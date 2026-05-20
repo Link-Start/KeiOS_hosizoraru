@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.mcp
 
 import android.content.Context
-import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
@@ -31,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
@@ -72,8 +72,9 @@ fun McpPage(
     mcpServerManager: McpServerManager,
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     liquidActionBarLayeredStyleEnabled: Boolean = true,
+    onShowBottomBar: () -> Unit = {},
     onOpenSkill: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val mcpTitle = stringResource(R.string.page_mcp_title)
     val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
@@ -98,26 +99,28 @@ fun McpPage(
         uiState.port,
         uiState.allowExternal,
         uiState.serverName,
-        pageUiState.showEditSheet
+        pageUiState.showEditSheet,
     ) {
         mcpPageViewModel.syncServiceDraft(uiState)
     }
     val isDark = isSystemInDarkTheme()
-    val overviewState = rememberMcpPageOverviewState(
-        context = context,
-        uiState = uiState,
-        runtime = runtime,
-        isDark = isDark,
-        titleColor = titleColor,
-        subtitleColor = subtitleColor,
-        runningColor = runningColor,
-        stoppedColor = stoppedColor,
-        runtimePendingText = runtimePendingText
-    )
+    val overviewState =
+        rememberMcpPageOverviewState(
+            context = context,
+            uiState = uiState,
+            runtime = runtime,
+            isDark = isDark,
+            titleColor = titleColor,
+            subtitleColor = subtitleColor,
+            runningColor = runningColor,
+            stoppedColor = stoppedColor,
+            runtimePendingText = runtimePendingText,
+        )
     val portText = pageUiState.portText
     val allowExternal = pageUiState.allowExternal
     val serverName = pageUiState.serverName
-    val serviceDraftChanged = serverName.trim() != uiState.serverName.trim() ||
+    val serviceDraftChanged =
+        serverName.trim() != uiState.serverName.trim() ||
             portText.trim() != uiState.port.toString() ||
             allowExternal != uiState.allowExternal
     val listState = rememberLazyListState()
@@ -129,6 +132,7 @@ fun McpPage(
     }
     var startAfterLocalNetworkPermission by remember { mutableStateOf(false) }
     var refreshRunning by remember { mutableStateOf(false) }
+
     fun launchServerToggle() {
         scope.launch {
             when (val result = mcpPageViewModel.toggleServer(mcpServerManager)) {
@@ -137,10 +141,12 @@ fun McpPage(
                 }
 
                 is McpToggleServerResult.Failed -> {
-                    context.showToast(context.resolveString(
-                        R.string.mcp_toast_start_failed,
-                        result.reason ?: unknownText
-                    ))
+                    context.showToast(
+                        context.resolveString(
+                            R.string.mcp_toast_start_failed,
+                            result.reason ?: unknownText,
+                        ),
+                    )
                 }
 
                 McpToggleServerResult.Started -> {
@@ -153,39 +159,56 @@ fun McpPage(
             }
         }
     }
-    val localNetworkPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        localNetworkPermissionGranted = granted || hasMcpLocalNetworkPermission(context)
-        context.showToast(context.resolveString(
-            if (localNetworkPermissionGranted) {
-                R.string.mcp_toast_local_network_permission_granted
-            } else {
-                R.string.mcp_toast_local_network_permission_denied
+    val localNetworkPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            localNetworkPermissionGranted = granted || hasMcpLocalNetworkPermission(context)
+            context.showToast(
+                context.resolveString(
+                    if (localNetworkPermissionGranted) {
+                        R.string.mcp_toast_local_network_permission_granted
+                    } else {
+                        R.string.mcp_toast_local_network_permission_denied
+                    },
+                ),
+            )
+            val shouldStartServer = startAfterLocalNetworkPermission && localNetworkPermissionGranted
+            startAfterLocalNetworkPermission = false
+            if (shouldStartServer && !mcpServerManager.uiState.value.running) {
+                launchServerToggle()
             }
-        ))
-        val shouldStartServer = startAfterLocalNetworkPermission && localNetworkPermissionGranted
-        startAfterLocalNetworkPermission = false
-        if (shouldStartServer && !mcpServerManager.uiState.value.running) {
-            launchServerToggle()
         }
-    }
-    val serverNameFieldWidth = remember(serverName, serverNameHint) {
-        val visibleChars = serverName.trim().ifBlank { serverNameHint }.length.coerceIn(6, 18)
-        (visibleChars * 11 + 36).dp
-    }
-    val portFieldWidth = remember(portText) {
-        val visibleChars = portText.trim().ifBlank { "38888" }.length.coerceIn(4, 6)
-        (visibleChars * 14 + 28).dp
-    }
-    val pageBackdropEffectsEnabled = runtime.isPageActive &&
-        !runtime.isPagerScrollInProgress
+    val serverNameFieldWidth =
+        remember(serverName, serverNameHint) {
+            val visibleChars =
+                serverName
+                    .trim()
+                    .ifBlank { serverNameHint }
+                    .length
+                    .coerceIn(6, 18)
+            (visibleChars * 11 + 36).dp
+        }
+    val portFieldWidth =
+        remember(portText) {
+            val visibleChars =
+                portText
+                    .trim()
+                    .ifBlank { "38888" }
+                    .length
+                    .coerceIn(4, 6)
+            (visibleChars * 14 + 28).dp
+        }
+    val pageBackdropEffectsEnabled =
+        runtime.isPageActive &&
+            !runtime.isPagerScrollInProgress
     val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
     val mcpGlassRuntime = LocalGlassEffectRuntime.current
     val toggleServer: () -> Unit = toggleServer@{
         localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
         if (!uiState.running && allowExternal && !localNetworkPermissionGranted) {
-            LocalNetworkPermissionCompat.requiredPermissionOrNull()
+            LocalNetworkPermissionCompat
+                .requiredPermissionOrNull()
                 ?.let { permission ->
                     startAfterLocalNetworkPermission = true
                     runCatching { localNetworkPermissionLauncher.launch(permission) }
@@ -196,24 +219,26 @@ fun McpPage(
         startAfterLocalNetworkPermission = false
         launchServerToggle()
     }
-    val dockAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
-        Alignment.BottomStart
-    } else {
-        Alignment.BottomEnd
-    }
+    val dockAlignment =
+        if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
+            Alignment.BottomStart
+        } else {
+            Alignment.BottomEnd
+        }
     val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
     val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
     val floatingDockBottom by animateDpAsState(
         targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
-        label = "mcp_floating_action_dock_bottom"
+        label = "mcp_floating_action_dock_bottom",
     )
     val copyCurrentConfig: () -> Unit = {
         scope.launch {
-            val json = mcpPageViewModel.buildConfigJson(
-                manager = mcpServerManager,
-                serverState = uiState
-            )
+            val json =
+                mcpPageViewModel.buildConfigJson(
+                    manager = mcpServerManager,
+                    serverState = uiState,
+                )
             copyToClipboard(context, "mcp-config", json)
             context.showToast(R.string.mcp_toast_config_copied)
         }
@@ -247,10 +272,12 @@ fun McpPage(
                 }
 
                 is McpSaveConfigResult.Failed -> {
-                    context.showToast(context.resolveString(
-                        R.string.common_save_failed_with_reason,
-                        result.reason ?: unknownText
-                    ))
+                    context.showToast(
+                        context.resolveString(
+                            R.string.common_save_failed_with_reason,
+                            result.reason ?: unknownText,
+                        ),
+                    )
                 }
 
                 McpSaveConfigResult.Success -> {
@@ -263,28 +290,32 @@ fun McpPage(
     }
     val sendTestNotification: () -> Unit = {
         scope.launch {
-            mcpPageViewModel.sendTestNotification(mcpServerManager)
+            mcpPageViewModel
+                .sendTestNotification(mcpServerManager)
                 .onSuccess {
                     context.showToast(R.string.mcp_toast_test_notification_sent)
-                }
-                .onFailure {
-                    context.showToast(context.resolveString(
-                        R.string.common_send_failed_with_reason,
-                        it.message ?: unknownText
-                    ))
+                }.onFailure {
+                    context.showToast(
+                        context.resolveString(
+                            R.string.common_send_failed_with_reason,
+                            it.message ?: unknownText,
+                        ),
+                    )
                 }
         }
     }
     val resetConfig: () -> Unit = {
         scope.launch {
             val requiresRestart = mcpPageViewModel.resetConfigPreservingToken(mcpServerManager)
-            context.showToast(context.resolveString(
-                if (requiresRestart) {
-                    R.string.mcp_toast_config_reset_requires_restart
-                } else {
-                    R.string.mcp_toast_config_reset
-                }
-            ))
+            context.showToast(
+                context.resolveString(
+                    if (requiresRestart) {
+                        R.string.mcp_toast_config_reset_requires_restart
+                    } else {
+                        R.string.mcp_toast_config_reset
+                    },
+                ),
+            )
             mcpPageViewModel.updateResetConfigConfirmVisible(false)
         }
     }
@@ -295,11 +326,12 @@ fun McpPage(
             mcpPageViewModel.updateResetTokenConfirmVisible(false)
         }
     }
-    val backdrops = rememberMainPageBackdropSet(
-        keyPrefix = "mcp",
-        refreshOnCompositionEnter = true,
-        distinctLayers = fullBackdropEffectsEnabled
-    )
+    val backdrops =
+        rememberMainPageBackdropSet(
+            keyPrefix = "mcp",
+            refreshOnCompositionEnter = true,
+            distinctLayers = fullBackdropEffectsEnabled,
+        )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     DisposableEffect(Unit) {
         onDispose { onActionBarInteractingChanged(false) }
@@ -307,233 +339,245 @@ fun McpPage(
     LaunchedEffect(runtime.scrollToTopSignal, runtime.isPageActive) {
         if (runtime.isPageActive && runtime.scrollToTopSignal > 0) listState.animateScrollToItem(0)
     }
-    val logsExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        val request = mcpPageViewModel.consumePendingLogsExport()
-        if (uri == null || request == null) {
-            mcpPageViewModel.finishLogsExport()
-            return@rememberLauncherForActivityResult
-        }
-        scope.launch {
-            val result = runCatching {
-                mcpPageViewModel.exportLogs(
-                    contentResolver = context.contentResolver,
-                    uri = uri,
-                    request = request,
-                    state = currentUiState
-                )
+    val logsExportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            val request = mcpPageViewModel.consumePendingLogsExport()
+            if (uri == null || request == null) {
+                mcpPageViewModel.finishLogsExport()
+                return@rememberLauncherForActivityResult
             }
-            mcpPageViewModel.finishLogsExport()
-            result.onSuccess {
-                context.showToast(R.string.mcp_toast_logs_exported)
-            }.onFailure {
-                context.showToast(context.resolveString(
-                    R.string.mcp_toast_logs_export_failed,
-                    it.javaClass.simpleName
-                ))
+            scope.launch {
+                val result =
+                    runCatching {
+                        mcpPageViewModel.exportLogs(
+                            contentResolver = context.contentResolver,
+                            uri = uri,
+                            request = request,
+                            state = currentUiState,
+                        )
+                    }
+                mcpPageViewModel.finishLogsExport()
+                result
+                    .onSuccess {
+                        context.showToast(R.string.mcp_toast_logs_exported)
+                    }.onFailure {
+                        context.showToast(
+                            context.resolveString(
+                                R.string.mcp_toast_logs_export_failed,
+                                it.javaClass.simpleName,
+                            ),
+                        )
+                    }
             }
         }
-    }
     val onOpenSkillState = rememberUpdatedState(onOpenSkill)
     val editIcon = appLucideEditIcon()
     val notesIcon = appLucideNotesIcon()
     val copyIcon = osLucideCopyIcon()
     val refreshIcon = appLucideRefreshIcon()
     val toggleIcon = if (uiState.running) appLucidePauseIcon() else osLucideRunIcon()
-    val toggleContentDescription = if (uiState.running) {
-        stringResource(R.string.mcp_action_stop_service)
-    } else {
-        stringResource(R.string.mcp_action_start_service)
-    }
-    val dockActions = listOf(
-        AppFloatingDockAction(
-            icon = copyIcon,
-            contentDescription = copyConfigContentDescription,
-            iconTint = MiuixTheme.colorScheme.primary,
-            onClick = copyCurrentConfig
-        ),
-        AppFloatingDockAction(
-            icon = refreshIcon,
-            contentDescription = refreshContentDescription,
-            iconTint = MiuixTheme.colorScheme.primary,
-            enabled = !refreshRunning,
-            rotating = refreshRunning,
-            onClick = refreshMcpNow
-        ),
-        AppFloatingDockAction(
-            icon = toggleIcon,
-            contentDescription = toggleContentDescription,
-            iconTint = if (uiState.running) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary,
-            onClick = toggleServer
-        )
-    )
-    val actionItems = remember(
-        editServiceParamsContentDescription,
-        openSkillContentDescription
-    ) {
+    val toggleContentDescription =
+        if (uiState.running) {
+            stringResource(R.string.mcp_action_stop_service)
+        } else {
+            stringResource(R.string.mcp_action_start_service)
+        }
+    val dockActions =
         listOf(
-            LiquidActionItem(
-                icon = editIcon,
-                contentDescription = editServiceParamsContentDescription,
-                onClick = { mcpPageViewModel.updateEditSheetVisible(true) }
+            AppFloatingDockAction(
+                icon = copyIcon,
+                contentDescription = copyConfigContentDescription,
+                iconTint = MiuixTheme.colorScheme.primary,
+                onClick = copyCurrentConfig,
             ),
-            LiquidActionItem(
-                icon = notesIcon,
-                contentDescription = openSkillContentDescription,
-                onClick = { onOpenSkillState.value() }
-            )
+            AppFloatingDockAction(
+                icon = refreshIcon,
+                contentDescription = refreshContentDescription,
+                iconTint = MiuixTheme.colorScheme.primary,
+                enabled = !refreshRunning,
+                rotating = refreshRunning,
+                onClick = refreshMcpNow,
+            ),
+            AppFloatingDockAction(
+                icon = toggleIcon,
+                contentDescription = toggleContentDescription,
+                iconTint = if (uiState.running) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary,
+                onClick = toggleServer,
+            ),
         )
-    }
+    val actionItems =
+        remember(
+            editServiceParamsContentDescription,
+            openSkillContentDescription,
+        ) {
+            listOf(
+                LiquidActionItem(
+                    icon = editIcon,
+                    contentDescription = editServiceParamsContentDescription,
+                    onClick = { mcpPageViewModel.updateEditSheetVisible(true) },
+                ),
+                LiquidActionItem(
+                    icon = notesIcon,
+                    contentDescription = openSkillContentDescription,
+                    onClick = { onOpenSkillState.value() },
+                ),
+            )
+        }
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides mcpGlassRuntime) {
-    AppPageScaffold(
-        title = "",
-        largeTitle = mcpTitle,
-        modifier = Modifier.fillMaxSize(),
-        scrollBehavior = scrollBehavior,
-        topBarColor = topBarMaterialBackdrop,
-        titleBackdrop = backdrops.topBar,
-        reserveTopEndActionSpace = true,
-        actions = {
-            LiquidActionBar(
-                backdrop = backdrops.topBar,
-                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                items = actionItems,
-                onInteractionChanged = onActionBarInteractingChanged
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            AppPageLazyColumn(
-                innerPadding = innerPadding,
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
-                sectionSpacing = 12.dp
-            ) {
-                item(key = "mcp-overview", contentType = "mcp_overview_section") {
-                    McpOverviewCardSection(
-                        backdrop = backdrops.content,
-                        titleColor = titleColor,
-                        subtitleColor = subtitleColor,
-                        overviewCardColor = overviewState.overviewCardColor,
-                        overviewBorderColor = overviewState.overviewBorderColor,
-                        overviewAccentColor = overviewState.overviewAccentColor,
-                        runtimeText = overviewState.runtimeText,
-                        isDark = isDark,
-                        running = uiState.running,
-                        overviewMetrics = overviewState.overviewMetrics,
-                        onToggleServer = toggleServer,
-                        onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) }
-                    )
-                }
-                item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
-                    McpServiceControlSection(
-                        backdrop = backdrops.content,
-                        expanded = pageUiState.controlExpanded,
-                        onExpandedChange = mcpPageViewModel::updateControlExpanded,
-                        onSendTestNotification = sendTestNotification,
-                        onShowResetConfigConfirm = {
-                            mcpPageViewModel.updateResetConfigConfirmVisible(
-                                true
-                            )
-                        },
-                        onCopySkillResource = copySkillResource,
-                        onCopyWorkflowResource = copyWorkflowResource
-                    )
-                }
-                item(key = "mcp-tools", contentType = "mcp_tools_section") {
-                    McpToolsSection(
-                        backdrop = backdrops.content,
-                        expanded = pageUiState.configExpanded,
-                        onExpandedChange = mcpPageViewModel::updateConfigExpanded,
-                        uiState = uiState,
-                        searchQuery = pageUiState.toolsSearchQuery,
-                        onSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
-                        advancedExpanded = pageUiState.advancedToolsExpanded,
-                        onAdvancedExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded
-                    )
-                }
-                item(key = "mcp-logs", contentType = "mcp_logs_section") {
-                    McpLogsSection(
-                        backdrop = backdrops.content,
-                        expanded = pageUiState.logsExpanded,
-                        onExpandedChange = mcpPageViewModel::updateLogsExpanded,
-                        uiState = uiState,
-                        logsExporting = pageUiState.logsExporting,
-                        onExportLogs = { generatedAt, fileName ->
-                            mcpPageViewModel.beginLogsExport(generatedAt, fileName)
-                            runCatching {
-                                logsExportLauncher.launch(fileName)
-                            }.onFailure {
-                                mcpPageViewModel.finishLogsExport()
-                                context.showToast(context.resolveString(
-                                    R.string.mcp_toast_logs_export_failed,
-                                    it.javaClass.simpleName
-                                ))
-                            }
-                        },
-                        onClearLogs = {
-                            scope.launch {
-                                mcpPageViewModel.clearLogs(mcpServerManager)
-                            }
-                        },
-                        subtitleColor = subtitleColor
-                    )
-                }
-            }
-
-            AppFloatingVerticalActionDock(
-                backdrop = backdrops.content,
-                actions = dockActions,
-                modifier = Modifier
-                    .align(dockAlignment)
-                    .padding(
-                        start = dockStartPadding,
-                        end = dockEndPadding,
-                        bottom = floatingDockBottom
-                    )
+        AppPageScaffold(
+            title = "",
+            largeTitle = mcpTitle,
+            modifier = Modifier.fillMaxSize(),
+            scrollBehavior = scrollBehavior,
+            topBarColor = topBarMaterialBackdrop,
+            titleBackdrop = backdrops.topBar,
+            reserveTopEndActionSpace = true,
+            onTitleClick = onShowBottomBar,
+            actions = {
+                LiquidActionBar(
+                    backdrop = backdrops.topBar,
+                    layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                    items = actionItems,
+                    onInteractionChanged = onActionBarInteractingChanged,
                 )
+            },
+        ) { innerPadding ->
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize(),
+            ) {
+                AppPageLazyColumn(
+                    innerPadding = innerPadding,
+                    state = listState,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
+                    sectionSpacing = 12.dp,
+                ) {
+                    item(key = "mcp-overview", contentType = "mcp_overview_section") {
+                        McpOverviewCardSection(
+                            backdrop = backdrops.content,
+                            titleColor = titleColor,
+                            subtitleColor = subtitleColor,
+                            overviewCardColor = overviewState.overviewCardColor,
+                            overviewBorderColor = overviewState.overviewBorderColor,
+                            overviewAccentColor = overviewState.overviewAccentColor,
+                            runtimeText = overviewState.runtimeText,
+                            isDark = isDark,
+                            running = uiState.running,
+                            overviewMetrics = overviewState.overviewMetrics,
+                            onToggleServer = toggleServer,
+                            onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
+                        )
+                    }
+                    item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
+                        McpServiceControlSection(
+                            backdrop = backdrops.content,
+                            expanded = pageUiState.controlExpanded,
+                            onExpandedChange = mcpPageViewModel::updateControlExpanded,
+                            onSendTestNotification = sendTestNotification,
+                            onShowResetConfigConfirm = {
+                                mcpPageViewModel.updateResetConfigConfirmVisible(
+                                    true,
+                                )
+                            },
+                            onCopySkillResource = copySkillResource,
+                            onCopyWorkflowResource = copyWorkflowResource,
+                        )
+                    }
+                    item(key = "mcp-tools", contentType = "mcp_tools_section") {
+                        McpToolsSection(
+                            backdrop = backdrops.content,
+                            expanded = pageUiState.configExpanded,
+                            onExpandedChange = mcpPageViewModel::updateConfigExpanded,
+                            uiState = uiState,
+                            searchQuery = pageUiState.toolsSearchQuery,
+                            onSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
+                            advancedExpanded = pageUiState.advancedToolsExpanded,
+                            onAdvancedExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
+                        )
+                    }
+                    item(key = "mcp-logs", contentType = "mcp_logs_section") {
+                        McpLogsSection(
+                            backdrop = backdrops.content,
+                            expanded = pageUiState.logsExpanded,
+                            onExpandedChange = mcpPageViewModel::updateLogsExpanded,
+                            uiState = uiState,
+                            logsExporting = pageUiState.logsExporting,
+                            onExportLogs = { generatedAt, fileName ->
+                                mcpPageViewModel.beginLogsExport(generatedAt, fileName)
+                                runCatching {
+                                    logsExportLauncher.launch(fileName)
+                                }.onFailure {
+                                    mcpPageViewModel.finishLogsExport()
+                                    context.showToast(
+                                        context.resolveString(
+                                            R.string.mcp_toast_logs_export_failed,
+                                            it.javaClass.simpleName,
+                                        ),
+                                    )
+                                }
+                            },
+                            onClearLogs = {
+                                scope.launch {
+                                    mcpPageViewModel.clearLogs(mcpServerManager)
+                                }
+                            },
+                            subtitleColor = subtitleColor,
+                        )
+                    }
+                }
+
+                AppFloatingVerticalActionDock(
+                    backdrop = backdrops.content,
+                    actions = dockActions,
+                    modifier =
+                        Modifier
+                            .align(dockAlignment)
+                            .padding(
+                                start = dockStartPadding,
+                                end = dockEndPadding,
+                                bottom = floatingDockBottom,
+                            ),
+                )
+            }
         }
-    }
 
-    McpEditServiceSheet(
-        show = pageUiState.showEditSheet,
-        backdrop = backdrops.sheet,
-        serverName = serverName,
-        onServerNameChange = mcpPageViewModel::updateServerName,
-        serverNameFieldWidth = serverNameFieldWidth,
-        portText = portText,
-        onPortTextChange = mcpPageViewModel::updatePortText,
-        portFieldWidth = portFieldWidth,
-        allowExternal = allowExternal,
-        hasUnsavedChanges = serviceDraftChanged,
-        onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
-        onSave = saveServiceConfig,
-        onDismissRequest = { mcpPageViewModel.updateEditSheetVisible(false) },
-        onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) }
-    )
+        McpEditServiceSheet(
+            show = pageUiState.showEditSheet,
+            backdrop = backdrops.sheet,
+            serverName = serverName,
+            onServerNameChange = mcpPageViewModel::updateServerName,
+            serverNameFieldWidth = serverNameFieldWidth,
+            portText = portText,
+            onPortTextChange = mcpPageViewModel::updatePortText,
+            portFieldWidth = portFieldWidth,
+            allowExternal = allowExternal,
+            hasUnsavedChanges = serviceDraftChanged,
+            onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
+            onSave = saveServiceConfig,
+            onDismissRequest = { mcpPageViewModel.updateEditSheetVisible(false) },
+            onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) },
+        )
 
-    McpResetConfigDialog(
-        show = pageUiState.showResetConfigConfirm,
-        onConfirm = resetConfig,
-        onDismissRequest = { mcpPageViewModel.updateResetConfigConfirmVisible(false) }
-    )
+        McpResetConfigDialog(
+            show = pageUiState.showResetConfigConfirm,
+            onConfirm = resetConfig,
+            onDismissRequest = { mcpPageViewModel.updateResetConfigConfirmVisible(false) },
+        )
 
-    McpResetTokenDialog(
-        show = pageUiState.showResetTokenConfirm,
-        onConfirm = resetToken,
-        onDismissRequest = { mcpPageViewModel.updateResetTokenConfirmVisible(false) }
-    )
+        McpResetTokenDialog(
+            show = pageUiState.showResetTokenConfirm,
+            onConfirm = resetToken,
+            onDismissRequest = { mcpPageViewModel.updateResetTokenConfirmVisible(false) },
+        )
     }
 }
 
-private fun hasMcpLocalNetworkPermission(context: Context): Boolean {
-    return LocalNetworkPermissionCompat.hasPermission(context)
-}
+private fun hasMcpLocalNetworkPermission(context: Context): Boolean = LocalNetworkPermissionCompat.hasPermission(context)

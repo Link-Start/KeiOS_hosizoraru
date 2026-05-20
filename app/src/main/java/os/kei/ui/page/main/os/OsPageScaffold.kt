@@ -27,38 +27,40 @@ internal fun OsPageScaffoldShell(
     onOpenActivityVisibilityManager: () -> Unit,
     onOpenShellCardVisibilityManager: () -> Unit,
     onRefresh: () -> Unit,
+    onTitleClick: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     val manageCardsIcon = appLucideLayersIcon()
     val manageActivitiesIcon = appLucideAppWindowIcon()
     val manageShellCardsIcon = osLucideShellIcon()
-    val actionItems = remember(
-        manageCardsContentDescription,
-        manageActivitiesContentDescription,
-        manageShellCardsContentDescription,
-        onOpenCardManager,
-        onOpenActivityVisibilityManager,
-        onOpenShellCardVisibilityManager,
-    ) {
-        listOf(
-            LiquidActionItem(
-                icon = manageCardsIcon,
-                contentDescription = manageCardsContentDescription,
-                onClick = onOpenCardManager
-            ),
-            LiquidActionItem(
-                icon = manageActivitiesIcon,
-                contentDescription = manageActivitiesContentDescription,
-                onClick = onOpenActivityVisibilityManager
-            ),
-            LiquidActionItem(
-                icon = manageShellCardsIcon,
-                contentDescription = manageShellCardsContentDescription,
-                onClick = onOpenShellCardVisibilityManager
+    val actionItems =
+        remember(
+            manageCardsContentDescription,
+            manageActivitiesContentDescription,
+            manageShellCardsContentDescription,
+            onOpenCardManager,
+            onOpenActivityVisibilityManager,
+            onOpenShellCardVisibilityManager,
+        ) {
+            listOf(
+                LiquidActionItem(
+                    icon = manageCardsIcon,
+                    contentDescription = manageCardsContentDescription,
+                    onClick = onOpenCardManager,
+                ),
+                LiquidActionItem(
+                    icon = manageActivitiesIcon,
+                    contentDescription = manageActivitiesContentDescription,
+                    onClick = onOpenActivityVisibilityManager,
+                ),
+                LiquidActionItem(
+                    icon = manageShellCardsIcon,
+                    contentDescription = manageShellCardsContentDescription,
+                    onClick = onOpenShellCardVisibilityManager,
+                ),
             )
-        )
-    }
+        }
 
     AppPageScaffold(
         title = "",
@@ -68,14 +70,15 @@ internal fun OsPageScaffoldShell(
         topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,
         reserveTopEndActionSpace = true,
+        onTitleClick = onTitleClick,
         actions = {
             LiquidActionBar(
                 backdrop = topBarBackdrop,
                 layeredStyleEnabled = layeredStyleEnabled,
                 items = actionItems,
-                onInteractionChanged = onActionBarInteractingChanged
+                onInteractionChanged = onActionBarInteractingChanged,
             )
         },
-        content = content
+        content = content,
     )
 }

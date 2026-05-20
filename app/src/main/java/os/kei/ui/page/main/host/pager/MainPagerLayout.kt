@@ -334,6 +334,7 @@ internal fun MainPagerLayout(
                         onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
                         onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
                         onCacheFreshnessVisibilityChange = coordinator.onCacheFreshnessVisibilityChange,
+                        onShowBottomBar = coordinator.onShowBottomBar,
                         onOpenSettings = onOpenSettings,
                         onOpenAbout = onOpenAbout,
                         onOpenGitHubPage = onOpenGitHubPage,

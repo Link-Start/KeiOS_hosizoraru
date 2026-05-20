@@ -73,10 +73,11 @@ fun HomePage(
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
     onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
+    onShowBottomBar: () -> Unit = {},
     onOpenGitHubPage: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
@@ -85,42 +86,50 @@ fun HomePage(
     val blurEnabled = isRenderEffectSupported()
     val shaderSupported = isRuntimeShaderSupported()
     val effectBackgroundEnabled = shaderSupported && runtime.isPageActive
-    val homeDynamicActive = runtime.isDataActive ||
-        (homeDynamicFullEffectEnabled && runtime.isPageActive)
-    val dynamicBackgroundEnabled = shaderSupported &&
-        homeDynamicActive &&
-        (homeDynamicFullEffectEnabled || !runtime.isPagerScrollInProgress)
-    val fullBackdropEffectsEnabled = runtime.isPageActive &&
-        (
-            homeDynamicFullEffectEnabled ||
-                !runtime.isPagerScrollInProgress
-            )
-    val foregroundBlurActive = blurEnabled &&
+    val homeDynamicActive =
+        runtime.isDataActive ||
+            (homeDynamicFullEffectEnabled && runtime.isPageActive)
+    val dynamicBackgroundEnabled =
         shaderSupported &&
-        fullBackdropEffectsEnabled
+            homeDynamicActive &&
+            (homeDynamicFullEffectEnabled || !runtime.isPagerScrollInProgress)
+    val fullBackdropEffectsEnabled =
+        runtime.isPageActive &&
+            (
+                homeDynamicFullEffectEnabled ||
+                    !runtime.isPagerScrollInProgress
+            )
+    val foregroundBlurActive =
+        blurEnabled &&
+            shaderSupported &&
+            fullBackdropEffectsEnabled
     val surfaceColor = MiuixTheme.colorScheme.surface
-    val actionBarBackdrop = rememberActionBarBackdrop {
-        drawRect(surfaceColor)
-        drawContent()
-    }
-    val homeCardBackdrop = if (fullBackdropEffectsEnabled) {
+    val actionBarBackdrop =
         rememberActionBarBackdrop {
+            drawRect(surfaceColor)
             drawContent()
         }
-    } else {
-        null
-    }
-    val foregroundBackdrop = if (foregroundBlurActive) {
-        rememberMiuixLayerBackdrop()
-    } else {
-        null
-    }
-    val contentState = rememberHomePageContentState(
-        shizukuStatus = shizukuStatus,
-        mcpOverview = mcpOverview,
-        githubOverview = homeGitHubOverview,
-        baOverview = homeBaOverview
-    )
+    val homeCardBackdrop =
+        if (fullBackdropEffectsEnabled) {
+            rememberActionBarBackdrop {
+                drawContent()
+            }
+        } else {
+            null
+        }
+    val foregroundBackdrop =
+        if (foregroundBlurActive) {
+            rememberMiuixLayerBackdrop()
+        } else {
+            null
+        }
+    val contentState =
+        rememberHomePageContentState(
+            shizukuStatus = shizukuStatus,
+            mcpOverview = mcpOverview,
+            githubOverview = homeGitHubOverview,
+            baOverview = homeBaOverview,
+        )
 
     var actionBarSelectedIndex by rememberSaveable { mutableIntStateOf(1) }
     var showBottomPageEditor by rememberSaveable { mutableStateOf(false) }
@@ -134,107 +143,110 @@ fun HomePage(
     val editBottomPagesContentDescription = stringResource(R.string.home_cd_edit_bottom_pages)
     val aboutContentDescription = stringResource(R.string.about_page_title)
     val settingsContentDescription = stringResource(R.string.settings_title)
-    val homeActionItems = remember(
-        editBottomPagesContentDescription,
-        aboutContentDescription,
-        settingsContentDescription,
-        onOpenAbout,
-        onOpenSettings
-    ) {
-        listOf(
-            LiquidActionItem(
-                icon = layersIcon,
-                contentDescription = editBottomPagesContentDescription,
-                onClick = {
-                    actionBarSelectedIndex = 0
-                    showBottomPageEditor = true
-                }
-            ),
-            LiquidActionItem(
-                icon = aboutIcon,
-                contentDescription = aboutContentDescription,
-                onClick = {
-                    actionBarSelectedIndex = 1
-                    onOpenAbout()
-                }
-            ),
-            LiquidActionItem(
-                icon = settingsIcon,
-                contentDescription = settingsContentDescription,
-                onClick = {
-                    actionBarSelectedIndex = 2
-                    onOpenSettings()
-                }
+    val homeActionItems =
+        remember(
+            editBottomPagesContentDescription,
+            aboutContentDescription,
+            settingsContentDescription,
+            onOpenAbout,
+            onOpenSettings,
+        ) {
+            listOf(
+                LiquidActionItem(
+                    icon = layersIcon,
+                    contentDescription = editBottomPagesContentDescription,
+                    onClick = {
+                        actionBarSelectedIndex = 0
+                        showBottomPageEditor = true
+                    },
+                ),
+                LiquidActionItem(
+                    icon = aboutIcon,
+                    contentDescription = aboutContentDescription,
+                    onClick = {
+                        actionBarSelectedIndex = 1
+                        onOpenAbout()
+                    },
+                ),
+                LiquidActionItem(
+                    icon = settingsIcon,
+                    contentDescription = settingsContentDescription,
+                    onClick = {
+                        actionBarSelectedIndex = 2
+                        onOpenSettings()
+                    },
+                ),
             )
-        )
-    }
+        }
     val hiddenOverviewCardCount = (HomeOverviewCard.entries.size - visibleOverviewCards.size).coerceAtLeast(0)
-    val heroMotionState = rememberHomePageHeroMotionState(
-        lazyListState = lazyListState,
-        homeIconHdrEnabled = homeIconHdrEnabled,
-        runtime = runtime,
-        hiddenOverviewCardCount = hiddenOverviewCardCount
-    )
-    val overviewCardState = rememberHomePageOverviewCardState(
-        homeStatusMcp = contentState.homeStatusMcp,
-        homeStatusGitHub = contentState.homeStatusGitHub,
-        homeStatusBa = contentState.homeStatusBa,
-        homeStatusShizuku = contentState.homeStatusShizuku,
-        mcpRunning = mcpOverview.running,
-        cacheStateColor = contentState.cacheStateColor,
-        baLoaded = homeBaOverview.loaded,
-        baActivated = homeBaOverview.activated,
-        shizukuGranted = contentState.shizukuGranted,
-        runningColor = contentState.runningColor,
-        stoppedColor = contentState.stoppedColor,
-        inactiveColor = contentState.inactiveColor,
-        shizukuStatusLine = contentState.shizukuStatusLine,
-        mcpFocusLine = contentState.mcpFocusLine,
-        githubFocusLine = contentState.githubFocusLine,
-        baFocusLine = contentState.baFocusLine,
-        homeStatStatus = contentState.homeStatStatus,
-        mcpStatusText = contentState.mcpStatusText,
-        homeStatRuntime = contentState.homeStatRuntime,
-        mcpRuntimeText = contentState.mcpRuntimeText,
-        homeStatClients = contentState.homeStatClients,
-        mcpConnectedClients = contentState.mcpConnectedClients,
-        homeStatNetwork = contentState.homeStatNetwork,
-        networkModeText = contentState.networkModeText,
-        homeStatPort = contentState.homeStatPort,
-        mcpPort = contentState.mcpPort,
-        homeStatToken = contentState.homeStatToken,
-        mcpTokenStatusText = contentState.mcpTokenStatusText,
-        homeStatStableUpdates = contentState.homeStatStableUpdates,
-        githubUpdatableLine = contentState.githubUpdatableLine,
-        homeStatPreReleaseUpdates = contentState.homeStatPreReleaseUpdates,
-        githubPreReleaseUpdateLine = contentState.githubPreReleaseUpdateLine,
-        homeStatFailed = contentState.homeStatFailed,
-        githubFailedLine = contentState.githubFailedLine,
-        homeStatTracked = contentState.homeStatTracked,
-        trackedCountLine = contentState.trackedCountLine,
-        homeStatCached = contentState.homeStatCached,
-        cacheHitCountLine = contentState.cacheHitCountLine,
-        homeStatCacheState = contentState.homeStatCacheState,
-        githubCacheFreshnessLine = contentState.githubCacheFreshnessLine,
-        showCacheFreshnessInCards = showCacheFreshnessInCards,
-        homeStatShare = contentState.homeStatShare,
-        githubShareLine = contentState.githubShareLine,
-        githubPendingShareImport = homeGitHubOverview.pendingShareImport,
-        homeStatLastUpdate = contentState.homeStatLastUpdate,
-        githubLastUpdateLine = contentState.githubLastUpdateLine,
-        baActivationLine = contentState.baActivationLine,
-        homeStatAp = contentState.homeStatAp,
-        baApLine = contentState.baApLine,
-        homeStatCafeAp = contentState.homeStatCafeAp,
-        baCafeApLine = contentState.baCafeApLine,
-        homeStatApRemaining = contentState.homeStatApRemaining,
-        baApRemainingLine = contentState.baApRemainingLine,
-        homeStatBaServer = contentState.homeStatBaServer,
-        baServerLine = contentState.baServerLine,
-        homeStatBaNotify = contentState.homeStatBaNotify,
-        baNotifyLine = contentState.baNotifyLine,
-        baCacheFreshnessLine = contentState.baCacheFreshnessLine
-    )
+    val heroMotionState =
+        rememberHomePageHeroMotionState(
+            lazyListState = lazyListState,
+            homeIconHdrEnabled = homeIconHdrEnabled,
+            runtime = runtime,
+            hiddenOverviewCardCount = hiddenOverviewCardCount,
+        )
+    val overviewCardState =
+        rememberHomePageOverviewCardState(
+            homeStatusMcp = contentState.homeStatusMcp,
+            homeStatusGitHub = contentState.homeStatusGitHub,
+            homeStatusBa = contentState.homeStatusBa,
+            homeStatusShizuku = contentState.homeStatusShizuku,
+            mcpRunning = mcpOverview.running,
+            cacheStateColor = contentState.cacheStateColor,
+            baLoaded = homeBaOverview.loaded,
+            baActivated = homeBaOverview.activated,
+            shizukuGranted = contentState.shizukuGranted,
+            runningColor = contentState.runningColor,
+            stoppedColor = contentState.stoppedColor,
+            inactiveColor = contentState.inactiveColor,
+            shizukuStatusLine = contentState.shizukuStatusLine,
+            mcpFocusLine = contentState.mcpFocusLine,
+            githubFocusLine = contentState.githubFocusLine,
+            baFocusLine = contentState.baFocusLine,
+            homeStatStatus = contentState.homeStatStatus,
+            mcpStatusText = contentState.mcpStatusText,
+            homeStatRuntime = contentState.homeStatRuntime,
+            mcpRuntimeText = contentState.mcpRuntimeText,
+            homeStatClients = contentState.homeStatClients,
+            mcpConnectedClients = contentState.mcpConnectedClients,
+            homeStatNetwork = contentState.homeStatNetwork,
+            networkModeText = contentState.networkModeText,
+            homeStatPort = contentState.homeStatPort,
+            mcpPort = contentState.mcpPort,
+            homeStatToken = contentState.homeStatToken,
+            mcpTokenStatusText = contentState.mcpTokenStatusText,
+            homeStatStableUpdates = contentState.homeStatStableUpdates,
+            githubUpdatableLine = contentState.githubUpdatableLine,
+            homeStatPreReleaseUpdates = contentState.homeStatPreReleaseUpdates,
+            githubPreReleaseUpdateLine = contentState.githubPreReleaseUpdateLine,
+            homeStatFailed = contentState.homeStatFailed,
+            githubFailedLine = contentState.githubFailedLine,
+            homeStatTracked = contentState.homeStatTracked,
+            trackedCountLine = contentState.trackedCountLine,
+            homeStatCached = contentState.homeStatCached,
+            cacheHitCountLine = contentState.cacheHitCountLine,
+            homeStatCacheState = contentState.homeStatCacheState,
+            githubCacheFreshnessLine = contentState.githubCacheFreshnessLine,
+            showCacheFreshnessInCards = showCacheFreshnessInCards,
+            homeStatShare = contentState.homeStatShare,
+            githubShareLine = contentState.githubShareLine,
+            githubPendingShareImport = homeGitHubOverview.pendingShareImport,
+            homeStatLastUpdate = contentState.homeStatLastUpdate,
+            githubLastUpdateLine = contentState.githubLastUpdateLine,
+            baActivationLine = contentState.baActivationLine,
+            homeStatAp = contentState.homeStatAp,
+            baApLine = contentState.baApLine,
+            homeStatCafeAp = contentState.homeStatCafeAp,
+            baCafeApLine = contentState.baCafeApLine,
+            homeStatApRemaining = contentState.homeStatApRemaining,
+            baApRemainingLine = contentState.baApRemainingLine,
+            homeStatBaServer = contentState.homeStatBaServer,
+            baServerLine = contentState.baServerLine,
+            homeStatBaNotify = contentState.homeStatBaNotify,
+            baNotifyLine = contentState.baNotifyLine,
+            baCacheFreshnessLine = contentState.baCacheFreshnessLine,
+        )
 
     Box(modifier = Modifier.fillMaxSize()) {
         AppScaffold(
@@ -244,8 +256,9 @@ fun HomePage(
                     largeTitle = "",
                     scrollBehavior = topAppBarScrollBehavior,
                     color = Color.Transparent,
+                    onTitleClick = onShowBottomBar,
                 )
-            }
+            },
         ) { innerPadding ->
             HomePageControlSheet(
                 show = showBottomPageEditor,
@@ -265,21 +278,23 @@ fun HomePage(
                 onDismissRequest = { showBottomPageEditor = false },
                 onBottomPageVisibilityChange = onBottomPageVisibilityChange,
                 onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
-                onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange
+                onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
             )
 
             val horizontalSafeInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal).asPaddingValues()
-            val listContentPadding = PaddingValues(
-                start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
-                top = innerPadding.calculateTopPadding() + runtime.contentTopPadding,
-                end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
-                bottom = innerPadding.calculateBottomPadding() + runtime.contentBottomPadding + 16.dp
-            )
-            val logoPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding() + runtime.contentTopPadding + 24.dp,
-                start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
-                end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
-            )
+            val listContentPadding =
+                PaddingValues(
+                    start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
+                    top = innerPadding.calculateTopPadding() + runtime.contentTopPadding,
+                    end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
+                    bottom = innerPadding.calculateBottomPadding() + runtime.contentBottomPadding + 16.dp,
+                )
+            val logoPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding() + runtime.contentTopPadding + 24.dp,
+                    start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
+                    end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
+                )
 
             BgEffectBackground(
                 dynamicBackground = dynamicBackgroundEnabled,
@@ -308,14 +323,15 @@ fun HomePage(
                     onHeroHeightChanged = heroMotionState.onHeroHeightPxChanged,
                     onIconBottomChanged = heroMotionState.onIconBottomChanged,
                     onTitleBottomChanged = heroMotionState.onTitleBottomChanged,
-                    onSummaryBottomChanged = heroMotionState.onSummaryBottomChanged
+                    onSummaryBottomChanged = heroMotionState.onSummaryBottomChanged,
                 )
 
                 LazyColumn(
                     state = lazyListState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
                     contentPadding = listContentPadding,
                     overscrollEffect = null,
                 ) {
@@ -326,15 +342,16 @@ fun HomePage(
                             listContentPadding = listContentPadding,
                             homeHeaderSinkOffset = heroMotionState.homeHeaderSinkOffset,
                             onLogoHeightPxChanged = heroMotionState.onLogoHeightPxChanged,
-                            onLogoAreaBottomChanged = heroMotionState.onLogoAreaBottomChanged
+                            onLogoAreaBottomChanged = heroMotionState.onLogoAreaBottomChanged,
                         )
                     }
 
                     item(key = "home_content") {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = listContentPadding.calculateBottomPadding())
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = listContentPadding.calculateBottomPadding()),
                         ) {
                             HomePageOverviewCards(
                                 visibleOverviewCards = visibleOverviewCards,
@@ -347,7 +364,7 @@ fun HomePage(
                                 githubStats = overviewCardState.githubOverviewStats,
                                 onOpenGitHubPage = onOpenGitHubPage,
                                 homeCardBa = contentState.homeCardBa,
-                                baStats = overviewCardState.baOverviewStats
+                                baStats = overviewCardState.baOverviewStats,
                             )
                         }
                     }
@@ -361,7 +378,7 @@ fun HomePage(
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 items = homeActionItems,
                 selectedIndex = actionBarSelectedIndex,
-                onInteractionChanged = onActionBarInteractingChanged
+                onInteractionChanged = onActionBarInteractingChanged,
             )
         }
     }

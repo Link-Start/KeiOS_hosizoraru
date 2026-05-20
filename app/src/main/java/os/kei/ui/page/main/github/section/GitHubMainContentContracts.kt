@@ -32,6 +32,7 @@ internal data class GitHubMainContentLayout(
     val addButtonScrollConnection: NestedScrollConnection,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
+    val onShowBottomBar: () -> Unit,
 )
 
 internal data class GitHubMainContentSurfaces(

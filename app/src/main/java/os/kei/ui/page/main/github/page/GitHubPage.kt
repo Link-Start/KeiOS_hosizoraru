@@ -54,7 +54,8 @@ fun GitHubPage(
     externalActionsSheetToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onShowBottomBar: () -> Unit = {},
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val openLinkFailureMessage = context.resolveString(R.string.github_error_open_link)
@@ -73,13 +74,15 @@ fun GitHubPage(
     val topBarBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
-    val backdrops = rememberMainPageBackdropSet(
-        keyPrefix = "github",
-        distinctLayers = fullBackdropEffectsEnabled
-    )
-    val topBarColor = rememberAppTopBarColor(
-        enableBackdropEffects = topBarBackdropEffectsEnabled
-    )
+    val backdrops =
+        rememberMainPageBackdropSet(
+            keyPrefix = "github",
+            distinctLayers = fullBackdropEffectsEnabled,
+        )
+    val topBarColor =
+        rememberAppTopBarColor(
+            enableBackdropEffects = topBarBackdropEffectsEnabled,
+        )
 
     val state = rememberGitHubPageState(githubPageViewModel)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
@@ -104,89 +107,94 @@ fun GitHubPage(
         if (!runtime.hasActivated) return@LaunchedEffect
         githubPageViewModel.bindContextObservers(
             context = context,
-            state = state
+            state = state,
         )
     }
     SideEffect {
         state.updateScrollBounds(
             canScrollBackward = listState.canScrollBackward,
-            canScrollForward = listState.canScrollForward
+            canScrollForward = listState.canScrollForward,
         )
     }
-    val actions = remember(
-        context,
-        scope,
-        state,
-        githubPageViewModel.repository,
-        systemDmOption,
-        openLinkFailureMessage
-    ) {
-        GitHubPageActions(
-            context = context,
-            scope = scope,
-            state = state,
-            repository = githubPageViewModel.repository,
-            systemDmOption = systemDmOption,
-            openLinkFailureMessage = openLinkFailureMessage
-        )
-    }
+    val actions =
+        remember(
+            context,
+            scope,
+            state,
+            githubPageViewModel.repository,
+            systemDmOption,
+            openLinkFailureMessage,
+        ) {
+            GitHubPageActions(
+                context = context,
+                scope = scope,
+                state = state,
+                repository = githubPageViewModel.repository,
+                systemDmOption = systemDmOption,
+                openLinkFailureMessage = openLinkFailureMessage,
+            )
+        }
     val appListPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             scope.launch { actions.reloadApps(forceRefresh = true) }
         }
-    val launchAppListPermission: (Intent) -> Unit = remember(appListPermissionLauncher) {
-        { intent: Intent -> appListPermissionLauncher.launch(intent) }
-    }
+    val launchAppListPermission: (Intent) -> Unit =
+        remember(appListPermissionLauncher) {
+            { intent: Intent -> appListPermissionLauncher.launch(intent) }
+        }
     val starImportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             handleGitHubStarImportActivityResult(
                 result = result,
-                actions = actions
+                actions = actions,
             )
         }
-    val tracksExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        handleGitHubTrackExportDestinationResult(
-            context = context,
-            scope = scope,
-            githubPageViewModel = githubPageViewModel,
-            uri = uri
-        )
-    }
-    val tracksImportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        handleGitHubTrackImportSourceResult(
-            context = context,
-            scope = scope,
-            state = state,
-            actions = actions,
-            githubPageViewModel = githubPageViewModel,
-            uri = uri
-        )
-    }
-    val transferCallbacks = remember(
-        context,
-        scope,
-        state,
-        actions,
-        githubPageViewModel,
-        tracksExportLauncher,
-        tracksImportLauncher,
-        starImportLauncher
-    ) {
-        buildGitHubPageTrackTransferCallbacks(
-            context = context,
-            scope = scope,
-            state = state,
-            actions = actions,
-            githubPageViewModel = githubPageViewModel,
-            launchTrackedExport = { fileName -> tracksExportLauncher.launch(fileName) },
-            launchTrackedImport = { mimeTypes -> tracksImportLauncher.launch(mimeTypes) },
-            launchStarImport = { intent -> starImportLauncher.launch(intent) }
-        )
-    }
+    val tracksExportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            handleGitHubTrackExportDestinationResult(
+                context = context,
+                scope = scope,
+                githubPageViewModel = githubPageViewModel,
+                uri = uri,
+            )
+        }
+    val tracksImportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            handleGitHubTrackImportSourceResult(
+                context = context,
+                scope = scope,
+                state = state,
+                actions = actions,
+                githubPageViewModel = githubPageViewModel,
+                uri = uri,
+            )
+        }
+    val transferCallbacks =
+        remember(
+            context,
+            scope,
+            state,
+            actions,
+            githubPageViewModel,
+            tracksExportLauncher,
+            tracksImportLauncher,
+            starImportLauncher,
+        ) {
+            buildGitHubPageTrackTransferCallbacks(
+                context = context,
+                scope = scope,
+                state = state,
+                actions = actions,
+                githubPageViewModel = githubPageViewModel,
+                launchTrackedExport = { fileName -> tracksExportLauncher.launch(fileName) },
+                launchTrackedImport = { mimeTypes -> tracksImportLauncher.launch(mimeTypes) },
+                launchStarImport = { intent -> starImportLauncher.launch(intent) },
+            )
+        }
     LaunchedEffect(externalRefreshTriggerToken) {
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
@@ -204,7 +212,7 @@ fun GitHubPage(
         externalActionsSheetToken,
         externalActionsTrackId,
         trackedItemIds,
-        runtime.contentReady
+        runtime.contentReady,
     ) {
         if (externalActionsSheetToken <= 0 ||
             externalActionsSheetToken == consumedExternalActionsSheetToken ||
@@ -234,24 +242,27 @@ fun GitHubPage(
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,
         onLaunchAppListPermission = launchAppListPermission,
-        onActionBarInteractingChanged = onActionBarInteractingChanged
+        onActionBarInteractingChanged = onActionBarInteractingChanged,
     )
 
     BindGitHubTrackCardFocusCoordinator(
         listState = listState,
         request = state.trackCardFocusRequest,
         sortedTracked = contentDerivedState.trackedUi.sortedTracked,
-        pendingTrackVisible = contentDerivedState.showPendingShareImportCard &&
+        pendingTrackVisible =
+            contentDerivedState.showPendingShareImportCard &&
                 state.pendingShareImportTrack != null,
         attachCandidateVisible = state.pendingShareImportAttachCandidate != null,
-        previewVisible = state.pendingShareImportTrack == null &&
+        previewVisible =
+            state.pendingShareImportTrack == null &&
                 state.pendingShareImportAttachCandidate == null &&
                 state.pendingShareImportPreview != null,
-        resultVisible = state.pendingShareImportPreview == null &&
+        resultVisible =
+            state.pendingShareImportPreview == null &&
                 state.pendingShareImportTrack == null &&
                 state.pendingShareImportAttachCandidate == null &&
                 state.pendingShareImportResult != null,
-        onConsumed = state::consumeTrackCardFocus
+        onConsumed = state::consumeTrackCardFocus,
     )
 
     val hasKeiOsSelfTrack by remember {
@@ -260,125 +271,133 @@ fun GitHubPage(
     val githubGlassRuntime = LocalGlassEffectRuntime.current
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
         GitHubMainContent(
-            layout = GitHubMainContentLayout(
-                contentBottomPadding = runtime.contentBottomPadding,
-                listState = listState,
-                scrollBehavior = scrollBehavior,
-                addButtonScrollConnection = state.addButtonScrollConnection,
-                bottomBarVisible = runtime.bottomBarVisible,
-                floatingDockSide = runtime.floatingDockSide
-            ),
-            surfaces = GitHubMainContentSurfaces(
-                topBarBackdrop = backdrops.topBar,
-                contentBackdrop = backdrops.content,
-                topBarColor = topBarColor,
-                liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                isDark = isDark
-            ),
-            controls = GitHubMainContentControls(
-                searchExpanded = enableSearchBar && searchExpanded,
-                trackedSearch = state.trackedSearch,
-                sortMode = state.sortMode,
-                sortDirection = state.sortDirection,
-                trackedFilterMode = state.trackedFilterMode,
-                refreshIntervalHours = state.refreshIntervalHours,
-                showActionMenuPopup = state.showActionMenuPopup,
-                deleteInProgress = state.deleteInProgress,
-                tracksExporting = transferState.tracksExporting,
-                tracksImporting = transferState.tracksImporting
-            ),
-            overview = GitHubMainContentOverview(
-                refreshState = state.overviewRefreshState,
-                expanded = state.overviewExpanded,
-                refreshProgress = state.refreshProgress,
-                lastRefreshMs = state.lastRefreshMs,
-                lookupConfig = state.lookupConfig,
-                visibleEntries = state.overviewVisibleEntries,
-                metrics = contentDerivedState.trackedUi.overviewMetrics
-            ),
-            tracked = GitHubMainContentTracked(
-                appList = state.appList,
-                trackedItems = state.trackedItems,
-                filteredTracked = contentDerivedState.trackedUi.filteredTracked,
-                sortedTracked = contentDerivedState.trackedUi.sortedTracked,
-                appLastUpdatedAtByTrackId = contentDerivedState.appLastUpdatedAtByTrackId,
-                checkStates = state.checkStates,
-                itemRefreshLoading = state.itemRefreshLoading,
-                apkAssetBundles = state.apkAssetBundles,
-                apkAssetLoading = state.apkAssetLoading,
-                apkAssetErrors = state.apkAssetErrors,
-                apkAssetExpanded = state.apkAssetExpanded,
-                managedInstallLoading = state.managedInstallLoading,
-                actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
-                trackedCardExpanded = state.trackedCardExpanded,
-                trackedLocalVersionExpanded = state.trackedLocalVersionExpanded,
-                trackedStableVersionExpanded = state.trackedStableVersionExpanded,
-                trackedPreReleaseVersionExpanded = state.trackedPreReleaseVersionExpanded
-            ),
-            shareImport = GitHubMainContentShareImport(
-                pendingPreview = state.pendingShareImportPreview,
-                pendingTrack = state.pendingShareImportTrack,
-                pendingAttachCandidate = state.pendingShareImportAttachCandidate,
-                pendingResult = state.pendingShareImportResult,
-                showPendingCard = contentDerivedState.showPendingShareImportCard,
-                pendingRepoOverlapCount = contentDerivedState.pendingShareImportRepoOverlapCount
-            ),
-            actions = GitHubMainContentActions(
-                onTrackedSearchChange = { state.trackedSearch = it },
-                onSearchExpandedChange = { expanded ->
-                    searchExpanded = enableSearchBar && expanded
-                },
-                onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
-                onSortModeChange = actions::setSortMode,
-                onSortDirectionChange = actions::setSortDirection,
-                onTrackedFilterModeChange = actions::setTrackedFilterMode,
-                onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
-                onExportTrackedItems = transferCallbacks.onExportTrackedItems,
-                onImportTrackedItems = transferCallbacks.onImportTrackedItems,
-                onOpenStarImport = transferCallbacks.onOpenStarImport,
-                onOpenStrategySheet = actions::openStrategySheet,
-                onOpenCheckLogicSheet = actions::openCheckLogicSheet,
-                onOverviewExpandedChange = actions::setOverviewExpanded,
-                onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
-                onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
-                onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,
-                onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
-                onRefreshVisibleTracked = {
-                    actions.refreshVisibleTracked(
-                        items = contentDerivedState.trackedUi.sortedTracked,
-                        showToast = true
-                    )
-                },
-                onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
-                onFailedFilterToggle = actions::setFailedFilterEnabled,
-                onRefreshTrackedItem = { actions.refreshTrackedItem(it, showToastOnError = true) },
-                onOpenActionsSheet = actions::openActionsSheet,
-                onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
-                onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
-                onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
-                onCollapseTrackedCard = actions::collapseTrackedCard,
-                onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
-                onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->
-                    actions.loadApkAssets(
-                        item = item,
-                        itemState = itemState,
-                        toggleOnlyWhenCached = toggleOnlyWhenCached,
-                        includeAllAssets = includeAllAssets,
-                        allowLatestReleaseFallback = allowLatestReleaseFallback
-                    )
-                },
-                onOpenDecisionAssistDetail = actions::openDecisionAssistDetail,
-                onOpenExternalUrl = actions::openExternalUrl,
-                onOpenApkInfo = actions::openApkInfo,
-                onOpenApkInDownloader = actions::openApkInDownloader,
-                onShareApkLink = actions::shareApkLink,
-                onOpenShareImportFlow = actions::openShareImportFlow,
-                onOpenShareImportResult = actions::focusShareImportResult,
-                onCancelActiveShareImportFlow = actions::cancelActiveShareImportFlow,
-                onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,
-                onDismissShareImportResult = actions::dismissShareImportResult,
-                onActionBarInteractingChanged = onActionBarInteractingChanged
-            )
+            layout =
+                GitHubMainContentLayout(
+                    contentBottomPadding = runtime.contentBottomPadding,
+                    listState = listState,
+                    scrollBehavior = scrollBehavior,
+                    addButtonScrollConnection = state.addButtonScrollConnection,
+                    bottomBarVisible = runtime.bottomBarVisible,
+                    floatingDockSide = runtime.floatingDockSide,
+                    onShowBottomBar = onShowBottomBar,
+                ),
+            surfaces =
+                GitHubMainContentSurfaces(
+                    topBarBackdrop = backdrops.topBar,
+                    contentBackdrop = backdrops.content,
+                    topBarColor = topBarColor,
+                    liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                    isDark = isDark,
+                ),
+            controls =
+                GitHubMainContentControls(
+                    searchExpanded = enableSearchBar && searchExpanded,
+                    trackedSearch = state.trackedSearch,
+                    sortMode = state.sortMode,
+                    sortDirection = state.sortDirection,
+                    trackedFilterMode = state.trackedFilterMode,
+                    refreshIntervalHours = state.refreshIntervalHours,
+                    showActionMenuPopup = state.showActionMenuPopup,
+                    deleteInProgress = state.deleteInProgress,
+                    tracksExporting = transferState.tracksExporting,
+                    tracksImporting = transferState.tracksImporting,
+                ),
+            overview =
+                GitHubMainContentOverview(
+                    refreshState = state.overviewRefreshState,
+                    expanded = state.overviewExpanded,
+                    refreshProgress = state.refreshProgress,
+                    lastRefreshMs = state.lastRefreshMs,
+                    lookupConfig = state.lookupConfig,
+                    visibleEntries = state.overviewVisibleEntries,
+                    metrics = contentDerivedState.trackedUi.overviewMetrics,
+                ),
+            tracked =
+                GitHubMainContentTracked(
+                    appList = state.appList,
+                    trackedItems = state.trackedItems,
+                    filteredTracked = contentDerivedState.trackedUi.filteredTracked,
+                    sortedTracked = contentDerivedState.trackedUi.sortedTracked,
+                    appLastUpdatedAtByTrackId = contentDerivedState.appLastUpdatedAtByTrackId,
+                    checkStates = state.checkStates,
+                    itemRefreshLoading = state.itemRefreshLoading,
+                    apkAssetBundles = state.apkAssetBundles,
+                    apkAssetLoading = state.apkAssetLoading,
+                    apkAssetErrors = state.apkAssetErrors,
+                    apkAssetExpanded = state.apkAssetExpanded,
+                    managedInstallLoading = state.managedInstallLoading,
+                    actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
+                    trackedCardExpanded = state.trackedCardExpanded,
+                    trackedLocalVersionExpanded = state.trackedLocalVersionExpanded,
+                    trackedStableVersionExpanded = state.trackedStableVersionExpanded,
+                    trackedPreReleaseVersionExpanded = state.trackedPreReleaseVersionExpanded,
+                ),
+            shareImport =
+                GitHubMainContentShareImport(
+                    pendingPreview = state.pendingShareImportPreview,
+                    pendingTrack = state.pendingShareImportTrack,
+                    pendingAttachCandidate = state.pendingShareImportAttachCandidate,
+                    pendingResult = state.pendingShareImportResult,
+                    showPendingCard = contentDerivedState.showPendingShareImportCard,
+                    pendingRepoOverlapCount = contentDerivedState.pendingShareImportRepoOverlapCount,
+                ),
+            actions =
+                GitHubMainContentActions(
+                    onTrackedSearchChange = { state.trackedSearch = it },
+                    onSearchExpandedChange = { expanded ->
+                        searchExpanded = enableSearchBar && expanded
+                    },
+                    onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
+                    onSortModeChange = actions::setSortMode,
+                    onSortDirectionChange = actions::setSortDirection,
+                    onTrackedFilterModeChange = actions::setTrackedFilterMode,
+                    onRefreshIntervalHoursChange = actions::selectRefreshIntervalHours,
+                    onExportTrackedItems = transferCallbacks.onExportTrackedItems,
+                    onImportTrackedItems = transferCallbacks.onImportTrackedItems,
+                    onOpenStarImport = transferCallbacks.onOpenStarImport,
+                    onOpenStrategySheet = actions::openStrategySheet,
+                    onOpenCheckLogicSheet = actions::openCheckLogicSheet,
+                    onOverviewExpandedChange = actions::setOverviewExpanded,
+                    onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
+                    onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
+                    onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,
+                    onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
+                    onRefreshVisibleTracked = {
+                        actions.refreshVisibleTracked(
+                            items = contentDerivedState.trackedUi.sortedTracked,
+                            showToast = true,
+                        )
+                    },
+                    onRetryFailedTracked = { actions.refreshFailedTrackedItems(showToast = true) },
+                    onFailedFilterToggle = actions::setFailedFilterEnabled,
+                    onRefreshTrackedItem = { actions.refreshTrackedItem(it, showToastOnError = true) },
+                    onOpenActionsSheet = actions::openActionsSheet,
+                    onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
+                    onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
+                    onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
+                    onCollapseTrackedCard = actions::collapseTrackedCard,
+                    onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
+                    onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->
+                        actions.loadApkAssets(
+                            item = item,
+                            itemState = itemState,
+                            toggleOnlyWhenCached = toggleOnlyWhenCached,
+                            includeAllAssets = includeAllAssets,
+                            allowLatestReleaseFallback = allowLatestReleaseFallback,
+                        )
+                    },
+                    onOpenDecisionAssistDetail = actions::openDecisionAssistDetail,
+                    onOpenExternalUrl = actions::openExternalUrl,
+                    onOpenApkInfo = actions::openApkInfo,
+                    onOpenApkInDownloader = actions::openApkInDownloader,
+                    onShareApkLink = actions::shareApkLink,
+                    onOpenShareImportFlow = actions::openShareImportFlow,
+                    onOpenShareImportResult = actions::focusShareImportResult,
+                    onCancelActiveShareImportFlow = actions::cancelActiveShareImportFlow,
+                    onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,
+                    onDismissShareImportResult = actions::dismissShareImportResult,
+                    onActionBarInteractingChanged = onActionBarInteractingChanged,
+                ),
         )
     }
 
@@ -395,10 +414,9 @@ fun GitHubPage(
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
-            onConfirmTrackImport = transferCallbacks.onConfirmTrackImport
+            onConfirmTrackImport = transferCallbacks.onConfirmTrackImport,
         )
     }
-
 }
 
 @Composable
@@ -410,7 +428,7 @@ private fun BindGitHubTrackCardFocusCoordinator(
     attachCandidateVisible: Boolean,
     previewVisible: Boolean,
     resultVisible: Boolean,
-    onConsumed: (GitHubTrackCardFocusRequest) -> Unit
+    onConsumed: (GitHubTrackCardFocusRequest) -> Unit,
 ) {
     val sortedTrackIds = remember(sortedTracked) { sortedTracked.map { it.id } }
     LaunchedEffect(
@@ -419,20 +437,22 @@ private fun BindGitHubTrackCardFocusCoordinator(
         pendingTrackVisible,
         attachCandidateVisible,
         previewVisible,
-        resultVisible
+        resultVisible,
     ) {
         val focusRequest = request ?: return@LaunchedEffect
-        val leadingItemCount = githubTrackedListLeadingItemCount(
-            pendingTrackVisible = pendingTrackVisible,
-            attachCandidateVisible = attachCandidateVisible,
-            previewVisible = previewVisible,
-            resultVisible = resultVisible
-        )
-        val targetIndex = githubTrackedLazyListIndex(
-            targetTrackId = focusRequest.trackId,
-            sortedTracked = sortedTracked,
-            leadingItemCount = leadingItemCount
-        ) ?: return@LaunchedEffect
+        val leadingItemCount =
+            githubTrackedListLeadingItemCount(
+                pendingTrackVisible = pendingTrackVisible,
+                attachCandidateVisible = attachCandidateVisible,
+                previewVisible = previewVisible,
+                resultVisible = resultVisible,
+            )
+        val targetIndex =
+            githubTrackedLazyListIndex(
+                targetTrackId = focusRequest.trackId,
+                sortedTracked = sortedTracked,
+                leadingItemCount = leadingItemCount,
+            ) ?: return@LaunchedEffect
         listState.animateItemToViewportCenter(targetIndex)
         onConsumed(focusRequest)
     }

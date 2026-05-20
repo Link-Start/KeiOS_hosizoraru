@@ -360,6 +360,9 @@ fun BaStudentGuidePage(
                     color = topBarMaterialBackdrop,
                     titleBackdrop = topBarBackdrop,
                     titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
+                    onTitleClick = {
+                        bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
+                    },
                     navigationIcon = {
                         AppLiquidNavigationButton(
                             icon = appLucideBackIcon(),

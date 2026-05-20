@@ -38,21 +38,24 @@ fun AppTopBarSection(
     titleEndReserve: Dp? = null,
     searchBarVisible: Boolean = false,
     searchBarAnimationLabelPrefix: String = "appTopBarSearch",
-    searchBarContent: (@Composable BoxScope.() -> Unit)? = null
+    onTitleClick: () -> Unit = {},
+    searchBarContent: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val safeTop = WindowInsets.safeDrawing.asPaddingValues().calculateTopPadding()
     val barHeight = AppChromeTokens.topBarCollapsedHeight
     val topBarTitle = title.ifBlank { largeTitle }
-    val resolvedTitleStartReserve = titleStartReserve ?: if (navigationIcon != null) {
-        AppChromeTokens.topBarTitleNavigationReserve
-    } else {
-        AppChromeTokens.topBarTitleEdgePadding
-    }
-    val resolvedTitleEndReserve = titleEndReserve ?: if (navigationIcon != null) {
-        AppChromeTokens.topBarTitleNavigationReserve
-    } else {
-        AppChromeTokens.topBarTitleEdgePadding
-    }
+    val resolvedTitleStartReserve =
+        titleStartReserve ?: if (navigationIcon != null) {
+            AppChromeTokens.topBarTitleNavigationReserve
+        } else {
+            AppChromeTokens.topBarTitleEdgePadding
+        }
+    val resolvedTitleEndReserve =
+        titleEndReserve ?: if (navigationIcon != null) {
+            AppChromeTokens.topBarTitleNavigationReserve
+        } else {
+            AppChromeTokens.topBarTitleEdgePadding
+        }
     SideEffect {
         scrollBehavior?.state?.let { state ->
             if (state.heightOffsetLimit != 0f) {
@@ -63,19 +66,21 @@ fun AppTopBarSection(
     }
     Column(modifier = modifier) {
         androidx.compose.foundation.layout.Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(safeTop + barHeight)
-                .background(color)
-                .padding(top = safeTop)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(safeTop + barHeight)
+                    .background(color)
+                    .padding(top = safeTop),
         ) {
             androidx.compose.foundation.layout.Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(
-                        start = AppChromeTokens.topBarHorizontalPadding,
-                        top = AppChromeTokens.topBarChromeTopPadding
-                    )
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(
+                            start = AppChromeTokens.topBarHorizontalPadding,
+                            top = AppChromeTokens.topBarChromeTopPadding,
+                        ),
             ) {
                 navigationIcon?.invoke()
             }
@@ -84,26 +89,29 @@ fun AppTopBarSection(
                 backdrop = titleBackdrop,
                 startReserve = resolvedTitleStartReserve,
                 endReserve = resolvedTitleEndReserve,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = AppChromeTokens.topBarChromeTopPadding),
+                onClick = onTitleClick,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(top = AppChromeTokens.topBarChromeTopPadding),
             )
             Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(
-                        end = AppChromeTokens.topBarHorizontalPadding,
-                        top = AppChromeTokens.topBarChromeTopPadding
-                    ),
-                content = actions
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(
+                            end = AppChromeTokens.topBarHorizontalPadding,
+                            top = AppChromeTokens.topBarChromeTopPadding,
+                        ),
+                content = actions,
             )
         }
         if (searchBarContent != null) {
             SearchBarHost(
                 visible = searchBarVisible,
                 animationLabelPrefix = searchBarAnimationLabelPrefix,
-                content = searchBarContent
+                content = searchBarContent,
             )
         }
     }
@@ -116,7 +124,7 @@ fun AppTopBarSearchField(
     label: String,
     modifier: Modifier = Modifier,
     backdrop: LayerBackdrop? = null,
-    singleLine: Boolean = true
+    singleLine: Boolean = true,
 ) {
     Column {
         AppLiquidSearchField(
@@ -126,7 +134,7 @@ fun AppTopBarSearchField(
             label = label,
             backdrop = backdrop,
             variant = GlassVariant.SearchField,
-            singleLine = singleLine
+            singleLine = singleLine,
         )
         Spacer(modifier = Modifier.height(AppChromeTokens.searchFieldBottomSpacing))
     }

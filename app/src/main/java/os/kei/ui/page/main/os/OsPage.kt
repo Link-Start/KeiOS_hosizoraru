@@ -36,6 +36,7 @@ fun OsPage(
     shizukuApiUtils: ShizukuApiUtils,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
+    onShowBottomBar: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
@@ -328,6 +329,7 @@ fun OsPage(
             onOpenActivityVisibilityManager = { overlayState.onShowActivityVisibilityManagerChange(true) },
             onOpenShellCardVisibilityManager = { overlayState.onShowShellCardVisibilityManagerChange(true) },
             onRefresh = { scope.launch { actionState.refreshAllSections() } },
+            onTitleClick = onShowBottomBar,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
         ) { innerPadding ->
             OsPageOverlayCoordinator(

@@ -434,6 +434,9 @@ fun SettingsPage(
         scrollBehavior = scrollBehavior,
         topBarColor = androidx.compose.ui.graphics.Color.Transparent,
         titleBackdrop = topBarBackdrop,
+        onTitleClick = {
+            bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+        },
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),

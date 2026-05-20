@@ -20,6 +20,7 @@ internal fun BaTopBar(
     topBarColor: Color,
     scrollBehavior: ScrollBehavior?,
     titleBackdrop: LayerBackdrop? = null,
+    onTitleClick: () -> Unit = {},
 ) {
     AppTopBarSection(
         title = "",
@@ -28,6 +29,7 @@ internal fun BaTopBar(
         color = topBarColor,
         titleBackdrop = titleBackdrop,
         titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
+        onTitleClick = onTitleClick,
     )
 }
 
@@ -46,32 +48,33 @@ internal fun BaTopBarActions(
     val editContentDescription = stringResource(R.string.ba_cd_edit)
     val notificationContentDescription = stringResource(R.string.ba_cd_notification_settings)
     val debugContentDescription = stringResource(R.string.ba_cd_debug_tools)
-    val actionItems = remember(
-        editContentDescription,
-        notificationContentDescription,
-        debugContentDescription,
-        onShowSettings,
-        onShowNotificationSettings,
-        onShowDebug,
-    ) {
-        listOf(
-            LiquidActionItem(
-                icon = bellIcon,
-                contentDescription = notificationContentDescription,
-                onClick = onShowNotificationSettings,
-            ),
-            LiquidActionItem(
-                icon = editIcon,
-                contentDescription = editContentDescription,
-                onClick = onShowSettings,
-            ),
-            LiquidActionItem(
-                icon = debugIcon,
-                contentDescription = debugContentDescription,
-                onClick = onShowDebug,
+    val actionItems =
+        remember(
+            editContentDescription,
+            notificationContentDescription,
+            debugContentDescription,
+            onShowSettings,
+            onShowNotificationSettings,
+            onShowDebug,
+        ) {
+            listOf(
+                LiquidActionItem(
+                    icon = bellIcon,
+                    contentDescription = notificationContentDescription,
+                    onClick = onShowNotificationSettings,
+                ),
+                LiquidActionItem(
+                    icon = editIcon,
+                    contentDescription = editContentDescription,
+                    onClick = onShowSettings,
+                ),
+                LiquidActionItem(
+                    icon = debugIcon,
+                    contentDescription = debugContentDescription,
+                    onClick = onShowDebug,
+                ),
             )
-        )
-    }
+        }
 
     LiquidActionBar(
         backdrop = backdrop,

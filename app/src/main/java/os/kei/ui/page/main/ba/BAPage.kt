@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import os.kei.core.ext.showToast
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +23,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASessionState
@@ -53,28 +53,32 @@ fun BAPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     preloadingEnabled: Boolean = false,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
+    onShowBottomBar: () -> Unit = {},
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {}
+    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
-    val pageBackdropEffectsEnabled = runtime.isPageActive &&
-        !runtime.isPagerScrollInProgress
+    val pageBackdropEffectsEnabled =
+        runtime.isPageActive &&
+            !runtime.isPagerScrollInProgress
     val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
-    val backdrops = rememberMainPageBackdropSet(
-        keyPrefix = "ba",
-        refreshOnCompositionEnter = true,
-        distinctLayers = fullBackdropEffectsEnabled
-    )
+    val backdrops =
+        rememberMainPageBackdropSet(
+            keyPrefix = "ba",
+            refreshOnCompositionEnter = true,
+            distinctLayers = fullBackdropEffectsEnabled,
+        )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
-    val serverOptions = listOf(
-        stringResource(R.string.ba_server_cn),
-        stringResource(R.string.ba_server_global),
-        stringResource(R.string.ba_server_jp)
-    )
+    val serverOptions =
+        listOf(
+            stringResource(R.string.ba_server_cn),
+            stringResource(R.string.ba_server_global),
+            stringResource(R.string.ba_server_jp),
+        )
     val cafeLevelOptions = remember { (1..10).toList() }
 
     // Reset once per cold process start so app relaunch always lands at BA top.
@@ -93,61 +97,69 @@ fun BAPage(
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
     val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
-    val baRouteState = ui.routeState(
-        calendarUiState = calendarUiState,
-        poolUiState = poolUiState,
-    )
+    val baRouteState =
+        ui.routeState(
+            calendarUiState = calendarUiState,
+            poolUiState = poolUiState,
+        )
     val baClockState = ui.clockState()
 
-    val officeName = when (baRouteState.serverIndex) {
-        0 -> stringResource(R.string.ba_office_name_cn)
-        1 -> stringResource(R.string.ba_office_name_global)
-        else -> stringResource(R.string.ba_office_name_jp)
-    }
+    val officeName =
+        when (baRouteState.serverIndex) {
+            0 -> stringResource(R.string.ba_office_name_cn)
+            1 -> stringResource(R.string.ba_office_name_global)
+            else -> stringResource(R.string.ba_office_name_jp)
+        }
     val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
 
-    val settingsSheetState = buildBaSettingsSheetState(
-        draft = baRouteState.settingsDraftState,
-        calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
-    )
-    val notificationSettingsSheetState = buildBaNotificationSettingsSheetState(
-        draft = baRouteState.notificationDraftState
-    )
-    val savedSettingsSheetState = BaSettingsSheetState(
-        cafeLevel = office.cafeLevel,
-        mediaAdaptiveRotationEnabled = baRouteState.mediaAdaptiveRotationEnabled,
-        mediaSaveCustomEnabled = baRouteState.mediaSaveCustomEnabled,
-        mediaSaveFixedTreeUri = baRouteState.mediaSaveFixedTreeUri,
-        idIndependentByServer = baRouteState.idIndependentByServer,
-        showEndedActivities = baRouteState.showEndedActivities,
-        showEndedPools = baRouteState.showEndedPools,
-        showCalendarPoolImages = baRouteState.showCalendarPoolImages,
-        calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
-    )
-    val savedNotificationSettingsSheetState = BaNotificationSettingsSheetState(
-        apNotifyEnabled = office.apNotifyEnabled,
-        cafeApNotifyEnabled = office.cafeApNotifyEnabled,
-        arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
-        cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
-        calendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled(),
-        calendarEndingNotifyEnabled = BASettingsStore.loadCalendarEndingNotifyEnabled(),
-        poolUpcomingNotifyEnabled = BASettingsStore.loadPoolUpcomingNotifyEnabled(),
-        poolEndingNotifyEnabled = BASettingsStore.loadPoolEndingNotifyEnabled(),
-        calendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled(),
-        calendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours(),
-        apNotifyThresholdText = office.apNotifyThreshold.toString(),
-        cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
-    )
-    val pageContentState = buildBaPageContentState(
-        isPageActive = runtime.isPageActive,
-        officeOverviewTitle = officeOverviewTitle,
-        office = office,
-        routeState = baRouteState,
-        clockState = baClockState,
-        serverOptions = serverOptions,
-        cafeLevelOptions = cafeLevelOptions,
-    )
-    val syncPageActive = runtime.hasActivated &&
+    val settingsSheetState =
+        buildBaSettingsSheetState(
+            draft = baRouteState.settingsDraftState,
+            calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
+        )
+    val notificationSettingsSheetState =
+        buildBaNotificationSettingsSheetState(
+            draft = baRouteState.notificationDraftState,
+        )
+    val savedSettingsSheetState =
+        BaSettingsSheetState(
+            cafeLevel = office.cafeLevel,
+            mediaAdaptiveRotationEnabled = baRouteState.mediaAdaptiveRotationEnabled,
+            mediaSaveCustomEnabled = baRouteState.mediaSaveCustomEnabled,
+            mediaSaveFixedTreeUri = baRouteState.mediaSaveFixedTreeUri,
+            idIndependentByServer = baRouteState.idIndependentByServer,
+            showEndedActivities = baRouteState.showEndedActivities,
+            showEndedPools = baRouteState.showEndedPools,
+            showCalendarPoolImages = baRouteState.showCalendarPoolImages,
+            calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
+        )
+    val savedNotificationSettingsSheetState =
+        BaNotificationSettingsSheetState(
+            apNotifyEnabled = office.apNotifyEnabled,
+            cafeApNotifyEnabled = office.cafeApNotifyEnabled,
+            arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+            cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+            calendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled(),
+            calendarEndingNotifyEnabled = BASettingsStore.loadCalendarEndingNotifyEnabled(),
+            poolUpcomingNotifyEnabled = BASettingsStore.loadPoolUpcomingNotifyEnabled(),
+            poolEndingNotifyEnabled = BASettingsStore.loadPoolEndingNotifyEnabled(),
+            calendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled(),
+            calendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours(),
+            apNotifyThresholdText = office.apNotifyThreshold.toString(),
+            cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
+        )
+    val pageContentState =
+        buildBaPageContentState(
+            isPageActive = runtime.isPageActive,
+            officeOverviewTitle = officeOverviewTitle,
+            office = office,
+            routeState = baRouteState,
+            clockState = baClockState,
+            serverOptions = serverOptions,
+            cafeLevelOptions = cafeLevelOptions,
+        )
+    val syncPageActive =
+        runtime.hasActivated &&
             if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
     val baGlassRuntime = LocalGlassEffectRuntime.current
     val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
@@ -191,17 +203,18 @@ fun BAPage(
     }
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                val savedServerIndex = BASettingsStore.loadServerIndex()
-                if (savedServerIndex != ui.serverIndex) {
-                    ui.serverIndex = savedServerIndex
-                    office.loadIdForServer(savedServerIndex)
-                    refreshCalendar(force = true)
-                    refreshPool(force = true)
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    val savedServerIndex = BASettingsStore.loadServerIndex()
+                    if (savedServerIndex != ui.serverIndex) {
+                        ui.serverIndex = savedServerIndex
+                        office.loadIdForServer(savedServerIndex)
+                        refreshCalendar(force = true)
+                        refreshPool(force = true)
+                    }
                 }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
@@ -228,16 +241,17 @@ fun BAPage(
         )
     }
 
-    val pageContentActions = buildBaPageContentActions(
-        context = context,
-        office = office,
-        ui = ui,
-        onRefreshCalendar = { refreshCalendar(force = true) },
-        onRefreshPool = { refreshPool(force = true) },
-        onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
-        onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-        onOpenGuideCatalog = onOpenGuideCatalog,
-    )
+    val pageContentActions =
+        buildBaPageContentActions(
+            context = context,
+            office = office,
+            ui = ui,
+            onRefreshCalendar = { refreshCalendar(force = true) },
+            onRefreshPool = { refreshPool(force = true) },
+            onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
+            onOpenPoolStudentGuide = onOpenPoolStudentGuide,
+            onOpenGuideCatalog = onOpenGuideCatalog,
+        )
 
     BaPageCommonEffects(
         listState = listState,
@@ -266,14 +280,14 @@ fun BAPage(
         ui.serverIndex,
         ui.baCalendarReloadSignal,
         ui.calendarRefreshIntervalHours,
-        ui.calendarHydrationReady
+        ui.calendarHydrationReady,
     ) {
         calendarPoolViewModel.syncCalendar(
             isPageActive = syncPageActive,
             serverIndex = ui.serverIndex,
             reloadSignal = ui.baCalendarReloadSignal,
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
-            hydrationReady = ui.calendarHydrationReady
+            hydrationReady = ui.calendarHydrationReady,
         )
     }
     LaunchedEffect(
@@ -281,54 +295,57 @@ fun BAPage(
         ui.serverIndex,
         ui.baPoolReloadSignal,
         ui.calendarRefreshIntervalHours,
-        ui.poolHydrationReady
+        ui.poolHydrationReady,
     ) {
         calendarPoolViewModel.syncPool(
             isPageActive = syncPageActive,
             serverIndex = ui.serverIndex,
             reloadSignal = ui.baPoolReloadSignal,
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
-            hydrationReady = ui.poolHydrationReady
+            hydrationReady = ui.poolHydrationReady,
         )
     }
-    val dockAlignment = if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
-        Alignment.BottomStart
-    } else {
-        Alignment.BottomEnd
-    }
+    val dockAlignment =
+        if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
+            Alignment.BottomStart
+        } else {
+            Alignment.BottomEnd
+        }
     val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
     val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
     val floatingDockBottom by animateDpAsState(
         targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
-        label = "ba_floating_action_dock_bottom"
+        label = "ba_floating_action_dock_bottom",
     )
     val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE
-    val copyFriendCodeIconTint = if (friendCodeActivated) {
-        MiuixTheme.colorScheme.primary
-    } else {
-        MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.62f)
-    }
-    val baDockActions = listOf(
-        AppFloatingDockAction(
-            icon = osLucideCopyIcon(),
-            contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
-            iconTint = copyFriendCodeIconTint,
-            onClick = { office.copyFriendCodeToClipboard(context) },
-        ),
-        AppFloatingDockAction(
-            icon = appLucideCalendarIcon(),
-            contentDescription = stringResource(R.string.ba_calendar_cd_open_activity),
-            iconTint = MiuixTheme.colorScheme.primary,
-            onClick = { BaActivityCalendarActivity.launch(context) },
-        ),
-        AppFloatingDockAction(
-            icon = appLucideMailIcon(),
-            contentDescription = stringResource(R.string.ba_pool_cd_open_activity),
-            iconTint = MiuixTheme.colorScheme.primary,
-            onClick = { BaPoolActivity.launch(context) },
+    val copyFriendCodeIconTint =
+        if (friendCodeActivated) {
+            MiuixTheme.colorScheme.primary
+        } else {
+            MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.62f)
+        }
+    val baDockActions =
+        listOf(
+            AppFloatingDockAction(
+                icon = osLucideCopyIcon(),
+                contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
+                iconTint = copyFriendCodeIconTint,
+                onClick = { office.copyFriendCodeToClipboard(context) },
+            ),
+            AppFloatingDockAction(
+                icon = appLucideCalendarIcon(),
+                contentDescription = stringResource(R.string.ba_calendar_cd_open_activity),
+                iconTint = MiuixTheme.colorScheme.primary,
+                onClick = { BaActivityCalendarActivity.launch(context) },
+            ),
+            AppFloatingDockAction(
+                icon = appLucideMailIcon(),
+                contentDescription = stringResource(R.string.ba_pool_cd_open_activity),
+                iconTint = MiuixTheme.colorScheme.primary,
+                onClick = { BaPoolActivity.launch(context) },
+            ),
         )
-    )
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -339,6 +356,7 @@ fun BAPage(
                         topBarColor = topBarMaterialBackdrop,
                         scrollBehavior = scrollBehavior,
                         titleBackdrop = backdrops.topBar,
+                        onTitleClick = onShowBottomBar,
                     )
                 },
             ) { innerPadding ->
@@ -365,13 +383,14 @@ fun BAPage(
             AppFloatingVerticalActionDock(
                 backdrop = backdrops.content,
                 actions = baDockActions,
-                modifier = Modifier
-                    .align(dockAlignment)
-                    .padding(
-                        start = dockStartPadding,
-                        end = dockEndPadding,
-                        bottom = floatingDockBottom,
-                    )
+                modifier =
+                    Modifier
+                        .align(dockAlignment)
+                        .padding(
+                            start = dockStartPadding,
+                            end = dockEndPadding,
+                            bottom = floatingDockBottom,
+                        ),
             )
         }
 
@@ -446,98 +465,108 @@ fun BAPage(
                 office.sendCafeVisitTestNotification(
                     context = context,
                     serverIndex = ui.serverIndex,
-                    showToast = true
+                    showToast = true,
                 )
             },
             onSendArenaRefreshTestNotification = {
                 office.sendArenaRefreshTestNotification(
                     context = context,
                     serverIndex = ui.serverIndex,
-                    showToast = true
+                    showToast = true,
                 )
             },
             onSendCalendarUpcomingTestNotification = {
-                val entries = resolveCalendarDebugEntries(
-                    context = context,
-                    entries = calendarUiState.entries,
-                    useRealData = ui.debugUseRealCalendarPoolData,
-                    upcoming = true
-                ) ?: return@BaDebugSheet
+                val entries =
+                    resolveCalendarDebugEntries(
+                        context = context,
+                        entries = calendarUiState.entries,
+                        useRealData = ui.debugUseRealCalendarPoolData,
+                        upcoming = true,
+                    ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarUpcomingGroup(
-                        context = context,
-                        serverIndex = ui.serverIndex,
-                        entries = entries
-                    )
+                    sent =
+                        BaCalendarPoolNotificationDispatcher.sendCalendarUpcomingGroup(
+                            context = context,
+                            serverIndex = ui.serverIndex,
+                            entries = entries,
+                        ),
                 )
             },
             onSendCalendarEndingTestNotification = {
-                val entries = resolveCalendarDebugEntries(
-                    context = context,
-                    entries = calendarUiState.entries,
-                    useRealData = ui.debugUseRealCalendarPoolData,
-                    upcoming = false
-                ) ?: return@BaDebugSheet
+                val entries =
+                    resolveCalendarDebugEntries(
+                        context = context,
+                        entries = calendarUiState.entries,
+                        useRealData = ui.debugUseRealCalendarPoolData,
+                        upcoming = false,
+                    ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendCalendarEndingGroup(
-                        context = context,
-                        serverIndex = ui.serverIndex,
-                        entries = entries
-                    )
+                    sent =
+                        BaCalendarPoolNotificationDispatcher.sendCalendarEndingGroup(
+                            context = context,
+                            serverIndex = ui.serverIndex,
+                            entries = entries,
+                        ),
                 )
             },
             onSendPoolUpcomingTestNotification = {
-                val entries = resolvePoolDebugEntries(
-                    context = context,
-                    entries = poolUiState.entries,
-                    useRealData = ui.debugUseRealCalendarPoolData,
-                    upcoming = true
-                ) ?: return@BaDebugSheet
+                val entries =
+                    resolvePoolDebugEntries(
+                        context = context,
+                        entries = poolUiState.entries,
+                        useRealData = ui.debugUseRealCalendarPoolData,
+                        upcoming = true,
+                    ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendPoolUpcomingGroup(
-                        context = context,
-                        serverIndex = ui.serverIndex,
-                        entries = entries
-                    )
+                    sent =
+                        BaCalendarPoolNotificationDispatcher.sendPoolUpcomingGroup(
+                            context = context,
+                            serverIndex = ui.serverIndex,
+                            entries = entries,
+                        ),
                 )
             },
             onSendPoolEndingTestNotification = {
-                val entries = resolvePoolDebugEntries(
-                    context = context,
-                    entries = poolUiState.entries,
-                    useRealData = ui.debugUseRealCalendarPoolData,
-                    upcoming = false
-                ) ?: return@BaDebugSheet
+                val entries =
+                    resolvePoolDebugEntries(
+                        context = context,
+                        entries = poolUiState.entries,
+                        useRealData = ui.debugUseRealCalendarPoolData,
+                        upcoming = false,
+                    ) ?: return@BaDebugSheet
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendPoolEndingGroup(
-                        context = context,
-                        serverIndex = ui.serverIndex,
-                        entries = entries
-                    )
+                    sent =
+                        BaCalendarPoolNotificationDispatcher.sendPoolEndingGroup(
+                            context = context,
+                            serverIndex = ui.serverIndex,
+                            entries = entries,
+                        ),
                 )
             },
             onSendCalendarPoolChangeTestNotification = {
-                val detail = if (ui.debugUseRealCalendarPoolData) {
-                    resolveRealChangeDebugDetail(
-                        context = context,
-                        calendarEntries = calendarUiState.entries,
-                        poolEntries = poolUiState.entries
-                    ) ?: return@BaDebugSheet
-                } else {
-                    context.resolveString(R.string.ba_debug_sample_change_detail)
-                }
+                val detail =
+                    if (ui.debugUseRealCalendarPoolData) {
+                        resolveRealChangeDebugDetail(
+                            context = context,
+                            calendarEntries = calendarUiState.entries,
+                            poolEntries = poolUiState.entries,
+                        ) ?: return@BaDebugSheet
+                    } else {
+                        context.resolveString(R.string.ba_debug_sample_change_detail)
+                    }
                 notifyBaDebugResult(
                     context = context,
-                    sent = BaCalendarPoolNotificationDispatcher.sendDataChanged(
-                        context = context,
-                        calendarChangeCount = 1,
-                        poolChangeCount = 1,
-                        detail = detail
-                    )
+                    sent =
+                        BaCalendarPoolNotificationDispatcher.sendDataChanged(
+                            context = context,
+                            calendarChangeCount = 1,
+                            poolChangeCount = 1,
+                            detail = detail,
+                        ),
                 )
             },
             useRealCalendarPoolData = ui.debugUseRealCalendarPoolData,
@@ -564,7 +593,7 @@ private fun sampleCalendarEntry(
         endAtMs = endAtMs,
         linkUrl = "",
         imageUrl = "",
-        isRunning = !upcoming
+        isRunning = !upcoming,
     )
 }
 
@@ -584,7 +613,7 @@ private fun samplePoolEntry(
         endAtMs = endAtMs,
         linkUrl = "",
         imageUrl = "",
-        isRunning = !upcoming
+        isRunning = !upcoming,
     )
 }
 
@@ -592,11 +621,12 @@ private fun notifyBaDebugResult(
     context: Context,
     sent: Boolean,
 ) {
-    val messageRes = if (sent) {
-        R.string.ba_toast_calendar_pool_notification_sent
-    } else {
-        R.string.ba_toast_notification_permission_required
-    }
+    val messageRes =
+        if (sent) {
+            R.string.ba_toast_calendar_pool_notification_sent
+        } else {
+            R.string.ba_toast_notification_permission_required
+        }
     context.showToast(messageRes)
 }
 
@@ -608,17 +638,18 @@ private fun resolveCalendarDebugEntries(
 ): List<BaCalendarEntry>? {
     if (!useRealData) return listOf(sampleCalendarEntry(context, upcoming))
     val nowMs = System.currentTimeMillis()
-    val targetTime = if (upcoming) {
-        entries
-            .filter { it.beginAtMs > nowMs }
-            .minByOrNull { it.beginAtMs }
-            ?.beginAtMs
-    } else {
-        entries
-            .filter { it.endAtMs > nowMs }
-            .minByOrNull { it.endAtMs }
-            ?.endAtMs
-    }
+    val targetTime =
+        if (upcoming) {
+            entries
+                .filter { it.beginAtMs > nowMs }
+                .minByOrNull { it.beginAtMs }
+                ?.beginAtMs
+        } else {
+            entries
+                .filter { it.endAtMs > nowMs }
+                .minByOrNull { it.endAtMs }
+                ?.endAtMs
+        }
     if (targetTime != null) {
         return if (upcoming) {
             entries.filter { it.beginAtMs == targetTime }
@@ -638,17 +669,18 @@ private fun resolvePoolDebugEntries(
 ): List<BaPoolEntry>? {
     if (!useRealData) return listOf(samplePoolEntry(context, upcoming))
     val nowMs = System.currentTimeMillis()
-    val targetTime = if (upcoming) {
-        entries
-            .filter { it.startAtMs > nowMs }
-            .minByOrNull { it.startAtMs }
-            ?.startAtMs
-    } else {
-        entries
-            .filter { it.endAtMs > nowMs }
-            .minByOrNull { it.endAtMs }
-            ?.endAtMs
-    }
+    val targetTime =
+        if (upcoming) {
+            entries
+                .filter { it.startAtMs > nowMs }
+                .minByOrNull { it.startAtMs }
+                ?.startAtMs
+        } else {
+            entries
+                .filter { it.endAtMs > nowMs }
+                .minByOrNull { it.endAtMs }
+                ?.endAtMs
+        }
     if (targetTime != null) {
         return if (upcoming) {
             entries.filter { it.startAtMs == targetTime }
@@ -666,19 +698,22 @@ private fun resolveRealChangeDebugDetail(
     poolEntries: List<BaPoolEntry>,
 ): String? {
     val nowMs = System.currentTimeMillis()
-    val calendarTitle = calendarEntries
-        .filter { it.endAtMs > nowMs }
-        .minByOrNull { if (it.beginAtMs > nowMs) it.beginAtMs else it.endAtMs }
-        ?.title
-        .orEmpty()
-    val poolTitle = poolEntries
-        .filter { it.endAtMs > nowMs }
-        .minByOrNull { if (it.startAtMs > nowMs) it.startAtMs else it.endAtMs }
-        ?.name
-        .orEmpty()
-    val detail = listOf(calendarTitle, poolTitle)
-        .filter { it.isNotBlank() }
-        .joinToString(separator = " / ")
+    val calendarTitle =
+        calendarEntries
+            .filter { it.endAtMs > nowMs }
+            .minByOrNull { if (it.beginAtMs > nowMs) it.beginAtMs else it.endAtMs }
+            ?.title
+            .orEmpty()
+    val poolTitle =
+        poolEntries
+            .filter { it.endAtMs > nowMs }
+            .minByOrNull { if (it.startAtMs > nowMs) it.startAtMs else it.endAtMs }
+            ?.name
+            .orEmpty()
+    val detail =
+        listOf(calendarTitle, poolTitle)
+            .filter { it.isNotBlank() }
+            .joinToString(separator = " / ")
     if (detail.isNotBlank()) return detail
     context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
     return null

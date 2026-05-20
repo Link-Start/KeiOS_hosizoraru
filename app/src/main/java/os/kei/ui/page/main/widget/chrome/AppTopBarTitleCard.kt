@@ -27,6 +27,7 @@ fun AppTopBarTitleCard(
     modifier: Modifier = Modifier,
     startReserve: Dp = AppChromeTokens.topBarTitleEdgePadding,
     endReserve: Dp = AppChromeTokens.topBarTitleEdgePadding,
+    onClick: () -> Unit = {},
 ) {
     if (title.isBlank()) return
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
@@ -36,22 +37,26 @@ fun AppTopBarTitleCard(
     ) {
         val availableWidth = maxWidth.coerceAtLeast(AppChromeTokens.topBarTitleMinWidth)
         val cardMaxWidth = availableWidth.coerceAtMost(AppChromeTokens.topBarTitleMaxWidth)
-        val horizontalPadding = when {
-            cardMaxWidth < 112.dp -> 13.dp
-            cardMaxWidth < 150.dp -> 15.dp
-            else -> 18.dp
-        }
+        val horizontalPadding =
+            when {
+                cardMaxWidth < 112.dp -> 13.dp
+                cardMaxWidth < 150.dp -> 15.dp
+                else -> 18.dp
+            }
         val estimatedTextWidthAt18Sp = estimateTopBarTitleWidthAt18Sp(title)
-        val targetContentWidth = (cardMaxWidth - horizontalPadding * 2)
-            .coerceAtLeast(36.dp)
+        val targetContentWidth =
+            (cardMaxWidth - horizontalPadding * 2)
+                .coerceAtLeast(36.dp)
         val scaledEstimate = estimatedTextWidthAt18Sp * fontScale
-        val textScale = (targetContentWidth.value / scaledEstimate.value)
-            .coerceIn(0.52f, 1f)
+        val textScale =
+            (targetContentWidth.value / scaledEstimate.value)
+                .coerceIn(0.52f, 1f)
         val titleTextSize = (18f * textScale).sp
         val titleLineHeight = (22f * textScale).coerceAtLeast(15.5f).sp
         val scaledTextWidth = scaledEstimate * textScale
-        val cardWidth = (scaledTextWidth + horizontalPadding * 2)
-            .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
+        val cardWidth =
+            (scaledTextWidth + horizontalPadding * 2)
+                .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
         AppTopBarTitleCardSurface(
             title = title,
             backdrop = backdrop,
@@ -59,6 +64,7 @@ fun AppTopBarTitleCard(
             textSize = titleTextSize,
             lineHeight = titleLineHeight,
             horizontalPadding = horizontalPadding,
+            onClick = onClick,
         )
     }
 }
@@ -73,20 +79,23 @@ private fun AppTopBarTitleCardSurface(
     textSize: TextUnit,
     lineHeight: TextUnit,
     horizontalPadding: Dp,
+    onClick: () -> Unit,
 ) {
     Box(
-        modifier = modifier
-            .height(height)
-            .width(width),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .height(height)
+                .width(width),
+        contentAlignment = Alignment.Center,
     ) {
         AppLiquidTextButton(
             backdrop = backdrop,
             text = title,
-            onClick = {},
-            modifier = Modifier
-                .height(height)
-                .width(width),
+            onClick = onClick,
+            modifier =
+                Modifier
+                    .height(height)
+                    .width(width),
             textColor = MiuixTheme.colorScheme.onSurface,
             variant = GlassVariant.Bar,
             minHeight = height,
@@ -103,17 +112,15 @@ private fun AppTopBarTitleCardSurface(
     }
 }
 
-internal fun estimateTopBarTitleWidthAt18Sp(title: String): Dp {
-    return title.sumOf { char ->
-        when {
-            char == ' ' -> 5
-            char.code <= 0x007F -> if (char.isUpperCase()) 11 else 10
-            char.isJapaneseKana() -> 18
-            else -> 19
-        }
-    }.dp
-}
+internal fun estimateTopBarTitleWidthAt18Sp(title: String): Dp =
+    title
+        .sumOf { char ->
+            when {
+                char == ' ' -> 5
+                char.code <= 0x007F -> if (char.isUpperCase()) 11 else 10
+                char.isJapaneseKana() -> 18
+                else -> 19
+            }
+        }.dp
 
-private fun Char.isJapaneseKana(): Boolean {
-    return this in '\u3040'..'\u30FF' || this in '\u31F0'..'\u31FF'
-}
+private fun Char.isJapaneseKana(): Boolean = this in '\u3040'..'\u30FF' || this in '\u31F0'..'\u31FF'

@@ -30,7 +30,8 @@ internal data class MainPagerTabJumpControllerState(
     val nestedScrollConnection: NestedScrollConnection,
     val farJumpAlpha: Float,
     val onActionBarInteractingChanged: (Boolean) -> Unit,
-    val onPageSelected: (Int) -> Unit
+    val onPageSelected: (Int) -> Unit,
+    val onShowBottomBar: () -> Unit,
 )
 
 @Composable
@@ -41,7 +42,7 @@ internal fun rememberMainPagerTabJumpController(
     transitionAnimationsEnabled: Boolean,
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
-    onRequestedBottomPageConsumed: () -> Unit
+    onRequestedBottomPageConsumed: () -> Unit,
 ): MainPagerTabJumpControllerState {
     val coroutineScope = rememberCoroutineScope()
     var tabJumpJob by remember { mutableStateOf<Job?>(null) }
@@ -53,32 +54,44 @@ internal fun rememberMainPagerTabJumpController(
     }
     val density = LocalDensity.current
     val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
-    val bottomBarVisibilityController = remember(bottomBarVisibilityThresholdPx) {
-        ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
-    }
+    val bottomBarVisibilityController =
+        remember(bottomBarVisibilityThresholdPx) {
+            ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
+        }
     val currentShowBottomBar by rememberUpdatedState(showBottomBar)
 
-    val nestedScrollConnection = remember(pagerRuntime.homePageBottomBarPinned, bottomBarVisibilityController) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (pagerRuntime.homePageBottomBarPinned) {
-                    bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
+    val nestedScrollConnection =
+        remember(pagerRuntime.homePageBottomBarPinned, bottomBarVisibilityController) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (pagerRuntime.homePageBottomBarPinned) {
+                        bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
+                    }
+                    return Offset.Zero
                 }
-                return Offset.Zero
-            }
 
-            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                if (!pagerRuntime.homePageBottomBarPinned) {
-                    bottomBarVisibilityController.update(consumed.y, currentShowBottomBar) { showBottomBar = it }
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (!pagerRuntime.homePageBottomBarPinned) {
+                        bottomBarVisibilityController.update(consumed.y, currentShowBottomBar) { showBottomBar = it }
+                    }
+                    return Offset.Zero
                 }
-                return Offset.Zero
             }
         }
-    }
     val onActionBarInteractingChanged: (Boolean) -> Unit = { interacting ->
         pagerScrollEnabled = !interacting
     }
-    val onPageSelected: (Int) -> Unit = onPageSelected@ { index ->
+    val onShowBottomBar: () -> Unit = {
+        bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
+    }
+    val onPageSelected: (Int) -> Unit = onPageSelected@{ index ->
         if (index !in tabs.indices) return@onPageSelected
         showBottomBar = true
         val targetPageIndex = index.coerceIn(0, tabs.lastIndex)
@@ -87,26 +100,28 @@ internal fun rememberMainPagerTabJumpController(
         selectedPageIndex = targetPageIndex
         navigationActive = true
         tabJumpJob?.cancel()
-        val nextJob = coroutineScope.launch(start = CoroutineStart.LAZY) {
-            val runningJob = coroutineContext.job
-            try {
-                val distance = kotlin.math.abs(targetPageIndex - pagerState.currentPage).coerceAtLeast(2)
-                pagerState.animateToPage(
-                    target = targetPageIndex,
-                    animationsEnabled = transitionAnimationsEnabled,
-                    durationMillis = 100 * distance + 100
-                )
-            } finally {
-                if (tabJumpJob == runningJob) {
-                    navigationActive = false
-                    selectedPageIndex = pagerState.selectedPage.coerceIn(
-                        0,
-                        tabs.lastIndex.coerceAtLeast(0)
+        val nextJob =
+            coroutineScope.launch(start = CoroutineStart.LAZY) {
+                val runningJob = coroutineContext.job
+                try {
+                    val distance = kotlin.math.abs(targetPageIndex - pagerState.currentPage).coerceAtLeast(2)
+                    pagerState.animateToPage(
+                        target = targetPageIndex,
+                        animationsEnabled = transitionAnimationsEnabled,
+                        durationMillis = 100 * distance + 100,
                     )
-                    tabJumpJob = null
+                } finally {
+                    if (tabJumpJob == runningJob) {
+                        navigationActive = false
+                        selectedPageIndex =
+                            pagerState.selectedPage.coerceIn(
+                                0,
+                                tabs.lastIndex.coerceAtLeast(0),
+                            )
+                        tabJumpJob = null
+                    }
                 }
             }
-        }
         tabJumpJob = nextJob
         nextJob.start()
     }
@@ -122,10 +137,11 @@ internal fun rememberMainPagerTabJumpController(
     }
     LaunchedEffect(pagerState.selectedPage, pagerState.isScrollInProgress, tabs.size) {
         if (!pagerState.isScrollInProgress && !navigationActive) {
-            selectedPageIndex = pagerState.selectedPage.coerceIn(
-                0,
-                tabs.lastIndex.coerceAtLeast(0)
-            )
+            selectedPageIndex =
+                pagerState.selectedPage.coerceIn(
+                    0,
+                    tabs.lastIndex.coerceAtLeast(0),
+                )
         }
     }
     LaunchedEffect(requestedBottomPageToken, requestedBottomPage, tabs) {
@@ -144,7 +160,8 @@ internal fun rememberMainPagerTabJumpController(
         navigationActive,
         nestedScrollConnection,
         onActionBarInteractingChanged,
-        onPageSelected
+        onPageSelected,
+        onShowBottomBar,
     ) {
         MainPagerTabJumpControllerState(
             pagerScrollEnabled = pagerScrollEnabled,
@@ -154,7 +171,8 @@ internal fun rememberMainPagerTabJumpController(
             nestedScrollConnection = nestedScrollConnection,
             farJumpAlpha = 1f,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
-            onPageSelected = onPageSelected
+            onPageSelected = onPageSelected,
+            onShowBottomBar = onShowBottomBar,
         )
     }
 }

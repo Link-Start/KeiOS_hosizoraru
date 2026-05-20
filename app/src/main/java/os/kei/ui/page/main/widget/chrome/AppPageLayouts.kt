@@ -22,32 +22,30 @@ import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 fun appPageContentPadding(
     innerPadding: PaddingValues,
     bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
-    topExtra: Dp = 0.dp
-): PaddingValues {
-    return PaddingValues(
+    topExtra: Dp = 0.dp,
+): PaddingValues =
+    PaddingValues(
         top = innerPadding.calculateTopPadding() + topExtra,
         bottom = innerPadding.calculateBottomPadding() + bottomExtra,
         start = AppChromeTokens.pageHorizontalPadding,
-        end = AppChromeTokens.pageHorizontalPadding
+        end = AppChromeTokens.pageHorizontalPadding,
     )
-}
 
-fun appPageBottomPaddingWithFloatingOverlay(contentBottomPadding: Dp): Dp {
-    return contentBottomPadding + AppChromeTokens.pageFloatingOverlayBottomExtra
-}
+fun appPageBottomPaddingWithFloatingOverlay(contentBottomPadding: Dp): Dp =
+    contentBottomPadding + AppChromeTokens.pageFloatingOverlayBottomExtra
 
 @Composable
 fun AppScaffold(
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     MiuixScaffold(
         modifier = modifier,
         topBar = topBar,
         bottomBar = bottomBar,
-        content = content
+        content = content,
     )
 }
 
@@ -66,7 +64,8 @@ fun AppPageScaffold(
     searchBarVisible: Boolean = false,
     searchBarAnimationLabelPrefix: String = "appPageSearch",
     searchBarContent: (@Composable BoxScope.() -> Unit)? = null,
-    content: @Composable (PaddingValues) -> Unit
+    onTitleClick: () -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     Box(modifier = modifier) {
         AppScaffold(
@@ -79,18 +78,20 @@ fun AppPageScaffold(
                     color = topBarColor,
                     navigationIcon = navigationIcon,
                     titleBackdrop = titleBackdrop,
-                    titleEndReserve = if (reserveTopEndActionSpace) {
-                        AppChromeTokens.topBarTitleActionReserve
-                    } else {
-                        null
-                    },
+                    titleEndReserve =
+                        if (reserveTopEndActionSpace) {
+                            AppChromeTokens.topBarTitleActionReserve
+                        } else {
+                            null
+                        },
                     searchBarVisible = searchBarVisible,
                     searchBarAnimationLabelPrefix = searchBarAnimationLabelPrefix,
-                    searchBarContent = searchBarContent
+                    searchBarContent = searchBarContent,
+                    onTitleClick = onTitleClick,
                 )
             },
             bottomBar = bottomBar,
-            content = content
+            content = content,
         )
         AppTopEndActionBarOverlay {
             Row {
@@ -109,19 +110,20 @@ fun AppPageLazyColumn(
     topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
     sectionSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     userScrollEnabled: Boolean = true,
-    content: LazyListScope.() -> Unit
+    content: LazyListScope.() -> Unit,
 ) {
     LazyColumn(
         modifier = modifier,
         state = state,
         overscrollEffect = null,
         userScrollEnabled = userScrollEnabled,
-        contentPadding = appPageContentPadding(
-            innerPadding = innerPadding,
-            bottomExtra = bottomExtra,
-            topExtra = topExtra
-        ),
+        contentPadding =
+            appPageContentPadding(
+                innerPadding = innerPadding,
+                bottomExtra = bottomExtra,
+                topExtra = topExtra,
+            ),
         verticalArrangement = Arrangement.spacedBy(sectionSpacing),
-        content = content
+        content = content,
     )
 }

@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.about.page
 
 import android.content.pm.PackageInfo
-import os.kei.core.ext.showToast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -46,6 +45,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.system.ShizukuApiUtils
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.about.section.AboutBuildSdkCardSection
@@ -503,6 +503,9 @@ fun AboutPage(
         scrollBehavior = scrollBehavior,
         topBarColor = Color.Transparent,
         titleBackdrop = topBarBackdrop,
+        onTitleClick = {
+            bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+        },
         navigationIcon = {
             if (onBack != null) {
                 AppLiquidNavigationButton(

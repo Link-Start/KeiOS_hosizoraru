@@ -24,10 +24,10 @@ import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.os.appLucideUploadIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
-import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
@@ -49,6 +49,7 @@ internal fun GitHubTopBarSection(
     topBarColor: Color,
     scrollBehavior: ScrollBehavior,
     titleBackdrop: LayerBackdrop? = null,
+    onTitleClick: () -> Unit = {},
 ) {
     AppTopBarSection(
         title = "",
@@ -57,7 +58,8 @@ internal fun GitHubTopBarSection(
         color = topBarColor,
         titleBackdrop = titleBackdrop,
         titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
-    ) {}
+        onTitleClick = onTitleClick,
+    )
 }
 
 @Composable
@@ -81,7 +83,7 @@ internal fun GitHubTopBarActions(
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
     onOpenStarImport: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit
+    onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     val editStrategyIcon = appLucideEditIcon()
     val checkLogicIcon = appLucideConfigIcon()
@@ -100,208 +102,225 @@ internal fun GitHubTopBarActions(
     val filterLabel = stringResource(R.string.github_topbar_cd_filter)
     val refreshIntervalLabel = stringResource(R.string.github_check_sheet_label_refresh_interval)
     val moreContentDescription = stringResource(R.string.github_item_cd_more_actions)
-    val exportTracksLabel = if (tracksExporting) {
-        stringResource(R.string.github_check_sheet_action_exporting)
-    } else {
-        stringResource(R.string.github_check_sheet_action_export_tracks)
-    }
-    val importTracksLabel = if (tracksImporting) {
-        stringResource(R.string.github_check_sheet_action_importing)
-    } else {
-        stringResource(R.string.github_check_sheet_action_import_tracks)
-    }
+    val exportTracksLabel =
+        if (tracksExporting) {
+            stringResource(R.string.github_check_sheet_action_exporting)
+        } else {
+            stringResource(R.string.github_check_sheet_action_export_tracks)
+        }
+    val importTracksLabel =
+        if (tracksImporting) {
+            stringResource(R.string.github_check_sheet_action_importing)
+        } else {
+            stringResource(R.string.github_check_sheet_action_import_tracks)
+        }
     val importStarsLabel = stringResource(R.string.github_check_sheet_action_import_stars)
     val transferActionEnabled = !tracksExporting && !tracksImporting
     val screenWidth = appWindowWidthDp()
-    val actionMenuMaxWidth = (screenWidth - GitHubActionMenuHorizontalMargin)
-        .coerceIn(GitHubActionMenuCompactMinWidth, GitHubActionMenuPreferredMaxWidth)
+    val actionMenuMaxWidth =
+        (screenWidth - GitHubActionMenuHorizontalMargin)
+            .coerceIn(GitHubActionMenuCompactMinWidth, GitHubActionMenuPreferredMaxWidth)
     val actionMenuMinWidth = minOf(GitHubActionMenuPreferredMinWidth, actionMenuMaxWidth)
-    val actionItems = remember(
-        editStrategyIcon,
-        checkLogicIcon,
-        moreIcon,
-        editStrategyContentDescription,
-        checkLogicContentDescription,
-        moreContentDescription,
-        showActionMenuPopup,
-        onOpenStrategySheet,
-        onOpenCheckLogicSheet,
-        onShowActionMenuPopupChange,
-    ) {
-        listOf(
-            LiquidActionItem(
-                icon = editStrategyIcon,
-                contentDescription = editStrategyContentDescription,
-                onClick = {
-                    onShowActionMenuPopupChange(false)
-                    onOpenStrategySheet()
-                }
-            ),
-            LiquidActionItem(
-                icon = checkLogicIcon,
-                contentDescription = checkLogicContentDescription,
-                onClick = {
-                    onShowActionMenuPopupChange(false)
-                    onOpenCheckLogicSheet()
-                }
-            ),
-            LiquidActionItem(
-                icon = moreIcon,
-                contentDescription = moreContentDescription,
-                onClick = { onShowActionMenuPopupChange(!showActionMenuPopup) },
-                testTag = KeiOsTestTags.GitHubImportMenuButton
+    val actionItems =
+        remember(
+            editStrategyIcon,
+            checkLogicIcon,
+            moreIcon,
+            editStrategyContentDescription,
+            checkLogicContentDescription,
+            moreContentDescription,
+            showActionMenuPopup,
+            onOpenStrategySheet,
+            onOpenCheckLogicSheet,
+            onShowActionMenuPopupChange,
+        ) {
+            listOf(
+                LiquidActionItem(
+                    icon = editStrategyIcon,
+                    contentDescription = editStrategyContentDescription,
+                    onClick = {
+                        onShowActionMenuPopupChange(false)
+                        onOpenStrategySheet()
+                    },
+                ),
+                LiquidActionItem(
+                    icon = checkLogicIcon,
+                    contentDescription = checkLogicContentDescription,
+                    onClick = {
+                        onShowActionMenuPopupChange(false)
+                        onOpenCheckLogicSheet()
+                    },
+                ),
+                LiquidActionItem(
+                    icon = moreIcon,
+                    contentDescription = moreContentDescription,
+                    onClick = { onShowActionMenuPopupChange(!showActionMenuPopup) },
+                    testTag = KeiOsTestTags.GitHubImportMenuButton,
+                ),
             )
-        )
-    }
+        }
     Box {
         LiquidActionBar(
             backdrop = backdrop,
             layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             items = actionItems,
-            onInteractionChanged = onActionBarInteractingChanged
+            onInteractionChanged = onActionBarInteractingChanged,
         )
 
         LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
             when (slotIndex) {
-                2 -> if (showActionMenuPopup) {
-                    SnapshotWindowListPopup(
-                        show = showActionMenuPopup,
-                        alignment = PopupPositionProvider.Align.BottomEnd,
-                        anchorBounds = popupAnchorBounds,
-                        placement = SnapshotPopupPlacement.ButtonEnd,
-                        onDismissRequest = { onShowActionMenuPopupChange(false) },
-                        enableWindowDim = false,
-                        maxWidth = actionMenuMaxWidth
-                    ) {
-                        val modes = GitHubSortMode.entries
-                        val sortLabels = modes.map { mode -> stringResource(mode.labelRes) }
-                        val selectedSortLabel = sortLabels.getOrElse(modes.indexOf(sortMode)) {
-                            stringResource(sortMode.labelRes)
-                        }
-                        val directions = GitHubSortDirection.entries
-                        val directionLabels = directions.map { direction ->
-                            stringResource(direction.labelRes)
-                        }
-                        val selectedDirectionLabel = directionLabels.getOrElse(
-                            directions.indexOf(sortDirection)
-                        ) {
-                            stringResource(sortDirection.labelRes)
-                        }
-                        val filterModes = GitHubTrackedFilterMode.entries
-                        val filterLabels = filterModes.map { mode -> stringResource(mode.labelRes) }
-                        val selectedFilterLabel =
-                            filterLabels.getOrElse(filterModes.indexOf(trackedFilterMode)) {
-                                stringResource(trackedFilterMode.labelRes)
-                            }
-                        val refreshIntervalOptions = RefreshIntervalOption.entries
-                        val refreshIntervalLabels = refreshIntervalOptions.map { option ->
-                            stringResource(option.labelRes)
-                        }
-                        val selectedRefreshInterval =
-                            RefreshIntervalOption.fromHours(refreshIntervalHours)
-                        val selectedRefreshIntervalLabel = refreshIntervalLabels.getOrElse(
-                            refreshIntervalOptions.indexOf(selectedRefreshInterval)
-                        ) {
-                            stringResource(selectedRefreshInterval.labelRes)
-                        }
-                        LiquidGlassActionMenu(
-                            backdrop = backdrop,
-                            accentColor = MiuixTheme.colorScheme.onBackground,
-                            minWidth = actionMenuMinWidth,
+                2 -> {
+                    if (showActionMenuPopup) {
+                        SnapshotWindowListPopup(
+                            show = showActionMenuPopup,
+                            alignment = PopupPositionProvider.Align.BottomEnd,
+                            anchorBounds = popupAnchorBounds,
+                            placement = SnapshotPopupPlacement.ButtonEnd,
+                            onDismissRequest = { onShowActionMenuPopupChange(false) },
+                            enableWindowDim = false,
                             maxWidth = actionMenuMaxWidth,
-                            quickActions = listOf(
-                                LiquidGlassActionMenuQuickAction(
-                                    id = "export_tracks",
-                                    icon = exportTracksIcon,
-                                    label = exportTracksLabel,
-                                    enabled = transferActionEnabled,
-                                    onClick = onExportTrackedItems
-                                ),
-                                LiquidGlassActionMenuQuickAction(
-                                    id = "import_tracks",
-                                    icon = importTracksIcon,
-                                    label = importTracksLabel,
-                                    enabled = transferActionEnabled,
-                                    testTag = KeiOsTestTags.GitHubImportTracks,
-                                    onClick = onImportTrackedItems
-                                ),
-                                LiquidGlassActionMenuQuickAction(
-                                    id = "import_stars",
-                                    icon = importStarsIcon,
-                                    label = importStarsLabel,
-                                    enabled = transferActionEnabled,
-                                    testTag = KeiOsTestTags.GitHubImportStars,
-                                    onClick = onOpenStarImport
-                                )
-                            ),
-                            items = listOf(
-                                LiquidGlassActionMenuSubmenuRow(
-                                    id = "sort",
-                                    text = sortContentDescription,
-                                    subtitle = selectedSortLabel,
-                                    leadingIcon = sortIcon,
-                                    trailingIcon = chevronRightIcon,
-                                    submenuItems = modes.mapIndexed { index, mode ->
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = mode.name,
-                                            text = sortLabels[index],
-                                            selected = sortMode == mode,
+                        ) {
+                            val modes = GitHubSortMode.entries
+                            val sortLabels = modes.map { mode -> stringResource(mode.labelRes) }
+                            val selectedSortLabel =
+                                sortLabels.getOrElse(modes.indexOf(sortMode)) {
+                                    stringResource(sortMode.labelRes)
+                                }
+                            val directions = GitHubSortDirection.entries
+                            val directionLabels =
+                                directions.map { direction ->
+                                    stringResource(direction.labelRes)
+                                }
+                            val selectedDirectionLabel =
+                                directionLabels.getOrElse(
+                                    directions.indexOf(sortDirection),
+                                ) {
+                                    stringResource(sortDirection.labelRes)
+                                }
+                            val filterModes = GitHubTrackedFilterMode.entries
+                            val filterLabels = filterModes.map { mode -> stringResource(mode.labelRes) }
+                            val selectedFilterLabel =
+                                filterLabels.getOrElse(filterModes.indexOf(trackedFilterMode)) {
+                                    stringResource(trackedFilterMode.labelRes)
+                                }
+                            val refreshIntervalOptions = RefreshIntervalOption.entries
+                            val refreshIntervalLabels =
+                                refreshIntervalOptions.map { option ->
+                                    stringResource(option.labelRes)
+                                }
+                            val selectedRefreshInterval =
+                                RefreshIntervalOption.fromHours(refreshIntervalHours)
+                            val selectedRefreshIntervalLabel =
+                                refreshIntervalLabels.getOrElse(
+                                    refreshIntervalOptions.indexOf(selectedRefreshInterval),
+                                ) {
+                                    stringResource(selectedRefreshInterval.labelRes)
+                                }
+                            LiquidGlassActionMenu(
+                                backdrop = backdrop,
+                                accentColor = MiuixTheme.colorScheme.onBackground,
+                                minWidth = actionMenuMinWidth,
+                                maxWidth = actionMenuMaxWidth,
+                                quickActions =
+                                    listOf(
+                                        LiquidGlassActionMenuQuickAction(
+                                            id = "export_tracks",
+                                            icon = exportTracksIcon,
+                                            label = exportTracksLabel,
+                                            enabled = transferActionEnabled,
+                                            onClick = onExportTrackedItems,
+                                        ),
+                                        LiquidGlassActionMenuQuickAction(
+                                            id = "import_tracks",
+                                            icon = importTracksIcon,
+                                            label = importTracksLabel,
+                                            enabled = transferActionEnabled,
+                                            testTag = KeiOsTestTags.GitHubImportTracks,
+                                            onClick = onImportTrackedItems,
+                                        ),
+                                        LiquidGlassActionMenuQuickAction(
+                                            id = "import_stars",
+                                            icon = importStarsIcon,
+                                            label = importStarsLabel,
+                                            enabled = transferActionEnabled,
+                                            testTag = KeiOsTestTags.GitHubImportStars,
+                                            onClick = onOpenStarImport,
+                                        ),
+                                    ),
+                                items =
+                                    listOf(
+                                        LiquidGlassActionMenuSubmenuRow(
+                                            id = "sort",
+                                            text = sortContentDescription,
+                                            subtitle = selectedSortLabel,
                                             leadingIcon = sortIcon,
-                                            onClick = { onSortModeChange(mode) }
-                                        )
-                                    }
-                                ),
-                                LiquidGlassActionMenuSubmenuRow(
-                                    id = "sort_direction",
-                                    text = sortDirectionLabel,
-                                    subtitle = selectedDirectionLabel,
-                                    leadingIcon = sortIcon,
-                                    trailingIcon = chevronRightIcon,
-                                    submenuItems = directions.mapIndexed { index, direction ->
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = direction.name,
-                                            text = directionLabels[index],
-                                            selected = sortDirection == direction,
+                                            trailingIcon = chevronRightIcon,
+                                            submenuItems =
+                                                modes.mapIndexed { index, mode ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = mode.name,
+                                                        text = sortLabels[index],
+                                                        selected = sortMode == mode,
+                                                        leadingIcon = sortIcon,
+                                                        onClick = { onSortModeChange(mode) },
+                                                    )
+                                                },
+                                        ),
+                                        LiquidGlassActionMenuSubmenuRow(
+                                            id = "sort_direction",
+                                            text = sortDirectionLabel,
+                                            subtitle = selectedDirectionLabel,
                                             leadingIcon = sortIcon,
-                                            onClick = { onSortDirectionChange(direction) }
-                                        )
-                                    }
-                                ),
-                                LiquidGlassActionMenuSubmenuRow(
-                                    id = "filter",
-                                    text = filterLabel,
-                                    subtitle = selectedFilterLabel,
-                                    leadingIcon = filterIcon,
-                                    trailingIcon = chevronRightIcon,
-                                    submenuItems = filterModes.mapIndexed { index, mode ->
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = mode.name,
-                                            text = filterLabels[index],
-                                            selected = trackedFilterMode == mode,
+                                            trailingIcon = chevronRightIcon,
+                                            submenuItems =
+                                                directions.mapIndexed { index, direction ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = direction.name,
+                                                        text = directionLabels[index],
+                                                        selected = sortDirection == direction,
+                                                        leadingIcon = sortIcon,
+                                                        onClick = { onSortDirectionChange(direction) },
+                                                    )
+                                                },
+                                        ),
+                                        LiquidGlassActionMenuSubmenuRow(
+                                            id = "filter",
+                                            text = filterLabel,
+                                            subtitle = selectedFilterLabel,
                                             leadingIcon = filterIcon,
-                                            onClick = { onTrackedFilterModeChange(mode) }
-                                        )
-                                    }
-                                ),
-                                LiquidGlassActionMenuSubmenuRow(
-                                    id = "refresh_interval",
-                                    text = refreshIntervalLabel,
-                                    subtitle = selectedRefreshIntervalLabel,
-                                    leadingIcon = intervalIcon,
-                                    trailingIcon = chevronRightIcon,
-                                    submenuItems = refreshIntervalOptions.mapIndexed { index, option ->
-                                        LiquidGlassActionMenuSingleChoiceRow(
-                                            id = option.name,
-                                            text = refreshIntervalLabels[index],
-                                            selected = selectedRefreshInterval == option,
+                                            trailingIcon = chevronRightIcon,
+                                            submenuItems =
+                                                filterModes.mapIndexed { index, mode ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = mode.name,
+                                                        text = filterLabels[index],
+                                                        selected = trackedFilterMode == mode,
+                                                        leadingIcon = filterIcon,
+                                                        onClick = { onTrackedFilterModeChange(mode) },
+                                                    )
+                                                },
+                                        ),
+                                        LiquidGlassActionMenuSubmenuRow(
+                                            id = "refresh_interval",
+                                            text = refreshIntervalLabel,
+                                            subtitle = selectedRefreshIntervalLabel,
                                             leadingIcon = intervalIcon,
-                                            onClick = { onRefreshIntervalHoursChange(option.hours) }
-                                        )
-                                    }
-                                )
-                            ),
-                            onDismissRequest = { onShowActionMenuPopupChange(false) }
-                        )
+                                            trailingIcon = chevronRightIcon,
+                                            submenuItems =
+                                                refreshIntervalOptions.mapIndexed { index, option ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = option.name,
+                                                        text = refreshIntervalLabels[index],
+                                                        selected = selectedRefreshInterval == option,
+                                                        leadingIcon = intervalIcon,
+                                                        onClick = { onRefreshIntervalHoursChange(option.hours) },
+                                                    )
+                                                },
+                                        ),
+                                    ),
+                                onDismissRequest = { onShowActionMenuPopupChange(false) },
+                            )
+                        }
                     }
                 }
             }

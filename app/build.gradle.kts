@@ -323,10 +323,11 @@ android {
 
 androidComponents {
     onVariants { variant ->
-        // AGP 9.2.1 resolved the variant-obfuscated startup profile issue that previously required
-        // disabling this flag. Re-enable for all variants so ART can use the generated startup
-        // profile for dex layout optimization, improving cold-start class loading order.
-        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, true)
+        // Keep Baseline Profiles packaged, while skipping R8's experimental dex startup layout.
+        // The checked-in startup profiles are generated from minified variants; feeding those
+        // obfuscated entries back into R8 produces thousands of missing startup class warnings
+        // during release/benchmarkRelease minification.
+        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
     }
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->

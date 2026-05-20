@@ -28,11 +28,9 @@ object LauncherIconController {
     ) {
         val appContext = context.applicationContext
         val packageManager = appContext.packageManager
-        // Activity-alias components are registered under the base package (os.kei), not the
-        // suffixed debug/benchmark package. Use MANIFEST_COMPONENT_PACKAGE for the ComponentName
-        // package so the system can resolve the alias regardless of applicationIdSuffix.
-        val componentPackage = BuildConfig.MANIFEST_COMPONENT_PACKAGE
-        val targetComponent = design.componentName(componentPackage)
+        // ComponentName.packageName must match the installed applicationId, while the alias
+        // class name is resolved from the manifest namespace.
+        val targetComponent = design.componentName(appContext.packageName)
         runCatching {
             packageManager.setComponentEnabledSetting(
                 targetComponent,
@@ -43,7 +41,7 @@ object LauncherIconController {
                 .filter { it != design }
                 .forEach { inactiveDesign ->
                     packageManager.setComponentEnabledSetting(
-                        inactiveDesign.componentName(componentPackage),
+                        inactiveDesign.componentName(appContext.packageName),
                         PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                         PackageManager.DONT_KILL_APP,
                     )
@@ -52,6 +50,20 @@ object LauncherIconController {
     }
 }
 
-internal fun LauncherIconDesign.componentName(packageName: String): ComponentName = ComponentName(packageName, qualifiedAliasClassName())
+internal data class LauncherIconComponentSpec(
+    val packageName: String,
+    val className: String,
+)
+
+internal fun LauncherIconDesign.componentName(packageName: String): ComponentName =
+    componentSpec(packageName).let { spec ->
+        ComponentName(spec.packageName, spec.className)
+    }
+
+internal fun LauncherIconDesign.componentSpec(packageName: String): LauncherIconComponentSpec =
+    LauncherIconComponentSpec(
+        packageName = packageName,
+        className = qualifiedAliasClassName(),
+    )
 
 internal fun LauncherIconDesign.qualifiedAliasClassName(): String = "${BuildConfig.MANIFEST_COMPONENT_PACKAGE}.$aliasClassName"

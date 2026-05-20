@@ -26,6 +26,17 @@ class LauncherIconContractTest {
     }
 
     @Test
+    fun `component package follows installed application id while class stays manifest namespace`() {
+        val appleDebugComponent = LauncherIconDesign.Apple.componentSpec("os.kei.debug")
+        val androidBenchmarkComponent = LauncherIconDesign.Android.componentSpec("os.kei.benchmark")
+
+        assertEquals("os.kei.debug", appleDebugComponent.packageName)
+        assertEquals("os.kei.LauncherAppleDesigns", appleDebugComponent.className)
+        assertEquals("os.kei.benchmark", androidBenchmarkComponent.packageName)
+        assertEquals("os.kei.LauncherAndroidDesigns", androidBenchmarkComponent.className)
+    }
+
+    @Test
     fun `launcher manifest defaults to android designs and keeps apple designs disabled`() {
         val manifest = androidManifest()
         val application =

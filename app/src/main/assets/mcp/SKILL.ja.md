@@ -23,6 +23,7 @@
 - Workflow prompt: `{{PROMPT_WORKFLOW_PLAN}}`
 - Diagnostics prompt: `{{PROMPT_DIAGNOSTICS_PLAN}}`
 - Claw onboarding tool: `keios.mcp.claw.skill.guide(mode=auto)`
+- Codex onboarding tool: `keios.dev.codex.config(mode=local)`
 
 ## Recommended Entry Points
 
@@ -49,6 +50,7 @@ a task fires.
 - GitHub: `keios://skill/domain/github`
 - OS: `keios://skill/domain/os`
 - BA: `keios://skill/domain/ba`
+- Dev/Codex: `keios://skill/domain/dev`
 - Single tool help: `{{RESOURCE_TOOL_TEMPLATE_URI}}`
 
 ## Common Flows
@@ -63,6 +65,8 @@ a task fires.
    `keios.github.stars.apk.verify` -> `keios.github.stars.import(apply=true)`
 5. OS card backup: `keios.os.cards.snapshot` -> `keios.os.cards.export(target=all)`
 6. BA daily brief: `keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
+7. Codex development: `keios.dev.codex.config(mode=local)` ->
+   `keios.dev.project.snapshot` -> `keios.dev.validation.plan(scope=quick)`
 
 ## Full Tool Index
 
@@ -76,6 +80,7 @@ a task fires.
 - Import tools preview by default; writes require explicit `apply=true`.
 - Network and deep-scan tools have timeouts and limit arguments; scheduled audits should start with
   20 to 80 rows.
+- Dev/Codex tools are read-only and return onboarding or validation text for local development.
 - `repoFilter` accepts owner/repo, package name, or app label.
 - `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.
 - `filterMode` accepts `all`, `github_repository`, `direct_apk`, `pre_release_tracked`,

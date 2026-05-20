@@ -26,5 +26,5 @@ internal object McpToolDomains {
     const val OS = "os"
     const val GITHUB = "github"
     const val BA = "ba"
+    const val DEV = "dev"
 }
-

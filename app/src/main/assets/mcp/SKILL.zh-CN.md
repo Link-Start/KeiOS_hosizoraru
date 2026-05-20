@@ -23,6 +23,7 @@
 - 工作流 Prompt：`{{PROMPT_WORKFLOW_PLAN}}`
 - 排障 Prompt：`{{PROMPT_DIAGNOSTICS_PLAN}}`
 - Claw 接入工具：`keios.mcp.claw.skill.guide(mode=auto)`
+- Codex 接入工具：`keios.dev.codex.config(mode=local)`
 
 ## 推荐入口
 
@@ -48,6 +49,7 @@
 - GitHub：`keios://skill/domain/github`
 - OS：`keios://skill/domain/os`
 - BA：`keios://skill/domain/ba`
+- Dev/Codex：`keios://skill/domain/dev`
 - 单工具帮助：`{{RESOURCE_TOOL_TEMPLATE_URI}}`
 
 ## 常用任务流
@@ -61,6 +63,8 @@
    `keios.github.stars.apk.verify` -> `keios.github.stars.import(apply=true)`
 5. OS 卡片备份：`keios.os.cards.snapshot` -> `keios.os.cards.export(target=all)`
 6. BA 每日简报：`keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
+7. Codex 开发辅助：`keios.dev.codex.config(mode=local)` ->
+   `keios.dev.project.snapshot` -> `keios.dev.validation.plan(scope=quick)`
 
 ## 完整工具索引
 
@@ -72,6 +76,7 @@
 - `structuredContent.text` 在入口工具中镜像文本输出，兼容需要结构化字段的客户端。
 - 导入类工具默认预览，写入必须显式传 `apply=true`。
 - 网络和深扫工具有超时与 limit，定时任务建议从 20 到 80 条开始。
+- Dev/Codex 工具保持只读，只返回本地开发接入、工程快照与验证计划文本。
 - `repoFilter` 支持 owner/repo、包名或应用名。
 - `sourceMode` 支持 `github_repository`、`direct_apk`，留空表示全部追踪来源。
 - `filterMode` 支持 `all`、`github_repository`、`direct_apk`、`pre_release_tracked`、`update_available`、

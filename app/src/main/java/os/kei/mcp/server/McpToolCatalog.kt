@@ -31,7 +31,8 @@ internal object McpToolCatalog {
         "keios.mcp.runtime.status",
         "keios.mcp.workflow.blueprints",
         "keios.github.config.snapshot",
-        "keios.ba.snapshot"
+        "keios.ba.snapshot",
+        "keios.dev.codex.config"
     )
 
     val runtimeToolNames = listOf(
@@ -97,6 +98,12 @@ internal object McpToolCatalog {
         "keios.ba.cache.clear"
     )
 
+    val devToolNames = listOf(
+        "keios.dev.codex.config",
+        "keios.dev.project.snapshot",
+        "keios.dev.validation.plan"
+    )
+
     val all: List<McpToolMeta>
         get() = englishTools
 
@@ -154,7 +161,13 @@ internal object McpToolCatalog {
     }
 
     private val orderedToolNames: List<String> =
-        runtimeToolNames + homeToolNames + systemToolNames + osToolNames + githubToolNames + baToolNames
+        runtimeToolNames +
+            homeToolNames +
+            systemToolNames +
+            osToolNames +
+            githubToolNames +
+            baToolNames +
+            devToolNames
 
     private val englishTools: List<McpToolMeta>
         get() = forLocale(Locale.ENGLISH)
@@ -426,7 +439,30 @@ internal object McpToolCatalog {
             McpSchema.string("json"),
             McpSchema.boolean("apply")
         ),
-        "keios.ba.cache.clear" to listOf(McpSchema.string("scope"), McpSchema.string("url"))
+        "keios.ba.cache.clear" to listOf(McpSchema.string("scope"), McpSchema.string("url")),
+        "keios.dev.codex.config" to listOf(
+            McpSchema.string(
+                name = "mode",
+                description = "Connection mode for generated Codex config.",
+                enumValues = listOf("auto", "local", "lan"),
+                defaultValue = "local"
+            ),
+            McpSchema.string("endpoint", description = "Optional endpoint override."),
+            McpSchema.string("serverName", description = "Optional Codex MCP server name override."),
+            McpSchema.string(
+                name = "tokenEnv",
+                description = "Environment variable name used by Codex for the bearer token.",
+                defaultValue = "KEIOS_MCP_TOKEN"
+            )
+        ),
+        "keios.dev.validation.plan" to listOf(
+            McpSchema.string(
+                name = "scope",
+                description = "Validation scope.",
+                enumValues = listOf("quick", "mcp", "release", "ui", "baseline"),
+                defaultValue = "quick"
+            )
+        )
     )
 
     private val definitions: Map<String, ToolDefinition> = orderedToolNames.associateWith { name ->
@@ -524,6 +560,7 @@ internal object McpToolCatalog {
             in osToolNames -> McpToolDomains.OS
             in githubToolNames -> McpToolDomains.GITHUB
             in baToolNames -> McpToolDomains.BA
+            in devToolNames -> McpToolDomains.DEV
             else -> "unknown"
         }
     }
@@ -532,6 +569,7 @@ internal object McpToolCatalog {
         return when {
             name == "keios.mcp.workflow.blueprints" -> McpToolVisibility.Workflow
             name in entrypointToolNames -> McpToolVisibility.Entrypoint
+            name.startsWith("keios.dev.") -> McpToolVisibility.Advanced
             name.endsWith(".cache.clear") ||
                     name == "keios.github.cache.clear" ||
                     name == "keios.github.link.pending" ||
@@ -549,6 +587,7 @@ internal object McpToolCatalog {
                     name == "keios.github.stars.apk.verify" -> McpToolMaturity.Preview
 
             name == "keios.github.direct_apk.inspect" -> McpToolMaturity.Preview
+            name.startsWith("keios.dev.") -> McpToolMaturity.Preview
             else -> McpToolMaturity.Stable
         }
     }
@@ -560,7 +599,8 @@ internal object McpToolCatalog {
                     name == "keios.github.tracks.export" -> McpToolOutputContract.JsonText
 
             name == "keios.mcp.claw.skill.guide" ||
-                    name == "keios.mcp.workflow.blueprints" -> McpToolOutputContract.Markdown
+                    name == "keios.mcp.workflow.blueprints" ||
+                    name == "keios.dev.codex.config" -> McpToolOutputContract.Markdown
 
             else -> McpToolOutputContract.KeyValueText
         }
@@ -572,6 +612,7 @@ internal object McpToolCatalog {
             name.startsWith("keios.github") -> listOf("github-update-watch")
             name.startsWith("keios.ba") -> listOf("ba-daily-brief")
             name.startsWith("keios.os") -> listOf("os-card-backup")
+            name.startsWith("keios.dev") -> listOf("codex-development")
             name.startsWith("keios.mcp") || name == "keios.health.ping" -> listOf("runtime-diagnostics")
             else -> emptyList()
         }
@@ -584,6 +625,10 @@ internal object McpToolCatalog {
             "keios.mcp.runtime.logs" -> listOf("connectivity", "diagnostics")
 
             "keios.mcp.workflow.blueprints" -> listOf("scheduled_tasks", "composed_skills")
+            "keios.dev.codex.config",
+            "keios.dev.project.snapshot",
+            "keios.dev.validation.plan" -> listOf("codex_development", "repository_validation")
+
             "keios.github.config.snapshot",
             "keios.github.tracks.list",
             "keios.github.tracks.summary",
@@ -660,7 +705,10 @@ internal object McpToolCatalog {
         "keios.ba.guide.cache.inspect" to "Inspect Student Guide detail cache by URL. Args: url, includeSections, refreshIntervalHours.",
         "keios.ba.guide.media.list" to "List gallery and voice media from Student Guide cache. Args: url, kind, limit.",
         "keios.ba.guide.bgm.favorites" to "List, export, or import Memorial Lobby BGM favorites.",
-        "keios.ba.cache.clear" to "Clear Blue Archive and GitHub cache data. Args: scope, url."
+        "keios.ba.cache.clear" to "Clear Blue Archive and GitHub cache data. Args: scope, url.",
+        "keios.dev.codex.config" to "Generate Codex MCP onboarding with streamable HTTP endpoint, bearer-token environment variable, and first-call flow.",
+        "keios.dev.project.snapshot" to "Read a compact developer snapshot for Codex, including source files, test files, architecture, and common commands.",
+        "keios.dev.validation.plan" to "Generate a validation command plan for Codex. Args: scope=quick|mcp|release|ui|baseline."
     )
 
     private val zhDescriptions = mapOf(
@@ -708,7 +756,10 @@ internal object McpToolCatalog {
         "keios.ba.guide.cache.inspect" to "按 URL 检查学生图鉴详情缓存。参数：url、includeSections、refreshIntervalHours。",
         "keios.ba.guide.media.list" to "列出学生图鉴缓存里的鉴赏与语音媒体。参数：url、kind、limit。",
         "keios.ba.guide.bgm.favorites" to "列出、导出或导入纪念大厅 BGM 收藏。",
-        "keios.ba.cache.clear" to "清理 Blue Archive 与 GitHub 缓存数据。参数：scope、url。"
+        "keios.ba.cache.clear" to "清理 Blue Archive 与 GitHub 缓存数据。参数：scope、url。",
+        "keios.dev.codex.config" to "生成 Codex MCP 接入指南，包含 streamable HTTP endpoint、Bearer Token 环境变量与首次调用流程。",
+        "keios.dev.project.snapshot" to "读取给 Codex 使用的开发快照，包含关键源码、测试文件、架构信息与常用命令。",
+        "keios.dev.validation.plan" to "生成 Codex 可执行的验证命令计划。参数：scope=quick|mcp|release|ui|baseline。"
     )
 
     private val jaDescriptions = mapOf(
@@ -756,7 +807,10 @@ internal object McpToolCatalog {
         "keios.ba.guide.cache.inspect" to "URL から生徒図鑑詳細キャッシュを検査します。引数: url、includeSections、refreshIntervalHours。",
         "keios.ba.guide.media.list" to "生徒図鑑キャッシュ内の鑑賞・音声メディアを一覧します。引数: url、kind、limit。",
         "keios.ba.guide.bgm.favorites" to "メモリアルロビー BGM お気に入りを一覧、エクスポート、またはインポートします。",
-        "keios.ba.cache.clear" to "Blue Archive と GitHub のキャッシュデータを削除します。引数: scope、url。"
+        "keios.ba.cache.clear" to "Blue Archive と GitHub のキャッシュデータを削除します。引数: scope、url。",
+        "keios.dev.codex.config" to "Codex MCP 導入ガイドを生成します。streamable HTTP endpoint、Bearer Token 環境変数、初回呼び出し手順を含みます。",
+        "keios.dev.project.snapshot" to "Codex 向けの開発スナップショットを読み取ります。主要ソース、テスト、構成、よく使うコマンドを含みます。",
+        "keios.dev.validation.plan" to "Codex 向けの検証コマンド計画を生成します。引数: scope=quick|mcp|release|ui|baseline。"
     )
 }
 

@@ -77,6 +77,12 @@ class McpToolRegistrationTest {
 
         val pingTool = server.tools.getValue("keios.health.ping").tool
         assertEquals(listOf("format", "text"), pingTool.outputSchema?.required?.sorted())
+
+        val codexTool = server.tools.getValue("keios.dev.codex.config").tool
+        assertTrue(codexTool.annotations?.readOnlyHint ?: false)
+        assertFalse(codexTool.annotations?.openWorldHint ?: true)
+        assertEquals(listOf("format", "text"), codexTool.outputSchema?.required?.sorted())
+        assertTrue(codexTool.meta.toString().contains("codex-development"))
     }
 
     @Test
@@ -96,6 +102,8 @@ class McpToolRegistrationTest {
         assertTrue(markdown.contains(WORKFLOW_RESOURCE_URI))
         assertTrue(markdown.contains(SKILL_DOMAIN_TEMPLATE_URI))
         assertTrue(markdown.contains("keios.mcp.workflow.blueprints"))
+        assertTrue(markdown.contains("keios.dev.codex.config"))
+        assertTrue(markdown.contains("keios://skill/domain/dev"))
         assertTrue(markdown.indexOf("Recommended Entry Points") < markdown.indexOf("Full Tool Index"))
     }
 

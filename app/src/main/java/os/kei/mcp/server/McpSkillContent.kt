@@ -303,8 +303,9 @@ internal class McpSkillContent(
             appendLine("osTools=${McpToolCatalog.osToolNames.joinToString(",")}")
             appendLine("githubTools=${McpToolCatalog.githubToolNames.joinToString(",")}")
             appendLine("baTools=${McpToolCatalog.baToolNames.joinToString(",")}")
+            appendLine("devTools=${McpToolCatalog.devToolNames.joinToString(",")}")
             appendLine("entrypointTools=${McpToolCatalog.entrypointToolNames.joinToString(",")}")
-            appendLine("domainGuides=${listOf("runtime", "github", "os", "ba").joinToString(",")}")
+            appendLine("domainGuides=${listOf("runtime", "github", "os", "ba", "dev").joinToString(",")}")
             appendLine("toolCount=${McpToolCatalog.all.size}")
             appendLine("tools=${McpToolCatalog.all.joinToString(",") { it.name }}")
         }.trim()
@@ -455,7 +456,7 @@ internal class McpSkillContent(
             return buildString {
                 appendLine(localText(locale, "# 未知领域", "# Unknown Domain", "# Unknown Domain"))
                 appendLine("domain=$domain")
-                appendLine("available=runtime,home,system,os,github,ba")
+                appendLine("available=runtime,home,system,os,github,ba,dev")
             }.trim()
         }
         return buildString {

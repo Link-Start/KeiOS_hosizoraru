@@ -72,6 +72,9 @@ class LocalMcpService(
     private val baTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
         McpBaTools(environment)
     }
+    private val devTools by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        McpDevTools(environment, runtimeTools::buildRuntimeConfigJson)
+    }
 
     fun bindMcpStateProvider(provider: () -> McpServerUiState) {
         mcpStateProvider = provider
@@ -152,6 +155,7 @@ class LocalMcpService(
         githubDiscoveryTools.register(server)
         githubActionsTools.register(server)
         baTools.register(server)
+        devTools.register(server)
         skillContent.registerResources(server)
         workflowContent.registerResources(server)
         skillContent.registerPrompt(server)

@@ -6,6 +6,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.SystemClock
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipEntry
@@ -587,6 +588,16 @@ class GitHubShizukuPackageInstaller(
                 onProgress = onProgress
             )
             ZipFile(archiveFile).use { zipFile ->
+                if (zipFile.isDirectApkArchive()) {
+                    return streamDownloadedApkFileIntoSession(
+                        context = context,
+                        apkFile = archiveFile,
+                        sessionName = assetName.apkSessionName(),
+                        session = session,
+                        sessionId = sessionId,
+                        onProgress = onProgress
+                    )
+                }
                 val apkEntry = selectInstallApkEntry(zipFile)
                     ?: throw IOException("Actions artifact contains no installable APK")
                 val entrySize = apkEntry.size.takeIf { it > 0L } ?: -1L
@@ -663,6 +674,77 @@ class GitHubShizukuPackageInstaller(
             }
         } finally {
             runCatching { archiveFile.delete() }
+        }
+    }
+
+    private suspend fun streamDownloadedApkFileIntoSession(
+        context: Context,
+        apkFile: File,
+        sessionName: String,
+        session: PackageInstaller.Session,
+        sessionId: Int,
+        onProgress: suspend (GitHubApkInstallProgress) -> Unit
+    ): SessionWriteResult {
+        val totalBytes = apkFile.length().takeIf { it > 0L } ?: -1L
+        var totalRead = 0L
+        var lastProgressPercent = -1
+        var lastProgressBytes = -1L
+        var lastProgressEmitAt = 0L
+        suspend fun emitStageProgress(force: Boolean = false) {
+            val progressPercent = downloadProgressPercent(totalRead, totalBytes)
+            val now = SystemClock.uptimeMillis()
+            val percentAdvanced = progressPercent > lastProgressPercent
+            val unknownTotalBytesAdvanced = totalBytes <= 0L &&
+                totalRead - lastProgressBytes >= UNKNOWN_TOTAL_PROGRESS_STEP_BYTES
+            val timeReady = now - lastProgressEmitAt >= DOWNLOAD_PROGRESS_MIN_INTERVAL_MS
+            if (!force && !unknownTotalBytesAdvanced && (!percentAdvanced || !timeReady)) {
+                return
+            }
+            lastProgressPercent = progressPercent
+            lastProgressBytes = totalRead
+            lastProgressEmitAt = now
+            onProgress(
+                GitHubApkInstallProgress(
+                    stage = GitHubApkInstallStage.Downloading,
+                    progressPercent = progressPercent,
+                    downloadedBytes = totalRead,
+                    totalBytes = totalBytes,
+                    sessionId = sessionId
+                )
+            )
+        }
+        emitStageProgress(force = true)
+        FileInputStream(apkFile).use { input ->
+            session.openWrite(sessionName, 0, totalBytes).use { output ->
+                val buffer = ByteArray(APK_STREAM_BUFFER_SIZE)
+                while (true) {
+                    currentCoroutineContext().ensureActive()
+                    val read = input.read(buffer)
+                    if (read == -1) break
+                    output.write(buffer, 0, read)
+                    totalRead += read.toLong()
+                    emitStageProgress()
+                }
+                emitStageProgress(force = true)
+                val archiveInfo = readArchiveInfo(context, apkFile)
+                onProgress(
+                    GitHubApkInstallProgress(
+                        stage = GitHubApkInstallStage.Staging,
+                        progressPercent = 100,
+                        downloadedBytes = totalRead,
+                        totalBytes = totalBytes,
+                        sessionId = sessionId,
+                        appLabel = archiveInfo.appLabel,
+                        packageName = archiveInfo.packageName,
+                        versionName = archiveInfo.versionName,
+                        versionCode = archiveInfo.versionCode,
+                        minSdk = archiveInfo.minSdk,
+                        targetSdk = archiveInfo.targetSdk
+                    )
+                )
+                session.fsync(output)
+                return SessionWriteResult(totalRead, totalBytes, archiveInfo)
+            }
         }
     }
 
@@ -744,6 +826,15 @@ class GitHubShizukuPackageInstaller(
                     .thenBy { entry -> entry.name.lowercase() }
             )
             .firstOrNull()
+    }
+
+    private fun ZipFile.isDirectApkArchive(): Boolean {
+        return getEntry(ANDROID_MANIFEST_ENTRY) != null
+    }
+
+    private fun String.apkSessionName(): String {
+        val normalized = trim().substringAfterLast('/').ifBlank { "base.apk" }
+        return if (normalized.endsWith(".apk", ignoreCase = true)) normalized else "$normalized.apk"
     }
 
     private fun nestedApkEntryScore(entryName: String): Int {
@@ -865,5 +956,6 @@ class GitHubShizukuPackageInstaller(
         private val defaultClient: OkHttpClient by lazy {
             SharedHttpClient.base
         }
+        private const val ANDROID_MANIFEST_ENTRY = "AndroidManifest.xml"
     }
 }

@@ -69,6 +69,15 @@ internal class BackNavigationRuntimeController {
         )
     }
 
+    fun updateGestureProgress(progress: Float, source: BackNavigationSource) {
+        state = state.copy(
+            isGestureInProgress = true,
+            source = source,
+            progress = progress.coerceIn(0f, 1f),
+            swipeEdge = BackEventCompat.EDGE_NONE
+        )
+    }
+
     fun beginCommit(source: BackNavigationSource) {
         state = state.copy(
             isGestureInProgress = false,

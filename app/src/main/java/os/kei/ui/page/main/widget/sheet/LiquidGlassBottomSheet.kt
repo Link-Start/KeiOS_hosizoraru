@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +53,17 @@ import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kyant.shapes.RoundedRectangle
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.NavigationEventTransitionState
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.back.BackNavigationCommitGate
+import os.kei.ui.page.main.back.BackNavigationSource
+import os.kei.ui.page.main.back.LocalBackNavigationRuntimeController
+import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
+import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.Text
 
 /**
@@ -106,6 +117,8 @@ private const val DETENT_DISMISS = 0.18f
 /** Below this fraction from half, blocked-dismiss bounce triggers (when allowDismiss = false). */
 private const val DETENT_BOUNCE = 0.35f
 
+private const val LIQUID_SHEET_BLOCKED_BACK_DRAG_FACTOR = 0.1f
+
 /**
  * Detent at which the iOS-style "fade to solid" begins. Below this, the sheet stays at full
  * frosted-glass transparency (semi-transparent surface + visible blurred backdrop). Above this,
@@ -125,6 +138,32 @@ enum class LiquidSheetInitialDetent(internal val fraction: Float) {
     Half(DETENT_HALF),
     ThreeQuarter(DETENT_THREE_QUARTER),
     Full(DETENT_FULL),
+}
+
+internal fun liquidSheetPredictiveBackOffsetFraction(
+    sheetFraction: Float,
+    progress: Float,
+    allowDismiss: Boolean,
+): Float {
+    val sheet = sheetFraction.coerceIn(0f, DETENT_FULL)
+    val clampedProgress = progress.coerceIn(0f, 1f)
+    val offset = sheet * clampedProgress
+    return if (allowDismiss) {
+        offset
+    } else {
+        offset * LIQUID_SHEET_BLOCKED_BACK_DRAG_FACTOR
+    }
+}
+
+internal fun liquidSheetPredictiveBackScrimFactor(
+    sheetFraction: Float,
+    offsetFraction: Float,
+    allowDismiss: Boolean,
+): Float {
+    if (!allowDismiss) return 1f
+    val sheet = sheetFraction.coerceIn(0f, DETENT_FULL)
+    if (sheet <= 0f) return 0f
+    return (1f - (offsetFraction / sheet).coerceIn(0f, 1f)).coerceIn(0f, 1f)
 }
 
 internal val LocalLiquidSheetContentOverflowReporter =
@@ -150,9 +189,16 @@ fun LiquidGlassBottomSheet(
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
     val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
+    val runtimeController = LocalBackNavigationRuntimeController.current
+    val runtimeState = LocalBackNavigationRuntimeState.current
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
+    val sheetNavigationBackEnabled = runtimeState.policy?.frameworkAnimationsEnabled
+        ?: (transitionAnimationsEnabled && LocalPredictiveBackAnimationsEnabled.current)
+    val backCommitGate = remember { BackNavigationCommitGate() }
 
     // heightFraction: 0 = off-screen, DETENT_HALF = half screen, DETENT_FULL = max height
     val heightFraction = remember { Animatable(0f) }
+    val predictiveBackOffsetFraction = remember { Animatable(0f) }
     var isRendered by remember { mutableStateOf(false) }
     var contentOverflowsOpeningDetent by remember { mutableStateOf(false) }
     var userAdjustedDetent by remember { mutableStateOf(false) }
@@ -166,6 +212,7 @@ fun LiquidGlassBottomSheet(
             autoExpandedForContent = false
             contentOverflowsOpeningDetent = false
             openingDetentReady = false
+            predictiveBackOffsetFraction.snapTo(0f)
             // Animate to the caller-requested initial detent. The sheet remains
             // user-resizable across all three detents after this.
             heightFraction.animateTo(
@@ -209,7 +256,7 @@ fun LiquidGlassBottomSheet(
             }
         },
         properties = DialogProperties(
-            dismissOnBackPress = allowDismiss,
+            dismissOnBackPress = false,
             dismissOnClickOutside = false,
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
@@ -230,7 +277,14 @@ fun LiquidGlassBottomSheet(
         // Current sheet height based on fraction
         val sheetHeightDp = availableHeightDp * fraction
         // Scrim alpha scales with how much of the screen is covered
-        val scrimAlpha = LiquidSheetScrimAlpha * (fraction / DETENT_FULL).coerceIn(0f, 1f)
+        val predictiveBackScrimFactor = liquidSheetPredictiveBackScrimFactor(
+            sheetFraction = fraction,
+            offsetFraction = predictiveBackOffsetFraction.value,
+            allowDismiss = allowDismiss
+        )
+        val scrimAlpha = LiquidSheetScrimAlpha *
+            (fraction / DETENT_FULL).coerceIn(0f, 1f) *
+            predictiveBackScrimFactor
         // Visibility progress for enter/exit animation (0 when hidden, 1 when at half or above)
         val visibilityProgress = (fraction / DETENT_HALF).coerceIn(0f, 1f)
 
@@ -305,11 +359,93 @@ fun LiquidGlassBottomSheet(
             }
         }
 
-        BackHandler(enabled = true) {
+        BackHandler(enabled = !sheetNavigationBackEnabled) {
             if (allowDismiss) {
                 currentOnDismissRequest?.invoke()
             } else {
                 currentOnBlockedDismissRequest?.invoke()
+            }
+        }
+
+        if (sheetNavigationBackEnabled) {
+            val navigationEventState =
+                rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+            var predictiveBackStartFraction by remember { mutableStateOf<Float?>(null) }
+            val resetPredictiveBackGesture: suspend () -> Unit = {
+                predictiveBackOffsetFraction.animateTo(
+                    targetValue = 0f,
+                    animationSpec = spring(dampingRatio = 0.86f, stiffness = 420f)
+                )
+                predictiveBackStartFraction = null
+                runtimeController.reset()
+            }
+
+            NavigationBackHandler(
+                state = navigationEventState,
+                isBackEnabled = true,
+                onBackCancelled = {
+                    scope.launch {
+                        resetPredictiveBackGesture()
+                    }
+                },
+                onBackCompleted = {
+                    scope.launch {
+                        runtimeController.beginCommit(BackNavigationSource.Modal)
+                        val startFraction = predictiveBackStartFraction
+                            ?: heightFraction.value.coerceIn(0f, DETENT_FULL)
+                        predictiveBackStartFraction = null
+                        val canDismiss = allowDismiss && currentOnDismissRequest != null
+                        if (canDismiss) {
+                            backCommitGate.reset()
+                            predictiveBackOffsetFraction.animateTo(
+                                targetValue = startFraction.coerceAtLeast(DETENT_DISMISS),
+                                animationSpec = spring(dampingRatio = 0.9f, stiffness = 520f),
+                            )
+                            backCommitGate.tryCommit {
+                                currentOnDismissRequest?.invoke()
+                            }
+                        } else {
+                            backCommitGate.reset()
+                            backCommitGate.tryCommit {
+                                currentOnBlockedDismissRequest?.invoke()
+                            }
+                            predictiveBackOffsetFraction.animateTo(
+                                targetValue = 0f,
+                                animationSpec = spring(dampingRatio = 0.82f, stiffness = 450f)
+                            )
+                        }
+                        runtimeController.reset()
+                    }
+                }
+            )
+
+            LaunchedEffect(allowDismiss, sheetNavigationBackEnabled) {
+                snapshotFlow { navigationEventState.transitionState }
+                    .collect { transitionState ->
+                        if (
+                            transitionState is NavigationEventTransitionState.InProgress &&
+                            transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
+                        ) {
+                            val startFraction = predictiveBackStartFraction
+                                ?: heightFraction.value.coerceIn(0f, DETENT_FULL).also { fraction ->
+                                    predictiveBackStartFraction = fraction
+                                    backCommitGate.reset()
+                                    runtimeController.beginGesture(BackNavigationSource.Modal)
+                                }
+                            val event = transitionState.latestEvent
+                            runtimeController.updateGestureProgress(
+                                progress = event.progress,
+                                source = BackNavigationSource.Modal
+                            )
+                            predictiveBackOffsetFraction.snapTo(
+                                liquidSheetPredictiveBackOffsetFraction(
+                                    sheetFraction = startFraction,
+                                    progress = event.progress,
+                                    allowDismiss = allowDismiss && currentOnDismissRequest != null,
+                                )
+                            )
+                        }
+                    }
             }
         }
 
@@ -384,6 +520,7 @@ fun LiquidGlassBottomSheet(
                         scaleX = scale
                         scaleY = scale
                         alpha = visibilityProgress
+                        translationY = availableHeightPx * predictiveBackOffsetFraction.value
                         transformOrigin = TransformOrigin(0.5f, 1f)
                     }
                     .clip(sheetShape)

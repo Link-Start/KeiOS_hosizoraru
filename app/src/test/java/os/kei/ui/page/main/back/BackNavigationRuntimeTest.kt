@@ -73,6 +73,20 @@ class BackNavigationRuntimeTest {
     }
 
     @Test
+    fun `runtime accepts navigation event progress without edge data`() {
+        val controller = BackNavigationRuntimeController()
+
+        controller.updateGestureProgress(
+            progress = 1.5f,
+            source = BackNavigationSource.Modal
+        )
+
+        assertTrue(controller.state.isGestureInProgress)
+        assertEquals(BackNavigationSource.Modal, controller.state.source)
+        assertEquals(1f, controller.state.progress)
+    }
+
+    @Test
     fun `aosp policy enables compose predictive local back`() {
         val mode = resolveBackNavigationHandlerMode(
             policy = PredictiveBackOemCompat.Policy(

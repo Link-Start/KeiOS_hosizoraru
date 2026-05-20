@@ -138,6 +138,46 @@ class LiquidGlassBottomSheetTest {
         )
     }
 
+    @Test
+    fun predictiveBackMovesDismissibleSheetTowardOffscreenOffset() {
+        val halfwayOffset = liquidSheetPredictiveBackOffsetFraction(
+            sheetFraction = 0.75f,
+            progress = 0.5f,
+            allowDismiss = true
+        )
+        val completedOffset = liquidSheetPredictiveBackOffsetFraction(
+            sheetFraction = 0.75f,
+            progress = 1f,
+            allowDismiss = true
+        )
+        val completedScrim = liquidSheetPredictiveBackScrimFactor(
+            sheetFraction = 0.75f,
+            offsetFraction = completedOffset,
+            allowDismiss = true
+        )
+
+        assertTrue(halfwayOffset in 0f..0.75f)
+        assertTrue(completedOffset >= 0.74f)
+        assertTrue(completedScrim <= 0.01f)
+    }
+
+    @Test
+    fun predictiveBackKeepsBlockedSheetNearCurrentPosition() {
+        val completedOffset = liquidSheetPredictiveBackOffsetFraction(
+            sheetFraction = 0.75f,
+            progress = 1f,
+            allowDismiss = false
+        )
+        val completedScrim = liquidSheetPredictiveBackScrimFactor(
+            sheetFraction = 0.75f,
+            offsetFraction = completedOffset,
+            allowDismiss = false
+        )
+
+        assertTrue(completedOffset in 0.07f..0.08f)
+        assertTrue(completedScrim >= 0.99f)
+    }
+
     private fun sheetHeight(): Dp {
         val heightPx = composeRule.onNodeWithTag(SheetTag)
             .fetchSemanticsNode()

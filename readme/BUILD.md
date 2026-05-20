@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.7.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.0).
-- `master` is the v1.7.0 release baseline for Liquid Glass sheet polish, GitHub tracking recovery,
-  OS shortcut maintenance, MCP Codex helpers, icon switching, and release hardening.
+  is [KeiOS v1.7.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.1).
+- `master` is the v1.7.1 release baseline for Liquid Glass sheet stability, OS shell shortcuts,
+  low-interruption Liquid Toast hints, and component polish.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
 
@@ -82,7 +82,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.7.0 Release Gate
+### v1.7.1 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -95,12 +95,11 @@ git diff --check
 
 Recommended focused checks for this release:
 
-- Liquid Glass bottom sheet close, predictive back, detent sizing, and Actions sheet first layout.
-- GitHub failed-item filter recovery, Actions update notifications, and release-notes copy action.
-- OS built-in activity cards, activity-card sheet search/category, and Shell-card sheet search/category.
-- Android Designs / Apple Designs icon switching in debug, benchmark, and release-style builds.
-- Release and benchmark APK startup, with generated Baseline Profiles included.
-- GitHub release upload notes copied from [Release Notes v1.7.0](RELEASE_V1.7.0.md).
+- Liquid Glass sheet close after save/edit and after back gestures.
+- Built-in OS shell cards for status-bar icon count and gesture-line hiding.
+- Liquid-only success hints and the reduce-toast-interruption setting.
+- Release APK signing, version metadata, and startup.
+- GitHub release upload notes copied from [Release Notes v1.7.1](RELEASE_V1.7.1.md).
 
 ### Screenshot Baseline
 

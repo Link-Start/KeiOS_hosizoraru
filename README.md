@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.7.0`                                             |
+| Latest stable tag | `v1.7.1`                                             |
 
 ## Quick Links
 
@@ -84,27 +84,18 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.7.0 Highlights
+## v1.7.1 Highlights
 
-- Liquid Glass bottom sheets now use a cleaner detent model: most sheets open at three-quarter
-  height, expand for overflowing content, preserve visible content around the top and bottom chrome,
-  and support predictive back with a smoother close path.
-- GitHub tracking received daily-use polish: failed refresh filters return to all items after
-  recovery, Actions update notifications stay separated per tracked project, release notes can be
-  copied as Markdown, and update wording is shorter.
-- OS tools add more useful built-in activity shortcuts, including HyperOS fullscreen settings,
-  language settings, app memory usage, notification settings, app management, low-brightness
-  settings, battery usage, and cross-device services.
-- Activity and Shell card sheets now include search and categories, making larger personal shortcut
-  sets easier to maintain.
-- MCP pages and packaged skills now include Codex-oriented development helpers, split dense tool
-  groups into clearer cards, and keep BA-specific tools separate from general tool entrypoints.
-- Settings and navigation polish covered bottom-bar recovery from short pages, title-card tap
-  recovery, copy-extension text selection behavior, release-note text selection, and darker search
-  field readability.
-- Release hardening covered Apple Designs icon switching in benchmark builds, R8 startup-profile
-  warning cleanup, MMKV native-symbol packaging, Gradle memory settings, baseline-profile refresh,
-  and focused tests for the changed chains.
+- Liquid Glass sheets received another closing-path cleanup, including smoother save/edit dismissal
+  and more stable overlay state after back gestures.
+- OS tools add built-in shell cards for status-bar notification icon count and gesture-line hiding,
+  plus the newer fullscreen settings shortcut metadata.
+- Shell and MCP success hints now use low-interruption Liquid Glass Toast only, while failures and
+  permission prompts stay visible.
+- Settings adds a `Reduce toast interruption` toggle for users who want completion/copy/clear hints
+  to stay silent.
+- The Liquid Glass component layer received focused polish for dialogs, switches, checkboxes,
+  progress bars, and toast presentation.
 
 Read the full feature tour:
 
@@ -114,7 +105,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.7.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.0).
+- Current stable tag: [v1.7.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.1).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
   Compose `1.11.1`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
@@ -123,7 +114,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.7.0](readme/RELEASE_V1.7.0.md)
+- [Release Notes v1.7.1](readme/RELEASE_V1.7.1.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

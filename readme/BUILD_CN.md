@@ -5,9 +5,9 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.7.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.0)。
-- `master` 当前作为 v1.7.0 发布基线，覆盖 Liquid Glass sheet 精修、GitHub 追踪恢复、OS 快捷入口维护、
-  MCP Codex 辅助、图标切换和发布前收口。
+- 当前公开标签基线为 [KeiOS v1.7.1](https://github.com/hosizoraru/KeiOS/releases/tag/v1.7.1)。
+- `master` 当前作为 v1.7.1 发布基线，覆盖 Liquid Glass sheet 稳定性、OS shell 快捷卡、
+  低打扰 Liquid Toast 提示和组件细节精修。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
 
@@ -77,7 +77,7 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.7.0 发布门禁
+### v1.7.1 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
@@ -90,12 +90,11 @@ git diff --check
 
 本次发布建议重点复查：
 
-- Liquid Glass bottom sheet 关闭、预测式返回、档位尺寸和 Actions sheet 首次布局。
-- GitHub 失败项目过滤恢复、Actions 更新通知和发行日志复制按钮。
-- OS 内置活动卡、活动 card sheet 搜索分类和 Shell card sheet 搜索分类。
-- Android Designs / Apple Designs 图标在 debug、benchmark 和 release 风格构建中的切换。
-- Release 与 Benchmark APK 启动，以及已生成 Baseline Profiles 的打包情况。
-- GitHub Release 发布文案可直接参考 [Release Notes v1.7.0](RELEASE_V1.7.0.md)。
+- Liquid Glass sheet 在保存、编辑和返回手势后的关闭状态。
+- 状态栏通知图标数量、隐藏手势提示线等 OS 内置 shell card。
+- 只走 Liquid Toast 的成功类轻提示，以及减少轻提示打扰开关。
+- Release APK 签名、版本元数据和启动。
+- GitHub Release 发布文案可直接参考 [Release Notes v1.7.1](RELEASE_V1.7.1.md)。
 
 ### 截图基线
 

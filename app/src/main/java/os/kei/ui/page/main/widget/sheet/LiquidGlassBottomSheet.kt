@@ -209,11 +209,13 @@ fun LiquidGlassBottomSheet(
     var userAdjustedDetent by remember { mutableStateOf(false) }
     var autoExpandedForContent by remember { mutableStateOf(false) }
     var openingDetentReady by remember { mutableStateOf(false) }
+    var closingFromPredictiveBack by remember { mutableStateOf(false) }
     val canDismissSheet = allowDismiss && currentOnDismissRequest != null
 
     LaunchedEffect(show, initialDetent) {
         if (show) {
             isRendered = true
+            closingFromPredictiveBack = false
             userAdjustedDetent = false
             autoExpandedForContent = false
             contentOverflowsOpeningDetent = false
@@ -228,11 +230,28 @@ fun LiquidGlassBottomSheet(
             openingDetentReady = true
         } else {
             if (isRendered) {
-                heightFraction.animateTo(
-                    targetValue = 0f,
-                    animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
-                )
-                isRendered = false
+                if (closingFromPredictiveBack) {
+                    val dismissOffsetTarget =
+                        maxOf(
+                            heightFraction.value,
+                            predictiveBackOffsetFraction.value,
+                        ).coerceIn(0f, DETENT_FULL)
+                    predictiveBackOffsetFraction.animateTo(
+                        targetValue = dismissOffsetTarget,
+                        animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
+                    )
+                    isRendered = false
+                    heightFraction.snapTo(0f)
+                    predictiveBackOffsetFraction.snapTo(0f)
+                    closingFromPredictiveBack = false
+                } else {
+                    heightFraction.animateTo(
+                        targetValue = 0f,
+                        animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
+                    )
+                    predictiveBackOffsetFraction.snapTo(0f)
+                    isRendered = false
+                }
                 currentOnDismissFinished?.invoke()
             }
         }
@@ -411,9 +430,9 @@ fun LiquidGlassBottomSheet(
                         if (canDismissSheet) {
                             backCommitGate.reset()
                             backCommitGate.tryCommit {
+                                closingFromPredictiveBack = true
                                 currentOnDismissRequest?.invoke()
                             }
-                            predictiveBackOffsetFraction.snapTo(0f)
                         } else {
                             backCommitGate.reset()
                             backCommitGate.tryCommit {

@@ -128,10 +128,12 @@ class LiquidGlassBottomSheetTest {
             .fetchSemanticsNode()
             .boundsInRoot
             .top
-        val minimumTopChromeHeight = with(composeRule.density) { 56.dp.toPx() }
+        val minimumTopChromeHeight = with(composeRule.density) { 44.dp.toPx() }
+        val maximumTopChromeHeight = with(composeRule.density) { 72.dp.toPx() }
+        val topChromeHeight = contentTop - sheetTop
 
         assertTrue(
-            actual = contentTop - sheetTop >= minimumTopChromeHeight,
+            actual = topChromeHeight in minimumTopChromeHeight..maximumTopChromeHeight,
             message = "Expected sheet content to start below top chrome, sheetTop=$sheetTop contentTop=$contentTop"
         )
     }

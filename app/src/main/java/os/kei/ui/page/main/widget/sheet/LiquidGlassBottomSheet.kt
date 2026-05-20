@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -86,8 +85,10 @@ private val LiquidSheetCornerRadius = 28.dp
 private val LiquidSheetMaxWidth = 480.dp
 private val LiquidSheetDragHandleWidth = 36.dp
 private val LiquidSheetDragHandleHeight = 4.dp
-private val LiquidSheetDragHandleTopPadding = 10.dp
-private val LiquidSheetHeaderBottomPadding = 10.dp
+private val LiquidSheetDragHandleTopPadding = 8.dp
+private val LiquidSheetHeaderBottomPadding = 4.dp
+private val LiquidSheetTitleTopPadding = 6.dp
+private val LiquidSheetContentTopPadding = 8.dp
 private const val LiquidSheetScrimAlpha = 0.38f
 
 /** Half-screen detent: sheet rests here on open. */
@@ -222,7 +223,6 @@ fun LiquidGlassBottomSheet(
         val fraction = heightFraction.value.coerceIn(0f, DETENT_FULL)
         val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-        val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
         // Available height = screen minus status bar
         val availableHeightDp = screenHeightDp - statusBarHeight
@@ -470,8 +470,7 @@ fun LiquidGlassBottomSheet(
                                 }
                             }
                         )
-                    }
-                    .padding(bottom = navBarHeight),
+                    },
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -485,7 +484,7 @@ fun LiquidGlassBottomSheet(
                             .clip(RoundedRectangle(2.dp))
                             .background(dragHandleColor)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(LiquidSheetTitleTopPadding))
 
                     // Title bar — title is centered as an overlay so asymmetric start/end action
                     // widths don't shift it off-center. Actions are positioned absolutely so the
@@ -495,7 +494,7 @@ fun LiquidGlassBottomSheet(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 20.dp, vertical = 8.dp),
+                                .padding(horizontal = 20.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             if (title != null) {
@@ -534,7 +533,7 @@ fun LiquidGlassBottomSheet(
                             .weight(1f)
                             .nestedScroll(sheetNestedScrollConnection)
                             .padding(horizontal = 20.dp)
-                            .padding(top = 12.dp, bottom = 16.dp)
+                            .padding(top = LiquidSheetContentTopPadding, bottom = 16.dp)
                     ) {
                         CompositionLocalProvider(
                             LocalLiquidSheetContentOverflowReporter provides { overflows ->

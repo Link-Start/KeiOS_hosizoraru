@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.ui.snapshot.AppSnapshotFlowManager
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -253,7 +254,16 @@ internal class GitHubPageViewModel : ViewModel() {
             ) { input, nowMillis ->
                 input.copy(nowMillis = nowMillis)
             }.collectLatest { input ->
-                _contentDerivedState.value = repository.buildContentState(input)
+                val derived = repository.buildContentState(input)
+                if (shouldResetFailedTrackedFilter(input, derived)) {
+                    state.trackedFilterMode = GitHubTrackedFilterMode.All
+                    GitHubPageUiStateStore.setTrackedFilterMode(GitHubTrackedFilterMode.All)
+                    _contentDerivedState.value = repository.buildContentState(
+                        input.copy(trackedFilterMode = GitHubTrackedFilterMode.All)
+                    )
+                } else {
+                    _contentDerivedState.value = derived
+                }
             }
         }
     }
@@ -266,4 +276,13 @@ internal class GitHubPageViewModel : ViewModel() {
         snapshotFlowManager.dispose()
         super.onCleared()
     }
+}
+
+internal fun shouldResetFailedTrackedFilter(
+    input: GitHubPageContentInput,
+    derived: GitHubPageContentDerivedState
+): Boolean {
+    return input.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks &&
+        input.trackedItems.isNotEmpty() &&
+        derived.trackedUi.overviewMetrics.failedCount == 0
 }

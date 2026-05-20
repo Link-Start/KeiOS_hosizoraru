@@ -143,6 +143,38 @@ class GitHubPageContentStateDeriverTest {
     }
 
     @Test
+    fun `failed checks filter resets when no tracked item is failed`() = runBlocking {
+        val items = sampleTrackedItems()
+        val input = baseInput(
+            trackedItems = items,
+            trackedFilterMode = GitHubTrackedFilterMode.FailedChecks,
+            checkStates = mapOf(
+                items[0].id to VersionCheckUi(failed = false),
+                items[1].id to VersionCheckUi(failed = false)
+            )
+        )
+        val derived = GitHubPageContentStateDeriver().build(input)
+
+        assertTrue(shouldResetFailedTrackedFilter(input, derived))
+    }
+
+    @Test
+    fun `failed checks filter stays active while a failed item remains`() = runBlocking {
+        val items = sampleTrackedItems()
+        val input = baseInput(
+            trackedItems = items,
+            trackedFilterMode = GitHubTrackedFilterMode.FailedChecks,
+            checkStates = mapOf(
+                items[0].id to VersionCheckUi(failed = true),
+                items[1].id to VersionCheckUi(failed = false)
+            )
+        )
+        val derived = GitHubPageContentStateDeriver().build(input)
+
+        assertFalse(shouldResetFailedTrackedFilter(input, derived))
+    }
+
+    @Test
     fun `actions check filter keeps actions enabled items`() = runBlocking {
         val items = sampleTrackedItems()
         val derived = GitHubPageContentStateDeriver().build(

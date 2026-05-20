@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,14 +68,16 @@ fun StatusPill(
             shape = shape
         )
     val content: @Composable () -> Unit = {
-        Text(
-            text = label,
-            color = textColor,
-            fontSize = metrics.typography.fontSize,
-            lineHeight = metrics.typography.lineHeight,
-            fontWeight = metrics.typography.fontWeight,
-            textAlign = TextAlign.Center
-        )
+        DisableSelection {
+            Text(
+                text = label,
+                color = textColor,
+                fontSize = metrics.typography.fontSize,
+                lineHeight = metrics.typography.lineHeight,
+                fontWeight = metrics.typography.fontWeight,
+                textAlign = TextAlign.Center
+            )
+        }
     }
     Box {
         if (activeBackdrop != null && backdrop == null) {

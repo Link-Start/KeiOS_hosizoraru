@@ -175,10 +175,10 @@
     <string name="settings_shizuku_status_permission_granted_identity">Shizuku authorized (%1$s)</string>
     <string name="settings_copy_capability_header">Text copy</string>
     <string name="settings_copy_capability_title">Copy capability extension</string>
-    <string name="settings_copy_capability_summary_enabled">Full copy mode: text supports long-press selection, drag selection, select all, and the system text menu.</string>
-    <string name="settings_copy_capability_summary_disabled">Lightweight copy mode: long-press an item to copy “title: value”, with lower scroll and interaction cost.</string>
-    <string name="settings_copy_capability_note_enabled">Enables system text selection for text rows. This mode is more complete and touch-heavy; use it as needed for long lists.</string>
-    <string name="settings_copy_capability_note_disabled">Uses lightweight copy everywhere for smoother scrolling. Temporarily enable this option when drag selection or select-all is needed.</string>
+    <string name="settings_copy_capability_summary_enabled">Full copy mode: text uses system selection with long press, drag handles, select all, and the system text menu.</string>
+    <string name="settings_copy_capability_summary_disabled">Lightweight copy mode: long-press an item to copy “title: value” with system haptics and lower interaction cost.</string>
+    <string name="settings_copy_capability_note_enabled">Only text joins system selection. Buttons, pills, links, and other interactive content leave the selection area to reduce gesture conflicts.</string>
+    <string name="settings_copy_capability_note_disabled">Uses lightweight copy everywhere for smoother scrolling. Enable this temporarily when drag selection or select all is needed.</string>
     <string name="settings_cache_header">Cache</string>
     <string name="settings_cache_diagnostics_title">Cache diagnostics</string>
     <string name="settings_cache_diagnostics_summary_enabled">Count cached items, storage size, and recent activity across pages.</string>

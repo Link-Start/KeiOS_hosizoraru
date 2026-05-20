@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -583,29 +584,31 @@ fun AppLiquidTextButton(
                     .background(pressedOverlayColor.copy(alpha = pressedOverlayAlpha))
             )
         }
-        Row(
-            modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
-            horizontalArrangement = Arrangement.spacedBy(AppInteractiveTokens.controlContentGap),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            leadingIcon?.let { icon ->
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint
-                )
-            }
-            if (text.isNotBlank()) {
-                Text(
-                    text = text,
-                    color = textColor,
-                    fontSize = textSize,
-                    lineHeight = textLineHeight,
-                    fontWeight = textFontWeight,
-                    maxLines = textMaxLines,
-                    overflow = textOverflow,
-                    softWrap = textSoftWrap
-                )
+        DisableSelection {
+            Row(
+                modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
+                horizontalArrangement = Arrangement.spacedBy(AppInteractiveTokens.controlContentGap),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                leadingIcon?.let { icon ->
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint
+                    )
+                }
+                if (text.isNotBlank()) {
+                    Text(
+                        text = text,
+                        color = textColor,
+                        fontSize = textSize,
+                        lineHeight = textLineHeight,
+                        fontWeight = textFontWeight,
+                        maxLines = textMaxLines,
+                        overflow = textOverflow,
+                        softWrap = textSoftWrap
+                    )
+                }
             }
         }
     }

@@ -54,6 +54,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.support.CopyModeDisableSelection
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -259,39 +260,41 @@ internal fun GuideProfileValueCapsule(
             textAlign = TextAlign.Center,
         )
     }
-    Box {
-        if (activeBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(localBackdrop),
-            )
-            LiquidSurface(
-                backdrop = activeBackdrop,
-                modifier = capsuleModifier,
-                shape = shape,
-                isInteractive = false,
-                surfaceColor = tint.copy(alpha = if (isDark) 0.20f else 0.16f),
-                blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
-                lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
-                shadow = false,
-            ) {
+    CopyModeDisableSelection {
+        Box {
+            if (activeBackdrop != null) {
                 Box(
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .layerBackdrop(localBackdrop),
+                )
+                LiquidSurface(
+                    backdrop = activeBackdrop,
+                    modifier = capsuleModifier,
+                    shape = shape,
+                    isInteractive = false,
+                    surfaceColor = tint.copy(alpha = if (isDark) 0.20f else 0.16f),
+                    blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
+                    lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
+                    shadow = false,
+                ) {
+                    Box(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        content()
+                    }
+                }
+            } else {
+                Box(
+                    modifier =
+                        capsuleModifier
+                            .padding(horizontal = 9.dp, vertical = 3.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     content()
                 }
-            }
-        } else {
-            Box(
-                modifier =
-                    capsuleModifier
-                        .padding(horizontal = 9.dp, vertical = 3.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                content()
             }
         }
     }
@@ -439,54 +442,59 @@ internal fun GuideGalleryRelatedLinkRows(
             )
         val rowCopyAction = rememberGuideTabCopyAction(rowCopyPayload)
 
-        CopyModeSelectionContainer {
-            BoxWithConstraints(
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 1.dp),
+        ) {
+            val keyMaxWidth =
+                adaptiveProfileKeyMaxWidth(
+                    key = keyText,
+                    value = links.first(),
+                    containerWidth = maxWidth,
+                )
+            Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 1.dp),
+                        .copyModeAwareRow(
+                            copyPayload = rowCopyPayload,
+                            onLongClick = rowCopyAction,
+                        ),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Top,
             ) {
-                val keyMaxWidth =
-                    adaptiveProfileKeyMaxWidth(
-                        key = keyText,
-                        value = links.first(),
-                        containerWidth = maxWidth,
-                    )
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .copyModeAwareRow(
-                                copyPayload = rowCopyPayload,
-                                onLongClick = rowCopyAction,
-                            ),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Top,
-                ) {
+                CopyModeSelectionContainer(modifier = Modifier.widthIn(min = 52.dp, max = keyMaxWidth)) {
                     Text(
                         text = keyText,
                         color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        modifier = Modifier.widthIn(min = 52.dp, max = keyMaxWidth),
+                        modifier = Modifier.fillMaxWidth(),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        if (noteText.isNotBlank()) {
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    if (noteText.isNotBlank()) {
+                        CopyModeSelectionContainer(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = noteText,
                                 color = MiuixTheme.colorScheme.onBackground,
                                 textAlign = TextAlign.End,
+                                modifier = Modifier.fillMaxWidth(),
                                 maxLines = Int.MAX_VALUE,
                                 overflow = TextOverflow.Clip,
                             )
                         }
-                        links.forEach { link ->
-                            val linkCopyAction =
-                                rememberGuideTabCopyAction(buildGuideTabCopyPayload(keyText, link))
+                    }
+                    links.forEach { link ->
+                        val linkCopyAction =
+                            rememberGuideTabCopyAction(buildGuideTabCopyPayload(keyText, link))
+                        CopyModeDisableSelection {
                             Text(
                                 text = link,
                                 color = Color(0xFF3B82F6),

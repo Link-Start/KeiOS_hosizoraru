@@ -175,9 +175,9 @@
     <string name="settings_shizuku_status_permission_granted_identity">Shizuku 認可済み（%1$s）</string>
     <string name="settings_copy_capability_header">テキストコピー</string>
     <string name="settings_copy_capability_title">コピー機能拡張</string>
-    <string name="settings_copy_capability_summary_enabled">完全コピー: テキストの長押し選択、ドラッグ選択、すべて選択、システムテキストメニューを利用できます。</string>
-    <string name="settings_copy_capability_summary_disabled">軽量コピー: 項目を長押しして「タイトル: 値」をコピーします。スクロールと操作負荷を抑えます。</string>
-    <string name="settings_copy_capability_note_enabled">テキスト行でシステムテキスト選択を有効にします。より完全ですがタッチ操作が重くなるため、長いリストで必要な時に使います。</string>
+    <string name="settings_copy_capability_summary_enabled">完全コピー: テキストはシステム選択を使い、長押し、ドラッグ、すべて選択、システムメニューに対応します。</string>
+    <string name="settings_copy_capability_summary_disabled">軽量コピー: 項目を長押しして「タイトル: 値」をコピーします。システム触覚フィードバック付きで操作負荷を抑えます。</string>
+    <string name="settings_copy_capability_note_enabled">テキストだけをシステム選択に入れます。ボタン、ピル、リンクなどの操作要素は選択範囲から外し、ジェスチャー衝突を減らします。</string>
     <string name="settings_copy_capability_note_disabled">全体で軽量コピーを使い、スクロールを滑らかにします。ドラッグ選択や全選択が必要な時だけ一時的に有効にしてください。</string>
     <string name="settings_cache_header">キャッシュ</string>
     <string name="settings_cache_diagnostics_title">キャッシュ診断</string>

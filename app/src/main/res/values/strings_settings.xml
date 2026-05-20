@@ -179,10 +179,10 @@
     <string name="settings_shizuku_status_permission_granted_identity">Shizuku 已授权（%1$s）</string>
     <string name="settings_copy_capability_header">文本复制</string>
     <string name="settings_copy_capability_title">复制能力扩展</string>
-    <string name="settings_copy_capability_summary_enabled">完整复制模式：文本支持长按选区、拖动、全选与系统文本菜单联动，适合深度检索与引用。</string>
-    <string name="settings_copy_capability_summary_disabled">轻量复制模式：长按条目立即复制“标题：值”，滚动与交互开销更低，适合日常快速查看。</string>
-    <string name="settings_copy_capability_note_enabled">开启后会在文字条目启用系统选区能力。该模式功能更完整，触控链路更重；长列表场景建议按需开启。</string>
-    <string name="settings_copy_capability_note_disabled">关闭后统一使用轻量复制逻辑，保持流畅优先；如需拖拽选区与全选，请临时开启本选项。</string>
+    <string name="settings_copy_capability_summary_enabled">完整复制模式：文本使用系统选区，支持长按、拖动、全选与系统文本菜单。</string>
+    <string name="settings_copy_capability_summary_disabled">轻量复制模式：长按条目复制“标题：值”，带系统长按反馈，滚动与交互开销更低。</string>
+    <string name="settings_copy_capability_note_enabled">开启后只让文本进入系统选区，按钮、胶囊、链接等交互内容会自动退出选区，减少手势冲突。</string>
+    <string name="settings_copy_capability_note_disabled">关闭后统一使用轻量复制逻辑，保持流畅优先；需要拖拽选区与全选时可临时开启。</string>
     <string name="settings_cache_header">缓存</string>
     <string name="settings_cache_diagnostics_title">缓存诊断</string>
     <string name="settings_cache_diagnostics_summary_enabled">统计各页面缓存条数、占用空间与最近活动时间。</string>

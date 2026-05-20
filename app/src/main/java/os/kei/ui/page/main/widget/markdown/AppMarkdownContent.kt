@@ -4,7 +4,6 @@ package os.kei.ui.page.main.widget.markdown
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -505,15 +502,9 @@ private fun AppMarkdownInlineText(
             modifier = modifier,
         )
     } else {
-        val firstLink = remember(annotated) { annotated.firstMarkdownUrlOrNull() }
         BasicText(
             text = annotated,
-            modifier =
-                if (firstLink == null) {
-                    modifier
-                } else {
-                    modifier.clickable { onOpenLink(firstLink) }
-                },
+            modifier = modifier,
             style =
                 TextStyle(
                     color = color,
@@ -524,19 +515,6 @@ private fun AppMarkdownInlineText(
         )
     }
 }
-
-private fun androidx.compose.ui.text.AnnotatedString.firstMarkdownUrlOrNull(): String? =
-    getLinkAnnotations(0, length)
-        .firstOrNull()
-        ?.item
-        ?.markdownUrlOrNull()
-
-private fun LinkAnnotation.markdownUrlOrNull(): String? =
-    when (this) {
-        is LinkAnnotation.Url -> url
-        is LinkAnnotation.Clickable -> tag
-        else -> null
-    }
 
 private fun Modifier.markdownCopyAwareRow(
     copyPayload: String,

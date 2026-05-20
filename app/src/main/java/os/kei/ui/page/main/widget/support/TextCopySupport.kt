@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -15,8 +16,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -86,6 +89,7 @@ internal fun Modifier.copyModeAwareRow(
         } else {
             val quickCopyAction = rememberLightTextCopyAction(copyPayload)
             val resolvedLongClick = onLongClick ?: quickCopyAction
+            val hapticFeedback = LocalHapticFeedback.current
             if (onClick != null || resolvedLongClick != null) {
                 this.combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -93,7 +97,12 @@ internal fun Modifier.copyModeAwareRow(
                     role = Role.Button,
                     onClick = { onClick?.invoke() },
                     onLongClickLabel = if (resolvedLongClick != null) copyLabel else null,
-                    onLongClick = { resolvedLongClick?.invoke() },
+                    onLongClick = {
+                        if (resolvedLongClick != null) {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            resolvedLongClick()
+                        }
+                    },
                 )
             } else {
                 this
@@ -112,6 +121,17 @@ internal fun CopyModeSelectionContainer(
         }
     } else if (modifier !== Modifier) {
         Box(modifier = modifier) {
+            content()
+        }
+    } else {
+        content()
+    }
+}
+
+@Composable
+internal fun CopyModeDisableSelection(content: @Composable () -> Unit) {
+    if (rememberTextCopyExpandedEnabled()) {
+        DisableSelection {
             content()
         }
     } else {

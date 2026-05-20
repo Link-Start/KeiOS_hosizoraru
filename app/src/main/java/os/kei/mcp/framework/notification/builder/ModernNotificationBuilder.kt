@@ -56,6 +56,12 @@ class ModernNotificationBuilder(
                 if (showSecondaryAction) {
                     builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
                 }
+                if (!state.ongoing &&
+                    state.showSecondaryActionWhenStopped &&
+                    state.stopPendingIntent != state.openPendingIntent
+                ) {
+                    builder.setDeleteIntent(state.stopPendingIntent)
+                }
             }
             .build()
     }

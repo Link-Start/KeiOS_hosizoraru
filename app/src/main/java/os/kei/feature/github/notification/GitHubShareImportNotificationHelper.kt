@@ -521,7 +521,7 @@ object GitHubShareImportNotificationHelper {
             port = progressPercent,
             path = content,
             clients = if (state.phase.ongoing && state.phase.progressTemplateEnabled) 1 else 0,
-            ongoing = liveUpdateActive,
+            ongoing = state.phase.ongoing,
             onlyAlertOnce = true,
             openPendingIntent = openPendingIntent,
             stopPendingIntent = secondaryPendingIntent,

@@ -106,7 +106,6 @@ fun MainScreen(
         requestedBottomPage = effectiveRequestedBottomPage,
         requestedBottomPageToken = effectiveRequestedBottomPageToken,
         requestedGitHubRefreshToken = hostState.requestedGitHubRefreshToken,
-        requestedGitHubManagedInstallConfirmToken = hostState.requestedGitHubManagedInstallConfirmToken,
         requestedGitHubActionsTrackId = hostState.requestedGitHubActionsTrackId,
         requestedGitHubActionsSheetToken = hostState.requestedGitHubActionsSheetToken,
         onRequestedBottomPageConsumed = {

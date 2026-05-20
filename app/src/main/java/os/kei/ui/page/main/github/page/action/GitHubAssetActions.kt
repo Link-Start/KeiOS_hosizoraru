@@ -2,15 +2,18 @@ package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.install.GitHubPageManagedInstallConfirmRegistry
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -23,6 +26,7 @@ import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.page.GitHubApkInfoDetailRequest
 import os.kei.ui.page.main.github.page.GitHubManagedInstallConfirmRequest
 import os.kei.ui.page.main.github.page.githubApkInfoKey
+import os.kei.ui.page.main.github.page.githubManagedInstallKey
 import os.kei.ui.page.main.github.statusActionUrl
 
 internal class GitHubAssetActions(
@@ -37,6 +41,11 @@ internal class GitHubAssetActions(
     private val cacheActions = GitHubAssetCacheActions(env)
     private val releaseNotesActions = GitHubReleaseNotesActions(env, apkInfoRepository)
     private val managedInstallRunner = GitHubPageManagedInstallRunner(env, apkInfoRepository)
+    private var managedInstallConfirmRegistrationToken: Long? = null
+
+    fun dispose() {
+        clearManagedInstallConfirmRegistration()
+    }
 
     fun openExternalUrl(
         url: String,
@@ -64,21 +73,26 @@ internal class GitHubAssetActions(
     }
 
     fun confirmManagedInstall() {
-        val request = state.managedInstallConfirmRequest ?: run {
-            GitHubShareImportNotificationHelper.cancel(context)
+        val request = consumeManagedInstallConfirmRequest() ?: run {
             env.toast(R.string.github_page_install_confirm_expired)
             return
         }
-        state.managedInstallConfirmRequest = null
+        launchManagedInstall(request)
+    }
+
+    private fun launchManagedInstall(request: GitHubManagedInstallConfirmRequest) {
         scope.launch {
             managedInstallRunner.install(request.item, request.asset)
         }
     }
 
     fun dismissManagedInstallConfirm() {
-        val hadRequest = state.managedInstallConfirmRequest != null
+        val request = state.managedInstallConfirmRequest
         state.managedInstallConfirmRequest = null
-        if (hadRequest) {
+        clearManagedInstallConfirmRegistration()
+        if (request != null &&
+            state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] != true
+        ) {
             GitHubShareImportNotificationHelper.cancel(context)
         }
     }
@@ -104,8 +118,37 @@ internal class GitHubAssetActions(
             item = item,
             asset = asset
         )
+        registerManagedInstallConfirmAction()
         notifyManagedInstallConfirm(item, asset, state.apkInfoResults[asset.githubApkInfoKey()])
         loadApkInfo(asset = asset, forceRefresh = false)
+    }
+
+    private fun consumeManagedInstallConfirmRequest(): GitHubManagedInstallConfirmRequest? {
+        val request = state.managedInstallConfirmRequest ?: return null
+        state.managedInstallConfirmRequest = null
+        clearManagedInstallConfirmRegistration()
+        return request
+    }
+
+    private fun registerManagedInstallConfirmAction() {
+        clearManagedInstallConfirmRegistration()
+        managedInstallConfirmRegistrationToken =
+            GitHubPageManagedInstallConfirmRegistry.register {
+                withContext(Dispatchers.Main.immediate) {
+                    if (!scope.coroutineContext.isActive) return@withContext false
+                    val request = consumeManagedInstallConfirmRequest()
+                        ?: return@withContext false
+                    launchManagedInstall(request)
+                    true
+                }
+            }
+    }
+
+    private fun clearManagedInstallConfirmRegistration() {
+        managedInstallConfirmRegistrationToken?.let { token ->
+            GitHubPageManagedInstallConfirmRegistry.clear(token)
+        }
+        managedInstallConfirmRegistrationToken = null
     }
 
     private fun loadApkInfo(

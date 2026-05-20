@@ -97,8 +97,6 @@ internal fun MainScreenNavHost(
                     requestedBottomPage = pagerCoordinator.requestedBottomPage,
                     requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
                     requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
-                    requestedGitHubManagedInstallConfirmToken =
-                        pagerCoordinator.requestedGitHubManagedInstallConfirmToken,
                     requestedGitHubActionsTrackId = pagerCoordinator.requestedGitHubActionsTrackId,
                     requestedGitHubActionsSheetToken = pagerCoordinator.requestedGitHubActionsSheetToken,
                     transientExternalLaunchActive = transientExternalLaunchActive,

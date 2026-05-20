@@ -26,7 +26,6 @@ data class MainHostUiState(
     val requestedBottomPage: String?,
     val requestedBottomPageToken: Int,
     val requestedGitHubRefreshToken: Int,
-    val requestedGitHubManagedInstallConfirmToken: Int,
     val requestedGitHubActionsTrackId: String?,
     val requestedGitHubActionsSheetToken: Int,
     val requestedBaBgmPlaybackToken: Int
@@ -40,7 +39,6 @@ data class MainHostUiState(
             requestedBottomPage = null,
             requestedBottomPageToken = 0,
             requestedGitHubRefreshToken = 0,
-            requestedGitHubManagedInstallConfirmToken = 0,
             requestedGitHubActionsTrackId = null,
             requestedGitHubActionsSheetToken = 0,
             requestedBaBgmPlaybackToken = 0

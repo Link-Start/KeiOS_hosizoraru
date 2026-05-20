@@ -79,12 +79,6 @@ internal object MainActivityIntentRouting {
                 } else {
                     null
                 }
-            MainActivity.SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL ->
-                if (targetBottomPage == MainActivity.TARGET_BOTTOM_PAGE_GITHUB) {
-                    MainActivity.SHORTCUT_ACTION_GITHUB_CONFIRM_MANAGED_INSTALL
-                } else {
-                    null
-                }
             else -> null
         }
     }

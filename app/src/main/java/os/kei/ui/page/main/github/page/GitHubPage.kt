@@ -49,7 +49,6 @@ import kotlin.math.abs
 fun GitHubPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     externalRefreshTriggerToken: Int = 0,
-    externalManagedInstallConfirmToken: Int = 0,
     externalActionsTrackId: String? = null,
     externalActionsSheetToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
@@ -134,6 +133,9 @@ fun GitHubPage(
                 openLinkFailureMessage = openLinkFailureMessage,
             )
         }
+    DisposableEffect(actions) {
+        onDispose { actions.dispose() }
+    }
     val appListPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             scope.launch { actions.reloadApps(forceRefresh = true) }
@@ -198,12 +200,6 @@ fun GitHubPage(
     LaunchedEffect(externalRefreshTriggerToken) {
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
-    }
-    LaunchedEffect(externalManagedInstallConfirmToken, runtime.contentReady) {
-        if (externalManagedInstallConfirmToken <= 0 || !runtime.contentReady) {
-            return@LaunchedEffect
-        }
-        actions.confirmManagedInstall()
     }
     val trackedItemIds by remember {
         derivedStateOf { state.trackedItems.joinToString(separator = "\n") { it.id } }

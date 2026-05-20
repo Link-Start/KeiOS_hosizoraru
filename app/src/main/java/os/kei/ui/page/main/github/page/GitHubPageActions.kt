@@ -83,6 +83,10 @@ internal class GitHubPageActions(
 
     fun openStrategySheet() = configActions.openStrategySheet()
 
+    fun dispose() {
+        assetActions.dispose()
+    }
+
     fun closeStrategySheet() = configActions.closeStrategySheet()
 
     fun openCheckLogicSheet() = configActions.openCheckLogicSheet()

@@ -43,7 +43,6 @@ internal fun MainPagerPageHost(
     visibleOverviewCards: Set<HomeOverviewCard>,
     showCacheFreshnessInCards: Boolean,
     requestedGitHubRefreshToken: Int,
-    requestedGitHubManagedInstallConfirmToken: Int,
     requestedGitHubActionsTrackId: String?,
     requestedGitHubActionsSheetToken: Int,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
@@ -131,8 +130,6 @@ internal fun MainPagerPageHost(
                     GitHubPage(
                         runtime = runtime,
                         externalRefreshTriggerToken = requestedGitHubRefreshToken,
-                        externalManagedInstallConfirmToken =
-                        requestedGitHubManagedInstallConfirmToken,
                         externalActionsTrackId = requestedGitHubActionsTrackId,
                         externalActionsSheetToken = requestedGitHubActionsSheetToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,

@@ -3,7 +3,9 @@ package os.kei.feature.github.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import os.kei.R
 import os.kei.core.background.BackgroundAsyncReceiverRunner
+import os.kei.feature.github.install.GitHubPageManagedInstallConfirmRegistry
 import os.kei.ui.page.main.github.share.GitHubShareImportDeliveryRunner
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 
@@ -39,6 +41,16 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                 actionConfirmShareImport(appContext) -> {
                     GitHubShareImportFlowCoordinator.confirmActiveAttachCandidate(appContext)
                 }
+
+                actionConfirmPageInstall(appContext) -> {
+                    val consumed = GitHubPageManagedInstallConfirmRegistry.confirm(appContext)
+                    if (!consumed) {
+                        GitHubShareImportNotificationHelper.notifyPageInstallFailed(
+                            context = appContext,
+                            reason = appContext.getString(R.string.github_page_install_confirm_expired),
+                        )
+                    }
+                }
             }
         }
     }
@@ -50,8 +62,12 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
         const val ACTION_SEND_INSTALL_SHARE_IMPORT =
             "os.kei.github.share_import.action.SEND_INSTALL"
         const val ACTION_CONFIRM_SHARE_IMPORT = "os.kei.github.share_import.action.CONFIRM"
+        const val ACTION_CONFIRM_PAGE_INSTALL =
+            "os.kei.github.share_import.action.CONFIRM_PAGE_INSTALL"
 
         private const val TAG = "GitHubShareImportAction"
+        private const val ACTION_CONFIRM_PAGE_INSTALL_SUFFIX =
+            ".github.share_import.action.CONFIRM_PAGE_INSTALL"
 
         fun actionCancelShareImport(context: Context): String = "${context.packageName}.github.share_import.action.CANCEL"
 
@@ -63,6 +79,8 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
 
         fun actionConfirmShareImport(context: Context): String = "${context.packageName}.github.share_import.action.CONFIRM"
 
+        fun actionConfirmPageInstall(context: Context): String = context.packageName + ACTION_CONFIRM_PAGE_INSTALL_SUFFIX
+
         private fun supportedActions(context: Context): Set<String> =
             setOf(
                 actionCancelShareImport(context),
@@ -70,6 +88,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                 actionRefreshShareImport(context),
                 actionSendInstallShareImport(context),
                 actionConfirmShareImport(context),
+                actionConfirmPageInstall(context),
             )
     }
 }

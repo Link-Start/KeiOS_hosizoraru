@@ -15,6 +15,7 @@ import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
@@ -313,6 +314,53 @@ internal class GitHubPageActions(
                 reloadExpandedAssetPanelsAfterRefresh(targetIds = targetIds)
             }
         }
+    }
+
+    fun openDecisionAssistDetail(
+        type: GitHubDecisionAssistDetailType,
+        item: GitHubTrackedApp,
+    ) {
+        val itemState = env.state.checkStates[item.id] ?: VersionCheckUi()
+        env.state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
+            type = type,
+            item = item,
+        )
+        when (type) {
+            GitHubDecisionAssistDetailType.ReleaseNotes -> {
+                assetActions.loadReleaseNotesTargets(
+                    item = item,
+                    itemState = itemState,
+                    forceRefresh = false,
+                )
+            }
+
+            GitHubDecisionAssistDetailType.RepositoryHealth -> {
+                refreshRepositoryHealthDetailIfNeeded(item, itemState)
+            }
+        }
+    }
+
+    private fun refreshRepositoryHealthDetailIfNeeded(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+    ) {
+        val refreshing =
+            env.state.itemRefreshLoading[item.id] == true ||
+                env.state.checkStates[item.id]?.loading == true
+        if (!shouldAutoRefreshRepositoryHealthDetail(
+                itemState = itemState,
+                lookupConfig = env.state.lookupConfig.forTrackedItem(item),
+                refreshing = refreshing,
+            )
+        ) {
+            return
+        }
+        refreshTrackedItem(
+            item = item,
+            showToastOnError = false,
+            profilePurposeOverride = GitHubRepositoryProfilePurpose.DetailFull,
+            forceRefresh = false,
+        )
     }
 
     private fun reloadExpandedAssetPanelsAfterRefresh(targetIds: Set<String>? = null) {

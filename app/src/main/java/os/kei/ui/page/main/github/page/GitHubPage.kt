@@ -30,7 +30,6 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.isKeiOsSelfTrack
-import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.github.section.GitHubMainContentActions
@@ -368,20 +367,7 @@ fun GitHubPage(
                         allowLatestReleaseFallback = allowLatestReleaseFallback
                     )
                 },
-                onOpenDecisionAssistDetail = { type, item ->
-                    val itemState = state.checkStates[item.id] ?: VersionCheckUi()
-                    state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
-                        type = type,
-                        item = item
-                    )
-                    if (type == GitHubDecisionAssistDetailType.ReleaseNotes) {
-                        actions.loadReleaseNotesTargets(
-                            item = item,
-                            itemState = itemState,
-                            forceRefresh = false
-                        )
-                    }
-                },
+                onOpenDecisionAssistDetail = actions::openDecisionAssistDetail,
                 onOpenExternalUrl = actions::openExternalUrl,
                 onOpenApkInfo = actions::openApkInfo,
                 onOpenApkInDownloader = actions::openApkInDownloader,

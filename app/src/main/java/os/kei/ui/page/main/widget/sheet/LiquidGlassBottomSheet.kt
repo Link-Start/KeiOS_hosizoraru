@@ -204,6 +204,7 @@ fun LiquidGlassBottomSheet(
     var userAdjustedDetent by remember { mutableStateOf(false) }
     var autoExpandedForContent by remember { mutableStateOf(false) }
     var openingDetentReady by remember { mutableStateOf(false) }
+    val canDismissSheet = allowDismiss && currentOnDismissRequest != null
 
     LaunchedEffect(show, initialDetent) {
         if (show) {
@@ -249,7 +250,7 @@ fun LiquidGlassBottomSheet(
 
     Dialog(
         onDismissRequest = {
-            if (allowDismiss) {
+            if (canDismissSheet) {
                 currentOnDismissRequest?.invoke()
             } else {
                 currentOnBlockedDismissRequest?.invoke()
@@ -280,7 +281,7 @@ fun LiquidGlassBottomSheet(
         val predictiveBackScrimFactor = liquidSheetPredictiveBackScrimFactor(
             sheetFraction = fraction,
             offsetFraction = predictiveBackOffsetFraction.value,
-            allowDismiss = allowDismiss
+            allowDismiss = canDismissSheet
         )
         val scrimAlpha = LiquidSheetScrimAlpha *
             (fraction / DETENT_FULL).coerceIn(0f, 1f) *
@@ -292,7 +293,7 @@ fun LiquidGlassBottomSheet(
         // When sheet is NOT at full height: upward scroll EXPANDS the sheet (not scroll content).
         // When sheet IS at full height: upward scroll scrolls content normally.
         // Downward scroll at content top: SHRINKS the sheet first.
-        val sheetNestedScrollConnection = remember(allowDismiss) {
+        val sheetNestedScrollConnection = remember(canDismissSheet) {
             object : NestedScrollConnection {
                 override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                     val dy = available.y
@@ -336,7 +337,7 @@ fun LiquidGlassBottomSheet(
                                 return Offset(0f, (currentFraction - newFraction) * availableHeightPx)
                             }
                             // Sheet at or below half → dismiss zone
-                            allowDismiss -> {
+                            canDismissSheet -> {
                                 userAdjustedDetent = true
                                 val delta = dy / availableHeightPx
                                 val newFraction = (currentFraction - delta).coerceAtLeast(0f)
@@ -360,7 +361,7 @@ fun LiquidGlassBottomSheet(
         }
 
         BackHandler(enabled = !sheetNavigationBackEnabled) {
-            if (allowDismiss) {
+            if (canDismissSheet) {
                 currentOnDismissRequest?.invoke()
             } else {
                 currentOnBlockedDismissRequest?.invoke()
@@ -394,8 +395,7 @@ fun LiquidGlassBottomSheet(
                         val startFraction = predictiveBackStartFraction
                             ?: heightFraction.value.coerceIn(0f, DETENT_FULL)
                         predictiveBackStartFraction = null
-                        val canDismiss = allowDismiss && currentOnDismissRequest != null
-                        if (canDismiss) {
+                        if (canDismissSheet) {
                             backCommitGate.reset()
                             predictiveBackOffsetFraction.animateTo(
                                 targetValue = startFraction.coerceAtLeast(DETENT_DISMISS),
@@ -419,7 +419,7 @@ fun LiquidGlassBottomSheet(
                 }
             )
 
-            LaunchedEffect(allowDismiss, sheetNavigationBackEnabled) {
+            LaunchedEffect(canDismissSheet, sheetNavigationBackEnabled) {
                 snapshotFlow { navigationEventState.transitionState }
                     .collect { transitionState ->
                         if (
@@ -441,7 +441,7 @@ fun LiquidGlassBottomSheet(
                                 liquidSheetPredictiveBackOffsetFraction(
                                     sheetFraction = startFraction,
                                     progress = event.progress,
-                                    allowDismiss = allowDismiss && currentOnDismissRequest != null,
+                                    allowDismiss = canDismissSheet,
                                 )
                             )
                         }
@@ -456,7 +456,7 @@ fun LiquidGlassBottomSheet(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    enabled = allowDismiss
+                    enabled = canDismissSheet
                 ) {
                     currentOnDismissRequest?.invoke()
                 },
@@ -533,7 +533,7 @@ fun LiquidGlassBottomSheet(
                         indication = null
                     ) {}
                     // Drag gesture for resizing
-                    .pointerInput(allowDismiss) {
+                    .pointerInput(canDismissSheet) {
                         val availableHeightPx = with(density) { availableHeightDp.toPx() }
                         var dragStartFraction = 0f
 
@@ -548,12 +548,12 @@ fun LiquidGlassBottomSheet(
                                 scope.launch {
                                     when {
                                         // Dismiss zone
-                                        allowDismiss && current < DETENT_DISMISS -> {
+                                        canDismissSheet && current < DETENT_DISMISS -> {
                                             currentOnDismissRequest?.invoke()
                                         }
                                         // Below half: snap to half (or bounce if not dismissable)
                                         current < DETENT_HALF -> {
-                                            if (!allowDismiss && current < DETENT_BOUNCE) {
+                                            if (!canDismissSheet && current < DETENT_BOUNCE) {
                                                 currentOnBlockedDismissRequest?.invoke()
                                             }
                                             heightFraction.animateTo(
@@ -599,7 +599,7 @@ fun LiquidGlassBottomSheet(
                                     .coerceIn(
                                         // Allow dragging below half for dismiss gesture feel,
                                         // but clamp at 0 (fully hidden)
-                                        if (allowDismiss) 0f else DETENT_DISMISS * 0.5f,
+                                        if (canDismissSheet) 0f else DETENT_DISMISS * 0.5f,
                                         DETENT_FULL
                                     )
                                 scope.launch {

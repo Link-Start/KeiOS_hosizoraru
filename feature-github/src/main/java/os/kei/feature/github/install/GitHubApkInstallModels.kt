@@ -1,0 +1,121 @@
+package os.kei.feature.github.install
+
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubLookupConfig
+
+data class GitHubApkInstallRequest(
+    val owner: String,
+    val repo: String,
+    val releaseTag: String,
+    val projectUrl: String,
+    val asset: GitHubReleaseAssetFile,
+    val lookupConfig: GitHubLookupConfig,
+    val targetDisplayName: String = "",
+    val scannedAppLabel: String = "",
+    val scannedPackageName: String = "",
+    val scannedVersionName: String = "",
+    val scannedVersionCode: String = "",
+    val scannedMinSdk: String = "",
+    val scannedTargetSdk: String = "",
+    val scannedNativeAbis: List<String> = emptyList(),
+    val resolvedDownloadUrl: String = "",
+    val requestId: String = GitHubApkInstallRequestIds.newId(),
+    val startedAtMillis: Long = System.currentTimeMillis()
+)
+
+enum class GitHubApkInstallStage {
+    Preparing,
+    Downloading,
+    Staging,
+    ReadyToCommit,
+    Committing,
+    Succeeded,
+    Failed,
+    Cancelled
+}
+
+data class GitHubApkInstallProgress(
+    val stage: GitHubApkInstallStage,
+    val progressPercent: Int = 0,
+    val downloadedBytes: Long = 0L,
+    val totalBytes: Long = -1L,
+    val sessionId: Int = -1,
+    val appLabel: String = "",
+    val packageName: String = "",
+    val versionName: String = "",
+    val versionCode: String = "",
+    val minSdk: String = "",
+    val targetSdk: String = ""
+) {
+    val boundedProgressPercent: Int
+        get() = progressPercent.coerceIn(0, 100)
+}
+
+sealed interface GitHubApkInstallResult {
+    data class Staged(
+        val requestId: String,
+        val sessionId: Int,
+        val packageName: String = "",
+        val appLabel: String = "",
+        val versionName: String = "",
+        val versionCode: String = "",
+        val minSdk: String = "",
+        val targetSdk: String = "",
+        val downloadedBytes: Long = 0L,
+        val totalBytes: Long = -1L
+    ) : GitHubApkInstallResult
+
+    data class Succeeded(
+        val requestId: String,
+        val sessionId: Int,
+        val packageName: String,
+        val appLabel: String = "",
+        val firstInstallTimeMs: Long = -1L
+    ) : GitHubApkInstallResult
+
+    data class Failed(
+        val reason: GitHubApkInstallFailureReason,
+        val message: String,
+        val sessionId: Int = -1,
+        val statusCode: Int = -1,
+        val legacyStatus: Int = Int.MIN_VALUE,
+        val packageName: String = ""
+    ) : GitHubApkInstallResult
+
+    data class Cancelled(
+        val requestId: String,
+        val sessionId: Int = -1
+    ) : GitHubApkInstallResult
+}
+
+enum class GitHubApkInstallFailureReason {
+    ShizukuUnavailable,
+    ShizukuPermissionMissing,
+    RemoteInstallPermissionMissing,
+    DownloadUrlInvalid,
+    DownloadFailed,
+    SessionCreateFailed,
+    SessionOpenFailed,
+    SessionWriteFailed,
+    CommitFailed,
+    ResultTimeout,
+    PackageNameMissing,
+    Unknown
+}
+
+object GitHubApkInstallRequestIds {
+    fun newId(ownerPackageName: String = ""): String {
+        val ownerPrefix = ownerPackageName
+            .trim()
+            .replace(Regex("[^A-Za-z0-9._-]"), "-")
+            .take(80)
+            .takeIf { it.isNotBlank() }
+            ?.let { "$it-" }
+            .orEmpty()
+        return "${ownerPrefix}github-apk-${System.currentTimeMillis()}-${randomSuffix()}"
+    }
+
+    private fun randomSuffix(): String {
+        return java.util.UUID.randomUUID().toString().substring(0, 8)
+    }
+}

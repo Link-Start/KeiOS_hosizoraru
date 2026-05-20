@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import os.kei.BuildConfig
 import os.kei.R
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isKeiOsSelfTrack
@@ -88,7 +89,7 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                     )
                 },
                 titleAccessory = {
-                    if (item.isKeiOsSelfTrack()) {
+                    if (item.isKeiOsSelfTrack(packageName = BuildConfig.APPLICATION_ID)) {
                         StatusPill(
                             label = stringResource(R.string.github_track_badge_current_app),
                             color = GitHubStatusPalette.Active,

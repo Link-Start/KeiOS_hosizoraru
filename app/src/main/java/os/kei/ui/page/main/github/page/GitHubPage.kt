@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import os.kei.BuildConfig
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
@@ -263,7 +264,9 @@ fun GitHubPage(
     )
 
     val hasKeiOsSelfTrack by remember {
-        derivedStateOf { state.trackedItems.any { it.isKeiOsSelfTrack() } }
+        derivedStateOf {
+            state.trackedItems.any { it.isKeiOsSelfTrack(packageName = BuildConfig.APPLICATION_ID) }
+        }
     }
     val githubGlassRuntime = LocalGlassEffectRuntime.current
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {

@@ -400,8 +400,12 @@ configurations.configureEach {
 }
 
 dependencies {
+    implementation(project(":core-concurrency"))
     implementation(project(":core-log"))
     implementation(project(":core-io"))
+    implementation(project(":core-prefs"))
+    implementation(project(":core-system"))
+    implementation(project(":feature-github"))
     implementation("androidx.core:core-ktx:$coreKtxVersion")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.profileinstaller:profileinstaller:$profileInstallerVersion")

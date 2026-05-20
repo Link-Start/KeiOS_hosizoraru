@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.page.action
 
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import os.kei.BuildConfig
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
@@ -76,7 +77,7 @@ internal class GitHubTrackActions(
     }
 
     fun ensureKeiOsSelfTrack() {
-        val newItem = defaultKeiOsTrackedApp()
+        val newItem = defaultKeiOsTrackedApp(packageName = BuildConfig.APPLICATION_ID)
         if (state.trackedItems.any { it.id == newItem.id }) {
             env.toast(R.string.github_toast_track_exists)
             return

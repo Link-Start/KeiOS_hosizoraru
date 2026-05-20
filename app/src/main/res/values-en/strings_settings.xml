@@ -32,8 +32,8 @@
     <string name="settings_predictive_back_animations_summary_disabled">Back gestures return directly, reducing visual distraction from page previews.</string>
     <string name="settings_predictive_back_animations_scope">Affects system back gesture previews on Settings, About, Guide, and other navigation-stack pages.</string>
     <string name="settings_group_visual_header">Visual</string>
-    <string name="settings_group_visual_title">Visual &amp; Theme</string>
-    <string name="settings_group_visual_summary">Theme mode, preload behavior, and Home highlight options.</string>
+    <string name="settings_group_visual_title">Visual &amp; Performance</string>
+    <string name="settings_group_visual_summary">Theme mode, performance prefetching, and Home highlight options.</string>
     <string name="settings_group_permissions_header">Permissions</string>
     <string name="settings_group_permissions_title">Permissions &amp; Keepalive</string>
     <string name="settings_group_animation_header">Animation</string>
@@ -53,7 +53,10 @@
     <string name="settings_group_copy_summary">Manage lightweight copy and full selection modes.</string>
     <string name="settings_bottom_bar_header">Bottom bar</string>
     <string name="settings_bottom_bar_title">Liquid Glass bottom bar</string>
-    <string name="settings_bottom_bar_summary">Capsule bottom bar, selected highlight, and lightweight glass texture</string>
+    <string name="settings_bottom_bar_summary_enabled">KeiOS main navigation uses the Liquid Glass capsule bottom bar with selected highlights and lightweight glass texture.</string>
+    <string name="settings_bottom_bar_summary_disabled">KeiOS main navigation uses a lightweight solid bottom bar to reduce bottom glass rendering cost.</string>
+    <string name="settings_bottom_bar_summary_miuix_active">MIUIX main navigation currently owns the main bottom bar; this setting applies after switching back to KeiOS navigation.</string>
+    <string name="settings_bottom_bar_scope">Affects the KeiOS main tab bottom-bar visual style. MIUIX main navigation uses the MIUIX floating bottom bar.</string>
     <string name="settings_miuix_main_navigation_title">MIUIX main navigation mode</string>
     <string name="settings_miuix_main_navigation_summary_enabled">Main tabs use the MIUIX demo-style HorizontalPager state chain and MIUIX floating bottom bar.</string>
     <string name="settings_miuix_main_navigation_summary_disabled">Main tabs use the current KeiOS Liquid Glass bottom bar and pager chain.</string>
@@ -71,10 +74,10 @@
     <string name="settings_grip_aware_floating_dock_summary_enabled">Use side tilt with a small touch fallback to place floating buttons on the easier side.</string>
     <string name="settings_grip_aware_floating_dock_summary_disabled">Keep floating buttons on the right side to avoid position jumps from false positives.</string>
     <string name="settings_grip_aware_floating_dock_scope">Affects OS / GitHub add and search buttons, plus the MCP start-stop button. Off by default.</string>
-    <string name="settings_preloading_title">Preloading</string>
-    <string name="settings_preloading_summary_enabled">Preload adjacent pages and guide resources for faster common page switches and returns.</string>
-    <string name="settings_preloading_summary_disabled">Use the current lower-cost strategy to prioritize memory and burst-load control.</string>
-    <string name="settings_preloading_scope">Affects main pager preloading, guide-page preloading, and static guide media prefetch.</string>
+    <string name="settings_preloading_title">Performance prefetch</string>
+    <string name="settings_preloading_summary_enabled">Keeps adjacent main pages, warms target-page data, and prefetches guide cover/gallery media for faster switching and return visits.</string>
+    <string name="settings_preloading_summary_disabled">Keeps only the current main page and loads guide media on demand, fitting memory-tight or heat-sensitive devices.</string>
+    <string name="settings_preloading_scope">Affects main-pager beyond-viewport pages, BA warm data, guide-page preloading, and static media prefetch.</string>
     <string name="settings_home_shine_header">Home highlight</string>
     <string name="settings_home_shine_title">Home icon and title HDR highlight</string>
     <string name="settings_home_shine_summary_enabled">Enable linked highlight effects for the Kei icon and KeiOS title. The effect is brighter with the screen on.</string>

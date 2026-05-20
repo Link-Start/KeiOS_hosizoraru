@@ -32,8 +32,8 @@
     <string name="settings_predictive_back_animations_summary_disabled">关闭后返回手势直接执行返回，减少上一页预览带来的视觉干扰。</string>
     <string name="settings_predictive_back_animations_scope">影响设置、关于、图鉴等主导航栈页面的系统返回手势预览。</string>
     <string name="settings_group_visual_header">视觉</string>
-    <string name="settings_group_visual_title">视觉与主题</string>
-    <string name="settings_group_visual_summary">主题模式、预加载与主页高光能力配置。</string>
+    <string name="settings_group_visual_title">视觉与性能</string>
+    <string name="settings_group_visual_summary">主题模式、性能预取与主页高光能力配置。</string>
     <string name="settings_group_permissions_header">权限</string>
     <string name="settings_group_permissions_title">权限与保活</string>
     <string name="settings_group_animation_header">动画</string>
@@ -53,7 +53,10 @@
     <string name="settings_group_copy_summary">统一管理轻量复制与完整选区模式，兼顾流畅与可编辑性。</string>
     <string name="settings_bottom_bar_header">底栏</string>
     <string name="settings_bottom_bar_title">液态玻璃底栏</string>
-    <string name="settings_bottom_bar_summary">胶囊底栏 + 选中态高亮 + 轻量玻璃质感</string>
+    <string name="settings_bottom_bar_summary_enabled">KeiOS 主导航使用液态玻璃胶囊底栏，保留选中态高亮与轻量玻璃质感。</string>
+    <string name="settings_bottom_bar_summary_disabled">KeiOS 主导航使用轻量实体底栏，降低底部玻璃渲染负载。</string>
+    <string name="settings_bottom_bar_summary_miuix_active">当前 MIUIX 主导航接管主底栏；本设置会在切回 KeiOS 主导航时生效。</string>
+    <string name="settings_bottom_bar_scope">影响 KeiOS 主分页底栏视觉；MIUIX 主导航模式会使用 MIUIX 浮动底栏。</string>
     <string name="settings_miuix_main_navigation_title">MIUIX 主导航模式</string>
     <string name="settings_miuix_main_navigation_summary_enabled">主页面使用 MIUIX demo 同款 HorizontalPager 状态链路与 MIUIX 浮动底栏。</string>
     <string name="settings_miuix_main_navigation_summary_disabled">主页面使用 KeiOS 当前液态玻璃底栏与切页链路。</string>
@@ -75,10 +78,10 @@
     <string name="settings_grip_aware_floating_dock_summary_enabled">根据手机横向倾斜和少量触控辅助，把浮动按钮放到更顺手的一侧。</string>
     <string name="settings_grip_aware_floating_dock_summary_disabled">浮动按钮固定在右侧，避免误判导致位置跳动。</string>
     <string name="settings_grip_aware_floating_dock_scope">影响 OS / GitHub 的添加与搜索按钮，以及 MCP 启停按钮。默认关闭。</string>
-    <string name="settings_preloading_title">预加载</string>
-    <string name="settings_preloading_summary_enabled">开启后会预载相邻分页与图鉴资源，提升常用切页和回访速度。</string>
-    <string name="settings_preloading_summary_disabled">关闭后使用当前低开销策略，优先控制内存与瞬时负载。</string>
-    <string name="settings_preloading_scope">影响主分页、图鉴分页预加载与图鉴静态媒体预取策略。</string>
+    <string name="settings_preloading_title">性能预取</string>
+    <string name="settings_preloading_summary_enabled">开启后保留相邻主分页、提前激活目标页数据，并预取图鉴封面/影画资源，切页和回访更快。</string>
+    <string name="settings_preloading_summary_disabled">关闭后主分页只保留当前页，图鉴媒体按需加载，适合内存紧张或容易发热的设备。</string>
+    <string name="settings_preloading_scope">影响主分页 beyond viewport、BA 页面热数据、图鉴分页预加载与静态媒体预取。</string>
     <string name="settings_home_shine_header">主页高光</string>
     <string name="settings_home_shine_title">主页图标与标题 HDR 高光</string>
     <string name="settings_home_shine_summary_enabled">启用主页 Kei 图标与 KeiOS 标题联动高光（亮屏时更明显）</string>

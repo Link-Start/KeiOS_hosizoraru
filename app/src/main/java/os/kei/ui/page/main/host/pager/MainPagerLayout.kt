@@ -349,6 +349,7 @@ internal fun MainPagerLayout(
                     MainMiuixPager(
                         state = pagerState,
                         userScrollEnabled = coordinator.pagerScrollEnabled,
+                        beyondViewportPageCount = coordinator.mainPagerBeyondViewportPageCount,
                         modifier = pagerModifier,
                         pageContent = pageContent,
                     )
@@ -358,6 +359,7 @@ internal fun MainPagerLayout(
                     MainFoundationPager(
                         state = pagerState,
                         userScrollEnabled = coordinator.pagerScrollEnabled,
+                        beyondViewportPageCount = coordinator.mainPagerBeyondViewportPageCount,
                         modifier = pagerModifier,
                         pageContent = pageContent,
                     )

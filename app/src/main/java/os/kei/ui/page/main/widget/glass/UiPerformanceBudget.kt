@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:property-naming")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.ui.unit.Dp
@@ -16,6 +18,7 @@ object UiPerformanceBudget {
     const val baCalendarPoolDeferredWarmDelayMs: Long = 220L
 
     data class PreloadPolicy(
+        val mainPagerBeyondViewportPageCount: Int,
         val catalogPagerBeyondViewportPageCount: Int,
         val guidePagerBeyondViewportPageCount: Int,
         val guideStaticPrefetchInitialCount: Int,
@@ -24,26 +27,26 @@ object UiPerformanceBudget {
         val initialFetchDelayMs: Int,
     )
 
-    fun resolvePreloadPolicy(
-        preloadingEnabled: Boolean
-    ): PreloadPolicy {
+    fun resolvePreloadPolicy(preloadingEnabled: Boolean): PreloadPolicy {
         if (!preloadingEnabled) {
             return PreloadPolicy(
+                mainPagerBeyondViewportPageCount = 0,
                 catalogPagerBeyondViewportPageCount = catalogPagerBeyondViewportPageCount,
                 guidePagerBeyondViewportPageCount = guidePagerBeyondViewportPageCount,
                 guideStaticPrefetchInitialCount = guideStaticPrefetchInitialCount,
                 guideStaticPrefetchGalleryExtraCount = guideStaticPrefetchGalleryExtraCount,
                 includeTargetPageInHeavyRender = false,
-                initialFetchDelayMs = 90
+                initialFetchDelayMs = 90,
             )
         }
         return PreloadPolicy(
+            mainPagerBeyondViewportPageCount = 1,
             catalogPagerBeyondViewportPageCount = 1,
             guidePagerBeyondViewportPageCount = 1,
             guideStaticPrefetchInitialCount = 10,
             guideStaticPrefetchGalleryExtraCount = 16,
             includeTargetPageInHeavyRender = true,
-            initialFetchDelayMs = 0
+            initialFetchDelayMs = 0,
         )
     }
 }

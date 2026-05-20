@@ -186,13 +186,19 @@ internal fun rememberMainMiuixPagerState(
 internal fun MainMiuixPager(
     state: MainMiuixPagerState,
     userScrollEnabled: Boolean,
+    beyondViewportPageCount: Int,
     modifier: Modifier = Modifier,
     pageContent: @Composable (pageIndex: Int) -> Unit,
 ) {
     HorizontalPager(
         state = state.pagerState,
         modifier = modifier.fillMaxSize(),
-        beyondViewportPageCount = if (state.pageCount > 1) 1 else 0,
+        beyondViewportPageCount =
+            if (state.pageCount > 1) {
+                beyondViewportPageCount.coerceAtLeast(0)
+            } else {
+                0
+            },
         userScrollEnabled = userScrollEnabled && state.pageCount > 1,
         verticalAlignment = Alignment.Top,
         pageContent = { pageIndex ->

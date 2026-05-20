@@ -574,6 +574,9 @@ internal fun SettingsComponentEffectsSection(
     val componentEffectsGroupActive =
         state.liquidActionBarLayeredStyleEnabled ||
             state.liquidSwitchEnabled ||
+            state.liquidToastEnabled ||
+            state.liquidSheetEnabled ||
+            state.liquidDialogEnabled ||
             state.liquidBottomBarEnabled ||
             state.miuixMainNavigationEnabled ||
             state.searchAutoFocusEnabled ||
@@ -645,9 +648,24 @@ internal fun SettingsComponentEffectsSection(
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_bottom_bar_title),
-            summary = stringResource(R.string.settings_bottom_bar_summary),
+            summary =
+                when {
+                    state.miuixMainNavigationEnabled -> {
+                        stringResource(R.string.settings_bottom_bar_summary_miuix_active)
+                    }
+
+                    state.liquidBottomBarEnabled -> {
+                        stringResource(R.string.settings_bottom_bar_summary_enabled)
+                    }
+
+                    else -> {
+                        stringResource(R.string.settings_bottom_bar_summary_disabled)
+                    }
+                },
             checked = state.liquidBottomBarEnabled,
             onCheckedChange = actions.onLiquidBottomBarChanged,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_bottom_bar_scope),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_miuix_main_navigation_title),

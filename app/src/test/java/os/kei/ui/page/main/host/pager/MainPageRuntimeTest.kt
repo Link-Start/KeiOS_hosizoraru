@@ -3,10 +3,24 @@ package os.kei.ui.page.main.host.pager
 import org.junit.Test
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MainPageRuntimeTest {
+    @Test
+    fun `preload policy controls main pager adjacent page retention`() {
+        val enabledPolicy = UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled = true)
+        val disabledPolicy = UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled = false)
+
+        assertEquals(1, enabledPolicy.mainPagerBeyondViewportPageCount)
+        assertTrue(enabledPolicy.includeTargetPageInHeavyRender)
+        assertEquals(0, enabledPolicy.initialFetchDelayMs)
+        assertEquals(0, disabledPolicy.mainPagerBeyondViewportPageCount)
+        assertFalse(disabledPolicy.includeTargetPageInHeavyRender)
+        assertTrue(disabledPolicy.initialFetchDelayMs > 0)
+    }
+
     @Test
     fun `back gesture freezes heavy page work while keeping activation state`() {
         val snapshot =

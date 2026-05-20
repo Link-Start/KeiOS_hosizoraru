@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.host.pager
 
 import androidx.compose.animation.core.EaseInOut
@@ -28,7 +30,7 @@ import kotlinx.coroutines.launch
 @Stable
 internal class MainFoundationPagerState internal constructor(
     internal val pagerState: PagerState,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
 ) : MainPagerStateContract {
     private var snapJob: Job? = null
     private var navigationSelectedPage by mutableIntStateOf(pagerState.currentPage)
@@ -50,8 +52,9 @@ internal class MainFoundationPagerState internal constructor(
         get() = pagerState.currentPageOffsetFraction
 
     override val pagePosition: Float
-        get() = (pagerState.currentPage + pagerState.currentPageOffsetFraction)
-            .coerceIn(0f, lastIndex().toFloat().coerceAtLeast(0f))
+        get() =
+            (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                .coerceIn(0f, lastIndex().toFloat().coerceAtLeast(0f))
 
     override val isScrollInProgress: Boolean
         get() = pagerState.isScrollInProgress
@@ -65,16 +68,17 @@ internal class MainFoundationPagerState internal constructor(
     override fun scrollToPage(page: Int) {
         val target = page.coerceInPageRange()
         snapJob?.cancel()
-        snapJob = coroutineScope.launch {
-            pagerState.scrollToPage(target)
-            navigationSelectedPage = target
-        }
+        snapJob =
+            coroutineScope.launch {
+                pagerState.scrollToPage(target)
+                navigationSelectedPage = target
+            }
     }
 
     override suspend fun animateToPage(
         target: Int,
         animationsEnabled: Boolean,
-        durationMillis: Int
+        durationMillis: Int,
     ) {
         val targetIndex = target.coerceInPageRange()
         if (targetIndex == navigationSelectedPage && navigating) return
@@ -99,10 +103,11 @@ internal class MainFoundationPagerState internal constructor(
                 animate(
                     initialValue = 0f,
                     targetValue = scrollPixels,
-                    animationSpec = tween(
-                        durationMillis = durationMillis.coerceIn(180, 520),
-                        easing = EaseInOut
-                    )
+                    animationSpec =
+                        tween(
+                            durationMillis = durationMillis.coerceIn(180, 520),
+                            easing = EaseInOut,
+                        ),
                 ) { currentValue, _ ->
                     previousValue += scrollBy(currentValue - previousValue)
                 }
@@ -141,28 +146,31 @@ internal class MainFoundationPagerState internal constructor(
 internal fun rememberMainFoundationPagerState(
     initialPage: Int,
     pageCount: Int,
-    pageKeys: List<String> = List(pageCount.coerceAtLeast(0)) { index -> index.toString() }
+    pageKeys: List<String> = List(pageCount.coerceAtLeast(0)) { index -> index.toString() },
 ): MainFoundationPagerState {
     var savedPageKey by rememberSaveable { mutableStateOf("") }
     val safePageCount = pageCount.coerceAtLeast(0)
-    val resolvedInitialPage = remember(pageKeys, initialPage, savedPageKey) {
-        resolveMainLoadedPagerInitialPage(
-            pageKeys = pageKeys,
-            initialPage = initialPage,
-            savedPageKey = savedPageKey
+    val resolvedInitialPage =
+        remember(pageKeys, initialPage, savedPageKey) {
+            resolveMainLoadedPagerInitialPage(
+                pageKeys = pageKeys,
+                initialPage = initialPage,
+                savedPageKey = savedPageKey,
+            )
+        }
+    val pagerState =
+        rememberPagerState(
+            initialPage = resolvedInitialPage.coerceIn(0, (safePageCount - 1).coerceAtLeast(0)),
+            pageCount = { safePageCount },
         )
-    }
-    val pagerState = rememberPagerState(
-        initialPage = resolvedInitialPage.coerceIn(0, (safePageCount - 1).coerceAtLeast(0)),
-        pageCount = { safePageCount }
-    )
     val coroutineScope = rememberCoroutineScope()
-    val state = remember(pagerState, coroutineScope) {
-        MainFoundationPagerState(
-            pagerState = pagerState,
-            coroutineScope = coroutineScope
-        )
-    }
+    val state =
+        remember(pagerState, coroutineScope) {
+            MainFoundationPagerState(
+                pagerState = pagerState,
+                coroutineScope = coroutineScope,
+            )
+        }
     SideEffect {
         state.syncPageCount()
         savedPageKey = pageKeys.getOrNull(state.settledPage).orEmpty()
@@ -177,17 +185,23 @@ internal fun rememberMainFoundationPagerState(
 internal fun MainFoundationPager(
     state: MainFoundationPagerState,
     userScrollEnabled: Boolean,
+    beyondViewportPageCount: Int,
     modifier: Modifier = Modifier,
-    pageContent: @Composable (pageIndex: Int) -> Unit
+    pageContent: @Composable (pageIndex: Int) -> Unit,
 ) {
     HorizontalPager(
         state = state.pagerState,
         modifier = modifier.fillMaxSize(),
-        beyondViewportPageCount = if (state.pageCount > 1) 1 else 0,
+        beyondViewportPageCount =
+            if (state.pageCount > 1) {
+                beyondViewportPageCount.coerceAtLeast(0)
+            } else {
+                0
+            },
         userScrollEnabled = userScrollEnabled && state.pageCount > 1,
         verticalAlignment = Alignment.Top,
         pageContent = { pageIndex ->
             pageContent(pageIndex)
-        }
+        },
     )
 }

@@ -65,6 +65,11 @@ fun readLocalPropertyOrNull(key: String): String? {
     }.getOrNull()
 }
 
+fun readGradleOrLocalPropertyOrNull(key: String): String? {
+    return providers.gradleProperty(key).orNull
+        ?: readLocalPropertyOrNull(key)
+}
+
 fun gitRelativeCommitCountOrNull(anchorTag: String): Int? {
     return runGitCommandOrNull("rev-list", "--count", "$anchorTag..HEAD")?.toIntOrNull()
 }
@@ -128,6 +133,10 @@ val nonReleaseVersionCode = nonReleaseVersion.toVersionCode(
 // developer-local fallback when Android Studio or Gradle cannot auto-resolve a suitable JDK.
 // Useful local-only keys include:
 // - miuix.version
+// - keios.release.storeFile
+// - keios.release.storePassword
+// - keios.release.keyAlias
+// - keios.release.keyPassword
 // - keios.github.liveBenchmark
 // - keios.github.api.token
 // - keios.github.liveTargets
@@ -147,6 +156,15 @@ val navigationCommonVersion = "2.9.8"
 val backdropVersion = "2.0.0-alpha03"
 val capsuleVersion = "2.1.3"
 val shapesVersion = "1.2.0"
+val releaseSigningStoreFile = readGradleOrLocalPropertyOrNull("keios.release.storeFile")?.trim().orEmpty()
+val releaseSigningStorePassword = readGradleOrLocalPropertyOrNull("keios.release.storePassword")?.trim().orEmpty()
+val releaseSigningKeyAlias = readGradleOrLocalPropertyOrNull("keios.release.keyAlias")?.trim().orEmpty()
+val releaseSigningKeyPassword = readGradleOrLocalPropertyOrNull("keios.release.keyPassword")?.trim().orEmpty()
+val releaseSigningConfigured =
+    releaseSigningStoreFile.isNotBlank() &&
+        releaseSigningStorePassword.isNotBlank() &&
+        releaseSigningKeyAlias.isNotBlank() &&
+        releaseSigningKeyPassword.isNotBlank()
 val shizukuVersion = "13.1.5"
 val hiddenApiBypassVersion = "6.1"
 val mmkvVersion = "2.4.0"
@@ -196,6 +214,14 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseSigningStoreFile)
+                storePassword = releaseSigningStorePassword
+                keyAlias = releaseSigningKeyAlias
+                keyPassword = releaseSigningKeyPassword
+            }
         }
     }
 
@@ -266,6 +292,9 @@ android {
 
         release {
             optimization.enable = true
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 

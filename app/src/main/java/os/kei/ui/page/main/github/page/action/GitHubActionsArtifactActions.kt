@@ -30,7 +30,11 @@ internal class GitHubActionsArtifactActions(
     private val state get() = env.state
     private val systemDmOption get() = env.systemDmOption
 
-    fun downloadActionsArtifact(runId: Long, artifactId: Long) {
+    fun downloadActionsArtifact(
+        runId: Long,
+        artifactId: Long,
+        forceExternalDownload: Boolean = false
+    ) {
         val item = state.actionsTargetItem ?: return
         val workflowMatch = selectedWorkflowMatch() ?: return
         val runMatch = state.actionsRuns.firstOrNull { it.runArtifacts.run.id == runId } ?: return
@@ -66,7 +70,7 @@ internal class GitHubActionsArtifactActions(
                 ).getOrThrow()
                 val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(resolution.downloadUrl)
                     ?: error(context.getString(R.string.github_actions_error_download_url_invalid))
-                if (artifactMatch.supportsManagedApkInstall(state.lookupConfig)) {
+                if (!forceExternalDownload && artifactMatch.supportsManagedApkInstall(state.lookupConfig)) {
                     assetActions.openManagedInstallConfirm(
                         item = item,
                         asset = artifact.toManagedInstallAsset(resolvedUrl)

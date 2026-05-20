@@ -159,6 +159,7 @@ internal fun GitHubPageSheetHost(
         onRunsExpandedChange = actions::setActionsRunsExpanded,
         onArtifactsExpandedChange = { state.actionsArtifactsExpanded = it },
         onRefreshRun = actions::refreshActionsRunStatus,
+        onInstallArtifact = actions::installActionsArtifact,
         onDownloadArtifact = actions::downloadActionsArtifact,
         onShareArtifact = actions::shareActionsArtifact,
         onOpenRun = actions::openSelectedActionsRun,
@@ -256,7 +257,7 @@ internal fun GitHubPageSheetHost(
             ?.let { state.actionsArtifactShareLoadingId == it } == true,
         onDismissRequest = { state.actionsArtifactDetailRequest = null },
         onRefreshRun = actions::refreshActionsRunStatus,
-        onDownload = actions::downloadActionsArtifact,
+        onDownload = actions::installActionsArtifact,
         onShare = actions::shareActionsArtifact
     )
 

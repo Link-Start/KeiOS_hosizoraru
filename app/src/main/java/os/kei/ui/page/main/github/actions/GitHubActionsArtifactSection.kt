@@ -31,6 +31,7 @@ internal fun GitHubActionsArtifactsSection(
     isDark: Boolean,
     backdrop: LayerBackdrop,
     onExpandedChange: (Boolean) -> Unit,
+    onInstallArtifact: (Long, Long) -> Unit,
     onDownloadArtifact: (Long, Long) -> Unit,
     onShareArtifact: (Long, Long) -> Unit,
     onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit,
@@ -120,6 +121,12 @@ internal fun GitHubActionsArtifactsSection(
                         context = context,
                         isDark = isDark,
                         backdrop = backdrop,
+                        onInstall = {
+                            onInstallArtifact(
+                                selectedRun.runArtifacts.run.id,
+                                artifactMatch.artifact.id
+                            )
+                        },
                         onDownload = {
                             onDownloadArtifact(
                                 selectedRun.runArtifacts.run.id,

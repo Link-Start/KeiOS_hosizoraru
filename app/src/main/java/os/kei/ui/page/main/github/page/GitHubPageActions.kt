@@ -237,6 +237,9 @@ internal class GitHubPageActions(
 
     fun refreshActionsRunStatus(runId: Long) = actionsActions.refreshActionsRunStatus(runId)
 
+    fun installActionsArtifact(runId: Long, artifactId: Long) =
+        actionsActions.installActionsArtifact(runId = runId, artifactId = artifactId)
+
     fun downloadActionsArtifact(runId: Long, artifactId: Long) =
         actionsActions.downloadActionsArtifact(runId = runId, artifactId = artifactId)
 

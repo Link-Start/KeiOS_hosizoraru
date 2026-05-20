@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -40,6 +42,7 @@ internal fun GitHubActionsArtifactCard(
     context: Context,
     isDark: Boolean,
     backdrop: LayerBackdrop,
+    onInstall: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
     onOpenDetail: () -> Unit
@@ -48,22 +51,14 @@ internal fun GitHubActionsArtifactCard(
     val actionColor = if (artifact.expired) GitHubStatusPalette.Error else MiuixTheme.colorScheme.primary
     val kindColor = artifactKindColor(artifactMatch.traits.kind)
     val busy = downloading || sharing
-    val canDownload = hasToken && runMatch.traits.completed && !artifact.expired && !busy
+    val canDownload = runMatch.traits.completed && !artifact.expired && !busy
     val canShare = hasToken && runMatch.traits.completed && !artifact.expired && !busy
     val neutralPillColor = MiuixTheme.colorScheme.onBackgroundVariant
     val actionButtonSize = 48.dp
     val sizeLabel = formatAssetSize(artifact.sizeBytes, context)
-    val primaryActionLabel = stringResource(
-        if (managedInstallEnabled) {
-            R.string.github_page_install_status_install
-        } else {
-            R.string.common_download
-        }
-    )
-    val primaryActionText = stringResource(
-        R.string.github_actions_action_with_size,
-        primaryActionLabel,
-        sizeLabel
+    val downloadActionDescription = stringResource(
+        R.string.github_actions_cd_download_artifact,
+        artifact.name
     )
     GitHubActionsSelectableCard(
         selected = false,
@@ -168,16 +163,33 @@ internal fun GitHubActionsArtifactCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.weight(1f))
+            if (managedInstallEnabled) {
+                AppLiquidIconButton(
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    icon = appLucidePackageIcon(),
+                    contentDescription = stringResource(
+                        if (downloading) {
+                            R.string.github_cd_install_asset_running
+                        } else {
+                            R.string.github_cd_install_asset
+                        },
+                        artifact.name
+                    ),
+                    iconTint = if (canDownload) actionColor else neutralPillColor,
+                    enabled = canDownload,
+                    width = actionButtonSize,
+                    height = actionButtonSize,
+                    onClick = onInstall
+                )
+            }
             AppLiquidTextButton(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
-                text = primaryActionText,
-                leadingIcon = if (managedInstallEnabled) {
-                    appLucidePackageIcon()
-                } else {
-                    appLucideDownloadIcon()
-                },
+                text = sizeLabel,
+                leadingIcon = appLucideDownloadIcon(),
                 enabled = canDownload,
+                modifier = Modifier.semantics { contentDescription = downloadActionDescription },
                 textColor = if (canDownload) actionColor else neutralPillColor,
                 iconTint = if (canDownload) actionColor else neutralPillColor,
                 minHeight = actionButtonSize,

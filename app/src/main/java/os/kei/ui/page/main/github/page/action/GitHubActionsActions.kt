@@ -156,8 +156,20 @@ internal class GitHubActionsActions(
         }
     }
 
+    fun installActionsArtifact(runId: Long, artifactId: Long) {
+        artifactActions.downloadActionsArtifact(
+            runId = runId,
+            artifactId = artifactId,
+            forceExternalDownload = false
+        )
+    }
+
     fun downloadActionsArtifact(runId: Long, artifactId: Long) {
-        artifactActions.downloadActionsArtifact(runId = runId, artifactId = artifactId)
+        artifactActions.downloadActionsArtifact(
+            runId = runId,
+            artifactId = artifactId,
+            forceExternalDownload = true
+        )
     }
 
     fun shareActionsArtifact(runId: Long, artifactId: Long) {

@@ -114,7 +114,7 @@ internal fun GitHubActionsArtifactsSection(
                         runMatch = selectedRun,
                         artifactMatch = artifactMatch,
                         recommended = index == 0,
-                        hasToken = canResolveArtifacts,
+                        canShareArtifact = canResolveArtifacts,
                         managedInstallEnabled = artifactMatch.supportsManagedApkInstall(state.lookupConfig),
                         downloading = state.actionsArtifactDownloadLoadingId == artifactMatch.artifact.id,
                         sharing = state.actionsArtifactShareLoadingId == artifactMatch.artifact.id,

@@ -35,7 +35,7 @@ internal fun GitHubActionsArtifactCard(
     runMatch: GitHubActionsRunMatch,
     artifactMatch: GitHubActionsArtifactMatch,
     recommended: Boolean,
-    hasToken: Boolean,
+    canShareArtifact: Boolean,
     managedInstallEnabled: Boolean,
     downloading: Boolean,
     sharing: Boolean,
@@ -52,7 +52,7 @@ internal fun GitHubActionsArtifactCard(
     val kindColor = artifactKindColor(artifactMatch.traits.kind)
     val busy = downloading || sharing
     val canDownload = runMatch.traits.completed && !artifact.expired && !busy
-    val canShare = hasToken && runMatch.traits.completed && !artifact.expired && !busy
+    val canShare = canShareArtifact && runMatch.traits.completed && !artifact.expired && !busy
     val neutralPillColor = MiuixTheme.colorScheme.onBackgroundVariant
     val actionButtonSize = 48.dp
     val sizeLabel = formatAssetSize(artifact.sizeBytes, context)

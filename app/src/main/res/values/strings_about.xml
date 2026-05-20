@@ -21,8 +21,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.6.0</string>
-    <string name="about_card_release_subtitle">发布重点、最终收口与构建门禁</string>
+    <string name="about_card_release_title">Release v1.7.1</string>
+    <string name="about_card_release_subtitle">Liquid Glass、OS 快捷卡与轻提示收口</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -204,21 +204,21 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.6.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.7.1 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">发布重点</string>
-    <string name="about_release_value_focus">GitHub 追踪、OS TopInfo、MCP 工具台、BA 图鉴、MIUIX 导航与发布前性能收口</string>
+    <string name="about_release_value_focus">Liquid Glass sheet、OS 快捷卡、GitHub 追踪、MCP / Codex 辅助与发布稳定性</string>
     <string name="about_release_row_github">GitHub 链路</string>
-    <string name="about_release_value_github">订阅项目健康度、安装动作、Actions 间隔、分享导入与 Shizuku 托管安装统一收口</string>
-    <string name="about_release_row_ba_guide">BA 图鉴</string>
-    <string name="about_release_value_ba_guide">目录筛选、NPC / 卫星详情、影画鉴赏、相关角色分类和媒体解析适配</string>
-    <string name="about_release_row_navigation">导航模式</string>
-    <string name="about_release_value_navigation">经典底栏与 MIUIX iOS-like 底栏 / pager 链路可在设置中切换</string>
-    <string name="about_release_row_icon">图标设计</string>
-    <string name="about_release_value_icon">Android Designs 作为默认图标，Apple Designs 保留为可切换焕新版</string>
+    <string name="about_release_value_github">失败过滤恢复、Actions 通知分项目、发行日志复制 / 翻译与安装接管链路继续收口</string>
+    <string name="about_release_row_ba_guide">OS 工具</string>
+    <string name="about_release_value_ba_guide">内置活动与 Shell card 增加分类搜索、全面屏设置入口和状态栏 / 手势线快捷命令</string>
+    <string name="about_release_row_navigation">交互体验</string>
+    <string name="about_release_value_navigation">Liquid Glass sheet 默认 3/4 或全屏，预测返回、保存 / 编辑关闭、底栏唤回与 sheet chrome 继续优化</string>
+    <string name="about_release_row_icon">图标与外观</string>
+    <string name="about_release_value_icon">Android Designs 保持默认，Apple Designs 在 benchmark 构建恢复切换，主页 HDR 高光默认关闭</string>
     <string name="about_release_row_release_gate">发布门禁</string>
-    <string name="about_release_value_release_gate">compile、unit test、lint、Ktor 3.5.0、baseline profiles、release/benchmark R8 mapping 与 diff check 已作为收口基线</string>
-    <string name="about_release_row_next">下一步</string>
-    <string name="about_release_value_next">v1.6.0 tag 将作为正式构建的版本锚点，后续进入 GitHub Releases 发布流程</string>
+    <string name="about_release_value_release_gate">Release / Benchmark R8、baseline profile、Gradle 内存、MMKV strip、签名校验与构建日志继续收口</string>
+    <string name="about_release_row_next">升级建议</string>
+    <string name="about_release_value_next">建议 v1.7.0 及更早版本升级到 v1.7.1，常用 OS / MCP / GitHub 与 sheet 的用户优先升级</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -25,36 +27,62 @@ import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.testing.KeiOsTestTags
 
+@Immutable
+internal data class MainPagerHomePageState(
+    val shizukuStatus: String,
+    val homeIconHdrEnabled: Boolean,
+    val homeDynamicFullEffectEnabled: Boolean,
+    val visibleBottomPages: Set<BottomPage>,
+    val homeMcpOverview: HomeMcpOverview,
+    val homeGitHubOverview: HomeGitHubOverview,
+    val homeBaOverview: HomeBaOverview,
+    val visibleOverviewCards: Set<HomeOverviewCard>,
+    val showCacheFreshnessInCards: Boolean,
+    val onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
+    val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
+    val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
+    val onOpenGitHubPage: () -> Unit,
+    val onOpenSettings: () -> Unit,
+    val onOpenAbout: () -> Unit,
+)
+
+@Stable
+internal data class MainPagerOsPageState(
+    val shizukuStatus: String,
+    val shizukuApiUtils: ShizukuApiUtils,
+)
+
+@Immutable
+internal data class MainPagerBaPageState(
+    val preloadingEnabled: Boolean,
+    val onOpenPoolGuideDetail: (String) -> Unit,
+    val onOpenBaGuideCatalog: () -> Unit,
+)
+
+@Stable
+internal data class MainPagerMcpPageState(
+    val mcpServerManager: McpServerManager,
+    val onOpenMcpSkill: () -> Unit,
+)
+
+@Immutable
+internal data class MainPagerGitHubPageState(
+    val requestedGitHubRefreshToken: Int,
+    val requestedGitHubActionsTrackId: String?,
+    val requestedGitHubActionsSheetToken: Int,
+)
+
 @Composable
 internal fun MainPagerPageHost(
     pageType: BottomPage,
     runtime: MainPageRuntime,
-    visibleBottomPages: Set<BottomPage>,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
     liquidActionBarLayeredStyleEnabled: Boolean,
-    homeIconHdrEnabled: Boolean,
-    homeDynamicFullEffectEnabled: Boolean,
-    preloadingEnabled: Boolean,
-    mcpServerManager: McpServerManager,
-    homeMcpOverview: HomeMcpOverview,
-    homeGitHubOverview: HomeGitHubOverview,
-    homeBaOverview: HomeBaOverview,
-    visibleOverviewCards: Set<HomeOverviewCard>,
-    showCacheFreshnessInCards: Boolean,
-    requestedGitHubRefreshToken: Int,
-    requestedGitHubActionsTrackId: String?,
-    requestedGitHubActionsSheetToken: Int,
-    onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
-    onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
-    onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
+    homePageState: MainPagerHomePageState?,
+    osPageState: MainPagerOsPageState?,
+    baPageState: MainPagerBaPageState?,
+    mcpPageState: MainPagerMcpPageState?,
+    githubPageState: MainPagerGitHubPageState?,
     onShowBottomBar: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenAbout: () -> Unit,
-    onOpenGitHubPage: () -> Unit,
-    onOpenPoolGuideDetail: (String) -> Unit,
-    onOpenBaGuideCatalog: () -> Unit,
-    onOpenMcpSkill: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     val glassRuntime = remember { GlassEffectRuntime() }
@@ -69,34 +97,40 @@ internal fun MainPagerPageHost(
         ) {
             when (pageType) {
                 BottomPage.Home -> {
+                    val homeState = checkNotNull(homePageState) {
+                        "Home page state is required for the Home tab"
+                    }
                     HomePage(
-                        shizukuStatus = shizukuStatus,
-                        mcpOverview = homeMcpOverview,
-                        homeGitHubOverview = homeGitHubOverview,
-                        homeBaOverview = homeBaOverview,
-                        homeIconHdrEnabled = homeIconHdrEnabled,
-                        homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
+                        shizukuStatus = homeState.shizukuStatus,
+                        mcpOverview = homeState.homeMcpOverview,
+                        homeGitHubOverview = homeState.homeGitHubOverview,
+                        homeBaOverview = homeState.homeBaOverview,
+                        homeIconHdrEnabled = homeState.homeIconHdrEnabled,
+                        homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
                         runtime = runtime,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        visibleBottomPages = visibleBottomPages,
-                        visibleOverviewCards = visibleOverviewCards,
-                        showCacheFreshnessInCards = showCacheFreshnessInCards,
-                        onBottomPageVisibilityChange = onBottomPageVisibilityChange,
-                        onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
-                        onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
+                        visibleBottomPages = homeState.visibleBottomPages,
+                        visibleOverviewCards = homeState.visibleOverviewCards,
+                        showCacheFreshnessInCards = homeState.showCacheFreshnessInCards,
+                        onBottomPageVisibilityChange = homeState.onBottomPageVisibilityChange,
+                        onOverviewCardVisibilityChange = homeState.onOverviewCardVisibilityChange,
+                        onCacheFreshnessVisibilityChange = homeState.onCacheFreshnessVisibilityChange,
                         onShowBottomBar = onShowBottomBar,
-                        onOpenGitHubPage = onOpenGitHubPage,
-                        onOpenSettings = onOpenSettings,
-                        onOpenAbout = onOpenAbout,
+                        onOpenGitHubPage = homeState.onOpenGitHubPage,
+                        onOpenSettings = homeState.onOpenSettings,
+                        onOpenAbout = homeState.onOpenAbout,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
                 BottomPage.Os -> {
+                    val osState = checkNotNull(osPageState) {
+                        "OS page state is required for the OS tab"
+                    }
                     OsPage(
                         runtime = runtime,
-                        shizukuStatus = shizukuStatus,
-                        shizukuApiUtils = shizukuApiUtils,
+                        shizukuStatus = osState.shizukuStatus,
+                        shizukuApiUtils = osState.shizukuApiUtils,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onShowBottomBar = onShowBottomBar,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
@@ -104,34 +138,43 @@ internal fun MainPagerPageHost(
                 }
 
                 BottomPage.Ba -> {
+                    val baState = checkNotNull(baPageState) {
+                        "BA page state is required for the BA tab"
+                    }
                     BAPage(
                         runtime = runtime,
-                        preloadingEnabled = preloadingEnabled,
+                        preloadingEnabled = baState.preloadingEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onShowBottomBar = onShowBottomBar,
-                        onOpenPoolStudentGuide = onOpenPoolGuideDetail,
-                        onOpenGuideCatalog = onOpenBaGuideCatalog,
+                        onOpenPoolStudentGuide = baState.onOpenPoolGuideDetail,
+                        onOpenGuideCatalog = baState.onOpenBaGuideCatalog,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
                 BottomPage.Mcp -> {
+                    val mcpState = checkNotNull(mcpPageState) {
+                        "MCP page state is required for the MCP tab"
+                    }
                     McpPage(
-                        mcpServerManager = mcpServerManager,
+                        mcpServerManager = mcpState.mcpServerManager,
                         runtime = runtime,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onShowBottomBar = onShowBottomBar,
-                        onOpenSkill = onOpenMcpSkill,
+                        onOpenSkill = mcpState.onOpenMcpSkill,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
                 BottomPage.GitHub -> {
+                    val githubState = checkNotNull(githubPageState) {
+                        "GitHub page state is required for the GitHub tab"
+                    }
                     GitHubPage(
                         runtime = runtime,
-                        externalRefreshTriggerToken = requestedGitHubRefreshToken,
-                        externalActionsTrackId = requestedGitHubActionsTrackId,
-                        externalActionsSheetToken = requestedGitHubActionsSheetToken,
+                        externalRefreshTriggerToken = githubState.requestedGitHubRefreshToken,
+                        externalActionsTrackId = githubState.requestedGitHubActionsTrackId,
+                        externalActionsSheetToken = githubState.requestedGitHubActionsSheetToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onShowBottomBar = onShowBottomBar,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,

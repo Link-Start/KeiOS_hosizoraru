@@ -280,35 +280,106 @@ internal fun MainPagerLayout(
                                 contentWorkAllowed = contentWorkAllowed,
                             )
                         }
+                    val homePageState =
+                        if (pageType == BottomPage.Home) {
+                            remember(
+                                shizukuStatus,
+                                homeHdrEffectActive,
+                                homeDynamicFullEffectEnabled,
+                                coordinator.visibleTabsSnapshot,
+                                coordinator.homeMcpOverview,
+                                coordinator.homeGitHubOverview,
+                                coordinator.homeBaOverview,
+                                coordinator.visibleOverviewCards,
+                                coordinator.showCacheFreshnessInCards,
+                                coordinator.onBottomPageVisibilityChange,
+                                coordinator.onOverviewCardVisibilityChange,
+                                coordinator.onCacheFreshnessVisibilityChange,
+                                onOpenGitHubPage,
+                                onOpenSettings,
+                                onOpenAbout,
+                            ) {
+                                MainPagerHomePageState(
+                                    shizukuStatus = shizukuStatus,
+                                    homeIconHdrEnabled = homeHdrEffectActive,
+                                    homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
+                                    visibleBottomPages = coordinator.visibleTabsSnapshot,
+                                    homeMcpOverview = coordinator.homeMcpOverview,
+                                    homeGitHubOverview = coordinator.homeGitHubOverview,
+                                    homeBaOverview = coordinator.homeBaOverview,
+                                    visibleOverviewCards = coordinator.visibleOverviewCards,
+                                    showCacheFreshnessInCards = coordinator.showCacheFreshnessInCards,
+                                    onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
+                                    onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
+                                    onCacheFreshnessVisibilityChange = coordinator.onCacheFreshnessVisibilityChange,
+                                    onOpenGitHubPage = onOpenGitHubPage,
+                                    onOpenSettings = onOpenSettings,
+                                    onOpenAbout = onOpenAbout,
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    val osPageState =
+                        if (pageType == BottomPage.Os) {
+                            remember(shizukuStatus, shizukuApiUtils) {
+                                MainPagerOsPageState(
+                                    shizukuStatus = shizukuStatus,
+                                    shizukuApiUtils = shizukuApiUtils,
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    val baPageState =
+                        if (pageType == BottomPage.Ba) {
+                            remember(preloadingEnabled, onOpenGuideDetail, openBaGuideCatalog) {
+                                MainPagerBaPageState(
+                                    preloadingEnabled = preloadingEnabled,
+                                    onOpenPoolGuideDetail = onOpenGuideDetail,
+                                    onOpenBaGuideCatalog = openBaGuideCatalog,
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    val mcpPageState =
+                        if (pageType == BottomPage.Mcp) {
+                            remember(mcpServerManager, onOpenMcpSkill) {
+                                MainPagerMcpPageState(
+                                    mcpServerManager = mcpServerManager,
+                                    onOpenMcpSkill = onOpenMcpSkill,
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    val githubPageState =
+                        if (pageType == BottomPage.GitHub) {
+                            remember(
+                                requestedGitHubRefreshToken,
+                                requestedGitHubActionsTrackId,
+                                requestedGitHubActionsSheetToken,
+                            ) {
+                                MainPagerGitHubPageState(
+                                    requestedGitHubRefreshToken = requestedGitHubRefreshToken,
+                                    requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
+                                    requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
+                                )
+                            }
+                        } else {
+                            null
+                        }
                     MainPagerPageHost(
                         pageType = pageType,
                         runtime = pageRuntime,
-                        visibleBottomPages = coordinator.visibleTabsSnapshot,
-                        shizukuStatus = shizukuStatus,
-                        shizukuApiUtils = shizukuApiUtils,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        homeIconHdrEnabled = homeHdrEffectActive,
-                        homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
-                        preloadingEnabled = preloadingEnabled,
-                        mcpServerManager = mcpServerManager,
-                        homeMcpOverview = coordinator.homeMcpOverview,
-                        homeGitHubOverview = coordinator.homeGitHubOverview,
-                        homeBaOverview = coordinator.homeBaOverview,
-                        visibleOverviewCards = coordinator.visibleOverviewCards,
-                        showCacheFreshnessInCards = coordinator.showCacheFreshnessInCards,
-                        requestedGitHubRefreshToken = requestedGitHubRefreshToken,
-                        requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
-                        requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
-                        onBottomPageVisibilityChange = coordinator.onBottomPageVisibilityChange,
-                        onOverviewCardVisibilityChange = coordinator.onOverviewCardVisibilityChange,
-                        onCacheFreshnessVisibilityChange = coordinator.onCacheFreshnessVisibilityChange,
+                        homePageState = homePageState,
+                        osPageState = osPageState,
+                        baPageState = baPageState,
+                        mcpPageState = mcpPageState,
+                        githubPageState = githubPageState,
                         onShowBottomBar = coordinator.onShowBottomBar,
-                        onOpenSettings = onOpenSettings,
-                        onOpenAbout = onOpenAbout,
-                        onOpenGitHubPage = onOpenGitHubPage,
-                        onOpenPoolGuideDetail = onOpenGuideDetail,
-                        onOpenBaGuideCatalog = openBaGuideCatalog,
-                        onOpenMcpSkill = onOpenMcpSkill,
                         onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged,
                     )
                 }

@@ -9,14 +9,16 @@ import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 @Immutable
 internal data class BaGuideStudentBgmDisplayedModel(
     val contentIds: List<Long>,
+    val rows: List<BaGuideStudentBgmRowModel>,
     val playableFavorites: List<GuideBgmFavoriteItem>,
     val resolvedCount: Int,
-    val loadingCount: Int
+    val loadingCount: Int,
 ) {
     companion object {
         val Empty =
             BaGuideStudentBgmDisplayedModel(
                 contentIds = emptyList(),
+                rows = emptyList(),
                 playableFavorites = emptyList(),
                 resolvedCount = 0,
                 loadingCount = 0,
@@ -24,9 +26,17 @@ internal data class BaGuideStudentBgmDisplayedModel(
     }
 }
 
+@Immutable
+internal data class BaGuideStudentBgmRowModel(
+    val entry: BaGuideCatalogEntry,
+    val displayState: BaGuideStudentBgmLookupState,
+    val readyAudioUrl: String?,
+    val favorite: Boolean,
+)
+
 internal fun favoriteForStudentBgmEntry(
     entry: BaGuideCatalogEntry,
-    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>
+    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
 ): GuideBgmFavoriteItem? {
     val detailUrl = normalizeGuideUrl(entry.detailUrl)
     if (detailUrl.isBlank()) return null
@@ -35,7 +45,7 @@ internal fun favoriteForStudentBgmEntry(
 
 internal fun favoriteStudentBgmEntryContentIds(
     entries: List<BaGuideCatalogEntry>,
-    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>
+    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
 ): Set<Long> {
     if (entries.isEmpty() || favoriteByNormalizedSourceUrl.isEmpty()) return emptySet()
     return buildSet {
@@ -51,21 +61,21 @@ internal fun favoriteStudentBgmEntryContentIds(
 internal fun filterAndSortStudentBgmEntries(
     entries: List<BaGuideCatalogEntry>,
     searchQuery: String,
-    favoriteContentIds: Set<Long>
+    favoriteContentIds: Set<Long>,
 ): List<BaGuideCatalogEntry> {
     val filtered = entries.filterByQuery(searchQuery)
     if (filtered.size <= 1 || favoriteContentIds.isEmpty()) return filtered
     return filtered.sortedWith(
         compareByDescending<BaGuideCatalogEntry> { entry ->
             entry.contentId in favoriteContentIds
-        }.thenBy { entry -> entry.order }
+        }.thenBy { entry -> entry.order },
     )
 }
 
 internal fun studentBgmStateWithFavoriteFallback(
     entry: BaGuideCatalogEntry,
     lookupState: BaGuideStudentBgmLookupState,
-    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>
+    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
 ): BaGuideStudentBgmLookupState {
     if (lookupState is BaGuideStudentBgmLookupState.Ready) return lookupState
     if (lookupState == BaGuideStudentBgmLookupState.Loading) return lookupState
@@ -75,17 +85,19 @@ internal fun studentBgmStateWithFavoriteFallback(
         BaGuideStudentBgmResolvedItem(
             favorite = favorite,
             fromCache = false,
-            fromFavorite = true
-        )
+            fromFavorite = true,
+        ),
     )
 }
 
 internal fun buildBaGuideStudentBgmDisplayedModel(
     displayedEntries: List<BaGuideCatalogEntry>,
     lookupStates: Map<Long, BaGuideStudentBgmLookupState>,
-    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>
+    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
+    favoriteAudioUrls: Set<String>,
 ): BaGuideStudentBgmDisplayedModel {
     val contentIds = ArrayList<Long>(displayedEntries.size)
+    val rows = ArrayList<BaGuideStudentBgmRowModel>(displayedEntries.size)
     val playableFavorites = ArrayList<GuideBgmFavoriteItem>()
     val seenAudioUrls = mutableSetOf<String>()
     var resolvedCount = 0
@@ -96,11 +108,27 @@ internal fun buildBaGuideStudentBgmDisplayedModel(
         if (lookupState == BaGuideStudentBgmLookupState.Loading) {
             loadingCount += 1
         }
-        val readyFavorite = studentBgmStateWithFavoriteFallback(
-            entry = entry,
-            lookupState = lookupState,
-            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
-        ).readyFavoriteOrNull()
+        val displayState =
+            studentBgmStateWithFavoriteFallback(
+                entry = entry,
+                lookupState = lookupState,
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+            )
+        val readyFavorite = displayState.readyFavoriteOrNull()
+        val readyAudioUrl = readyFavorite?.audioUrl
+        val favorite =
+            if (!readyAudioUrl.isNullOrBlank()) {
+                readyAudioUrl in favoriteAudioUrls
+            } else {
+                favoriteForStudentBgmEntry(entry, favoriteByNormalizedSourceUrl) != null
+            }
+        rows +=
+            BaGuideStudentBgmRowModel(
+                entry = entry,
+                displayState = displayState,
+                readyAudioUrl = readyAudioUrl,
+                favorite = favorite,
+            )
         if (readyFavorite != null) {
             resolvedCount += 1
             if (seenAudioUrls.add(readyFavorite.audioUrl)) {
@@ -110,8 +138,9 @@ internal fun buildBaGuideStudentBgmDisplayedModel(
     }
     return BaGuideStudentBgmDisplayedModel(
         contentIds = contentIds.toList(),
+        rows = rows.toList(),
         playableFavorites = playableFavorites.toList(),
         resolvedCount = resolvedCount,
-        loadingCount = loadingCount
+        loadingCount = loadingCount,
     )
 }

@@ -110,18 +110,19 @@ internal fun rememberBaGuideCatalogTabListState(
             .snapshotFlow {
                 val layoutInfo = listState.layoutInfo
                 val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                lastVisible to layoutInfo.totalItemsCount
+                Triple(
+                    lastVisible,
+                    layoutInfo.totalItemsCount,
+                    layoutInfo.visibleItemsInfo.size.coerceAtLeast(6),
+                )
             }.distinctUntilChanged()
-            .collect { (lastVisible, totalCount) ->
+            .collect { (lastVisible, totalCount, viewportItems) ->
                 if (loading) return@collect
                 if (visibleCount >= filteredEntries.size) return@collect
                 if (totalCount <= 0) return@collect
                 val triggerIndex = (totalCount - 1 - CATALOG_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
                 if (lastVisible < triggerIndex) return@collect
 
-                val viewportItems =
-                    listState.layoutInfo.visibleItemsInfo.size
-                        .coerceAtLeast(6)
                 val appendBatch =
                     max(CATALOG_BATCH_SIZE, viewportItems * 3)
                         .coerceAtMost(CATALOG_BATCH_SIZE * 3)

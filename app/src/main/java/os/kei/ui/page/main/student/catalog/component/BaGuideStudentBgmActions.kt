@@ -1,10 +1,10 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
-import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import os.kei.core.ext.showToast
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
@@ -12,14 +12,6 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 
 internal data class BaGuideStudentBgmActions(
-    val stateWithFavoriteFallback: (
-        BaGuideCatalogEntry,
-        BaGuideStudentBgmLookupState
-    ) -> BaGuideStudentBgmLookupState,
-    val isFavoriteEntry: (
-        BaGuideCatalogEntry,
-        BaGuideStudentBgmLookupState
-    ) -> Boolean,
     val openStudentGuide: (BaGuideCatalogEntry) -> Unit,
     val openFavoriteGuide: (GuideBgmFavoriteItem) -> Unit,
     val playEntry: (BaGuideCatalogEntry) -> Unit,
@@ -34,7 +26,6 @@ internal fun rememberBaGuideStudentBgmActions(
     lookupCoordinator: BaGuideStudentBgmLookupCoordinator,
     lookupStates: Map<Long, BaGuideStudentBgmLookupState>,
     favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
-    favoriteAudioUrls: Set<String>,
     selectedAudioUrl: String,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     setNowPlayingVisible: (Boolean) -> Unit,
@@ -51,7 +42,6 @@ internal fun rememberBaGuideStudentBgmActions(
         lookupCoordinator,
         lookupStates,
         favoriteByNormalizedSourceUrl,
-        favoriteAudioUrls,
         selectedAudioUrl,
         playbackCoordinator,
         bgmMissingText,
@@ -164,20 +154,7 @@ internal fun rememberBaGuideStudentBgmActions(
             }
         }
 
-        fun isFavoriteEntry(
-            entry: BaGuideCatalogEntry,
-            lookupState: BaGuideStudentBgmLookupState
-        ): Boolean {
-            val readyAudioUrl = lookupState.readyFavoriteOrNull()?.audioUrl
-            if (!readyAudioUrl.isNullOrBlank()) {
-                return readyAudioUrl in favoriteAudioUrls
-            }
-            return favoriteForEntry(entry) != null
-        }
-
         BaGuideStudentBgmActions(
-            stateWithFavoriteFallback = ::stateWithFavoriteFallback,
-            isFavoriteEntry = ::isFavoriteEntry,
             openStudentGuide = ::openStudentGuide,
             openFavoriteGuide = ::openFavoriteGuide,
             playEntry = ::playEntry,

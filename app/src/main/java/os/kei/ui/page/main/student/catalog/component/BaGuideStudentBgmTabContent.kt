@@ -152,15 +152,18 @@ internal fun BaGuideStudentBgmTabContent(
         snapshotFlowManager.snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            lastVisible to layoutInfo.totalItemsCount
+            Triple(
+                lastVisible,
+                layoutInfo.totalItemsCount,
+                layoutInfo.visibleItemsInfo.size.coerceAtLeast(6),
+            )
         }
             .distinctUntilChanged()
-            .collect { (lastVisible, totalCount) ->
+            .collect { (lastVisible, totalCount, viewportItems) ->
                 if (visibleCount >= filteredEntries.size) return@collect
                 if (totalCount <= 0) return@collect
                 val triggerIndex = (totalCount - 1 - STUDENT_BGM_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
                 if (lastVisible < triggerIndex) return@collect
-                val viewportItems = listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(6)
                 val appendBatch = max(STUDENT_BGM_BATCH_SIZE, viewportItems * 3)
                     .coerceAtMost(STUDENT_BGM_BATCH_SIZE * 3)
                 visibleCount = minOf(visibleCount + appendBatch, filteredEntries.size)
@@ -188,7 +191,6 @@ internal fun BaGuideStudentBgmTabContent(
         lookupCoordinator = lookupCoordinator,
         lookupStates = lookupStates,
         favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
-        favoriteAudioUrls = favoriteAudioUrls,
         selectedAudioUrl = selectedAudioUrl,
         playbackCoordinator = playbackCoordinator,
         setNowPlayingVisible = ::setNowPlayingVisible,
@@ -200,16 +202,18 @@ internal fun BaGuideStudentBgmTabContent(
     )
 
     var displayedBgmModel by remember { mutableStateOf(BaGuideStudentBgmDisplayedModel.Empty) }
-    LaunchedEffect(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl) {
+    LaunchedEffect(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl, favoriteAudioUrls) {
         displayedBgmModel =
             withContext(AppDispatchers.uiDerivation) {
                 buildBaGuideStudentBgmDisplayedModel(
                     displayedEntries = displayedEntries,
                     lookupStates = lookupStates,
                     favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+                    favoriteAudioUrls = favoriteAudioUrls,
                 )
             }
     }
+    val displayedRows = displayedBgmModel.rows
     val displayedPlayableFavorites = displayedBgmModel.playableFavorites
     LaunchedEffect(playbackCoordinator, displayedPlayableFavorites, isPageActive) {
         if (isPageActive) {
@@ -353,20 +357,18 @@ internal fun BaGuideStudentBgmTabContent(
                 }
             } else {
                 items(
-                    items = displayedEntries,
-                    key = { it.contentId },
+                    items = displayedRows,
+                    key = { it.entry.contentId },
                     contentType = { "student_bgm_entry" }
-                ) { entry ->
-                    val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
-                    val displayState = actions.stateWithFavoriteFallback(entry, lookupState)
-                    val readyFavorite = displayState.readyFavoriteOrNull()
-                    val selected = readyFavorite?.audioUrl == selectedAudioUrl
+                ) { row ->
+                    val entry = row.entry
+                    val selected = row.readyAudioUrl == selectedAudioUrl
                     BaGuideStudentBgmCard(
                         entry = entry,
-                        lookupState = displayState,
+                        lookupState = row.displayState,
                         selected = selected,
                         playing = selected && playbackRuntimeState.isPlaying,
-                        favorite = actions.isFavoriteEntry(entry, lookupState),
+                        favorite = row.favorite,
                         accent = accent,
                         onOpenGuide = { actions.openStudentGuide(entry) },
                         onPlay = { actions.playEntry(entry) },

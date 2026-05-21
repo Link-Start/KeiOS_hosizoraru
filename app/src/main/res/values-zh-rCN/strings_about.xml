@@ -194,11 +194,11 @@
     <string name="about_release_row_github">GitHub 链路</string>
     <string name="about_release_value_github">下载入口在 nightly.link 与 GitHub API Token 两种模式下保持常驻</string>
     <string name="about_release_row_ba_guide">OS 工具</string>
-    <string name="about_release_value_ba_guide">支持托管安装的 APK artifact 同时提供安装与下载，receiver 路由与安装状态上报更稳定</string>
+    <string name="about_release_value_ba_guide">支持托管安装的 APK artifact 同时提供安装与下载，安装状态与通知提示更稳定</string>
     <string name="about_release_row_navigation">交互体验</string>
     <string name="about_release_value_navigation">下载按钮只显示文件大小，动作含义交给 icon，减少重复文字</string>
     <string name="about_release_row_icon">图标与外观</string>
-    <string name="about_release_value_icon">图标偏好默认值、GitHub feature module、core prefs / system 边界与依赖同步整理</string>
+    <string name="about_release_value_icon">图标切换、设置分区、依赖版本与发布检测同步整理</string>
     <string name="about_release_row_release_gate">发布门禁</string>
     <string name="about_release_value_release_gate">Debug 编译、Release 构建、签名校验与 GitHub Release 发布链路完成验证</string>
     <string name="about_release_row_next">升级建议</string>

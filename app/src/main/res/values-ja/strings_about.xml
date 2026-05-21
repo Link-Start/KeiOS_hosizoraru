@@ -203,11 +203,11 @@
     <string name="about_release_row_github">GitHub フロー</string>
     <string name="about_release_value_github">nightly.link と GitHub API Token の両方でダウンロード操作を常時表示</string>
     <string name="about_release_row_ba_guide">OS ツール</string>
-    <string name="about_release_value_ba_guide">管理インストール対応 APK artifact はインストールとダウンロードを分離し、receiver ルーティングとインストール状態通知を安定化</string>
+    <string name="about_release_value_ba_guide">管理インストール対応 APK artifact はインストールとダウンロードを分離し、インストール状態と通知表示を安定化</string>
     <string name="about_release_row_navigation">インタラクション</string>
     <string name="about_release_value_navigation">ダウンロード操作はファイルサイズだけを表示し、アクションの意味は icon で示します</string>
     <string name="about_release_row_icon">アイコンと外観</string>
-    <string name="about_release_value_icon">アイコン設定の既定値、GitHub feature module、core prefs / system 境界、依存関係を整理</string>
+    <string name="about_release_value_icon">アイコン切替、設定分区、依存関係、リリース検証を整理</string>
     <string name="about_release_row_release_gate">リリースゲート</string>
     <string name="about_release_value_release_gate">Debug compile、Release build、署名検証、GitHub Release 公開を確認済み</string>
     <string name="about_release_row_next">アップグレード推奨</string>

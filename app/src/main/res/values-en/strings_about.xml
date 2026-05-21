@@ -206,11 +206,11 @@
     <string name="about_release_row_github">GitHub flow</string>
     <string name="about_release_value_github">Downloads stay visible in both nightly.link and GitHub API Token modes</string>
     <string name="about_release_row_ba_guide">OS tools</string>
-    <string name="about_release_value_ba_guide">Managed APK artifacts expose separate install and download actions, with steadier receiver routing and install state reporting</string>
+    <string name="about_release_value_ba_guide">Managed APK artifacts expose separate install and download actions, with steadier install states and notification hints</string>
     <string name="about_release_row_navigation">Interactions</string>
     <string name="about_release_value_navigation">Download controls show file size only, letting the icon carry the action meaning</string>
     <string name="about_release_row_icon">Icons and visuals</string>
-    <string name="about_release_value_icon">Icon preference defaults, GitHub feature module boundaries, core prefs/system boundaries, and dependencies were cleaned up</string>
+    <string name="about_release_value_icon">Icon switching, Settings grouping, dependency versions, and release checks were cleaned up</string>
     <string name="about_release_row_release_gate">Release gates</string>
     <string name="about_release_value_release_gate">Debug compile, release build, signing verification, and GitHub Release publishing were verified</string>
     <string name="about_release_row_next">Upgrade advice</string>

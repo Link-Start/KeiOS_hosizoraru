@@ -90,11 +90,11 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   download control, and install/download split into separate actions.
 - The artifact download action stays visible in nightly.link and GitHub API Token modes, making
   public-repository and token-backed Actions flows more consistent.
-- Managed install and share-import actions are steadier for Actions APK artifacts, with improved
-  install confirmation, receiver routing, notification cleanup, and Super Island actions.
+- Managed install and share-import actions are steadier for Actions APK artifacts, with smoother
+  confirmation, notification cleanup, and Super Island actions.
 - GitHub tracking now supports per-project update-check intervals alongside the global cadence.
-- Settings grouping, icon preference defaults, GitHub feature-module boundaries, dependency
-  refreshes, and release checks were cleaned up together.
+- Settings grouping, icon switching, dependency refreshes, and release checks were cleaned up
+  together.
 
 Read the full feature tour:
 

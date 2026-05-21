@@ -551,15 +551,17 @@ internal fun OsActivityVisibilityManagerSheet(
         ) {
             var query by remember(show) { mutableStateOf("") }
             val activityVisibilityItems =
-                cards.map { card ->
-                    OsActivityVisibilityItem(
-                        id = card.id,
-                        title = card.config.title.ifBlank { defaultCardTitle },
-                        packageName = card.config.packageName,
-                        className = card.config.className,
-                        builtInSample = card.isBuiltInSample,
-                        visible = card.visible,
-                    )
+                remember(cards, defaultCardTitle) {
+                    cards.map { card ->
+                        OsActivityVisibilityItem(
+                            id = card.id,
+                            title = card.config.title.ifBlank { defaultCardTitle },
+                            packageName = card.config.packageName,
+                            className = card.config.className,
+                            builtInSample = card.isBuiltInSample,
+                            visible = card.visible,
+                        )
+                    }
                 }
             val filteredActivityVisibilityItems =
                 remember(activityVisibilityItems, query) {
@@ -567,8 +569,14 @@ internal fun OsActivityVisibilityManagerSheet(
                         item.matchesActivityVisibilityQuery(query)
                     }
                 }
-            val builtInItems = filteredActivityVisibilityItems.filter { it.builtInSample }
-            val customItems = filteredActivityVisibilityItems.filterNot { it.builtInSample }
+            val builtInItems =
+                remember(filteredActivityVisibilityItems) {
+                    filteredActivityVisibilityItems.filter { it.builtInSample }
+                }
+            val customItems =
+                remember(filteredActivityVisibilityItems) {
+                    filteredActivityVisibilityItems.filterNot { it.builtInSample }
+                }
             SheetSectionCard(verticalSpacing = 8.dp) {
                 AppLiquidSearchField(
                     value = query,

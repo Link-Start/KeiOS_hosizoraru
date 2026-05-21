@@ -6,57 +6,55 @@ import java.util.Locale
 
 internal enum class GitHubTrackAppPickerSortMode(
     val labelRes: Int,
-    val storageId: String
+    val storageId: String,
 ) {
     Name(R.string.github_track_sheet_app_sort_name, "name"),
     LastUpdated(R.string.github_track_sheet_app_sort_last_updated, "last_updated"),
     RecentlyInstalled(
         R.string.github_track_sheet_app_sort_recently_installed,
-        "recently_installed"
+        "recently_installed",
     ),
     InstallSource(R.string.github_track_sheet_app_sort_install_source, "install_source"),
-    Package(R.string.github_track_sheet_app_sort_package, "package");
+    Package(R.string.github_track_sheet_app_sort_package, "package"),
+    ;
 
     companion object {
-        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortMode {
-            return entries.firstOrNull { it.storageId == storageId } ?: Name
-        }
+        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortMode = entries.firstOrNull { it.storageId == storageId } ?: Name
     }
 }
 
 internal enum class GitHubTrackAppPickerSortDirection(
     val labelRes: Int,
-    val storageId: String
+    val storageId: String,
 ) {
     Ascending(R.string.github_track_sheet_app_sort_direction_ascending, "ascending"),
-    Descending(R.string.github_track_sheet_app_sort_direction_descending, "descending");
+    Descending(R.string.github_track_sheet_app_sort_direction_descending, "descending"),
+    ;
 
     companion object {
-        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortDirection {
-            return entries.firstOrNull { it.storageId == storageId } ?: Ascending
-        }
+        fun fromStorageId(storageId: String): GitHubTrackAppPickerSortDirection =
+            entries.firstOrNull { it.storageId == storageId } ?: Ascending
     }
 }
 
-internal fun GitHubTrackAppPickerSortMode.isTimeSort(): Boolean {
-    return this == GitHubTrackAppPickerSortMode.LastUpdated ||
-            this == GitHubTrackAppPickerSortMode.RecentlyInstalled
-}
+internal fun GitHubTrackAppPickerSortMode.isTimeSort(): Boolean =
+    this == GitHubTrackAppPickerSortMode.LastUpdated ||
+        this == GitHubTrackAppPickerSortMode.RecentlyInstalled
 
-internal fun GitHubTrackAppPickerSortMode.showsInstallSourcePill(): Boolean {
-    return this == GitHubTrackAppPickerSortMode.InstallSource
-}
+internal fun GitHubTrackAppPickerSortMode.showsInstallSourcePill(): Boolean = this == GitHubTrackAppPickerSortMode.InstallSource
 
 internal fun gitHubTrackAppCandidateInitialScrollIndex(
     candidates: List<InstalledAppItem>,
-    selectedPackageName: String?
+    selectedPackageName: String?,
 ): Int {
-    val normalizedSelectedPackage = selectedPackageName
-        ?.normalizedGitHubTrackAppPackageNameOrNull()
-        ?: return 0
-    val selectedIndex = candidates.indexOfFirst { candidate ->
-        candidate.packageName.normalizedGitHubTrackAppPackageNameOrNull() == normalizedSelectedPackage
-    }
+    val normalizedSelectedPackage =
+        selectedPackageName
+            ?.normalizedGitHubTrackAppPackageNameOrNull()
+            ?: return 0
+    val selectedIndex =
+        candidates.indexOfFirst { candidate ->
+            candidate.packageName.normalizedGitHubTrackAppPackageNameOrNull() == normalizedSelectedPackage
+        }
     return when {
         selectedIndex <= 0 -> 0
         else -> selectedIndex - 1
@@ -72,26 +70,29 @@ internal fun filterAndSortGitHubTrackAppCandidates(
     trackedPackageNames: Set<String>,
     pinnedPackageNames: Set<String>,
     sortMode: GitHubTrackAppPickerSortMode,
-    sortDirection: GitHubTrackAppPickerSortDirection
+    sortDirection: GitHubTrackAppPickerSortDirection,
 ): List<InstalledAppItem> {
-    val normalizedTrackedPackages = trackedPackageNames
-        .mapNotNullTo(LinkedHashSet()) { it.normalizedGitHubTrackAppPackageNameOrNull() }
-    val normalizedPinnedPackages = pinnedPackageNames
-        .mapNotNullTo(LinkedHashSet()) { it.normalizedGitHubTrackAppPackageNameOrNull() }
-    val trimmedQuery = query.trim()
+    val normalizedTrackedPackages =
+        trackedPackageNames
+            .mapNotNullTo(LinkedHashSet()) { it.normalizedGitHubTrackAppPackageNameOrNull() }
+    val normalizedPinnedPackages =
+        pinnedPackageNames
+            .mapNotNullTo(LinkedHashSet()) { it.normalizedGitHubTrackAppPackageNameOrNull() }
+    val normalizedQuery = query.trim().lowercase(Locale.ROOT)
     return apps
         .asSequence()
-        .filter { app -> app.matchesAppPickerQuery(trimmedQuery) }
-        .filter { app ->
-            app.matchesAppPickerScope(
+        .map(::GitHubTrackAppCandidateProjection)
+        .filter { projection -> projection.matchesAppPickerQuery(normalizedQuery) }
+        .filter { projection ->
+            projection.matchesAppPickerScope(
                 includeUserApps = includeUserApps,
                 includeSystemApps = includeSystemApps,
                 includeTrackedApps = includeTrackedApps,
                 trackedPackageNames = normalizedTrackedPackages,
-                pinnedPackageNames = normalizedPinnedPackages
+                pinnedPackageNames = normalizedPinnedPackages,
             )
-        }
-        .sortedWith(sortMode.comparator(sortDirection))
+        }.sortedWith(sortMode.comparator(sortDirection))
+        .map { projection -> projection.app }
         .toList()
 }
 
@@ -100,69 +101,83 @@ internal fun String.normalizedGitHubTrackAppPackageNameOrNull(): String? {
     return normalized.ifBlank { null }
 }
 
-private fun InstalledAppItem.matchesAppPickerQuery(query: String): Boolean {
-    if (query.isBlank()) return true
-    return label.contains(query, ignoreCase = true) ||
-            packageName.contains(query, ignoreCase = true) ||
-            installSourceLabel.contains(query, ignoreCase = true) ||
-            installSourcePackageName.contains(query, ignoreCase = true)
+private data class GitHubTrackAppCandidateProjection(
+    val app: InstalledAppItem,
+) {
+    val labelKey: String = app.label.lowercase(Locale.ROOT)
+    val packageNameKey: String = app.packageName.lowercase(Locale.ROOT)
+    val installSourcePackageNameKey: String = app.installSourcePackageName.lowercase(Locale.ROOT)
+    val installSourceKey: String =
+        app.installSourceLabel
+            .ifBlank { app.installSourcePackageName }
+            .lowercase(Locale.ROOT)
+    val normalizedPackageName: String? = app.packageName.normalizedGitHubTrackAppPackageNameOrNull()
 }
 
-private fun InstalledAppItem.matchesAppPickerScope(
+private fun GitHubTrackAppCandidateProjection.matchesAppPickerQuery(query: String): Boolean {
+    if (query.isBlank()) return true
+    return labelKey.contains(query) ||
+        packageNameKey.contains(query) ||
+        installSourceKey.contains(query) ||
+        installSourcePackageNameKey.contains(query)
+}
+
+private fun GitHubTrackAppCandidateProjection.matchesAppPickerScope(
     includeUserApps: Boolean,
     includeSystemApps: Boolean,
     includeTrackedApps: Boolean,
     trackedPackageNames: Set<String>,
-    pinnedPackageNames: Set<String>
+    pinnedPackageNames: Set<String>,
 ): Boolean {
-    val normalizedPackageName = packageName.normalizedGitHubTrackAppPackageNameOrNull()
     if (normalizedPackageName != null && normalizedPackageName in pinnedPackageNames) {
         return true
     }
-    val matchesType = when {
-        isSystemApp -> includeSystemApps
-        else -> includeUserApps
-    }
+    val matchesType =
+        when {
+            app.isSystemApp -> includeSystemApps
+            else -> includeUserApps
+        }
     if (!matchesType) return false
-    val alreadyTracked = normalizedPackageName != null &&
+    val alreadyTracked =
+        normalizedPackageName != null &&
             normalizedPackageName in trackedPackageNames
     return includeTrackedApps || !alreadyTracked
 }
 
 private fun GitHubTrackAppPickerSortMode.comparator(
-    direction: GitHubTrackAppPickerSortDirection
-): Comparator<InstalledAppItem> {
-    val baseComparator = when (this) {
-        GitHubTrackAppPickerSortMode.Name ->
-            compareBy<InstalledAppItem> { it.label.lowercase(Locale.ROOT) }
-                .thenBy { it.packageName.lowercase(Locale.ROOT) }
+    direction: GitHubTrackAppPickerSortDirection,
+): Comparator<GitHubTrackAppCandidateProjection> {
+    val baseComparator =
+        when (this) {
+            GitHubTrackAppPickerSortMode.Name -> {
+                compareBy<GitHubTrackAppCandidateProjection> { it.labelKey }
+                    .thenBy { it.packageNameKey }
+            }
 
-        GitHubTrackAppPickerSortMode.LastUpdated ->
-            compareBy<InstalledAppItem> { it.lastUpdateTimeMs }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
+            GitHubTrackAppPickerSortMode.LastUpdated -> {
+                compareBy<GitHubTrackAppCandidateProjection> { it.app.lastUpdateTimeMs }
+                    .thenBy { it.labelKey }
+            }
 
-        GitHubTrackAppPickerSortMode.RecentlyInstalled ->
-            compareBy<InstalledAppItem> { it.firstInstallTimeMs }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
+            GitHubTrackAppPickerSortMode.RecentlyInstalled -> {
+                compareBy<GitHubTrackAppCandidateProjection> { it.app.firstInstallTimeMs }
+                    .thenBy { it.labelKey }
+            }
 
-        GitHubTrackAppPickerSortMode.InstallSource ->
-            compareBy<InstalledAppItem> { it.installSourceSortKey().isBlank() }
-                .thenBy { it.installSourceSortKey() }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
-                .thenBy { it.packageName.lowercase(Locale.ROOT) }
+            GitHubTrackAppPickerSortMode.InstallSource -> {
+                compareBy<GitHubTrackAppCandidateProjection> { it.installSourceKey.isBlank() }
+                    .thenBy { it.installSourceKey }
+                    .thenBy { it.labelKey }
+                    .thenBy { it.packageNameKey }
+            }
 
-        GitHubTrackAppPickerSortMode.Package ->
-            compareBy<InstalledAppItem> { it.packageName.lowercase(Locale.ROOT) }
-                .thenBy { it.label.lowercase(Locale.ROOT) }
-    }
+            GitHubTrackAppPickerSortMode.Package -> {
+                compareBy<GitHubTrackAppCandidateProjection> { it.packageNameKey }
+                    .thenBy { it.labelKey }
+            }
+        }
     return when (direction) {
         GitHubTrackAppPickerSortDirection.Ascending -> baseComparator
         GitHubTrackAppPickerSortDirection.Descending -> baseComparator.reversed()
     }
-}
-
-private fun InstalledAppItem.installSourceSortKey(): String {
-    return installSourceLabel
-        .ifBlank { installSourcePackageName }
-        .lowercase(Locale.ROOT)
 }

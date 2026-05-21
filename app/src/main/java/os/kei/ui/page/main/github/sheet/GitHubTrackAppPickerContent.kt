@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.InstalledAppItem
@@ -268,34 +270,43 @@ internal fun GitHubTrackAppPickerContent(
         mutableStateOf(false)
     }
     val showInstallSourcePill = sortMode.showsInstallSourcePill()
-    val filteredApps =
-        remember(
-            appList,
-            appSearch,
-            includeUserApps,
-            includeSystemApps,
-            includeTrackedApps,
-            trackedPackageNames,
-            selectedApp,
-            editingPackageName,
-            sortMode,
-            sortDirection
-        ) {
-            filterAndSortGitHubTrackAppCandidates(
-                apps = appList,
-                query = appSearch,
-                includeUserApps = includeUserApps,
-                includeSystemApps = includeSystemApps,
-                includeTrackedApps = includeTrackedApps,
-                trackedPackageNames = trackedPackageNames,
-                pinnedPackageNames = setOf(
-                    selectedApp?.packageName.orEmpty(),
-                    editingPackageName
-                ),
-                sortMode = sortMode,
-                sortDirection = sortDirection
+    var filteredApps by remember { mutableStateOf(emptyList<InstalledAppItem>()) }
+    var appFilterReady by remember { mutableStateOf(false) }
+    LaunchedEffect(
+        appList,
+        appSearch,
+        includeUserApps,
+        includeSystemApps,
+        includeTrackedApps,
+        trackedPackageNames,
+        selectedApp?.packageName,
+        editingPackageName,
+        sortMode,
+        sortDirection,
+    ) {
+        appFilterReady = false
+        val pinnedPackageNames =
+            setOf(
+                selectedApp?.packageName.orEmpty(),
+                editingPackageName,
             )
-        }
+        filteredApps =
+            withContext(AppDispatchers.uiDerivation) {
+                filterAndSortGitHubTrackAppCandidates(
+                    apps = appList,
+                    query = appSearch,
+                    includeUserApps = includeUserApps,
+                    includeSystemApps = includeSystemApps,
+                    includeTrackedApps = includeTrackedApps,
+                    trackedPackageNames = trackedPackageNames,
+                    pinnedPackageNames = pinnedPackageNames,
+                    sortMode = sortMode,
+                    sortDirection = sortDirection,
+                )
+            }
+        appFilterReady = true
+    }
+
     fun saveAppPickerPreferences() {
         GitHubTrackStore.saveAppPickerPreferences(
             GitHubAppPickerPreferences(
@@ -457,7 +468,12 @@ internal fun GitHubTrackAppPickerContent(
                     showInstallSource = showInstallSourcePill
                 )
             }
-            if (filteredApps.isEmpty()) {
+            if (!appFilterReady) {
+                MiuixInfoItem(
+                    stringResource(R.string.github_track_sheet_label_app_list),
+                    stringResource(R.string.common_loading)
+                )
+            } else if (filteredApps.isEmpty()) {
                 MiuixInfoItem(
                     stringResource(R.string.github_track_sheet_label_app_list),
                     stringResource(R.string.github_track_sheet_msg_app_no_match)

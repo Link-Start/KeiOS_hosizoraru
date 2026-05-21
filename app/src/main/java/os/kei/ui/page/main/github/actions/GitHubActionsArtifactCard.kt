@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.actions
 
 import android.content.Context
@@ -21,6 +23,7 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.assetRelativeTimeLabel
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -45,7 +48,7 @@ internal fun GitHubActionsArtifactCard(
     onInstall: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
-    onOpenDetail: () -> Unit
+    onOpenDetail: () -> Unit,
 ) {
     val artifact = artifactMatch.artifact
     val actionColor = if (artifact.expired) GitHubStatusPalette.Error else MiuixTheme.colorScheme.primary
@@ -56,36 +59,38 @@ internal fun GitHubActionsArtifactCard(
     val neutralPillColor = MiuixTheme.colorScheme.onBackgroundVariant
     val actionButtonSize = 48.dp
     val sizeLabel = formatAssetSize(artifact.sizeBytes, context)
-    val downloadActionDescription = stringResource(
-        R.string.github_actions_cd_download_artifact,
-        artifact.name
-    )
+    val downloadActionDescription =
+        stringResource(
+            R.string.github_actions_cd_download_artifact,
+            artifact.name,
+        )
     GitHubActionsSelectableCard(
         selected = false,
         isDark = isDark,
-        onClick = onOpenDetail
+        onClick = onOpenDetail,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = artifactDisplayName(artifactMatch),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 color = MiuixTheme.colorScheme.onBackground,
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
+        }
+        GitHubActionsPillRow {
             if (recommended) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_recommended),
                     color = GitHubStatusPalette.Update,
                     emphasized = true,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
             }
             if (artifactMatch.lastDownload != null) {
@@ -93,15 +98,13 @@ internal fun GitHubActionsArtifactCard(
                     label = stringResource(R.string.github_actions_badge_last_downloaded),
                     color = GitHubStatusPalette.Active,
                     emphasized = true,
-                    minWidth = GitHubActionsStatePillMinWidth
+                    minWidth = GitHubActionsStatePillMinWidth,
                 )
             }
-        }
-        GitHubActionsPillRow {
             GitHubActionsInfoPill(
                 label = artifactKindLabel(artifactMatch.traits.kind),
                 color = kindColor,
-                minWidth = GitHubActionsShortPillMinWidth
+                minWidth = GitHubActionsShortPillMinWidth,
             )
             artifactMatch.traits.version.takeIf { it.isNotBlank() }?.let { version ->
                 GitHubActionsInfoPill(label = version, color = GitHubStatusPalette.Update)
@@ -109,12 +112,13 @@ internal fun GitHubActionsArtifactCard(
             artifactMatch.traits.abi.takeIf { it.isNotBlank() }?.let { abi ->
                 GitHubActionsInfoPill(label = abi, color = GitHubStatusPalette.Active)
             }
-            artifactMatch.lastDownload?.artifactPackageName
+            artifactMatch.lastDownload
+                ?.artifactPackageName
                 ?.takeIf { it.isNotBlank() }
                 ?.let { packageName ->
                     GitHubActionsInfoPill(
                         label = packageName,
-                        color = GitHubStatusPalette.Active
+                        color = GitHubStatusPalette.Active,
                     )
                 }
             artifactMatch.traits.flavors.forEach { flavor ->
@@ -125,32 +129,32 @@ internal fun GitHubActionsArtifactCard(
                 .forEach { buildType ->
                     GitHubActionsInfoPill(
                         label = artifactBuildTypeLabel(buildType),
-                        color = artifactBuildTypeColor(buildType)
+                        color = artifactBuildTypeColor(buildType),
                     )
                 }
             if (artifactMatch.traits.releaseLike) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_release),
-                    color = GitHubStatusPalette.Update
+                    color = GitHubStatusPalette.Update,
                 )
             }
             if (artifactMatch.traits.debugLike) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_debug),
-                    color = GitHubStatusPalette.PreRelease
+                    color = GitHubStatusPalette.PreRelease,
                 )
             }
             if (artifactMatch.traits.universalLike) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_universal),
-                    color = GitHubStatusPalette.Active
+                    color = GitHubStatusPalette.Active,
                 )
             }
             if (artifact.expired) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_expired),
                     color = GitHubStatusPalette.Error,
-                    emphasized = true
+                    emphasized = true,
                 )
             }
             assetRelativeTimeLabel(artifact.updatedAtMillis, context)?.let { label ->
@@ -160,27 +164,38 @@ internal fun GitHubActionsArtifactCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Spacer(modifier = Modifier.weight(1f))
+            AppLiquidIconButton(
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction,
+                icon = appLucideInfoIcon(),
+                contentDescription = stringResource(R.string.github_actions_artifact_detail_title),
+                iconTint = MiuixTheme.colorScheme.primary,
+                width = actionButtonSize,
+                height = actionButtonSize,
+                onClick = onOpenDetail,
+            )
             if (managedInstallEnabled) {
                 AppLiquidIconButton(
                     backdrop = backdrop,
                     variant = GlassVariant.SheetAction,
                     icon = appLucidePackageIcon(),
-                    contentDescription = stringResource(
-                        if (downloading) {
-                            R.string.github_cd_install_asset_running
-                        } else {
-                            R.string.github_cd_install_asset
-                        },
-                        artifact.name
-                    ),
+                    contentDescription =
+                        stringResource(
+                            if (downloading) {
+                                R.string.github_cd_install_asset_running
+                            } else {
+                                R.string.github_cd_install_asset
+                            },
+                            artifact.name,
+                        ),
                     iconTint = if (canDownload) actionColor else neutralPillColor,
                     enabled = canDownload,
                     width = actionButtonSize,
                     height = actionButtonSize,
-                    onClick = onInstall
+                    onClick = onInstall,
                 )
             }
             AppLiquidTextButton(
@@ -204,15 +219,16 @@ internal fun GitHubActionsArtifactCard(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
                 icon = appLucideShareIcon(),
-                contentDescription = stringResource(
-                    R.string.github_actions_cd_share_artifact,
-                    artifact.name
-                ),
+                contentDescription =
+                    stringResource(
+                        R.string.github_actions_cd_share_artifact,
+                        artifact.name,
+                    ),
                 iconTint = if (canShare) actionColor else neutralPillColor,
                 enabled = canShare,
                 width = actionButtonSize,
                 height = actionButtonSize,
-                onClick = onShare
+                onClick = onShare,
             )
         }
     }

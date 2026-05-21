@@ -1,9 +1,11 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -30,21 +33,19 @@ import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
-import os.kei.ui.page.main.ba.support.BaCalendarEntry
-import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.os.appLucideMailIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -313,11 +314,12 @@ fun BAPage(
         }
     val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
-    val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
-    val floatingDockBottom by animateDpAsState(
-        targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
-        label = "ba_floating_action_dock_bottom",
-    )
+    val floatingDockBottomState =
+        rememberAppFloatingDockBottomState(
+            contentBottomPadding = runtime.contentBottomPadding,
+            bottomBarVisible = runtime.bottomBarVisible,
+            label = "ba_floating_action_dock_bottom",
+        )
     val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE
     val copyFriendCodeIconTint =
         if (friendCodeActivated) {
@@ -386,10 +388,10 @@ fun BAPage(
                 modifier =
                     Modifier
                         .align(dockAlignment)
+                        .offset { IntOffset(x = 0, y = -floatingDockBottomState.value.roundToPx()) }
                         .padding(
                             start = dockStartPadding,
                             end = dockEndPadding,
-                            bottom = floatingDockBottom,
                         ),
             )
         }
@@ -476,13 +478,15 @@ fun BAPage(
                 )
             },
             onSendCalendarUpcomingTestNotification = {
+                val nowMs = ui.uiNowMs
                 val entries =
                     resolveCalendarDebugEntries(
                         context = context,
                         entries = calendarUiState.entries,
                         useRealData = ui.debugUseRealCalendarPoolData,
                         upcoming = true,
-                    ) ?: return@BaDebugSheet
+                        nowMs = nowMs,
+                    ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
                 notifyBaDebugResult(
                     context = context,
                     sent =
@@ -494,13 +498,15 @@ fun BAPage(
                 )
             },
             onSendCalendarEndingTestNotification = {
+                val nowMs = ui.uiNowMs
                 val entries =
                     resolveCalendarDebugEntries(
                         context = context,
                         entries = calendarUiState.entries,
                         useRealData = ui.debugUseRealCalendarPoolData,
                         upcoming = false,
-                    ) ?: return@BaDebugSheet
+                        nowMs = nowMs,
+                    ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
                 notifyBaDebugResult(
                     context = context,
                     sent =
@@ -512,13 +518,15 @@ fun BAPage(
                 )
             },
             onSendPoolUpcomingTestNotification = {
+                val nowMs = ui.uiNowMs
                 val entries =
                     resolvePoolDebugEntries(
                         context = context,
                         entries = poolUiState.entries,
                         useRealData = ui.debugUseRealCalendarPoolData,
                         upcoming = true,
-                    ) ?: return@BaDebugSheet
+                        nowMs = nowMs,
+                    ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
                 notifyBaDebugResult(
                     context = context,
                     sent =
@@ -530,13 +538,15 @@ fun BAPage(
                 )
             },
             onSendPoolEndingTestNotification = {
+                val nowMs = ui.uiNowMs
                 val entries =
                     resolvePoolDebugEntries(
                         context = context,
                         entries = poolUiState.entries,
                         useRealData = ui.debugUseRealCalendarPoolData,
                         upcoming = false,
-                    ) ?: return@BaDebugSheet
+                        nowMs = nowMs,
+                    ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
                 notifyBaDebugResult(
                     context = context,
                     sent =
@@ -551,10 +561,11 @@ fun BAPage(
                 val detail =
                     if (ui.debugUseRealCalendarPoolData) {
                         resolveRealChangeDebugDetail(
-                            context = context,
                             calendarEntries = calendarUiState.entries,
                             poolEntries = poolUiState.entries,
-                        ) ?: return@BaDebugSheet
+                            nowMs = ui.uiNowMs,
+                        ).takeIf { it.isNotBlank() }
+                            ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
                     } else {
                         context.resolveString(R.string.ba_debug_sample_change_detail)
                     }
@@ -577,46 +588,6 @@ fun BAPage(
     }
 }
 
-private fun sampleCalendarEntry(
-    context: Context,
-    upcoming: Boolean,
-): BaCalendarEntry {
-    val nowMs = System.currentTimeMillis()
-    val startAtMs = if (upcoming) nowMs + 60L * 60L * 1000L else nowMs - 2L * 60L * 60L * 1000L
-    val endAtMs = if (upcoming) nowMs + 3L * 60L * 60L * 1000L else nowMs + 60L * 60L * 1000L
-    return BaCalendarEntry(
-        id = -10_001,
-        title = context.resolveString(R.string.ba_debug_sample_calendar_title),
-        kindId = 14,
-        kindName = "",
-        beginAtMs = startAtMs,
-        endAtMs = endAtMs,
-        linkUrl = "",
-        imageUrl = "",
-        isRunning = !upcoming,
-    )
-}
-
-private fun samplePoolEntry(
-    context: Context,
-    upcoming: Boolean,
-): BaPoolEntry {
-    val nowMs = System.currentTimeMillis()
-    val startAtMs = if (upcoming) nowMs + 60L * 60L * 1000L else nowMs - 2L * 60L * 60L * 1000L
-    val endAtMs = if (upcoming) nowMs + 3L * 60L * 60L * 1000L else nowMs + 60L * 60L * 1000L
-    return BaPoolEntry(
-        id = -10_002,
-        name = context.resolveString(R.string.ba_debug_sample_pool_title),
-        tagId = 6,
-        tagName = "",
-        startAtMs = startAtMs,
-        endAtMs = endAtMs,
-        linkUrl = "",
-        imageUrl = "",
-        isRunning = !upcoming,
-    )
-}
-
 private fun notifyBaDebugResult(
     context: Context,
     sent: Boolean,
@@ -630,91 +601,6 @@ private fun notifyBaDebugResult(
     context.showToast(messageRes)
 }
 
-private fun resolveCalendarDebugEntries(
-    context: Context,
-    entries: List<BaCalendarEntry>,
-    useRealData: Boolean,
-    upcoming: Boolean,
-): List<BaCalendarEntry>? {
-    if (!useRealData) return listOf(sampleCalendarEntry(context, upcoming))
-    val nowMs = System.currentTimeMillis()
-    val targetTime =
-        if (upcoming) {
-            entries
-                .filter { it.beginAtMs > nowMs }
-                .minByOrNull { it.beginAtMs }
-                ?.beginAtMs
-        } else {
-            entries
-                .filter { it.endAtMs > nowMs }
-                .minByOrNull { it.endAtMs }
-                ?.endAtMs
-        }
-    if (targetTime != null) {
-        return if (upcoming) {
-            entries.filter { it.beginAtMs == targetTime }
-        } else {
-            entries.filter { it.endAtMs == targetTime }
-        }
-    }
+private fun showBaDebugRealDataMissingToast(context: Context) {
     context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
-    return null
-}
-
-private fun resolvePoolDebugEntries(
-    context: Context,
-    entries: List<BaPoolEntry>,
-    useRealData: Boolean,
-    upcoming: Boolean,
-): List<BaPoolEntry>? {
-    if (!useRealData) return listOf(samplePoolEntry(context, upcoming))
-    val nowMs = System.currentTimeMillis()
-    val targetTime =
-        if (upcoming) {
-            entries
-                .filter { it.startAtMs > nowMs }
-                .minByOrNull { it.startAtMs }
-                ?.startAtMs
-        } else {
-            entries
-                .filter { it.endAtMs > nowMs }
-                .minByOrNull { it.endAtMs }
-                ?.endAtMs
-        }
-    if (targetTime != null) {
-        return if (upcoming) {
-            entries.filter { it.startAtMs == targetTime }
-        } else {
-            entries.filter { it.endAtMs == targetTime }
-        }
-    }
-    context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
-    return null
-}
-
-private fun resolveRealChangeDebugDetail(
-    context: Context,
-    calendarEntries: List<BaCalendarEntry>,
-    poolEntries: List<BaPoolEntry>,
-): String? {
-    val nowMs = System.currentTimeMillis()
-    val calendarTitle =
-        calendarEntries
-            .filter { it.endAtMs > nowMs }
-            .minByOrNull { if (it.beginAtMs > nowMs) it.beginAtMs else it.endAtMs }
-            ?.title
-            .orEmpty()
-    val poolTitle =
-        poolEntries
-            .filter { it.endAtMs > nowMs }
-            .minByOrNull { if (it.startAtMs > nowMs) it.startAtMs else it.endAtMs }
-            ?.name
-            .orEmpty()
-    val detail =
-        listOf(calendarTitle, poolTitle)
-            .filter { it.isNotBlank() }
-            .joinToString(separator = " / ")
-    if (detail.isNotBlank()) return detail
-    context.showToast(R.string.ba_toast_calendar_pool_real_data_missing)
-    return null
 }

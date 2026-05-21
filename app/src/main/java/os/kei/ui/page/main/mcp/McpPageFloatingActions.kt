@@ -2,15 +2,15 @@
 
 package os.kei.ui.page.main.mcp
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
@@ -20,10 +20,10 @@ import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.os.osLucideRunIcon
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -42,10 +42,11 @@ internal fun BoxScope.McpPageFloatingActionDock(
         }
     val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
-    val hiddenOffsetState =
-        animateDpAsState(
-            targetValue = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight,
-            label = "mcp_floating_action_dock_hidden_offset",
+    val dockBottomState =
+        rememberAppFloatingDockBottomState(
+            contentBottomPadding = runtime.contentBottomPadding,
+            bottomBarVisible = runtime.bottomBarVisible,
+            label = "mcp_floating_action_dock_bottom",
         )
     val copyIcon = osLucideCopyIcon()
     val refreshIcon = appLucideRefreshIcon()
@@ -103,12 +104,10 @@ internal fun BoxScope.McpPageFloatingActionDock(
         modifier =
             Modifier
                 .align(dockAlignment)
+                .offset { IntOffset(x = 0, y = -dockBottomState.value.roundToPx()) }
                 .padding(
                     start = dockStartPadding,
                     end = dockEndPadding,
-                    bottom = runtime.contentBottomPadding - 24.dp,
-                ).graphicsLayer {
-                    translationY = hiddenOffsetState.value.toPx()
-                },
+                ),
     )
 }

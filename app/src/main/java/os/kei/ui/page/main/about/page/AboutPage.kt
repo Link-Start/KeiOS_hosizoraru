@@ -569,7 +569,6 @@ fun AboutPage(
                     Modifier
                         .fillMaxSize()
                         .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .graphicsLayer { alpha = 1f }
                         .layerBackdrop(topBarBackdrop)
                         .layerBackdrop(bottomBarBackdrop),
                 bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,

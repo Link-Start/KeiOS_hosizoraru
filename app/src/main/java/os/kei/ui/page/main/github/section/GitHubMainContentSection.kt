@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.section
 
 import android.os.Build
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -21,7 +20,6 @@ import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
@@ -30,6 +28,8 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
+import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.testing.KeiOsTestTags
 
@@ -54,16 +54,15 @@ internal fun GitHubMainContent(
                 .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
                 .toMap()
         }
-    val bottomBarOffset =
-        if (layout.bottomBarVisible) {
-            0.dp
-        } else {
-            AppChromeTokens.floatingBottomBarOuterHeight
-        }
-    val searchDockBottomTarget = layout.contentBottomPadding - 24.dp - bottomBarOffset
+    val searchDockBottomTarget =
+        appFloatingDockBottomTarget(
+            contentBottomPadding = layout.contentBottomPadding,
+            bottomBarVisible = layout.bottomBarVisible,
+        )
     val searchDockBottomState =
-        animateDpAsState(
-            targetValue = searchDockBottomTarget,
+        rememberAppFloatingDockBottomState(
+            contentBottomPadding = layout.contentBottomPadding,
+            bottomBarVisible = layout.bottomBarVisible,
             label = "github_floating_search_bottom",
         )
     val floatingKeyboardLift =

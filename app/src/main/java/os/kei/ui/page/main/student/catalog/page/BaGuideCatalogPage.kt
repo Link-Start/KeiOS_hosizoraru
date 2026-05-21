@@ -30,10 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -47,10 +45,9 @@ import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.host.pager.rememberPagerTargetWarmDataActive
 import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
+import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
-import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
@@ -715,47 +712,3 @@ fun BaGuideCatalogPage(
         )
     }
 }
-
-@Composable
-private fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
-    val studentLabel = stringResource(R.string.ba_catalog_tab_student_short)
-    val npcLabel = stringResource(R.string.ba_catalog_tab_npc_satellite_short)
-    val studentBgmLabel = stringResource(R.string.ba_catalog_tab_student_bgm_short)
-    val bgmLabel = stringResource(R.string.ba_catalog_tab_bgm)
-    val studentIcon = ImageVector.vectorResource(R.drawable.ba_tab_profile_vector)
-    val npcIcon = ImageVector.vectorResource(R.drawable.ba_tab_skill_vector)
-    val musicIcon = ImageVector.vectorResource(R.drawable.ba_tab_bgm)
-    val playbackIcon = ImageVector.vectorResource(R.drawable.ba_tab_play)
-    return remember(
-        studentLabel,
-        npcLabel,
-        studentBgmLabel,
-        bgmLabel,
-        studentIcon,
-        npcIcon,
-        musicIcon,
-        playbackIcon,
-    ) {
-        listOf(
-            BaGuideBgmDockTab(BaGuideCatalogPageTab.Student.name, studentIcon, studentLabel),
-            BaGuideBgmDockTab(BaGuideCatalogPageTab.NpcSatellite.name, npcIcon, npcLabel),
-            BaGuideBgmDockTab(BaGuideCatalogPageTab.StudentBgm.name, musicIcon, studentBgmLabel),
-            BaGuideBgmDockTab(BaGuideCatalogPageTab.Bgm.name, playbackIcon, bgmLabel),
-        )
-    }
-}
-
-private fun catalogPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
-
-private fun Map<String, String>.catalogSearchQueryFor(tab: BaGuideCatalogTab): String =
-    get(
-        when (tab) {
-            BaGuideCatalogTab.Student -> BaGuideCatalogPageTab.Student.name
-            BaGuideCatalogTab.NpcSatellite -> BaGuideCatalogPageTab.NpcSatellite.name
-        },
-    ).orEmpty()
-
-private const val CATALOG_PAGER_TARGET_WARM_DATA_DISTANCE = 0.75f
-
-private val CATALOG_MUSIC_CONTENT_TOP_PADDING = 136.dp
-private val CATALOG_MUSIC_CONTENT_BOTTOM_PADDING = 224.dp

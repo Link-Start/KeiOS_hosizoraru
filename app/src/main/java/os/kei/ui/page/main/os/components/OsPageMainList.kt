@@ -1,7 +1,8 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
 import android.content.Context
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +23,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
@@ -47,6 +49,8 @@ import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -129,47 +133,55 @@ internal fun OsPageMainList(
     onQueryInputChange: (String) -> Unit,
     onSearchExpandedChange: (Boolean) -> Unit,
     searchLabel: String,
-    floatingDockSide: AppFloatingDockSide
+    floatingDockSide: AppFloatingDockSide,
 ) {
     val topMetricLabel = stringResource(R.string.os_overview_metric_top_info)
-    fun metricLabelWeight(label: String): Float {
-        return if (label == topMetricLabel) 0.30f else 0.56f
-    }
-    fun metricValueWeight(label: String): Float {
-        return if (label == topMetricLabel) 0.70f else 0.44f
-    }
-    val bottomBarOffset = if (bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
-    val searchDockBottom by animateDpAsState(
-        targetValue = contentBottomPadding - 24.dp - bottomBarOffset,
-        label = "os_floating_search_bottom"
-    )
-    val floatingKeyboardLift = rememberAppFloatingKeyboardLift(
-        restingBottomGap = searchDockBottom,
-        label = "os_floating_keyboard_lift"
-    )
-    val dockAlignment = if (floatingDockSide == AppFloatingDockSide.Start) {
-        Alignment.BottomStart
-    } else {
-        Alignment.BottomEnd
-    }
+
+    fun metricLabelWeight(label: String): Float = if (label == topMetricLabel) 0.30f else 0.56f
+
+    fun metricValueWeight(label: String): Float = if (label == topMetricLabel) 0.70f else 0.44f
+    val searchDockBottomTarget =
+        appFloatingDockBottomTarget(
+            contentBottomPadding = contentBottomPadding,
+            bottomBarVisible = bottomBarVisible,
+        )
+    val searchDockBottomState =
+        rememberAppFloatingDockBottomState(
+            contentBottomPadding = contentBottomPadding,
+            bottomBarVisible = bottomBarVisible,
+            label = "os_floating_search_bottom",
+        )
+    val floatingKeyboardLift =
+        rememberAppFloatingKeyboardLift(
+            restingBottomGap = searchDockBottomTarget,
+            label = "os_floating_keyboard_lift",
+        )
+    val dockAlignment =
+        if (floatingDockSide == AppFloatingDockSide.Start) {
+            Alignment.BottomStart
+        } else {
+            Alignment.BottomEnd
+        }
     val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
-    val refreshStatus = when (overviewState) {
-        SystemOverviewState.Refreshing -> AppFloatingRefreshStatus.Refreshing
-        SystemOverviewState.Completed -> AppFloatingRefreshStatus.Success
-        SystemOverviewState.Failed -> AppFloatingRefreshStatus.Danger
-        SystemOverviewState.Cached -> AppFloatingRefreshStatus.Cached
-        SystemOverviewState.Idle -> AppFloatingRefreshStatus.Idle
-    }
+    val refreshStatus =
+        when (overviewState) {
+            SystemOverviewState.Refreshing -> AppFloatingRefreshStatus.Refreshing
+            SystemOverviewState.Completed -> AppFloatingRefreshStatus.Success
+            SystemOverviewState.Failed -> AppFloatingRefreshStatus.Danger
+            SystemOverviewState.Cached -> AppFloatingRefreshStatus.Cached
+            SystemOverviewState.Idle -> AppFloatingRefreshStatus.Idle
+        }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AppPageLazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehaviorConnection),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehaviorConnection),
             state = listState,
             innerPadding = innerPadding,
-            sectionSpacing = 0.dp
+            sectionSpacing = 0.dp,
         ) {
             item(key = "os-overview-card") {
                 AppOverviewCard(
@@ -189,7 +201,7 @@ internal fun OsPageMainList(
                                 size = 16.dp,
                                 strokeWidth = 2.dp,
                                 activeColor = statusColor,
-                                inactiveColor = indicatorBg
+                                inactiveColor = indicatorBg,
                             )
                         }
                         StatusPill(
@@ -198,31 +210,32 @@ internal fun OsPageMainList(
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
                             backgroundAlphaOverride = if (isDark) 0.24f else 0.34f,
                             borderAlphaOverride = if (isDark) 0.42f else 0.52f,
-                            backdrop = contentBackdrop
+                            backdrop = contentBackdrop,
                         )
-                    }
+                    },
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
+                        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
                     ) {
                         overviewMetricRows.forEach { pair ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap)
+                                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
                             ) {
                                 GitHubOverviewMetricItem(
                                     label = pair.first.label,
                                     value = pair.first.value,
                                     titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                    valueColor = pair.first.valueColor
-                                        ?: MiuixTheme.colorScheme.onBackground,
+                                    valueColor =
+                                        pair.first.valueColor
+                                            ?: MiuixTheme.colorScheme.onBackground,
                                     labelMaxLines = 1,
                                     valueMaxLines = 1,
                                     labelWeight = metricLabelWeight(pair.first.label),
                                     valueWeight = metricValueWeight(pair.first.label),
                                     backdrop = contentBackdrop,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 )
                                 val second = pair.second
                                 if (second != null) {
@@ -230,14 +243,15 @@ internal fun OsPageMainList(
                                         label = second.label,
                                         value = second.value,
                                         titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                        valueColor = second.valueColor
-                                            ?: MiuixTheme.colorScheme.onBackground,
+                                        valueColor =
+                                            second.valueColor
+                                                ?: MiuixTheme.colorScheme.onBackground,
                                         labelMaxLines = 1,
                                         valueMaxLines = 1,
                                         labelWeight = metricLabelWeight(second.label),
                                         valueWeight = metricValueWeight(second.label),
                                         backdrop = contentBackdrop,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     )
                                 } else {
                                     Spacer(modifier = Modifier.weight(1f))
@@ -265,9 +279,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.TOP_INFO,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.TOP_INFO) }
+                        onExportClick = { onExportCard(OsSectionCard.TOP_INFO) },
                     )
-                }
+                },
             )
 
             addKeyValueSectionCard(
@@ -284,9 +298,9 @@ internal fun OsPageMainList(
                     AppCompactIconAction(
                         icon = osLucideEnterIcon(),
                         contentDescription = stringResource(R.string.os_shell_card_cd_open),
-                        onClick = onOpenShellRunner
+                        onClick = onOpenShellRunner,
                     )
-                }
+                },
             )
 
             addShellCommandCards(
@@ -296,7 +310,7 @@ internal fun OsPageMainList(
                 runningCardIds = runningShellCommandCardIds,
                 onExpandedChange = onShellCommandCardExpandedChange,
                 onHeaderLongClick = onOpenShellCommandCardEditor,
-                onRunCard = onRunShellCommandCard
+                onRunCard = onRunShellCommandCard,
             )
 
             addKeyValueSectionCard(
@@ -304,10 +318,11 @@ internal fun OsPageMainList(
                 card = OsSectionCard.SYSTEM,
                 contentBackdrop = contentBackdrop,
                 title = context.getString(R.string.os_section_system_title),
-                subtitle = sectionSubtitle(
-                    SectionKind.SYSTEM,
-                    if (query.isBlank()) prunedSystemRows.size else displayedSystemRows.size
-                ),
+                subtitle =
+                    sectionSubtitle(
+                        SectionKind.SYSTEM,
+                        if (query.isBlank()) prunedSystemRows.size else displayedSystemRows.size,
+                    ),
                 expanded = systemTableExpanded,
                 onExpandedChange = onSystemTableExpandedChange,
                 rows = displayedSystemRows,
@@ -316,9 +331,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.SYSTEM,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.SYSTEM) }
+                        onExportClick = { onExportCard(OsSectionCard.SYSTEM) },
                     )
-                }
+                },
             )
 
             addKeyValueSectionCard(
@@ -326,10 +341,11 @@ internal fun OsPageMainList(
                 card = OsSectionCard.SECURE,
                 contentBackdrop = contentBackdrop,
                 title = context.getString(R.string.os_section_secure_title),
-                subtitle = sectionSubtitle(
-                    SectionKind.SECURE,
-                    if (query.isBlank()) prunedSecureRows.size else displayedSecureRows.size
-                ),
+                subtitle =
+                    sectionSubtitle(
+                        SectionKind.SECURE,
+                        if (query.isBlank()) prunedSecureRows.size else displayedSecureRows.size,
+                    ),
                 expanded = secureTableExpanded,
                 onExpandedChange = onSecureTableExpandedChange,
                 rows = displayedSecureRows,
@@ -338,9 +354,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.SECURE,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.SECURE) }
+                        onExportClick = { onExportCard(OsSectionCard.SECURE) },
                     )
-                }
+                },
             )
 
             addKeyValueSectionCard(
@@ -348,10 +364,11 @@ internal fun OsPageMainList(
                 card = OsSectionCard.GLOBAL,
                 contentBackdrop = contentBackdrop,
                 title = context.getString(R.string.os_section_global_title),
-                subtitle = sectionSubtitle(
-                    SectionKind.GLOBAL,
-                    if (query.isBlank()) prunedGlobalRows.size else displayedGlobalRows.size
-                ),
+                subtitle =
+                    sectionSubtitle(
+                        SectionKind.GLOBAL,
+                        if (query.isBlank()) prunedGlobalRows.size else displayedGlobalRows.size,
+                    ),
                 expanded = globalTableExpanded,
                 onExpandedChange = onGlobalTableExpandedChange,
                 rows = displayedGlobalRows,
@@ -360,9 +377,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.GLOBAL,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.GLOBAL) }
+                        onExportClick = { onExportCard(OsSectionCard.GLOBAL) },
                     )
-                }
+                },
             )
 
             addKeyValueSectionCard(
@@ -370,10 +387,11 @@ internal fun OsPageMainList(
                 card = OsSectionCard.ANDROID,
                 contentBackdrop = contentBackdrop,
                 title = context.getString(R.string.os_section_android_title),
-                subtitle = sectionSubtitle(
-                    SectionKind.ANDROID,
-                    if (query.isBlank()) prunedAndroidRows.size else displayedAndroidRows.size
-                ),
+                subtitle =
+                    sectionSubtitle(
+                        SectionKind.ANDROID,
+                        if (query.isBlank()) prunedAndroidRows.size else displayedAndroidRows.size,
+                    ),
                 expanded = androidPropsExpanded,
                 onExpandedChange = onAndroidPropsExpandedChange,
                 rows = displayedAndroidRows,
@@ -382,9 +400,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.ANDROID,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.ANDROID) }
+                        onExportClick = { onExportCard(OsSectionCard.ANDROID) },
                     )
-                }
+                },
             )
 
             addKeyValueSectionCard(
@@ -392,10 +410,11 @@ internal fun OsPageMainList(
                 card = OsSectionCard.JAVA,
                 contentBackdrop = contentBackdrop,
                 title = context.getString(R.string.os_section_java_title),
-                subtitle = sectionSubtitle(
-                    SectionKind.JAVA,
-                    if (query.isBlank()) prunedJavaRows.size else displayedJavaRows.size
-                ),
+                subtitle =
+                    sectionSubtitle(
+                        SectionKind.JAVA,
+                        if (query.isBlank()) prunedJavaRows.size else displayedJavaRows.size,
+                    ),
                 expanded = javaPropsExpanded,
                 onExpandedChange = onJavaPropsExpandedChange,
                 rows = displayedJavaRows,
@@ -404,9 +423,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.JAVA,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.JAVA) }
+                        onExportClick = { onExportCard(OsSectionCard.JAVA) },
                     )
-                }
+                },
             )
 
             addKeyValueSectionCard(
@@ -414,10 +433,11 @@ internal fun OsPageMainList(
                 card = OsSectionCard.LINUX,
                 contentBackdrop = contentBackdrop,
                 title = context.getString(R.string.os_section_linux_title),
-                subtitle = sectionSubtitle(
-                    SectionKind.LINUX,
-                    if (query.isBlank()) prunedLinuxRows.size else displayedLinuxRows.size
-                ),
+                subtitle =
+                    sectionSubtitle(
+                        SectionKind.LINUX,
+                        if (query.isBlank()) prunedLinuxRows.size else displayedLinuxRows.size,
+                    ),
                 expanded = linuxEnvExpanded,
                 onExpandedChange = onLinuxEnvExpandedChange,
                 rows = displayedLinuxRows,
@@ -426,9 +446,9 @@ internal fun OsPageMainList(
                     OsCardExportAction(
                         card = OsSectionCard.LINUX,
                         exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.LINUX) }
+                        onExportClick = { onExportCard(OsSectionCard.LINUX) },
                     )
-                }
+                },
             )
 
             addShortcutActivityCards(
@@ -438,7 +458,7 @@ internal fun OsPageMainList(
                 expandedStates = activityCardExpanded,
                 onExpandedChange = onActivityCardExpandedChange,
                 onOpenActivity = onOpenActivityShortcutCard,
-                onHeaderLongClick = onOpenActivityShortcutCardEditor
+                onHeaderLongClick = onOpenActivityShortcutCardEditor,
             )
         }
 
@@ -462,9 +482,11 @@ internal fun OsPageMainList(
             refreshStatus = refreshStatus,
             dockSide = floatingDockSide,
             keyboardLift = floatingKeyboardLift,
-            modifier = Modifier
-                .align(dockAlignment)
-                .padding(start = dockStartPadding, end = dockEndPadding, bottom = searchDockBottom)
+            modifier =
+                Modifier
+                    .align(dockAlignment)
+                    .offset { IntOffset(x = 0, y = -searchDockBottomState.value.roundToPx()) }
+                    .padding(start = dockStartPadding, end = dockEndPadding),
         )
     }
 }

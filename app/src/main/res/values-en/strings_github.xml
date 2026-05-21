@@ -203,6 +203,7 @@
     <string name="github_toast_repo_message">%1$s/%2$s: %3$s</string>
     <string name="github_cd_add_track">Add tracking</string>
     <string name="github_cd_status">Status</string>
+    <string name="github_cd_download_asset">Download %1$s</string>
     <string name="github_cd_share_asset">Share %1$s</string>
     <string name="github_cd_view_apk_info">View APK info for %1$s</string>
     <string name="github_topbar_cd_edit_strategy">Edit fetch strategy</string>

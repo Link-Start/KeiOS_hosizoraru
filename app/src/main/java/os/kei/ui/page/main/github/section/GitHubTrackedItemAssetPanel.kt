@@ -44,6 +44,7 @@ internal fun GitHubTrackedItemAssetPanel(
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
+    onInstallApk: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     onOpenApkInDownloader: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     context: Context,
@@ -162,6 +163,7 @@ internal fun GitHubTrackedItemAssetPanel(
                             },
                             context = context,
                             onOpenApkInfo = { onOpenApkInfo(item, asset) },
+                            onInstallApk = { onInstallApk(item, asset) },
                             onOpenApkInDownloader = { onOpenApkInDownloader(item, asset) },
                             onShareApkLink = onShareApkLink
                         )

@@ -65,6 +65,12 @@ internal class GitHubAssetActions(
 
     fun openApkInDownloader(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) {
         scope.launch {
+            openApkInDownloaderInternal(asset)
+        }
+    }
+
+    fun installApkWithKeiOs(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) {
+        scope.launch {
             if (shouldInstallWithKeiOs(asset)) {
                 openManagedInstallConfirm(item, asset)
             } else {

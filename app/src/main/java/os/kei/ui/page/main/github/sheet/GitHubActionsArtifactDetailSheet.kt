@@ -50,6 +50,7 @@ internal fun GitHubActionsArtifactDetailSheet(
     sharing: Boolean,
     onDismissRequest: () -> Unit,
     onRefreshRun: (Long) -> Unit,
+    onInstall: (Long, Long) -> Unit,
     onDownload: (Long, Long) -> Unit,
     onShare: (Long, Long) -> Unit,
 ) {
@@ -76,18 +77,10 @@ internal fun GitHubActionsArtifactDetailSheet(
             .takeIf { it > 0L }
             ?.let { formatAssetSize(it, context) }
             ?: stringResource(R.string.common_unknown)
-    val primaryActionLabel =
-        stringResource(
-            when {
-                managedInstallEnabled && downloading -> R.string.github_apk_info_action_installing
-                managedInstallEnabled -> R.string.github_page_install_status_install
-                else -> R.string.common_download
-            },
-        )
-    val primaryActionText =
+    val downloadActionText =
         stringResource(
             R.string.github_actions_action_with_size,
-            primaryActionLabel,
+            stringResource(R.string.common_download),
             artifactSizeLabel,
         )
     SnapshotWindowBottomSheet(
@@ -184,16 +177,28 @@ internal fun GitHubActionsArtifactDetailSheet(
                     )
                 }
                 ActionButtonRow {
+                    if (managedInstallEnabled) {
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            variant = GlassVariant.SheetAction,
+                            text = stringResource(
+                                if (downloading) {
+                                    R.string.github_apk_info_action_installing
+                                } else {
+                                    R.string.github_page_install_status_install
+                                },
+                            ),
+                            leadingIcon = appLucidePackageIcon(),
+                            enabled = canAct,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onInstall(run.id, artifact.id) },
+                        )
+                    }
                     AppLiquidTextButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
-                        text = primaryActionText,
-                        leadingIcon =
-                            if (managedInstallEnabled) {
-                                appLucidePackageIcon()
-                            } else {
-                                appLucideDownloadIcon()
-                            },
+                        text = downloadActionText,
+                        leadingIcon = appLucideDownloadIcon(),
                         enabled = canAct,
                         modifier = Modifier.weight(1f),
                         onClick = { onDownload(run.id, artifact.id) },

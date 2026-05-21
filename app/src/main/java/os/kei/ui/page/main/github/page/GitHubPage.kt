@@ -389,6 +389,7 @@ fun GitHubPage(
                     onOpenDecisionAssistDetail = actions::openDecisionAssistDetail,
                     onOpenExternalUrl = actions::openExternalUrl,
                     onOpenApkInfo = actions::openApkInfo,
+                    onInstallApk = actions::installApkWithKeiOs,
                     onOpenApkInDownloader = actions::openApkInDownloader,
                     onShareApkLink = actions::shareApkLink,
                     onOpenShareImportFlow = actions::openShareImportFlow,

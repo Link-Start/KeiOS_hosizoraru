@@ -203,6 +203,7 @@
     <string name="github_toast_repo_message">%1$s/%2$s: %3$s</string>
     <string name="github_cd_add_track">新增跟踪</string>
     <string name="github_cd_status">状态</string>
+    <string name="github_cd_download_asset">下载 %1$s</string>
     <string name="github_cd_share_asset">分享 %1$s</string>
     <string name="github_cd_view_apk_info">查看 %1$s 的 APK 信息</string>
     <string name="github_topbar_cd_edit_strategy">编辑抓取方案</string>

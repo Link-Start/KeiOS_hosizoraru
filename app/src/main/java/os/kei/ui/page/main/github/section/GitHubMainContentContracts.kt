@@ -127,6 +127,7 @@ internal data class GitHubMainContentActions(
     val onOpenDecisionAssistDetail: (GitHubDecisionAssistDetailType, GitHubTrackedApp) -> Unit,
     val onOpenExternalUrl: (String) -> Unit,
     val onOpenApkInfo: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
+    val onInstallApk: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     val onOpenApkInDownloader: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
     val onShareApkLink: (GitHubReleaseAssetFile) -> Unit,
     val onOpenShareImportFlow: () -> Unit,

@@ -246,6 +246,7 @@ internal fun GitHubMainContent(
                                 onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
                                 onOpenExternalUrl = actions.onOpenExternalUrl,
                                 onOpenApkInfo = actions.onOpenApkInfo,
+                                onInstallApk = actions.onInstallApk,
                                 onOpenApkInDownloader = actions.onOpenApkInDownloader,
                                 onShareApkLink = actions.onShareApkLink,
                             ),

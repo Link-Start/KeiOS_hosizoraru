@@ -257,7 +257,8 @@ internal fun GitHubPageSheetHost(
             ?.let { state.actionsArtifactShareLoadingId == it } == true,
         onDismissRequest = { state.actionsArtifactDetailRequest = null },
         onRefreshRun = actions::refreshActionsRunStatus,
-        onDownload = actions::installActionsArtifact,
+        onInstall = actions::installActionsArtifact,
+        onDownload = actions::downloadActionsArtifact,
         onShare = actions::shareActionsArtifact
     )
 
@@ -278,6 +279,9 @@ internal fun GitHubPageSheetHost(
         managedInstallRunning = apkInfoManagedInstallRunning,
         onRefresh = {
             apkInfoRequest?.let { actions.refreshApkInfo(it.item, it.asset) }
+        },
+        onInstall = {
+            apkInfoRequest?.let { actions.installApkWithKeiOs(it.item, it.asset) }
         },
         onDownload = {
             apkInfoRequest?.let { actions.openApkInDownloader(it.item, it.asset) }

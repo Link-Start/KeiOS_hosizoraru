@@ -62,6 +62,7 @@ internal fun GitHubApkInfoSheet(
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,
     onRefresh: () -> Unit,
+    onInstall: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,
     onDismissRequest: () -> Unit
@@ -126,6 +127,7 @@ internal fun GitHubApkInfoSheet(
                     managedInstallEnabled = managedInstallEnabled,
                     managedInstallRunning = managedInstallRunning,
                     onRefresh = onRefresh,
+                    onInstall = onInstall,
                     onDownload = onDownload,
                     onShare = onShare
                 )
@@ -191,6 +193,7 @@ private fun ApkInfoActionRow(
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,
     onRefresh: () -> Unit,
+    onInstall: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit
 ) {
@@ -214,19 +217,28 @@ private fun ApkInfoActionRow(
                 MiuixTheme.colorScheme.primary
             }
         )
+        if (managedInstallEnabled) {
+            AppLiquidIconButton(
+                backdrop = backdrop,
+                icon = appLucidePackageIcon(),
+                contentDescription = stringResource(
+                    if (managedInstallRunning) {
+                        R.string.github_apk_info_action_installing
+                    } else {
+                        R.string.github_apk_info_action_install
+                    }
+                ),
+                onClick = onInstall,
+                enabled = !managedInstallRunning,
+                variant = GlassVariant.SheetPrimaryAction
+            )
+        }
         AppLiquidIconButton(
             backdrop = backdrop,
-            icon = if (managedInstallEnabled) appLucidePackageIcon() else appLucideDownloadIcon(),
-            contentDescription = stringResource(
-                when {
-                    managedInstallRunning -> R.string.github_apk_info_action_installing
-                    managedInstallEnabled -> R.string.github_apk_info_action_install
-                    else -> R.string.github_apk_info_action_download
-                }
-            ),
+            icon = appLucideDownloadIcon(),
+            contentDescription = stringResource(R.string.github_apk_info_action_download),
             onClick = onDownload,
-            enabled = !managedInstallRunning,
-            variant = GlassVariant.SheetPrimaryAction
+            variant = GlassVariant.SheetAction
         )
         AppLiquidIconButton(
             backdrop = backdrop,

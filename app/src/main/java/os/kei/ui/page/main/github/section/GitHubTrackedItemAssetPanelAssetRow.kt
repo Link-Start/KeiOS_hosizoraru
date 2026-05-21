@@ -57,6 +57,7 @@ internal fun GitHubTrackedItemAssetRow(
     installActionColor: Color,
     context: Context,
     onOpenApkInfo: () -> Unit,
+    onInstallApk: () -> Unit,
     onOpenApkInDownloader: () -> Unit,
     onShareApkLink: (GitHubReleaseAssetFile) -> Unit
 ) {
@@ -125,24 +126,30 @@ internal fun GitHubTrackedItemAssetRow(
                         minSize = 34.dp
                     )
                 }
-                val installWithKeiOs = managedInstallEnabled && isApkAsset
+                if (managedInstallEnabled && isApkAsset) {
+                    AppCompactIconAction(
+                        icon = appLucidePackageIcon(),
+                        contentDescription = context.getString(
+                            if (managedInstallRunning) {
+                                R.string.github_cd_install_asset_running
+                            } else {
+                                R.string.github_cd_install_asset
+                            },
+                            asset.name
+                        ),
+                        tint = installActionColor,
+                        enabled = !managedInstallRunning,
+                        onClick = onInstallApk,
+                        minSize = 34.dp
+                    )
+                }
                 AppCompactIconAction(
-                    icon = if (installWithKeiOs) appLucidePackageIcon() else appLucideDownloadIcon(),
-                    contentDescription = when {
-                        managedInstallRunning -> context.getString(
-                            R.string.github_cd_install_asset_running,
-                            asset.name
-                        )
-
-                        installWithKeiOs -> context.getString(
-                            R.string.github_cd_install_asset,
-                            asset.name
-                        )
-
-                        else -> sizeLabel
-                    },
-                    tint = installActionColor,
-                    enabled = !managedInstallRunning,
+                    icon = appLucideDownloadIcon(),
+                    contentDescription = context.getString(
+                        R.string.github_cd_download_asset,
+                        asset.name
+                    ),
+                    tint = actionButtonColor,
                     onClick = onOpenApkInDownloader,
                     minSize = 34.dp
                 )

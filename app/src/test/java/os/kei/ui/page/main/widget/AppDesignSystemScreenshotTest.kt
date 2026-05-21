@@ -396,6 +396,7 @@ class AppDesignSystemScreenshotTest {
                             installActionColor = MiuixTheme.colorScheme.primary,
                             context = ApplicationProvider.getApplicationContext(),
                             onOpenApkInfo = {},
+                            onInstallApk = {},
                             onOpenApkInDownloader = {},
                             onShareApkLink = {},
                         )

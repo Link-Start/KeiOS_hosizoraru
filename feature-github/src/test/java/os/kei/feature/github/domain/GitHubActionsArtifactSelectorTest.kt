@@ -233,17 +233,30 @@ class GitHubActionsArtifactSelectorTest {
     }
 
     @Test
-    fun `managed install takeover applies only to apk artifacts when enabled`() {
+    fun `managed install takeover applies to android apk-like artifacts when enabled`() {
         val apkMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
             artifacts = listOf(artifact("app-arm64-v8a-release.apk"))
+        ).single()
+        val extensionlessAndroidMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
+            artifacts = listOf(artifact("Market"))
         ).single()
         val archiveMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
             artifacts = listOf(artifact("app-universal-release.zip"))
         ).single()
+        val genericArchiveMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
+            artifacts = listOf(artifact("docs-release.zip")),
+            options = GitHubActionsArtifactSelectionOptions(fallbackToAllArtifacts = true)
+        ).single()
+        val bundleMatch = GitHubActionsArtifactSelector.selectDisplayArtifacts(
+            artifacts = listOf(artifact("app-release.aab"))
+        ).single()
         val enabledConfig = GitHubLookupConfig(appManagedShareInstallEnabled = true)
 
         assertTrue(apkMatch.supportsManagedApkInstall(enabledConfig))
-        assertFalse(archiveMatch.supportsManagedApkInstall(enabledConfig))
+        assertTrue(extensionlessAndroidMatch.supportsManagedApkInstall(enabledConfig))
+        assertTrue(archiveMatch.supportsManagedApkInstall(enabledConfig))
+        assertFalse(genericArchiveMatch.supportsManagedApkInstall(enabledConfig))
+        assertFalse(bundleMatch.supportsManagedApkInstall(enabledConfig))
         assertFalse(apkMatch.supportsManagedApkInstall(GitHubLookupConfig()))
     }
 

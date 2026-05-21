@@ -593,6 +593,9 @@ internal class GitHubPageActions(
     fun openApkInDownloader(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
         assetActions.openApkInDownloader(item, asset)
 
+    fun installApkWithKeiOs(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
+        assetActions.installApkWithKeiOs(item, asset)
+
     fun openApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
         assetActions.openApkInfo(item, asset)
 

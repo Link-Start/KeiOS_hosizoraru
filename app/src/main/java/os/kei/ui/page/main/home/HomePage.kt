@@ -302,7 +302,7 @@ fun HomePage(
                 bgModifier = foregroundBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
                 effectBackground = effectBackgroundEnabled,
                 isFullSize = true,
-                alpha = { heroMotionState.bgAlpha },
+                alpha = heroMotionState.bgAlpha,
             ) {
                 HomePageHero(
                     foregroundBackdrop = foregroundBackdrop,

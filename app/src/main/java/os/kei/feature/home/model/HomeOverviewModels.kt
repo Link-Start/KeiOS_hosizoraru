@@ -17,6 +17,7 @@ data class HomeMcpOverview(
     val allowExternal: Boolean = false,
 )
 
+@Immutable
 data class HomeGitHubOverview(
     val trackedCount: Int = 0,
     val cacheHitCount: Int = 0,
@@ -33,6 +34,7 @@ data class HomeGitHubOverview(
     val loaded: Boolean = false
 )
 
+@Immutable
 data class HomeBaOverview(
     val activated: Boolean = false,
     val serverIndex: Int = 2,
@@ -47,12 +49,14 @@ data class HomeBaOverview(
     val loaded: Boolean = false
 )
 
+@Immutable
 enum class HomeOverviewCard {
     MCP,
     GITHUB,
     BA
 }
 
+@Immutable
 data class HomeOverviewSnapshot(
     val mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     val githubOverview: HomeGitHubOverview = HomeGitHubOverview(),

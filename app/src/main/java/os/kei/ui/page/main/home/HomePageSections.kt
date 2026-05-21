@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -328,6 +329,7 @@ private fun homeInfoGridRows(
     return rows
 }
 
+@Immutable
 internal data class HomeCardStatItem(
     val label: String,
     val value: String,

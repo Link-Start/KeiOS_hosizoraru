@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -286,10 +287,10 @@ internal fun HomePageHero(
     homeAppName: String,
     homeTagline: String,
     appVersionText: String,
-    avoidanceProgress: Float,
-    iconProgress: Float,
-    titleProgress: Float,
-    summaryProgress: Float,
+    avoidanceProgress: () -> Float,
+    iconProgress: () -> Float,
+    titleProgress: () -> Float,
+    summaryProgress: () -> Float,
     statusPills: List<HomeHeaderStatusPillState>,
     onHeroHeightChanged: (Int) -> Unit,
     onIconBottomChanged: (Float) -> Unit,
@@ -298,10 +299,6 @@ internal fun HomePageHero(
 ) {
     val density = LocalDensity.current
     val sharedAvoidanceLiftPx = with(density) { HOME_HERO_SHARED_AVOIDANCE_LIFT.toPx() }
-    val sharedLiftProgress = max(avoidanceProgress, max(iconProgress, max(titleProgress, summaryProgress)))
-    val iconExitProgress = max(iconProgress, avoidanceProgress * HOME_HERO_AVOIDANCE_ALPHA_WEIGHT)
-    val titleExitProgress = max(titleProgress, avoidanceProgress * HOME_HERO_AVOIDANCE_ALPHA_WEIGHT)
-    val summaryExitProgress = max(summaryProgress, avoidanceProgress * HOME_HERO_AVOIDANCE_ALPHA_WEIGHT)
 
     Column(
         modifier = Modifier
@@ -319,6 +316,20 @@ internal fun HomePageHero(
             modifier = Modifier
                 .size(88.dp)
                 .graphicsLayer {
+                    val avoidanceValue = avoidanceProgress()
+                    val iconValue = iconProgress()
+                    val titleValue = titleProgress()
+                    val summaryValue = summaryProgress()
+                    val sharedLiftProgress = homeHeroSharedLiftProgress(
+                        avoidanceProgress = avoidanceValue,
+                        iconProgress = iconValue,
+                        titleProgress = titleValue,
+                        summaryProgress = summaryValue
+                    )
+                    val iconExitProgress = homeHeroIconExitProgress(
+                        avoidanceProgress = avoidanceValue,
+                        iconProgress = iconValue
+                    )
                     alpha = 1f - iconExitProgress
                     translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
                     scaleX = 1f - (iconExitProgress * 0.05f)
@@ -334,6 +345,12 @@ internal fun HomePageHero(
                 modifier = Modifier
                     .size(88.dp)
                     .graphicsLayer {
+                        val avoidanceValue = avoidanceProgress()
+                        val iconValue = iconProgress()
+                        val iconExitProgress = homeHeroIconExitProgress(
+                            avoidanceProgress = avoidanceValue,
+                            iconProgress = iconValue
+                        )
                         alpha = (1f - iconExitProgress) * 0.95f
                     }
                     .homeKeiHdrAccent(
@@ -347,20 +364,22 @@ internal fun HomePageHero(
             )
         }
 
-        val titleTextStyle = TextStyle(
-            brush = Brush.linearGradient(
-                colors = HOME_KEI_TITLE_GRADIENT_COLORS,
-                start = Offset(14f, 6f),
-                end = Offset(260f, 104f)
-            ),
-            fontWeight = FontWeight.Bold,
-            fontSize = 30.sp,
-            shadow = ComposeTextShadow(
-                color = Color(0x55FF74A6),
-                offset = Offset(0f, 3f),
-                blurRadius = 16f
+        val titleTextStyle = remember {
+            TextStyle(
+                brush = Brush.linearGradient(
+                    colors = HOME_KEI_TITLE_GRADIENT_COLORS,
+                    start = Offset(14f, 6f),
+                    end = Offset(260f, 104f)
+                ),
+                fontWeight = FontWeight.Bold,
+                fontSize = 30.sp,
+                shadow = ComposeTextShadow(
+                    color = Color(0x55FF74A6),
+                    offset = Offset(0f, 3f),
+                    blurRadius = 16f
+                )
             )
-        )
+        }
         Box(
             modifier = Modifier
                 .padding(top = 10.dp, bottom = 4.dp)
@@ -368,6 +387,20 @@ internal fun HomePageHero(
                     onTitleBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
                 }
                 .graphicsLayer {
+                    val avoidanceValue = avoidanceProgress()
+                    val iconValue = iconProgress()
+                    val titleValue = titleProgress()
+                    val summaryValue = summaryProgress()
+                    val sharedLiftProgress = homeHeroSharedLiftProgress(
+                        avoidanceProgress = avoidanceValue,
+                        iconProgress = iconValue,
+                        titleProgress = titleValue,
+                        summaryProgress = summaryValue
+                    )
+                    val titleExitProgress = homeHeroTitleExitProgress(
+                        avoidanceProgress = avoidanceValue,
+                        titleProgress = titleValue
+                    )
                     alpha = 1f - titleExitProgress
                     translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
                     scaleX = 1f - (titleExitProgress * 0.05f)
@@ -404,6 +437,20 @@ internal fun HomePageHero(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer {
+                    val avoidanceValue = avoidanceProgress()
+                    val iconValue = iconProgress()
+                    val titleValue = titleProgress()
+                    val summaryValue = summaryProgress()
+                    val sharedLiftProgress = homeHeroSharedLiftProgress(
+                        avoidanceProgress = avoidanceValue,
+                        iconProgress = iconValue,
+                        titleProgress = titleValue,
+                        summaryProgress = summaryValue
+                    )
+                    val summaryExitProgress = homeHeroSummaryExitProgress(
+                        avoidanceProgress = avoidanceValue,
+                        summaryProgress = summaryValue
+                    )
                     alpha = 1f - summaryExitProgress
                     translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
                     scaleX = 1f - (summaryExitProgress * 0.05f)
@@ -454,6 +501,32 @@ internal fun HomePageHero(
         }
     }
 }
+
+private fun homeHeroSharedLiftProgress(
+    avoidanceProgress: Float,
+    iconProgress: Float,
+    titleProgress: Float,
+    summaryProgress: Float
+): Float =
+    max(
+        avoidanceProgress,
+        max(iconProgress, max(titleProgress, summaryProgress))
+    )
+
+private fun homeHeroIconExitProgress(
+    avoidanceProgress: Float,
+    iconProgress: Float
+): Float = max(iconProgress, avoidanceProgress * HOME_HERO_AVOIDANCE_ALPHA_WEIGHT)
+
+private fun homeHeroTitleExitProgress(
+    avoidanceProgress: Float,
+    titleProgress: Float
+): Float = max(titleProgress, avoidanceProgress * HOME_HERO_AVOIDANCE_ALPHA_WEIGHT)
+
+private fun homeHeroSummaryExitProgress(
+    avoidanceProgress: Float,
+    summaryProgress: Float
+): Float = max(summaryProgress, avoidanceProgress * HOME_HERO_AVOIDANCE_ALPHA_WEIGHT)
 
 @Composable
 internal fun HomePageHeroSpacer(

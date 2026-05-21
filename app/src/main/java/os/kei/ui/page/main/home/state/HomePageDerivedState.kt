@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -26,22 +25,20 @@ import os.kei.ui.page.main.home.HomeCardStatItem
 import os.kei.ui.page.main.home.HomeHeaderStatusPillState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 
 private const val HOME_HEADER_SINK_PER_HIDDEN_CARD_DP = 22
 private val HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP = 128.dp
 
 internal data class HomePageHeroMotionState(
-    val scrollProgress: Float,
-    val bgAlpha: Float,
+    val bgAlpha: () -> Float,
     val hdrSweepProgress: Float,
     val logoHeightDp: Dp,
     val homeHeaderSinkOffset: Dp,
-    val avoidanceProgress: Float,
-    val iconProgress: Float,
-    val titleProgress: Float,
-    val summaryProgress: Float,
+    val avoidanceProgress: () -> Float,
+    val iconProgress: () -> Float,
+    val titleProgress: () -> Float,
+    val summaryProgress: () -> Float,
     val onHeroHeightPxChanged: (Int) -> Unit,
     val onLogoHeightPxChanged: (Int) -> Unit,
     val onLogoAreaBottomChanged: (Float) -> Unit,
@@ -67,21 +64,9 @@ internal fun rememberHomePageHeroMotionState(
 ): HomePageHeroMotionState {
     val density = LocalDensity.current
     var logoHeightPx by remember { mutableIntStateOf(0) }
-    val scrollProgress by remember {
-        derivedStateOf {
-            if (logoHeightPx <= 0) {
-                0f
-            } else {
-                val index = lazyListState.firstVisibleItemIndex
-                val offset = lazyListState.firstVisibleItemScrollOffset
-                if (index > 0) 1f else (offset.toFloat() / logoHeightPx).coerceIn(0f, 1f)
-            }
-        }
-    }
-    val bgAlpha by appMotionFloatState(
-        targetValue = 1f - scrollProgress,
-        label = "home_bg_alpha"
-    )
+    var lastListIndex by remember { mutableIntStateOf(0) }
+    var lastListOffsetPx by remember { mutableIntStateOf(0) }
+    var bgAlpha by remember { mutableFloatStateOf(1f) }
     var logoHeightDp by remember { mutableStateOf(300.dp) }
     var logoAreaY by remember { mutableFloatStateOf(0f) }
     var iconY by remember { mutableFloatStateOf(0f) }
@@ -119,12 +104,26 @@ internal fun rememberHomePageHeroMotionState(
     var summaryProgress by remember { mutableFloatStateOf(0f) }
     var avoidanceProgress by remember { mutableFloatStateOf(0f) }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    val bgAlphaProvider = remember { { bgAlpha } }
+    val avoidanceProgressProvider = remember { { avoidanceProgress } }
+    val iconProgressProvider = remember { { iconProgress } }
+    val titleProgressProvider = remember { { titleProgress } }
+    val summaryProgressProvider = remember { { summaryProgress } }
 
     LaunchedEffect(lazyListState, snapshotFlowManager) {
         snapshotFlowManager.snapshotFlow {
             lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
         }
             .onEach { (index, offset) ->
+                lastListIndex = index
+                lastListOffsetPx = offset
+                val nextBgAlpha = 1f - homeHeroScrollProgress(
+                    index = index,
+                    offsetPx = offset,
+                    logoHeightPx = logoHeightPx
+                )
+                if (bgAlpha != nextBgAlpha) bgAlpha = nextBgAlpha
+
                 if (index > 0) {
                     if (avoidanceProgress != 1f) avoidanceProgress = 1f
                     if (iconProgress != 1f) iconProgress = 1f
@@ -132,10 +131,13 @@ internal fun rememberHomePageHeroMotionState(
                     if (summaryProgress != 1f) summaryProgress = 1f
                     return@onEach
                 }
-                avoidanceProgress = homeHeroAvoidanceProgress(
+                val nextAvoidanceProgress = homeHeroAvoidanceProgress(
                     offsetPx = offset.toFloat(),
                     distancePx = avoidanceScrollDistancePx
                 )
+                if (avoidanceProgress != nextAvoidanceProgress) {
+                    avoidanceProgress = nextAvoidanceProgress
+                }
 
                 if (initialLogoAreaY == 0f && logoAreaY > 0f) {
                     initialLogoAreaY = logoAreaY
@@ -147,46 +149,70 @@ internal fun rememberHomePageHeroMotionState(
                 val stage3 = (titleY - iconY).coerceAtLeast(1f)
 
                 val summaryDelay = stage1 * 0.5f
-                summaryProgress = ((offset.toFloat() - summaryDelay) / (stage1 - summaryDelay).coerceAtLeast(1f))
+                val nextSummaryProgress =
+                    ((offset.toFloat() - summaryDelay) / (stage1 - summaryDelay).coerceAtLeast(1f))
+                        .coerceIn(0f, 1f)
+                val nextTitleProgress = ((offset.toFloat() - stage1) / stage2)
                     .coerceIn(0f, 1f)
-                titleProgress = ((offset.toFloat() - stage1) / stage2)
+                val nextIconProgress = ((offset.toFloat() - stage1 - stage2) / stage3)
                     .coerceIn(0f, 1f)
-                iconProgress = ((offset.toFloat() - stage1 - stage2) / stage3)
-                    .coerceIn(0f, 1f)
+                if (summaryProgress != nextSummaryProgress) summaryProgress = nextSummaryProgress
+                if (titleProgress != nextTitleProgress) titleProgress = nextTitleProgress
+                if (iconProgress != nextIconProgress) iconProgress = nextIconProgress
             }
             .collect { }
     }
 
     return remember(
-        scrollProgress,
-        bgAlpha,
+        bgAlphaProvider,
         hdrSweepProgress,
         logoHeightDp,
         hiddenOverviewCardCount,
-        avoidanceProgress,
-        iconProgress,
-        titleProgress,
-        summaryProgress
+        avoidanceProgressProvider,
+        iconProgressProvider,
+        titleProgressProvider,
+        summaryProgressProvider,
+        density
     ) {
         HomePageHeroMotionState(
-            scrollProgress = scrollProgress,
-            bgAlpha = bgAlpha,
+            bgAlpha = bgAlphaProvider,
             hdrSweepProgress = hdrSweepProgress,
             logoHeightDp = logoHeightDp,
             homeHeaderSinkOffset = (hiddenOverviewCardCount * HOME_HEADER_SINK_PER_HIDDEN_CARD_DP).dp,
-            avoidanceProgress = avoidanceProgress,
-            iconProgress = iconProgress,
-            titleProgress = titleProgress,
-            summaryProgress = summaryProgress,
+            avoidanceProgress = avoidanceProgressProvider,
+            iconProgress = iconProgressProvider,
+            titleProgress = titleProgressProvider,
+            summaryProgress = summaryProgressProvider,
             onHeroHeightPxChanged = { heightPx ->
                 with(density) { logoHeightDp = heightPx.toDp() }
             },
-            onLogoHeightPxChanged = { logoHeightPx = it },
+            onLogoHeightPxChanged = { heightPx ->
+                logoHeightPx = heightPx
+                val nextBgAlpha = 1f - homeHeroScrollProgress(
+                    index = lastListIndex,
+                    offsetPx = lastListOffsetPx,
+                    logoHeightPx = heightPx
+                )
+                if (bgAlpha != nextBgAlpha) bgAlpha = nextBgAlpha
+            },
             onLogoAreaBottomChanged = { logoAreaY = it },
             onIconBottomChanged = { bottom -> if (iconY == 0f) iconY = bottom },
             onTitleBottomChanged = { bottom -> if (titleY == 0f) titleY = bottom },
             onSummaryBottomChanged = { bottom -> if (summaryY == 0f) summaryY = bottom }
         )
+    }
+}
+
+private fun homeHeroScrollProgress(
+    index: Int,
+    offsetPx: Int,
+    logoHeightPx: Int
+): Float {
+    if (logoHeightPx <= 0) return 0f
+    return if (index > 0) {
+        1f
+    } else {
+        (offsetPx.toFloat() / logoHeightPx).coerceIn(0f, 1f)
     }
 }
 

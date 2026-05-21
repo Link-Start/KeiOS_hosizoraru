@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.home.state
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -15,6 +16,7 @@ import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@Immutable
 internal data class HomePageContentState(
     val homeNa: String,
     val homeAppName: String,

@@ -6,7 +6,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -17,7 +19,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
@@ -25,6 +29,7 @@ import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
@@ -55,12 +60,22 @@ internal fun BaGuideFavoriteBgmMusicContent(
     val contentBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    val displayedFavorites = remember(favorites, searchQuery) {
-        filterAndSortBgmFavorites(
-            favorites = favorites,
-            searchQuery = searchQuery,
-            sortMode = os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode.Recent
-        )
+    var displayedFavorites by remember { mutableStateOf(emptyList<GuideBgmFavoriteItem>()) }
+    LaunchedEffect(favorites, searchQuery) {
+        val dispatcher =
+            if (searchQuery.isBlank()) {
+                AppDispatchers.uiDerivation
+            } else {
+                AppDispatchers.fileIo
+            }
+        displayedFavorites =
+            withContext(dispatcher) {
+                filterAndSortBgmFavorites(
+                    favorites = favorites,
+                    searchQuery = searchQuery,
+                    sortMode = BaGuideBgmFavoriteSortMode.Recent,
+                )
+            }
     }
     val offlineCacheState = rememberBaGuideFavoriteBgmOfflineCacheState(
         context = context,

@@ -5,38 +5,66 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.buildProfileMetaItems
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 
 private val BGM_SEARCH_TOKEN_SPLIT_REGEX = Regex("""\s+""")
 
+internal class BgmFavoriteSearchContext private constructor(
+    private val catalogEntryByContentId: Map<Long, BaGuideCatalogEntry>,
+) {
+    private val guideInfoBySourceUrl = mutableMapOf<String, BaStudentGuideInfo?>()
+
+    fun catalogEntryFor(contentId: Long): BaGuideCatalogEntry? = catalogEntryByContentId[contentId]
+
+    fun guideInfoFor(sourceUrl: String): BaStudentGuideInfo? =
+        guideInfoBySourceUrl.getOrPut(sourceUrl) {
+            BaStudentGuideStore.loadInfo(sourceUrl)
+        }
+
+    companion object {
+        fun build(): BgmFavoriteSearchContext {
+            val catalogEntryByContentId =
+                BaGuideCatalogStore
+                    .loadBundle()
+                    ?.entriesByTab
+                    ?.values
+                    ?.asSequence()
+                    ?.flatten()
+                    ?.associateBy { entry -> entry.contentId }
+                    .orEmpty()
+            return BgmFavoriteSearchContext(catalogEntryByContentId)
+        }
+    }
+}
+
 internal fun bgmFavoriteMatchesSearch(
     favorite: GuideBgmFavoriteItem,
-    searchQuery: String
+    searchQuery: String,
+    context: BgmFavoriteSearchContext,
 ): Boolean {
-    val tokens = searchQuery
-        .trim()
-        .split(BGM_SEARCH_TOKEN_SPLIT_REGEX)
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
+    val tokens =
+        searchQuery
+            .trim()
+            .split(BGM_SEARCH_TOKEN_SPLIT_REGEX)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
     if (tokens.isEmpty()) return true
-    val haystack = bgmFavoriteSearchFields(favorite)
+    val contentId = extractGuideContentIdFromUrl(favorite.sourceUrl)
+    val haystack = bgmFavoriteSearchFields(favorite, contentId, context)
     return tokens.all { token ->
         haystack.any { field -> field.contains(token, ignoreCase = true) }
     }
 }
 
-private fun bgmFavoriteSearchFields(favorite: GuideBgmFavoriteItem): List<String> {
-    val contentId = extractGuideContentIdFromUrl(favorite.sourceUrl)
-    val catalogEntry = contentId?.let { id ->
-        BaGuideCatalogStore.loadBundle()
-            ?.entriesByTab
-            ?.values
-            ?.asSequence()
-            ?.flatten()
-            ?.firstOrNull { entry -> entry.contentId == id }
-    }
-    val guideInfo = BaStudentGuideStore.loadInfo(favorite.sourceUrl)
+private fun bgmFavoriteSearchFields(
+    favorite: GuideBgmFavoriteItem,
+    contentId: Long?,
+    context: BgmFavoriteSearchContext,
+): List<String> {
+    val catalogEntry = contentId?.let(context::catalogEntryFor)
+    val guideInfo = context.guideInfoFor(favorite.sourceUrl)
     return buildList {
         add(favorite.title)
         add(favorite.studentTitle)

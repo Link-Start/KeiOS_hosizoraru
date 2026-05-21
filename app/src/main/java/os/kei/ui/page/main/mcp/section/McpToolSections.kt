@@ -46,63 +46,93 @@ internal data class McpToolBuckets(
     val advancedTools: List<McpToolMeta>,
 )
 
+private val McpToolEntrypointGroups =
+    setOf(
+        McpToolDomains.RUNTIME,
+        McpToolDomains.HOME,
+    )
+
+private val McpToolSystemGroups =
+    setOf(
+        McpToolDomains.SYSTEM,
+        McpToolDomains.OS,
+    )
+
+private val McpToolCategorizedGroups =
+    setOf(
+        McpToolDomains.RUNTIME,
+        McpToolDomains.HOME,
+        McpToolDomains.SYSTEM,
+        McpToolDomains.OS,
+        McpToolDomains.GITHUB,
+        McpToolDomains.BA,
+        McpToolDomains.DEV,
+    )
+
+private val McpCodexToolNames = McpToolCatalog.devToolNames.toSet()
+
 internal fun mcpToolBuckets(
     uiState: McpServerUiState,
     searchQuery: String,
 ): McpToolBuckets {
     val query = searchQuery.trim().lowercase(Locale.ROOT)
-    val filteredTools =
-        if (query.isBlank()) {
-            uiState.tools
-        } else {
-            uiState.tools.filter { tool ->
-                tool.name.lowercase(Locale.ROOT).contains(query) ||
-                    tool.description.lowercase(Locale.ROOT).contains(query) ||
-                    tool.group.lowercase(Locale.ROOT).contains(query)
-            }
+    val entrypointTools = mutableListOf<McpToolMeta>()
+    val runtimeTools = mutableListOf<McpToolMeta>()
+    val systemTools = mutableListOf<McpToolMeta>()
+    val githubTools = mutableListOf<McpToolMeta>()
+    val baTools = mutableListOf<McpToolMeta>()
+    val codexTools = mutableListOf<McpToolMeta>()
+    val workflowTools = mutableListOf<McpToolMeta>()
+    val advancedCandidates = mutableListOf<McpToolMeta>()
+    val categorizedToolNames = mutableSetOf<String>()
+
+    uiState.tools.forEach { tool ->
+        if (query.isNotBlank() && !tool.matchesMcpToolQuery(query)) {
+            return@forEach
         }
-    val codexToolNames = McpToolCatalog.devToolNames.toSet()
-    val categorizedToolNames =
-        filteredTools
-            .filter {
-                it.group in
-                    setOf(
-                        McpToolDomains.RUNTIME,
-                        McpToolDomains.HOME,
-                        McpToolDomains.SYSTEM,
-                        McpToolDomains.OS,
-                        McpToolDomains.GITHUB,
-                        McpToolDomains.BA,
-                        McpToolDomains.DEV,
-                    ) || it.visibility == McpToolVisibility.Workflow
-            }.mapTo(mutableSetOf()) { it.name }
+        if (tool.group in McpToolCategorizedGroups || tool.visibility == McpToolVisibility.Workflow) {
+            categorizedToolNames += tool.name
+        }
+        when {
+            tool.visibility == McpToolVisibility.Entrypoint &&
+                tool.group in McpToolEntrypointGroups -> entrypointTools += tool
+
+            tool.group in McpToolEntrypointGroups &&
+                tool.visibility != McpToolVisibility.Workflow -> runtimeTools += tool
+
+            tool.group in McpToolSystemGroups -> systemTools += tool
+
+            tool.group == McpToolDomains.GITHUB -> githubTools += tool
+
+            tool.group == McpToolDomains.BA -> baTools += tool
+        }
+        if (tool.name in McpCodexToolNames) {
+            codexTools += tool
+        }
+        if (tool.visibility == McpToolVisibility.Workflow) {
+            workflowTools += tool
+        }
+        if (tool.visibility == McpToolVisibility.Advanced) {
+            advancedCandidates += tool
+        }
+    }
+
     return McpToolBuckets(
-        entrypointTools =
-            filteredTools.filter {
-                it.visibility == McpToolVisibility.Entrypoint &&
-                    it.group in setOf(McpToolDomains.RUNTIME, McpToolDomains.HOME) &&
-                    it.visibility != McpToolVisibility.Workflow
-            },
-        runtimeTools =
-            filteredTools.filter {
-                it.group in setOf(McpToolDomains.RUNTIME, McpToolDomains.HOME) &&
-                    it.visibility != McpToolVisibility.Entrypoint &&
-                    it.visibility != McpToolVisibility.Workflow
-            },
-        systemTools =
-            filteredTools.filter {
-                it.group in setOf(McpToolDomains.SYSTEM, McpToolDomains.OS)
-            },
-        githubTools = filteredTools.filter { it.group == McpToolDomains.GITHUB },
-        baTools = filteredTools.filter { it.group == McpToolDomains.BA },
-        codexTools = filteredTools.filter { it.name in codexToolNames },
-        workflowTools = filteredTools.filter { it.visibility == McpToolVisibility.Workflow },
-        advancedTools =
-            filteredTools.filter {
-                it.visibility == McpToolVisibility.Advanced && it.name !in categorizedToolNames
-            },
+        entrypointTools = entrypointTools,
+        runtimeTools = runtimeTools,
+        systemTools = systemTools,
+        githubTools = githubTools,
+        baTools = baTools,
+        codexTools = codexTools,
+        workflowTools = workflowTools,
+        advancedTools = advancedCandidates.filter { tool -> tool.name !in categorizedToolNames },
     )
 }
+
+private fun McpToolMeta.matchesMcpToolQuery(query: String): Boolean =
+    name.lowercase(Locale.ROOT).contains(query) ||
+        description.lowercase(Locale.ROOT).contains(query) ||
+        group.lowercase(Locale.ROOT).contains(query)
 
 @Composable
 internal fun McpToolEntrypointsSection(

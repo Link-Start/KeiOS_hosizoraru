@@ -181,8 +181,18 @@ fun AboutPage(
         )
     val trimmedSearchQuery = searchQuery.trim()
     val searchActive = trimmedSearchQuery.isNotEmpty()
-    val matchingSearchTargets = searchTargets.filter { it.matches(trimmedSearchQuery) }
-    val matchingSearchCards = matchingSearchTargets.map { it.card }.toSet()
+    val matchingSearchTargets =
+        remember(searchTargets, trimmedSearchQuery) {
+            if (trimmedSearchQuery.isBlank()) {
+                emptyList()
+            } else {
+                searchTargets.filter { it.matches(trimmedSearchQuery) }
+            }
+        }
+    val matchingSearchCards =
+        remember(matchingSearchTargets) {
+            matchingSearchTargets.map { it.card }.toSet()
+        }
     val activeCategoryIndex =
         if (pagerState.isScrollInProgress) {
             pagerState.targetPage
@@ -295,7 +305,10 @@ fun AboutPage(
     fun cardVisible(card: AboutSearchCard): Boolean = !searchActive || card in matchingSearchCards
 
     fun LazyListScope.aboutCardItem(card: AboutSearchCard) {
-        item(key = "about_card_${card.name}") {
+        item(
+            key = "about_card_${card.name}",
+            contentType = "about_card",
+        ) {
             when (card) {
                 AboutSearchCard.App -> {
                     AboutAppCardSection(

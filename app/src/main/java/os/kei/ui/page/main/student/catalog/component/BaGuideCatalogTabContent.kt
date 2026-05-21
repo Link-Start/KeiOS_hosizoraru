@@ -93,21 +93,26 @@ internal fun BaGuideCatalogTabContent(
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
+        var lastScrollBounds: Pair<Boolean, Boolean>? = null
+        var lastScrollInProgress: Boolean? = null
         snapshotFlowManager
             .snapshotFlow {
-                tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
+                Triple(
+                    tabListState.listState.canScrollBackward,
+                    tabListState.listState.canScrollForward,
+                    tabListState.listState.isScrollInProgress,
+                )
             }.distinctUntilChanged()
-            .collect { (canScrollBackward, canScrollForward) ->
-                onScrollBoundsChange(canScrollBackward, canScrollForward)
-            }
-    }
-    LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
-        if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager
-            .snapshotFlow { tabListState.listState.isScrollInProgress }
-            .distinctUntilChanged()
-            .collect { scrolling ->
-                onListScrollInProgressChange(scrolling)
+            .collect { (canScrollBackward, canScrollForward, scrolling) ->
+                val scrollBounds = canScrollBackward to canScrollForward
+                if (lastScrollBounds != scrollBounds) {
+                    lastScrollBounds = scrollBounds
+                    onScrollBoundsChange(canScrollBackward, canScrollForward)
+                }
+                if (lastScrollInProgress != scrolling) {
+                    lastScrollInProgress = scrolling
+                    onListScrollInProgressChange(scrolling)
+                }
             }
     }
     BaGuideCatalogTabListLayout(

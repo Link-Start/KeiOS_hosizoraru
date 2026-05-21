@@ -97,9 +97,17 @@ internal fun BaGuideFavoriteBgmMusicContent(
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
-    val selectedFavorite = playbackState.selectedFavorite
-        ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
-        ?: displayedFavorites.firstOrNull()
+    val selectedFavorite =
+        remember(
+            playbackState.selectedAudioUrl,
+            playbackState.queue,
+            playbackState.favorites,
+            displayedFavorites,
+        ) {
+            playbackState.selectedFavorite
+                ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
+                ?: displayedFavorites.firstOrNull()
+        }
     val playbackSnapshot = remember(displayedFavorites) {
         GuideBgmFavoritePlaybackStore.snapshot()
     }

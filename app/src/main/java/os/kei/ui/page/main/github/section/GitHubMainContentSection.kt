@@ -44,7 +44,7 @@ internal fun GitHubMainContent(
     actions: GitHubMainContentActions,
 ) {
     val context = LocalContext.current
-    val supportedAbis = Build.SUPPORTED_ABIS?.toList().orEmpty()
+    val supportedAbis = remember { Build.SUPPORTED_ABIS?.toList().orEmpty() }
     val installedAppLabelsByPackage =
         remember(tracked.appList) {
             tracked.appList

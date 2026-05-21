@@ -48,13 +48,14 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp as lerpFloat
@@ -262,9 +263,6 @@ internal fun BaGuideBgmDockGroupContent(
                     tabs.getOrNull(index)?.key?.let(onSelectedDockKeyChange)
                 }
         }
-        val selectedPillOffset = contentHorizontalPadding +
-            tabSlotWidth * dampedDragAnimation.value + selectedPillInset
-
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -362,7 +360,18 @@ internal fun BaGuideBgmDockGroupContent(
 
         BaGuideBgmDockSelectionPill(
             modifier = Modifier
-                .offset(x = selectedPillOffset, y = contentVerticalPadding)
+                .offset {
+                    with(density) {
+                        val selectedPillOffset =
+                            contentHorizontalPadding +
+                                tabSlotWidth * dampedDragAnimation.value +
+                                selectedPillInset
+                        IntOffset(
+                            x = selectedPillOffset.roundToPx(),
+                            y = contentVerticalPadding.roundToPx(),
+                        )
+                    }
+                }
                 .width(selectedPillWidth)
                 .height(selectedPillHeight)
                 .zIndex(if (expanded >= compact) 2f else 0f)

@@ -235,11 +235,20 @@ fun BaGuideCatalogPage(
                 BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
             },
         )
-    val chromePlaybackFavorite = playbackUiState.selectedFavorite
+    val chromePlaybackFavorite =
+        remember(
+            playbackUiState.selectedAudioUrl,
+            playbackUiState.queue,
+            playbackUiState.favorites,
+        ) {
+            playbackUiState.selectedFavorite
+        }
     val chromeArtworkImageUrl =
-        chromePlaybackFavorite
-            ?.resolvePlaybackArtworkImageUrl()
-            .orEmpty()
+        remember(chromePlaybackFavorite) {
+            chromePlaybackFavorite
+                ?.resolvePlaybackArtworkImageUrl()
+                .orEmpty()
+        }
     val chromePlaybackProgress = playbackSliderPreview ?: playbackUiState.runtimeState.progress
     val bgmCacheState =
         rememberBaGuideCatalogBgmCacheState(

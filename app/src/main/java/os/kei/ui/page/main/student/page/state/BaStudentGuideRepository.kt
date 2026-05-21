@@ -3,15 +3,18 @@ package os.kei.ui.page.main.student.page.state
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
 import kotlin.coroutines.cancellation.CancellationException
-import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaStudentGuideLoadResult(
     val info: BaStudentGuideInfo?,
@@ -27,6 +30,12 @@ internal class BaStudentGuideRepository(
     fun saveCurrentUrl(sourceUrl: String) {
         BaStudentGuideStore.setCurrentUrl(sourceUrl)
     }
+
+    fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
+        GuideBgmFavoriteStore.favoritesFlow()
+
+    fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> =
+        GuideBgmFavoriteStore.favoritesSnapshot()
 
     suspend fun prefetchStaticImages(
         context: Context,

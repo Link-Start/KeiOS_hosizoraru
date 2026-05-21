@@ -180,26 +180,27 @@ internal fun MainPagerLayout(
                     0,
                     (coordinator.tabs.size - 1).coerceAtLeast(0),
                 )
+            val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
+            val selectedPagePositionProvider =
+                remember(coordinator.pagerState, lastPagePosition) {
+                    {
+                        coordinator.pagerState.pagePosition.coerceIn(
+                            0f,
+                            lastPagePosition,
+                        )
+                    }
+                }
             if (miuixMainNavigationEnabled) {
                 MainMiuixBottomBar(
                     visible = coordinator.showBottomBar,
                     navigationBarBottom = insets.navigationBarBottom,
                     tabs = coordinator.tabs,
                     selectedPageIndex = safeSelectedPageIndex,
+                    selectedPagePositionProvider = selectedPagePositionProvider,
                     backdrop = coordinator.backdrop,
                     onPageSelected = coordinator.onPageSelected,
                 )
             } else {
-                val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
-                val selectedPagePositionProvider =
-                    remember(coordinator.pagerState, lastPagePosition) {
-                        {
-                            coordinator.pagerState.pagePosition.coerceIn(
-                                0f,
-                                lastPagePosition,
-                            )
-                        }
-                    }
                 MainPagerBottomBar(
                     visible = coordinator.showBottomBar,
                     navigationBarBottom = insets.navigationBarBottom,

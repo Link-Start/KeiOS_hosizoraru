@@ -3,9 +3,12 @@ package os.kei.ui.page.main.student.catalog.state
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
@@ -42,6 +45,12 @@ internal class BaGuideCatalogRepository(
     private val expiredChecker: (BaGuideCatalogBundle?, Int, Long) -> Boolean =
         ::isBaGuideCatalogCacheExpired
 ) {
+    fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
+        GuideBgmFavoriteStore.favoritesFlow()
+
+    fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> =
+        GuideBgmFavoriteStore.favoritesSnapshot()
+
     suspend fun loadCatalog(
         context: Context?,
         currentCatalog: BaGuideCatalogBundle,

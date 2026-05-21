@@ -6,11 +6,16 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import kotlin.time.Duration.Companion.milliseconds
@@ -59,6 +64,16 @@ internal class BaStudentGuideViewModel(
 
     private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
     val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
+    val bgmFavoriteAudioUrls: StateFlow<Set<String>> =
+        repository
+            .bgmFavoritesFlow()
+            .map { favorites -> favorites.toAudioUrlSet() }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = repository.bgmFavoritesSnapshot().toAudioUrlSet(),
+            )
 
     fun bind(
         transitionAnimationsEnabled: Boolean,
@@ -277,3 +292,6 @@ internal class BaStudentGuideViewModel(
         }
     }
 }
+
+private fun List<GuideBgmFavoriteItem>.toAudioUrlSet(): Set<String> =
+    mapTo(hashSetOf()) { it.audioUrl }

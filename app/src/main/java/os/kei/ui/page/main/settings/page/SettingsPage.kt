@@ -462,7 +462,8 @@ fun SettingsPage(
                 navigationBarBottom = navigationBarBottom,
                 categories = categories,
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),
-                selectedPagePosition =
+                selectedPagePosition = null,
+                selectedPagePositionProvider = {
                     if (!searchExpanded && pagerState.isScrollInProgress) {
                         pagerState.pagePosition.coerceIn(
                             0f,
@@ -470,7 +471,8 @@ fun SettingsPage(
                         )
                     } else {
                         null
-                    },
+                    }
+                },
                 selectedPageProvider = { pagerState.targetPage },
                 searchExpanded = searchExpanded,
                 searchQuery = searchQuery,

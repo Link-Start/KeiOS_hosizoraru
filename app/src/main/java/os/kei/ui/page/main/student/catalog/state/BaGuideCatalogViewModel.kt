@@ -6,10 +6,13 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import kotlin.time.Duration.Companion.milliseconds
@@ -47,6 +50,14 @@ internal class BaGuideCatalogViewModel(
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
     val dataState: StateFlow<BaGuideCatalogDataUiState> = _dataState.asStateFlow()
+    val favoriteBgms: StateFlow<List<GuideBgmFavoriteItem>> =
+        repository
+            .bgmFavoritesFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = repository.bgmFavoritesSnapshot(),
+            )
 
     private val _catalogListDerivedStates =
         MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())

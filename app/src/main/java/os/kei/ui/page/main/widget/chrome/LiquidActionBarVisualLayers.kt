@@ -50,7 +50,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
     singleBreakoutPadding: Dp,
     isInLightTheme: Boolean,
     isLtr: Boolean,
-    effectivePanelOffset: Float,
+    effectivePanelOffset: () -> Float,
     interactionLensScale: Float,
     interactiveHighlight: InteractiveHighlight?
 ) {
@@ -87,7 +87,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                 .alpha(0f)
                 .layerBackdrop(tabsBackdrop)
                 .graphicsLayer {
-                    translationX = effectivePanelOffset
+                    translationX = effectivePanelOffset()
                     clip = false
                 }
                 .drawBackdrop(
@@ -132,7 +132,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                         translationX = horizontalPaddingPx -
                             breakoutPaddingPx +
                             slotOffsetPx +
-                            effectivePanelOffset
+                            effectivePanelOffset()
                         clip = false
                     }
                     .then(if (isBlurEnabled && interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)

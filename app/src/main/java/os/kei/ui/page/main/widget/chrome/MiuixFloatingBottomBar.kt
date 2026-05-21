@@ -26,7 +26,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -48,6 +47,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -131,6 +131,7 @@ fun MiuixFloatingBottomBarHost(
 fun MiuixFloatingBottomTabStrip(
     itemCount: Int,
     selectedIndex: Int,
+    selectedPositionProvider: (() -> Float?)? = null,
     onSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
@@ -156,16 +157,13 @@ fun MiuixFloatingBottomTabStrip(
     var tabWidthPx by remember { mutableFloatStateOf(0f) }
     var totalWidthPx by remember { mutableFloatStateOf(0f) }
     val offsetAnimation = remember { Animatable(0f) }
-    val panelOffset by remember(density) {
-        derivedStateOf {
-            if (totalWidthPx == 0f) {
-                0f
-            } else {
-                val fraction = (offsetAnimation.value / totalWidthPx).fastCoerceIn(-1f, 1f)
-                with(density) {
-                    4.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
-                }
-            }
+    val panelOffsetProvider = remember(density, offsetAnimation) {
+        {
+            miuixFloatingBottomBarPanelOffset(
+                rawOffsetPx = offsetAnimation.value,
+                totalWidthPx = totalWidthPx,
+                density = density
+            )
         }
     }
     var currentIndex by remember(safeCount) {
@@ -227,19 +225,36 @@ fun MiuixFloatingBottomTabStrip(
                 },
             ).also { holder.instance = it }
         }
-    val currentSelectionValue by rememberUpdatedState(dampedDrag.value)
-    val currentPanelOffset by rememberUpdatedState(panelOffset)
+    val currentSelectedPositionProvider = rememberUpdatedState(selectedPositionProvider)
+    val selectionValueProvider =
+        remember(safeCount, dampedDrag) {
+            {
+                val pagerDrivenPosition = currentSelectedPositionProvider.value
+                    ?.invoke()
+                    ?.fastCoerceIn(0f, (safeCount - 1).toFloat())
+                if (
+                    pagerDrivenPosition != null &&
+                    dampedDrag.pressProgress <= 0.001f
+                ) {
+                    pagerDrivenPosition
+                } else {
+                    dampedDrag.value
+                }
+            }
+        }
     val interactiveHighlight =
-        remember(animationScope, tabWidthPx, isLtr) {
+        remember(animationScope, tabWidthPx, isLtr, selectionValueProvider, panelOffsetProvider) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 position = { size, _ ->
+                    val selectionValue = selectionValueProvider()
+                    val panelOffset = panelOffsetProvider()
                     Offset(
                         x =
                             if (isLtr) {
-                                (currentSelectionValue + 0.5f) * tabWidthPx + currentPanelOffset
+                                (selectionValue + 0.5f) * tabWidthPx + panelOffset
                             } else {
-                                size.width - (currentSelectionValue + 0.5f) * tabWidthPx + currentPanelOffset
+                                size.width - (selectionValue + 0.5f) * tabWidthPx + panelOffset
                             },
                         y = size.height / 2f,
                     )
@@ -252,6 +267,23 @@ fun MiuixFloatingBottomTabStrip(
 
     LaunchedEffect(safeSelectedIndex) {
         currentIndex = safeSelectedIndex
+    }
+    LaunchedEffect(selectedPositionProvider, dampedDrag, safeCount) {
+        val provider = selectedPositionProvider ?: return@LaunchedEffect
+        snapshotFlow {
+            provider()?.fastCoerceIn(0f, (safeCount - 1).toFloat())
+        }.collectLatest { pagerDrivenPosition ->
+            if (
+                pagerDrivenPosition != null &&
+                dampedDrag.pressProgress <= 0.001f &&
+                abs(dampedDrag.value - pagerDrivenPosition) > 0.001f
+            ) {
+                dampedDrag.snapToValue(
+                    value = pagerDrivenPosition,
+                    updateVelocity = false,
+                )
+            }
+        }
     }
     LaunchedEffect(dampedDrag, animationsEnabled, safeCount) {
         snapshotFlow { currentIndex }
@@ -278,7 +310,7 @@ fun MiuixFloatingBottomTabStrip(
                         val contentWidthPx =
                             totalWidthPx - with(density) { MiuixFloatingBottomBarDefaults.HorizontalPadding.toPx() * 2f }
                         tabWidthPx = (contentWidthPx / safeCount).coerceAtLeast(0f)
-                    }.graphicsLayer { translationX = panelOffset }
+                    }.graphicsLayer { translationX = panelOffsetProvider() }
                     .then(
                         if (backdrop != null) {
                             Modifier.drawBackdrop(
@@ -324,7 +356,8 @@ fun MiuixFloatingBottomTabStrip(
                     Modifier
                         .padding(horizontal = MiuixFloatingBottomBarDefaults.HorizontalPadding)
                         .graphicsLayer {
-                            val progressOffset = dampedDrag.value * tabWidthPx
+                            val progressOffset = selectionValueProvider() * tabWidthPx
+                            val panelOffset = panelOffsetProvider()
                             translationX =
                                 if (isLtr) {
                                     progressOffset + panelOffset
@@ -348,7 +381,7 @@ fun MiuixFloatingBottomTabStrip(
                                 with(density) { (totalWidthPx - MiuixFloatingBottomBarDefaults.HorizontalPadding.toPx() * 2f).toDp() },
                             ).height(MiuixFloatingBottomBarDefaults.IndicatorHeight)
                             .graphicsLayer {
-                                val progressOffset = dampedDrag.value * tabWidthPx
+                                val progressOffset = selectionValueProvider() * tabWidthPx
                                 translationX = if (isLtr) -progressOffset else progressOffset
                             },
                     verticalAlignment = Alignment.CenterVertically,
@@ -360,6 +393,18 @@ fun MiuixFloatingBottomTabStrip(
                 }
             }
         }
+    }
+}
+
+private fun miuixFloatingBottomBarPanelOffset(
+    rawOffsetPx: Float,
+    totalWidthPx: Float,
+    density: Density
+): Float {
+    if (totalWidthPx == 0f) return 0f
+    val fraction = (rawOffsetPx / totalWidthPx).fastCoerceIn(-1f, 1f)
+    return with(density) {
+        4.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
     }
 }
 

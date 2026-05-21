@@ -20,23 +20,23 @@ internal fun Modifier.liquidActionBarSelectionAura(
     enabled: Boolean,
     animation: DampedDragAnimation,
     tabWidthPx: Float,
-    panelOffsetPx: Float,
+    panelOffsetPx: () -> Float,
     isLtr: Boolean,
     glowColor: Color,
     coreColor: Color,
-    interactionProgress: Float
+    interactionProgress: () -> Float
 ): Modifier {
     if (!enabled || tabWidthPx <= 0f) return this
     return drawWithContent {
-        val activeProgress = interactionProgress.fastCoerceIn(0f, 1f)
+        val activeProgress = interactionProgress().fastCoerceIn(0f, 1f)
         if (activeProgress <= 0.001f) {
             drawContent()
             return@drawWithContent
         }
         val centerX = if (isLtr) {
-            (animation.value + 0.5f) * tabWidthPx + panelOffsetPx
+            (animation.value + 0.5f) * tabWidthPx + panelOffsetPx()
         } else {
-            size.width - (animation.value + 0.5f) * tabWidthPx + panelOffsetPx
+            size.width - (animation.value + 0.5f) * tabWidthPx + panelOffsetPx()
         }.fastCoerceIn(0f, size.width)
         val center = Offset(centerX, size.height / 2f)
         val pressProgress = animation.pressProgress.fastCoerceIn(0f, 1f)

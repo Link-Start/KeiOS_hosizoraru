@@ -30,6 +30,7 @@ internal fun MainMiuixBottomBar(
     navigationBarBottom: Dp,
     tabs: List<BottomPage>,
     selectedPageIndex: Int,
+    selectedPagePositionProvider: (() -> Float?)? = null,
     backdrop: LayerBackdrop,
     onPageSelected: (Int) -> Unit,
 ) {
@@ -44,6 +45,7 @@ internal fun MainMiuixBottomBar(
                 MiuixFloatingBottomTabStrip(
                     itemCount = tabs.size,
                     selectedIndex = selectedPageIndex,
+                    selectedPositionProvider = selectedPagePositionProvider,
                     onSelected = onPageSelected,
                     backdrop = backdrop,
                     modifier = Modifier.fillMaxWidth(),

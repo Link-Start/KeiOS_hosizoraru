@@ -25,7 +25,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -47,6 +46,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
@@ -196,14 +196,13 @@ fun LiquidGlassBottomBar(
     var totalWidthPx by remember { mutableFloatStateOf(0f) }
 
     val offsetAnimation = remember { Animatable(0f) }
-    val panelOffset by remember(density) {
-        derivedStateOf {
-            if (totalWidthPx == 0f) 0f else {
-                val fraction = (offsetAnimation.value / totalWidthPx).fastCoerceIn(-1f, 1f)
-                with(density) {
-                    4f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
-                }
-            }
+    val panelOffsetProvider = remember(density, offsetAnimation) {
+        {
+            liquidBottomBarPanelOffset(
+                rawOffsetPx = offsetAnimation.value,
+                totalWidthPx = totalWidthPx,
+                density = density
+            )
         }
     }
 
@@ -270,34 +269,26 @@ fun LiquidGlassBottomBar(
         0f,
         (safeTabsCount - 1).toFloat(),
     )
+    val currentExternalSelectionPosition = rememberUpdatedState(externalSelectionPosition)
     val currentSelectedPositionProvider = rememberUpdatedState(selectedPositionProvider)
-    val displaySelectionValue = if (
-        externalSelectionPosition != null &&
-        dampedDragAnimation.pressProgress <= 0.001f
-    ) {
-        externalSelectionPosition
-    } else {
-        dampedDragAnimation.value
-    }
-    val currentDisplaySelectionValue = rememberUpdatedState(displaySelectionValue)
     val displaySelectionValueProvider =
-        remember(safeTabsCount) {
+        remember(safeTabsCount, dampedDragAnimation) {
             {
                 val providedPosition =
                     currentSelectedPositionProvider.value
                         ?.invoke()
                         ?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
+                val pagerDrivenPosition = providedPosition ?: currentExternalSelectionPosition.value
                 if (
-                    providedPosition != null &&
+                    pagerDrivenPosition != null &&
                     dampedDragAnimation.pressProgress <= 0.001f
                 ) {
-                    providedPosition
+                    pagerDrivenPosition
                 } else {
-                    currentDisplaySelectionValue.value
+                    dampedDragAnimation.value
                 }
             }
         }
-    val currentPanelOffset by rememberUpdatedState(panelOffset)
 
     LaunchedEffect(externalSelectionPosition, safeTabsCount) {
         val pagerDrivenPosition = externalSelectionPosition ?: return@LaunchedEffect
@@ -305,6 +296,23 @@ fun LiquidGlassBottomBar(
             value = pagerDrivenPosition,
             updateVelocity = false,
         )
+    }
+    LaunchedEffect(selectedPositionProvider, dampedDragAnimation, safeTabsCount) {
+        val provider = selectedPositionProvider ?: return@LaunchedEffect
+        snapshotFlow {
+            provider()?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
+        }.collectLatest { pagerDrivenPosition ->
+            if (
+                pagerDrivenPosition != null &&
+                dampedDragAnimation.pressProgress <= 0.001f &&
+                abs(dampedDragAnimation.value - pagerDrivenPosition) > 0.001f
+            ) {
+                dampedDragAnimation.snapToValue(
+                    value = pagerDrivenPosition,
+                    updateVelocity = false,
+                )
+            }
+        }
     }
 
     LaunchedEffect(selectedIndex, safeTabsCount) {
@@ -341,10 +349,10 @@ fun LiquidGlassBottomBar(
     val useLightweightBackdrop = false
 
     val selectionProgressValue =
-        if (selectedPositionProvider != null) {
+        if (selectedPositionProvider != null || externalSelectionPosition != null) {
             selectedIndex.fastCoerceIn(0, safeTabsCount - 1).toFloat()
         } else {
-            displaySelectionValue
+            currentIndex.toFloat()
         }
     val selectionProgressProvider: (Int) -> Float = remember(selectionProgressValue) {
         { tabIndex ->
@@ -355,16 +363,16 @@ fun LiquidGlassBottomBar(
     val interactiveHighlight = if (
         isLiquidEffectEnabled
     ) {
-        remember(animationScope, tabWidthPx, isLtr) {
+        remember(animationScope, tabWidthPx, isLtr, displaySelectionValueProvider, panelOffsetProvider) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 position = { size, _ ->
                     val displayValue = displaySelectionValueProvider()
                     val x =
                         if (isLtr) {
-                            (displayValue + 0.5f) * tabWidthPx + currentPanelOffset
+                            (displayValue + 0.5f) * tabWidthPx + panelOffsetProvider()
                         } else {
-                            size.width - (displayValue + 0.5f) * tabWidthPx + currentPanelOffset
+                            size.width - (displayValue + 0.5f) * tabWidthPx + panelOffsetProvider()
                         }
                     Offset(
                         x,
@@ -417,7 +425,7 @@ fun LiquidGlassBottomBar(
                         }
                     }
                     .graphicsLayer {
-                        translationX = panelOffset
+                        translationX = panelOffsetProvider()
                         translationY = -tactileLiftPx
                         scaleX = tactileScaleX
                         scaleY = tactileScaleY
@@ -471,7 +479,7 @@ fun LiquidGlassBottomBar(
                             )
                         )
                         .graphicsLayer {
-                            translationX = panelOffset
+                            translationX = panelOffsetProvider()
                             translationY = -tactileLiftPx
                             scaleX = tactileScaleX
                             scaleY = tactileScaleY
@@ -518,6 +526,7 @@ fun LiquidGlassBottomBar(
                             }
                             val singleTabWidth = contentWidth / safeTabsCount
                             val progressOffset = displaySelectionValueProvider() * singleTabWidth
+                            val panelOffset = panelOffsetProvider()
                             translationX = if (isLtr) {
                                 progressOffset + panelOffset
                             } else {
@@ -605,6 +614,18 @@ fun LiquidGlassBottomBar(
                 )
             }
         }
+    }
+}
+
+private fun liquidBottomBarPanelOffset(
+    rawOffsetPx: Float,
+    totalWidthPx: Float,
+    density: Density
+): Float {
+    if (totalWidthPx == 0f) return 0f
+    val fraction = (rawOffsetPx / totalWidthPx).fastCoerceIn(-1f, 1f)
+    return with(density) {
+        4f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
     }
 }
 

@@ -47,7 +47,6 @@ import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.host.pager.rememberPagerTargetWarmDataActive
 import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
@@ -157,6 +156,7 @@ fun BaGuideCatalogPage(
     val studentBgmListDerivedState by catalogViewModel.studentBgmListDerivedState.collectAsStateWithLifecycle()
     val favoriteBgmListDerivedState by catalogViewModel.favoriteBgmListDerivedState.collectAsStateWithLifecycle()
     val studentBgmDisplayedDerivedState by catalogViewModel.studentBgmDisplayedDerivedState.collectAsStateWithLifecycle()
+    val favoriteBgms by catalogViewModel.favoriteBgms.collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
         transitionAnimationsEnabled,
@@ -188,7 +188,6 @@ fun BaGuideCatalogPage(
     val npcSearchQuery = searchQueries.catalogSearchQueryFor(BaGuideCatalogTab.NpcSatellite)
     val studentBgmSearchQuery = searchQueries[BaGuideCatalogPageTab.StudentBgm.name].orEmpty()
     val favoriteBgmSearchQuery = searchQueries[BaGuideCatalogPageTab.Bgm.name].orEmpty()
-    val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
         catalogDataState.catalog,

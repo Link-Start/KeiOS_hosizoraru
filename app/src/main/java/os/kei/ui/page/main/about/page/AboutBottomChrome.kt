@@ -55,6 +55,7 @@ internal fun AboutBottomChrome(
     categories: List<AboutCategory>,
     selectedPage: Int,
     selectedPagePosition: Float?,
+    selectedPagePositionProvider: (() -> Float?)? = null,
     selectedPageProvider: () -> Int,
     searchExpanded: Boolean,
     searchQuery: String,
@@ -240,6 +241,7 @@ internal fun AboutBottomChrome(
                         },
                 selectedIndex = safeSelectedPage,
                 selectedPosition = selectedPagePosition,
+                selectedPositionProvider = selectedPagePositionProvider,
                 onSelected = { index ->
                     if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
                         onSelectCategory(index)

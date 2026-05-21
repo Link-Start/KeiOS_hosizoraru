@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -36,6 +35,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -209,17 +209,19 @@ fun LiquidActionBar(
     }
 
     val offsetAnimation = remember { Animatable(0f) }
-    val panelOffset by remember(density) {
-        derivedStateOf {
-            if (totalWidthPx == 0f) 0f else {
-                val fraction = (offsetAnimation.value / totalWidthPx).fastCoerceIn(-1f, 1f)
-                with(density) {
-                    3f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
-                }
+    val effectivePanelOffsetProvider = remember(density, offsetAnimation, layeredStyleEnabled) {
+        {
+            if (layeredStyleEnabled) {
+                liquidActionBarPanelOffset(
+                    rawOffsetPx = offsetAnimation.value,
+                    totalWidthPx = totalWidthPx,
+                    density = density,
+                )
+            } else {
+                0f
             }
         }
     }
-    val effectivePanelOffset = if (layeredStyleEnabled) panelOffset else 0f
 
     var gestureActive by remember { mutableStateOf(false) }
     var dragMoved by remember { mutableStateOf(false) }
@@ -316,8 +318,8 @@ fun LiquidActionBar(
         layeredStyleEnabled = layeredStyleEnabled,
         isInLightTheme = isInLightTheme
     )
-    val interactionProgress by remember {
-        derivedStateOf { dampedDragAnimation.pressProgress.fastCoerceIn(0f, 1f) }
+    val interactionProgressProvider = remember(dampedDragAnimation) {
+        { dampedDragAnimation.pressProgress.fastCoerceIn(0f, 1f) }
     }
     val interactionLensScale = 1f
     val effectBlurDp = UiPerformanceBudget.backdropBlur
@@ -342,11 +344,11 @@ fun LiquidActionBar(
                         if (isLtr) {
                             horizontalPaddingPx +
                                 (dampedDragAnimation.value + 0.5f) * tabWidthPx +
-                                effectivePanelOffset
+                                effectivePanelOffsetProvider()
                         } else {
                             size.width - horizontalPaddingPx -
                                 (dampedDragAnimation.value + 0.5f) * tabWidthPx +
-                                effectivePanelOffset
+                                effectivePanelOffsetProvider()
                         },
                         size.height / 2f
                     )
@@ -401,7 +403,7 @@ fun LiquidActionBar(
                 }
             }
             .graphicsLayer {
-                translationX = effectivePanelOffset
+                translationX = effectivePanelOffsetProvider()
                 clip = false
             }
             .drawBackdrop(
@@ -440,18 +442,18 @@ fun LiquidActionBar(
                         enabled = true,
                         animation = dampedDragAnimation,
                         tabWidthPx = tabWidthPx,
-                        panelOffsetPx = effectivePanelOffset,
+                        panelOffsetPx = effectivePanelOffsetProvider,
                         isLtr = isLtr,
                         glowColor = palette.selectionGlowColor,
                         coreColor = palette.selectionCoreColor,
-                        interactionProgress = interactionProgress
+                        interactionProgress = interactionProgressProvider,
                     )
                 } else {
                     Modifier
                 }
             )
             .then(
-                if (isBlurEnabled && interactiveHighlight != null && interactionProgress > 0.001f) {
+                if (isBlurEnabled && interactiveHighlight != null) {
                     interactiveHighlight.modifier
                 } else {
                     Modifier
@@ -516,9 +518,21 @@ fun LiquidActionBar(
             singleBreakoutPadding = singleBreakoutPadding,
             isInLightTheme = isInLightTheme,
             isLtr = isLtr,
-            effectivePanelOffset = effectivePanelOffset,
+            effectivePanelOffset = effectivePanelOffsetProvider,
             interactionLensScale = interactionLensScale,
             interactiveHighlight = interactiveHighlight
         )
+    }
+}
+
+private fun liquidActionBarPanelOffset(
+    rawOffsetPx: Float,
+    totalWidthPx: Float,
+    density: Density,
+): Float {
+    if (totalWidthPx == 0f) return 0f
+    val fraction = (rawOffsetPx / totalWidthPx).fastCoerceIn(-1f, 1f)
+    return with(density) {
+        3f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
     }
 }

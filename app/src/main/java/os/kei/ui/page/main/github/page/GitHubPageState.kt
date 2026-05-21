@@ -15,45 +15,18 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Job
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
-import os.kei.feature.github.model.GitHubActionsBranchOption
-import os.kei.feature.github.model.GitHubActionsDownloadRecord
-import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubActionsRunMatch
-import os.kei.feature.github.model.GitHubActionsRunTrackingPlan
-import os.kei.feature.github.model.GitHubActionsWorkflow
-import os.kei.feature.github.model.GitHubActionsWorkflowArtifactSignal
-import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
-import os.kei.feature.github.model.GitHubActionsWorkflowMatch
-import os.kei.feature.github.model.GitHubApiAuthMode
-import os.kei.feature.github.model.GitHubApiCredentialStatus
-import os.kei.feature.github.model.GitHubApkManifestInfo
-import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
-import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
-import os.kei.feature.github.model.GitHubProfileDepth
-import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
-import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
-import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
-import os.kei.feature.github.model.GitHubTrackedSourceMode
-import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
-import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.githubAssetSourceSignature
-import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
 import os.kei.ui.page.main.github.section.GitHubOverviewUiState
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
-import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
-import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
-import os.kei.ui.page.main.github.share.GitHubShareImportPreview
-import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 @Stable
@@ -62,130 +35,135 @@ internal class GitHubPageState(
     pageUiState: GitHubPageUiState = GitHubPageUiState(),
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
     overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
-    trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState()
+    trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState(),
 ) {
+    private val sheetState = GitHubPageSheetStateHolder()
+    private val actionsState = GitHubActionsPageStateHolder(actionsSectionExpansionState)
+    private val assetState = GitHubAssetPageStateHolder()
+    private val trackEditorState = GitHubTrackEditorPageStateHolder()
+    private val strategyState = GitHubStrategyPageStateHolder()
+    private val overviewState = GitHubOverviewPageStateHolder(overviewUiState)
+
     var trackedSearch by mutableStateOf("")
     var trackedFilterMode by mutableStateOf(pageUiState.trackedFilterMode)
-    var repoUrlInput by mutableStateOf("")
-    var packageNameInput by mutableStateOf("")
-    var repoScanCandidates by mutableStateOf<List<GitHubPackageRepositoryScanCandidate>>(emptyList())
-    var appSearch by mutableStateOf("")
-    var addTrackAppPickerFirstVisibleItemIndex by mutableIntStateOf(0)
-    var addTrackAppPickerFirstVisibleItemScrollOffset by mutableIntStateOf(0)
-    var pickerExpanded by mutableStateOf(false)
-    var showAddSheet by mutableStateOf(false)
-    var showStrategySheet by mutableStateOf(false)
-    var showCheckLogicSheet by mutableStateOf(false)
-    var showActionsSheet by mutableStateOf(false)
-    var showOverviewEntrySheet by mutableStateOf(false)
-    var showDownloaderPopup by mutableStateOf(false)
-    var editingTrackedItem by mutableStateOf<GitHubTrackedApp?>(null)
-    var actionsTargetItem by mutableStateOf<GitHubTrackedApp?>(null)
-    var actionsLoading by mutableStateOf(false)
-    var actionsRunsLoading by mutableStateOf(false)
-    var actionsError by mutableStateOf<String?>(null)
-    var actionsAuthMode by mutableStateOf<GitHubApiAuthMode?>(null)
-    var actionsDefaultBranch by mutableStateOf("")
-    var actionsSelectedBranch by mutableStateOf("")
-    var actionsBranchManuallySelected by mutableStateOf(false)
-    var actionsBranchOptions by mutableStateOf<List<GitHubActionsBranchOption>>(emptyList())
-    var actionsRawWorkflows by mutableStateOf<List<GitHubActionsWorkflow>>(emptyList())
-    var actionsWorkflowSignals by mutableStateOf<Map<Long, GitHubActionsWorkflowArtifactSignal>>(emptyMap())
-    var actionsWorkflows by mutableStateOf<List<GitHubActionsWorkflowMatch>>(emptyList())
-    var actionsSelectedWorkflowId by mutableStateOf<Long?>(null)
-    var actionsWorkflowManuallySelected by mutableStateOf(false)
-    var actionsSnapshot by mutableStateOf<GitHubActionsWorkflowArtifactsSnapshot?>(null)
-    var actionsRuns by mutableStateOf<List<GitHubActionsRunMatch>>(emptyList())
-    var actionsRunLimit by mutableStateOf(6)
-    var actionsSelectedRunId by mutableStateOf<Long?>(null)
-    var actionsBranchesExpanded by mutableStateOf(actionsSectionExpansionState.branchesExpanded)
-    var actionsWorkflowsExpanded by mutableStateOf(actionsSectionExpansionState.workflowsExpanded)
-    var actionsRunsExpanded by mutableStateOf(actionsSectionExpansionState.runsExpanded)
-    var actionsArtifactsExpanded by mutableStateOf(true)
-    var actionsArtifactFilter by mutableStateOf(GitHubActionsArtifactFilter.Recommended)
-    var actionsDownloadHistory by mutableStateOf<List<GitHubActionsDownloadRecord>>(emptyList())
-    var actionsRunTrackingPlans by mutableStateOf<Map<Long, GitHubActionsRunTrackingPlan>>(emptyMap())
-    var actionsArtifactDownloadLoadingId by mutableStateOf<Long?>(null)
-    var actionsArtifactShareLoadingId by mutableStateOf<Long?>(null)
-    var actionsRunWatchJob by mutableStateOf<Job?>(null)
-    var debugActionsUpdateNotificationLoading by mutableStateOf(false)
-    var preferPreReleaseInput by mutableStateOf(false)
-    var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
-    var checkActionsUpdatesInput by mutableStateOf(false)
-    var updateIntervalModeInput by mutableStateOf(GitHubTrackedUpdateIntervalMode.FollowGlobal)
-    var actionsUpdateIntervalModeInput by mutableStateOf(
-        GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
-    )
-    var preciseApkVersionModeInput by mutableStateOf(GitHubTrackedPreciseApkVersionMode.FollowGlobal)
-    var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
-    var repoUrlScanRunning by mutableStateOf(false)
-    var packageNameScanRunning by mutableStateOf(false)
-    var selectedApp by mutableStateOf<InstalledAppItem?>(null)
-    var appList by mutableStateOf<List<InstalledAppItem>>(emptyList())
-    var appListLoaded by mutableStateOf(false)
-    var appListRefreshing by mutableStateOf(false)
+    var repoUrlInput by trackEditorState::repoUrlInput
+    var packageNameInput by trackEditorState::packageNameInput
+    var repoScanCandidates by trackEditorState::repoScanCandidates
+    var appSearch by trackEditorState::appSearch
+    var addTrackAppPickerFirstVisibleItemIndex by trackEditorState::addTrackAppPickerFirstVisibleItemIndex
+    var addTrackAppPickerFirstVisibleItemScrollOffset by trackEditorState::addTrackAppPickerFirstVisibleItemScrollOffset
+    var pickerExpanded by trackEditorState::pickerExpanded
+    var showAddSheet by sheetState::showAddSheet
+    var showStrategySheet by sheetState::showStrategySheet
+    var showCheckLogicSheet by sheetState::showCheckLogicSheet
+    var showActionsSheet by sheetState::showActionsSheet
+    var showOverviewEntrySheet by sheetState::showOverviewEntrySheet
+    var showDownloaderPopup by sheetState::showDownloaderPopup
+    var editingTrackedItem by sheetState::editingTrackedItem
+    var actionsTargetItem by sheetState::actionsTargetItem
+    var actionsLoading by actionsState::actionsLoading
+    var actionsRunsLoading by actionsState::actionsRunsLoading
+    var actionsError by actionsState::actionsError
+    var actionsAuthMode by actionsState::actionsAuthMode
+    var debugActionsUpdateNotificationLoading by actionsState::debugActionsUpdateNotificationLoading
+    var actionsDefaultBranch by actionsState::actionsDefaultBranch
+    var actionsSelectedBranch by actionsState::actionsSelectedBranch
+    var actionsBranchManuallySelected by actionsState::actionsBranchManuallySelected
+    var actionsBranchOptions by actionsState::actionsBranchOptions
+    var actionsRawWorkflows by actionsState::actionsRawWorkflows
+    var actionsWorkflowSignals by actionsState::actionsWorkflowSignals
+    var actionsWorkflows by actionsState::actionsWorkflows
+    var actionsSelectedWorkflowId by actionsState::actionsSelectedWorkflowId
+    var actionsWorkflowManuallySelected by actionsState::actionsWorkflowManuallySelected
+    var actionsSnapshot by actionsState::actionsSnapshot
+    var actionsRuns by actionsState::actionsRuns
+    var actionsRunLimit by actionsState::actionsRunLimit
+    var actionsSelectedRunId by actionsState::actionsSelectedRunId
+    var actionsBranchesExpanded by actionsState::actionsBranchesExpanded
+    var actionsWorkflowsExpanded by actionsState::actionsWorkflowsExpanded
+    var actionsRunsExpanded by actionsState::actionsRunsExpanded
+    var actionsArtifactsExpanded by actionsState::actionsArtifactsExpanded
+    var actionsArtifactFilter by actionsState::actionsArtifactFilter
+    var actionsDownloadHistory by actionsState::actionsDownloadHistory
+    var actionsRunTrackingPlans by actionsState::actionsRunTrackingPlans
+    var actionsArtifactDownloadLoadingId by actionsState::actionsArtifactDownloadLoadingId
+    var actionsArtifactShareLoadingId by actionsState::actionsArtifactShareLoadingId
+    var actionsRunWatchJob by actionsState::actionsRunWatchJob
+    var preferPreReleaseInput by trackEditorState::preferPreReleaseInput
+    var alwaysShowLatestReleaseDownloadButtonInput by trackEditorState::alwaysShowLatestReleaseDownloadButtonInput
+    var checkActionsUpdatesInput by trackEditorState::checkActionsUpdatesInput
+    var updateIntervalModeInput by trackEditorState::updateIntervalModeInput
+    var actionsUpdateIntervalModeInput by trackEditorState::actionsUpdateIntervalModeInput
+    var preciseApkVersionModeInput by trackEditorState::preciseApkVersionModeInput
+    var trackSourceModeInput by trackEditorState::trackSourceModeInput
+    var repoUrlScanRunning by trackEditorState::repoUrlScanRunning
+    var packageNameScanRunning by trackEditorState::packageNameScanRunning
+    var selectedApp by trackEditorState::selectedApp
+    var appList by trackEditorState::appList
+    var appListLoaded by trackEditorState::appListLoaded
+    var appListRefreshing by trackEditorState::appListRefreshing
     var hasAutoRequestedPermission by mutableStateOf(false)
     var hasInitialized by mutableStateOf(false)
     var hasActiveInitialized by mutableStateOf(false)
     var lastTrackStoreSignalVersion by mutableStateOf(0L)
     var deferredTrackStoreSyncAfterRefresh by mutableStateOf(false)
-    var showActionMenuPopup by mutableStateOf(false)
-    var showOnlineShareTargetPopup by mutableStateOf(false)
+    var showActionMenuPopup by sheetState::showActionMenuPopup
+    var showOnlineShareTargetPopup by sheetState::showOnlineShareTargetPopup
     var downloaderPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var onlineShareTargetPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var shareImportFlowModePopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var pendingTrackImportPreview by mutableStateOf<GitHubTrackImportPreview?>(null)
-    var pendingShareImportPreview by mutableStateOf<GitHubShareImportPreview?>(null)
-    var pendingShareImportTrack by mutableStateOf<GitHubPendingShareImportTrack?>(null)
-    var pendingShareImportAttachCandidate by mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null)
-    var pendingShareImportResult by mutableStateOf<GitHubShareImportResult?>(null)
+    var pendingTrackImportPreview by sheetState::pendingTrackImportPreview
+    var pendingShareImportPreview by sheetState::pendingShareImportPreview
+    var pendingShareImportTrack by sheetState::pendingShareImportTrack
+    var pendingShareImportAttachCandidate by sheetState::pendingShareImportAttachCandidate
+    var pendingShareImportResult by sheetState::pendingShareImportResult
     var trackCardFocusRequest by mutableStateOf<GitHubTrackCardFocusRequest?>(null)
     private var nextTrackCardFocusRequestVersion by mutableIntStateOf(0)
-    var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
-    var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
-    var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
-    var managedInstallConfirmRequest by mutableStateOf<GitHubManagedInstallConfirmRequest?>(null)
+    var decisionAssistDetailRequest by sheetState::decisionAssistDetailRequest
+    var actionsArtifactDetailRequest by sheetState::actionsArtifactDetailRequest
+    var apkInfoDetailRequest by sheetState::apkInfoDetailRequest
+    var managedInstallConfirmRequest by sheetState::managedInstallConfirmRequest
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(pageUiState.sortMode)
     var sortDirection by mutableStateOf(pageUiState.sortDirection)
-    var overviewExpanded by mutableStateOf(overviewUiState.expanded)
-    var overviewVisibleEntries by mutableStateOf(overviewUiState.visibleEntries)
-    var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)
-    var overviewRefreshState by mutableStateOf(OverviewRefreshState.Idle)
-    var lastRefreshMs by mutableStateOf(0L)
-    var refreshIntervalHours by mutableStateOf(3)
-    var refreshProgress by mutableStateOf(0f)
-    var lookupConfig by mutableStateOf(GitHubLookupConfig())
-    var selectedStrategyInput by mutableStateOf(lookupConfig.selectedStrategy)
-    var selectedActionsStrategyInput by mutableStateOf(lookupConfig.actionsStrategy)
-    var githubApiTokenInput by mutableStateOf("")
-    var checkAllTrackedPreReleasesInput by mutableStateOf(false)
-    var checkAllDirectApkPreReleasesInput by mutableStateOf(false)
-    var aggressiveApkFilteringInput by mutableStateOf(false)
-    var preciseApkVersionEnabledInput by mutableStateOf(false)
-    var scanSystemAppsByDefaultInput by mutableStateOf(false)
-    var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
-    var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
-    var appManagedShareInstallEnabledInput by mutableStateOf(false)
-    var onlineShareTargetPackageInput by mutableStateOf("")
-    var preferredDownloaderPackageInput by mutableStateOf("")
-    var decisionAssistEnabledInput by mutableStateOf(false)
-    var repositoryHealthCardEnabledInput by mutableStateOf(false)
-    var apkTrustCheckEnabledInput by mutableStateOf(false)
-    var showApiTokenPlainText by mutableStateOf(false)
-    var showShareImportFlowModePopup by mutableStateOf(false)
-    var strategyBenchmarkRunning by mutableStateOf(false)
-    var strategyBenchmarkError by mutableStateOf<String?>(null)
-    var strategyBenchmarkReport by mutableStateOf<GitHubStrategyBenchmarkReport?>(null)
-    var credentialCheckRunning by mutableStateOf(false)
-    var credentialCheckError by mutableStateOf<String?>(null)
-    var credentialCheckStatus by mutableStateOf<GitHubApiCredentialStatus?>(null)
-    var recommendedTokenGuideExpanded by mutableStateOf(false)
-    var assetSourceSignature by mutableStateOf("")
-    var refreshAllJob by mutableStateOf<Job?>(null)
-    var actionsRecommendedRunRefreshJob by mutableStateOf<Job?>(null)
-    var refreshTargetIds by mutableStateOf<Set<String>>(emptySet())
-    var deleteInProgress by mutableStateOf(false)
+    var overviewExpanded by overviewState::overviewExpanded
+    var overviewVisibleEntries by overviewState::overviewVisibleEntries
+    var pendingDeleteItem by sheetState::pendingDeleteItem
+    var overviewRefreshState by overviewState::overviewRefreshState
+    var lastRefreshMs by overviewState::lastRefreshMs
+    var refreshIntervalHours by overviewState::refreshIntervalHours
+    var refreshProgress by overviewState::refreshProgress
+    var lookupConfig by strategyState::lookupConfig
+    var selectedStrategyInput by strategyState::selectedStrategyInput
+    var selectedActionsStrategyInput by strategyState::selectedActionsStrategyInput
+    var githubApiTokenInput by strategyState::githubApiTokenInput
+    var checkAllTrackedPreReleasesInput by strategyState::checkAllTrackedPreReleasesInput
+    var checkAllDirectApkPreReleasesInput by strategyState::checkAllDirectApkPreReleasesInput
+    var aggressiveApkFilteringInput by strategyState::aggressiveApkFilteringInput
+    var preciseApkVersionEnabledInput by strategyState::preciseApkVersionEnabledInput
+    var scanSystemAppsByDefaultInput by strategyState::scanSystemAppsByDefaultInput
+    var profileDepthInput by strategyState::profileDepthInput
+    var shareImportFlowModeInput by strategyState::shareImportFlowModeInput
+    var appManagedShareInstallEnabledInput by strategyState::appManagedShareInstallEnabledInput
+    var onlineShareTargetPackageInput by strategyState::onlineShareTargetPackageInput
+    var preferredDownloaderPackageInput by strategyState::preferredDownloaderPackageInput
+    var decisionAssistEnabledInput by strategyState::decisionAssistEnabledInput
+    var repositoryHealthCardEnabledInput by strategyState::repositoryHealthCardEnabledInput
+    var apkTrustCheckEnabledInput by strategyState::apkTrustCheckEnabledInput
+    var showApiTokenPlainText by strategyState::showApiTokenPlainText
+    var showShareImportFlowModePopup by strategyState::showShareImportFlowModePopup
+    var strategyBenchmarkRunning by strategyState::strategyBenchmarkRunning
+    var strategyBenchmarkError by strategyState::strategyBenchmarkError
+    var strategyBenchmarkReport by strategyState::strategyBenchmarkReport
+    var credentialCheckRunning by strategyState::credentialCheckRunning
+    var credentialCheckError by strategyState::credentialCheckError
+    var credentialCheckStatus by strategyState::credentialCheckStatus
+    var recommendedTokenGuideExpanded by strategyState::recommendedTokenGuideExpanded
+    var assetSourceSignature by strategyState::assetSourceSignature
+    var refreshAllJob by overviewState::refreshAllJob
+    var actionsRecommendedRunRefreshJob by actionsState::actionsRecommendedRunRefreshJob
+    var refreshTargetIds by overviewState::refreshTargetIds
+    var deleteInProgress by overviewState::deleteInProgress
     var showSearchBar by mutableStateOf(true)
     private var pendingShowSearchBar: Boolean? = null
     private var canScrollBackward by mutableStateOf(false)
@@ -194,67 +172,73 @@ internal class GitHubPageState(
 
     val trackedItems = mutableStateListOf<GitHubTrackedApp>()
     val checkStates = mutableStateMapOf<String, VersionCheckUi>()
-    val apkAssetBundles = mutableStateMapOf<String, GitHubReleaseAssetBundle>()
-    val apkAssetLoading = mutableStateMapOf<String, Boolean>()
-    val apkAssetErrors = mutableStateMapOf<String, String>()
-    val apkAssetExpanded = mutableStateMapOf<String, Boolean>()
-    val apkAssetIncludeAll = mutableStateMapOf<String, Boolean>()
-    val releaseNotesLoading = mutableStateMapOf<String, Boolean>()
-    val releaseNotesErrors = mutableStateMapOf<String, String>()
-    val releaseNotesTargets = mutableStateMapOf<String, List<GitHubReleaseNotesTarget>>()
-    val releaseNotesSelectedTargets = mutableStateMapOf<String, GitHubReleaseNotesTarget>()
-    val releaseNotesBundles = mutableStateMapOf<String, GitHubReleaseAssetBundle>()
-    val releaseNotesApkVersions = mutableStateMapOf<String, GitHubRemoteApkVersionInfo>()
-    val apkAssetBundleLoadedAtMs = mutableStateMapOf<String, Long>()
-    val releaseNotesTargetsLoadedAtMs = mutableStateMapOf<String, Long>()
-    val releaseNotesBundleLoadedAtMs = mutableStateMapOf<String, Long>()
-    val apkInfoLoading = mutableStateMapOf<String, Boolean>()
-    val apkInfoErrors = mutableStateMapOf<String, String>()
-    val apkInfoResults = mutableStateMapOf<String, GitHubApkManifestInfo>()
-    val apkInfoInstalledResults = mutableStateMapOf<String, GitHubInstalledPackageInfo?>()
+    val apkAssetBundles get() = assetState.apkAssetBundles
+    val apkAssetLoading get() = assetState.apkAssetLoading
+    val apkAssetErrors get() = assetState.apkAssetErrors
+    val apkAssetExpanded get() = assetState.apkAssetExpanded
+    val apkAssetIncludeAll get() = assetState.apkAssetIncludeAll
+    val releaseNotesLoading get() = assetState.releaseNotesLoading
+    val releaseNotesErrors get() = assetState.releaseNotesErrors
+    val releaseNotesTargets get() = assetState.releaseNotesTargets
+    val releaseNotesSelectedTargets get() = assetState.releaseNotesSelectedTargets
+    val releaseNotesBundles get() = assetState.releaseNotesBundles
+    val releaseNotesApkVersions get() = assetState.releaseNotesApkVersions
+    val apkAssetBundleLoadedAtMs get() = assetState.apkAssetBundleLoadedAtMs
+    val releaseNotesTargetsLoadedAtMs get() = assetState.releaseNotesTargetsLoadedAtMs
+    val releaseNotesBundleLoadedAtMs get() = assetState.releaseNotesBundleLoadedAtMs
+    val apkInfoLoading get() = assetState.apkInfoLoading
+    val apkInfoErrors get() = assetState.apkInfoErrors
+    val apkInfoResults get() = assetState.apkInfoResults
+    val apkInfoInstalledResults get() = assetState.apkInfoInstalledResults
     val managedInstallLoading = mutableStateMapOf<String, Boolean>()
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
-    val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()
-    val actionsRecommendedRunSnapshots =
-        mutableStateMapOf<String, GitHubActionsRecommendedRunSnapshot>()
+    val actionsStatusRefreshingRunIds get() = actionsState.actionsStatusRefreshingRunIds
+    val actionsRecommendedRunSnapshots get() = actionsState.actionsRecommendedRunSnapshots
     val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
-    val trackedLocalVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
-        putAll(trackedReleaseExpansionState.localVersionExpanded)
-    }
-    val trackedStableVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
-        putAll(trackedReleaseExpansionState.stableVersionExpanded)
-    }
-    val trackedPreReleaseVersionExpanded = mutableStateMapOf<String, Boolean>().apply {
-        putAll(trackedReleaseExpansionState.preReleaseVersionExpanded)
-    }
+    val trackedLocalVersionExpanded =
+        mutableStateMapOf<String, Boolean>().apply {
+            putAll(trackedReleaseExpansionState.localVersionExpanded)
+        }
+    val trackedStableVersionExpanded =
+        mutableStateMapOf<String, Boolean>().apply {
+            putAll(trackedReleaseExpansionState.stableVersionExpanded)
+        }
+    val trackedPreReleaseVersionExpanded =
+        mutableStateMapOf<String, Boolean>().apply {
+            putAll(trackedReleaseExpansionState.preReleaseVersionExpanded)
+        }
     val trackedFirstInstallAtByPackage = mutableStateMapOf<String, Long>()
     val trackedAddedAtById = mutableStateMapOf<String, Long>()
     val trackedModifiedAtById = mutableStateMapOf<String, Long>()
 
-    val addButtonScrollConnection = object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            searchBarVisibilityController.updateWithinScrollBounds(
-                deltaY = available.y,
-                visible = pendingShowSearchBar ?: showSearchBar,
-                canScrollBackward = canScrollBackward,
-                canScrollForward = canScrollForward
-            ) {
-                pendingShowSearchBar = it
+    val addButtonScrollConnection =
+        object : NestedScrollConnection {
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                searchBarVisibilityController.updateWithinScrollBounds(
+                    deltaY = available.y,
+                    visible = pendingShowSearchBar ?: showSearchBar,
+                    canScrollBackward = canScrollBackward,
+                    canScrollForward = canScrollForward,
+                ) {
+                    pendingShowSearchBar = it
+                }
+                return Offset.Zero
             }
-            return Offset.Zero
         }
-    }
 
     fun updateScrollBounds(
         canScrollBackward: Boolean,
-        canScrollForward: Boolean
+        canScrollForward: Boolean,
     ) {
         this.canScrollBackward = canScrollBackward
         this.canScrollForward = canScrollForward
         searchBarVisibilityController.showForStaticContent(
             visible = pendingShowSearchBar ?: showSearchBar,
             canScrollBackward = canScrollBackward,
-            canScrollForward = canScrollForward
+            canScrollForward = canScrollForward,
         ) { target ->
             pendingShowSearchBar = null
             showSearchBar = target
@@ -275,10 +259,11 @@ internal class GitHubPageState(
         val normalizedTrackId = trackId.trim()
         if (normalizedTrackId.isBlank()) return
         nextTrackCardFocusRequestVersion += 1
-        trackCardFocusRequest = GitHubTrackCardFocusRequest(
-            trackId = normalizedTrackId,
-            version = nextTrackCardFocusRequestVersion
-        )
+        trackCardFocusRequest =
+            GitHubTrackCardFocusRequest(
+                trackId = normalizedTrackId,
+                version = nextTrackCardFocusRequestVersion,
+            )
     }
 
     fun consumeTrackCardFocus(request: GitHubTrackCardFocusRequest) {
@@ -289,17 +274,14 @@ internal class GitHubPageState(
 
     fun activeStrategyId(): String = lookupConfig.selectedStrategy.storageId
 
-    fun buildAssetSourceSignature(config: GitHubLookupConfig = lookupConfig): String {
-        return config.githubAssetSourceSignature()
-    }
+    fun buildAssetSourceSignature(config: GitHubLookupConfig = lookupConfig): String = config.githubAssetSourceSignature()
 
     fun matchesAssetSourceSignature(
         bundle: GitHubReleaseAssetBundle,
-        config: GitHubLookupConfig = lookupConfig
-    ): Boolean {
-        return bundle.sourceConfigSignature.isNotBlank() &&
+        config: GitHubLookupConfig = lookupConfig,
+    ): Boolean =
+        bundle.sourceConfigSignature.isNotBlank() &&
             bundle.sourceConfigSignature == buildAssetSourceSignature(config)
-    }
 
     fun clearAllAssetUiState() {
         apkAssetBundles.clear()
@@ -368,7 +350,10 @@ internal class GitHubPageState(
         }
     }
 
-    fun recordTrackedFirstInstallAt(packageName: String, firstInstallAtMillis: Long) {
+    fun recordTrackedFirstInstallAt(
+        packageName: String,
+        firstInstallAtMillis: Long,
+    ) {
         val normalizedPackageName = packageName.trim()
         if (normalizedPackageName.isBlank()) return
         if (firstInstallAtMillis <= 0L) return
@@ -379,14 +364,18 @@ internal class GitHubPageState(
     }
 
     fun retainTrackedFirstInstallAtByTrackedItems() {
-        val trackedPackages = trackedItems
-            .map { it.packageName.trim() }
-            .filter { it.isNotBlank() }
-            .toSet()
+        val trackedPackages =
+            trackedItems
+                .map { it.packageName.trim() }
+                .filter { it.isNotBlank() }
+                .toSet()
         trackedFirstInstallAtByPackage.keys.retainAll(trackedPackages)
     }
 
-    fun recordTrackedAddedAt(trackId: String, addedAtMillis: Long) {
+    fun recordTrackedAddedAt(
+        trackId: String,
+        addedAtMillis: Long,
+    ) {
         val normalizedTrackId = trackId.trim()
         if (normalizedTrackId.isBlank()) return
         if (addedAtMillis <= 0L) return
@@ -397,14 +386,18 @@ internal class GitHubPageState(
     }
 
     fun retainTrackedAddedAtByTrackedItems() {
-        val trackedIds = trackedItems
-            .map { it.id.trim() }
-            .filter { it.isNotBlank() }
-            .toSet()
+        val trackedIds =
+            trackedItems
+                .map { it.id.trim() }
+                .filter { it.isNotBlank() }
+                .toSet()
         trackedAddedAtById.keys.retainAll(trackedIds)
     }
 
-    fun recordTrackedModifiedAt(trackId: String, modifiedAtMillis: Long) {
+    fun recordTrackedModifiedAt(
+        trackId: String,
+        modifiedAtMillis: Long,
+    ) {
         val normalizedTrackId = trackId.trim()
         if (normalizedTrackId.isBlank()) return
         if (modifiedAtMillis <= 0L) return
@@ -412,18 +405,17 @@ internal class GitHubPageState(
     }
 
     fun retainTrackedModifiedAtByTrackedItems() {
-        val trackedIds = trackedItems
-            .map { it.id.trim() }
-            .filter { it.isNotBlank() }
-            .toSet()
+        val trackedIds =
+            trackedItems
+                .map { it.id.trim() }
+                .filter { it.isNotBlank() }
+                .toSet()
         trackedModifiedAtById.keys.retainAll(trackedIds)
     }
 
     fun dismissStrategySheet() {
         showStrategySheet = false
-        showApiTokenPlainText = false
-        credentialCheckRunning = false
-        recommendedTokenGuideExpanded = false
+        strategyState.dismissStrategySheet()
     }
 
     fun dismissCheckLogicSheet() {
@@ -480,21 +472,7 @@ internal class GitHubPageState(
 
     fun resetTrackEditor() {
         editingTrackedItem = null
-        repoUrlInput = ""
-        packageNameInput = ""
-        repoScanCandidates = emptyList()
-        selectedApp = null
-        appSearch = ""
-        pickerExpanded = false
-        preferPreReleaseInput = false
-        alwaysShowLatestReleaseDownloadButtonInput = false
-        checkActionsUpdatesInput = false
-        updateIntervalModeInput = GitHubTrackedUpdateIntervalMode.FollowGlobal
-        actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
-        preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
-        trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
-        repoUrlScanRunning = false
-        packageNameScanRunning = false
+        trackEditorState.reset()
     }
 
     fun dismissTrackSheet() {
@@ -505,16 +483,16 @@ internal class GitHubPageState(
 
 internal data class GitHubApkInfoDetailRequest(
     val item: GitHubTrackedApp,
-    val asset: GitHubReleaseAssetFile
+    val asset: GitHubReleaseAssetFile,
 )
 
 internal data class GitHubManagedInstallConfirmRequest(
     val item: GitHubTrackedApp,
-    val asset: GitHubReleaseAssetFile
+    val asset: GitHubReleaseAssetFile,
 )
 
-internal fun GitHubTrackedApp.githubManagedInstallKey(asset: GitHubReleaseAssetFile): String {
-    return listOf(
+internal fun GitHubTrackedApp.githubManagedInstallKey(asset: GitHubReleaseAssetFile): String =
+    listOf(
         id,
         owner,
         repo,
@@ -522,50 +500,51 @@ internal fun GitHubTrackedApp.githubManagedInstallKey(asset: GitHubReleaseAssetF
         asset.downloadUrl,
         asset.apiAssetUrl,
         asset.sizeBytes.toString(),
-        asset.digest
+        asset.digest,
     ).joinToString("|")
-}
 
 internal enum class GitHubDecisionAssistDetailType {
     RepositoryHealth,
-    ReleaseNotes
+    ReleaseNotes,
 }
 
 internal enum class GitHubActionsArtifactFilter {
     Recommended,
     Alternatives,
-    All
+    All,
 }
 
 internal data class GitHubDecisionAssistDetailRequest(
     val type: GitHubDecisionAssistDetailType,
-    val item: GitHubTrackedApp
+    val item: GitHubTrackedApp,
 )
 
 internal data class GitHubActionsArtifactDetailRequest(
     val runMatch: GitHubActionsRunMatch,
     val artifactMatch: GitHubActionsArtifactMatch,
-    val recommended: Boolean
+    val recommended: Boolean,
 )
 
-internal fun GitHubReleaseAssetFile.githubApkInfoKey(): String {
-    return listOf(name, downloadUrl, apiAssetUrl, sizeBytes.toString()).joinToString("|")
-}
+internal fun GitHubReleaseAssetFile.githubApkInfoKey(): String =
+    listOf(name, downloadUrl, apiAssetUrl, sizeBytes.toString()).joinToString("|")
 
-internal fun releaseNotesApkVersionKey(itemId: String, target: GitHubReleaseNotesTarget): String {
-    return listOf(
+internal fun releaseNotesApkVersionKey(
+    itemId: String,
+    target: GitHubReleaseNotesTarget,
+): String =
+    listOf(
         itemId.trim(),
         target.tagName.trim(),
-        target.htmlUrl.trim()
+        target.htmlUrl.trim(),
     ).joinToString("|")
-}
 
 @Composable
 internal fun rememberGitHubPageState(viewModel: GitHubPageViewModel): GitHubPageState {
     val density = LocalDensity.current
-    val searchBarHideThresholdPx = remember(density) {
-        with(density) { 28.dp.toPx() }
-    }
+    val searchBarHideThresholdPx =
+        remember(density) {
+            with(density) { 28.dp.toPx() }
+        }
     return remember(viewModel, searchBarHideThresholdPx) {
         viewModel.pageState(searchBarHideThresholdPx)
     }

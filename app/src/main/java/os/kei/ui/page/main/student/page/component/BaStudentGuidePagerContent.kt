@@ -13,6 +13,7 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBottomTab
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 
 @Composable
 internal fun BaStudentGuidePagerContent(
@@ -42,6 +43,7 @@ internal fun BaStudentGuidePagerContent(
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (String, String) -> Unit,
     onSaveMediaPack: (List<Pair<String, String>>, String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
     onToggleVoicePlayback: (String) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
@@ -82,6 +84,7 @@ internal fun BaStudentGuidePagerContent(
             onOpenGuide = onOpenGuide,
             onSaveMedia = onSaveMedia,
             onSaveMediaPack = onSaveMediaPack,
+            onToggleBgmFavorite = onToggleBgmFavorite,
             onToggleVoicePlayback = onToggleVoicePlayback,
             onScrollBoundsChange = onScrollBoundsChange,
             onListScrollInProgressChange = onListScrollInProgressChange,

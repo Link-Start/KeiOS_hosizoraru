@@ -71,6 +71,8 @@ internal fun BaGuideStudentBgmTabContent(
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
     onNowPlayingVisibilityChange: (Boolean) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
+    onRemoveBgmFavorite: suspend (String) -> Unit,
     showNowPlayingOverlay: Boolean = true,
     onOpenGuide: (String) -> Unit
 ) {
@@ -152,6 +154,8 @@ internal fun BaGuideStudentBgmTabContent(
         playbackCoordinator = playbackCoordinator,
         setNowPlayingVisible = ::setNowPlayingVisible,
         onOpenGuide = onOpenGuide,
+        onToggleFavorite = onToggleBgmFavorite,
+        onRemoveFavorite = onRemoveBgmFavorite,
         bgmMissingText = bgmMissingText,
         bgmResolveFailedText = bgmResolveFailedText,
         favoriteAddedText = favoriteAddedText,

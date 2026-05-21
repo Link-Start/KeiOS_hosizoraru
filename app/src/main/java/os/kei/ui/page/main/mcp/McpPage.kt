@@ -55,8 +55,8 @@ import os.kei.ui.page.main.mcp.section.McpToolGithubSection
 import os.kei.ui.page.main.mcp.section.McpToolRuntimeSection
 import os.kei.ui.page.main.mcp.section.McpToolSystemSection
 import os.kei.ui.page.main.mcp.section.McpToolWorkflowSection
-import os.kei.ui.page.main.mcp.section.mcpToolBuckets
 import os.kei.ui.page.main.mcp.sheet.McpEditServiceSheet
+import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.rememberMcpPageOverviewState
 import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.os.appLucideEditIcon
@@ -105,6 +105,7 @@ fun McpPage(
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val pageUiState by mcpPageViewModel.uiState.collectAsStateWithLifecycle()
+    val mcpToolBuckets by mcpPageViewModel.toolBuckets.collectAsStateWithLifecycle()
     LaunchedEffect(
         mcpServerManager,
         uiState.port,
@@ -130,10 +131,14 @@ fun McpPage(
     val portText = pageUiState.portText
     val allowExternal = pageUiState.allowExternal
     val serverName = pageUiState.serverName
-    val mcpToolBuckets =
-        remember(uiState.tools, pageUiState.toolsSearchQuery) {
-            mcpToolBuckets(uiState, pageUiState.toolsSearchQuery)
-        }
+    LaunchedEffect(uiState.tools, pageUiState.toolsSearchQuery) {
+        mcpPageViewModel.requestToolBuckets(
+            McpToolBucketInput(
+                tools = uiState.tools,
+                searchQuery = pageUiState.toolsSearchQuery,
+            ),
+        )
+    }
     val serviceDraftChanged =
         serverName.trim() != uiState.serverName.trim() ||
             portText.trim() != uiState.port.toString() ||

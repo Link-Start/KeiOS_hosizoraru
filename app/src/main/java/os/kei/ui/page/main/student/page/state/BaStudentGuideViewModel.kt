@@ -139,6 +139,9 @@ internal class BaStudentGuideViewModel(
         )
     }
 
+    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
+        repository.toggleBgmFavorite(item)
+
     fun syncStaticImagePrefetch(
         info: BaStudentGuideInfo?,
         prefetchBottomTab: GuideBottomTab,

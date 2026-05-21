@@ -3,6 +3,9 @@ package os.kei.ui.page.main.mcp.section
 import org.junit.Test
 import os.kei.mcp.server.McpServerUiState
 import os.kei.mcp.server.McpToolCatalog
+import os.kei.ui.page.main.mcp.state.McpToolBucketInput
+import os.kei.ui.page.main.mcp.state.McpToolBuckets
+import os.kei.ui.page.main.mcp.state.deriveMcpToolBuckets
 import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,7 +15,7 @@ class McpToolSectionsTest {
     fun toolBucketsKeepUserFacingGroupsSeparate() {
         val state = McpServerUiState(tools = McpToolCatalog.forLocale(Locale.SIMPLIFIED_CHINESE))
 
-        val buckets = mcpToolBuckets(state, searchQuery = "")
+        val buckets = deriveMcpToolBuckets(McpToolBucketInput(state.tools, searchQuery = ""))
 
         assertTrue(buckets.baTools.any { it.name == "keios.ba.snapshot" })
         assertTrue(buckets.githubTools.any { it.name == "keios.github.config.snapshot" })
@@ -25,7 +28,7 @@ class McpToolSectionsTest {
     fun toolBucketsApplySearchAcrossDomains() {
         val state = McpServerUiState(tools = McpToolCatalog.forLocale(Locale.SIMPLIFIED_CHINESE))
 
-        val buckets = mcpToolBuckets(state, searchQuery = "codex")
+        val buckets = deriveMcpToolBuckets(McpToolBucketInput(state.tools, searchQuery = "codex"))
 
         assertTrue(buckets.codexTools.isNotEmpty())
         assertEquals(emptyList(), buckets.baTools)

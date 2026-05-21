@@ -1,20 +1,12 @@
 package os.kei.ui.page.main.student.catalog.state
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import os.kei.R
 import os.kei.ui.page.main.student.catalog.BA_GUIDE_FILTER_ID_CN_SCORE
 import os.kei.ui.page.main.student.catalog.BA_GUIDE_FILTER_ID_GLOBAL_SCORE
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.scoreRankForSort
-import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 
 internal enum class BaGuideCatalogSortMode(
     @get:StringRes val labelRes: Int,
@@ -26,49 +18,6 @@ internal enum class BaGuideCatalogSortMode(
     GlobalScoreAsc(R.string.ba_catalog_sort_global_score_asc),
     CnScoreDesc(R.string.ba_catalog_sort_cn_score_desc),
     CnScoreAsc(R.string.ba_catalog_sort_cn_score_asc),
-}
-
-@Composable
-internal fun rememberCatalogSyncProgress(
-    loading: Boolean,
-    animationsEnabled: Boolean,
-): Float {
-    val progress = remember { Animatable(0f) }
-    LaunchedEffect(loading, animationsEnabled) {
-        if (!animationsEnabled) {
-            progress.snapTo(if (loading) 0.9f else 1f)
-            return@LaunchedEffect
-        }
-        if (loading) {
-            progress.snapTo(0.12f)
-            progress.animateTo(
-                targetValue = 0.68f,
-                animationSpec =
-                    tween(
-                        durationMillis = resolvedMotionDuration(520, animationsEnabled),
-                        easing = FastOutSlowInEasing,
-                    ),
-            )
-            progress.animateTo(
-                targetValue = 0.90f,
-                animationSpec =
-                    tween(
-                        durationMillis = resolvedMotionDuration(1800, animationsEnabled),
-                        easing = LinearEasing,
-                    ),
-            )
-        } else {
-            progress.animateTo(
-                targetValue = 1f,
-                animationSpec =
-                    tween(
-                        durationMillis = resolvedMotionDuration(260, animationsEnabled),
-                        easing = FastOutSlowInEasing,
-                    ),
-            )
-        }
-    }
-    return progress.value
 }
 
 internal fun List<BaGuideCatalogEntry>.sortedByMode(

@@ -58,6 +58,10 @@ internal class BaGuideCatalogViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = repository.bgmFavoritesSnapshot(),
             )
+    private val _nativeBgmMediaNotificationEnabled =
+        MutableStateFlow(repository.loadNativeBgmMediaNotificationEnabled())
+    val nativeBgmMediaNotificationEnabled: StateFlow<Boolean> =
+        _nativeBgmMediaNotificationEnabled.asStateFlow()
 
     private val _catalogListDerivedStates =
         MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())
@@ -98,6 +102,21 @@ internal class BaGuideCatalogViewModel(
 
     fun requestRefresh() {
         loadCatalog(manualRefresh = true, allowInitialDelay = false)
+    }
+
+    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
+        repository.toggleBgmFavorite(item)
+
+    suspend fun removeBgmFavorite(audioUrl: String) {
+        repository.removeBgmFavorite(audioUrl)
+    }
+
+    fun setNativeBgmMediaNotificationEnabled(enabled: Boolean) {
+        if (_nativeBgmMediaNotificationEnabled.value == enabled) return
+        _nativeBgmMediaNotificationEnabled.value = enabled
+        viewModelScope.launch {
+            repository.saveNativeBgmMediaNotificationEnabled(enabled)
+        }
     }
 
     fun requestCatalogListDerivedState(input: BaGuideCatalogListInput) {

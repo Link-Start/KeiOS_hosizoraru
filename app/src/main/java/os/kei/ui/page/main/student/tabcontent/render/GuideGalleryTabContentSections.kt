@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.isExpressionGalleryItem
 import os.kei.ui.page.main.student.section.GuideGalleryCardItem
@@ -41,7 +42,8 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
-    onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit
+    onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean
 ) {
     if (!error.isNullOrBlank()) {
         item { GuideGalleryErrorCard(error = error) }
@@ -114,7 +116,8 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     bgmFavoriteStudentTitle = studentTitle,
                     bgmFavoriteStudentImageUrl = studentImageUrl,
                     bgmFavoriteSourceUrl = sourceUrl,
-                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls
+                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                    onToggleBgmFavorite = onToggleBgmFavorite
                 )
             }
         }

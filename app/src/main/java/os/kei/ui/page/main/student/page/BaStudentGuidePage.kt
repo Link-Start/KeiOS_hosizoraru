@@ -414,6 +414,7 @@ fun BaStudentGuidePage(
                 onOpenGuide = pageActions.openGuideInPage,
                 onSaveMedia = pageActions.saveGuideMedia,
                 onSaveMediaPack = pageActions.saveGuideMediaPack,
+                onToggleBgmFavorite = guideViewModel::toggleBgmFavorite,
                 onToggleVoicePlayback = pageActions.toggleVoicePlayback,
                 onScrollBoundsChange = { canScrollBackward, canScrollForward ->
                     activePageCanScrollBackward = canScrollBackward

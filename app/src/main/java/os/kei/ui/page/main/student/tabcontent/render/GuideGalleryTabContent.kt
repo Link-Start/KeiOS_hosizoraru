@@ -3,9 +3,10 @@ package os.kei.ui.page.main.student.tabcontent.render
 import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
-import os.kei.ui.page.main.student.BaStudentGuideInfo
-import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 
 internal fun LazyListScope.renderGuideGalleryTabContent(
     tabLabel: String,
@@ -19,7 +20,8 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
     bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
-    onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit
+    onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean
 ) {
     val guide = info
     if (guide == null) {
@@ -47,6 +49,7 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
-        onSaveMediaPack = onSaveMediaPack
+        onSaveMediaPack = onSaveMediaPack,
+        onToggleBgmFavorite = onToggleBgmFavorite
     )
 }

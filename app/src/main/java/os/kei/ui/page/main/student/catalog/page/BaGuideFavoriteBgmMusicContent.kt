@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -16,12 +17,11 @@ import androidx.compose.ui.unit.Dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
-import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
@@ -48,9 +48,11 @@ internal fun BaGuideFavoriteBgmMusicContent(
     isPageActive: Boolean,
     onSliderInteractionChanged: (Boolean) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
+    onRemoveBgmFavorite: suspend (String) -> Unit,
     onOpenGuide: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val contentBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
@@ -86,10 +88,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
                 ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
                 ?: displayedFavorites.firstOrNull()
         }
-    val playbackSnapshot = remember(displayedFavorites) {
-        GuideBgmFavoritePlaybackStore.snapshot()
-    }
-    val tracks = remember(displayedFavorites) {
+    val playbackSnapshot = derivedState.playbackSnapshot
+    val tracks = remember(displayedFavorites, playbackSnapshot) {
         displayedFavorites.map { favorite ->
             favorite.toBaGuideBgmTrack(playbackSnapshot)
         }
@@ -162,8 +162,10 @@ internal fun BaGuideFavoriteBgmMusicContent(
                 }
             },
             onTrackFavoriteClick = { id ->
-                GuideBgmFavoriteStore.removeFavorite(id)
-                if (playbackState.selectedAudioUrl == id) playbackCoordinator.select("")
+                coroutineScope.launch {
+                    onRemoveBgmFavorite(id)
+                    if (playbackState.selectedAudioUrl == id) playbackCoordinator.select("")
+                }
             },
             onTrackOfflineClick = { id ->
                 favoritesByTrackId[id]?.let(offlineCacheState.onToggleFavoriteCache)

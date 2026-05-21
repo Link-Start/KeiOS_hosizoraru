@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.section.GuideGalleryCardItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
@@ -61,6 +62,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     bgmFavoriteAudioUrls: Set<String>,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
     preferCapsule: Boolean
 ) {
     if (infoRows.isEmpty() && galleryItems.isEmpty()) return
@@ -95,7 +97,8 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
                 },
                 embedded = true,
                 showMediaTypeLabel = false,
-                bgmFavoriteAudioUrls = bgmFavoriteAudioUrls
+                bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                onToggleBgmFavorite = onToggleBgmFavorite
             )
         }
     }

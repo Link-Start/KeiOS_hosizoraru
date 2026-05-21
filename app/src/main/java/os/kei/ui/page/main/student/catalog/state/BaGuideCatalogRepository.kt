@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
@@ -43,13 +43,33 @@ internal class BaGuideCatalogRepository(
     private val completeChecker: (BaGuideCatalogBundle?) -> Boolean =
         ::isBaGuideCatalogBundleComplete,
     private val expiredChecker: (BaGuideCatalogBundle?, Int, Long) -> Boolean =
-        ::isBaGuideCatalogCacheExpired
+        ::isBaGuideCatalogCacheExpired,
+    private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
 ) {
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
-        GuideBgmFavoriteStore.favoritesFlow()
+        bgmFavoriteRepository.favoritesFlow()
 
     fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> =
-        GuideBgmFavoriteStore.favoritesSnapshot()
+        bgmFavoriteRepository.favoritesSnapshot()
+
+    fun bgmPlaybackSnapshot() =
+        bgmFavoriteRepository.playbackSnapshot()
+
+    fun loadNativeBgmMediaNotificationEnabled(): Boolean =
+        BASettingsStore.loadNativeBgmMediaNotificationEnabled()
+
+    suspend fun saveNativeBgmMediaNotificationEnabled(enabled: Boolean) {
+        withContext(ioDispatcher) {
+            BASettingsStore.saveNativeBgmMediaNotificationEnabled(enabled)
+        }
+    }
+
+    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
+        bgmFavoriteRepository.toggleFavorite(item)
+
+    suspend fun removeBgmFavorite(audioUrl: String) {
+        bgmFavoriteRepository.removeFavorite(audioUrl)
+    }
 
     suspend fun loadCatalog(
         context: Context?,
@@ -203,6 +223,7 @@ internal class BaGuideCatalogRepository(
                         searchQuery = input.searchQuery,
                         sortMode = input.sortMode,
                     ),
+                playbackSnapshot = bgmPlaybackSnapshot(),
                 deriving = false,
             )
         }

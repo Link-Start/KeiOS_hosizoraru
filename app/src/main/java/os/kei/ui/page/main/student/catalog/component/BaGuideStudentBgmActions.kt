@@ -3,13 +3,14 @@ package os.kei.ui.page.main.student.catalog.component
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
+import kotlinx.coroutines.launch
 
 internal data class BaGuideStudentBgmActions(
     val openStudentGuide: (BaGuideCatalogEntry) -> Unit,
@@ -30,15 +31,21 @@ internal fun rememberBaGuideStudentBgmActions(
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     setNowPlayingVisible: (Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
+    onToggleFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
+    onRemoveFavorite: suspend (String) -> Unit,
     bgmMissingText: String,
     bgmResolveFailedText: String,
     favoriteAddedText: String,
     favoriteRemovedText: String
 ): BaGuideStudentBgmActions {
+    val actionScope = rememberCoroutineScope()
     val currentSetNowPlayingVisible = rememberUpdatedState(setNowPlayingVisible)
     val currentOnOpenGuide = rememberUpdatedState(onOpenGuide)
+    val currentOnToggleFavorite = rememberUpdatedState(onToggleFavorite)
+    val currentOnRemoveFavorite = rememberUpdatedState(onRemoveFavorite)
     return remember(
         context,
+        actionScope,
         lookupCoordinator,
         lookupStates,
         favoriteByNormalizedSourceUrl,
@@ -136,8 +143,10 @@ internal fun rememberBaGuideStudentBgmActions(
             if (lookupState !is BaGuideStudentBgmLookupState.Ready) {
                 val savedFavorite = favoriteForEntry(entry)
                 if (savedFavorite != null) {
-                    GuideBgmFavoriteStore.removeFavorite(savedFavorite.audioUrl)
-                    context.showToast(favoriteRemovedText)
+                    actionScope.launch {
+                        currentOnRemoveFavorite.value(savedFavorite.audioUrl)
+                        context.showToast(favoriteRemovedText)
+                    }
                     return
                 }
             }
@@ -147,10 +156,12 @@ internal fun rememberBaGuideStudentBgmActions(
                     context.showToast(bgmResolveFailedText)
                     return@resolveEntry
                 }
-                val added = GuideBgmFavoriteStore.toggleFavorite(favorite)
-                context.showToast(
-                    if (added) favoriteAddedText else favoriteRemovedText
-                )
+                actionScope.launch {
+                    val added = currentOnToggleFavorite.value(favorite)
+                    context.showToast(
+                        if (added) favoriteAddedText else favoriteRemovedText
+                    )
+                }
             }
         }
 

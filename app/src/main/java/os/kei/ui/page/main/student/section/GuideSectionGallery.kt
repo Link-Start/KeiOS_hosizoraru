@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,10 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.extractGuideWebLinks
 import os.kei.ui.page.main.student.guideLocalizedLabel
@@ -39,7 +40,7 @@ import os.kei.ui.page.main.student.section.gallery.rememberGuideGalleryGestureSt
 import os.kei.ui.page.main.student.stripGuideWebLinks
 
 @Composable
-fun GuideGalleryCardItem(
+internal fun GuideGalleryCardItem(
     item: BaGuideGalleryItem,
     backdrop: Backdrop?,
     onOpenMedia: (String) -> Unit,
@@ -61,9 +62,11 @@ fun GuideGalleryCardItem(
     bgmFavoriteStudentImageUrl: String = "",
     bgmFavoriteSourceUrl: String = "",
     bgmFavoriteAudioUrls: Set<String> = emptySet(),
+    onToggleBgmFavorite: (suspend (GuideBgmFavoriteItem) -> Boolean)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val normalizedMediaType = item.mediaType.lowercase()
     val isInteractiveFurnitureAnimated = remember(item.title, item.mediaUrl, item.imageUrl) {
         isInteractiveFurnitureAnimatedGalleryItem(item)
@@ -151,6 +154,7 @@ fun GuideGalleryCardItem(
         }
     }
     val canFavoriteBgm = showBgmFavoriteAction &&
+        onToggleBgmFavorite != null &&
         normalizedMediaType == "audio" &&
         favoriteAudioUrl.isNotBlank() &&
         isGuideBgmFavoriteCandidateTitle(item.title, displayTitle)
@@ -239,8 +243,13 @@ fun GuideGalleryCardItem(
             isBgmFavorite = isBgmFavorite,
             bgmFavoriteContentDescription = favoriteContentDescription,
             onToggleBgmFavorite = {
-                val added = GuideBgmFavoriteStore.toggleFavorite(bgmFavoriteItem)
-                context.showToast(if (added) favoriteAddedText else favoriteRemovedText)
+                val toggleFavorite = onToggleBgmFavorite
+                if (toggleFavorite != null) {
+                    coroutineScope.launch {
+                        val added = toggleFavorite(bgmFavoriteItem)
+                        context.showToast(if (added) favoriteAddedText else favoriteRemovedText)
+                    }
+                }
             },
             showAudioLoopAction = showAudioLoopAction,
             onToggleAudioLoop = {

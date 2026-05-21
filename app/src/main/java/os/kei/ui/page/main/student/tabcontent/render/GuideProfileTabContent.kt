@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.isNpcSatelliteLikeGuide
 import os.kei.ui.page.main.student.tabcontent.profile.GuideGiftPreferenceGrid
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
@@ -44,6 +45,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
 ) {
     val guide = info
     if (guide == null) {
@@ -228,6 +230,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
+        onToggleBgmFavorite = onToggleBgmFavorite,
         preferCapsule = true,
     )
 
@@ -242,6 +245,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
+        onToggleBgmFavorite = onToggleBgmFavorite,
         preferCapsule = false,
     )
 }

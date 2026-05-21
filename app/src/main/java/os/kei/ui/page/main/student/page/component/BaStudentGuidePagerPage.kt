@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderState
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
@@ -67,6 +68,7 @@ internal fun BaStudentGuidePagerPage(
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (String, String) -> Unit,
     onSaveMediaPack: (List<Pair<String, String>>, String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
     onToggleVoicePlayback: (String) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
@@ -226,6 +228,7 @@ internal fun BaStudentGuidePagerPage(
                         onOpenGuide = onOpenGuide,
                         onSaveMedia = onSaveMedia,
                         onSaveMediaPack = onSaveMediaPack,
+                        onToggleBgmFavorite = onToggleBgmFavorite,
                         onToggleVoicePlayback = onToggleVoicePlayback,
                         onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange
                     )

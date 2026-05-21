@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideArchiveTabContent
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideGalleryTabContent
@@ -32,6 +33,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
+    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
     onToggleVoicePlayback: (String) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit
 ) {
@@ -60,7 +62,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
             onOpenExternal = onOpenExternal,
             onOpenGuide = onOpenGuide,
-            onSaveMedia = onSaveMedia
+            onSaveMedia = onSaveMedia,
+            onToggleBgmFavorite = onToggleBgmFavorite
         )
 
         GuideBottomTab.Voice -> renderGuideVoiceTabContent(
@@ -92,7 +95,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
             onOpenExternal = onOpenExternal,
             onSaveMedia = onSaveMedia,
-            onSaveMediaPack = onSaveMediaPack
+            onSaveMediaPack = onSaveMediaPack,
+            onToggleBgmFavorite = onToggleBgmFavorite
         )
 
         GuideBottomTab.Simulate -> renderGuideSimulateTabContent(

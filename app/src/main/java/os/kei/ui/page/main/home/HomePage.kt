@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.home
 
 import androidx.compose.foundation.layout.Box
@@ -39,6 +41,7 @@ import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.ui.page.main.home.state.rememberHomePageContentState
 import os.kei.ui.page.main.home.state.rememberHomePageHeroMotionState
 import os.kei.ui.page.main.home.state.rememberHomePageOverviewCardState
+import os.kei.ui.page.main.home.state.rememberHomePageRuntimeNowMs
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.appLucideInfoIcon
@@ -123,12 +126,17 @@ fun HomePage(
         } else {
             null
         }
+    val runtimeNowMs by rememberHomePageRuntimeNowMs(
+        mcpOverview = mcpOverview,
+        runtime = runtime,
+    )
     val contentState =
         rememberHomePageContentState(
             shizukuStatus = shizukuStatus,
             mcpOverview = mcpOverview,
             githubOverview = homeGitHubOverview,
             baOverview = homeBaOverview,
+            runtimeNowMs = runtimeNowMs,
         )
 
     var actionBarSelectedIndex by rememberSaveable { mutableIntStateOf(1) }

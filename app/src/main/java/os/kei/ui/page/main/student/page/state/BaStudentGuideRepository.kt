@@ -8,10 +8,10 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
+import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
 import kotlin.coroutines.cancellation.CancellationException
@@ -24,6 +24,7 @@ internal data class BaStudentGuideLoadResult(
 internal class BaStudentGuideRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
 ) {
     fun loadCurrentUrl(): String = BaStudentGuideStore.loadCurrentUrl()
 
@@ -32,10 +33,13 @@ internal class BaStudentGuideRepository(
     }
 
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
-        GuideBgmFavoriteStore.favoritesFlow()
+        bgmFavoriteRepository.favoritesFlow()
 
     fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> =
-        GuideBgmFavoriteStore.favoritesSnapshot()
+        bgmFavoriteRepository.favoritesSnapshot()
+
+    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
+        bgmFavoriteRepository.toggleFavorite(item)
 
     suspend fun prefetchStaticImages(
         context: Context,

@@ -3,12 +3,20 @@ package os.kei.ui.page.main.mcp
 import android.content.ContentResolver
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerUiState
+import os.kei.ui.page.main.mcp.state.McpToolBucketInput
+import os.kei.ui.page.main.mcp.state.McpToolBuckets
+import os.kei.ui.page.main.mcp.state.deriveMcpToolBuckets
 
 internal data class McpLogsExportRequest(
     val generatedAt: String,
@@ -49,6 +57,10 @@ internal class McpPageViewModel : ViewModel() {
     private val repository = McpPageRepository()
     private val _uiState = MutableStateFlow(McpPageUiState())
     val uiState: StateFlow<McpPageUiState> = _uiState.asStateFlow()
+    private val _toolBuckets = MutableStateFlow(McpToolBuckets.Empty)
+    val toolBuckets: StateFlow<McpToolBuckets> = _toolBuckets.asStateFlow()
+    private var toolBucketsInput: McpToolBucketInput? = null
+    private var toolBucketsJob: Job? = null
 
     fun syncServiceDraft(
         serverState: McpServerUiState,
@@ -118,6 +130,22 @@ internal class McpPageViewModel : ViewModel() {
 
     fun updateToolsSearchQuery(value: String) {
         _uiState.update { state -> state.copy(toolsSearchQuery = value.take(80)) }
+    }
+
+    fun requestToolBuckets(input: McpToolBucketInput) {
+        if (toolBucketsInput == input) return
+        toolBucketsInput = input
+        toolBucketsJob?.cancel()
+        toolBucketsJob =
+            viewModelScope.launch {
+                val derived =
+                    withContext(Dispatchers.Default) {
+                        deriveMcpToolBuckets(input)
+                    }
+                if (toolBucketsInput == input) {
+                    _toolBuckets.value = derived
+                }
+            }
     }
 
     fun updateLogsExpanded(value: Boolean) {

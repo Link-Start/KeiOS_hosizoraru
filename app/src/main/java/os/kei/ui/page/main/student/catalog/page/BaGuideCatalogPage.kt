@@ -42,7 +42,6 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import os.kei.R
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.host.pager.rememberPagerTargetWarmDataActive
@@ -62,7 +61,6 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListInput
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
-import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
@@ -241,9 +239,8 @@ fun BaGuideCatalogPage(
     var importPreviewState by remember { mutableStateOf<BaGuideCatalogImportPreviewState?>(null) }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
-    var nativeBgmMediaNotificationEnabled by rememberSaveable {
-        mutableStateOf(BASettingsStore.loadNativeBgmMediaNotificationEnabled())
-    }
+    val nativeBgmMediaNotificationEnabled by
+        catalogViewModel.nativeBgmMediaNotificationEnabled.collectAsStateWithLifecycle()
     val playbackCoordinator =
         rememberBaGuideBgmPlaybackCoordinator(
             context = appContext,
@@ -383,17 +380,6 @@ fun BaGuideCatalogPage(
                     .fillMaxSize()
                     .layerBackdrop(bottomChromeBackdrop),
         ) {
-            val progress =
-                rememberCatalogSyncProgress(
-                    loading = catalogDataState.loading,
-                    animationsEnabled = transitionAnimationsEnabled,
-                )
-            val progressColor =
-                when {
-                    catalogDataState.loading -> Color(0xFF3B82F6)
-                    !catalogDataState.error.isNullOrBlank() -> Color(0xFFEF4444)
-                    else -> Color(0xFF22C55E)
-                }
             val targetWarmDataActive =
                 rememberPagerTargetWarmDataActive(
                     pagerState = pagerState,
@@ -472,6 +458,8 @@ fun BaGuideCatalogPage(
                                     onScrollBoundsChange = chromeScrollState::expandForStaticContent,
                                     onListScrollInProgressChange = {},
                                     onNowPlayingVisibilityChange = {},
+                                    onToggleBgmFavorite = catalogViewModel::toggleBgmFavorite,
+                                    onRemoveBgmFavorite = catalogViewModel::removeBgmFavorite,
                                     showNowPlayingOverlay = false,
                                     onOpenGuide = onOpenGuide,
                                 )
@@ -491,6 +479,7 @@ fun BaGuideCatalogPage(
                                     isPageActive = pageIndex == pagerState.settledPage,
                                     onSliderInteractionChanged = { sliderInteractionActive = it },
                                     onScrollBoundsChange = chromeScrollState::expandForStaticContent,
+                                    onRemoveBgmFavorite = catalogViewModel::removeBgmFavorite,
                                     onOpenGuide = onOpenGuide,
                                 )
                             }
@@ -537,8 +526,7 @@ fun BaGuideCatalogPage(
                             if (enabled && !notificationPermissionGranted) {
                                 onRequestNotificationPermission()
                             }
-                            nativeBgmMediaNotificationEnabled = enabled
-                            BASettingsStore.saveNativeBgmMediaNotificationEnabled(enabled)
+                            catalogViewModel.setNativeBgmMediaNotificationEnabled(enabled)
                             playbackCoordinator.updateNativeMediaNotificationEnabled(enabled)
                         },
                     ),

@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.catalog.state
 
 import androidx.compose.runtime.Immutable
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
@@ -121,6 +122,13 @@ internal data class BaGuideStudentBgmDisplayedDerivedState(
 @Immutable
 internal data class BaGuideFavoriteBgmListDerivedState(
     val displayedFavorites: List<GuideBgmFavoriteItem> = emptyList(),
+    val playbackSnapshot: GuideBgmFavoritePlaybackSnapshot =
+        GuideBgmFavoritePlaybackSnapshot(
+            selectedAudioUrl = "",
+            queueModeName = "",
+            volume = 1f,
+            progressByAudioUrl = emptyMap(),
+        ),
     val deriving: Boolean = false,
 ) {
     companion object {

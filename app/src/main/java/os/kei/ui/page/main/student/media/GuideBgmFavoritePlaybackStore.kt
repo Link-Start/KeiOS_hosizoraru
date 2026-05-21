@@ -1,8 +1,8 @@
 package os.kei.ui.page.main.student
 
 import com.tencent.mmkv.MMKV
-import os.kei.core.prefs.KeiMmkv
 import org.json.JSONObject
+import os.kei.core.prefs.KeiMmkv
 import kotlin.math.abs
 
 private const val BA_GUIDE_BGM_PLAYBACK_KV_ID = "ba_guide_bgm_favorite_playback"
@@ -17,7 +17,7 @@ internal data class GuideBgmFavoritePlaybackProgress(
     val positionMs: Long,
     val durationMs: Long,
     val updatedAtMs: Long,
-    val lastPlayedAtMs: Long
+    val lastPlayedAtMs: Long,
 ) {
     val resumePositionMs: Long
         get() {
@@ -31,8 +31,18 @@ internal data class GuideBgmFavoritePlaybackSnapshot(
     val selectedAudioUrl: String,
     val queueModeName: String,
     val volume: Float,
-    val progressByAudioUrl: Map<String, GuideBgmFavoritePlaybackProgress>
+    val progressByAudioUrl: Map<String, GuideBgmFavoritePlaybackProgress>,
 ) {
+    companion object {
+        val Empty =
+            GuideBgmFavoritePlaybackSnapshot(
+                selectedAudioUrl = "",
+                queueModeName = "",
+                volume = 1f,
+                progressByAudioUrl = emptyMap(),
+            )
+    }
+
     fun progressFor(audioUrl: String): GuideBgmFavoritePlaybackProgress? {
         val normalized = normalizeGuideMediaSource(audioUrl)
         if (normalized.isBlank()) return null
@@ -57,7 +67,7 @@ internal object GuideBgmFavoritePlaybackStore {
             selectedAudioUrl = selectedAudioUrl,
             queueModeName = queueModeName,
             volume = volume,
-            progressByAudioUrl = progressByAudioUrl
+            progressByAudioUrl = progressByAudioUrl,
         )
     }
 
@@ -68,11 +78,12 @@ internal object GuideBgmFavoritePlaybackStore {
         }
     }
 
-    fun progressFor(audioUrl: String): GuideBgmFavoritePlaybackProgress? {
-        return snapshot().progressFor(audioUrl)
-    }
+    fun progressFor(audioUrl: String): GuideBgmFavoritePlaybackProgress? = snapshot().progressFor(audioUrl)
 
-    fun saveSelection(audioUrl: String, queueModeName: String) {
+    fun saveSelection(
+        audioUrl: String,
+        queueModeName: String,
+    ) {
         val normalizedAudioUrl = normalizeGuideMediaSource(audioUrl)
         synchronized(lock) {
             ensureLoadedLocked()
@@ -97,31 +108,34 @@ internal object GuideBgmFavoritePlaybackStore {
         positionMs: Long,
         durationMs: Long,
         isPlaying: Boolean,
-        nowMs: Long = System.currentTimeMillis()
+        nowMs: Long = System.currentTimeMillis(),
     ) {
         val normalizedAudioUrl = normalizeGuideMediaSource(audioUrl)
         if (normalizedAudioUrl.isBlank()) return
         val safeDuration = durationMs.coerceAtLeast(0L)
-        val safePosition = if (safeDuration > 0L) {
-            positionMs.coerceIn(0L, safeDuration)
-        } else {
-            positionMs.coerceAtLeast(0L)
-        }
+        val safePosition =
+            if (safeDuration > 0L) {
+                positionMs.coerceIn(0L, safeDuration)
+            } else {
+                positionMs.coerceAtLeast(0L)
+            }
         synchronized(lock) {
             ensureLoadedLocked()
             val previous = progressByAudioUrl[normalizedAudioUrl]
             val safeNow = nowMs.coerceAtLeast(1L)
-            val next = GuideBgmFavoritePlaybackProgress(
-                audioUrl = normalizedAudioUrl,
-                positionMs = safePosition,
-                durationMs = safeDuration,
-                updatedAtMs = safeNow,
-                lastPlayedAtMs = if (isPlaying) {
-                    safeNow
-                } else {
-                    previous?.lastPlayedAtMs ?: 0L
-                }
-            )
+            val next =
+                GuideBgmFavoritePlaybackProgress(
+                    audioUrl = normalizedAudioUrl,
+                    positionMs = safePosition,
+                    durationMs = safeDuration,
+                    updatedAtMs = safeNow,
+                    lastPlayedAtMs =
+                        if (isPlaying) {
+                            safeNow
+                        } else {
+                            previous?.lastPlayedAtMs ?: 0L
+                        },
+                )
             if (!shouldPersistProgress(previous, next, isPlaying)) return
             progressByAudioUrl = progressByAudioUrl + (normalizedAudioUrl to next)
             persistProgressLocked()
@@ -137,9 +151,10 @@ internal object GuideBgmFavoritePlaybackStore {
 
     private fun ensureLoadedLocked() {
         if (loaded) return
-        selectedAudioUrl = normalizeGuideMediaSource(
-            store.decodeString(KEY_SELECTED_AUDIO_URL, "").orEmpty()
-        )
+        selectedAudioUrl =
+            normalizeGuideMediaSource(
+                store.decodeString(KEY_SELECTED_AUDIO_URL, "").orEmpty(),
+            )
         queueModeName = store.decodeString(KEY_QUEUE_MODE_NAME, "").orEmpty().trim()
         volume = store.decodeFloat(KEY_VOLUME, 1f).coerceIn(0f, 1f)
         progressByAudioUrl = decodeProgress(store.decodeString(KEY_PROGRESS_RAW, "").orEmpty())
@@ -149,7 +164,7 @@ internal object GuideBgmFavoritePlaybackStore {
     private fun shouldPersistProgress(
         previous: GuideBgmFavoritePlaybackProgress?,
         next: GuideBgmFavoritePlaybackProgress,
-        isPlaying: Boolean
+        isPlaying: Boolean,
     ): Boolean {
         previous ?: return true
         if (previous.durationMs != next.durationMs) return true
@@ -160,22 +175,24 @@ internal object GuideBgmFavoritePlaybackStore {
     }
 
     private fun persistProgressLocked() {
-        val raw = JSONObject().apply {
-            progressByAudioUrl.values
-                .sortedByDescending { it.updatedAtMs }
-                .take(120)
-                .forEach { progress ->
-                    put(
-                        progress.audioUrl,
-                        JSONObject().apply {
-                            put("positionMs", progress.positionMs)
-                            put("durationMs", progress.durationMs)
-                            put("updatedAtMs", progress.updatedAtMs)
-                            put("lastPlayedAtMs", progress.lastPlayedAtMs)
+        val raw =
+            JSONObject()
+                .apply {
+                    progressByAudioUrl.values
+                        .sortedByDescending { it.updatedAtMs }
+                        .take(120)
+                        .forEach { progress ->
+                            put(
+                                progress.audioUrl,
+                                JSONObject().apply {
+                                    put("positionMs", progress.positionMs)
+                                    put("durationMs", progress.durationMs)
+                                    put("updatedAtMs", progress.updatedAtMs)
+                                    put("lastPlayedAtMs", progress.lastPlayedAtMs)
+                                },
+                            )
                         }
-                    )
-                }
-        }.toString()
+                }.toString()
         store.encode(KEY_PROGRESS_RAW, raw)
     }
 
@@ -195,8 +212,8 @@ internal object GuideBgmFavoritePlaybackStore {
                             positionMs = item.optLong("positionMs", 0L).coerceAtLeast(0L),
                             durationMs = item.optLong("durationMs", 0L).coerceAtLeast(0L),
                             updatedAtMs = item.optLong("updatedAtMs", 0L).coerceAtLeast(0L),
-                            lastPlayedAtMs = item.optLong("lastPlayedAtMs", 0L).coerceAtLeast(0L)
-                        )
+                            lastPlayedAtMs = item.optLong("lastPlayedAtMs", 0L).coerceAtLeast(0L),
+                        ),
                     )
                 }
             }

@@ -3,12 +3,8 @@
 package os.kei.ui.page.main.github.actions
 
 import android.content.Context
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -20,6 +16,7 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.github.asset.GitHubAssetFileCard
 import os.kei.ui.page.main.github.asset.assetRelativeTimeLabel
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.os.appLucideDownloadIcon
@@ -30,7 +27,6 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -64,27 +60,15 @@ internal fun GitHubActionsArtifactCard(
             R.string.github_actions_cd_download_artifact,
             artifact.name,
         )
-    GitHubActionsSelectableCard(
-        selected = false,
-        isDark = isDark,
+    GitHubAssetFileCard(
+        title = artifactDisplayName(artifactMatch),
+        containerColor = githubActionsNeutralCardColor(isDark),
+        borderColor = githubActionsNeutralBorderColor(isDark),
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        verticalSpacing = 10.dp,
+        captureLocalBackdrop = false,
         onClick = onOpenDetail,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = artifactDisplayName(artifactMatch),
-                modifier = Modifier.fillMaxWidth(),
-                color = MiuixTheme.colorScheme.onBackground,
-                fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight,
-                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        GitHubActionsPillRow {
+        pills = {
             if (recommended) {
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_recommended),
@@ -160,13 +144,8 @@ internal fun GitHubActionsArtifactCard(
             assetRelativeTimeLabel(artifact.updatedAtMillis, context)?.let { label ->
                 GitHubActionsInfoPill(label = label, color = neutralPillColor)
             }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
+        },
+        actions = {
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.SheetAction,
@@ -230,6 +209,6 @@ internal fun GitHubActionsArtifactCard(
                 height = actionButtonSize,
                 onClick = onShare,
             )
-        }
-    }
+        },
+    )
 }

@@ -156,6 +156,7 @@ fun BaGuideCatalogPage(
     val catalogListDerivedStates by catalogViewModel.catalogListDerivedStates.collectAsStateWithLifecycle()
     val studentBgmListDerivedState by catalogViewModel.studentBgmListDerivedState.collectAsStateWithLifecycle()
     val favoriteBgmListDerivedState by catalogViewModel.favoriteBgmListDerivedState.collectAsStateWithLifecycle()
+    val studentBgmDisplayedDerivedState by catalogViewModel.studentBgmDisplayedDerivedState.collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
         transitionAnimationsEnabled,
@@ -454,6 +455,8 @@ fun BaGuideCatalogPage(
                                     catalogSyncedAtMs = catalogDataState.catalog.syncedAtMs,
                                     favorites = favoriteBgms,
                                     derivedState = studentBgmListDerivedState,
+                                    displayedDerivedState = studentBgmDisplayedDerivedState,
+                                    onRequestDisplayedDerivedState = catalogViewModel::requestStudentBgmDisplayedDerivedState,
                                     playbackCoordinator = playbackCoordinator,
                                     playbackState = playbackUiState,
                                     searchQuery = pageSearchQuery,

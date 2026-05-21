@@ -12,6 +12,7 @@ import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
 import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
+import os.kei.ui.page.main.student.catalog.component.buildBaGuideStudentBgmDisplayedModel
 import os.kei.ui.page.main.student.catalog.hydrateBaGuideCatalogReleaseDateIndex
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
@@ -168,6 +169,11 @@ internal class BaGuideCatalogRepository(
                 )
             BaGuideStudentBgmListDerivedState(
                 allStudentEntries = allStudentEntries,
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+                favoriteAudioUrls =
+                    input.favorites.mapNotNullTo(LinkedHashSet()) { favorite ->
+                        favorite.audioUrl.takeIf { it.isNotBlank() }
+                    },
                 filteredEntries =
                     filterAndSortStudentBgmEntries(
                         entries = allStudentEntries,
@@ -187,6 +193,24 @@ internal class BaGuideCatalogRepository(
                         favorites = input.favorites,
                         searchQuery = input.searchQuery,
                         sortMode = input.sortMode,
+                    ),
+                deriving = false,
+            )
+        }
+    }
+
+    suspend fun deriveStudentBgmDisplayedState(
+        input: BaGuideStudentBgmDisplayedInput,
+    ): BaGuideStudentBgmDisplayedDerivedState {
+        return withContext(parseDispatcher) {
+            BaGuideStudentBgmDisplayedDerivedState(
+                input = input,
+                model =
+                    buildBaGuideStudentBgmDisplayedModel(
+                        displayedEntries = input.displayedEntries,
+                        lookupStates = input.lookupStates,
+                        favoriteByNormalizedSourceUrl = input.favoriteByNormalizedSourceUrl,
+                        favoriteAudioUrls = input.favoriteAudioUrls,
                     ),
                 deriving = false,
             )

@@ -42,6 +42,8 @@ internal class BaGuideCatalogViewModel(
     private var studentBgmListDerivationInput: BaGuideStudentBgmListInput? = null
     private var favoriteBgmListDerivationJob: Job? = null
     private var favoriteBgmListDerivationInput: BaGuideFavoriteBgmListInput? = null
+    private var studentBgmDisplayedDerivationJob: Job? = null
+    private var studentBgmDisplayedDerivationInput: BaGuideStudentBgmDisplayedInput? = null
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
     val dataState: StateFlow<BaGuideCatalogDataUiState> = _dataState.asStateFlow()
@@ -60,6 +62,11 @@ internal class BaGuideCatalogViewModel(
         MutableStateFlow(BaGuideFavoriteBgmListDerivedState.Empty)
     val favoriteBgmListDerivedState: StateFlow<BaGuideFavoriteBgmListDerivedState> =
         _favoriteBgmListDerivedState.asStateFlow()
+
+    private val _studentBgmDisplayedDerivedState =
+        MutableStateFlow(BaGuideStudentBgmDisplayedDerivedState.Empty)
+    val studentBgmDisplayedDerivedState: StateFlow<BaGuideStudentBgmDisplayedDerivedState> =
+        _studentBgmDisplayedDerivedState.asStateFlow()
 
     fun bind(
         transitionAnimationsEnabled: Boolean,
@@ -137,6 +144,26 @@ internal class BaGuideCatalogViewModel(
             }
     }
 
+    fun requestStudentBgmDisplayedDerivedState(input: BaGuideStudentBgmDisplayedInput) {
+        val previousInput = studentBgmDisplayedDerivationInput
+        if (previousInput == input && _studentBgmDisplayedDerivedState.value.input == input) return
+
+        studentBgmDisplayedDerivationInput = input
+        studentBgmDisplayedDerivationJob?.cancel()
+        _studentBgmDisplayedDerivedState.update { state ->
+            state.copy(
+                input = input,
+                deriving = true,
+            )
+        }
+        studentBgmDisplayedDerivationJob =
+            viewModelScope.launch {
+                val derivedState = repository.deriveStudentBgmDisplayedState(input)
+                if (studentBgmDisplayedDerivationInput != input) return@launch
+                _studentBgmDisplayedDerivedState.value = derivedState
+            }
+    }
+
     private fun loadCatalog(
         manualRefresh: Boolean,
         allowInitialDelay: Boolean
@@ -195,6 +222,7 @@ internal class BaGuideCatalogViewModel(
         listDerivationJobs.values.forEach { job -> job.cancel() }
         studentBgmListDerivationJob?.cancel()
         favoriteBgmListDerivationJob?.cancel()
+        studentBgmDisplayedDerivationJob?.cancel()
         super.onCleared()
     }
 }

@@ -11,6 +11,8 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterOption
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
+import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmLookupState
+import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmResolvedItem
 import kotlin.test.assertEquals
 
 class BaGuideCatalogRepositoryTest {
@@ -163,6 +165,8 @@ class BaGuideCatalogRepositoryTest {
 
         assertEquals(listOf("阿露", "日富美"), result.filteredEntries.map { it.name })
         assertEquals(listOf("日富美", "阿露"), result.allStudentEntries.map { it.name })
+        assertEquals(listOf(favorite.detailUrl), result.favoriteByNormalizedSourceUrl.keys.toList())
+        assertEquals(listOf("https://example.com/audio.ogg"), result.favoriteAudioUrls.toList())
         assertEquals(false, result.deriving)
     }
 
@@ -194,6 +198,46 @@ class BaGuideCatalogRepositoryTest {
             )
 
         assertEquals(listOf("New Track", "Old Track"), result.displayedFavorites.map { it.title })
+        assertEquals(false, result.deriving)
+    }
+
+    @Test
+    fun `student bgm displayed model derives off composable path`() = runBlocking {
+        val entry =
+            catalogEntry(
+                name = "阿露",
+                tab = BaGuideCatalogTab.Student,
+                order = 1,
+            )
+        val favorite =
+            bgmFavorite(
+                sourceUrl = entry.detailUrl,
+                title = "Theme",
+                studentTitle = "阿露",
+            )
+        val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
+        val input =
+            BaGuideStudentBgmDisplayedInput(
+                displayedEntries = listOf(entry),
+                lookupStates =
+                    mapOf(
+                        entry.contentId to
+                            BaGuideStudentBgmLookupState.Ready(
+                                BaGuideStudentBgmResolvedItem(
+                                    favorite = favorite,
+                                    fromCache = true,
+                                ),
+                            ),
+                    ),
+                favoriteByNormalizedSourceUrl = mapOf(entry.detailUrl to favorite),
+                favoriteAudioUrls = setOf(favorite.audioUrl),
+            )
+
+        val result = repository.deriveStudentBgmDisplayedState(input)
+
+        assertEquals(input, result.input)
+        assertEquals(listOf(entry.contentId), result.model.contentIds)
+        assertEquals(listOf(favorite.audioUrl), result.model.playableFavorites.map { it.audioUrl })
         assertEquals(false, result.deriving)
     }
 

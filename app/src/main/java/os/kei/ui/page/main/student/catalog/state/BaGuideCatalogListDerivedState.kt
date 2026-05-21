@@ -6,6 +6,8 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
+import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmDisplayedModel
+import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmLookupState
 import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 
@@ -81,6 +83,41 @@ internal class BaGuideFavoriteBgmListInput(
     }
 }
 
+internal class BaGuideStudentBgmDisplayedInput(
+    val displayedEntries: List<BaGuideCatalogEntry>,
+    val lookupStates: Map<Long, BaGuideStudentBgmLookupState>,
+    val favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
+    val favoriteAudioUrls: Set<String>,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return other is BaGuideStudentBgmDisplayedInput &&
+            displayedEntries === other.displayedEntries &&
+            lookupStates === other.lookupStates &&
+            favoriteByNormalizedSourceUrl === other.favoriteByNormalizedSourceUrl &&
+            favoriteAudioUrls === other.favoriteAudioUrls
+    }
+
+    override fun hashCode(): Int {
+        var result = System.identityHashCode(displayedEntries)
+        result = 31 * result + System.identityHashCode(lookupStates)
+        result = 31 * result + System.identityHashCode(favoriteByNormalizedSourceUrl)
+        result = 31 * result + System.identityHashCode(favoriteAudioUrls)
+        return result
+    }
+}
+
+@Immutable
+internal data class BaGuideStudentBgmDisplayedDerivedState(
+    val input: BaGuideStudentBgmDisplayedInput? = null,
+    val model: BaGuideStudentBgmDisplayedModel = BaGuideStudentBgmDisplayedModel.Empty,
+    val deriving: Boolean = false,
+) {
+    companion object {
+        val Empty = BaGuideStudentBgmDisplayedDerivedState()
+    }
+}
+
 @Immutable
 internal data class BaGuideFavoriteBgmListDerivedState(
     val displayedFavorites: List<GuideBgmFavoriteItem> = emptyList(),
@@ -95,6 +132,8 @@ internal data class BaGuideFavoriteBgmListDerivedState(
 internal data class BaGuideStudentBgmListDerivedState(
     val allStudentEntries: List<BaGuideCatalogEntry> = emptyList(),
     val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
+    val favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem> = emptyMap(),
+    val favoriteAudioUrls: Set<String> = emptySet(),
     val deriving: Boolean = false,
 ) {
     companion object {

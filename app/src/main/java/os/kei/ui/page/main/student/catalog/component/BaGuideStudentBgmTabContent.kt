@@ -36,13 +36,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
+import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
-import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
@@ -58,6 +57,8 @@ internal fun BaGuideStudentBgmTabContent(
     catalogSyncedAtMs: Long,
     favorites: List<GuideBgmFavoriteItem>,
     derivedState: BaGuideStudentBgmListDerivedState,
+    displayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
+    onRequestDisplayedDerivedState: (BaGuideStudentBgmDisplayedInput) -> Unit,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     playbackState: BaGuideBgmPlaybackUiState,
     searchQuery: String,
@@ -92,21 +93,8 @@ internal fun BaGuideStudentBgmTabContent(
     val favoriteAddedText = stringResource(R.string.guide_bgm_toast_favorite_added)
     val favoriteRemovedText = stringResource(R.string.guide_bgm_toast_favorite_removed)
 
-    val favoriteByNormalizedSourceUrl = remember(favorites) {
-        buildMap {
-            favorites.forEach { favorite ->
-                val normalizedSourceUrl = normalizeGuideUrl(favorite.sourceUrl)
-                if (normalizedSourceUrl.isNotBlank() && !containsKey(normalizedSourceUrl)) {
-                    put(normalizedSourceUrl, favorite)
-                }
-            }
-        }
-    }
-    val favoriteAudioUrls = remember(favorites) {
-        favorites.mapNotNullTo(mutableSetOf()) { favorite ->
-            favorite.audioUrl.takeIf { it.isNotBlank() }
-        }
-    }
+    val favoriteByNormalizedSourceUrl = derivedState.favoriteByNormalizedSourceUrl
+    val favoriteAudioUrls = derivedState.favoriteAudioUrls
     val allStudentEntries = derivedState.allStudentEntries
     val filteredEntries = derivedState.filteredEntries
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
@@ -170,18 +158,24 @@ internal fun BaGuideStudentBgmTabContent(
         favoriteRemovedText = favoriteRemovedText
     )
 
-    var displayedBgmModel by remember { mutableStateOf(BaGuideStudentBgmDisplayedModel.Empty) }
-    LaunchedEffect(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl, favoriteAudioUrls) {
-        displayedBgmModel =
-            withContext(AppDispatchers.uiDerivation) {
-                buildBaGuideStudentBgmDisplayedModel(
-                    displayedEntries = displayedEntries,
-                    lookupStates = lookupStates,
-                    favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
-                    favoriteAudioUrls = favoriteAudioUrls,
-                )
-            }
+    val displayedInput =
+        remember(
+            displayedEntries,
+            lookupStates,
+            favoriteByNormalizedSourceUrl,
+            favoriteAudioUrls,
+        ) {
+            BaGuideStudentBgmDisplayedInput(
+                displayedEntries = displayedEntries,
+                lookupStates = lookupStates,
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+                favoriteAudioUrls = favoriteAudioUrls,
+            )
+        }
+    LaunchedEffect(displayedInput) {
+        onRequestDisplayedDerivedState(displayedInput)
     }
+    val displayedBgmModel = displayedDerivedState.model
     val displayedRows = displayedBgmModel.rows
     val displayedPlayableFavorites = displayedBgmModel.playableFavorites
     LaunchedEffect(playbackCoordinator, displayedPlayableFavorites, isPageActive) {

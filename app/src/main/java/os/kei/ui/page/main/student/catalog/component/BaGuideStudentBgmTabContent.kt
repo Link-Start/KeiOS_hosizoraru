@@ -36,10 +36,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -51,6 +54,15 @@ import kotlin.math.max
 
 private const val STUDENT_BGM_BATCH_SIZE = 20
 private const val STUDENT_BGM_LOAD_MORE_THRESHOLD = 10
+
+private data class BaGuideStudentBgmComputedEntries(
+    val allStudentEntries: List<BaGuideCatalogEntry> = emptyList(),
+    val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
+) {
+    companion object {
+        val Empty = BaGuideStudentBgmComputedEntries()
+    }
+}
 
 @Composable
 internal fun BaGuideStudentBgmTabContent(
@@ -90,9 +102,6 @@ internal fun BaGuideStudentBgmTabContent(
     val favoriteAddedText = stringResource(R.string.guide_bgm_toast_favorite_added)
     val favoriteRemovedText = stringResource(R.string.guide_bgm_toast_favorite_removed)
 
-    val allStudentEntries = remember(catalog) {
-        catalog.entries(BaGuideCatalogTab.Student).sortedBy { it.order }
-    }
     val favoriteByNormalizedSourceUrl = remember(favorites) {
         buildMap {
             favorites.forEach { favorite ->
@@ -103,24 +112,35 @@ internal fun BaGuideStudentBgmTabContent(
             }
         }
     }
-    val favoriteContentIds = remember(allStudentEntries, favoriteByNormalizedSourceUrl) {
-        favoriteStudentBgmEntryContentIds(
-            entries = allStudentEntries,
-            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
-        )
-    }
     val favoriteAudioUrls = remember(favorites) {
         favorites.mapNotNullTo(mutableSetOf()) { favorite ->
             favorite.audioUrl.takeIf { it.isNotBlank() }
         }
     }
-    val filteredEntries = remember(allStudentEntries, searchQuery, favoriteContentIds) {
-        filterAndSortStudentBgmEntries(
-            entries = allStudentEntries,
-            searchQuery = searchQuery,
-            favoriteContentIds = favoriteContentIds
-        )
+    var computedEntries by remember { mutableStateOf(BaGuideStudentBgmComputedEntries.Empty) }
+    LaunchedEffect(catalog, searchQuery, favoriteByNormalizedSourceUrl) {
+        computedEntries =
+            withContext(AppDispatchers.uiDerivation) {
+                val allStudentEntries =
+                    catalog.entries(BaGuideCatalogTab.Student).sortedBy { it.order }
+                val favoriteContentIds =
+                    favoriteStudentBgmEntryContentIds(
+                        entries = allStudentEntries,
+                        favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+                    )
+                BaGuideStudentBgmComputedEntries(
+                    allStudentEntries = allStudentEntries,
+                    filteredEntries =
+                        filterAndSortStudentBgmEntries(
+                            entries = allStudentEntries,
+                            searchQuery = searchQuery,
+                            favoriteContentIds = favoriteContentIds,
+                        ),
+                )
+            }
     }
+    val allStudentEntries = computedEntries.allStudentEntries
+    val filteredEntries = computedEntries.filteredEntries
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var visibleCount by rememberSaveable(searchQuery) { mutableIntStateOf(0) }
@@ -179,14 +199,17 @@ internal fun BaGuideStudentBgmTabContent(
         favoriteRemovedText = favoriteRemovedText
     )
 
-    val displayedBgmModel =
-        remember(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl) {
-            buildBaGuideStudentBgmDisplayedModel(
-                displayedEntries = displayedEntries,
-                lookupStates = lookupStates,
-                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
-            )
-        }
+    var displayedBgmModel by remember { mutableStateOf(BaGuideStudentBgmDisplayedModel.Empty) }
+    LaunchedEffect(displayedEntries, lookupStates, favoriteByNormalizedSourceUrl) {
+        displayedBgmModel =
+            withContext(AppDispatchers.uiDerivation) {
+                buildBaGuideStudentBgmDisplayedModel(
+                    displayedEntries = displayedEntries,
+                    lookupStates = lookupStates,
+                    favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+                )
+            }
+    }
     val displayedPlayableFavorites = displayedBgmModel.playableFavorites
     LaunchedEffect(playbackCoordinator, displayedPlayableFavorites, isPageActive) {
         if (isPageActive) {

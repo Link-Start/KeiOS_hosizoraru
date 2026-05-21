@@ -12,7 +12,17 @@ internal data class BaGuideStudentBgmDisplayedModel(
     val playableFavorites: List<GuideBgmFavoriteItem>,
     val resolvedCount: Int,
     val loadingCount: Int
-)
+) {
+    companion object {
+        val Empty =
+            BaGuideStudentBgmDisplayedModel(
+                contentIds = emptyList(),
+                playableFavorites = emptyList(),
+                resolvedCount = 0,
+                loadingCount = 0,
+            )
+    }
+}
 
 internal fun favoriteForStudentBgmEntry(
     entry: BaGuideCatalogEntry,

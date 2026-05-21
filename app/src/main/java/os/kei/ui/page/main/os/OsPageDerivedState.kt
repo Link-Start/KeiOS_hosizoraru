@@ -129,6 +129,38 @@ internal fun rememberOsPageDerivedState(
             )
         )
     }
+    val overviewMetrics = remember(
+        context,
+        visibleCards,
+        rowsState.topInfoRows.size,
+        rowsState.visibleRowsCount,
+        activityShortcutCards,
+        shellCommandCards,
+    ) {
+        buildOsOverviewMetrics(
+            context = context,
+            topInfoCount = rowsState.topInfoRows.size,
+            visibleRowsCount = rowsState.visibleRowsCount,
+            visibleParameterCardCount =
+                visibleCards.count {
+                    it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                        it != OsSectionCard.SHELL_RUNNER
+                },
+            totalParameterCardCount =
+                OsSectionCard.entries.count {
+                    it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                        it != OsSectionCard.SHELL_RUNNER
+                },
+            activityStats = buildOsActivityOverviewStats(cards = activityShortcutCards),
+            shellStats =
+                OsShellOverviewStats(
+                    totalCount = shellCommandCards.size + 1,
+                    visibleCount =
+                        shellCommandCards.count { it.visible } +
+                            if (visibleCards.contains(OsSectionCard.SHELL_RUNNER)) 1 else 0,
+                ),
+        )
+    }
     val overviewUiState = remember(
         isDark,
         inactiveColor,
@@ -142,8 +174,7 @@ internal fun rememberOsPageDerivedState(
         sectionStates,
         rowsState.topInfoRows.size,
         rowsState.visibleRowsCount,
-        activityShortcutCards,
-        shellCommandCards,
+        overviewMetrics,
         surfaceColor
     ) {
         buildOsOverviewUiState(
@@ -162,7 +193,8 @@ internal fun rememberOsPageDerivedState(
             topInfoCount = rowsState.topInfoRows.size,
             visibleRowsCount = rowsState.visibleRowsCount,
             activityCards = activityShortcutCards,
-            shellCommandCards = shellCommandCards
+            shellCommandCards = shellCommandCards,
+            metrics = overviewMetrics,
         )
     }
     val overviewMetricRows = remember(overviewUiState.metrics) {

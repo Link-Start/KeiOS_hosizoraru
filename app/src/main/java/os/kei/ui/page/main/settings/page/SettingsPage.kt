@@ -313,7 +313,14 @@ fun SettingsPage(
     val searchTargets = rememberSettingsSearchTargets()
     val trimmedSearchQuery = searchQuery.trim()
     val searchActive = trimmedSearchQuery.isNotEmpty()
-    val matchingSearchTargets = searchTargets.filter { it.matches(trimmedSearchQuery) }
+    val matchingSearchTargets =
+        remember(searchTargets, trimmedSearchQuery) {
+            if (trimmedSearchQuery.isBlank()) {
+                emptyList()
+            } else {
+                searchTargets.filter { it.matches(trimmedSearchQuery) }
+            }
+        }
     val selectSettingsCategoryAction =
         remember(
             categories,

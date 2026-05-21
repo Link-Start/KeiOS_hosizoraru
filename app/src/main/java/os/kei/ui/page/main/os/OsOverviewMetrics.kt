@@ -103,7 +103,8 @@ internal fun buildOsOverviewUiState(
     topInfoCount: Int,
     visibleRowsCount: Int,
     activityCards: List<OsActivityShortcutCard>,
-    shellCommandCards: List<OsShellCommandCard>
+    shellCommandCards: List<OsShellCommandCard>,
+    metrics: List<OsOverviewMetric>? = null
 ): OsOverviewUiState {
     val currentVisibleSectionKinds = visibleSectionKinds(visibleCards)
     val visibleSectionStates = currentVisibleSectionKinds.mapNotNull { sectionStates[it] }
@@ -158,29 +159,30 @@ internal fun buildOsOverviewUiState(
         SystemOverviewState.Cached -> Color(0x55F59E0B)
         SystemOverviewState.Idle -> surfaceColor
     }
-    val totalParameterCardCount = OsSectionCard.entries.count {
-        it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
-            it != OsSectionCard.SHELL_RUNNER
-    }
-    val visibleParameterCardCount = visibleCards.count {
-        it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
-            it != OsSectionCard.SHELL_RUNNER
-    }
-    val activityOverviewStats = buildOsActivityOverviewStats(cards = activityCards)
-    val shellOverviewStats = OsShellOverviewStats(
-        totalCount = shellCommandCards.size + 1,
-        visibleCount = shellCommandCards.count { it.visible } +
-            if (visibleCards.contains(OsSectionCard.SHELL_RUNNER)) 1 else 0
-    )
-    val metrics = buildOsOverviewMetrics(
-        context = context,
-        topInfoCount = topInfoCount,
-        visibleRowsCount = visibleRowsCount,
-        visibleParameterCardCount = visibleParameterCardCount,
-        totalParameterCardCount = totalParameterCardCount,
-        activityStats = activityOverviewStats,
-        shellStats = shellOverviewStats
-    )
+    val resolvedMetrics =
+        metrics ?: buildOsOverviewMetrics(
+            context = context,
+            topInfoCount = topInfoCount,
+            visibleRowsCount = visibleRowsCount,
+            visibleParameterCardCount =
+                visibleCards.count {
+                    it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                        it != OsSectionCard.SHELL_RUNNER
+                },
+            totalParameterCardCount =
+                OsSectionCard.entries.count {
+                    it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                        it != OsSectionCard.SHELL_RUNNER
+                },
+            activityStats = buildOsActivityOverviewStats(cards = activityCards),
+            shellStats =
+                OsShellOverviewStats(
+                    totalCount = shellCommandCards.size + 1,
+                    visibleCount =
+                        shellCommandCards.count { it.visible } +
+                            if (visibleCards.contains(OsSectionCard.SHELL_RUNNER)) 1 else 0,
+                ),
+        )
     return OsOverviewUiState(
         overviewState = overviewState,
         statusLabel = statusLabel,
@@ -189,6 +191,6 @@ internal fun buildOsOverviewUiState(
         overviewBorderColor = overviewBorderColor,
         indicatorProgress = indicatorProgress,
         indicatorBg = indicatorBg,
-        metrics = metrics
+        metrics = resolvedMetrics
     )
 }

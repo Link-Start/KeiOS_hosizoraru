@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
@@ -35,6 +36,9 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
+import os.kei.ui.page.main.github.picker.filterAndSortGitHubTrackAppCandidates
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
@@ -78,7 +82,7 @@ internal data class GitHubActiveShareImportFlow(
 
 internal class GitHubPageRepository(
     ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
-    defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     private val contentStateDeriver = GitHubPageContentStateDeriver(defaultDispatcher)
     private val trackRepository = GitHubPageTrackRepository(ioDispatcher)
@@ -99,6 +103,27 @@ internal class GitHubPageRepository(
 
     suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState {
         return contentStateDeriver.build(input)
+    }
+
+    suspend fun buildAppPickerState(input: GitHubTrackAppPickerInput): GitHubTrackAppPickerDerivedState {
+        return withContext(defaultDispatcher) {
+            GitHubTrackAppPickerDerivedState(
+                filteredApps =
+                    filterAndSortGitHubTrackAppCandidates(
+                        apps = input.appList,
+                        query = input.query,
+                        includeUserApps = input.includeUserApps,
+                        includeSystemApps = input.includeSystemApps,
+                        includeTrackedApps = input.includeTrackedApps,
+                        trackedPackageNames = input.trackedPackageNames,
+                        pinnedPackageNames = input.pinnedPackageNames,
+                        sortMode = input.sortMode,
+                        sortDirection = input.sortDirection,
+                    ),
+                deriving = false,
+                input = input,
+            )
+        }
     }
 
     suspend fun queryOnlineShareTargets(

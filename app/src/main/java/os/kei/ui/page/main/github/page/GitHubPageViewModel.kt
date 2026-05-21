@@ -24,6 +24,8 @@ import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import kotlin.time.Duration.Companion.milliseconds
@@ -61,6 +63,8 @@ internal class GitHubPageViewModel : ViewModel() {
     private var pendingShareImportClockJob: Job? = null
     private var onlineShareTargetsJob: Job? = null
     private var downloaderOptionsJob: Job? = null
+    private var appPickerStateJob: Job? = null
+    private var appPickerStateInput: GitHubTrackAppPickerInput? = null
     private val snapshotFlowManager = AppSnapshotFlowManager()
     private val pendingShareImportPageActive = MutableStateFlow(false)
     private val pendingShareImportNowMillis = MutableStateFlow(System.currentTimeMillis())
@@ -78,6 +82,11 @@ internal class GitHubPageViewModel : ViewModel() {
     private val _checkLogicDownloaderOptions = MutableStateFlow<List<DownloaderOption>>(emptyList())
     val checkLogicDownloaderOptions: StateFlow<List<DownloaderOption>> =
         _checkLogicDownloaderOptions.asStateFlow()
+
+    private val _appPickerDerivedState =
+        MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
+    val appPickerDerivedState: StateFlow<GitHubTrackAppPickerDerivedState> =
+        _appPickerDerivedState.asStateFlow()
 
     fun pageState(searchBarHideThresholdPx: Float): GitHubPageState {
         val current = pageState
@@ -134,6 +143,27 @@ internal class GitHubPageViewModel : ViewModel() {
     fun setPageDataActive(active: Boolean) {
         if (pendingShareImportPageActive.value == active) return
         pendingShareImportPageActive.value = active
+    }
+
+    fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
+        val previousInput = appPickerStateInput
+        if (previousInput == input && _appPickerDerivedState.value !== GitHubTrackAppPickerDerivedState.Empty) {
+            return
+        }
+        appPickerStateInput = input
+        appPickerStateJob?.cancel()
+        _appPickerDerivedState.update { state ->
+            state.copy(
+                deriving = true,
+                input = input,
+            )
+        }
+        appPickerStateJob =
+            viewModelScope.launch {
+                val derivedState = repository.buildAppPickerState(input)
+                if (appPickerStateInput != input) return@launch
+                _appPickerDerivedState.value = derivedState
+            }
     }
 
     suspend fun beginTrackedExport(
@@ -283,6 +313,7 @@ internal class GitHubPageViewModel : ViewModel() {
         pendingShareImportClockJob?.cancel()
         onlineShareTargetsJob?.cancel()
         downloaderOptionsJob?.cancel()
+        appPickerStateJob?.cancel()
         snapshotFlowManager.dispose()
         super.onCleared()
     }

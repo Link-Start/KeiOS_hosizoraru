@@ -33,6 +33,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsSectionCard
+import os.kei.ui.page.main.os.TopInfoRowsGroup
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -65,7 +66,7 @@ internal fun LazyListScope.addTopInfoCard(
     visible: Boolean,
     contentBackdrop: LayerBackdrop,
     displayedTopInfoRows: List<InfoRow>,
-    groupedTopInfoRows: List<Pair<String, List<InfoRow>>>,
+    groupedTopInfoRows: List<TopInfoRowsGroup>,
     query: String,
     noMatchedResultsText: String,
     expanded: Boolean,
@@ -281,7 +282,7 @@ private fun OsVirtualizedInfoRows(
 
 private sealed interface TopInfoVirtualizedItem {
     data class Header(
-        val title: String,
+        val group: TopInfoRowsGroup,
     ) : TopInfoVirtualizedItem
 
     data class Entry(
@@ -290,15 +291,15 @@ private sealed interface TopInfoVirtualizedItem {
 }
 
 @Composable
-private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<InfoRow>>>) {
+private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<TopInfoRowsGroup>) {
     val context = LocalContext.current
     val rows =
         remember(groupedRows) {
             buildList {
-                groupedRows.forEach { (type, entries) ->
-                    if (entries.isNotEmpty()) {
-                        add(TopInfoVirtualizedItem.Header(type))
-                        entries.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
+                groupedRows.forEach { group ->
+                    if (group.rows.isNotEmpty()) {
+                        add(TopInfoVirtualizedItem.Header(group))
+                        group.rows.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
                     }
                 }
             }
@@ -309,7 +310,7 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
                 when (item) {
                     is TopInfoVirtualizedItem.Header -> {
                         Text(
-                            text = item.title,
+                            text = stringResource(item.group.titleRes),
                             color = MiuixTheme.colorScheme.onBackground,
                             fontSize = AppTypographyTokens.CompactTitle.fontSize,
                             lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
@@ -342,7 +343,7 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
             items = rows,
             key = { _, item ->
                 when (item) {
-                    is TopInfoVirtualizedItem.Header -> "header-${item.title}"
+                    is TopInfoVirtualizedItem.Header -> "header-${item.group.titleRes}"
                     is TopInfoVirtualizedItem.Entry -> "entry-${item.row.key}"
                 }
             },
@@ -356,7 +357,7 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
             when (item) {
                 is TopInfoVirtualizedItem.Header -> {
                     Text(
-                        text = item.title,
+                        text = stringResource(item.group.titleRes),
                         color = MiuixTheme.colorScheme.onBackground,
                         fontSize = AppTypographyTokens.CompactTitle.fontSize,
                         lineHeight = AppTypographyTokens.CompactTitle.lineHeight,

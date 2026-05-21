@@ -50,6 +50,7 @@ internal class OsPageViewModel : ViewModel() {
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
     private var activitySuggestionJob: Job? = null
+    private var rowsDerivationJob: Job? = null
 
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
@@ -72,6 +73,9 @@ internal class OsPageViewModel : ViewModel() {
     private val _activitySuggestionState = MutableStateFlow(OsActivitySuggestionUiState())
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
         _activitySuggestionState.asStateFlow()
+
+    private val _rowsDerivedState = MutableStateFlow(OsPageRowsUiDerivedState.Empty)
+    val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = _rowsDerivedState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -190,6 +194,22 @@ internal class OsPageViewModel : ViewModel() {
                         }
                     }
                 }
+            }
+    }
+
+    fun requestRowsDerivedState(input: OsPageRowsDerivationInput) {
+        val current = _rowsDerivedState.value
+        if (current.input == input && !current.deriving) return
+        rowsDerivationJob?.cancel()
+        rowsDerivationJob =
+            viewModelScope.launch {
+                _rowsDerivedState.update { state ->
+                    state.copy(
+                        input = input,
+                        deriving = true,
+                    )
+                }
+                _rowsDerivedState.value = repository.buildRowsDerivedState(input)
             }
     }
 
@@ -347,6 +367,7 @@ internal class OsPageViewModel : ViewModel() {
 
     override fun onCleared() {
         activitySuggestionJob?.cancel()
+        rowsDerivationJob?.cancel()
         super.onCleared()
     }
 }

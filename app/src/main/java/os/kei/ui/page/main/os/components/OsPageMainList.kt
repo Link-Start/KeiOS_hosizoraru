@@ -31,6 +31,7 @@ import os.kei.ui.page.main.os.OsCardExportAction
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.SystemOverviewState
+import os.kei.ui.page.main.os.TopInfoRowsGroup
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -71,7 +72,7 @@ internal fun OsPageMainList(
     noMatchedResultsText: String,
     query: String,
     displayedTopInfoRows: List<InfoRow>,
-    groupedTopInfoRows: List<Pair<String, List<InfoRow>>>,
+    groupedTopInfoRows: List<TopInfoRowsGroup>,
     topInfoExpanded: Boolean,
     onTopInfoExpandedChange: (Boolean) -> Unit,
     shellRunnerRows: List<InfoRow>,

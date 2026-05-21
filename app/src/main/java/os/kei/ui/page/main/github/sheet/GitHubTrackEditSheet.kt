@@ -31,6 +31,8 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
@@ -67,6 +69,7 @@ internal fun GitHubTrackEditSheet(
     pickerExpanded: Boolean,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
+    appPickerDerivedState: GitHubTrackAppPickerDerivedState,
     trackedPackageNames: Set<String>,
     appListRefreshing: Boolean,
     addAppPickerRememberedFirstVisibleItemIndex: Int,
@@ -91,6 +94,7 @@ internal fun GitHubTrackEditSheet(
     onRepoScanCandidateSelected: (GitHubPackageRepositoryScanCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
+    onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
@@ -179,6 +183,7 @@ internal fun GitHubTrackEditSheet(
                     appSearch = appSearch,
                     selectedApp = selectedApp,
                     appList = appList,
+                    derivedState = appPickerDerivedState,
                     trackedPackageNames = trackedPackageNames,
                     editingPackageName = editingTrackedItem?.packageName.orEmpty(),
                     appListRefreshing = appListRefreshing,
@@ -189,6 +194,7 @@ internal fun GitHubTrackEditSheet(
                     onAppSearchChange = onAppSearchChange,
                     onPickerExpandedChange = onPickerExpandedChange,
                     onRefreshAppList = onRefreshAppList,
+                    onRequestAppPickerState = onRequestAppPickerState,
                     onAddAppPickerScrollPositionChange = onAddAppPickerScrollPositionChange,
                     onSelectedAppChange = onSelectedAppChange
                 )

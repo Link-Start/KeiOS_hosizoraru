@@ -26,6 +26,7 @@ internal data class OsPagePersistentState(
 
 internal class OsPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.osOperations,
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ) {
     private val persistentState = MutableStateFlow(OsPagePersistentState())
 
@@ -83,6 +84,27 @@ internal class OsPageRepository(
             loadActivityClassOptions(
                 context = context,
                 packageName = packageName,
+            )
+        }
+
+    suspend fun buildRowsDerivedState(input: OsPageRowsDerivationInput): OsPageRowsUiDerivedState =
+        withContext(defaultDispatcher) {
+            val rowsState =
+                deriveOsPageRowsState(
+                    queryApplied = input.queryApplied,
+                    sectionStates = input.sectionStates,
+                    expansionFlags = input.expansionFlags,
+                )
+            val groupedTopInfoRows =
+                if (rowsState.query.isBlank() && !input.expansionFlags.topInfoExpanded) {
+                    emptyList()
+                } else {
+                    groupTopInfoRows(rowsState.displayedTopInfoRows)
+                }
+            OsPageRowsUiDerivedState(
+                input = input,
+                rowsState = rowsState,
+                groupedTopInfoRows = groupedTopInfoRows,
             )
         }
 

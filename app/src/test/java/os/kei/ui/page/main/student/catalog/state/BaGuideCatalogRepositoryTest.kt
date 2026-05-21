@@ -10,6 +10,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntryFilterAttributes
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterOption
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
 import kotlin.test.assertEquals
 
 class BaGuideCatalogRepositoryTest {
@@ -165,6 +166,37 @@ class BaGuideCatalogRepositoryTest {
         assertEquals(false, result.deriving)
     }
 
+    @Test
+    fun `favorite bgm list derivation sorts off composable path`() = runBlocking {
+        val older =
+            bgmFavorite(
+                sourceUrl = "https://www.gamekee.com/ba/1.html",
+                title = "Old Track",
+                studentTitle = "日富美",
+                favoritedAtMs = 1L,
+            )
+        val newer =
+            bgmFavorite(
+                sourceUrl = "https://www.gamekee.com/ba/2.html",
+                title = "New Track",
+                studentTitle = "阿露",
+                favoritedAtMs = 2L,
+            )
+        val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
+
+        val result =
+            repository.deriveFavoriteBgmListState(
+                BaGuideFavoriteBgmListInput(
+                    favorites = listOf(older, newer),
+                    searchQuery = "",
+                    sortMode = BaGuideBgmFavoriteSortMode.Recent,
+                ),
+            )
+
+        assertEquals(listOf("New Track", "Old Track"), result.displayedFavorites.map { it.title })
+        assertEquals(false, result.deriving)
+    }
+
     private fun catalogBundle(name: String): BaGuideCatalogBundle {
         return BaGuideCatalogBundle(
             entriesByTab = mapOf(
@@ -200,15 +232,20 @@ class BaGuideCatalogRepositoryTest {
         )
     }
 
-    private fun bgmFavorite(sourceUrl: String): GuideBgmFavoriteItem =
+    private fun bgmFavorite(
+        sourceUrl: String,
+        title: String = "BGM",
+        studentTitle: String = "学生",
+        favoritedAtMs: Long = 1L,
+    ): GuideBgmFavoriteItem =
         GuideBgmFavoriteItem(
             audioUrl = "https://example.com/audio.ogg",
-            title = "BGM",
-            studentTitle = "学生",
+            title = title,
+            studentTitle = studentTitle,
             studentImageUrl = "",
             imageUrl = "",
             sourceUrl = sourceUrl,
             note = "",
-            favoritedAtMs = 1L,
+            favoritedAtMs = favoritedAtMs,
         )
 }

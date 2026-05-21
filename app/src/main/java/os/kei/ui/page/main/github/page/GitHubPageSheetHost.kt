@@ -19,6 +19,8 @@ import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheet
 import os.kei.ui.page.main.github.sheet.GitHubOverviewEntrySheet
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackImportDialog
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
@@ -32,10 +34,12 @@ internal fun GitHubPageSheetHost(
     contentDerivedState: GitHubPageContentDerivedState,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     checkLogicDownloaderOptions: List<DownloaderOption>,
+    appPickerDerivedState: GitHubTrackAppPickerDerivedState,
     hasKeiOsSelfTrack: Boolean,
     tracksExporting: Boolean,
     tracksImporting: Boolean,
     onEnsureKeiOsSelfTrack: () -> Unit,
+    onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
     onConfirmTrackImport: () -> Unit
 ) {
     val trackedPackageNames =
@@ -327,6 +331,7 @@ internal fun GitHubPageSheetHost(
         pickerExpanded = state.pickerExpanded,
         selectedApp = state.selectedApp,
         appList = state.appList,
+        appPickerDerivedState = appPickerDerivedState,
         trackedPackageNames = trackedPackageNames,
         appListRefreshing = state.appListRefreshing,
         addAppPickerRememberedFirstVisibleItemIndex = state.addTrackAppPickerFirstVisibleItemIndex,
@@ -376,6 +381,7 @@ internal fun GitHubPageSheetHost(
         onRepoScanCandidateSelected = actions::selectRepoScanCandidate,
         onPickerExpandedChange = actions::setTrackAppPickerExpanded,
         onRefreshAppList = actions::refreshTrackAppList,
+        onRequestAppPickerState = onRequestAppPickerState,
         onAddAppPickerScrollPositionChange = { index, offset ->
             state.addTrackAppPickerFirstVisibleItemIndex = index
             state.addTrackAppPickerFirstVisibleItemScrollOffset = offset

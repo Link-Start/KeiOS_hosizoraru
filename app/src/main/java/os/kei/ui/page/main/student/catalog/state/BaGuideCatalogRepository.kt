@@ -11,6 +11,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
 import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
 import os.kei.ui.page.main.student.catalog.hydrateBaGuideCatalogReleaseDateIndex
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
@@ -172,6 +173,20 @@ internal class BaGuideCatalogRepository(
                         entries = allStudentEntries,
                         searchQuery = input.searchQuery,
                         favoriteContentIds = favoriteContentIds,
+                    ),
+                deriving = false,
+            )
+        }
+    }
+
+    suspend fun deriveFavoriteBgmListState(input: BaGuideFavoriteBgmListInput): BaGuideFavoriteBgmListDerivedState {
+        return withContext(parseDispatcher) {
+            BaGuideFavoriteBgmListDerivedState(
+                displayedFavorites =
+                    filterAndSortBgmFavorites(
+                        favorites = input.favorites,
+                        searchQuery = input.searchQuery,
+                        sortMode = input.sortMode,
                     ),
                 deriving = false,
             )

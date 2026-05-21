@@ -82,6 +82,7 @@ fun OsPage(
     val activitySuggestionState by osPageViewModel.activitySuggestionState.collectAsStateWithLifecycle()
     val queryInput by osPageViewModel.queryInput.collectAsStateWithLifecycle()
     val queryApplied by osPageViewModel.queryApplied.collectAsStateWithLifecycle()
+    val rowsDerivedState by osPageViewModel.rowsDerivedState.collectAsStateWithLifecycle()
     val uiSnapshot = persistentState.uiSnapshot
     val topInfoExpanded = uiSnapshot.topInfoExpanded
     val shellRunnerExpanded = uiSnapshot.shellRunnerExpanded
@@ -274,22 +275,45 @@ fun OsPage(
             cachePersisted = runtimeState.cachePersisted,
             runningShellCommandCardIds = runtimeState.runningShellCommandCardIds,
         )
+    val rowsDerivationInput =
+        remember(
+            routeState.queryApplied,
+            routeState.sectionStates,
+            topInfoExpanded,
+            systemTableExpanded,
+            secureTableExpanded,
+            globalTableExpanded,
+            androidPropsExpanded,
+            javaPropsExpanded,
+            linuxEnvExpanded,
+        ) {
+            OsPageRowsDerivationInput(
+                queryApplied = routeState.queryApplied,
+                sectionStates = routeState.sectionStates,
+                expansionFlags =
+                    OsPageExpansionFlags(
+                        topInfoExpanded = topInfoExpanded,
+                        systemTableExpanded = systemTableExpanded,
+                        secureTableExpanded = secureTableExpanded,
+                        globalTableExpanded = globalTableExpanded,
+                        androidPropsExpanded = androidPropsExpanded,
+                        javaPropsExpanded = javaPropsExpanded,
+                        linuxEnvExpanded = linuxEnvExpanded,
+                    ),
+            )
+        }
+    LaunchedEffect(rowsDerivationInput) {
+        osPageViewModel.requestRowsDerivedState(rowsDerivationInput)
+    }
 
     val derivedState =
         rememberOsPageDerivedState(
             context = context,
-            queryApplied = routeState.queryApplied,
+            rowsDerivedState = rowsDerivedState,
             shizukuStatus = shizukuStatus,
             shellSavedCountLabel = textBundle.shellSavedCountLabel,
             shellCommandCards = routeState.shellCommandCards,
             sectionStates = routeState.sectionStates,
-            topInfoExpanded = topInfoExpanded,
-            systemTableExpanded = systemTableExpanded,
-            secureTableExpanded = secureTableExpanded,
-            globalTableExpanded = globalTableExpanded,
-            androidPropsExpanded = androidPropsExpanded,
-            javaPropsExpanded = javaPropsExpanded,
-            linuxEnvExpanded = linuxEnvExpanded,
             isDark = isDark,
             inactiveColor = inactive,
             cachedColor = cachedColor,

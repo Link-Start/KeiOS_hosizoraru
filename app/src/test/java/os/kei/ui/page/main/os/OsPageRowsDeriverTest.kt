@@ -1,6 +1,9 @@
 package os.kei.ui.page.main.os
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import os.kei.R
 import kotlin.test.assertEquals
 
 class OsPageRowsDeriverTest {
@@ -44,6 +47,37 @@ class OsPageRowsDeriverTest {
         assertEquals(rows, state.displayedSystemRows)
         assertEquals(rows, state.prunedSystemRows)
         assertEquals(2, state.visibleRowsCount)
+    }
+
+    @Test
+    fun `repository derives rows and groups off composable path`() = runBlocking {
+        val input =
+            OsPageRowsDerivationInput(
+                queryApplied = "",
+                sectionStates =
+                    mapOf(
+                        SectionKind.ANDROID to
+                            SectionState(
+                                rows =
+                                    listOf(
+                                        InfoRow("device.model", "demo"),
+                                        InfoRow("custom.flag", "true"),
+                                    ),
+                            ),
+                    ),
+                expansionFlags =
+                    collapsedFlags().copy(
+                        topInfoExpanded = true,
+                    ),
+            )
+        val repository = OsPageRepository(defaultDispatcher = Dispatchers.Unconfined)
+
+        val state = repository.buildRowsDerivedState(input)
+
+        assertEquals(input, state.input)
+        assertEquals(listOf(InfoRow("device.model", "demo")), state.rowsState.displayedTopInfoRows)
+        assertEquals(listOf(R.string.os_top_info_topic_device_identity), state.groupedTopInfoRows.map { it.titleRes })
+        assertEquals(false, state.deriving)
     }
 
     private fun collapsedFlags(): OsPageExpansionFlags {

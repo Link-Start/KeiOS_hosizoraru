@@ -50,6 +50,7 @@ import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBottomChrome
@@ -59,6 +60,7 @@ import os.kei.ui.page.main.student.catalog.component.resolvePlaybackArtworkImage
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
+import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListInput
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
@@ -153,6 +155,7 @@ fun BaGuideCatalogPage(
     val catalogDataState by catalogViewModel.dataState.collectAsStateWithLifecycle()
     val catalogListDerivedStates by catalogViewModel.catalogListDerivedStates.collectAsStateWithLifecycle()
     val studentBgmListDerivedState by catalogViewModel.studentBgmListDerivedState.collectAsStateWithLifecycle()
+    val favoriteBgmListDerivedState by catalogViewModel.favoriteBgmListDerivedState.collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
         transitionAnimationsEnabled,
@@ -183,6 +186,7 @@ fun BaGuideCatalogPage(
     val studentSearchQuery = searchQueries.catalogSearchQueryFor(BaGuideCatalogTab.Student)
     val npcSearchQuery = searchQueries.catalogSearchQueryFor(BaGuideCatalogTab.NpcSatellite)
     val studentBgmSearchQuery = searchQueries[BaGuideCatalogPageTab.StudentBgm.name].orEmpty()
+    val favoriteBgmSearchQuery = searchQueries[BaGuideCatalogPageTab.Bgm.name].orEmpty()
     val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
@@ -217,6 +221,19 @@ fun BaGuideCatalogPage(
                 catalog = catalogDataState.catalog,
                 favorites = favoriteBgms,
                 searchQuery = studentBgmSearchQuery,
+            ),
+        )
+    }
+    LaunchedEffect(
+        catalogViewModel,
+        favoriteBgms,
+        favoriteBgmSearchQuery,
+    ) {
+        catalogViewModel.requestFavoriteBgmListDerivedState(
+            BaGuideFavoriteBgmListInput(
+                favorites = favoriteBgms,
+                searchQuery = favoriteBgmSearchQuery,
+                sortMode = BaGuideBgmFavoriteSortMode.Recent,
             ),
         )
     }
@@ -461,9 +478,10 @@ fun BaGuideCatalogPage(
                             pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm -> {
                                 BaGuideFavoriteBgmMusicContent(
                                     catalog = catalogDataState.catalog,
+                                    favorites = favoriteBgms,
+                                    derivedState = favoriteBgmListDerivedState,
                                     playbackCoordinator = playbackCoordinator,
                                     playbackState = playbackUiState,
-                                    searchQuery = pageSearchQuery,
                                     accent = accent,
                                     bottomBarScrollConnection = chromeScrollState,
                                     topPadding = CATALOG_MUSIC_CONTENT_TOP_PADDING,

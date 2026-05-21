@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.github.sheet
+package os.kei.ui.page.main.github.picker
 
 import org.junit.Test
 import os.kei.feature.github.model.InstalledAppItem

@@ -90,6 +90,7 @@ fun GitHubPage(
     val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsStateWithLifecycle()
     val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsStateWithLifecycle()
     val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsStateWithLifecycle()
+    val appPickerDerivedState by githubPageViewModel.appPickerDerivedState.collectAsStateWithLifecycle()
     val isGitHubPageDataActive = runtime.contentReady && runtime.isDataActive
     LaunchedEffect(isGitHubPageDataActive) {
         githubPageViewModel.setPageDataActive(isGitHubPageDataActive)
@@ -401,10 +402,12 @@ fun GitHubPage(
             contentDerivedState = contentDerivedState,
             installedOnlineShareTargets = installedOnlineShareTargets,
             checkLogicDownloaderOptions = checkLogicDownloaderOptions,
+            appPickerDerivedState = appPickerDerivedState,
             hasKeiOsSelfTrack = contentDerivedState.hasKeiOsSelfTrack,
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
+            onRequestAppPickerState = githubPageViewModel::requestAppPickerState,
             onConfirmTrackImport = transferCallbacks.onConfirmTrackImport,
         )
     }

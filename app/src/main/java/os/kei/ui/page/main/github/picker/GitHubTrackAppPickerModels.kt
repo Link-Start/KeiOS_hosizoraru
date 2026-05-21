@@ -1,8 +1,57 @@
-package os.kei.ui.page.main.github.sheet
+package os.kei.ui.page.main.github.picker
 
 import os.kei.R
 import os.kei.feature.github.model.InstalledAppItem
 import java.util.Locale
+
+internal class GitHubTrackAppPickerInput(
+    val appList: List<InstalledAppItem>,
+    val query: String,
+    val includeUserApps: Boolean,
+    val includeSystemApps: Boolean,
+    val includeTrackedApps: Boolean,
+    val trackedPackageNames: Set<String>,
+    val pinnedPackageNames: Set<String>,
+    val sortMode: GitHubTrackAppPickerSortMode,
+    val sortDirection: GitHubTrackAppPickerSortDirection,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return other is GitHubTrackAppPickerInput &&
+            appList === other.appList &&
+            query == other.query &&
+            includeUserApps == other.includeUserApps &&
+            includeSystemApps == other.includeSystemApps &&
+            includeTrackedApps == other.includeTrackedApps &&
+            trackedPackageNames == other.trackedPackageNames &&
+            pinnedPackageNames == other.pinnedPackageNames &&
+            sortMode == other.sortMode &&
+            sortDirection == other.sortDirection
+    }
+
+    override fun hashCode(): Int {
+        var result = System.identityHashCode(appList)
+        result = 31 * result + query.hashCode()
+        result = 31 * result + includeUserApps.hashCode()
+        result = 31 * result + includeSystemApps.hashCode()
+        result = 31 * result + includeTrackedApps.hashCode()
+        result = 31 * result + trackedPackageNames.hashCode()
+        result = 31 * result + pinnedPackageNames.hashCode()
+        result = 31 * result + sortMode.hashCode()
+        result = 31 * result + sortDirection.hashCode()
+        return result
+    }
+}
+
+internal data class GitHubTrackAppPickerDerivedState(
+    val filteredApps: List<InstalledAppItem> = emptyList(),
+    val deriving: Boolean = false,
+    val input: GitHubTrackAppPickerInput? = null,
+) {
+    companion object {
+        val Empty = GitHubTrackAppPickerDerivedState()
+    }
+}
 
 internal enum class GitHubTrackAppPickerSortMode(
     val labelRes: Int,

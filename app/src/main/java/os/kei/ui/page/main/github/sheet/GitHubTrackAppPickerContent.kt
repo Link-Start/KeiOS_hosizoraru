@@ -31,14 +31,19 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerSortDirection
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerSortMode
+import os.kei.ui.page.main.github.picker.gitHubTrackAppCandidateInitialScrollIndex
+import os.kei.ui.page.main.github.picker.isTimeSort
+import os.kei.ui.page.main.github.picker.showsInstallSourcePill
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.appWindowHeightDp
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
@@ -233,6 +238,7 @@ internal fun GitHubTrackAppPickerContent(
     appSearch: String,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
+    derivedState: GitHubTrackAppPickerDerivedState,
     trackedPackageNames: Set<String>,
     editingPackageName: String,
     appListRefreshing: Boolean,
@@ -242,6 +248,7 @@ internal fun GitHubTrackAppPickerContent(
     onAppSearchChange: (String) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
+    onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit
 ) {
@@ -270,41 +277,46 @@ internal fun GitHubTrackAppPickerContent(
         mutableStateOf(false)
     }
     val showInstallSourcePill = sortMode.showsInstallSourcePill()
-    var filteredApps by remember { mutableStateOf(emptyList<InstalledAppItem>()) }
-    var appFilterReady by remember { mutableStateOf(false) }
-    LaunchedEffect(
-        appList,
-        appSearch,
-        includeUserApps,
-        includeSystemApps,
-        includeTrackedApps,
-        trackedPackageNames,
-        selectedApp?.packageName,
-        editingPackageName,
-        sortMode,
-        sortDirection,
-    ) {
-        appFilterReady = false
-        val pinnedPackageNames =
-            setOf(
-                selectedApp?.packageName.orEmpty(),
-                editingPackageName,
-            )
-        filteredApps =
-            withContext(AppDispatchers.uiDerivation) {
-                filterAndSortGitHubTrackAppCandidates(
-                    apps = appList,
-                    query = appSearch,
-                    includeUserApps = includeUserApps,
-                    includeSystemApps = includeSystemApps,
-                    includeTrackedApps = includeTrackedApps,
-                    trackedPackageNames = trackedPackageNames,
-                    pinnedPackageNames = pinnedPackageNames,
-                    sortMode = sortMode,
-                    sortDirection = sortDirection,
+    val appPickerInput =
+        remember(
+            appList,
+            appSearch,
+            includeUserApps,
+            includeSystemApps,
+            includeTrackedApps,
+            trackedPackageNames,
+            selectedApp?.packageName,
+            editingPackageName,
+            sortMode,
+            sortDirection,
+        ) {
+            val pinnedPackageNames =
+                setOf(
+                    selectedApp?.packageName.orEmpty(),
+                    editingPackageName,
                 )
-            }
-        appFilterReady = true
+            GitHubTrackAppPickerInput(
+                appList = appList,
+                query = appSearch,
+                includeUserApps = includeUserApps,
+                includeSystemApps = includeSystemApps,
+                includeTrackedApps = includeTrackedApps,
+                trackedPackageNames = trackedPackageNames,
+                pinnedPackageNames = pinnedPackageNames,
+                sortMode = sortMode,
+                sortDirection = sortDirection,
+            )
+        }
+    val derivedInputMatches = derivedState.input == appPickerInput
+    val filteredApps =
+        if (derivedInputMatches) {
+            derivedState.filteredApps
+        } else {
+            emptyList()
+        }
+    val appFilterReady = derivedInputMatches && !derivedState.deriving
+    LaunchedEffect(appPickerInput) {
+        onRequestAppPickerState(appPickerInput)
     }
 
     fun saveAppPickerPreferences() {

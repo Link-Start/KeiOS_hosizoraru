@@ -5,6 +5,7 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
 import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 
@@ -56,6 +57,37 @@ internal class BaGuideStudentBgmListInput(
         result = 31 * result + favorites.hashCode()
         result = 31 * result + searchQuery.hashCode()
         return result
+    }
+}
+
+internal class BaGuideFavoriteBgmListInput(
+    val favorites: List<GuideBgmFavoriteItem>,
+    val searchQuery: String,
+    val sortMode: BaGuideBgmFavoriteSortMode,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return other is BaGuideFavoriteBgmListInput &&
+            favorites == other.favorites &&
+            searchQuery == other.searchQuery &&
+            sortMode == other.sortMode
+    }
+
+    override fun hashCode(): Int {
+        var result = favorites.hashCode()
+        result = 31 * result + searchQuery.hashCode()
+        result = 31 * result + sortMode.hashCode()
+        return result
+    }
+}
+
+@Immutable
+internal data class BaGuideFavoriteBgmListDerivedState(
+    val displayedFavorites: List<GuideBgmFavoriteItem> = emptyList(),
+    val deriving: Boolean = false,
+) {
+    companion object {
+        val Empty = BaGuideFavoriteBgmListDerivedState()
     }
 }
 

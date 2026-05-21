@@ -3,15 +3,9 @@ package os.kei.ui.page.main.os
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.os.components.OsOverviewMetricRow
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -20,7 +14,7 @@ import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 internal data class OsPageDerivedState(
     val query: String,
     val displayedTopInfoRows: List<InfoRow>,
-    val groupedTopInfoRows: List<Pair<String, List<InfoRow>>>,
+    val groupedTopInfoRows: List<TopInfoRowsGroup>,
     val shellRunnerRows: List<InfoRow>,
     val displayedSystemRows: List<InfoRow>,
     val displayedSecureRows: List<InfoRow>,
@@ -43,18 +37,11 @@ internal data class OsPageDerivedState(
 @Composable
 internal fun rememberOsPageDerivedState(
     context: Context,
-    queryApplied: String,
+    rowsDerivedState: OsPageRowsUiDerivedState,
     shizukuStatus: String,
     shellSavedCountLabel: String,
     shellCommandCards: List<OsShellCommandCard>,
     sectionStates: Map<SectionKind, SectionState>,
-    topInfoExpanded: Boolean,
-    systemTableExpanded: Boolean,
-    secureTableExpanded: Boolean,
-    globalTableExpanded: Boolean,
-    androidPropsExpanded: Boolean,
-    javaPropsExpanded: Boolean,
-    linuxEnvExpanded: Boolean,
     isDark: Boolean,
     inactiveColor: Color,
     cachedColor: Color,
@@ -67,51 +54,8 @@ internal fun rememberOsPageDerivedState(
     visibleCards: Set<OsSectionCard>,
     activityShortcutCards: List<OsActivityShortcutCard>,
 ): OsPageDerivedState {
-    var rowsState by remember { mutableStateOf(OsPageRowsDerivedState.Empty) }
-    LaunchedEffect(
-        queryApplied,
-        sectionStates,
-        topInfoExpanded,
-        systemTableExpanded,
-        secureTableExpanded,
-        globalTableExpanded,
-        androidPropsExpanded,
-        javaPropsExpanded,
-        linuxEnvExpanded
-    ) {
-        rowsState =
-            withContext(AppDispatchers.uiDerivation) {
-                deriveOsPageRowsState(
-                    queryApplied = queryApplied,
-                    sectionStates = sectionStates,
-                    expansionFlags = OsPageExpansionFlags(
-                        topInfoExpanded = topInfoExpanded,
-                        systemTableExpanded = systemTableExpanded,
-                        secureTableExpanded = secureTableExpanded,
-                        globalTableExpanded = globalTableExpanded,
-                        androidPropsExpanded = androidPropsExpanded,
-                        javaPropsExpanded = javaPropsExpanded,
-                        linuxEnvExpanded = linuxEnvExpanded
-                    )
-                )
-            }
-    }
-    var groupedTopInfoRows by remember { mutableStateOf<List<Pair<String, List<InfoRow>>>>(emptyList()) }
-    LaunchedEffect(
-        context,
-        rowsState.displayedTopInfoRows,
-        topInfoExpanded,
-        rowsState.query
-    ) {
-        groupedTopInfoRows =
-            withContext(AppDispatchers.uiDerivation) {
-                if (rowsState.query.isBlank() && !topInfoExpanded) {
-                    emptyList()
-                } else {
-                    groupTopInfoRows(context, rowsState.displayedTopInfoRows)
-                }
-            }
-    }
+    val rowsState = rowsDerivedState.rowsState
+    val groupedTopInfoRows = rowsDerivedState.groupedTopInfoRows
     val shellRunnerRows = remember(
         shizukuStatus,
         context,

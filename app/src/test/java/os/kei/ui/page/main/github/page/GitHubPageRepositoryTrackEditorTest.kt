@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
@@ -8,11 +9,15 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
+import os.kei.feature.github.model.InstalledAppItem
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerSortDirection
+import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerSortMode
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class GitHubPageRepositoryTrackEditorTest {
-    private val repository = GitHubPageRepository()
+    private val repository = GitHubPageRepository(defaultDispatcher = Dispatchers.Unconfined)
 
     @Test
     fun `github source rejects non github url`() = runBlocking {
@@ -96,5 +101,43 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(1, preview.githubRepositoryCount)
         assertEquals(1, preview.directApkCount)
         assertEquals(true, preview.hasSourceBreakdown)
+    }
+
+    @Test
+    fun `app picker state derives candidates off ui component`() = runBlocking {
+        val result =
+            repository.buildAppPickerState(
+                GitHubTrackAppPickerInput(
+                    appList =
+                        listOf(
+                            InstalledAppItem(
+                                label = "Alpha",
+                                packageName = "com.demo.alpha",
+                                isSystemApp = false,
+                            ),
+                            InstalledAppItem(
+                                label = "Beta",
+                                packageName = "com.demo.beta",
+                                isSystemApp = false,
+                            ),
+                            InstalledAppItem(
+                                label = "System",
+                                packageName = "com.demo.system",
+                                isSystemApp = true,
+                            ),
+                        ),
+                    query = "",
+                    includeUserApps = true,
+                    includeSystemApps = false,
+                    includeTrackedApps = false,
+                    trackedPackageNames = setOf("com.demo.beta"),
+                    pinnedPackageNames = setOf("com.demo.beta"),
+                    sortMode = GitHubTrackAppPickerSortMode.Name,
+                    sortDirection = GitHubTrackAppPickerSortDirection.Ascending,
+                ),
+            )
+
+        assertEquals(listOf("com.demo.alpha", "com.demo.beta"), result.filteredApps.map { it.packageName })
+        assertEquals(false, result.deriving)
     }
 }

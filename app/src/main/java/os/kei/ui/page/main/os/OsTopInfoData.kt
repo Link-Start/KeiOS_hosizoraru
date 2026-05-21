@@ -1,9 +1,14 @@
 package os.kei.ui.page.main.os
 
-import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import os.kei.R
+
+@Immutable
+internal data class TopInfoRowsGroup(
+    @param:StringRes val titleRes: Int,
+    val rows: List<InfoRow>,
+)
 
 internal data class TopInfoTopic(
     val order: Int,
@@ -93,11 +98,16 @@ internal fun sortTopInfoRows(rows: List<InfoRow>): List<InfoRow> {
     )
 }
 
-internal fun groupTopInfoRows(context: Context, rows: List<InfoRow>): List<Pair<String, List<InfoRow>>> {
+internal fun groupTopInfoRows(rows: List<InfoRow>): List<TopInfoRowsGroup> {
     val grouped = rows.groupBy { topInfoTopicOf(it.key) }
     return grouped.entries
         .sortedBy { it.key.order }
-        .map { entry -> context.getString(entry.key.titleRes) to entry.value }
+        .map { entry ->
+            TopInfoRowsGroup(
+                titleRes = entry.key.titleRes,
+                rows = entry.value,
+            )
+        }
 }
 
 internal fun removeTopInfoRows(section: SectionKind, rows: List<InfoRow>): List<InfoRow> {

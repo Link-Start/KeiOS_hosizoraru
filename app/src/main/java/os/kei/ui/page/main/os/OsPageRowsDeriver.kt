@@ -13,6 +13,39 @@ internal data class OsPageExpansionFlags(
     val linuxEnvExpanded: Boolean
 )
 
+internal class OsPageRowsDerivationInput(
+    val queryApplied: String,
+    val sectionStates: Map<SectionKind, SectionState>,
+    val expansionFlags: OsPageExpansionFlags,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return other is OsPageRowsDerivationInput &&
+            queryApplied == other.queryApplied &&
+            sectionStates === other.sectionStates &&
+            expansionFlags == other.expansionFlags
+    }
+
+    override fun hashCode(): Int {
+        var result = queryApplied.hashCode()
+        result = 31 * result + System.identityHashCode(sectionStates)
+        result = 31 * result + expansionFlags.hashCode()
+        return result
+    }
+}
+
+@Immutable
+internal data class OsPageRowsUiDerivedState(
+    val input: OsPageRowsDerivationInput? = null,
+    val rowsState: OsPageRowsDerivedState = OsPageRowsDerivedState.Empty,
+    val groupedTopInfoRows: List<TopInfoRowsGroup> = emptyList(),
+    val deriving: Boolean = false,
+) {
+    companion object {
+        val Empty = OsPageRowsUiDerivedState()
+    }
+}
+
 @Immutable
 internal data class OsPageRowsDerivedState(
     val query: String,

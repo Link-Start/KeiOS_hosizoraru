@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaGuideCatalogDataUiState(
@@ -35,9 +36,23 @@ internal class BaGuideCatalogViewModel(
     private var loadJob: Job? = null
     private var hydrateJob: Job? = null
     private var hydratedSyncedAtMs: Long = -1L
+    private val listDerivationJobs = mutableMapOf<BaGuideCatalogTab, Job>()
+    private val listDerivationInputs = mutableMapOf<BaGuideCatalogTab, BaGuideCatalogListInput>()
+    private var studentBgmListDerivationJob: Job? = null
+    private var studentBgmListDerivationInput: BaGuideStudentBgmListInput? = null
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
     val dataState: StateFlow<BaGuideCatalogDataUiState> = _dataState.asStateFlow()
+
+    private val _catalogListDerivedStates =
+        MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())
+    val catalogListDerivedStates: StateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>> =
+        _catalogListDerivedStates.asStateFlow()
+
+    private val _studentBgmListDerivedState =
+        MutableStateFlow(BaGuideStudentBgmListDerivedState.Empty)
+    val studentBgmListDerivedState: StateFlow<BaGuideStudentBgmListDerivedState> =
+        _studentBgmListDerivedState.asStateFlow()
 
     fun bind(
         transitionAnimationsEnabled: Boolean,
@@ -58,6 +73,44 @@ internal class BaGuideCatalogViewModel(
 
     fun requestRefresh() {
         loadCatalog(manualRefresh = true, allowInitialDelay = false)
+    }
+
+    fun requestCatalogListDerivedState(input: BaGuideCatalogListInput) {
+        val previousInput = listDerivationInputs[input.tab]
+        val hasDerivedState = _catalogListDerivedStates.value.containsKey(input.tab)
+        if (previousInput == input && hasDerivedState) return
+
+        listDerivationInputs[input.tab] = input
+        listDerivationJobs[input.tab]?.cancel()
+        _catalogListDerivedStates.update { states ->
+            val current = states[input.tab] ?: BaGuideCatalogListDerivedState.Empty
+            states + (input.tab to current.copy(deriving = true))
+        }
+        listDerivationJobs[input.tab] =
+            viewModelScope.launch {
+                val derivedState = repository.deriveCatalogListState(input)
+                if (listDerivationInputs[input.tab] != input) return@launch
+                _catalogListDerivedStates.update { states ->
+                    states + (input.tab to derivedState)
+                }
+            }
+    }
+
+    fun requestStudentBgmListDerivedState(input: BaGuideStudentBgmListInput) {
+        val previousInput = studentBgmListDerivationInput
+        if (previousInput == input && _studentBgmListDerivedState.value !== BaGuideStudentBgmListDerivedState.Empty) return
+
+        studentBgmListDerivationInput = input
+        studentBgmListDerivationJob?.cancel()
+        _studentBgmListDerivedState.update { state ->
+            state.copy(deriving = true)
+        }
+        studentBgmListDerivationJob =
+            viewModelScope.launch {
+                val derivedState = repository.deriveStudentBgmListState(input)
+                if (studentBgmListDerivationInput != input) return@launch
+                _studentBgmListDerivedState.value = derivedState
+            }
     }
 
     private fun loadCatalog(

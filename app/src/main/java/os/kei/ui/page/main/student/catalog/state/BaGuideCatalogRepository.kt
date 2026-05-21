@@ -4,15 +4,20 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
+import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.hydrateBaGuideCatalogReleaseDateIndex
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
 import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.selectedCatalogFilterOptionsForDefinitions
+import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import kotlin.coroutines.cancellation.CancellationException
-import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaGuideCatalogLoadResult(
     val catalog: BaGuideCatalogBundle,
@@ -108,5 +113,68 @@ internal class BaGuideCatalogRepository(
             parseDispatcher = parseDispatcher,
             onBundleUpdated = onBundleUpdated
         )
+    }
+
+    suspend fun deriveCatalogListState(input: BaGuideCatalogListInput): BaGuideCatalogListDerivedState {
+        return withContext(parseDispatcher) {
+            val filterDefinitions =
+                input.catalog
+                    .filterDefinitions(input.tab)
+                    .filter { it.type == 0 }
+            val activeSelectedFilterOptions =
+                selectedCatalogFilterOptionsForDefinitions(
+                    selectedOptionIdsByFilterId = input.selectedFilterOptions,
+                    definitions = filterDefinitions,
+                )
+            val sortedEntries =
+                input.catalog
+                    .entries(input.tab)
+                    .sortedByMode(
+                        mode = input.sortMode,
+                        favoriteCatalogEntries = input.favoriteCatalogEntries,
+                        filterDefinitions = filterDefinitions,
+                    )
+            BaGuideCatalogListDerivedState(
+                filteredEntries =
+                    sortedEntries
+                        .filterByCatalogFilters(activeSelectedFilterOptions)
+                        .filterByQuery(input.searchQuery),
+                activeFilterCount = activeSelectedFilterOptions.size,
+                deriving = false,
+            )
+        }
+    }
+
+    suspend fun deriveStudentBgmListState(input: BaGuideStudentBgmListInput): BaGuideStudentBgmListDerivedState {
+        return withContext(parseDispatcher) {
+            val allStudentEntries =
+                input.catalog
+                    .entries(BaGuideCatalogTab.Student)
+                    .sortedBy { it.order }
+            val favoriteByNormalizedSourceUrl =
+                buildMap {
+                    input.favorites.forEach { favorite ->
+                        val normalizedSourceUrl = normalizeGuideUrl(favorite.sourceUrl)
+                        if (normalizedSourceUrl.isNotBlank() && !containsKey(normalizedSourceUrl)) {
+                            put(normalizedSourceUrl, favorite)
+                        }
+                    }
+            }
+            val favoriteContentIds =
+                favoriteStudentBgmEntryContentIds(
+                    entries = allStudentEntries,
+                    favoriteSourceUrls = favoriteByNormalizedSourceUrl.keys,
+                )
+            BaGuideStudentBgmListDerivedState(
+                allStudentEntries = allStudentEntries,
+                filteredEntries =
+                    filterAndSortStudentBgmEntries(
+                        entries = allStudentEntries,
+                        searchQuery = input.searchQuery,
+                        favoriteContentIds = favoriteContentIds,
+                    ),
+                deriving = false,
+            )
+        }
     }
 }

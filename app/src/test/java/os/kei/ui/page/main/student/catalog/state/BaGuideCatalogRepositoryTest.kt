@@ -3,8 +3,12 @@ package os.kei.ui.page.main.student.catalog.state
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntryFilterAttributes
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterOption
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import kotlin.test.assertEquals
 
@@ -62,6 +66,105 @@ class BaGuideCatalogRepositoryTest {
         assertEquals(false, fetchCalled)
     }
 
+    @Test
+    fun `catalog list derivation filters current tab and pins favorites`() = runBlocking {
+        val starDefinition =
+            BaGuideCatalogFilterDefinition(
+                id = 68,
+                name = "星级",
+                type = 0,
+                options =
+                    listOf(
+                        BaGuideCatalogFilterOption(176, "三星"),
+                        BaGuideCatalogFilterOption(70, "二星"),
+                    ),
+            )
+        val favorite = catalogEntry(
+            name = "阿露",
+            tab = BaGuideCatalogTab.Student,
+            order = 2,
+            attributes = BaGuideCatalogEntryFilterAttributes(optionIdsByFilterId = mapOf(68 to setOf(176))),
+        )
+        val regular = catalogEntry(
+            name = "日富美",
+            tab = BaGuideCatalogTab.Student,
+            order = 1,
+            attributes = BaGuideCatalogEntryFilterAttributes(optionIdsByFilterId = mapOf(68 to setOf(176))),
+        )
+        val filteredOut = catalogEntry(
+            name = "晴",
+            tab = BaGuideCatalogTab.Student,
+            order = 3,
+            attributes = BaGuideCatalogEntryFilterAttributes(optionIdsByFilterId = mapOf(68 to setOf(70))),
+        )
+        val bundle =
+            BaGuideCatalogBundle(
+                entriesByTab =
+                    mapOf(
+                        BaGuideCatalogTab.Student to listOf(regular, favorite, filteredOut),
+                        BaGuideCatalogTab.NpcSatellite to emptyList(),
+                    ),
+                syncedAtMs = 2_000L,
+                filterDefinitionsByTab = mapOf(BaGuideCatalogTab.Student to listOf(starDefinition)),
+            )
+        val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
+
+        val result =
+            repository.deriveCatalogListState(
+                BaGuideCatalogListInput(
+                    catalog = bundle,
+                    tab = BaGuideCatalogTab.Student,
+                    sortMode = BaGuideCatalogSortMode.Default,
+                    favoriteCatalogEntries = mapOf(favorite.contentId to 1L),
+                    selectedFilterOptions = mapOf(68 to setOf(176), 9999 to setOf(1)),
+                    searchQuery = "",
+                ),
+            )
+
+        assertEquals(1, result.activeFilterCount)
+        assertEquals(listOf("阿露", "日富美"), result.filteredEntries.map { it.name })
+        assertEquals(false, result.deriving)
+    }
+
+    @Test
+    fun `student bgm list derivation pins favorite guide entries`() = runBlocking {
+        val regular =
+            catalogEntry(
+                name = "日富美",
+                tab = BaGuideCatalogTab.Student,
+                order = 1,
+            )
+        val favorite =
+            catalogEntry(
+                name = "阿露",
+                tab = BaGuideCatalogTab.Student,
+                order = 2,
+            )
+        val bundle =
+            BaGuideCatalogBundle(
+                entriesByTab =
+                    mapOf(
+                        BaGuideCatalogTab.Student to listOf(regular, favorite),
+                        BaGuideCatalogTab.NpcSatellite to emptyList(),
+                    ),
+                syncedAtMs = 3_000L,
+            )
+        val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
+
+        val result =
+            repository.deriveStudentBgmListState(
+                BaGuideStudentBgmListInput(
+                    catalog = bundle,
+                    favorites = listOf(bgmFavorite(sourceUrl = favorite.detailUrl)),
+                    searchQuery = "",
+                ),
+            )
+
+        assertEquals(listOf("阿露", "日富美"), result.filteredEntries.map { it.name })
+        assertEquals(listOf("日富美", "阿露"), result.allStudentEntries.map { it.name })
+        assertEquals(false, result.deriving)
+    }
+
     private fun catalogBundle(name: String): BaGuideCatalogBundle {
         return BaGuideCatalogBundle(
             entriesByTab = mapOf(
@@ -76,21 +179,36 @@ class BaGuideCatalogRepositoryTest {
 
     private fun catalogEntry(
         name: String,
-        tab: BaGuideCatalogTab
+        tab: BaGuideCatalogTab,
+        order: Int = 0,
+        attributes: BaGuideCatalogEntryFilterAttributes = BaGuideCatalogEntryFilterAttributes.EMPTY,
     ): BaGuideCatalogEntry {
         return BaGuideCatalogEntry(
-            entryId = name.hashCode(),
+            entryId = name.hashCode() + order,
             pid = 1,
-            contentId = name.hashCode().toLong().let { if (it < 0L) -it else it } + 1L,
+            contentId = name.hashCode().toLong().let { if (it < 0L) -it else it } + order + 1L,
             name = name,
             alias = "",
             aliasDisplay = "",
             iconUrl = "https://example.com/icon.png",
             type = 1,
-            order = 0,
+            order = order,
             createdAtSec = 1L,
-            detailUrl = "https://www.gamekee.com/ba/tj/1.html",
-            tab = tab
+            detailUrl = "https://www.gamekee.com/ba/tj/${name.hashCode().let { if (it < 0) -it else it } + order}.html",
+            tab = tab,
+            filterAttributes = attributes,
         )
     }
+
+    private fun bgmFavorite(sourceUrl: String): GuideBgmFavoriteItem =
+        GuideBgmFavoriteItem(
+            audioUrl = "https://example.com/audio.ogg",
+            title = "BGM",
+            studentTitle = "学生",
+            studentImageUrl = "",
+            imageUrl = "",
+            sourceUrl = sourceUrl,
+            note = "",
+            favoritedAtMs = 1L,
+        )
 }

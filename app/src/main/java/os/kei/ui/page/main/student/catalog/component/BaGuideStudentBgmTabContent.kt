@@ -40,10 +40,8 @@ import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -55,18 +53,11 @@ import kotlin.math.max
 private const val STUDENT_BGM_BATCH_SIZE = 20
 private const val STUDENT_BGM_LOAD_MORE_THRESHOLD = 10
 
-private data class BaGuideStudentBgmComputedEntries(
-    val allStudentEntries: List<BaGuideCatalogEntry> = emptyList(),
-    val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
-) {
-    companion object {
-        val Empty = BaGuideStudentBgmComputedEntries()
-    }
-}
-
 @Composable
 internal fun BaGuideStudentBgmTabContent(
-    catalog: BaGuideCatalogBundle,
+    catalogSyncedAtMs: Long,
+    favorites: List<GuideBgmFavoriteItem>,
+    derivedState: BaGuideStudentBgmListDerivedState,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     playbackState: BaGuideBgmPlaybackUiState,
     searchQuery: String,
@@ -85,7 +76,6 @@ internal fun BaGuideStudentBgmTabContent(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
-    val favorites by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     val lookupCoordinator = remember(pageScope) {
         BaGuideStudentBgmLookupCoordinator(scope = pageScope)
     }
@@ -117,30 +107,9 @@ internal fun BaGuideStudentBgmTabContent(
             favorite.audioUrl.takeIf { it.isNotBlank() }
         }
     }
-    var computedEntries by remember { mutableStateOf(BaGuideStudentBgmComputedEntries.Empty) }
-    LaunchedEffect(catalog, searchQuery, favoriteByNormalizedSourceUrl) {
-        computedEntries =
-            withContext(AppDispatchers.uiDerivation) {
-                val allStudentEntries =
-                    catalog.entries(BaGuideCatalogTab.Student).sortedBy { it.order }
-                val favoriteContentIds =
-                    favoriteStudentBgmEntryContentIds(
-                        entries = allStudentEntries,
-                        favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
-                    )
-                BaGuideStudentBgmComputedEntries(
-                    allStudentEntries = allStudentEntries,
-                    filteredEntries =
-                        filterAndSortStudentBgmEntries(
-                            entries = allStudentEntries,
-                            searchQuery = searchQuery,
-                            favoriteContentIds = favoriteContentIds,
-                        ),
-                )
-            }
-    }
-    val allStudentEntries = computedEntries.allStudentEntries
-    val filteredEntries = computedEntries.filteredEntries
+    val allStudentEntries = derivedState.allStudentEntries
+    val filteredEntries = derivedState.filteredEntries
+    val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var visibleCount by rememberSaveable(searchQuery) { mutableIntStateOf(0) }
@@ -244,7 +213,7 @@ internal fun BaGuideStudentBgmTabContent(
     }
     val nowPlayingBottomPadding = navigationBarBottom + AppChromeTokens.pageSectionGap
 
-    LaunchedEffect(catalog.syncedAtMs) {
+    LaunchedEffect(catalogSyncedAtMs) {
         lookupCoordinator.clear()
     }
     LaunchedEffect(displayedBgmModel.contentIds, isPageActive) {
@@ -328,7 +297,7 @@ internal fun BaGuideStudentBgmTabContent(
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            if (loading && allStudentEntries.isEmpty()) {
+            if (effectiveLoading && allStudentEntries.isEmpty()) {
                 item(key = "student-bgm-loading") {
                     AppAronaLoadingPanel(accent = accent)
                 }
@@ -346,7 +315,7 @@ internal fun BaGuideStudentBgmTabContent(
                 }
             }
 
-            if (!loading && filteredEntries.isEmpty()) {
+            if (!effectiveLoading && filteredEntries.isEmpty()) {
                 item(key = "student-bgm-empty") {
                     LiquidInfoBlock(
                         backdrop = null,

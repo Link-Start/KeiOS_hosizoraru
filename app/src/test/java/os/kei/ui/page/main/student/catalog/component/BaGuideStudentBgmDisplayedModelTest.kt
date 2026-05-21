@@ -4,6 +4,8 @@ import org.junit.Test
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.state.favoriteStudentBgmEntryContentIds
+import os.kei.ui.page.main.student.catalog.state.filterAndSortStudentBgmEntries
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 

@@ -16,10 +16,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.activeCatalogFilterCountForDefinitions
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -29,8 +28,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun BaGuideCatalogTabContent(
     tab: BaGuideCatalogTab,
-    catalog: BaGuideCatalogBundle,
     filterSortState: BaGuideCatalogFilterSortState,
+    derivedState: BaGuideCatalogListDerivedState,
     loading: Boolean,
     error: String?,
     progress: Float,
@@ -66,27 +65,20 @@ internal fun BaGuideCatalogTabContent(
         return
     }
 
+    val effectiveLoading = loading || (derivedState.deriving && derivedState.filteredEntries.isEmpty())
     val tabListState =
         rememberBaGuideCatalogTabListState(
             tab = tab,
-            catalog = catalog,
-            sortMode = filterSortState.sortMode,
-            favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
-            selectedFilterOptions = filterSortState.selectedFilterOptions,
-            searchQuery = filterSortState.searchQuery,
-            loading = loading,
+            filteredEntries = derivedState.filteredEntries,
+            loading = effectiveLoading,
             isPageActive = isPageActive,
         )
     val tabContentUiState =
         rememberBaGuideCatalogTabContentUiState(
             tab = tab,
             searchQuery = filterSortState.searchQuery,
-            activeFilterCount =
-                activeCatalogFilterCountForDefinitions(
-                    selectedOptionIdsByFilterId = filterSortState.selectedFilterOptions,
-                    definitions = catalog.filterDefinitions(tab).filter { it.type == 0 },
-                ),
-            loading = loading,
+            activeFilterCount = derivedState.activeFilterCount,
+            loading = effectiveLoading,
             error = error,
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
         )

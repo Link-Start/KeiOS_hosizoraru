@@ -3,25 +3,17 @@ package os.kei.ui.page.main.student.catalog.state
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
-import os.kei.ui.page.main.student.catalog.filterByQuery
-import os.kei.ui.page.main.student.catalog.selectedCatalogFilterOptionsForDefinitions
 import kotlin.math.max
 
 internal const val CATALOG_BATCH_SIZE = 20
@@ -36,71 +28,16 @@ internal data class BaGuideCatalogTabListState(
     val hasMoreEntries: Boolean,
 )
 
-@Immutable
-private data class BaGuideCatalogComputedEntries(
-    val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
-) {
-    companion object {
-        val Empty = BaGuideCatalogComputedEntries()
-    }
-}
-
 @Composable
 internal fun rememberBaGuideCatalogTabListState(
     tab: BaGuideCatalogTab,
-    catalog: BaGuideCatalogBundle,
-    sortMode: BaGuideCatalogSortMode,
-    favoriteCatalogEntries: Map<Long, Long>,
-    selectedFilterOptions: Map<Int, Set<Int>>,
-    searchQuery: String,
+    filteredEntries: List<BaGuideCatalogEntry>,
     loading: Boolean,
     isPageActive: Boolean,
 ): BaGuideCatalogTabListState {
-    val baseEntries =
-        remember(catalog, tab) {
-            catalog.entries(tab)
-        }
-    val catalogFilterDefinitions =
-        remember(catalog, tab) {
-            catalog.filterDefinitions(tab).filter { it.type == 0 }
-        }
-    val activeSelectedFilterOptions =
-        remember(selectedFilterOptions, catalogFilterDefinitions) {
-            selectedCatalogFilterOptionsForDefinitions(
-                selectedOptionIdsByFilterId = selectedFilterOptions,
-                definitions = catalogFilterDefinitions,
-            )
-        }
-    var computedEntries by remember { mutableStateOf(BaGuideCatalogComputedEntries.Empty) }
-    LaunchedEffect(
-        baseEntries,
-        sortMode,
-        favoriteCatalogEntries,
-        catalogFilterDefinitions,
-        activeSelectedFilterOptions,
-        searchQuery,
-    ) {
-        computedEntries =
-            withContext(AppDispatchers.uiDerivation) {
-                val currentEntries =
-                    baseEntries.sortedByMode(
-                        mode = sortMode,
-                        favoriteCatalogEntries = favoriteCatalogEntries,
-                        filterDefinitions = catalogFilterDefinitions,
-                    )
-                BaGuideCatalogComputedEntries(
-                    filteredEntries =
-                        currentEntries
-                            .filterByCatalogFilters(activeSelectedFilterOptions)
-                            .filterByQuery(searchQuery),
-                )
-            }
-    }
-    val filteredEntries = computedEntries.filteredEntries
-
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    var visibleCount by rememberSaveable(tab, searchQuery) { mutableIntStateOf(0) }
+    var visibleCount by rememberSaveable(tab) { mutableIntStateOf(0) }
     LaunchedEffect(filteredEntries) {
         visibleCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
     }

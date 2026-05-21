@@ -14,10 +14,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.activeCatalogFilterCountForDefinitions
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -27,8 +26,8 @@ import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 @Composable
 internal fun BaGuideCatalogV2ListContent(
     tab: BaGuideCatalogTab,
-    catalog: BaGuideCatalogBundle,
     filterSortState: BaGuideCatalogFilterSortState,
+    derivedState: BaGuideCatalogListDerivedState,
     searchQuery: String,
     loading: Boolean,
     error: String?,
@@ -39,27 +38,20 @@ internal fun BaGuideCatalogV2ListContent(
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
 ) {
+    val effectiveLoading = loading || (derivedState.deriving && derivedState.filteredEntries.isEmpty())
     val tabListState =
         rememberBaGuideCatalogTabListState(
             tab = tab,
-            catalog = catalog,
-            sortMode = filterSortState.sortMode,
-            favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
-            selectedFilterOptions = filterSortState.selectedFilterOptions,
-            searchQuery = searchQuery,
-            loading = loading,
+            filteredEntries = derivedState.filteredEntries,
+            loading = effectiveLoading,
             isPageActive = isPageActive,
         )
     val uiState =
         rememberBaGuideCatalogTabContentUiState(
             tab = tab,
             searchQuery = searchQuery,
-            activeFilterCount =
-                activeCatalogFilterCountForDefinitions(
-                    selectedOptionIdsByFilterId = filterSortState.selectedFilterOptions,
-                    definitions = catalog.filterDefinitions(tab).filter { it.type == 0 },
-                ),
-            loading = loading,
+            activeFilterCount = derivedState.activeFilterCount,
+            loading = effectiveLoading,
             error = error,
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
         )

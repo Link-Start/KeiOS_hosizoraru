@@ -56,7 +56,10 @@ import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmFloatingBotto
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.resolvePlaybackArtworkImageUrl
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
+import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListInput
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.rememberCatalogSyncProgress
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
@@ -148,6 +151,8 @@ fun BaGuideCatalogPage(
     val bgmExportSuccessText = stringResource(R.string.ba_catalog_bgm_export_success)
     val catalogViewModel: BaGuideCatalogViewModel = viewModel()
     val catalogDataState by catalogViewModel.dataState.collectAsStateWithLifecycle()
+    val catalogListDerivedStates by catalogViewModel.catalogListDerivedStates.collectAsStateWithLifecycle()
+    val studentBgmListDerivedState by catalogViewModel.studentBgmListDerivedState.collectAsStateWithLifecycle()
     LaunchedEffect(
         catalogViewModel,
         transitionAnimationsEnabled,
@@ -172,11 +177,53 @@ fun BaGuideCatalogPage(
         )
     val filterSortState = rememberBaGuideCatalogFilterSortState()
     var searchQueries by rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
+    val catalogSortMode = filterSortState.sortMode
+    val catalogFavoriteEntries = filterSortState.favoriteCatalogEntries
+    val catalogSelectedFilterOptions = filterSortState.selectedFilterOptions
+    val studentSearchQuery = searchQueries.catalogSearchQueryFor(BaGuideCatalogTab.Student)
+    val npcSearchQuery = searchQueries.catalogSearchQueryFor(BaGuideCatalogTab.NpcSatellite)
+    val studentBgmSearchQuery = searchQueries[BaGuideCatalogPageTab.StudentBgm.name].orEmpty()
+    val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
+    LaunchedEffect(
+        catalogViewModel,
+        catalogDataState.catalog,
+        catalogSortMode,
+        catalogFavoriteEntries,
+        catalogSelectedFilterOptions,
+        studentSearchQuery,
+        npcSearchQuery,
+    ) {
+        BaGuideCatalogTab.entries.forEach { tab ->
+            catalogViewModel.requestCatalogListDerivedState(
+                BaGuideCatalogListInput(
+                    catalog = catalogDataState.catalog,
+                    tab = tab,
+                    sortMode = catalogSortMode,
+                    favoriteCatalogEntries = catalogFavoriteEntries,
+                    selectedFilterOptions = catalogSelectedFilterOptions,
+                    searchQuery = searchQueries.catalogSearchQueryFor(tab),
+                ),
+            )
+        }
+    }
+    LaunchedEffect(
+        catalogViewModel,
+        catalogDataState.catalog,
+        favoriteBgms,
+        studentBgmSearchQuery,
+    ) {
+        catalogViewModel.requestStudentBgmListDerivedState(
+            BaGuideStudentBgmListInput(
+                catalog = catalogDataState.catalog,
+                favorites = favoriteBgms,
+                searchQuery = studentBgmSearchQuery,
+            ),
+        )
+    }
     var showTransferSheet by rememberSaveable { mutableStateOf(false) }
     var importPreviewState by remember { mutableStateOf<BaGuideCatalogImportPreviewState?>(null) }
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
-    val favoriteBgms by GuideBgmFavoriteStore.favoritesFlow().collectAsStateWithLifecycle()
     var nativeBgmMediaNotificationEnabled by rememberSaveable {
         mutableStateOf(BASettingsStore.loadNativeBgmMediaNotificationEnabled())
     }
@@ -362,10 +409,13 @@ fun BaGuideCatalogPage(
                     } else {
                         when {
                             pageTab.catalogTab != null -> {
+                                val catalogTab = pageTab.catalogTab
                                 BaGuideCatalogV2ListContent(
-                                    tab = pageTab.catalogTab,
-                                    catalog = catalogDataState.catalog,
+                                    tab = catalogTab,
                                     filterSortState = filterSortState,
+                                    derivedState =
+                                        catalogListDerivedStates[catalogTab]
+                                            ?: BaGuideCatalogListDerivedState.Empty,
                                     searchQuery = pageSearchQuery,
                                     loading = catalogDataState.loading,
                                     error = catalogDataState.error,
@@ -384,7 +434,9 @@ fun BaGuideCatalogPage(
 
                             pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> {
                                 BaGuideStudentBgmTabContent(
-                                    catalog = catalogDataState.catalog,
+                                    catalogSyncedAtMs = catalogDataState.catalog.syncedAtMs,
+                                    favorites = favoriteBgms,
+                                    derivedState = studentBgmListDerivedState,
                                     playbackCoordinator = playbackCoordinator,
                                     playbackState = playbackUiState,
                                     searchQuery = pageSearchQuery,
@@ -431,11 +483,11 @@ fun BaGuideCatalogPage(
                 accent = accent,
                 onBack = onBack,
                 showSortPopup = filterSortState.showSortPopup,
-                sortMode = filterSortState.sortMode,
+                sortMode = catalogSortMode,
                 showFilterPopup = filterSortState.showFilterPopup,
                 filterEnabled = chromeFilterEnabled,
                 filterDefinitions = chromeFilterDefinitions,
-                selectedFilterOptions = filterSortState.selectedFilterOptions,
+                selectedFilterOptions = catalogSelectedFilterOptions,
                 onSort = filterSortState::openSortPopup,
                 onDismissSort = { filterSortState.showSortPopup = false },
                 onSelectSortMode = filterSortState::selectSortMode,
@@ -686,6 +738,14 @@ private fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
 }
 
 private fun catalogPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
+
+private fun Map<String, String>.catalogSearchQueryFor(tab: BaGuideCatalogTab): String =
+    get(
+        when (tab) {
+            BaGuideCatalogTab.Student -> BaGuideCatalogPageTab.Student.name
+            BaGuideCatalogTab.NpcSatellite -> BaGuideCatalogPageTab.NpcSatellite.name
+        },
+    ).orEmpty()
 
 private const val CATALOG_PAGER_TARGET_WARM_DATA_DISTANCE = 0.75f
 

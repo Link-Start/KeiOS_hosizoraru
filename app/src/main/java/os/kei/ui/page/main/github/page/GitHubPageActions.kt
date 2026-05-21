@@ -1,31 +1,23 @@
 package os.kei.ui.page.main.github.page
 
 import android.content.Context
-import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
-import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
-import os.kei.feature.github.model.isGitHubRepositoryTrack
-import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
-import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.isLocalAppUninstalled
-import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
 import os.kei.ui.page.main.github.page.action.GitHubAssetActions
 import os.kei.ui.page.main.github.page.action.GitHubConfigActions
@@ -35,14 +27,7 @@ import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.section.GitHubOverviewEntry
-import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
-import os.kei.ui.page.main.github.section.defaultGitHubOverviewEntries
-import os.kei.ui.page.main.github.section.orDefaultGitHubOverviewEntries
-import os.kei.ui.page.main.github.share.GitHubShareImportActivity
-import os.kei.ui.page.main.github.share.GitHubShareImportResult
-import os.kei.ui.page.main.github.share.GitHubShareImportResultKind
-import os.kei.ui.page.main.github.share.toShareImportResult
 
 internal class GitHubPageActions(
     context: Context,
@@ -50,32 +35,26 @@ internal class GitHubPageActions(
     state: GitHubPageState,
     repository: GitHubPageRepository,
     systemDmOption: DownloaderOption,
-    openLinkFailureMessage: String
+    openLinkFailureMessage: String,
 ) {
-    private val env = GitHubPageActionEnvironment(
-        context = context,
-        scope = scope,
-        state = state,
-        repository = repository,
-        systemDmOption = systemDmOption,
-        openLinkFailureMessage = openLinkFailureMessage
-    )
+    private val env =
+        GitHubPageActionEnvironment(
+            context = context,
+            scope = scope,
+            state = state,
+            repository = repository,
+            systemDmOption = systemDmOption,
+            openLinkFailureMessage = openLinkFailureMessage,
+        )
     private val assetActions = GitHubAssetActions(env)
     private val refreshActions = GitHubRefreshActions(env, assetActions)
     private val actionsActions = GitHubActionsActions(env, assetActions)
     private val configActions = GitHubConfigActions(env, refreshActions, assetActions)
     private val trackActions = GitHubTrackActions(env, refreshActions, assetActions)
-
-    private val minHandleIntervalMs = 1200L
-    private val pendingShareImportTrackMaxAgeMs = 25 * 60 * 1000L
-    private val handledAtByPackage = mutableMapOf<String, Long>()
-    private val packageUpdateActions = setOf(
-        Intent.ACTION_PACKAGE_ADDED,
-        Intent.ACTION_PACKAGE_REMOVED,
-        Intent.ACTION_PACKAGE_FULLY_REMOVED,
-        Intent.ACTION_PACKAGE_REPLACED,
-        Intent.ACTION_PACKAGE_CHANGED
-    )
+    private val debugNotificationActions = GitHubDebugNotificationActionFacade(env)
+    private val overviewActions = GitHubOverviewActionFacade(state)
+    private val shareImportActions = GitHubShareImportActionFacade(env)
+    private val packageChangedActions = GitHubPackageChangedActionFacade(env, refreshActions, assetActions)
 
     private companion object {
         const val RETRY_FAILED_TRACKED_PARALLELISM = 3
@@ -93,55 +72,7 @@ internal class GitHubPageActions(
 
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
 
-    fun sendDebugActionsUpdateNotification() {
-        if (env.state.debugActionsUpdateNotificationLoading) return
-        env.state.debugActionsUpdateNotificationLoading = true
-        env.scope.launch {
-            try {
-                val target = selectKeiOsActionsDebugNotificationTarget(env.state.trackedItems)
-                if (target == null) {
-                    env.toast(R.string.github_actions_update_debug_toast_track_missing)
-                    return@launch
-                }
-                val previous = GitHubActionsRecommendedRunStore.load(target.uiItem.id)
-                    ?: env.state.actionsRecommendedRunSnapshots[target.uiItem.id]
-                val snapshot = GitHubActionsUpdateCheckService()
-                    .fetchRecommendedRunSnapshot(
-                        item = target.lookupItem,
-                        lookupConfig = env.state.lookupConfig,
-                        previousWorkflowId = previous?.workflowId
-                    )
-                    .getOrElse { error ->
-                        env.toast(
-                            R.string.github_actions_update_debug_toast_fetch_failed,
-                            localizedGitHubActionsErrorMessage(env.context, error.message)
-                        )
-                        return@launch
-                    }
-                val routedSnapshot = snapshot.copy(
-                    trackId = target.uiItem.id,
-                    appLabel = target.uiItem.appLabel.ifBlank { snapshot.appLabel }
-                )
-                if (env.state.trackedItems.any { it.id == target.uiItem.id }) {
-                    GitHubActionsRecommendedRunStore.save(routedSnapshot)
-                    env.state.actionsRecommendedRunSnapshots[target.uiItem.id] = routedSnapshot
-                }
-                val sent = GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
-                    context = env.context,
-                    snapshot = routedSnapshot
-                )
-                env.toast(
-                    if (sent) {
-                        R.string.github_actions_update_debug_toast_sent
-                    } else {
-                        R.string.github_actions_update_debug_toast_failed
-                    }
-                )
-            } finally {
-                env.state.debugActionsUpdateNotificationLoading = false
-            }
-        }
-    }
+    fun sendDebugActionsUpdateNotification() = debugNotificationActions.sendActionsUpdateNotification()
 
     fun openActionsSheet(item: GitHubTrackedApp) = actionsActions.openActionsSheet(item)
 
@@ -163,22 +94,28 @@ internal class GitHubPageActions(
 
     fun setActionsRunsExpanded(value: Boolean) = actionsActions.setRunsExpanded(value)
 
-    fun setOverviewExpanded(value: Boolean) {
-        env.state.overviewExpanded = value
-        GitHubOverviewUiStateStore.setExpanded(value)
-    }
+    fun setOverviewExpanded(value: Boolean) = overviewActions.setOverviewExpanded(value)
 
-    fun setTrackedStableVersionExpanded(itemId: String, value: Boolean) {
+    fun setTrackedStableVersionExpanded(
+        itemId: String,
+        value: Boolean,
+    ) {
         env.state.trackedStableVersionExpanded[itemId] = value
         GitHubTrackedReleaseUiStateStore.setStableVersionExpanded(itemId, value)
     }
 
-    fun setTrackedLocalVersionExpanded(itemId: String, value: Boolean) {
+    fun setTrackedLocalVersionExpanded(
+        itemId: String,
+        value: Boolean,
+    ) {
         env.state.trackedLocalVersionExpanded[itemId] = value
         GitHubTrackedReleaseUiStateStore.setLocalVersionExpanded(itemId, value)
     }
 
-    fun setTrackedPreReleaseVersionExpanded(itemId: String, value: Boolean) {
+    fun setTrackedPreReleaseVersionExpanded(
+        itemId: String,
+        value: Boolean,
+    ) {
         env.state.trackedPreReleaseVersionExpanded[itemId] = value
         GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)
     }
@@ -204,79 +141,61 @@ internal class GitHubPageActions(
                 GitHubTrackedFilterMode.FailedChecks
             } else {
                 GitHubTrackedFilterMode.All
-            }
+            },
         )
     }
 
-    fun openOverviewEntrySheet() {
-        env.state.showOverviewEntrySheet = true
-        env.state.overviewExpanded = true
-        GitHubOverviewUiStateStore.setExpanded(true)
-    }
+    fun openOverviewEntrySheet() = overviewActions.openOverviewEntrySheet()
 
-    fun closeOverviewEntrySheet() {
-        env.state.showOverviewEntrySheet = false
-    }
+    fun closeOverviewEntrySheet() = overviewActions.closeOverviewEntrySheet()
 
-    fun setOverviewEntryVisible(entry: GitHubOverviewEntry, visible: Boolean) {
-        val current = env.state.overviewVisibleEntries.orDefaultGitHubOverviewEntries()
-        val next = if (visible) {
-            current + entry
-        } else {
-            (current - entry).ifEmpty { setOf(entry) }
-        }
-        env.state.overviewVisibleEntries = next
-        GitHubOverviewUiStateStore.setVisibleEntries(next)
-    }
+    fun setOverviewEntryVisible(
+        entry: GitHubOverviewEntry,
+        visible: Boolean,
+    ) = overviewActions.setOverviewEntryVisible(entry, visible)
 
-    fun resetOverviewEntries() {
-        val defaults = defaultGitHubOverviewEntries()
-        env.state.overviewVisibleEntries = defaults
-        GitHubOverviewUiStateStore.setVisibleEntries(defaults)
-    }
+    fun resetOverviewEntries() = overviewActions.resetOverviewEntries()
 
     fun refreshActionsRunStatus(runId: Long) = actionsActions.refreshActionsRunStatus(runId)
 
-    fun installActionsArtifact(runId: Long, artifactId: Long) =
-        actionsActions.installActionsArtifact(runId = runId, artifactId = artifactId)
+    fun installActionsArtifact(
+        runId: Long,
+        artifactId: Long,
+    ) = actionsActions.installActionsArtifact(runId = runId, artifactId = artifactId)
 
-    fun downloadActionsArtifact(runId: Long, artifactId: Long) =
-        actionsActions.downloadActionsArtifact(runId = runId, artifactId = artifactId)
+    fun downloadActionsArtifact(
+        runId: Long,
+        artifactId: Long,
+    ) = actionsActions.downloadActionsArtifact(runId = runId, artifactId = artifactId)
 
-    fun shareActionsArtifact(runId: Long, artifactId: Long) =
-        actionsActions.shareActionsArtifact(runId = runId, artifactId = artifactId)
+    fun shareActionsArtifact(
+        runId: Long,
+        artifactId: Long,
+    ) = actionsActions.shareActionsArtifact(runId = runId, artifactId = artifactId)
 
     fun openSelectedActionsRun() = actionsActions.openSelectedActionsRun()
 
-    suspend fun reloadApps(forceRefresh: Boolean = false) =
-        refreshActions.reloadApps(forceRefresh = forceRefresh)
+    suspend fun reloadApps(forceRefresh: Boolean = false) = refreshActions.reloadApps(forceRefresh = forceRefresh)
 
     suspend fun initializeWarmSnapshot() = refreshActions.initializeWarmSnapshot()
 
     suspend fun initializePageActiveWork() = refreshActions.initializePageActiveWork()
 
-    suspend fun syncTrackSnapshotFromStore(forceRefreshApps: Boolean = true) =
-        refreshActions.syncSnapshotFromStore(forceRefreshApps)
+    suspend fun syncTrackSnapshotFromStore(forceRefreshApps: Boolean = true) = refreshActions.syncSnapshotFromStore(forceRefreshApps)
 
     fun handleTrackMutationRefresh(
         affectedTrackIds: Set<String>,
-        removedTrackIds: Set<String>
+        removedTrackIds: Set<String>,
     ) {
         env.scope.launch {
             refreshActions.handleTrackMutationRefresh(
                 affectedTrackIds = affectedTrackIds,
-                removedTrackIds = removedTrackIds
+                removedTrackIds = removedTrackIds,
             )
         }
     }
 
-    suspend fun syncActiveShareImportFlowFromStore() {
-        val flow = env.repository.loadActiveShareImportFlow()
-        env.state.pendingShareImportPreview = flow.preview
-        env.state.pendingShareImportTrack = flow.pendingTrack
-        env.state.pendingShareImportAttachCandidate = flow.attachCandidate
-        env.state.pendingShareImportResult = flow.result
-    }
+    suspend fun syncActiveShareImportFlowFromStore() = shareImportActions.syncActiveFlowFromStore()
 
     suspend fun syncLocalAppStateOnPageActive() {
         refreshActions.syncLocalAppStateWithInstalledApps(forceRefreshApps = true)
@@ -284,13 +203,13 @@ internal class GitHubPageActions(
 
     fun refreshAllTracked(
         showToast: Boolean = true,
-        forceRefresh: Boolean = true
+        forceRefresh: Boolean = true,
     ) {
         env.scope.launch {
             refreshActions.reloadApps(forceRefresh = true)
             refreshActions.refreshAllTracked(
                 showToast = showToast,
-                forceRefresh = forceRefresh
+                forceRefresh = forceRefresh,
             ) {
                 reloadExpandedAssetPanelsAfterRefresh()
             }
@@ -300,13 +219,13 @@ internal class GitHubPageActions(
     fun refreshVisibleTracked(
         items: List<GitHubTrackedApp>,
         showToast: Boolean = true,
-        forceRefresh: Boolean = true
+        forceRefresh: Boolean = true,
     ) {
         if (items.isEmpty()) {
             refreshActions.refreshTrackedBatch(
                 targets = emptyList(),
                 showToast = showToast,
-                forceRefresh = forceRefresh
+                forceRefresh = forceRefresh,
             )
             return
         }
@@ -316,7 +235,7 @@ internal class GitHubPageActions(
             refreshActions.refreshTrackedBatch(
                 targets = items,
                 showToast = showToast,
-                forceRefresh = forceRefresh
+                forceRefresh = forceRefresh,
             ) {
                 reloadExpandedAssetPanelsAfterRefresh(targetIds = targetIds)
             }
@@ -328,10 +247,11 @@ internal class GitHubPageActions(
         item: GitHubTrackedApp,
     ) {
         val itemState = env.state.checkStates[item.id] ?: VersionCheckUi()
-        env.state.decisionAssistDetailRequest = GitHubDecisionAssistDetailRequest(
-            type = type,
-            item = item,
-        )
+        env.state.decisionAssistDetailRequest =
+            GitHubDecisionAssistDetailRequest(
+                type = type,
+                item = item,
+            )
         when (type) {
             GitHubDecisionAssistDetailType.ReleaseNotes -> {
                 assetActions.loadReleaseNotesTargets(
@@ -371,24 +291,25 @@ internal class GitHubPageActions(
     }
 
     private fun reloadExpandedAssetPanelsAfterRefresh(targetIds: Set<String>? = null) {
-        val expandedItemIds = env.state.apkAssetExpanded
-            .filterValues { it }
-            .keys
-            .filterTo(HashSet()) { targetIds == null || it in targetIds }
+        val expandedItemIds =
+            env.state.apkAssetExpanded
+                .filterValues { it }
+                .keys
+                .filterTo(HashSet()) { targetIds == null || it in targetIds }
         if (expandedItemIds.isEmpty()) return
 
         env.state.trackedItems.forEach { item ->
             if (item.id !in expandedItemIds) return@forEach
             val itemState = env.state.checkStates[item.id] ?: return@forEach
             val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
-            if (canLoadApkAssets(item, itemState)) {
+            if (canLoadApkAssets(item, itemState, env.context)) {
                 assetActions.clearApkAssetCache(item, itemState)
                 assetActions.loadApkAssets(
                     item = item,
                     itemState = itemState,
                     toggleOnlyWhenCached = false,
                     includeAllAssets = includeAllAssets,
-                    allowLatestReleaseFallback = itemState.isLocalAppUninstalled()
+                    allowLatestReleaseFallback = itemState.isLocalAppUninstalled(),
                 )
             } else {
                 assetActions.clearApkAssetUiState(item.id)
@@ -400,7 +321,7 @@ internal class GitHubPageActions(
         item: GitHubTrackedApp,
         showToastOnError: Boolean = true,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = true
+        forceRefresh: Boolean = true,
     ) {
         env.scope.launch {
             refreshTrackedItemNow(
@@ -408,7 +329,7 @@ internal class GitHubPageActions(
                 showToastOnError = showToastOnError,
                 profilePurposeOverride = profilePurposeOverride,
                 forceRefresh = forceRefresh,
-                reloadAppsBeforeRefresh = true
+                reloadAppsBeforeRefresh = true,
             )
         }
     }
@@ -418,7 +339,7 @@ internal class GitHubPageActions(
         showToastOnError: Boolean,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false,
-        reloadAppsBeforeRefresh: Boolean
+        reloadAppsBeforeRefresh: Boolean,
     ) {
         if (env.state.trackedItems.none { it.id == item.id }) return
         if (env.state.itemRefreshLoading[item.id] == true) return
@@ -437,16 +358,16 @@ internal class GitHubPageActions(
                 showToastOnError = showToastOnError,
                 keepCurrentVisualWhileRefreshing = true,
                 profilePurposeOverride = profilePurposeOverride,
-                forceRefresh = forceRefresh
+                forceRefresh = forceRefresh,
             ) { updatedState ->
-                if (wasAssetExpanded && canLoadApkAssets(item, updatedState)) {
+                if (wasAssetExpanded && canLoadApkAssets(item, updatedState, env.context)) {
                     assetActions.clearApkAssetCache(item, updatedState)
                     assetActions.loadApkAssets(
                         item = item,
                         itemState = updatedState,
                         toggleOnlyWhenCached = false,
                         includeAllAssets = includeAllAssets,
-                        allowLatestReleaseFallback = updatedState.isLocalAppUninstalled()
+                        allowLatestReleaseFallback = updatedState.isLocalAppUninstalled(),
                     )
                 } else if (wasAssetExpanded) {
                     assetActions.clearApkAssetUiState(item.id)
@@ -461,9 +382,10 @@ internal class GitHubPageActions(
     }
 
     fun refreshFailedTrackedItems(showToast: Boolean = true) {
-        val failedItems = env.state.trackedItems.filter { item ->
-            env.state.checkStates[item.id]?.failed == true
-        }
+        val failedItems =
+            env.state.trackedItems.filter { item ->
+                env.state.checkStates[item.id]?.failed == true
+            }
         if (failedItems.isEmpty()) {
             if (showToast) {
                 env.toast(R.string.github_toast_no_checkable_item)
@@ -474,17 +396,18 @@ internal class GitHubPageActions(
             refreshActions.reloadApps(forceRefresh = true)
             coroutineScope {
                 failedItems.chunked(RETRY_FAILED_TRACKED_PARALLELISM).forEach { chunk ->
-                    chunk.map { item ->
-                        launch {
-                            if (env.state.trackedItems.any { it.id == item.id }) {
-                                refreshTrackedItemNow(
-                                    item = item,
-                                    showToastOnError = showToast,
-                                    reloadAppsBeforeRefresh = false
-                                )
+                    chunk
+                        .map { item ->
+                            launch {
+                                if (env.state.trackedItems.any { it.id == item.id }) {
+                                    refreshTrackedItemNow(
+                                        item = item,
+                                        showToastOnError = showToast,
+                                        reloadAppsBeforeRefresh = false,
+                                    )
+                                }
                             }
-                        }
-                    }.joinAll()
+                        }.joinAll()
                 }
             }
         }
@@ -494,9 +417,8 @@ internal class GitHubPageActions(
 
     fun runCredentialCheck() = configActions.runCredentialCheck()
 
-    fun handleInstalledOnlineShareTargetsChanged(
-        installedOnlineShareTargets: List<OnlineShareTargetOption>
-    ) = configActions.handleInstalledOnlineShareTargetsChanged(installedOnlineShareTargets)
+    fun handleInstalledOnlineShareTargetsChanged(installedOnlineShareTargets: List<OnlineShareTargetOption>) =
+        configActions.handleInstalledOnlineShareTargetsChanged(installedOnlineShareTargets)
 
     fun currentTrackStoreSignalVersion(): Long = env.repository.currentTrackStoreSignalVersion()
 
@@ -513,150 +435,111 @@ internal class GitHubPageActions(
 
     suspend fun previewTrackedItemsImport(raw: String) = configActions.previewTrackedItemsImport(raw)
 
-    suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview) =
-        configActions.applyTrackedItemsImport(preview)
+    suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview) = configActions.applyTrackedItemsImport(preview)
 
     suspend fun importTrackedItemsJson(raw: String) = configActions.importTrackedItemsJson(raw)
 
-    fun cancelPendingShareImportTrack(showToast: Boolean = true) {
-        val hadPending = env.state.pendingShareImportTrack != null
-        val cancelledResult = buildCancelledShareImportResult()
-        clearPendingShareImportTrack(cancelledResult)
-        if (hadPending && showToast) {
-            env.toast(R.string.github_toast_share_import_pending_cancelled)
-        }
-    }
+    fun cancelPendingShareImportTrack(showToast: Boolean = true) = shareImportActions.cancelPendingTrack(showToast)
 
-    fun openShareImportFlow() {
-        val intent = Intent(env.context, GitHubShareImportActivity::class.java).apply {
-            action = GitHubShareImportActivity.ACTION_RESUME_SHARE_IMPORT
-            putExtra(GitHubShareImportActivity.EXTRA_FORCE_SHEET, true)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        }
-        env.context.startActivity(intent)
-    }
+    fun openShareImportFlow() = shareImportActions.openFlow()
 
-    fun cancelActiveShareImportFlow(showToast: Boolean = true) {
-        val hadActiveFlow = env.state.pendingShareImportPreview != null ||
-                env.state.pendingShareImportTrack != null ||
-                env.state.pendingShareImportAttachCandidate != null
-        val cancelledResult = buildCancelledShareImportResult()
-        env.state.pendingShareImportPreview = null
-        env.state.pendingShareImportTrack = null
-        env.state.pendingShareImportAttachCandidate = null
-        env.state.pendingShareImportResult = cancelledResult
-        env.scope.launch {
-            env.repository.clearActiveShareImportFlow()
-            if (cancelledResult != null) {
-                env.repository.saveShareImportResult(cancelledResult)
-            }
-            GitHubShareImportNotificationHelper.notifyCancelled(env.context)
-        }
-        if (hadActiveFlow && showToast) {
-            env.toast(R.string.github_toast_share_import_pending_cancelled)
-        }
-    }
+    fun cancelActiveShareImportFlow(showToast: Boolean = true) = shareImportActions.cancelActiveFlow(showToast)
 
-    fun focusShareImportResult() {
-        val result = env.state.pendingShareImportResult ?: return
-        setTrackedFilterMode(GitHubTrackedFilterMode.All)
-        val query = result.appDisplayLabel
-            .ifBlank { result.packageName }
-            .ifBlank { result.repo }
-            .ifBlank { result.owner }
-        if (query.isNotBlank()) {
-            env.state.trackedSearch = query
-        }
-    }
+    fun focusShareImportResult() = shareImportActions.focusResult()
 
-    fun dismissShareImportResult(showToast: Boolean = false) {
-        val hadResult = env.state.pendingShareImportResult != null
-        env.state.pendingShareImportResult = null
-        env.scope.launch {
-            env.repository.clearShareImportResult()
-            GitHubShareImportNotificationHelper.cancel(env.context)
-        }
-        if (hadResult && showToast) {
-            env.toast(R.string.common_mark_read)
-        }
-    }
+    fun dismissShareImportResult(showToast: Boolean = false) = shareImportActions.dismissResult(showToast)
 
-    fun trimExpiredPendingShareImportTrack(nowMillis: Long = System.currentTimeMillis()) {
-        clearExpiredPendingShareImportTrack(nowMillis)
-    }
+    fun trimExpiredPendingShareImportTrack(nowMillis: Long = System.currentTimeMillis()) =
+        shareImportActions.trimExpiredPendingTrack(nowMillis)
 
-    fun openExternalUrl(url: String, failureMessage: String = env.openLinkFailureMessage) =
-        assetActions.openExternalUrl(url = url, failureMessage = failureMessage)
+    fun openExternalUrl(
+        url: String,
+        failureMessage: String = env.openLinkFailureMessage,
+    ) = assetActions.openExternalUrl(url = url, failureMessage = failureMessage)
 
     fun shareApkLink(asset: GitHubReleaseAssetFile) = assetActions.shareApkLink(asset)
 
-    fun openApkInDownloader(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
-        assetActions.openApkInDownloader(item, asset)
+    fun openApkInDownloader(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+    ) = assetActions.openApkInDownloader(item, asset)
 
-    fun installApkWithKeiOs(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
-        assetActions.installApkWithKeiOs(item, asset)
+    fun installApkWithKeiOs(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+    ) = assetActions.installApkWithKeiOs(item, asset)
 
-    fun openApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
-        assetActions.openApkInfo(item, asset)
+    fun openApkInfo(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+    ) = assetActions.openApkInfo(item, asset)
 
     fun confirmManagedInstall() = assetActions.confirmManagedInstall()
 
     fun dismissManagedInstallConfirm() = assetActions.dismissManagedInstallConfirm()
 
-    fun refreshApkInfo(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile) =
-        assetActions.openApkInfo(item, asset, forceRefresh = true)
+    fun refreshApkInfo(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+    ) = assetActions.openApkInfo(item, asset, forceRefresh = true)
 
     fun clearApkAssetUiState(itemId: String) = assetActions.clearApkAssetUiState(itemId)
 
-    fun clearApkAssetCache(item: GitHubTrackedApp, itemState: VersionCheckUi) =
-        assetActions.clearApkAssetCache(item, itemState)
+    fun clearApkAssetCache(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+    ) = assetActions.clearApkAssetCache(item, itemState)
 
-    fun collapseApkAssetPanel(item: GitHubTrackedApp, itemState: VersionCheckUi) =
-        assetActions.clearApkAssetStateAndCache(item, itemState)
+    fun collapseApkAssetPanel(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+    ) = assetActions.clearApkAssetStateAndCache(item, itemState)
 
-    fun collapseTrackedCard(item: GitHubTrackedApp, itemState: VersionCheckUi) =
-        assetActions.clearApkAssetStateAndCache(item, itemState)
+    fun collapseTrackedCard(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+    ) = assetActions.clearApkAssetStateAndCache(item, itemState)
 
     fun loadApkAssets(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
         toggleOnlyWhenCached: Boolean = true,
         includeAllAssets: Boolean = false,
-        allowLatestReleaseFallback: Boolean = false
+        allowLatestReleaseFallback: Boolean = false,
     ) = assetActions.loadApkAssets(
         item = item,
         itemState = itemState,
         toggleOnlyWhenCached = toggleOnlyWhenCached,
         includeAllAssets = includeAllAssets,
-        allowLatestReleaseFallback = allowLatestReleaseFallback
+        allowLatestReleaseFallback = allowLatestReleaseFallback,
     )
 
     fun loadReleaseNotes(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
-        clearCache: Boolean = false
+        clearCache: Boolean = false,
     ) = assetActions.loadReleaseNotes(
         item = item,
         itemState = itemState,
-        clearCache = clearCache
+        clearCache = clearCache,
     )
 
     fun loadReleaseNotesTargets(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
     ) = assetActions.loadReleaseNotesTargets(
         item = item,
         itemState = itemState,
-        forceRefresh = forceRefresh
+        forceRefresh = forceRefresh,
     )
 
     fun selectReleaseNotesTarget(
         item: GitHubTrackedApp,
-        target: GitHubReleaseNotesTarget
+        target: GitHubReleaseNotesTarget,
     ) = assetActions.selectReleaseNotesTarget(
         item = item,
-        target = target
+        target = target,
     )
 
     fun openTrackSheetForAdd() = trackActions.openTrackSheetForAdd()
@@ -677,125 +560,11 @@ internal class GitHubPageActions(
 
     fun scanRepoUrlFromPackage() = trackActions.scanRepoUrlFromPackage()
 
-    fun selectRepoScanCandidate(candidate: GitHubPackageRepositoryScanCandidate) =
-        trackActions.selectRepoScanCandidate(candidate)
+    fun selectRepoScanCandidate(candidate: GitHubPackageRepositoryScanCandidate) = trackActions.selectRepoScanCandidate(candidate)
 
     fun applyTrackSheet() = trackActions.applyTrackSheet()
 
     fun confirmDeletePendingItem() = trackActions.confirmDeletePendingItem()
 
-    suspend fun handlePackageChangedEvent(event: AppPackageChangedEvent) {
-        val packageName = event.packageName.trim()
-        if (packageName.isBlank()) return
-        if (event.action !in packageUpdateActions) return
-        if (event.replacing && event.action == Intent.ACTION_PACKAGE_REMOVED) return
-
-        val matchedItems = env.state.trackedItems.filter { it.packageName == packageName }
-        if (matchedItems.isEmpty()) return
-
-        val lastHandledAt = handledAtByPackage[packageName] ?: 0L
-        if ((event.atMillis - lastHandledAt).coerceAtLeast(0L) < minHandleIntervalMs) {
-            return
-        }
-        handledAtByPackage[packageName] = event.atMillis
-
-        refreshActions.reloadApps(forceRefresh = true)
-        val uninstallAction = event.action == Intent.ACTION_PACKAGE_REMOVED ||
-            event.action == Intent.ACTION_PACKAGE_FULLY_REMOVED
-        matchedItems.forEach { item ->
-            val wasAssetExpanded = env.state.apkAssetExpanded[item.id] == true
-            val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
-            val previousState = env.state.checkStates[item.id] ?: VersionCheckUi()
-            if (uninstallAction) {
-                env.state.checkStates[item.id] = previousState.copy(
-                    loading = true,
-                    localVersion = "",
-                    localVersionCode = -1L,
-                    message = env.string(R.string.github_msg_checking)
-                )
-            }
-            assetActions.clearApkAssetCache(item, previousState)
-            refreshActions.refreshItem(item = item, showToastOnError = false) { updatedState ->
-                if (wasAssetExpanded && canLoadApkAssets(item, updatedState)) {
-                    assetActions.clearApkAssetCache(item, updatedState)
-                    assetActions.loadApkAssets(
-                        item = item,
-                        itemState = updatedState,
-                        toggleOnlyWhenCached = false,
-                        includeAllAssets = includeAllAssets
-                    )
-                } else if (wasAssetExpanded) {
-                    assetActions.clearApkAssetUiState(item.id)
-                } else {
-                    assetActions.clearApkAssetRuntimeState(item.id)
-                }
-            }
-        }
-    }
-
-    private fun canLoadApkAssets(item: GitHubTrackedApp, itemState: VersionCheckUi): Boolean {
-        return item.isGitHubRepositoryTrack() && (
-                item.alwaysShowLatestReleaseDownloadButton ||
-            itemState.hasUpdate == true ||
-            itemState.recommendsPreRelease ||
-                        itemState.hasPreReleaseUpdate ||
-                        (
-                                itemState.isLocalAppUninstalled() &&
-                                        itemState.apkAssetTarget(
-                                            owner = item.owner,
-                                            repo = item.repo,
-                                            context = env.context,
-                                            allowLatestReleaseFallback = true
-                                        ) != null
-                                )
-                )
-    }
-
-    private fun clearExpiredPendingShareImportTrack(nowMillis: Long) {
-        val pending = env.state.pendingShareImportTrack ?: return
-        val age = (nowMillis - pending.armedAtMillis).coerceAtLeast(0L)
-        if (age <= pendingShareImportTrackMaxAgeMs) return
-        clearPendingShareImportTrack(
-            pending.toShareImportResult(
-                kind = GitHubShareImportResultKind.Cancelled,
-                message = env.string(R.string.github_share_import_notify_content_cancelled)
-            )
-        )
-    }
-
-    private fun clearPendingShareImportTrack(cancelledResult: GitHubShareImportResult? = null) {
-        env.state.pendingShareImportTrack = null
-        env.state.pendingShareImportResult = cancelledResult
-        env.scope.launch {
-            env.repository.clearPendingShareImportTrack()
-            if (cancelledResult != null) {
-                env.repository.saveShareImportResult(cancelledResult)
-            }
-            GitHubShareImportNotificationHelper.notifyCancelled(env.context)
-        }
-    }
-
-    private fun buildCancelledShareImportResult(): GitHubShareImportResult? {
-        val message = env.string(R.string.github_share_import_notify_content_cancelled)
-        env.state.pendingShareImportAttachCandidate?.let { candidate ->
-            return candidate.toShareImportResult(
-                kind = GitHubShareImportResultKind.Cancelled,
-                message = message
-            )
-        }
-        env.state.pendingShareImportTrack?.let { pending ->
-            return pending.toShareImportResult(
-                kind = GitHubShareImportResultKind.Cancelled,
-                message = message
-            )
-        }
-        env.state.pendingShareImportPreview?.let { preview ->
-            return preview.toShareImportResult(
-                kind = GitHubShareImportResultKind.Cancelled,
-                message = message
-            )
-        }
-        return null
-    }
-
+    suspend fun handlePackageChangedEvent(event: AppPackageChangedEvent) = packageChangedActions.handle(event)
 }

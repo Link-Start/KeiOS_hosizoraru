@@ -5,26 +5,19 @@ package os.kei.ui.page.main.mcp
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,38 +35,13 @@ import os.kei.mcp.server.SKILL_RESOURCE_URI
 import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
-import os.kei.ui.page.main.mcp.dialog.McpResetConfigDialog
-import os.kei.ui.page.main.mcp.dialog.McpResetTokenDialog
-import os.kei.ui.page.main.mcp.section.McpLogsSection
-import os.kei.ui.page.main.mcp.section.McpOverviewCardSection
-import os.kei.ui.page.main.mcp.section.McpServiceControlSection
-import os.kei.ui.page.main.mcp.section.McpToolAdvancedSection
-import os.kei.ui.page.main.mcp.section.McpToolBaSection
-import os.kei.ui.page.main.mcp.section.McpToolCodexSection
-import os.kei.ui.page.main.mcp.section.McpToolEntrypointsSection
-import os.kei.ui.page.main.mcp.section.McpToolGithubSection
-import os.kei.ui.page.main.mcp.section.McpToolRuntimeSection
-import os.kei.ui.page.main.mcp.section.McpToolSystemSection
-import os.kei.ui.page.main.mcp.section.McpToolWorkflowSection
-import os.kei.ui.page.main.mcp.sheet.McpEditServiceSheet
-import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.rememberMcpPageOverviewState
 import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
-import os.kei.ui.page.main.os.appLucidePauseIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.os.osLucideCopyIcon
-import os.kei.ui.page.main.os.osLucideRunIcon
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
-import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
-import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
-import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -87,35 +55,21 @@ fun McpPage(
     onOpenSkill: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
-    val mcpTitle = stringResource(R.string.page_mcp_title)
-    val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
-    val openSkillContentDescription = stringResource(R.string.mcp_action_open_skill_md)
-    val copyConfigContentDescription = stringResource(R.string.mcp_action_copy_current_config)
-    val resourceCopiedText = stringResource(R.string.mcp_toast_resource_copied)
-    val refreshContentDescription = stringResource(R.string.common_refresh)
-    val unknownText = stringResource(R.string.common_unknown)
-    val runtimePendingText = stringResource(R.string.mcp_runtime_pending)
-    val titleColor = MiuixTheme.colorScheme.onBackground
-    val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
-    val runningColor = Color(0xFF2E7D32)
-    val stoppedColor = Color(0xFFC62828)
-
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val pageUiState by mcpPageViewModel.uiState.collectAsStateWithLifecycle()
     val mcpToolBuckets by mcpPageViewModel.toolBuckets.collectAsStateWithLifecycle()
-    LaunchedEffect(
-        mcpServerManager,
-        uiState.port,
-        uiState.allowExternal,
-        uiState.serverName,
-        pageUiState.showEditSheet,
-    ) {
-        mcpPageViewModel.syncServiceDraft(uiState)
-    }
+    val currentUiState by rememberUpdatedState(uiState)
+    val unknownText = stringResource(R.string.common_unknown)
+    val resourceCopiedText = stringResource(R.string.mcp_toast_resource_copied)
+
     val isDark = isSystemInDarkTheme()
+    val titleColor = MiuixTheme.colorScheme.onBackground
+    val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
+    val runningColor = Color(0xFF2E7D32)
+    val stoppedColor = Color(0xFFC62828)
     val overviewState =
         rememberMcpPageOverviewState(
             context = context,
@@ -126,27 +80,20 @@ fun McpPage(
             subtitleColor = subtitleColor,
             runningColor = runningColor,
             stoppedColor = stoppedColor,
-            runtimePendingText = runtimePendingText,
+            runtimePendingText = stringResource(R.string.mcp_runtime_pending),
         )
-    val portText = pageUiState.portText
-    val allowExternal = pageUiState.allowExternal
-    val serverName = pageUiState.serverName
-    LaunchedEffect(uiState.tools, pageUiState.toolsSearchQuery) {
-        mcpPageViewModel.requestToolBuckets(
-            McpToolBucketInput(
-                tools = uiState.tools,
-                searchQuery = pageUiState.toolsSearchQuery,
-            ),
-        )
-    }
-    val serviceDraftChanged =
-        serverName.trim() != uiState.serverName.trim() ||
-            portText.trim() != uiState.port.toString() ||
-            allowExternal != uiState.allowExternal
+
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
-    val currentUiState by rememberUpdatedState(uiState)
-    val serverNameHint = context.resolveString(R.string.mcp_input_service_name_hint)
+    val pageBackdropEffectsEnabled = runtime.isPageActive && !runtime.isPagerScrollInProgress
+    val backdrops =
+        rememberMainPageBackdropSet(
+            keyPrefix = "mcp",
+            refreshOnCompositionEnter = true,
+            distinctLayers = pageBackdropEffectsEnabled,
+        )
+    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
+    val mcpGlassRuntime = LocalGlassEffectRuntime.current
     var localNetworkPermissionGranted by remember {
         mutableStateOf(hasMcpLocalNetworkPermission(context))
     }
@@ -179,6 +126,7 @@ fun McpPage(
             }
         }
     }
+
     val localNetworkPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
@@ -199,34 +147,9 @@ fun McpPage(
                 launchServerToggle()
             }
         }
-    val serverNameFieldWidth =
-        remember(serverName, serverNameHint) {
-            val visibleChars =
-                serverName
-                    .trim()
-                    .ifBlank { serverNameHint }
-                    .length
-                    .coerceIn(6, 18)
-            (visibleChars * 11 + 36).dp
-        }
-    val portFieldWidth =
-        remember(portText) {
-            val visibleChars =
-                portText
-                    .trim()
-                    .ifBlank { "38888" }
-                    .length
-                    .coerceIn(4, 6)
-            (visibleChars * 14 + 28).dp
-        }
-    val pageBackdropEffectsEnabled =
-        runtime.isPageActive &&
-            !runtime.isPagerScrollInProgress
-    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
-    val mcpGlassRuntime = LocalGlassEffectRuntime.current
     val toggleServer: () -> Unit = toggleServer@{
         localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
-        if (!uiState.running && allowExternal && !localNetworkPermissionGranted) {
+        if (!uiState.running && pageUiState.allowExternal && !localNetworkPermissionGranted) {
             LocalNetworkPermissionCompat
                 .requiredPermissionOrNull()
                 ?.let { permission ->
@@ -239,19 +162,6 @@ fun McpPage(
         startAfterLocalNetworkPermission = false
         launchServerToggle()
     }
-    val dockAlignment =
-        if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
-            Alignment.BottomStart
-        } else {
-            Alignment.BottomEnd
-        }
-    val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
-    val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
-    val bottomBarOffset = if (runtime.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
-    val floatingDockBottom by animateDpAsState(
-        targetValue = runtime.contentBottomPadding - 24.dp - bottomBarOffset,
-        label = "mcp_floating_action_dock_bottom",
-    )
     val copyCurrentConfig: () -> Unit = {
         scope.launch {
             val json =
@@ -346,19 +256,6 @@ fun McpPage(
             mcpPageViewModel.updateResetTokenConfirmVisible(false)
         }
     }
-    val backdrops =
-        rememberMainPageBackdropSet(
-            keyPrefix = "mcp",
-            refreshOnCompositionEnter = true,
-            distinctLayers = fullBackdropEffectsEnabled,
-        )
-    val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
-    DisposableEffect(Unit) {
-        onDispose { onActionBarInteractingChanged(false) }
-    }
-    LaunchedEffect(runtime.scrollToTopSignal, runtime.isPageActive) {
-        if (runtime.isPageActive && runtime.scrollToTopSignal > 0) listState.animateScrollToItem(0)
-    }
     val logsExportLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -392,64 +289,97 @@ fun McpPage(
                     }
             }
         }
-    val onOpenSkillState = rememberUpdatedState(onOpenSkill)
-    val editIcon = appLucideEditIcon()
-    val notesIcon = appLucideNotesIcon()
-    val copyIcon = osLucideCopyIcon()
-    val refreshIcon = appLucideRefreshIcon()
-    val toggleIcon = if (uiState.running) appLucidePauseIcon() else osLucideRunIcon()
-    val toggleContentDescription =
-        if (uiState.running) {
-            stringResource(R.string.mcp_action_stop_service)
-        } else {
-            stringResource(R.string.mcp_action_start_service)
-        }
-    val dockActions =
-        listOf(
-            AppFloatingDockAction(
-                icon = copyIcon,
-                contentDescription = copyConfigContentDescription,
-                iconTint = MiuixTheme.colorScheme.primary,
-                onClick = copyCurrentConfig,
-            ),
-            AppFloatingDockAction(
-                icon = refreshIcon,
-                contentDescription = refreshContentDescription,
-                iconTint = MiuixTheme.colorScheme.primary,
-                enabled = !refreshRunning,
-                rotating = refreshRunning,
-                onClick = refreshMcpNow,
-            ),
-            AppFloatingDockAction(
-                icon = toggleIcon,
-                contentDescription = toggleContentDescription,
-                iconTint = if (uiState.running) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary,
-                onClick = toggleServer,
-            ),
+    val actions =
+        McpPageActions(
+            onToggleServer = toggleServer,
+            onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
+            onControlExpandedChange = mcpPageViewModel::updateControlExpanded,
+            onSendTestNotification = sendTestNotification,
+            onShowResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(true) },
+            onCopySkillResource = copySkillResource,
+            onCopyWorkflowResource = copyWorkflowResource,
+            onToolsSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
+            onToolEntrypointsExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
+            onRuntimeToolsExpandedChange = mcpPageViewModel::updateRuntimeToolsExpanded,
+            onSystemToolsExpandedChange = mcpPageViewModel::updateSystemToolsExpanded,
+            onGithubToolsExpandedChange = mcpPageViewModel::updateGithubToolsExpanded,
+            onBaToolsExpandedChange = mcpPageViewModel::updateBaToolsExpanded,
+            onCodexToolsExpandedChange = mcpPageViewModel::updateCodexToolsExpanded,
+            onWorkflowToolsExpandedChange = mcpPageViewModel::updateWorkflowToolsExpanded,
+            onAdvancedToolsExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
+            onLogsExpandedChange = mcpPageViewModel::updateLogsExpanded,
+            onExportLogs = { generatedAt, fileName ->
+                mcpPageViewModel.beginLogsExport(generatedAt, fileName)
+                runCatching {
+                    logsExportLauncher.launch(fileName)
+                }.onFailure {
+                    mcpPageViewModel.finishLogsExport()
+                    context.showToast(
+                        context.resolveString(
+                            R.string.mcp_toast_logs_export_failed,
+                            it.javaClass.simpleName,
+                        ),
+                    )
+                }
+            },
+            onClearLogs = {
+                scope.launch {
+                    mcpPageViewModel.clearLogs(mcpServerManager)
+                }
+            },
+            onCopyCurrentConfig = copyCurrentConfig,
+            onRefreshNow = refreshMcpNow,
+            onSaveServiceConfig = saveServiceConfig,
+            onServerNameChange = mcpPageViewModel::updateServerName,
+            onPortTextChange = mcpPageViewModel::updatePortText,
+            onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
+            onDismissEditSheet = { mcpPageViewModel.updateEditSheetVisible(false) },
+            onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) },
+            onResetConfig = resetConfig,
+            onDismissResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(false) },
+            onResetToken = resetToken,
+            onDismissResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(false) },
         )
-    val actionItems =
-        remember(
-            editServiceParamsContentDescription,
-            openSkillContentDescription,
-        ) {
-            listOf(
-                LiquidActionItem(
-                    icon = editIcon,
-                    contentDescription = editServiceParamsContentDescription,
-                    onClick = { mcpPageViewModel.updateEditSheetVisible(true) },
-                ),
-                LiquidActionItem(
-                    icon = notesIcon,
-                    contentDescription = openSkillContentDescription,
-                    onClick = { onOpenSkillState.value() },
-                ),
-            )
+    val serverNameHint = context.resolveString(R.string.mcp_input_service_name_hint)
+    val serverNameFieldWidth =
+        remember(pageUiState.serverName, serverNameHint) {
+            val visibleChars =
+                pageUiState.serverName
+                    .trim()
+                    .ifBlank { serverNameHint }
+                    .length
+                    .coerceIn(6, 18)
+            (visibleChars * 11 + 36).dp
         }
+    val portFieldWidth =
+        remember(pageUiState.portText) {
+            val visibleChars =
+                pageUiState.portText
+                    .trim()
+                    .ifBlank { "38888" }
+                    .length
+                    .coerceIn(4, 6)
+            (visibleChars * 14 + 28).dp
+        }
+    val serviceDraftChanged =
+        pageUiState.serverName.trim() != uiState.serverName.trim() ||
+            pageUiState.portText.trim() != uiState.port.toString() ||
+            pageUiState.allowExternal != uiState.allowExternal
+
+    BindMcpPageEffects(
+        mcpServerManager = mcpServerManager,
+        mcpPageViewModel = mcpPageViewModel,
+        uiState = uiState,
+        pageUiState = pageUiState,
+        runtime = runtime,
+        listState = listState,
+        onActionBarInteractingChanged = onActionBarInteractingChanged,
+    )
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides mcpGlassRuntime) {
         AppPageScaffold(
             title = "",
-            largeTitle = mcpTitle,
+            largeTitle = stringResource(R.string.page_mcp_title),
             modifier = Modifier.fillMaxSize(),
             scrollBehavior = scrollBehavior,
             topBarColor = topBarMaterialBackdrop,
@@ -460,205 +390,71 @@ fun McpPage(
                 LiquidActionBar(
                     backdrop = backdrops.topBar,
                     layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    items = actionItems,
+                    items =
+                        rememberMcpPageActionItems(
+                            onOpenEditSheet = actions.onOpenEditSheet,
+                            onOpenSkill = onOpenSkill,
+                        ),
                     onInteractionChanged = onActionBarInteractingChanged,
                 )
             },
         ) { innerPadding ->
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize(),
-            ) {
-                AppPageLazyColumn(
-                    innerPadding = innerPadding,
-                    state = listState,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
-                    sectionSpacing = 12.dp,
-                ) {
-                    item(key = "mcp-overview", contentType = "mcp_overview_section") {
-                        McpOverviewCardSection(
-                            backdrop = backdrops.content,
-                            titleColor = titleColor,
-                            subtitleColor = subtitleColor,
-                            overviewCardColor = overviewState.overviewCardColor,
-                            overviewBorderColor = overviewState.overviewBorderColor,
-                            overviewAccentColor = overviewState.overviewAccentColor,
-                            runtimeText = overviewState.runtimeText,
-                            isDark = isDark,
-                            running = uiState.running,
-                            overviewMetrics = overviewState.overviewMetrics,
-                            onToggleServer = toggleServer,
-                            onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
-                        )
-                    }
-                    item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
-                        McpServiceControlSection(
-                            backdrop = backdrops.content,
-                            expanded = pageUiState.controlExpanded,
-                            onExpandedChange = mcpPageViewModel::updateControlExpanded,
-                            onSendTestNotification = sendTestNotification,
-                            onShowResetConfigConfirm = {
-                                mcpPageViewModel.updateResetConfigConfirmVisible(
-                                    true,
-                                )
-                            },
-                            onCopySkillResource = copySkillResource,
-                            onCopyWorkflowResource = copyWorkflowResource,
-                        )
-                    }
-                    item(key = "mcp-tool-entrypoints", contentType = "mcp_tool_entrypoints_section") {
-                        McpToolEntrypointsSection(
-                            backdrop = backdrops.content,
-                            buckets = mcpToolBuckets,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            onSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
-                            expanded = pageUiState.toolEntrypointsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
-                        )
-                    }
-                    item(key = "mcp-tool-runtime", contentType = "mcp_tool_runtime_section") {
-                        McpToolRuntimeSection(
-                            backdrop = backdrops.content,
-                            tools = mcpToolBuckets.runtimeTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.runtimeToolsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateRuntimeToolsExpanded,
-                        )
-                    }
-                    item(key = "mcp-tool-system", contentType = "mcp_tool_system_section") {
-                        McpToolSystemSection(
-                            backdrop = backdrops.content,
-                            tools = mcpToolBuckets.systemTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.systemToolsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateSystemToolsExpanded,
-                        )
-                    }
-                    item(key = "mcp-tool-github", contentType = "mcp_tool_github_section") {
-                        McpToolGithubSection(
-                            backdrop = backdrops.content,
-                            tools = mcpToolBuckets.githubTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.githubToolsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateGithubToolsExpanded,
-                        )
-                    }
-                    item(key = "mcp-tool-ba", contentType = "mcp_tool_ba_section") {
-                        McpToolBaSection(
-                            backdrop = backdrops.content,
-                            tools = mcpToolBuckets.baTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.baToolsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateBaToolsExpanded,
-                        )
-                    }
-                    item(key = "mcp-tool-codex", contentType = "mcp_tool_codex_section") {
-                        McpToolCodexSection(
-                            backdrop = backdrops.content,
-                            tools = mcpToolBuckets.codexTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.codexToolsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateCodexToolsExpanded,
-                        )
-                    }
-                    item(key = "mcp-tool-workflows", contentType = "mcp_tool_workflows_section") {
-                        McpToolWorkflowSection(
-                            backdrop = backdrops.content,
-                            tools = mcpToolBuckets.workflowTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.workflowToolsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateWorkflowToolsExpanded,
-                        )
-                    }
-                    if (mcpToolBuckets.advancedTools.isNotEmpty()) {
-                        item(key = "mcp-tool-advanced", contentType = "mcp_tool_advanced_section") {
-                            McpToolAdvancedSection(
-                                backdrop = backdrops.content,
-                                tools = mcpToolBuckets.advancedTools,
-                                searchQuery = pageUiState.toolsSearchQuery,
-                                expanded = pageUiState.advancedToolsExpanded,
-                                onExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
-                            )
-                        }
-                    }
-                    item(key = "mcp-logs", contentType = "mcp_logs_section") {
-                        McpLogsSection(
-                            backdrop = backdrops.content,
-                            expanded = pageUiState.logsExpanded,
-                            onExpandedChange = mcpPageViewModel::updateLogsExpanded,
-                            uiState = uiState,
-                            logsExporting = pageUiState.logsExporting,
-                            onExportLogs = { generatedAt, fileName ->
-                                mcpPageViewModel.beginLogsExport(generatedAt, fileName)
-                                runCatching {
-                                    logsExportLauncher.launch(fileName)
-                                }.onFailure {
-                                    mcpPageViewModel.finishLogsExport()
-                                    context.showToast(
-                                        context.resolveString(
-                                            R.string.mcp_toast_logs_export_failed,
-                                            it.javaClass.simpleName,
-                                        ),
-                                    )
-                                }
-                            },
-                            onClearLogs = {
-                                scope.launch {
-                                    mcpPageViewModel.clearLogs(mcpServerManager)
-                                }
-                            },
-                            subtitleColor = subtitleColor,
-                        )
-                    }
-                }
-
-                AppFloatingVerticalActionDock(
-                    backdrop = backdrops.content,
-                    actions = dockActions,
-                    modifier =
-                        Modifier
-                            .align(dockAlignment)
-                            .padding(
-                                start = dockStartPadding,
-                                end = dockEndPadding,
-                                bottom = floatingDockBottom,
-                            ),
-                )
-            }
+            McpPageContent(
+                uiState = uiState,
+                pageUiState = pageUiState,
+                toolBuckets = mcpToolBuckets,
+                overviewState = overviewState,
+                runtime = runtime,
+                innerPadding = innerPadding,
+                listState = listState,
+                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                backdrops = backdrops,
+                titleColor = titleColor,
+                subtitleColor = subtitleColor,
+                isDark = isDark,
+                refreshRunning = refreshRunning,
+                actions = actions,
+            )
         }
-
-        McpEditServiceSheet(
-            show = pageUiState.showEditSheet,
-            backdrop = backdrops.sheet,
-            serverName = serverName,
-            onServerNameChange = mcpPageViewModel::updateServerName,
+        McpPageSheets(
+            pageUiState = pageUiState,
+            backdrops = backdrops,
             serverNameFieldWidth = serverNameFieldWidth,
-            portText = portText,
-            onPortTextChange = mcpPageViewModel::updatePortText,
             portFieldWidth = portFieldWidth,
-            allowExternal = allowExternal,
-            hasUnsavedChanges = serviceDraftChanged,
-            onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
-            onSave = saveServiceConfig,
-            onDismissRequest = { mcpPageViewModel.updateEditSheetVisible(false) },
-            onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) },
+            serviceDraftChanged = serviceDraftChanged,
+            actions = actions,
         )
+    }
+}
 
-        McpResetConfigDialog(
-            show = pageUiState.showResetConfigConfirm,
-            onConfirm = resetConfig,
-            onDismissRequest = { mcpPageViewModel.updateResetConfigConfirmVisible(false) },
-        )
-
-        McpResetTokenDialog(
-            show = pageUiState.showResetTokenConfirm,
-            onConfirm = resetToken,
-            onDismissRequest = { mcpPageViewModel.updateResetTokenConfirmVisible(false) },
+@Composable
+private fun rememberMcpPageActionItems(
+    onOpenEditSheet: () -> Unit,
+    onOpenSkill: () -> Unit,
+): List<LiquidActionItem> {
+    val editIcon = appLucideEditIcon()
+    val notesIcon = appLucideNotesIcon()
+    val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
+    val openSkillContentDescription = stringResource(R.string.mcp_action_open_skill_md)
+    return remember(
+        editIcon,
+        notesIcon,
+        editServiceParamsContentDescription,
+        openSkillContentDescription,
+        onOpenEditSheet,
+        onOpenSkill,
+    ) {
+        listOf(
+            LiquidActionItem(
+                icon = editIcon,
+                contentDescription = editServiceParamsContentDescription,
+                onClick = onOpenEditSheet,
+            ),
+            LiquidActionItem(
+                icon = notesIcon,
+                contentDescription = openSkillContentDescription,
+                onClick = onOpenSkill,
+            ),
         )
     }
 }

@@ -1,0 +1,38 @@
+package os.kei.ui.page.main.mcp
+
+import androidx.compose.runtime.Immutable
+
+@Immutable
+internal data class McpPageActions(
+    val onToggleServer: () -> Unit,
+    val onOpenEditSheet: () -> Unit,
+    val onControlExpandedChange: (Boolean) -> Unit,
+    val onSendTestNotification: () -> Unit,
+    val onShowResetConfigConfirm: () -> Unit,
+    val onCopySkillResource: () -> Unit,
+    val onCopyWorkflowResource: () -> Unit,
+    val onToolsSearchQueryChange: (String) -> Unit,
+    val onToolEntrypointsExpandedChange: (Boolean) -> Unit,
+    val onRuntimeToolsExpandedChange: (Boolean) -> Unit,
+    val onSystemToolsExpandedChange: (Boolean) -> Unit,
+    val onGithubToolsExpandedChange: (Boolean) -> Unit,
+    val onBaToolsExpandedChange: (Boolean) -> Unit,
+    val onCodexToolsExpandedChange: (Boolean) -> Unit,
+    val onWorkflowToolsExpandedChange: (Boolean) -> Unit,
+    val onAdvancedToolsExpandedChange: (Boolean) -> Unit,
+    val onLogsExpandedChange: (Boolean) -> Unit,
+    val onExportLogs: (generatedAt: String, fileName: String) -> Unit,
+    val onClearLogs: () -> Unit,
+    val onCopyCurrentConfig: () -> Unit,
+    val onRefreshNow: () -> Unit,
+    val onSaveServiceConfig: () -> Unit,
+    val onServerNameChange: (String) -> Unit,
+    val onPortTextChange: (String) -> Unit,
+    val onAllowExternalChange: (Boolean) -> Unit,
+    val onDismissEditSheet: () -> Unit,
+    val onShowResetTokenConfirm: () -> Unit,
+    val onResetConfig: () -> Unit,
+    val onDismissResetConfigConfirm: () -> Unit,
+    val onResetToken: () -> Unit,
+    val onDismissResetTokenConfirm: () -> Unit,
+)

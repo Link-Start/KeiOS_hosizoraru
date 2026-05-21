@@ -8,6 +8,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
@@ -57,6 +58,7 @@ internal fun OsPageOverlayHost(
     addActivityCardTitle: String,
     editActivityCardTitle: String,
     noMatchedResultsText: String,
+    activitySuggestionState: OsActivitySuggestionUiState,
     onActivityShortcutCardsChange: (List<OsActivityShortcutCard>) -> Unit,
     onRemoveActivityCardExpanded: (String) -> Unit,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
@@ -174,12 +176,12 @@ internal fun OsPageOverlayHost(
         onSaveActivityEditor = editorActions.onSaveActivityEditor,
         showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
         suggestionTarget = overlayState.googleSystemServiceSuggestionTarget,
-        packageSuggestions = overlayState.googleSystemServicePackageSuggestions,
-        packageSuggestionsLoading = overlayState.googleSystemServicePackageSuggestionsLoading,
+        packageSuggestions = activitySuggestionState.packageSuggestions,
+        packageSuggestionsLoading = activitySuggestionState.packageSuggestionsLoading,
         packageSuggestionQuery = overlayState.googleSystemServicePackageSuggestionQuery,
         onPackageSuggestionQueryChange = overlayState.onGoogleSystemServicePackageSuggestionQueryChange,
-        classSuggestions = overlayState.googleSystemServiceClassSuggestions,
-        classSuggestionsLoading = overlayState.googleSystemServiceClassSuggestionsLoading,
+        classSuggestions = activitySuggestionState.classSuggestions,
+        classSuggestionsLoading = activitySuggestionState.classSuggestionsLoading,
         classSuggestionQuery = overlayState.googleSystemServiceClassSuggestionQuery,
         onClassSuggestionQueryChange = overlayState.onGoogleSystemServiceClassSuggestionQueryChange,
         noMatchedResultsText = noMatchedResultsText,

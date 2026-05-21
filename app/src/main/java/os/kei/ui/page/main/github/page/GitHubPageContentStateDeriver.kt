@@ -8,6 +8,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -31,6 +32,7 @@ internal data class GitHubPageContentInput(
     val trackedAddedAtById: Map<String, Long>,
     val trackedModifiedAtById: Map<String, Long>,
     val pendingShareImportTrack: GitHubPendingShareImportTrack?,
+    val selfPackageName: String,
     val nowMillis: Long
 )
 
@@ -186,6 +188,7 @@ internal class GitHubPageContentStateDeriver(
                 ageMs <= shareImportTrackMaxAgeMs ||
                         pendingShareImportRepoOverlapCount > 0
             } ?: false
+            val sortedTrackIds = sortedTracked.map { item -> item.id }
             GitHubPageContentDerivedState(
                 trackedUi = GitHubPageDerivedState(
                     filteredTracked = filteredTracked,
@@ -194,7 +197,12 @@ internal class GitHubPageContentStateDeriver(
                 ),
                 appLastUpdatedAtByTrackId = buildAppLastUpdatedAtByTrackId(input),
                 pendingShareImportRepoOverlapCount = pendingShareImportRepoOverlapCount,
-                showPendingShareImportCard = showPendingShareImportCard
+                showPendingShareImportCard = showPendingShareImportCard,
+                trackedItemIdKey = input.trackedItems.joinToString(separator = "\n") { item -> item.id },
+                sortedTrackIds = sortedTrackIds,
+                hasKeiOsSelfTrack = input.trackedItems.any { item ->
+                    item.isKeiOsSelfTrack(packageName = input.selfPackageName)
+                }
             )
         }
     }

@@ -271,6 +271,34 @@ class GitHubPageContentStateDeriverTest {
         )
     }
 
+    @Test
+    fun `content derivation exposes stable page keys and self track flag`() = runBlocking {
+        val items = sampleTrackedItems() + GitHubTrackedApp(
+            repoUrl = "https://github.com/MuntashirAkon/AppManager",
+            owner = "MuntashirAkon",
+            repo = "AppManager",
+            packageName = "io.github.muntashirakon.AppManager",
+            appLabel = "App Manager"
+        )
+        val selfTrack = GitHubTrackedApp(
+            repoUrl = "https://github.com/hosizoraru/KeiOS",
+            owner = "hosizoraru",
+            repo = "KeiOS",
+            packageName = "os.kei",
+            appLabel = "KeiOS"
+        )
+        val derived = GitHubPageContentStateDeriver().build(
+            baseInput(
+                trackedItems = items + selfTrack,
+                selfPackageName = "os.kei"
+            )
+        )
+
+        assertEquals((items + selfTrack).joinToString(separator = "\n") { it.id }, derived.trackedItemIdKey)
+        assertEquals(derived.trackedUi.sortedTracked.map { it.id }, derived.sortedTrackIds)
+        assertTrue(derived.hasKeiOsSelfTrack)
+    }
+
     private fun baseInput(
         trackedItems: List<GitHubTrackedApp> = emptyList(),
         trackedSearch: String = "",
@@ -282,6 +310,7 @@ class GitHubPageContentStateDeriverTest {
         trackedAddedAtById: Map<String, Long> = emptyMap(),
         trackedModifiedAtById: Map<String, Long> = emptyMap(),
         pendingShareImportTrack: GitHubPendingShareImportTrack? = null,
+        selfPackageName: String = "os.kei",
         nowMillis: Long = 0L
     ): GitHubPageContentInput {
         return GitHubPageContentInput(
@@ -296,6 +325,7 @@ class GitHubPageContentStateDeriverTest {
             trackedAddedAtById = trackedAddedAtById,
             trackedModifiedAtById = trackedModifiedAtById,
             pendingShareImportTrack = pendingShareImportTrack,
+            selfPackageName = selfPackageName,
             nowMillis = nowMillis
         )
     }

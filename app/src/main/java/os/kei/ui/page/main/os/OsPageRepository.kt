@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.os
 
+import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +12,10 @@ import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
+import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
+import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
+import os.kei.ui.page.main.os.shortcut.loadActivityClassOptions
+import os.kei.ui.page.main.os.shortcut.loadInstalledAppOptions
 
 internal data class OsPagePersistentState(
     val uiSnapshot: OsUiSnapshot = OsUiSnapshot(),
@@ -62,6 +67,24 @@ internal class OsPageRepository(
             }
         persistentState.update { state -> state.copy(shellCommandCards = cards) }
     }
+
+    suspend fun loadActivityShortcutPackageSuggestions(
+        context: Context
+    ): List<ShortcutInstalledAppOption> =
+        withContext(ioDispatcher) {
+            loadInstalledAppOptions(context)
+        }
+
+    suspend fun loadActivityShortcutClassSuggestions(
+        context: Context,
+        packageName: String
+    ): List<ShortcutActivityClassOption> =
+        withContext(ioDispatcher) {
+            loadActivityClassOptions(
+                context = context,
+                packageName = packageName,
+            )
+        }
 
     fun updateVisibleCards(cards: Set<OsSectionCard>) {
         persistentState.update { state ->

@@ -40,7 +40,7 @@ class GitHubTrackScrollFocusTest {
             4,
             githubTrackedLazyListIndex(
                 targetTrackId = items[1].id,
-                sortedTracked = items,
+                sortedTrackIds = items.map { it.id },
                 leadingItemCount = 3
             )
         )
@@ -50,8 +50,10 @@ class GitHubTrackScrollFocusTest {
     fun `tracked lazy index returns null for hidden or blank target`() {
         val items = listOf(tracked("owner", "first"))
 
-        assertNull(githubTrackedLazyListIndex("", items, leadingItemCount = 1))
-        assertNull(githubTrackedLazyListIndex("missing", items, leadingItemCount = 1))
+        val itemIds = items.map { it.id }
+
+        assertNull(githubTrackedLazyListIndex("", itemIds, leadingItemCount = 1))
+        assertNull(githubTrackedLazyListIndex("missing", itemIds, leadingItemCount = 1))
     }
 
     private fun tracked(owner: String, repo: String): GitHubTrackedApp {

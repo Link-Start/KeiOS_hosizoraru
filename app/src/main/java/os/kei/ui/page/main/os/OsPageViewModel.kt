@@ -1,9 +1,11 @@
 package os.kei.ui.page.main.os
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +18,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
+import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
+import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 
 internal data class OsPageRuntimeState(
     val sectionStates: Map<SectionKind, SectionState> = defaultOsSectionStates(),
@@ -25,6 +30,13 @@ internal data class OsPageRuntimeState(
     val refreshing: Boolean = false,
     val refreshProgress: Float = 0f,
     val runningShellCommandCardIds: Set<String> = emptySet(),
+)
+
+internal data class OsActivitySuggestionUiState(
+    val packageSuggestions: List<ShortcutInstalledAppOption> = emptyList(),
+    val packageSuggestionsLoading: Boolean = false,
+    val classSuggestions: List<ShortcutActivityClassOption> = emptyList(),
+    val classSuggestionsLoading: Boolean = false,
 )
 
 @OptIn(FlowPreview::class)
@@ -37,6 +49,7 @@ internal class OsPageViewModel : ViewModel() {
     private val repository = OsPageRepository()
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
+    private var activitySuggestionJob: Job? = null
 
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
@@ -55,6 +68,10 @@ internal class OsPageViewModel : ViewModel() {
 
     private val _runtimeState = MutableStateFlow(OsPageRuntimeState())
     val runtimeState: StateFlow<OsPageRuntimeState> = _runtimeState.asStateFlow()
+
+    private val _activitySuggestionState = MutableStateFlow(OsActivitySuggestionUiState())
+    val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
+        _activitySuggestionState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -97,6 +114,83 @@ internal class OsPageViewModel : ViewModel() {
                 builtInShellCommandCards = builtInShellCommandCards,
             )
         }
+    }
+
+    fun requestActivitySuggestions(
+        context: Context,
+        show: Boolean,
+        target: ShortcutSuggestionField,
+        packageName: String,
+    ) {
+        activitySuggestionJob?.cancel()
+        if (!show) {
+            _activitySuggestionState.update { state ->
+                state.copy(
+                    packageSuggestionsLoading = false,
+                    classSuggestionsLoading = false,
+                )
+            }
+            return
+        }
+        val appContext = context.applicationContext
+        activitySuggestionJob =
+            viewModelScope.launch {
+                when (target) {
+                    ShortcutSuggestionField.PackageName -> {
+                        _activitySuggestionState.update { state ->
+                            state.copy(packageSuggestionsLoading = true)
+                        }
+                        val suggestions =
+                            runCatching {
+                                repository.loadActivityShortcutPackageSuggestions(appContext)
+                            }.getOrDefault(emptyList())
+                        _activitySuggestionState.update { state ->
+                            state.copy(
+                                packageSuggestions = suggestions,
+                                packageSuggestionsLoading = false,
+                            )
+                        }
+                    }
+
+                    ShortcutSuggestionField.ClassName -> {
+                        val normalizedPackageName = packageName.trim()
+                        if (normalizedPackageName.isBlank()) {
+                            _activitySuggestionState.update { state ->
+                                state.copy(
+                                    classSuggestions = emptyList(),
+                                    classSuggestionsLoading = false,
+                                )
+                            }
+                            return@launch
+                        }
+                        _activitySuggestionState.update { state ->
+                            state.copy(classSuggestionsLoading = true)
+                        }
+                        val suggestions =
+                            runCatching {
+                                repository.loadActivityShortcutClassSuggestions(
+                                    context = appContext,
+                                    packageName = normalizedPackageName,
+                                )
+                            }.getOrDefault(emptyList())
+                        _activitySuggestionState.update { state ->
+                            state.copy(
+                                classSuggestions = suggestions,
+                                classSuggestionsLoading = false,
+                            )
+                        }
+                    }
+
+                    else -> {
+                        _activitySuggestionState.update { state ->
+                            state.copy(
+                                packageSuggestionsLoading = false,
+                                classSuggestionsLoading = false,
+                            )
+                        }
+                    }
+                }
+            }
     }
 
     fun updateVisibleCards(cards: Set<OsSectionCard>) {
@@ -249,6 +343,11 @@ internal class OsPageViewModel : ViewModel() {
 
     fun updateLinuxEnvExpanded(value: Boolean) {
         repository.updateLinuxEnvExpanded(value)
+    }
+
+    override fun onCleared() {
+        activitySuggestionJob?.cancel()
+        super.onCleared()
     }
 }
 

@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.github.page
 
-import os.kei.feature.github.model.GitHubTrackedApp
-
 internal data class GitHubTrackCardFocusRequest(
     val trackId: String,
     val version: Int
@@ -24,12 +22,12 @@ internal fun githubTrackedListLeadingItemCount(
 
 internal fun githubTrackedLazyListIndex(
     targetTrackId: String,
-    sortedTracked: List<GitHubTrackedApp>,
+    sortedTrackIds: List<String>,
     leadingItemCount: Int
 ): Int? {
     val normalizedTarget = targetTrackId.trim()
     if (normalizedTarget.isBlank()) return null
-    val itemIndex = sortedTracked.indexOfFirst { it.id == normalizedTarget }
+    val itemIndex = sortedTrackIds.indexOf(normalizedTarget)
     if (itemIndex < 0) return null
     return leadingItemCount.coerceAtLeast(0) + itemIndex
 }

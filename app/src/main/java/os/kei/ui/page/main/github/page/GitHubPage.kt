@@ -26,11 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import os.kei.BuildConfig
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
-import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.github.section.GitHubMainContentActions
@@ -203,13 +201,10 @@ fun GitHubPage(
         if (externalRefreshTriggerToken <= 0) return@LaunchedEffect
         actions.refreshAllTracked(showToast = true)
     }
-    val trackedItemIds by remember {
-        derivedStateOf { state.trackedItems.joinToString(separator = "\n") { it.id } }
-    }
     LaunchedEffect(
         externalActionsSheetToken,
         externalActionsTrackId,
-        trackedItemIds,
+        contentDerivedState.trackedItemIdKey,
         runtime.contentReady,
     ) {
         if (externalActionsSheetToken <= 0 ||
@@ -246,7 +241,7 @@ fun GitHubPage(
     BindGitHubTrackCardFocusCoordinator(
         listState = listState,
         request = state.trackCardFocusRequest,
-        sortedTracked = contentDerivedState.trackedUi.sortedTracked,
+        sortedTrackIds = contentDerivedState.sortedTrackIds,
         pendingTrackVisible =
             contentDerivedState.showPendingShareImportCard &&
                 state.pendingShareImportTrack != null,
@@ -263,11 +258,6 @@ fun GitHubPage(
         onConsumed = state::consumeTrackCardFocus,
     )
 
-    val hasKeiOsSelfTrack by remember {
-        derivedStateOf {
-            state.trackedItems.any { it.isKeiOsSelfTrack(packageName = BuildConfig.APPLICATION_ID) }
-        }
-    }
     val githubGlassRuntime = LocalGlassEffectRuntime.current
     CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
         GitHubMainContent(
@@ -411,7 +401,7 @@ fun GitHubPage(
             contentDerivedState = contentDerivedState,
             installedOnlineShareTargets = installedOnlineShareTargets,
             checkLogicDownloaderOptions = checkLogicDownloaderOptions,
-            hasKeiOsSelfTrack = hasKeiOsSelfTrack,
+            hasKeiOsSelfTrack = contentDerivedState.hasKeiOsSelfTrack,
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
@@ -424,14 +414,13 @@ fun GitHubPage(
 private fun BindGitHubTrackCardFocusCoordinator(
     listState: LazyListState,
     request: GitHubTrackCardFocusRequest?,
-    sortedTracked: List<os.kei.feature.github.model.GitHubTrackedApp>,
+    sortedTrackIds: List<String>,
     pendingTrackVisible: Boolean,
     attachCandidateVisible: Boolean,
     previewVisible: Boolean,
     resultVisible: Boolean,
     onConsumed: (GitHubTrackCardFocusRequest) -> Unit,
 ) {
-    val sortedTrackIds = remember(sortedTracked) { sortedTracked.map { it.id } }
     LaunchedEffect(
         request?.version,
         sortedTrackIds,
@@ -451,7 +440,7 @@ private fun BindGitHubTrackCardFocusCoordinator(
         val targetIndex =
             githubTrackedLazyListIndex(
                 targetTrackId = focusRequest.trackId,
-                sortedTracked = sortedTracked,
+                sortedTrackIds = sortedTrackIds,
                 leadingItemCount = leadingItemCount,
             ) ?: return@LaunchedEffect
         listState.animateItemToViewportCenter(targetIndex)

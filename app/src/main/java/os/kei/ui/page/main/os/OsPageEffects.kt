@@ -9,23 +9,16 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
-import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
-import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
-import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
-import os.kei.ui.page.main.os.shortcut.loadActivityClassOptions
-import os.kei.ui.page.main.os.shortcut.loadInstalledAppOptions
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.withContext
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import kotlin.collections.plus
-import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
+import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
+import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 
 @Composable
 @OptIn(FlowPreview::class)
@@ -192,48 +185,25 @@ internal fun BindOsActivitySuggestionLoadEffect(
     googleSystemServiceSuggestionTarget: ShortcutSuggestionField,
     activityShortcutDraftPackageName: String,
     context: Context,
-    onPackageSuggestionsLoadingChange: (Boolean) -> Unit,
-    onPackageSuggestionsChange: (List<ShortcutInstalledAppOption>) -> Unit,
-    onClassSuggestionsLoadingChange: (Boolean) -> Unit,
-    onClassSuggestionsChange: (List<ShortcutActivityClassOption>) -> Unit
+    requestActivitySuggestions: (
+        context: Context,
+        show: Boolean,
+        target: ShortcutSuggestionField,
+        packageName: String,
+    ) -> Unit,
 ) {
     LaunchedEffect(
+        context,
         showActivitySuggestionSheet,
         googleSystemServiceSuggestionTarget,
-        activityShortcutDraftPackageName
+        activityShortcutDraftPackageName,
     ) {
-        if (!showActivitySuggestionSheet) return@LaunchedEffect
-        when (googleSystemServiceSuggestionTarget) {
-            ShortcutSuggestionField.PackageName -> {
-                onPackageSuggestionsLoadingChange(true)
-                runCatching {
-                    withContext(AppDispatchers.osOperations) { loadInstalledAppOptions(context) }
-                }.onSuccess(onPackageSuggestionsChange)
-                    .onFailure { onPackageSuggestionsChange(emptyList()) }
-                onPackageSuggestionsLoadingChange(false)
-            }
-
-            ShortcutSuggestionField.ClassName -> {
-                val targetPackageName = activityShortcutDraftPackageName.trim()
-                if (targetPackageName.isBlank()) {
-                    onClassSuggestionsChange(emptyList())
-                    return@LaunchedEffect
-                }
-                onClassSuggestionsLoadingChange(true)
-                runCatching {
-                    withContext(AppDispatchers.osOperations) {
-                        loadActivityClassOptions(
-                            context = context,
-                            packageName = targetPackageName
-                        )
-                    }
-                }.onSuccess(onClassSuggestionsChange)
-                    .onFailure { onClassSuggestionsChange(emptyList()) }
-                onClassSuggestionsLoadingChange(false)
-            }
-
-            else -> Unit
-        }
+        requestActivitySuggestions(
+            context,
+            showActivitySuggestionSheet,
+            googleSystemServiceSuggestionTarget,
+            activityShortcutDraftPackageName,
+        )
     }
 }
 

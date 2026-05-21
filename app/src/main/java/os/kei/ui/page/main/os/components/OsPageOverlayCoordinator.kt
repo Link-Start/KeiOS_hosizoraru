@@ -3,7 +3,10 @@ package os.kei.ui.page.main.os.components
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import kotlinx.coroutines.CoroutineScope
 import os.kei.R
+import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -12,8 +15,6 @@ import os.kei.ui.page.main.os.state.OsPageCardTransferState
 import os.kei.ui.page.main.os.state.OsPageOverlayState
 import os.kei.ui.page.main.os.state.OsPageOverlayTransferActions
 import os.kei.ui.page.main.os.state.OsPageTextBundle
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.CoroutineScope
 
 @Composable
 internal fun OsPageOverlayCoordinator(
@@ -25,6 +26,7 @@ internal fun OsPageOverlayCoordinator(
     visibleCards: Set<OsSectionCard>,
     activityShortcutCards: List<OsActivityShortcutCard>,
     shellCommandCards: List<OsShellCommandCard>,
+    activitySuggestionState: OsActivitySuggestionUiState,
     actionState: OsPageActionState,
     overlayTransferActions: OsPageOverlayTransferActions,
     cardTransferState: OsPageCardTransferState,
@@ -68,6 +70,7 @@ internal fun OsPageOverlayCoordinator(
         addActivityCardTitle = textBundle.addActivityCardTitle,
         editActivityCardTitle = textBundle.editActivityCardTitle,
         noMatchedResultsText = textBundle.noMatchedResultsText,
+        activitySuggestionState = activitySuggestionState,
         onActivityShortcutCardsChange = onActivityShortcutCardsChange,
         onRemoveActivityCardExpanded = onRemoveActivityCardExpanded,
         googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,

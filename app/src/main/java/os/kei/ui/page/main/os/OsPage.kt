@@ -79,6 +79,7 @@ fun OsPage(
     }
     val persistentState by osPageViewModel.persistentState.collectAsStateWithLifecycle()
     val runtimeState by osPageViewModel.runtimeState.collectAsStateWithLifecycle()
+    val activitySuggestionState by osPageViewModel.activitySuggestionState.collectAsStateWithLifecycle()
     val queryInput by osPageViewModel.queryInput.collectAsStateWithLifecycle()
     val queryApplied by osPageViewModel.queryApplied.collectAsStateWithLifecycle()
     val uiSnapshot = persistentState.uiSnapshot
@@ -257,10 +258,7 @@ fun OsPage(
         googleSystemServiceSuggestionTarget = overlayState.googleSystemServiceSuggestionTarget,
         activityShortcutDraftPackageName = overlayState.activityShortcutDraft.packageName,
         context = context,
-        onPackageSuggestionsLoadingChange = overlayState.onGoogleSystemServicePackageSuggestionsLoadingChange,
-        onPackageSuggestionsChange = overlayState.onGoogleSystemServicePackageSuggestionsChange,
-        onClassSuggestionsLoadingChange = overlayState.onGoogleSystemServiceClassSuggestionsLoadingChange,
-        onClassSuggestionsChange = overlayState.onGoogleSystemServiceClassSuggestionsChange,
+        requestActivitySuggestions = osPageViewModel::requestActivitySuggestions,
     )
 
     val routeState =
@@ -366,6 +364,7 @@ fun OsPage(
                 visibleCards = visibleCards,
                 activityShortcutCards = activityShortcutCards,
                 shellCommandCards = shellCommandCards,
+                activitySuggestionState = activitySuggestionState,
                 actionState = actionState,
                 overlayTransferActions = overlayTransferActions,
                 cardTransferState = cardTransferState,

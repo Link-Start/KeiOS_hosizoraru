@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -388,7 +387,6 @@ class AppDesignSystemScreenshotTest {
                             targetAccent = Color(0xFF06B6D4),
                             summaryContainerColor = Color(0x3322D3EE),
                             summaryBorderColor = Color(0x5522D3EE),
-                            contentBackdrop = rememberLayerBackdrop(),
                             supportedAbis = listOf("arm64-v8a"),
                             showApkTrustCheck = true,
                             managedInstallEnabled = false,

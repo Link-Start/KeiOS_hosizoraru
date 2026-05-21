@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.BuildConfig
 import os.kei.core.ui.snapshot.AppSnapshotFlowManager
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -252,6 +253,7 @@ internal class GitHubPageViewModel : ViewModel() {
                         trackedAddedAtById = state.trackedAddedAtById.toMap(),
                         trackedModifiedAtById = state.trackedModifiedAtById.toMap(),
                         pendingShareImportTrack = state.pendingShareImportTrack,
+                        selfPackageName = BuildConfig.APPLICATION_ID,
                         nowMillis = 0L
                     )
                 }

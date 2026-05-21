@@ -4,7 +4,6 @@ package os.kei
 
 import android.Manifest
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -111,7 +110,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         LauncherIconController.applyDesign(this, UiPrefs.getLauncherIconDesign())
-        applyWindowColorMode(UiPrefs.isHomeIconHdrEnabled())
         window.isNavigationBarContrastEnforced = false
         val initialNotificationGranted = hasNotificationPermission()
         hostUiState = hostUiState.copy(notificationPermissionGranted = initialNotificationGranted)
@@ -267,17 +265,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun hasLocalNetworkPermission(): Boolean = LocalNetworkPermissionCompat.hasPermission(this)
-
-    private fun applyWindowColorMode(hdrEnabled: Boolean) {
-        runCatching {
-            window.colorMode =
-                if (hdrEnabled) {
-                    ActivityInfo.COLOR_MODE_HDR
-                } else {
-                    ActivityInfo.COLOR_MODE_DEFAULT
-                }
-        }
-    }
 
     private fun consumeIntentNavigation(intent: Intent?) {
         pendingMcpServerAction = null

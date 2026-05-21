@@ -3,12 +3,15 @@
 package os.kei.ui.page.main.host.pager
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -74,7 +77,6 @@ internal fun MainPagerLayout(
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val backNavigationRuntime = LocalBackNavigationRuntimeState.current
-    val context = LocalContext.current
     val insets = rememberMainPagerInsets()
     val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
     val floatingDockSide =
@@ -123,59 +125,23 @@ internal fun MainPagerLayout(
                 }
             }
         }
-    // Derive the Home-visible boolean OUTSIDE the DisposableEffect. During a swipe
-    // currentPage/targetPage/settledPage change every frame, but the boolean only flips
-    // when one of them crosses into / out of the Home slot. Keying the effect on the
-    // boolean instead of the raw indices avoids running the JNI `Window.setColorMode`
-    // call on every frame of every page swipe.
+    // Keep HDR scoped to the settled, idle Home page so the Window color mode and
+    // visual sweep follow one stable runtime gate.
     val homeIndex =
         remember(coordinator.tabs) {
             coordinator.tabs.indexOf(BottomPage.Home)
         }
-    val homeHdrWindowActive =
-        remember(
-            homeIconHdrEnabled,
-            transitionAnimationsEnabled,
-            homeIndex,
-            coordinator.pagerState.settledPage,
-            coordinator.pagerState.isScrollInProgress,
-        ) {
-            homeIconHdrEnabled &&
-                transitionAnimationsEnabled &&
-                homeIndex >= 0 &&
-                coordinator.pagerState.settledPage == homeIndex &&
-                !coordinator.pagerState.isScrollInProgress
-        }
-    val homeVisibleInPager =
-        remember(
-            homeIndex,
-            coordinator.pagerState.currentPage,
-            coordinator.pagerState.targetPage,
-            coordinator.pagerState.settledPage,
-        ) {
-            homeIndex >= 0 &&
-                (
-                    coordinator.pagerState.currentPage == homeIndex ||
-                        coordinator.pagerState.targetPage == homeIndex ||
-                        coordinator.pagerState.settledPage == homeIndex
-                )
-        }
-    DisposableEffect(context, homeHdrWindowActive) {
-        val activity = context as? Activity
-        runCatching {
-            activity?.window?.colorMode =
-                if (homeHdrWindowActive) {
-                    ActivityInfo.COLOR_MODE_HDR
-                } else {
-                    ActivityInfo.COLOR_MODE_DEFAULT
-                }
-        }
-        onDispose {
-            runCatching {
-                activity?.window?.colorMode = ActivityInfo.COLOR_MODE_DEFAULT
-            }
-        }
-    }
+    val homeHdrEffectActive =
+        shouldActivateHomeHdrEffect(
+            homeIconHdrEnabled = homeIconHdrEnabled,
+            transitionAnimationsEnabled = transitionAnimationsEnabled,
+            mainRouteActive = rootBackHandlersEnabled,
+            homeIndex = homeIndex,
+            settledPage = coordinator.pagerState.settledPage,
+            pagerScrollInProgress = coordinator.pagerState.isScrollInProgress,
+            navigationActive = coordinator.navigationActive,
+        )
+    HomeHdrWindowModeEffect(active = homeHdrEffectActive)
     val homePageIndex =
         coordinator.tabs
             .indexOf(BottomPage.Home)
@@ -321,7 +287,7 @@ internal fun MainPagerLayout(
                         shizukuStatus = shizukuStatus,
                         shizukuApiUtils = shizukuApiUtils,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        homeIconHdrEnabled = homeIconHdrEnabled,
+                        homeIconHdrEnabled = homeHdrEffectActive,
                         homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
                         preloadingEnabled = preloadingEnabled,
                         mcpServerManager = mcpServerManager,
@@ -384,6 +350,50 @@ internal fun MainPagerLayout(
         }
     }
 }
+
+@Composable
+private fun HomeHdrWindowModeEffect(active: Boolean) {
+    val activity = LocalContext.current.findActivity()
+    val window = activity?.window
+    val targetMode =
+        if (active) {
+            ActivityInfo.COLOR_MODE_HDR
+        } else {
+            ActivityInfo.COLOR_MODE_DEFAULT
+        }
+    LaunchedEffect(window, targetMode) {
+        runCatching { window?.colorMode = targetMode }
+    }
+    DisposableEffect(window) {
+        onDispose {
+            runCatching { window?.colorMode = ActivityInfo.COLOR_MODE_DEFAULT }
+        }
+    }
+}
+
+internal fun shouldActivateHomeHdrEffect(
+    homeIconHdrEnabled: Boolean,
+    transitionAnimationsEnabled: Boolean,
+    mainRouteActive: Boolean,
+    homeIndex: Int,
+    settledPage: Int,
+    pagerScrollInProgress: Boolean,
+    navigationActive: Boolean,
+): Boolean =
+    homeIconHdrEnabled &&
+        transitionAnimationsEnabled &&
+        mainRouteActive &&
+        homeIndex >= 0 &&
+        settledPage == homeIndex &&
+        !pagerScrollInProgress &&
+        !navigationActive
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
 @Composable
 private fun NonHomePageBackground(

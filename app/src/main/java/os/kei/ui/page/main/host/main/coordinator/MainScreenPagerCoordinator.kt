@@ -1,8 +1,10 @@
 package os.kei.ui.page.main.host.main
 
+import androidx.compose.runtime.Stable
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 
+@Stable
 internal data class MainScreenPagerCoordinator(
     val settingsReturnToken: Int,
     val liquidBottomBarEnabled: Boolean,
@@ -28,7 +30,7 @@ internal data class MainScreenPagerCoordinator(
     val requestedGitHubActionsSheetToken: Int,
     val onRequestedBottomPageConsumed: () -> Unit,
     val onBaGuideCatalogOpen: () -> Unit,
-    val onBaGuideCatalogBack: () -> Unit
+    val onBaGuideCatalogBack: () -> Unit,
 )
 
 internal fun buildMainScreenPagerCoordinator(
@@ -45,9 +47,9 @@ internal fun buildMainScreenPagerCoordinator(
     requestedGitHubActionsSheetToken: Int,
     onRequestedBottomPageConsumed: () -> Unit,
     onBaGuideCatalogOpen: () -> Unit,
-    onBaGuideCatalogBack: () -> Unit
-): MainScreenPagerCoordinator {
-    return MainScreenPagerCoordinator(
+    onBaGuideCatalogBack: () -> Unit,
+): MainScreenPagerCoordinator =
+    MainScreenPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
         liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
         miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
@@ -72,6 +74,5 @@ internal fun buildMainScreenPagerCoordinator(
         requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
         onRequestedBottomPageConsumed = onRequestedBottomPageConsumed,
         onBaGuideCatalogOpen = onBaGuideCatalogOpen,
-        onBaGuideCatalogBack = onBaGuideCatalogBack
+        onBaGuideCatalogBack = onBaGuideCatalogBack,
     )
-}

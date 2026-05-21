@@ -225,17 +225,22 @@ internal fun MainPagerLayout(
                 )
             } else {
                 val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
-                val pagerSelectionPosition =
-                    coordinator.pagerState.pagePosition.coerceIn(
-                        0f,
-                        lastPagePosition,
-                    )
+                val selectedPagePositionProvider =
+                    remember(coordinator.pagerState, lastPagePosition) {
+                        {
+                            coordinator.pagerState.pagePosition.coerceIn(
+                                0f,
+                                lastPagePosition,
+                            )
+                        }
+                    }
                 MainPagerBottomBar(
                     visible = coordinator.showBottomBar,
                     navigationBarBottom = insets.navigationBarBottom,
                     tabs = coordinator.tabs,
                     selectedPageIndex = safeSelectedPageIndex,
-                    selectedPagePosition = pagerSelectionPosition,
+                    selectedPagePosition = null,
+                    selectedPagePositionProvider = selectedPagePositionProvider,
                     backdrop = coordinator.backdrop,
                     liquidBottomBarEnabled = liquidBottomBarEnabled,
                     onPageSelected = coordinator.onPageSelected,

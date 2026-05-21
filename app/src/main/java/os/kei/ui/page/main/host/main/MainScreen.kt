@@ -96,33 +96,50 @@ fun MainScreen(
             navigator.push(KeiosRoute.BaStudentGuide(nonce = System.nanoTime()))
         }
     )
-    val pagerCoordinator = buildMainScreenPagerCoordinator(
-        settingsReturnToken = mainReturnState.settingsReturnToken,
-        prefsState = uiPrefsState,
-        shizukuStatus = currentShizukuStatus,
-        shizukuApiUtils = shizukuApiUtils,
-        mcpServerManager = mcpServerManager,
-        onOpenGuideDetail = openGuideDetail,
-        requestedBottomPage = effectiveRequestedBottomPage,
-        requestedBottomPageToken = effectiveRequestedBottomPageToken,
-        requestedGitHubRefreshToken = hostState.requestedGitHubRefreshToken,
-        requestedGitHubActionsTrackId = hostState.requestedGitHubActionsTrackId,
-        requestedGitHubActionsSheetToken = hostState.requestedGitHubActionsSheetToken,
-        onRequestedBottomPageConsumed = {
-            if (externalBottomPageRequested) {
-                hostCallbacks.onRequestedBottomPageConsumed()
-            }
-            localRequestedBottomPage = null
-        },
-        onBaGuideCatalogOpen = {
-            localRequestedBottomPage = BottomPage.Ba.name
-            localRequestedBottomPageToken += 1
-        },
-        onBaGuideCatalogBack = {
-            localRequestedBottomPage = BottomPage.Ba.name
-            localRequestedBottomPageToken += 1
+    val pagerCoordinator =
+        remember(
+            mainReturnState.settingsReturnToken,
+            uiPrefsState,
+            currentShizukuStatus,
+            shizukuApiUtils,
+            mcpServerManager,
+            openGuideDetail,
+            effectiveRequestedBottomPage,
+            effectiveRequestedBottomPageToken,
+            hostState.requestedGitHubRefreshToken,
+            hostState.requestedGitHubActionsTrackId,
+            hostState.requestedGitHubActionsSheetToken,
+            externalBottomPageRequested,
+            hostCallbacks,
+        ) {
+            buildMainScreenPagerCoordinator(
+                settingsReturnToken = mainReturnState.settingsReturnToken,
+                prefsState = uiPrefsState,
+                shizukuStatus = currentShizukuStatus,
+                shizukuApiUtils = shizukuApiUtils,
+                mcpServerManager = mcpServerManager,
+                onOpenGuideDetail = openGuideDetail,
+                requestedBottomPage = effectiveRequestedBottomPage,
+                requestedBottomPageToken = effectiveRequestedBottomPageToken,
+                requestedGitHubRefreshToken = hostState.requestedGitHubRefreshToken,
+                requestedGitHubActionsTrackId = hostState.requestedGitHubActionsTrackId,
+                requestedGitHubActionsSheetToken = hostState.requestedGitHubActionsSheetToken,
+                onRequestedBottomPageConsumed = {
+                    if (externalBottomPageRequested) {
+                        hostCallbacks.onRequestedBottomPageConsumed()
+                    }
+                    localRequestedBottomPage = null
+                },
+                onBaGuideCatalogOpen = {
+                    localRequestedBottomPage = BottomPage.Ba.name
+                    localRequestedBottomPageToken += 1
+                },
+                onBaGuideCatalogBack = {
+                    localRequestedBottomPage = BottomPage.Ba.name
+                    localRequestedBottomPageToken += 1
+                },
+            )
         }
-    )
     MainScreenNavHost(
         backStack = backStack,
         navigator = navigator,

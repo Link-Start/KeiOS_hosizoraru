@@ -165,6 +165,7 @@ fun LiquidGlassBottomBar(
     modifier: Modifier = Modifier,
     selectedIndex: Int,
     selectedPosition: Float? = null,
+    selectedPositionProvider: (() -> Float?)? = null,
     onSelected: (index: Int) -> Unit,
     backdrop: Backdrop,
     tabsCount: Int,
@@ -267,8 +268,9 @@ fun LiquidGlassBottomBar(
     }
     val externalSelectionPosition = selectedPosition?.fastCoerceIn(
         0f,
-        (safeTabsCount - 1).toFloat()
+        (safeTabsCount - 1).toFloat(),
     )
+    val currentSelectedPositionProvider = rememberUpdatedState(selectedPositionProvider)
     val displaySelectionValue = if (
         externalSelectionPosition != null &&
         dampedDragAnimation.pressProgress <= 0.001f
@@ -277,14 +279,31 @@ fun LiquidGlassBottomBar(
     } else {
         dampedDragAnimation.value
     }
-    val currentDisplaySelectionValue by rememberUpdatedState(displaySelectionValue)
+    val currentDisplaySelectionValue = rememberUpdatedState(displaySelectionValue)
+    val displaySelectionValueProvider =
+        remember(safeTabsCount) {
+            {
+                val providedPosition =
+                    currentSelectedPositionProvider.value
+                        ?.invoke()
+                        ?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
+                if (
+                    providedPosition != null &&
+                    dampedDragAnimation.pressProgress <= 0.001f
+                ) {
+                    providedPosition
+                } else {
+                    currentDisplaySelectionValue.value
+                }
+            }
+        }
     val currentPanelOffset by rememberUpdatedState(panelOffset)
 
     LaunchedEffect(externalSelectionPosition, safeTabsCount) {
         val pagerDrivenPosition = externalSelectionPosition ?: return@LaunchedEffect
         dampedDragAnimation.snapToValue(
             value = pagerDrivenPosition,
-            updateVelocity = false
+            updateVelocity = false,
         )
     }
 
@@ -310,7 +329,7 @@ fun LiquidGlassBottomBar(
     val itemPressProgress by appMotionFloatState(
         targetValue = if (pressedTabIndex >= 0 && isLiquidEffectEnabled) 1f else 0f,
         durationMillis = 120,
-        label = "liquid_bottom_bar_item_press"
+        label = "liquid_bottom_bar_item_press",
     )
     val combinedPressProgress = max(pressProgress, itemPressProgress)
     val interactionLensScale = 1f
@@ -321,9 +340,15 @@ fun LiquidGlassBottomBar(
     val tactileScaleY = lerp(1f, 0.996f, combinedPressProgress)
     val useLightweightBackdrop = false
 
-    val selectionProgressProvider: (Int) -> Float = remember(displaySelectionValue) {
+    val selectionProgressValue =
+        if (selectedPositionProvider != null) {
+            selectedIndex.fastCoerceIn(0, safeTabsCount - 1).toFloat()
+        } else {
+            displaySelectionValue
+        }
+    val selectionProgressProvider: (Int) -> Float = remember(selectionProgressValue) {
         { tabIndex ->
-            (1f - abs(displaySelectionValue - tabIndex)).fastCoerceIn(0f, 1f)
+            (1f - abs(selectionProgressValue - tabIndex)).fastCoerceIn(0f, 1f)
         }
     }
 
@@ -334,15 +359,21 @@ fun LiquidGlassBottomBar(
             InteractiveHighlight(
                 animationScope = animationScope,
                 position = { size, _ ->
+                    val displayValue = displaySelectionValueProvider()
+                    val x =
+                        if (isLtr) {
+                            (displayValue + 0.5f) * tabWidthPx + currentPanelOffset
+                        } else {
+                            size.width - (displayValue + 0.5f) * tabWidthPx + currentPanelOffset
+                        }
                     Offset(
-                        if (isLtr) (currentDisplaySelectionValue + 0.5f) * tabWidthPx + currentPanelOffset
-                        else size.width - (currentDisplaySelectionValue + 0.5f) * tabWidthPx + currentPanelOffset,
-                        size.height / 2f
+                        x,
+                        size.height / 2f,
                     )
                 },
                 highlightColor = Color.White,
                 highlightStrength = if (isInLightTheme) 0.60f else 0.90f,
-                highlightRadiusScale = if (isInLightTheme) 0.90f else 1.08f
+                highlightRadiusScale = if (isInLightTheme) 0.90f else 1.08f,
             )
         }
     } else {
@@ -486,7 +517,7 @@ fun LiquidGlassBottomBar(
                                 (horizontalPadding * 2).toPx()
                             }
                             val singleTabWidth = contentWidth / safeTabsCount
-                            val progressOffset = displaySelectionValue * singleTabWidth
+                            val progressOffset = displaySelectionValueProvider() * singleTabWidth
                             translationX = if (isLtr) {
                                 progressOffset + panelOffset
                             } else {

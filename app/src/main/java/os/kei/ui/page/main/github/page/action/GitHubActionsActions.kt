@@ -2,26 +2,18 @@ package os.kei.ui.page.main.github.page.action
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import os.kei.R
-import os.kei.feature.github.domain.GitHubActionsBranchSelector
-import os.kei.feature.github.domain.GitHubActionsWorkflowSelector
-import os.kei.feature.github.model.GitHubActionsRunArtifacts
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.feature.github.model.GitHubActionsWorkflow
 import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
-import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
-import kotlin.time.Duration.Companion.milliseconds
 
 internal class GitHubActionsActions(
     private val env: GitHubPageActionEnvironment,
     assetActions: GitHubAssetActions,
 ) {
-    private val context get() = env.context
     private val scope get() = env.scope
     private val state get() = env.state
     private val actionsRepository get() = env.actionsRepository
@@ -33,6 +25,8 @@ internal class GitHubActionsActions(
             onDownloadHistoryChanged = { reselectActionsMatchesAfterHistoryChange() },
         )
     private val selectionDelegate = GitHubActionsSelectionDelegate(env)
+    private val runStatusDelegate = GitHubActionsRunStatusDelegate(env, selectionDelegate)
+    private val workflowStateDelegate = GitHubActionsWorkflowStateDelegate(env, selectionDelegate)
 
     fun openActionsSheet(item: GitHubTrackedApp) {
         if (state.trackedItems.none { it.id == item.id }) return
@@ -71,7 +65,7 @@ internal class GitHubActionsActions(
         state.actionsBranchManuallySelected = false
         state.actionsBranchOptions = emptyList()
         state.actionsSelectedRunId = null
-        state.actionsRunWatchJob?.cancel()
+        runStatusDelegate.cancelRunWatch()
         scope.launch {
             loadWorkflowSnapshot(
                 item = item,
@@ -108,7 +102,7 @@ internal class GitHubActionsActions(
         state.actionsBranchManuallySelected = true
         state.actionsRunLimit = DEFAULT_RUN_LIMIT
         state.actionsSelectedRunId = null
-        state.actionsRunWatchJob?.cancel()
+        runStatusDelegate.cancelRunWatch()
         scope.launch {
             loadWorkflowSnapshot(
                 item = item,
@@ -138,8 +132,8 @@ internal class GitHubActionsActions(
         val workflow = selectedWorkflowMatch()?.workflow ?: return
         if (state.actionsRuns.none { it.runArtifacts.run.id == runId }) return
         state.actionsSelectedRunId = runId
-        scheduleSelectedRunWatch()
-        loadRunArtifactsIfNeeded(
+        runStatusDelegate.scheduleSelectedRunWatch()
+        runStatusDelegate.loadRunArtifactsIfNeeded(
             item = item,
             workflowId = workflow.id,
             runId = runId,
@@ -148,7 +142,7 @@ internal class GitHubActionsActions(
 
     fun refreshActionsRunStatus(runId: Long) {
         scope.launch {
-            refreshRunStatus(runId = runId, showToast = true)
+            runStatusDelegate.refreshRunStatus(runId = runId, showToast = true)
         }
     }
 
@@ -189,7 +183,7 @@ internal class GitHubActionsActions(
         item: GitHubTrackedApp,
         preferredWorkflowId: Long?,
     ) {
-        state.actionsRunWatchJob?.cancel()
+        runStatusDelegate.cancelRunWatch()
         state.actionsLoading = true
         state.actionsRunsLoading = false
         state.actionsError = null
@@ -363,7 +357,7 @@ internal class GitHubActionsActions(
                     ?.workflow
             if (selectedWorkflow != null && !state.actionsBranchManuallySelected) {
                 val previousBranch = selectionDelegate.selectedBranchForRequest()
-                refreshBranchSelection(
+                workflowStateDelegate.refreshBranchSelection(
                     workflow = selectedWorkflow,
                     snapshot = state.actionsSnapshot,
                 )
@@ -418,7 +412,7 @@ internal class GitHubActionsActions(
         preferredRunId: Long?,
         keepCurrentRunsWhileLoading: Boolean = false,
     ) {
-        state.actionsRunWatchJob?.cancel()
+        runStatusDelegate.cancelRunWatch()
         state.actionsRunsLoading = true
         state.actionsError = null
         if (!keepCurrentRunsWhileLoading) {
@@ -428,7 +422,7 @@ internal class GitHubActionsActions(
             state.actionsRunTrackingPlans = emptyMap()
             state.actionsStatusRefreshingRunIds.clear()
         }
-        refreshBranchSelection(
+        workflowStateDelegate.refreshBranchSelection(
             workflow = workflow,
             snapshot = if (keepCurrentRunsWhileLoading) state.actionsSnapshot else null,
         )
@@ -464,11 +458,11 @@ internal class GitHubActionsActions(
             state.actionsSnapshot = snapshot
             state.actionsRuns = runMatches
             state.actionsRunTrackingPlans = selectionDelegate.buildTrackingPlans(runMatches)
-            updateWorkflowSignalFromSnapshot(
+            workflowStateDelegate.updateWorkflowSignalFromSnapshot(
                 workflow = workflow,
                 snapshot = snapshot,
             )
-            refreshBranchSelection(
+            workflowStateDelegate.refreshBranchSelection(
                 workflow = workflow,
                 snapshot = snapshot,
             )
@@ -479,9 +473,9 @@ internal class GitHubActionsActions(
                     ?.runArtifacts
                     ?.run
                     ?.id
-            scheduleSelectedRunWatch()
+            runStatusDelegate.scheduleSelectedRunWatch()
             state.actionsSelectedRunId?.let { runId ->
-                loadRunArtifactsIfNeeded(
+                runStatusDelegate.loadRunArtifactsIfNeeded(
                     item = item,
                     workflowId = workflow.id,
                     runId = runId,
@@ -492,150 +486,13 @@ internal class GitHubActionsActions(
                 requestHandled = true
                 state.actionsError = error.message ?: error.javaClass.simpleName
                 if (keepCurrentRunsWhileLoading) {
-                    scheduleSelectedRunWatch()
+                    runStatusDelegate.scheduleSelectedRunWatch()
                 }
             }
         } finally {
             if (requestHandled || isCurrentSnapshotRequest(item, workflow, branch)) {
                 state.actionsRunsLoading = false
             }
-        }
-    }
-
-    private suspend fun updateWorkflowSignalFromSnapshot(
-        workflow: GitHubActionsWorkflow,
-        snapshot: GitHubActionsWorkflowArtifactsSnapshot,
-    ) {
-        if (state.actionsRawWorkflows.none { it.id == workflow.id }) return
-        val signal =
-            GitHubActionsWorkflowSelector.buildArtifactSignal(
-                workflow = workflow,
-                runs = snapshot.runs,
-                defaultBranch = state.actionsDefaultBranch,
-            )
-        val mergedSignals = state.actionsWorkflowSignals + (workflow.id to signal)
-        state.actionsWorkflowSignals = mergedSignals
-        state.actionsWorkflows =
-            selectionDelegate.selectWorkflows(
-                workflows = state.actionsRawWorkflows,
-                signals = mergedSignals,
-                history = state.actionsDownloadHistory,
-            )
-    }
-
-    private fun refreshBranchSelection(
-        workflow: GitHubActionsWorkflow,
-        snapshot: GitHubActionsWorkflowArtifactsSnapshot?,
-    ) {
-        val signal = state.actionsWorkflowSignals[workflow.id]
-        val options =
-            GitHubActionsBranchSelector.buildOptions(
-                defaultBranch = state.actionsDefaultBranch,
-                workflow = workflow,
-                signal = signal,
-                snapshot = snapshot,
-            )
-        state.actionsBranchOptions = options
-        if (state.actionsBranchManuallySelected && state.actionsSelectedBranch.isNotBlank()) {
-            return
-        }
-        val recommendedBranch =
-            GitHubActionsBranchSelector.recommendBranch(
-                defaultBranch = state.actionsDefaultBranch,
-                workflow = workflow,
-                signal = signal,
-                snapshot = snapshot,
-            )
-        state.actionsSelectedBranch = recommendedBranch.ifBlank { state.actionsDefaultBranch }
-    }
-
-    private fun loadRunArtifactsIfNeeded(
-        item: GitHubTrackedApp,
-        workflowId: Long,
-        runId: Long,
-    ) {
-        if (!isCurrentTarget(item) || state.actionsSelectedWorkflowId != workflowId) return
-        if (state.actionsStatusRefreshingRunIds[runId] == true) return
-        val runMatch = state.actionsRuns.firstOrNull { it.runArtifacts.run.id == runId } ?: return
-        if (!runMatch.traits.completed) return
-        if (runMatch.runArtifacts.artifacts.isNotEmpty()) return
-        scope.launch {
-            if (!isCurrentTarget(item) || state.actionsSelectedWorkflowId != workflowId) return@launch
-            refreshRunStatus(runId = runId, showToast = false)
-        }
-    }
-
-    private suspend fun refreshRunStatus(
-        runId: Long,
-        showToast: Boolean,
-    ) {
-        val item = state.actionsTargetItem ?: return
-        val workflow = selectedWorkflowMatch()?.workflow ?: return
-        val currentSnapshot = state.actionsSnapshot ?: return
-        if (state.actionsStatusRefreshingRunIds[runId] == true) return
-        state.actionsStatusRefreshingRunIds[runId] = true
-        try {
-            val statusTrace =
-                actionsRepository.fetchGitHubActionsRunStatusSnapshot(
-                    owner = item.owner,
-                    repo = item.repo,
-                    runId = runId,
-                    lookupConfig = state.lookupConfig,
-                    artifactsLimit = 100,
-                    includeArtifactsWhenCompleted = true,
-                )
-            val statusSnapshot = statusTrace.result.getOrThrow()
-            if (!isCurrentTarget(item) || state.actionsSelectedWorkflowId != workflow.id) return
-            state.actionsAuthMode = statusTrace.authMode ?: state.actionsAuthMode
-            val updatedRunArtifacts =
-                GitHubActionsRunArtifacts(
-                    run = statusSnapshot.run,
-                    artifacts = statusSnapshot.artifacts,
-                )
-            val replaced = currentSnapshot.runs.any { it.run.id == runId }
-            val updatedRuns =
-                if (replaced) {
-                    currentSnapshot.runs.map { runArtifacts ->
-                        if (runArtifacts.run.id == runId) updatedRunArtifacts else runArtifacts
-                    }
-                } else {
-                    listOf(updatedRunArtifacts) + currentSnapshot.runs
-                }
-            val updatedSnapshot = currentSnapshot.copy(runs = updatedRuns)
-            val runMatches =
-                selectionDelegate.selectRunsForSnapshot(
-                    workflow = workflow,
-                    snapshot = updatedSnapshot,
-                    history = state.actionsDownloadHistory,
-                )
-            state.actionsSnapshot = updatedSnapshot
-            state.actionsRuns = runMatches
-            state.actionsRunTrackingPlans = selectionDelegate.buildTrackingPlans(runMatches)
-            state.actionsSelectedRunId = runId
-                .takeIf { id -> runMatches.any { it.runArtifacts.run.id == id } }
-                ?: runMatches
-                    .firstOrNull()
-                    ?.runArtifacts
-                    ?.run
-                    ?.id
-            if (showToast) {
-                env.toast(R.string.common_refreshed)
-            }
-        } catch (error: Throwable) {
-            if (showToast) {
-                env.toast(
-                    context.getString(
-                        R.string.github_actions_toast_refresh_run_failed,
-                        localizedGitHubActionsErrorMessage(
-                            context = context,
-                            rawMessage = error.message ?: error.javaClass.simpleName,
-                        ),
-                    ),
-                )
-            }
-        } finally {
-            state.actionsStatusRefreshingRunIds.remove(runId)
-            scheduleSelectedRunWatch()
         }
     }
 
@@ -671,24 +528,7 @@ internal class GitHubActionsActions(
                 ?.id
     }
 
-    private fun scheduleSelectedRunWatch() {
-        state.actionsRunWatchJob?.cancel()
-        val runId = state.actionsSelectedRunId ?: return
-        val plan = state.actionsRunTrackingPlans[runId] ?: return
-        if (!state.showActionsSheet || !plan.pollable) return
-        val delayMillis = plan.nextPollDelayMillis.coerceAtLeast(5_000L)
-        state.actionsRunWatchJob =
-            scope.launch {
-                delay(delayMillis.milliseconds)
-                if (!state.showActionsSheet || state.actionsSelectedRunId != runId) return@launch
-                refreshRunStatus(runId = runId, showToast = false)
-            }
-    }
-
-    private fun selectedWorkflowMatch(): GitHubActionsWorkflowMatch? {
-        val workflowId = state.actionsSelectedWorkflowId ?: return null
-        return state.actionsWorkflows.firstOrNull { it.workflow.id == workflowId }
-    }
+    private fun selectedWorkflowMatch(): GitHubActionsWorkflowMatch? = workflowStateDelegate.selectedWorkflowMatch()
 
     private fun isCurrentSnapshotRequest(
         item: GitHubTrackedApp,

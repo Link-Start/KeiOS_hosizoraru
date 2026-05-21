@@ -22,6 +22,7 @@ internal class GitHubActionsSelectionDelegate(
 ) {
     private val state get() = env.state
     private val actionsRepository get() = env.actionsRepository
+    private val clock get() = env.clock
 
     suspend fun selectWorkflows(
         workflows: List<GitHubActionsWorkflow>,
@@ -123,7 +124,7 @@ internal class GitHubActionsSelectionDelegate(
                 androidArtifactCount = match.artifactMatches.count { it.traits.androidLike },
                 createdAtMillis = run.createdAtMillis ?: 0L,
                 updatedAtMillis = run.updatedAtMillis ?: 0L,
-                checkedAtMillis = System.currentTimeMillis(),
+                checkedAtMillis = clock.nowMs(),
             )
         GitHubActionsRecommendedRunStore.save(snapshot)
         state.actionsRecommendedRunSnapshots[item.id] = snapshot

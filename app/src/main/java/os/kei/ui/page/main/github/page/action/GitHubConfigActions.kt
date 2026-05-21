@@ -19,7 +19,7 @@ import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 internal class GitHubConfigActions(
     private val env: GitHubPageActionEnvironment,
     private val refreshActions: GitHubRefreshActions,
-    private val assetActions: GitHubAssetActions
+    private val assetActions: GitHubAssetActions,
 ) {
     private val context get() = env.context
     private val scope get() = env.scope
@@ -90,42 +90,40 @@ internal class GitHubConfigActions(
         val payload = repository.parseTrackedItemsImport(raw)
         return repository.buildTrackedItemsImportPreview(
             payload = payload,
-            existingItems = state.trackedItems.toList()
+            existingItems = state.trackedItems.toList(),
         )
     }
 
-    suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview): GitHubTrackImportApplyResult {
-        return applyImportedTrackedItems(preview.payload)
-    }
+    suspend fun applyTrackedItemsImport(preview: GitHubTrackImportPreview): GitHubTrackImportApplyResult =
+        applyImportedTrackedItems(preview.payload)
 
-    suspend fun importTrackedItemsJson(raw: String): GitHubTrackImportApplyResult {
-        return applyTrackedItemsImport(previewTrackedItemsImport(raw))
-    }
+    suspend fun importTrackedItemsJson(raw: String): GitHubTrackImportApplyResult = applyTrackedItemsImport(previewTrackedItemsImport(raw))
 
     fun applyLookupConfig() {
         scope.launch {
             val previousConfig = repository.loadLookupConfig()
             val sanitizedToken = state.githubApiTokenInput.trim()
-            val newConfig = GitHubLookupConfig(
-                selectedStrategy = state.selectedStrategyInput,
-                actionsStrategy = state.selectedActionsStrategyInput,
-                apiToken = sanitizedToken,
-                checkAllTrackedPreReleases = previousConfig.checkAllTrackedPreReleases,
-                checkAllDirectApkPreReleases = previousConfig.checkAllDirectApkPreReleases,
-                aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
-                preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
-                scanSystemAppsByDefault = previousConfig.scanSystemAppsByDefault,
-                profileDepth = previousConfig.profileDepth,
-                shareImportLinkageEnabled = true,
-                shareImportFlowMode = previousConfig.shareImportFlowMode,
-                appManagedShareInstallEnabled = previousConfig.appManagedShareInstallEnabled,
-                onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
-                preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
-                decisionAssistEnabled = previousConfig.decisionAssistEnabled,
-                repositoryHealthCardEnabled = previousConfig.repositoryHealthCardEnabled,
-                apkTrustCheckEnabled = previousConfig.apkTrustCheckEnabled,
-                releaseNotesMode = previousConfig.releaseNotesMode
-            )
+            val newConfig =
+                GitHubLookupConfig(
+                    selectedStrategy = state.selectedStrategyInput,
+                    actionsStrategy = state.selectedActionsStrategyInput,
+                    apiToken = sanitizedToken,
+                    checkAllTrackedPreReleases = previousConfig.checkAllTrackedPreReleases,
+                    checkAllDirectApkPreReleases = previousConfig.checkAllDirectApkPreReleases,
+                    aggressiveApkFiltering = previousConfig.aggressiveApkFiltering,
+                    preciseApkVersionEnabled = previousConfig.preciseApkVersionEnabled,
+                    scanSystemAppsByDefault = previousConfig.scanSystemAppsByDefault,
+                    profileDepth = previousConfig.profileDepth,
+                    shareImportLinkageEnabled = true,
+                    shareImportFlowMode = previousConfig.shareImportFlowMode,
+                    appManagedShareInstallEnabled = previousConfig.appManagedShareInstallEnabled,
+                    onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
+                    preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
+                    decisionAssistEnabled = previousConfig.decisionAssistEnabled,
+                    repositoryHealthCardEnabled = previousConfig.repositoryHealthCardEnabled,
+                    apkTrustCheckEnabled = previousConfig.apkTrustCheckEnabled,
+                    releaseNotesMode = previousConfig.releaseNotesMode,
+                )
             repository.saveLookupConfig(newConfig)
             state.lookupConfig = newConfig
             closeStrategySheet()
@@ -155,7 +153,7 @@ internal class GitHubConfigActions(
                         if (strategyChanged) {
                             env.toast(
                                 R.string.github_toast_strategy_switched_recheck,
-                                newConfig.selectedStrategy.label
+                                newConfig.selectedStrategy.label,
                             )
                         } else {
                             env.toast(R.string.github_toast_api_credential_saved_recheck)
@@ -165,26 +163,29 @@ internal class GitHubConfigActions(
                         if (strategyChanged) {
                             env.toast(
                                 R.string.github_toast_strategy_switched,
-                                newConfig.selectedStrategy.label
+                                newConfig.selectedStrategy.label,
                             )
                         } else {
                             env.toast(R.string.github_toast_api_credential_saved)
                         }
                     }
                 }
+
                 actionsLookupChanged -> {
                     if (actionsStrategyChanged) {
                         env.toast(
                             R.string.github_toast_actions_strategy_switched,
-                            newConfig.actionsStrategy.label
+                            newConfig.actionsStrategy.label,
                         )
                     } else {
                         env.toast(R.string.github_toast_actions_api_credential_saved)
                     }
                 }
+
                 tokenChanged -> {
                     env.toast(R.string.github_toast_api_credential_saved)
                 }
+
                 else -> {
                     env.toast(R.string.github_toast_strategy_unchanged)
                 }
@@ -195,24 +196,28 @@ internal class GitHubConfigActions(
     fun applyCheckLogicSheet(installedOnlineShareTargets: List<OnlineShareTargetOption>) {
         scope.launch {
             val previousConfig = repository.loadLookupConfig()
-            val newConfig = previousConfig.copy(
-                checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
-                checkAllDirectApkPreReleases = state.checkAllDirectApkPreReleasesInput,
-                aggressiveApkFiltering = state.aggressiveApkFilteringInput,
-                preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
-                scanSystemAppsByDefault = state.scanSystemAppsByDefaultInput,
-                profileDepth = state.profileDepthInput,
-                shareImportLinkageEnabled = true,
-                shareImportFlowMode = state.shareImportFlowModeInput,
-                appManagedShareInstallEnabled = state.appManagedShareInstallEnabledInput,
-                onlineShareTargetPackage = state.onlineShareTargetPackageInput.trim().takeIf { selected ->
-                    installedOnlineShareTargets.any { it.packageName == selected }
-                }.orEmpty(),
-                preferredDownloaderPackage = state.preferredDownloaderPackageInput.trim(),
-                decisionAssistEnabled = state.decisionAssistEnabledInput,
-                repositoryHealthCardEnabled = state.repositoryHealthCardEnabledInput,
-                apkTrustCheckEnabled = state.apkTrustCheckEnabledInput
-            )
+            val newConfig =
+                previousConfig.copy(
+                    checkAllTrackedPreReleases = state.checkAllTrackedPreReleasesInput,
+                    checkAllDirectApkPreReleases = state.checkAllDirectApkPreReleasesInput,
+                    aggressiveApkFiltering = state.aggressiveApkFilteringInput,
+                    preciseApkVersionEnabled = state.preciseApkVersionEnabledInput,
+                    scanSystemAppsByDefault = state.scanSystemAppsByDefaultInput,
+                    profileDepth = state.profileDepthInput,
+                    shareImportLinkageEnabled = true,
+                    shareImportFlowMode = state.shareImportFlowModeInput,
+                    appManagedShareInstallEnabled = state.appManagedShareInstallEnabledInput,
+                    onlineShareTargetPackage =
+                        state.onlineShareTargetPackageInput
+                            .trim()
+                            .takeIf { selected ->
+                                installedOnlineShareTargets.any { it.packageName == selected }
+                            }.orEmpty(),
+                    preferredDownloaderPackage = state.preferredDownloaderPackageInput.trim(),
+                    decisionAssistEnabled = state.decisionAssistEnabledInput,
+                    repositoryHealthCardEnabled = state.repositoryHealthCardEnabledInput,
+                    apkTrustCheckEnabled = state.apkTrustCheckEnabledInput,
+                )
             repository.saveLookupConfig(newConfig)
             state.lookupConfig = newConfig
             repository.scheduleGitHubRefresh(context)
@@ -220,42 +225,44 @@ internal class GitHubConfigActions(
 
             val checkScopeChanged =
                 previousConfig.checkAllTrackedPreReleases !=
-                        newConfig.checkAllTrackedPreReleases ||
-                        previousConfig.checkAllDirectApkPreReleases !=
-                        newConfig.checkAllDirectApkPreReleases
+                    newConfig.checkAllTrackedPreReleases ||
+                    previousConfig.checkAllDirectApkPreReleases !=
+                    newConfig.checkAllDirectApkPreReleases
             val filteringChanged = previousConfig.aggressiveApkFiltering != newConfig.aggressiveApkFiltering
             val preciseVersionChanged =
                 previousConfig.preciseApkVersionEnabled != newConfig.preciseApkVersionEnabled
             val scanSystemAppsChanged =
                 previousConfig.scanSystemAppsByDefault != newConfig.scanSystemAppsByDefault
             val profileDepthChanged = previousConfig.profileDepth != newConfig.profileDepth
-            val profilePurposeChanged = previousConfig.defaultRepositoryProfilePurpose() !=
+            val profilePurposeChanged =
+                previousConfig.defaultRepositoryProfilePurpose() !=
                     newConfig.defaultRepositoryProfilePurpose()
             val shareImportChanged =
                 previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode ||
-                        previousConfig.appManagedShareInstallEnabled !=
-                        newConfig.appManagedShareInstallEnabled
+                    previousConfig.appManagedShareInstallEnabled !=
+                    newConfig.appManagedShareInstallEnabled
             val onlineShareTargetChanged =
                 previousConfig.onlineShareTargetPackage != newConfig.onlineShareTargetPackage
             val downloaderChanged =
                 previousConfig.preferredDownloaderPackage != newConfig.preferredDownloaderPackage
             val decisionAssistChanged =
                 previousConfig.decisionAssistEnabled != newConfig.decisionAssistEnabled ||
-                        previousConfig.repositoryHealthCardEnabled != newConfig.repositoryHealthCardEnabled ||
-                        previousConfig.apkTrustCheckEnabled != newConfig.apkTrustCheckEnabled
-            val preferenceChangedCount = listOf(
-                shareImportChanged,
-                onlineShareTargetChanged,
-                downloaderChanged,
-                decisionAssistChanged
-            ).count { it }
+                    previousConfig.repositoryHealthCardEnabled != newConfig.repositoryHealthCardEnabled ||
+                    previousConfig.apkTrustCheckEnabled != newConfig.apkTrustCheckEnabled
+            val preferenceChangedCount =
+                listOf(
+                    shareImportChanged,
+                    onlineShareTargetChanged,
+                    downloaderChanged,
+                    decisionAssistChanged,
+                ).count { it }
             when {
                 checkScopeChanged ||
-                        filteringChanged ||
-                        preciseVersionChanged ||
-                        scanSystemAppsChanged ||
-                        profileDepthChanged ||
-                        profilePurposeChanged -> {
+                    filteringChanged ||
+                    preciseVersionChanged ||
+                    scanSystemAppsChanged ||
+                    profileDepthChanged ||
+                    profilePurposeChanged -> {
                     repository.clearCheckCache()
                     state.checkStates.clear()
                     assetActions.clearAllApkAssetStateAndCacheNow()
@@ -272,28 +279,34 @@ internal class GitHubConfigActions(
                                 R.string.github_toast_profile_depth_updated_recheck
                             } else {
                                 R.string.github_toast_check_logic_updated_recheck
-                            }
+                            },
                         )
                         refreshActions.refreshAllTracked(showToast = true)
                     } else {
                         env.toast(R.string.github_toast_check_logic_saved)
                     }
                 }
+
                 preferenceChangedCount > 1 -> {
                     env.toast(R.string.github_toast_preferences_saved)
                 }
+
                 shareImportChanged -> {
                     env.toast(R.string.github_toast_share_import_setting_saved)
                 }
+
                 onlineShareTargetChanged -> {
                     env.toast(R.string.github_toast_online_share_target_saved)
                 }
+
                 downloaderChanged -> {
                     env.toast(R.string.github_toast_downloader_setting_saved)
                 }
+
                 decisionAssistChanged -> {
                     env.toast(R.string.github_toast_preferences_saved)
                 }
+
                 else -> {
                     env.toast(R.string.github_toast_check_logic_unchanged)
                 }
@@ -315,7 +328,7 @@ internal class GitHubConfigActions(
             runCatching {
                 repository.runStrategyBenchmark(
                     targets = targets,
-                    apiToken = benchmarkToken
+                    apiToken = benchmarkToken,
                 )
             }.onSuccess { report ->
                 state.strategyBenchmarkReport = report
@@ -343,9 +356,7 @@ internal class GitHubConfigActions(
         }
     }
 
-    fun handleInstalledOnlineShareTargetsChanged(
-        installedOnlineShareTargets: List<OnlineShareTargetOption>
-    ) {
+    fun handleInstalledOnlineShareTargetsChanged(installedOnlineShareTargets: List<OnlineShareTargetOption>) {
         if (state.onlineShareTargetPackageInput.isNotBlank() &&
             installedOnlineShareTargets.none { it.packageName == state.onlineShareTargetPackageInput }
         ) {
@@ -362,23 +373,23 @@ internal class GitHubConfigActions(
         }
     }
 
-    private suspend fun applyImportedTrackedItems(
-        payload: GitHubTrackedItemsImportPayload
-    ): GitHubTrackImportApplyResult {
-        val nowMillis = System.currentTimeMillis()
+    private suspend fun applyImportedTrackedItems(payload: GitHubTrackedItemsImportPayload): GitHubTrackImportApplyResult {
+        val nowMillis = env.clock.nowMs()
         if (payload.items.isEmpty()) {
             return GitHubTrackImportApplyResult(
                 addedCount = 0,
                 updatedCount = 0,
                 unchangedCount = 0,
                 invalidCount = payload.invalidCount,
-                duplicateCount = payload.duplicateCount
+                duplicateCount = payload.duplicateCount,
             )
         }
         val mergedItems = state.trackedItems.toMutableList()
-        val indexById = mergedItems.withIndex()
-            .associate { it.value.id to it.index }
-            .toMutableMap()
+        val indexById =
+            mergedItems
+                .withIndex()
+                .associate { it.value.id to it.index }
+                .toMutableMap()
         val touchedItems = mutableListOf<GitHubTrackedApp>()
         val refreshItems = mutableListOf<GitHubTrackedApp>()
         var addedCount = 0
@@ -406,7 +417,7 @@ internal class GitHubConfigActions(
                         val existingState = state.checkStates[item.id] ?: VersionCheckUi()
                         assetActions.clearApkAssetStateAndCacheNow(
                             item = existingItem,
-                            itemState = existingState
+                            itemState = existingState,
                         )
                     }
                     mergedItems[existingIndex] = mergedItem
@@ -430,7 +441,7 @@ internal class GitHubConfigActions(
                 updatedCount = 0,
                 unchangedCount = unchangedCount,
                 invalidCount = payload.invalidCount,
-                duplicateCount = payload.duplicateCount
+                duplicateCount = payload.duplicateCount,
             )
         }
         state.trackedItems.clear()
@@ -455,18 +466,14 @@ internal class GitHubConfigActions(
             updatedCount = updatedCount,
             unchangedCount = unchangedCount,
             invalidCount = payload.invalidCount,
-            duplicateCount = payload.duplicateCount
+            duplicateCount = payload.duplicateCount,
         )
     }
-
 }
 
-private fun GitHubTrackedApp.withTrackedLocalAppTypeFallback(
-    existingItem: GitHubTrackedApp
-): GitHubTrackedApp {
-    return if (localAppType == GitHubTrackedLocalAppType.Unknown) {
+private fun GitHubTrackedApp.withTrackedLocalAppTypeFallback(existingItem: GitHubTrackedApp): GitHubTrackedApp =
+    if (localAppType == GitHubTrackedLocalAppType.Unknown) {
         copy(localAppType = existingItem.localAppType)
     } else {
         this
     }
-}

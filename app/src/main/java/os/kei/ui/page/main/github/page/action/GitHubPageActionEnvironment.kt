@@ -17,7 +17,8 @@ internal class GitHubPageActionEnvironment(
     val repository: GitHubPageRepository,
     val actionsRepository: GitHubActionsPageRepository = GitHubActionsPageRepository(),
     val systemDmOption: DownloaderOption,
-    val openLinkFailureMessage: String
+    val openLinkFailureMessage: String,
+    val clock: GitHubActionClock = GitHubSystemActionClock
 ) {
     fun string(@StringRes resId: Int, vararg args: Any): String {
         return context.getString(resId, *args)

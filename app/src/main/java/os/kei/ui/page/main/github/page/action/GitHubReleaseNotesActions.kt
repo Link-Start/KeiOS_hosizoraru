@@ -20,23 +20,24 @@ import os.kei.ui.page.main.github.statusActionUrl
 
 internal class GitHubReleaseNotesActions(
     private val env: GitHubPageActionEnvironment,
-    private val apkInfoRepository: GitHubApkInfoRepository
+    private val apkInfoRepository: GitHubApkInfoRepository,
 ) {
     private val context get() = env.context
     private val scope get() = env.scope
     private val state get() = env.state
     private val repository get() = env.repository
+    private val clock get() = env.clock
 
     fun loadReleaseNotes(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
-        clearCache: Boolean
+        clearCache: Boolean,
     ) {
         if (clearCache) {
             loadReleaseNotesTargets(
                 item = item,
                 itemState = itemState,
-                forceRefresh = true
+                forceRefresh = true,
             )
             return
         }
@@ -45,39 +46,40 @@ internal class GitHubReleaseNotesActions(
             loadReleaseNotesTargets(
                 item = item,
                 itemState = itemState,
-                forceRefresh = clearCache
+                forceRefresh = clearCache,
             )
             return
         }
         loadReleaseNotesBundle(
             item = item,
             target = selectedTarget,
-            clearCache = clearCache
+            clearCache = clearCache,
         )
     }
 
     fun loadReleaseNotesTargets(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
     ) {
         val cachedTargets = state.releaseNotesTargets[item.id].orEmpty()
         val cachedSelected = state.releaseNotesSelectedTargets[item.id]
         directApkReleaseNotesTarget(item, itemState)?.let { directTarget ->
             val directTargets = listOf(directTarget)
-            val selectedTarget = selectRefreshedReleaseNotesTarget(
-                previousTarget = cachedSelected,
-                targets = directTargets,
-                preferPreRelease = item.preferPreRelease
-            ) ?: directTarget
+            val selectedTarget =
+                selectRefreshedReleaseNotesTarget(
+                    previousTarget = cachedSelected,
+                    targets = directTargets,
+                    preferPreRelease = item.preferPreRelease,
+                ) ?: directTarget
             state.releaseNotesTargets[item.id] = directTargets
-            state.releaseNotesTargetsLoadedAtMs[item.id] = System.currentTimeMillis()
+            state.releaseNotesTargetsLoadedAtMs[item.id] = clock.nowMs()
             state.releaseNotesSelectedTargets[item.id] = selectedTarget
             state.releaseNotesErrors.remove(item.id)
             loadReleaseNotesBundle(
                 item = item,
                 target = selectedTarget,
-                clearCache = forceRefresh
+                clearCache = forceRefresh,
             )
             return
         }
@@ -94,23 +96,26 @@ internal class GitHubReleaseNotesActions(
         state.releaseNotesErrors.remove(item.id)
         scope.launch {
             val lookupConfig = state.lookupConfig.forTrackedItem(item)
-            val remoteTargets = repository.fetchReleaseNotesTargets(
-                owner = item.owner,
-                repo = item.repo,
-                apiToken = lookupConfig.apiToken
-            ).getOrElse { error ->
-                fallbackReleaseNotesTargets(item, itemState).ifEmpty {
-                    state.releaseNotesLoading[item.id] = false
-                    state.releaseNotesErrors[item.id] = error.message
-                        ?: context.getString(R.string.github_error_load_apk_assets_failed)
-                    return@launch
-                }
-            }
-            val selectedTarget = selectRefreshedReleaseNotesTarget(
-                previousTarget = cachedSelected,
-                targets = remoteTargets,
-                preferPreRelease = item.preferPreRelease
-            )
+            val remoteTargets =
+                repository
+                    .fetchReleaseNotesTargets(
+                        owner = item.owner,
+                        repo = item.repo,
+                        apiToken = lookupConfig.apiToken,
+                    ).getOrElse { error ->
+                        fallbackReleaseNotesTargets(item, itemState).ifEmpty {
+                            state.releaseNotesLoading[item.id] = false
+                            state.releaseNotesErrors[item.id] = error.message
+                                ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                            return@launch
+                        }
+                    }
+            val selectedTarget =
+                selectRefreshedReleaseNotesTarget(
+                    previousTarget = cachedSelected,
+                    targets = remoteTargets,
+                    preferPreRelease = item.preferPreRelease,
+                )
             if (selectedTarget == null) {
                 state.releaseNotesLoading[item.id] = false
                 state.releaseNotesErrors[item.id] =
@@ -118,7 +123,7 @@ internal class GitHubReleaseNotesActions(
                 return@launch
             }
             state.releaseNotesTargets[item.id] = remoteTargets
-            state.releaseNotesTargetsLoadedAtMs[item.id] = System.currentTimeMillis()
+            state.releaseNotesTargetsLoadedAtMs[item.id] = clock.nowMs()
             state.releaseNotesSelectedTargets[item.id] = selectedTarget
             state.releaseNotesBundles.remove(item.id)
             state.releaseNotesBundleLoadedAtMs.remove(item.id)
@@ -128,14 +133,14 @@ internal class GitHubReleaseNotesActions(
             loadReleaseNotesBundle(
                 item = item,
                 target = selectedTarget,
-                clearCache = forceRefresh
+                clearCache = forceRefresh,
             )
         }
     }
 
     fun selectReleaseNotesTarget(
         item: GitHubTrackedApp,
-        target: GitHubReleaseNotesTarget
+        target: GitHubReleaseNotesTarget,
     ) {
         state.releaseNotesSelectedTargets[item.id] = target
         state.releaseNotesBundles.remove(item.id)
@@ -146,14 +151,14 @@ internal class GitHubReleaseNotesActions(
     private fun loadReleaseNotesBundle(
         item: GitHubTrackedApp,
         target: GitHubReleaseNotesTarget,
-        clearCache: Boolean
+        clearCache: Boolean,
     ) {
         directApkReleaseNotesBundle(item, target)?.let { bundle ->
             val key = releaseNotesApkVersionKey(item.id, target)
             state.releaseNotesLoading[item.id] = false
             state.releaseNotesErrors.remove(item.id)
             state.releaseNotesBundles[item.id] = bundle
-            state.releaseNotesBundleLoadedAtMs[item.id] = System.currentTimeMillis()
+            state.releaseNotesBundleLoadedAtMs[item.id] = clock.nowMs()
             state.checkStates[item.id]
                 ?.latestStableApkVersion
                 ?.takeIf { it.hasVersion() }
@@ -177,7 +182,7 @@ internal class GitHubReleaseNotesActions(
                 target = target,
                 bundle = cachedBundle,
                 lookupConfig = lookupConfig,
-                forceRefresh = false
+                forceRefresh = false,
             )
             return
         }
@@ -185,25 +190,27 @@ internal class GitHubReleaseNotesActions(
         state.releaseNotesErrors.remove(item.id)
         scope.launch {
             val preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
-            val cacheKey = repository.buildAssetCacheKey(
-                owner = item.owner,
-                repo = item.repo,
-                rawTag = target.tagName,
-                releaseUrl = target.htmlUrl,
-                preferHtml = preferHtml,
-                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                includeAllAssets = true,
-                hasApiToken = lookupConfig.apiToken.isNotBlank()
-            )
+            val cacheKey =
+                repository.buildAssetCacheKey(
+                    owner = item.owner,
+                    repo = item.repo,
+                    rawTag = target.tagName,
+                    releaseUrl = target.htmlUrl,
+                    preferHtml = preferHtml,
+                    aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                    includeAllAssets = true,
+                    hasApiToken = lookupConfig.apiToken.isNotBlank(),
+                )
             if (clearCache) {
                 repository.clearAssetCache(cacheKey)
             }
             val refreshIntervalHours = repository.loadRefreshIntervalHours()
-            val persistedBundle = if (clearCache) {
-                null
-            } else {
-                repository.loadAssetBundle(cacheKey, refreshIntervalHours)
-            }
+            val persistedBundle =
+                if (clearCache) {
+                    null
+                } else {
+                    repository.loadAssetBundle(cacheKey, refreshIntervalHours)
+                }
             if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@launch
             if (
                 persistedBundle != null &&
@@ -212,55 +219,57 @@ internal class GitHubReleaseNotesActions(
             ) {
                 state.releaseNotesLoading[item.id] = false
                 state.releaseNotesBundles[item.id] = persistedBundle
-                state.releaseNotesBundleLoadedAtMs[item.id] = System.currentTimeMillis()
+                state.releaseNotesBundleLoadedAtMs[item.id] = clock.nowMs()
                 resolveReleaseNotesApkVersionIfNeeded(
                     item = item,
                     target = target,
                     bundle = persistedBundle,
                     lookupConfig = lookupConfig,
-                    forceRefresh = false
+                    forceRefresh = false,
                 )
                 return@launch
             } else if (persistedBundle != null) {
                 repository.clearAssetCache(cacheKey)
             }
-            repository.fetchApkAssets(
-                owner = item.owner,
-                repo = item.repo,
-                rawTag = target.tagName,
-                releaseUrl = target.htmlUrl,
-                preferHtml = preferHtml,
-                aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                includeAllAssets = true,
-                apiToken = lookupConfig.apiToken
-            ).onSuccess { bundle ->
-                if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onSuccess
-                val persisted = bundle.copy(
-                    sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig)
-                )
-                state.releaseNotesLoading[item.id] = false
-                state.releaseNotesBundles[item.id] = persisted
-                state.releaseNotesBundleLoadedAtMs[item.id] = System.currentTimeMillis()
-                repository.saveAssetBundle(cacheKey, persisted)
-                resolveReleaseNotesApkVersionIfNeeded(
-                    item = item,
-                    target = target,
-                    bundle = persisted,
-                    lookupConfig = lookupConfig,
-                    forceRefresh = true
-                )
-            }.onFailure { error ->
-                if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
-                state.releaseNotesLoading[item.id] = false
-                state.releaseNotesErrors[item.id] = error.message
-                    ?: context.getString(R.string.github_error_load_apk_assets_failed)
-            }
+            repository
+                .fetchApkAssets(
+                    owner = item.owner,
+                    repo = item.repo,
+                    rawTag = target.tagName,
+                    releaseUrl = target.htmlUrl,
+                    preferHtml = preferHtml,
+                    aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                    includeAllAssets = true,
+                    apiToken = lookupConfig.apiToken,
+                ).onSuccess { bundle ->
+                    if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onSuccess
+                    val persisted =
+                        bundle.copy(
+                            sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig),
+                        )
+                    state.releaseNotesLoading[item.id] = false
+                    state.releaseNotesBundles[item.id] = persisted
+                    state.releaseNotesBundleLoadedAtMs[item.id] = clock.nowMs()
+                    repository.saveAssetBundle(cacheKey, persisted)
+                    resolveReleaseNotesApkVersionIfNeeded(
+                        item = item,
+                        target = target,
+                        bundle = persisted,
+                        lookupConfig = lookupConfig,
+                        forceRefresh = true,
+                    )
+                }.onFailure { error ->
+                    if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
+                    state.releaseNotesLoading[item.id] = false
+                    state.releaseNotesErrors[item.id] = error.message
+                        ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                }
         }
     }
 
     private fun isRuntimeCacheFresh(
         loadedAtMs: Long?,
-        nowMs: Long = System.currentTimeMillis()
+        nowMs: Long = clock.nowMs(),
     ): Boolean {
         val loadedAt = loadedAtMs ?: return false
         if (loadedAt <= 0L) return false
@@ -270,23 +279,25 @@ internal class GitHubReleaseNotesActions(
 
     private fun fallbackReleaseNotesTargets(
         item: GitHubTrackedApp,
-        itemState: VersionCheckUi
-    ): List<GitHubReleaseNotesTarget> {
-        return buildList {
+        itemState: VersionCheckUi,
+    ): List<GitHubReleaseNotesTarget> =
+        buildList {
             directApkReleaseNotesTarget(item, itemState)?.let(::add)
             itemState.latestStableRawTag.trim().takeIf { it.isNotBlank() }?.let { tag ->
                 add(
                     GitHubReleaseNotesTarget(
                         releaseName = itemState.latestStableName.trim().ifBlank { tag },
                         tagName = tag,
-                        htmlUrl = itemState.latestStableUrl.trim().ifBlank {
-                            itemState.statusActionUrl(item.owner, item.repo)
-                        },
+                        htmlUrl =
+                            itemState.latestStableUrl.trim().ifBlank {
+                                itemState.statusActionUrl(item.owner, item.repo)
+                            },
                         prerelease = false,
                         latestInChannel = true,
-                        updatedAtMillis = itemState.latestStableUpdatedAtMillis
-                            .takeIf { it > 0L }
-                    )
+                        updatedAtMillis =
+                            itemState.latestStableUpdatedAtMillis
+                                .takeIf { it > 0L },
+                    ),
                 )
             }
             itemState.latestPreRawTag.trim().takeIf { it.isNotBlank() }?.let { tag ->
@@ -294,102 +305,114 @@ internal class GitHubReleaseNotesActions(
                     GitHubReleaseNotesTarget(
                         releaseName = itemState.latestPreName.trim().ifBlank { tag },
                         tagName = tag,
-                        htmlUrl = itemState.latestPreUrl.trim().ifBlank {
-                            itemState.statusActionUrl(item.owner, item.repo)
-                        },
+                        htmlUrl =
+                            itemState.latestPreUrl.trim().ifBlank {
+                                itemState.statusActionUrl(item.owner, item.repo)
+                            },
                         prerelease = true,
                         latestInChannel = true,
-                        updatedAtMillis = itemState.latestPreUpdatedAtMillis
-                            .takeIf { it > 0L }
-                    )
+                        updatedAtMillis =
+                            itemState.latestPreUpdatedAtMillis
+                                .takeIf { it > 0L },
+                    ),
                 )
             }
         }.distinctBy { it.id.lowercase() }
-    }
 
     private fun directApkReleaseNotesTarget(
         item: GitHubTrackedApp,
-        itemState: VersionCheckUi
+        itemState: VersionCheckUi,
     ): GitHubReleaseNotesTarget? {
         if (!item.isDirectApkTrack()) return null
-        val preInfo = itemState.latestPreApkVersion
-            ?.takeIf { info -> info.releaseNotes.isNotBlank() }
-        val stableInfo = itemState.latestStableApkVersion
-            ?.takeIf { info -> info.releaseNotes.isNotBlank() }
-        val info = preInfo ?: stableInfo
-            ?: return null
+        val preInfo =
+            itemState.latestPreApkVersion
+                ?.takeIf { info -> info.releaseNotes.isNotBlank() }
+        val stableInfo =
+            itemState.latestStableApkVersion
+                ?.takeIf { info -> info.releaseNotes.isNotBlank() }
+        val info =
+            preInfo ?: stableInfo
+                ?: return null
         val prerelease = preInfo != null
-        val tag = info.versionLabel()
-            .ifBlank { info.releaseTag.trim() }
-            .ifBlank {
-                if (prerelease) itemState.latestPreRawTag.trim() else itemState.latestStableRawTag.trim()
-            }
-            .ifBlank {
-                if (prerelease) itemState.preReleaseInfo.trim() else itemState.latestTag.trim()
-            }
-            .ifBlank { info.assetName.trim() }
-            .ifBlank { item.repo.trim() }
-        return GitHubReleaseNotesTarget(
-            releaseName = info.releaseName.trim()
+        val tag =
+            info
+                .versionLabel()
+                .ifBlank { info.releaseTag.trim() }
                 .ifBlank {
-                    if (prerelease) itemState.latestPreName.trim() else itemState.latestStableName.trim()
-                }
-                .ifBlank { item.appLabel.trim() }
-                .ifBlank { item.repo.trim() },
+                    if (prerelease) itemState.latestPreRawTag.trim() else itemState.latestStableRawTag.trim()
+                }.ifBlank {
+                    if (prerelease) itemState.preReleaseInfo.trim() else itemState.latestTag.trim()
+                }.ifBlank { info.assetName.trim() }
+                .ifBlank { item.repo.trim() }
+        return GitHubReleaseNotesTarget(
+            releaseName =
+                info.releaseName
+                    .trim()
+                    .ifBlank {
+                        if (prerelease) itemState.latestPreName.trim() else itemState.latestStableName.trim()
+                    }.ifBlank { item.appLabel.trim() }
+                    .ifBlank { item.repo.trim() },
             tagName = tag,
             htmlUrl = info.releaseUrl.trim().ifBlank { item.repoUrl.trim() },
             prerelease = prerelease,
             latestInChannel = true,
-            updatedAtMillis = if (prerelease) {
-                itemState.latestPreUpdatedAtMillis.takeIf { it > 0L }
-            } else {
-                itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
-            }
+            updatedAtMillis =
+                if (prerelease) {
+                    itemState.latestPreUpdatedAtMillis.takeIf { it > 0L }
+                } else {
+                    itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+                },
         )
     }
 
     private fun directApkReleaseNotesBundle(
         item: GitHubTrackedApp,
-        target: GitHubReleaseNotesTarget
+        target: GitHubReleaseNotesTarget,
     ): GitHubReleaseAssetBundle? {
         if (!item.isDirectApkTrack()) return null
         val itemState = state.checkStates[item.id] ?: return null
-        val info = if (target.prerelease) {
-            itemState.latestPreApkVersion
-        } else {
-            itemState.latestStableApkVersion
-        }
-            ?.takeIf { version -> version.releaseNotes.isNotBlank() }
-            ?: return null
-        val updatedAtMillis = if (target.prerelease) {
-            itemState.latestPreUpdatedAtMillis.takeIf { it > 0L }
-        } else {
-            itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
-        }
-        val assetUrl = info.fetchSource.trim()
-            .ifBlank { info.releaseUrl.trim() }
-            .ifBlank { item.repoUrl.trim() }
-        val assetName = info.assetName.trim()
-            .ifBlank { directApkFileNameFromUrl(assetUrl) }
-            .ifBlank { "remote.apk" }
+        val info =
+            if (target.prerelease) {
+                itemState.latestPreApkVersion
+            } else {
+                itemState.latestStableApkVersion
+            }?.takeIf { version -> version.releaseNotes.isNotBlank() }
+                ?: return null
+        val updatedAtMillis =
+            if (target.prerelease) {
+                itemState.latestPreUpdatedAtMillis.takeIf { it > 0L }
+            } else {
+                itemState.latestStableUpdatedAtMillis.takeIf { it > 0L }
+            }
+        val assetUrl =
+            info.fetchSource
+                .trim()
+                .ifBlank { info.releaseUrl.trim() }
+                .ifBlank { item.repoUrl.trim() }
+        val assetName =
+            info.assetName
+                .trim()
+                .ifBlank { directApkFileNameFromUrl(assetUrl) }
+                .ifBlank { "remote.apk" }
         return GitHubReleaseAssetBundle(
             releaseName = target.releaseName,
             tagName = target.tagName,
             htmlUrl = target.htmlUrl.ifBlank { item.repoUrl },
             releaseUpdatedAtMillis = updatedAtMillis,
             releaseNotesBody = info.releaseNotes,
-            assets = listOf(
-                GitHubReleaseAssetFile(
-                    name = assetName,
-                    downloadUrl = assetUrl,
-                    sizeBytes = 0L,
-                    downloadCount = 0,
-                    contentType = "application/vnd.android.package-archive",
-                    updatedAtMillis = updatedAtMillis
-                )
-            ),
+            assets =
+                listOf(
+                    GitHubReleaseAssetFile(
+                        name = assetName,
+                        downloadUrl = assetUrl,
+                        sizeBytes = 0L,
+                        downloadCount = 0,
+                        contentType = "application/vnd.android.package-archive",
+                        updatedAtMillis = updatedAtMillis,
+                    ),
+                ),
             showingAllAssets = true,
-            fetchSource = DIRECT_APK_RELEASE_NOTES_FETCH_SOURCE
+            fetchSource = DIRECT_APK_RELEASE_NOTES_FETCH_SOURCE,
         )
     }
 
@@ -398,24 +421,26 @@ internal class GitHubReleaseNotesActions(
         target: GitHubReleaseNotesTarget,
         bundle: GitHubReleaseAssetBundle,
         lookupConfig: GitHubLookupConfig,
-        forceRefresh: Boolean
+        forceRefresh: Boolean,
     ) {
         if (!lookupConfig.preciseApkVersionEnabled) return
         val key = releaseNotesApkVersionKey(item.id, target)
         if (!forceRefresh && state.releaseNotesApkVersions[key]?.hasVersion() == true) return
-        val apkAssets = bundle.assets
-            .filter { asset -> asset.name.endsWith(".apk", ignoreCase = true) }
-            .take(MAX_RELEASE_NOTES_APK_VERSION_CANDIDATES)
+        val apkAssets =
+            bundle.assets
+                .filter { asset -> asset.name.endsWith(".apk", ignoreCase = true) }
+                .take(MAX_RELEASE_NOTES_APK_VERSION_CANDIDATES)
         if (apkAssets.isEmpty()) return
         scope.launch {
-            val resolved = resolveReleaseNotesApkVersion(
-                item = item,
-                target = target,
-                bundle = bundle,
-                apkAssets = apkAssets,
-                lookupConfig = lookupConfig,
-                forceRefresh = forceRefresh
-            )
+            val resolved =
+                resolveReleaseNotesApkVersion(
+                    item = item,
+                    target = target,
+                    bundle = bundle,
+                    apkAssets = apkAssets,
+                    lookupConfig = lookupConfig,
+                    forceRefresh = forceRefresh,
+                )
             if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@launch
             resolved?.takeIf { it.hasVersion() }?.let { state.releaseNotesApkVersions[key] = it }
         }
@@ -427,37 +452,40 @@ internal class GitHubReleaseNotesActions(
         bundle: GitHubReleaseAssetBundle,
         apkAssets: List<GitHubReleaseAssetFile>,
         lookupConfig: GitHubLookupConfig,
-        forceRefresh: Boolean
+        forceRefresh: Boolean,
     ): GitHubRemoteApkVersionInfo? {
-        val inspected = GitHubExecution.mapOrderedBounded(
-            items = apkAssets,
-            maxConcurrency = MAX_RELEASE_NOTES_APK_VERSION_PARALLEL
-        ) { asset ->
-            asset to apkInfoRepository.inspect(
-                asset = asset,
-                lookupConfig = lookupConfig,
-                forceRefresh = forceRefresh
-            )
-        }
+        val inspected =
+            GitHubExecution.mapOrderedBounded(
+                items = apkAssets,
+                maxConcurrency = MAX_RELEASE_NOTES_APK_VERSION_PARALLEL,
+            ) { asset ->
+                asset to
+                    apkInfoRepository.inspect(
+                        asset = asset,
+                        lookupConfig = lookupConfig,
+                        forceRefresh = forceRefresh,
+                    )
+            }
         val requestedPackageName = item.packageName.trim()
-        val matched = inspected.firstNotNullOfOrNull { (asset, result) ->
-            result.getOrNull()
-                ?.takeIf { info ->
-                    info.versionName.isNotBlank() || info.versionCode.isNotBlank()
-                }
-                ?.takeIf { info ->
-                    requestedPackageName.isBlank() ||
+        val matched =
+            inspected.firstNotNullOfOrNull { (asset, result) ->
+                result
+                    .getOrNull()
+                    ?.takeIf { info ->
+                        info.versionName.isNotBlank() || info.versionCode.isNotBlank()
+                    }?.takeIf { info ->
+                        requestedPackageName.isBlank() ||
                             info.packageName.equals(requestedPackageName, ignoreCase = true)
-                }
-                ?.let { info -> asset to info }
-        }
-        val fallback = inspected.firstNotNullOfOrNull { (asset, result) ->
-            result.getOrNull()
-                ?.takeIf { info ->
-                    info.versionName.isNotBlank() || info.versionCode.isNotBlank()
-                }
-                ?.let { info -> asset to info }
-        }
+                    }?.let { info -> asset to info }
+            }
+        val fallback =
+            inspected.firstNotNullOfOrNull { (asset, result) ->
+                result
+                    .getOrNull()
+                    ?.takeIf { info ->
+                        info.versionName.isNotBlank() || info.versionCode.isNotBlank()
+                    }?.let { info -> asset to info }
+            }
         val (asset, info) = matched ?: fallback ?: return null
         return GitHubRemoteApkVersionInfo(
             releaseName = bundle.releaseName.ifBlank { target.releaseName },
@@ -467,42 +495,45 @@ internal class GitHubReleaseNotesActions(
             packageName = info.packageName,
             versionName = info.versionName,
             versionCode = info.versionCode,
-            fetchSource = info.fetchSource.ifBlank { bundle.fetchSource }
+            fetchSource = info.fetchSource.ifBlank { bundle.fetchSource },
         )
     }
 
     private fun selectDefaultReleaseNotesTarget(
         targets: List<GitHubReleaseNotesTarget>,
-        preferPreRelease: Boolean
+        preferPreRelease: Boolean,
     ): GitHubReleaseNotesTarget? {
-        val preferred = if (preferPreRelease) {
-            targets.firstOrNull { it.prerelease && it.latestInChannel }
-                ?: targets.firstOrNull { it.prerelease }
-        } else {
-            targets.firstOrNull { !it.prerelease && it.latestInChannel }
-                ?: targets.firstOrNull { !it.prerelease }
-        }
+        val preferred =
+            if (preferPreRelease) {
+                targets.firstOrNull { it.prerelease && it.latestInChannel }
+                    ?: targets.firstOrNull { it.prerelease }
+            } else {
+                targets.firstOrNull { !it.prerelease && it.latestInChannel }
+                    ?: targets.firstOrNull { !it.prerelease }
+            }
         return preferred ?: targets.firstOrNull()
     }
 
     private fun selectRefreshedReleaseNotesTarget(
         previousTarget: GitHubReleaseNotesTarget?,
         targets: List<GitHubReleaseNotesTarget>,
-        preferPreRelease: Boolean
+        preferPreRelease: Boolean,
     ): GitHubReleaseNotesTarget? {
         previousTarget?.let { previous ->
             targets.firstOrNull { it.id.equals(previous.id, ignoreCase = true) }?.let { return it }
-            targets.firstOrNull {
-                it.tagName.equals(previous.tagName, ignoreCase = true) &&
+            targets
+                .firstOrNull {
+                    it.tagName.equals(previous.tagName, ignoreCase = true) &&
                         it.htmlUrl.equals(previous.htmlUrl, ignoreCase = true)
-            }?.let { return it }
-            targets.firstOrNull {
-                it.tagName.equals(previous.tagName, ignoreCase = true)
-            }?.let { return it }
+                }?.let { return it }
+            targets
+                .firstOrNull {
+                    it.tagName.equals(previous.tagName, ignoreCase = true)
+                }?.let { return it }
         }
         return selectDefaultReleaseNotesTarget(
             targets = targets,
-            preferPreRelease = preferPreRelease
+            preferPreRelease = preferPreRelease,
         )
     }
 

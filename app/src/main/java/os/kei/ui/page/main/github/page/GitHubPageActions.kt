@@ -449,8 +449,7 @@ internal class GitHubPageActions(
 
     fun dismissShareImportResult(showToast: Boolean = false) = shareImportActions.dismissResult(showToast)
 
-    fun trimExpiredPendingShareImportTrack(nowMillis: Long = System.currentTimeMillis()) =
-        shareImportActions.trimExpiredPendingTrack(nowMillis)
+    fun trimExpiredPendingShareImportTrack(nowMillis: Long = env.clock.nowMs()) = shareImportActions.trimExpiredPendingTrack(nowMillis)
 
     fun openExternalUrl(
         url: String,

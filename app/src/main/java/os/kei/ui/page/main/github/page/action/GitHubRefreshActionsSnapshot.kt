@@ -34,9 +34,7 @@ internal fun GitHubRefreshActions.consumeDeferredTrackStoreSyncAfterRefresh(): B
     return pending
 }
 
-internal suspend fun GitHubRefreshActions.persistCheckCacheNow(
-    refreshTimestamp: Long = state.lastRefreshMs
-) {
+internal suspend fun GitHubRefreshActions.persistCheckCacheNow(refreshTimestamp: Long = state.lastRefreshMs) {
     repository.saveCheckCache(buildCheckCacheEntries(), refreshTimestamp)
 }
 
@@ -49,7 +47,7 @@ internal fun GitHubRefreshActions.buildCheckCacheEntries(): Map<String, GitHubCh
 internal fun GitHubRefreshActions.mergeDirectApkRemoteFallback(
     item: GitHubTrackedApp,
     resolvedState: VersionCheckUi,
-    previousState: VersionCheckUi
+    previousState: VersionCheckUi,
 ): VersionCheckUi {
     if (!item.isDirectApkTrack() || !resolvedState.failed) return resolvedState
     if (!previousState.hasDirectApkReusableRemoteResult()) return resolvedState
@@ -59,36 +57,34 @@ internal fun GitHubRefreshActions.mergeDirectApkRemoteFallback(
         localVersionCode = resolvedState.localVersionCode,
         failed = false,
         directApkRemoteHealth = GitHubDirectApkRemoteHealth.Degraded,
-        directApkRemoteHealthMessage = resolvedState.directApkRemoteHealthMessage
-            .ifBlank { resolvedState.message },
-        directApkRemoteCheckedAtMillis = resolvedState.directApkRemoteCheckedAtMillis
-            .takeIf { it > 0L } ?: System.currentTimeMillis()
+        directApkRemoteHealthMessage =
+            resolvedState.directApkRemoteHealthMessage
+                .ifBlank { resolvedState.message },
+        directApkRemoteCheckedAtMillis =
+            resolvedState.directApkRemoteCheckedAtMillis
+                .takeIf { it > 0L } ?: clock.nowMs(),
     )
 }
 
-internal fun VersionCheckUi.hasDirectApkReusableRemoteResult(): Boolean {
-    return latestStableApkVersion != null ||
-            latestStableRawTag.isNotBlank() ||
-            latestTag.isNotBlank() ||
-            latestStableName.isNotBlank()
-}
+internal fun VersionCheckUi.hasDirectApkReusableRemoteResult(): Boolean =
+    latestStableApkVersion != null ||
+        latestStableRawTag.isNotBlank() ||
+        latestTag.isNotBlank() ||
+        latestStableName.isNotBlank()
 
-internal fun elapsedMsSince(startNs: Long): Long {
-    return ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
-}
+internal fun elapsedMsSince(startNs: Long): Long = ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
 
 internal suspend fun GitHubRefreshActions.resolveItemState(
     item: GitHubTrackedApp,
     profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-    forceRefresh: Boolean = false
-): VersionCheckUi {
-    return repository.evaluateTrackedApp(
+    forceRefresh: Boolean = false,
+): VersionCheckUi =
+    repository.evaluateTrackedApp(
         context = context,
         item = item,
         profilePurposeOverride = profilePurposeOverride,
-        forceRefresh = forceRefresh
+        forceRefresh = forceRefresh,
     )
-}
 
 internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitHubTrackSnapshot) {
     val previousItemsById = state.trackedItems.associateBy { it.id }
@@ -98,18 +94,17 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
     val incomingItemsById = trackSnapshot.items.associateBy { it.id }
     val changedAssetTrackIds =
         (previousItemsById.keys - incomingItemsById.keys) +
-                incomingItemsById
-                    .filter { (trackId, incomingItem) ->
-                        previousItemsById[trackId]?.let { previousItem ->
-                            !previousItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(
-                                incomingItem
-                            )
-                        } == true
-                    }
-                    .keys
+            incomingItemsById
+                .filter { (trackId, incomingItem) ->
+                    previousItemsById[trackId]?.let { previousItem ->
+                        !previousItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(
+                            incomingItem,
+                        )
+                    } == true
+                }.keys
     val assetSignatureChanged =
         state.assetSourceSignature.isNotBlank() &&
-                state.assetSourceSignature != snapshotAssetSourceSignature
+            state.assetSourceSignature != snapshotAssetSourceSignature
     state.lookupConfig = trackSnapshot.lookupConfig
     state.selectedStrategyInput = trackSnapshot.lookupConfig.selectedStrategy
     state.selectedActionsStrategyInput = trackSnapshot.lookupConfig.actionsStrategy
@@ -133,14 +128,15 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
         }
 
         changedAssetTrackIds.isNotEmpty() -> {
-            val staleAssetTargets = changedAssetTrackIds.mapNotNull { trackId ->
-                previousItemsById[trackId]?.let { item ->
-                    item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+            val staleAssetTargets =
+                changedAssetTrackIds.mapNotNull { trackId ->
+                    previousItemsById[trackId]?.let { item ->
+                        item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+                    }
                 }
-            }
             assetActions.clearApkAssetStatesAndCachesNow(
                 targets = staleAssetTargets,
-                clearItemIds = changedAssetTrackIds
+                clearItemIds = changedAssetTrackIds,
             )
         }
     }
@@ -167,15 +163,18 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
         }
     }
     state.pendingShareImportTrack = trackSnapshot.pendingShareImportTrack?.toShareImportTrack()
-    state.pendingShareImportPreview = GitHubShareImportFlowStore
-        .loadActivePreview()
-        ?.toShareImportPreview()
-    state.pendingShareImportAttachCandidate = GitHubShareImportFlowStore
-        .loadActiveAttachCandidate()
-        ?.toShareImportAttachCandidate()
-    state.pendingShareImportResult = GitHubShareImportFlowStore
-        .loadActiveResult()
-        ?.toShareImportResult()
+    state.pendingShareImportPreview =
+        GitHubShareImportFlowStore
+            .loadActivePreview()
+            ?.toShareImportPreview()
+    state.pendingShareImportAttachCandidate =
+        GitHubShareImportFlowStore
+            .loadActiveAttachCandidate()
+            ?.toShareImportAttachCandidate()
+    state.pendingShareImportResult =
+        GitHubShareImportFlowStore
+            .loadActiveResult()
+            ?.toShareImportResult()
 
     val cachedStates = trackSnapshot.checkCache
     val nextCheckStates = linkedMapOf<String, VersionCheckUi>()
@@ -187,33 +186,34 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
                 cache.isValidForTrackedItem(
                     item = item,
                     lookupConfig = itemLookupConfig,
-                    activeStrategyId = activeStrategyId
+                    activeStrategyId = activeStrategyId,
                 )
-            }
-            ?.let { cached ->
+            }?.let { cached ->
                 nextCheckStates[item.id] = cached.toUi()
             }
     }
     state.checkStates.putAll(nextCheckStates)
-    val externallyChangedCheckTrackIds = nextCheckStates
-        .filter { (trackId, nextState) ->
-            previousCheckStatesById[trackId]?.let { it != nextState } == true
-        }
-        .keys
+    val externallyChangedCheckTrackIds =
+        nextCheckStates
+            .filter { (trackId, nextState) ->
+                previousCheckStatesById[trackId]?.let { it != nextState } == true
+            }.keys
     if (!assetSignatureChanged && changedAssetTrackIds.isEmpty() && externallyChangedCheckTrackIds.isNotEmpty()) {
-        val staleAssetTargets = externallyChangedCheckTrackIds.mapNotNull { trackId ->
-            previousItemsById[trackId]?.let { item ->
-                item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+        val staleAssetTargets =
+            externallyChangedCheckTrackIds.mapNotNull { trackId ->
+                previousItemsById[trackId]?.let { item ->
+                    item to (previousCheckStatesById[trackId] ?: VersionCheckUi())
+                }
             }
-        }
         assetActions.clearApkAssetStatesAndCachesNow(
             targets = staleAssetTargets,
-            clearItemIds = externallyChangedCheckTrackIds
+            clearItemIds = externallyChangedCheckTrackIds,
         )
     }
-    state.lastRefreshMs = if (state.checkStates.isNotEmpty()) {
-        trackSnapshot.lastRefreshMs
-    } else {
-        0L
-    }
+    state.lastRefreshMs =
+        if (state.checkStates.isNotEmpty()) {
+            trackSnapshot.lastRefreshMs
+        } else {
+            0L
+        }
 }

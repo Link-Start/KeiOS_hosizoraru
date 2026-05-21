@@ -4,15 +4,16 @@ import android.os.Build
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -53,14 +54,21 @@ internal fun GitHubMainContent(
                 .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
                 .toMap()
         }
-    val bottomBarOffset = if (layout.bottomBarVisible) 0.dp else AppChromeTokens.floatingBottomBarOuterHeight
-    val searchDockBottom by animateDpAsState(
-        targetValue = layout.contentBottomPadding - 24.dp - bottomBarOffset,
-        label = "github_floating_search_bottom",
-    )
+    val bottomBarOffset =
+        if (layout.bottomBarVisible) {
+            0.dp
+        } else {
+            AppChromeTokens.floatingBottomBarOuterHeight
+        }
+    val searchDockBottomTarget = layout.contentBottomPadding - 24.dp - bottomBarOffset
+    val searchDockBottomState =
+        animateDpAsState(
+            targetValue = searchDockBottomTarget,
+            label = "github_floating_search_bottom",
+        )
     val floatingKeyboardLift =
         rememberAppFloatingKeyboardLift(
-            restingBottomGap = searchDockBottom,
+            restingBottomGap = searchDockBottomTarget,
             label = "github_floating_keyboard_lift",
         )
     val dockAlignment =
@@ -276,10 +284,14 @@ internal fun GitHubMainContent(
                     modifier =
                         Modifier
                             .align(dockAlignment)
-                            .padding(
+                            .offset {
+                                IntOffset(
+                                    x = 0,
+                                    y = -searchDockBottomState.value.roundToPx(),
+                                )
+                            }.padding(
                                 start = dockStartPadding,
                                 end = dockEndPadding,
-                                bottom = searchDockBottom,
                             ),
                 )
             }

@@ -8,9 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -42,13 +39,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
-import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
-import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
@@ -60,15 +55,11 @@ import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationC
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
-import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
-import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
@@ -254,6 +245,15 @@ fun SettingsPage(
     val appearanceListState = rememberLazyListState()
     val effectsListState = rememberLazyListState()
     val dataListState = rememberLazyListState()
+    val categoryListStates =
+        remember(accessListState, appearanceListState, effectsListState, dataListState) {
+            SettingsCategoryListStates(
+                access = accessListState,
+                appearance = appearanceListState,
+                effects = effectsListState,
+                data = dataListState,
+            )
+        }
     val searchListState = rememberLazyListState()
     var sliderInteractionActive by remember { mutableStateOf(false) }
     val topBarBackdrop = rememberLayerBackdrop()
@@ -275,13 +275,7 @@ fun SettingsPage(
             pagerState.settledPage
         }.coerceIn(0, categories.lastIndex)
     val activeCategory = categories[activeCategoryIndex]
-    val activePageListState =
-        when (activeCategory) {
-            SettingsCategory.Access -> accessListState
-            SettingsCategory.Appearance -> appearanceListState
-            SettingsCategory.Effects -> effectsListState
-            SettingsCategory.Data -> dataListState
-        }
+    val activePageListState = categoryListStates.forCategory(activeCategory)
     val currentActivePageListState = rememberUpdatedState(activePageListState)
     val currentActiveCategory = rememberUpdatedState(activeCategory)
     val currentShowBottomBar = rememberUpdatedState(showBottomBar)
@@ -489,89 +483,30 @@ fun SettingsPage(
         },
     ) { innerPadding ->
         if (searchActive) {
-            AppPageLazyColumn(
+            SettingsSearchContent(
                 innerPadding = innerPadding,
-                state = searchListState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .graphicsLayer { alpha = 1f }
-                        .layerBackdrop(topBarBackdrop)
-                        .layerBackdrop(bottomBarBackdrop),
-                bottomExtra =
-                    appPageBottomPaddingWithFloatingOverlay(
-                        AppChromeTokens.floatingBottomBarOuterHeight,
-                    ),
-                sectionSpacing = 12.dp,
-                userScrollEnabled = !sliderInteractionActive,
-            ) {
-                if (matchingSearchTargets.isEmpty()) {
-                    item(key = "settings_search_empty") {
-                        Text(
-                            text = stringResource(R.string.common_no_matched_results),
-                            color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            fontSize = AppTypographyTokens.Body.fontSize,
-                            lineHeight = AppTypographyTokens.Body.lineHeight,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = AppChromeTokens.pageHorizontalPadding),
-                        )
-                    }
-                } else {
-                    matchingSearchTargets.forEach { target ->
-                        settingsCardItem(target.card, settingsSearchCardInput)
-                    }
-                }
-            }
+                searchListState = searchListState,
+                matchingSearchTargets = matchingSearchTargets,
+                settingsSearchCardInput = settingsSearchCardInput,
+                scrollNestedConnection = scrollBehavior.nestedScrollConnection,
+                topBarBackdrop = topBarBackdrop,
+                bottomBarBackdrop = bottomBarBackdrop,
+                sliderInteractionActive = sliderInteractionActive,
+            )
         } else {
-            MainLoadedPager(
-                state = pagerState,
-                userScrollEnabled = !sliderInteractionActive && !searchExpanded,
-                animationsEnabled = transitionAnimationsEnabled,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = farJumpAlpha.value }
-                        .layerBackdrop(topBarBackdrop)
-                        .layerBackdrop(bottomBarBackdrop),
-            ) { pageIndex ->
-                val renderHeavyContent = pagerState.shouldRenderStablePageContent(pageIndex)
-                if (renderHeavyContent) {
-                    val category = categories[pageIndex]
-                    val pageListState =
-                        when (category) {
-                            SettingsCategory.Access -> accessListState
-                            SettingsCategory.Appearance -> appearanceListState
-                            SettingsCategory.Effects -> effectsListState
-                            SettingsCategory.Data -> dataListState
-                        }
-                    val pageNestedScrollConnection =
-                        remember(pageListState, scrollBehavior) {
-                            settingsChromeNestedScrollConnection(
-                                listState = pageListState,
-                                delegate = scrollBehavior.nestedScrollConnection,
-                            )
-                        }
-                    AppPageLazyColumn(
-                        innerPadding = innerPadding,
-                        state = pageListState,
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .nestedScroll(pageNestedScrollConnection),
-                        bottomExtra =
-                            appPageBottomPaddingWithFloatingOverlay(
-                                AppChromeTokens.floatingBottomBarOuterHeight,
-                            ),
-                        sectionSpacing = 12.dp,
-                        userScrollEnabled = !sliderInteractionActive,
-                    ) {
-                        settingsCategoryItems(category, settingsSearchCardInput)
-                    }
-                }
-            }
+            SettingsCategoryPagerContent(
+                innerPadding = innerPadding,
+                pagerState = pagerState,
+                categories = categories,
+                listStates = categoryListStates,
+                settingsSearchCardInput = settingsSearchCardInput,
+                scrollNestedConnection = scrollBehavior.nestedScrollConnection,
+                topBarBackdrop = topBarBackdrop,
+                bottomBarBackdrop = bottomBarBackdrop,
+                sliderInteractionActive = sliderInteractionActive || searchExpanded,
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                farJumpAlphaProvider = { farJumpAlpha.value },
+            )
         }
     }
 }

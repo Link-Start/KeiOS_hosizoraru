@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ fun LiquidLinearProgressBar(
 ) {
     val progressBackdrop = rememberLayerBackdrop()
     val contentDescriptionState = remember(contentDescription) { contentDescription }
+    val progressProvider = progress
     Box(
         modifier =
             modifier
@@ -70,11 +72,6 @@ fun LiquidLinearProgressBar(
                 },
         contentAlignment = Alignment.CenterStart,
     ) {
-        val safeFraction =
-            liquidProgressFraction(
-                value = progress(),
-                valueRange = valueRange,
-            )
         Box(
             modifier =
                 Modifier
@@ -93,6 +90,11 @@ fun LiquidLinearProgressBar(
                 Modifier
                     .height(height)
                     .layout { measurable, constraints ->
+                        val safeFraction =
+                            liquidProgressFraction(
+                                value = progressProvider(),
+                                valueRange = valueRange,
+                            )
                         val width =
                             (constraints.maxWidth * safeFraction)
                                 .fastRoundToInt()
@@ -171,35 +173,8 @@ fun LiquidCircularProgressBar(
 ) {
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress
-    val indeterminateValues =
-        if (progressProvider == null) {
-            val infiniteTransition = rememberInfiniteTransition(label = "liquid-circular-progress")
-            val rotation =
-                infiniteTransition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = 1100),
-                            repeatMode = RepeatMode.Restart,
-                        ),
-                    label = "liquid-circular-progress-rotation",
-                )
-            val pulse =
-                infiniteTransition.animateFloat(
-                    initialValue = 0.22f,
-                    targetValue = 0.66f,
-                    animationSpec =
-                        infiniteRepeatable(
-                            animation = tween(durationMillis = 900),
-                            repeatMode = RepeatMode.Reverse,
-                        ),
-                    label = "liquid-circular-progress-pulse",
-                )
-            rotation.value to pulse.value
-        } else {
-            null
-        }
+    val indeterminateStates =
+        rememberLiquidCircularIndeterminateStates(enabled = progressProvider == null)
     Canvas(
         modifier =
             modifier
@@ -242,13 +217,13 @@ fun LiquidCircularProgressBar(
             }
         val startAngle =
             if (fraction == null) {
-                (indeterminateValues?.first ?: 0f) - 90f
+                (indeterminateStates?.rotation?.value ?: 0f) - 90f
             } else {
                 -90f
             }
         val sweepAngle =
             if (fraction == null) {
-                72f + 148f * (indeterminateValues?.second ?: 0f)
+                72f + 148f * (indeterminateStates?.pulse?.value ?: 0f)
             } else {
                 (fraction * 360f).coerceIn(0f, 360f)
             }
@@ -276,6 +251,43 @@ fun LiquidCircularProgressBar(
         )
     }
 }
+
+@Composable
+private fun rememberLiquidCircularIndeterminateStates(enabled: Boolean): LiquidCircularIndeterminateStates? {
+    if (!enabled) return null
+    val infiniteTransition = rememberInfiniteTransition(label = "liquid-circular-progress")
+    val rotation =
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 1100),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "liquid-circular-progress-rotation",
+        )
+    val pulse =
+        infiniteTransition.animateFloat(
+            initialValue = 0.22f,
+            targetValue = 0.66f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 900),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "liquid-circular-progress-pulse",
+        )
+    return LiquidCircularIndeterminateStates(
+        rotation = rotation,
+        pulse = pulse,
+    )
+}
+
+private data class LiquidCircularIndeterminateStates(
+    val rotation: State<Float>,
+    val pulse: State<Float>,
+)
 
 @Composable
 private fun liquidProgressDefaultActiveColor(): Color = if (isSystemInDarkTheme()) Color(0xFF5DAEFF) else Color(0xFF0088FF)

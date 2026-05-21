@@ -468,6 +468,29 @@ private fun BaGuideBgmPlayingBars(
     accent: Color,
     animated: Boolean
 ) {
+    val heights = rememberBaGuideBgmPlayingBarHeights(animated)
+    Row(
+        modifier = Modifier
+            .width(18.dp)
+            .height(18.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        BaGuideBgmPlayingBar(accent = accent, heightFraction = heights.first)
+        BaGuideBgmPlayingBar(accent = accent, heightFraction = heights.second)
+        BaGuideBgmPlayingBar(accent = accent, heightFraction = heights.third)
+    }
+}
+
+@Composable
+private fun rememberBaGuideBgmPlayingBarHeights(animated: Boolean): BaGuideBgmPlayingBarHeights {
+    if (!animated) {
+        return BaGuideBgmPlayingBarHeights(
+            first = BaGuideBgmPlayingBarStaticHeight,
+            second = BaGuideBgmPlayingBarStaticHeight,
+            third = BaGuideBgmPlayingBarStaticHeight
+        )
+    }
     val transition = rememberInfiniteTransition(label = "ba_catalog_bgm_playing_bars")
     val firstHeight by transition.animateFloat(
         initialValue = 0.42f,
@@ -496,18 +519,11 @@ private fun BaGuideBgmPlayingBars(
         ),
         label = "ba_catalog_bgm_playing_bar_third"
     )
-
-    Row(
-        modifier = Modifier
-            .width(18.dp)
-            .height(18.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        BaGuideBgmPlayingBar(accent = accent, heightFraction = if (animated) firstHeight else 0.56f)
-        BaGuideBgmPlayingBar(accent = accent, heightFraction = if (animated) secondHeight else 0.56f)
-        BaGuideBgmPlayingBar(accent = accent, heightFraction = if (animated) thirdHeight else 0.56f)
-    }
+    return BaGuideBgmPlayingBarHeights(
+        first = firstHeight,
+        second = secondHeight,
+        third = thirdHeight
+    )
 }
 
 @Composable
@@ -523,6 +539,14 @@ private fun BaGuideBgmPlayingBar(
             .background(accent)
     )
 }
+
+private data class BaGuideBgmPlayingBarHeights(
+    val first: Float,
+    val second: Float,
+    val third: Float
+)
+
+private const val BaGuideBgmPlayingBarStaticHeight = 0.56f
 
 @Composable
 internal fun BaGuideBgmSearchPanel(

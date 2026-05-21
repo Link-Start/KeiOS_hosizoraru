@@ -28,7 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -129,7 +128,7 @@ fun AppFloatingSearchDock(
             modifier = Modifier
                 .width(fieldWidth)
                 .height(size)
-                .alpha(fieldAlpha)
+                .graphicsLayer { alpha = fieldAlpha }
         )
     }
     val buttonContent: @Composable () -> Unit = {
@@ -241,7 +240,7 @@ fun AppFloatingVerticalSearchActionDock(
             modifier = Modifier
                 .width(fieldWidth)
                 .height(size)
-                .alpha(fieldAlpha)
+                .graphicsLayer { alpha = fieldAlpha }
         )
     }
     val refreshTint = appFloatingRefreshTint(
@@ -397,27 +396,14 @@ private fun AppFloatingVerticalDockAction(
         durationMillis = 110,
         label = "app_floating_vertical_dock_action_scale"
     )
-    val infiniteTransition = rememberInfiniteTransition(label = "app_floating_vertical_dock_action_rotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 820, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "app_floating_vertical_dock_action_rotation"
-    )
+    val rotation = rememberFloatingDockActionRotation(rotating)
 
     Box(
         modifier = Modifier
             .size(size)
-            .then(
-                if (enabled || rotating) {
-                    Modifier
-                } else {
-                    Modifier.alpha(AppInteractiveTokens.disabledContentAlpha)
-                }
-            )
+            .graphicsLayer {
+                alpha = if (enabled || rotating) 1f else AppInteractiveTokens.disabledContentAlpha
+            }
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -439,6 +425,22 @@ private fun AppFloatingVerticalDockAction(
             tint = animatedTint
         )
     }
+}
+
+@Composable
+private fun rememberFloatingDockActionRotation(rotating: Boolean): Float {
+    if (!rotating) return 0f
+    val infiniteTransition = rememberInfiniteTransition(label = "app_floating_vertical_dock_action_rotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 820, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "app_floating_vertical_dock_action_rotation"
+    )
+    return rotation
 }
 
 private const val AppFloatingSearchDockWidthMotionMs = 220

@@ -263,7 +263,7 @@ private fun OsVirtualizedInfoRows(
     ) {
         itemsIndexed(
             items = rows,
-            key = { index, row -> "${row.key}-${row.value}-$index" },
+            key = { _, row -> row.key },
             contentType = { _, _ -> "os_info_row" },
         ) { _, row ->
             OsSectionInfoRow(
@@ -340,10 +340,10 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<Pair<String, List<
     ) {
         itemsIndexed(
             items = rows,
-            key = { index, item ->
+            key = { _, item ->
                 when (item) {
-                    is TopInfoVirtualizedItem.Header -> "header-${item.title}-$index"
-                    is TopInfoVirtualizedItem.Entry -> "entry-${item.row.key}-${item.row.value}-$index"
+                    is TopInfoVirtualizedItem.Header -> "header-${item.title}"
+                    is TopInfoVirtualizedItem.Entry -> "entry-${item.row.key}"
                 }
             },
             contentType = { _, item ->
@@ -409,7 +409,7 @@ private fun OsVirtualizedTopInfoRows(
     ) {
         itemsIndexed(
             items = rows,
-            key = { index, row -> "${row.key}-${row.value}-$index" },
+            key = { _, row -> row.key },
             contentType = { _, _ -> "os_top_info_entry" },
         ) { _, row ->
             OsTopInfoDisplayRow(

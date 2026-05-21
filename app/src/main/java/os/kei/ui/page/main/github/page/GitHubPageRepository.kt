@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
@@ -79,7 +78,7 @@ internal data class GitHubActiveShareImportFlow(
 
 internal class GitHubPageRepository(
     ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
-    defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     private val contentStateDeriver = GitHubPageContentStateDeriver(defaultDispatcher)
     private val trackRepository = GitHubPageTrackRepository(ioDispatcher)

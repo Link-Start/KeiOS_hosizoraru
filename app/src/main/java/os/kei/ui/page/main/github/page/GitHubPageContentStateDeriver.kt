@@ -200,21 +200,27 @@ internal class GitHubPageContentStateDeriver(
     }
 
     private fun buildOverviewMetrics(input: GitHubPageContentInput): GitHubOverviewMetrics {
-        val stableUpdateCount =
-            input.trackedItems.count { input.checkStates[it.id]?.hasUpdate == true }
-        val preReleaseCount =
-            input.trackedItems.count { input.checkStates[it.id]?.isPreRelease == true }
-        val preReleaseUpdateCount =
-            input.trackedItems.count { input.checkStates[it.id]?.hasPreReleaseUpdate == true }
-        val totalUpdatableCount = input.trackedItems.count {
-            val itemState = input.checkStates[it.id]
-            itemState?.hasUpdate == true || itemState?.hasPreReleaseUpdate == true
+        var stableUpdateCount = 0
+        var preReleaseCount = 0
+        var preReleaseUpdateCount = 0
+        var totalUpdatableCount = 0
+        var failedCount = 0
+        var stableLatestCount = 0
+
+        input.trackedItems.forEach { item ->
+            val itemState = input.checkStates[item.id] ?: return@forEach
+            if (itemState.hasUpdate == true) stableUpdateCount++
+            if (itemState.isPreRelease) preReleaseCount++
+            if (itemState.hasPreReleaseUpdate) preReleaseUpdateCount++
+            if (itemState.hasUpdate == true || itemState.hasPreReleaseUpdate) {
+                totalUpdatableCount++
+            }
+            if (itemState.failed) failedCount++
+            if (itemState.hasUpdate == false && !itemState.isPreRelease) {
+                stableLatestCount++
+            }
         }
-        val failedCount = input.trackedItems.count { input.checkStates[it.id]?.failed == true }
-        val stableLatestCount = input.trackedItems.count {
-            val itemState = input.checkStates[it.id]
-            itemState?.hasUpdate == false && itemState.isPreRelease.not()
-        }
+
         return GitHubOverviewMetrics(
             trackedCount = input.trackedItems.size,
             stableUpdateCount = stableUpdateCount,

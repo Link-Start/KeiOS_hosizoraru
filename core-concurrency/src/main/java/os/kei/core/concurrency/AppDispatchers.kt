@@ -65,4 +65,11 @@ object AppDispatchers {
      * Bounded to 3 threads — media decode is CPU-bound, don't over-parallelize.
      */
     val media: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(3)
+
+    /**
+     * UI data derivation: filtering, sorting, and grouping already-loaded in-memory models.
+     * Bounded to 2 Default threads so expensive page projections leave the main thread without
+     * competing with broader CPU work.
+     */
+    val uiDerivation: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(2)
 }

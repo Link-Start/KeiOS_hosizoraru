@@ -31,7 +31,29 @@ internal data class OsPageRowsDerivedState(
     val prunedJavaRows: List<InfoRow>,
     val prunedLinuxRows: List<InfoRow>,
     val visibleRowsCount: Int
-)
+) {
+    companion object {
+        val Empty =
+            OsPageRowsDerivedState(
+                query = "",
+                topInfoRows = emptyList(),
+                displayedTopInfoRows = emptyList(),
+                displayedSystemRows = emptyList(),
+                displayedSecureRows = emptyList(),
+                displayedGlobalRows = emptyList(),
+                displayedAndroidRows = emptyList(),
+                displayedJavaRows = emptyList(),
+                displayedLinuxRows = emptyList(),
+                prunedSystemRows = emptyList(),
+                prunedSecureRows = emptyList(),
+                prunedGlobalRows = emptyList(),
+                prunedAndroidRows = emptyList(),
+                prunedJavaRows = emptyList(),
+                prunedLinuxRows = emptyList(),
+                visibleRowsCount = 0,
+            )
+    }
+}
 
 internal fun deriveOsPageRowsState(
     queryApplied: String,

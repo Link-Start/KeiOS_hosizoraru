@@ -5,12 +5,15 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -25,6 +28,7 @@ import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val pendingShareImportCardTickMs = 15_000L
+private const val CONTENT_DERIVATION_DEBOUNCE_MS = 48L
 
 internal data class GitHubTrackedExportRequest(
     val content: String,
@@ -211,6 +215,7 @@ internal class GitHubPageViewModel : ViewModel() {
         )
     }
 
+    @OptIn(FlowPreview::class)
     private fun bindContentState(state: GitHubPageState) {
         contentStateJob?.cancel()
         pendingShareImportClockJob?.cancel()
@@ -249,7 +254,10 @@ internal class GitHubPageViewModel : ViewModel() {
                         pendingShareImportTrack = state.pendingShareImportTrack,
                         nowMillis = 0L
                     )
-                },
+                }
+                    .conflate()
+                    .debounce(CONTENT_DERIVATION_DEBOUNCE_MS.milliseconds)
+                    .distinctUntilChanged(),
                 pendingShareImportNowMillis
             ) { input, nowMillis ->
                 input.copy(nowMillis = nowMillis)

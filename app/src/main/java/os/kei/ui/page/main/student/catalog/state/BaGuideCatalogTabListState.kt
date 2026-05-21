@@ -3,14 +3,18 @@ package os.kei.ui.page.main.student.catalog.state
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -32,6 +36,15 @@ internal data class BaGuideCatalogTabListState(
     val hasMoreEntries: Boolean,
 )
 
+@Immutable
+private data class BaGuideCatalogComputedEntries(
+    val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
+) {
+    companion object {
+        val Empty = BaGuideCatalogComputedEntries()
+    }
+}
+
 @Composable
 internal fun rememberBaGuideCatalogTabListState(
     tab: BaGuideCatalogTab,
@@ -43,13 +56,9 @@ internal fun rememberBaGuideCatalogTabListState(
     loading: Boolean,
     isPageActive: Boolean,
 ): BaGuideCatalogTabListState {
-    val currentEntries =
-        remember(catalog, tab, sortMode, favoriteCatalogEntries) {
-            catalog.entries(tab).sortedByMode(
-                mode = sortMode,
-                favoriteCatalogEntries = favoriteCatalogEntries,
-                filterDefinitions = catalog.filterDefinitions(tab),
-            )
+    val baseEntries =
+        remember(catalog, tab) {
+            catalog.entries(tab)
         }
     val catalogFilterDefinitions =
         remember(catalog, tab) {
@@ -62,17 +71,37 @@ internal fun rememberBaGuideCatalogTabListState(
                 definitions = catalogFilterDefinitions,
             )
         }
-    val filteredEntries =
-        remember(currentEntries, searchQuery, activeSelectedFilterOptions) {
-            currentEntries
-                .filterByCatalogFilters(activeSelectedFilterOptions)
-                .filterByQuery(searchQuery)
-        }
+    var computedEntries by remember { mutableStateOf(BaGuideCatalogComputedEntries.Empty) }
+    LaunchedEffect(
+        baseEntries,
+        sortMode,
+        favoriteCatalogEntries,
+        catalogFilterDefinitions,
+        activeSelectedFilterOptions,
+        searchQuery,
+    ) {
+        computedEntries =
+            withContext(AppDispatchers.uiDerivation) {
+                val currentEntries =
+                    baseEntries.sortedByMode(
+                        mode = sortMode,
+                        favoriteCatalogEntries = favoriteCatalogEntries,
+                        filterDefinitions = catalogFilterDefinitions,
+                    )
+                BaGuideCatalogComputedEntries(
+                    filteredEntries =
+                        currentEntries
+                            .filterByCatalogFilters(activeSelectedFilterOptions)
+                            .filterByQuery(searchQuery),
+                )
+            }
+    }
+    val filteredEntries = computedEntries.filteredEntries
 
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var visibleCount by rememberSaveable(tab, searchQuery) { mutableIntStateOf(0) }
-    LaunchedEffect(filteredEntries.size) {
+    LaunchedEffect(filteredEntries) {
         visibleCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
     }
     LaunchedEffect(isPageActive, listState, filteredEntries.size, loading, snapshotFlowManager) {

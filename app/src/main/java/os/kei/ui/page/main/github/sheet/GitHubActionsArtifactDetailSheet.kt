@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +33,6 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -77,7 +77,9 @@ internal fun GitHubActionsArtifactDetailSheet(
             .takeIf { it > 0L }
             ?.let { formatAssetSize(it, context) }
             ?: stringResource(R.string.common_unknown)
-    val downloadActionText =
+    val actionButtonSize = 54.dp
+    val copyMetadataDescription = stringResource(R.string.github_actions_action_copy_metadata)
+    val downloadActionDescription =
         stringResource(
             R.string.github_actions_action_with_size,
             stringResource(R.string.common_download),
@@ -163,53 +165,56 @@ internal fun GitHubActionsArtifactDetailSheet(
                 val copyToast =
                     stringResource(R.string.github_actions_toast_artifact_metadata_copied)
                 ActionButtonRow {
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
-                        text = stringResource(R.string.github_actions_action_copy_metadata),
-                        leadingIcon = osLucideCopyIcon(),
+                        icon = osLucideCopyIcon(),
+                        contentDescription = copyMetadataDescription,
                         enabled = copyPayload.isNotBlank(),
-                        modifier = Modifier.weight(1f),
+                        width = actionButtonSize,
+                        height = actionButtonSize,
                         onClick = {
                             copyTextToClipboard(context, "github_artifact_metadata", copyPayload)
                             context.showToast(copyToast)
                         },
                     )
-                }
-                ActionButtonRow {
                     if (managedInstallEnabled) {
-                        AppLiquidTextButton(
+                        AppLiquidIconButton(
                             backdrop = backdrop,
                             variant = GlassVariant.SheetAction,
-                            text = stringResource(
-                                if (downloading) {
-                                    R.string.github_apk_info_action_installing
-                                } else {
-                                    R.string.github_page_install_status_install
-                                },
-                            ),
-                            leadingIcon = appLucidePackageIcon(),
+                            icon = appLucidePackageIcon(),
+                            contentDescription =
+                                stringResource(
+                                    if (downloading) {
+                                        R.string.github_apk_info_action_installing
+                                    } else {
+                                        R.string.github_page_install_status_install
+                                    },
+                                ),
                             enabled = canAct,
-                            modifier = Modifier.weight(1f),
+                            width = actionButtonSize,
+                            height = actionButtonSize,
                             onClick = { onInstall(run.id, artifact.id) },
                         )
                     }
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
-                        text = downloadActionText,
-                        leadingIcon = appLucideDownloadIcon(),
+                        icon = appLucideDownloadIcon(),
+                        contentDescription = downloadActionDescription,
                         enabled = canAct,
-                        modifier = Modifier.weight(1f),
+                        width = actionButtonSize,
+                        height = actionButtonSize,
                         onClick = { onDownload(run.id, artifact.id) },
                     )
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
-                        text = stringResource(R.string.github_actions_action_share),
-                        leadingIcon = appLucideShareIcon(),
+                        icon = appLucideShareIcon(),
+                        contentDescription = stringResource(R.string.github_actions_action_share),
                         enabled = canAct,
-                        modifier = Modifier.weight(1f),
+                        width = actionButtonSize,
+                        height = actionButtonSize,
                         onClick = { onShare(run.id, artifact.id) },
                     )
                 }
@@ -263,7 +268,7 @@ private fun ArtifactSelectorReasonSection(reasons: List<String>) {
 private fun ActionButtonRow(content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         content = content,
     )
 }

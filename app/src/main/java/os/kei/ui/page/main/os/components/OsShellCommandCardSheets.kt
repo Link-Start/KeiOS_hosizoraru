@@ -183,8 +183,10 @@ internal fun OsShellCommandVisibilityManagerSheet(
                         card.matchesShellVisibilityQuery(query)
                     }
                 }
-            val builtInCards = filteredCards.filter(::isBuiltInShellCommandCard)
-            val customCards = filteredCards.filterNot(::isBuiltInShellCommandCard)
+            val cardGroups =
+                remember(filteredCards) {
+                    filteredCards.splitByShellCommandCardType()
+                }
             val showShellRunner =
                 shellRunnerTitle.contains(query.trim(), ignoreCase = true) ||
                     query.isBlank()
@@ -215,16 +217,16 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     )
                 }
             }
-            if (builtInCards.isNotEmpty()) {
+            if (cardGroups.builtIn.isNotEmpty()) {
                 SheetSectionTitle(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_built_in),
-                            count = builtInCards.size,
+                            count = cardGroups.builtIn.size,
                         ),
                 )
                 SheetSectionCard(verticalSpacing = 10.dp) {
-                    builtInCards.forEach { item ->
+                    cardGroups.builtIn.forEach { item ->
                         ShellCommandVisibilityRow(
                             card = item,
                             builtIn = true,
@@ -233,16 +235,16 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     }
                 }
             }
-            if (customCards.isNotEmpty()) {
+            if (cardGroups.custom.isNotEmpty()) {
                 SheetSectionTitle(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_custom),
-                            count = customCards.size,
+                            count = cardGroups.custom.size,
                         ),
                 )
                 SheetSectionCard(verticalSpacing = 10.dp) {
-                    customCards.forEach { item ->
+                    cardGroups.custom.forEach { item ->
                         ShellCommandVisibilityRow(
                             card = item,
                             builtIn = false,
@@ -297,6 +299,27 @@ internal fun OsShellCommandVisibilityManagerSheet(
         }
     }
 }
+
+private fun List<OsShellCommandCard>.splitByShellCommandCardType(): ShellCommandCardGroups {
+    val builtIn = ArrayList<OsShellCommandCard>()
+    val custom = ArrayList<OsShellCommandCard>()
+    forEach { card ->
+        if (isBuiltInShellCommandCard(card)) {
+            builtIn += card
+        } else {
+            custom += card
+        }
+    }
+    return ShellCommandCardGroups(
+        builtIn = builtIn,
+        custom = custom,
+    )
+}
+
+private data class ShellCommandCardGroups(
+    val builtIn: List<OsShellCommandCard>,
+    val custom: List<OsShellCommandCard>,
+)
 
 @Composable
 private fun ShellRunnerVisibilityRow(

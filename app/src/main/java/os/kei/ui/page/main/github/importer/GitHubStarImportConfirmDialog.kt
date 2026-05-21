@@ -28,6 +28,7 @@ import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
+import java.util.EnumMap
 
 @Composable
 internal fun GitHubStarImportConfirmDialog(
@@ -38,9 +39,13 @@ internal fun GitHubStarImportConfirmDialog(
     onConfirmImport: () -> Unit
 ) {
     if (candidates.isEmpty()) return
-    val summary = buildStarImportConfirmSummary(candidates, verificationStates)
-    val groups = buildStarImportConfirmGroups(candidates, verificationStates)
-    val expandedGroups = remember(candidates, verificationStates) {
+    val confirmUiState =
+        remember(candidates, verificationStates) {
+            buildStarImportConfirmUiState(candidates, verificationStates)
+        }
+    val summary = confirmUiState.summary
+    val groups = confirmUiState.groups
+    val expandedGroups = remember(confirmUiState) {
         mutableStateMapOf<StarImportConfirmGroupKey, Boolean>().apply {
             groups.forEach { group -> put(group.key, group.initiallyExpanded) }
         }
@@ -226,55 +231,61 @@ private fun StarImportConfirmGroupCard(
     }
 }
 
-private fun buildStarImportConfirmSummary(
+private fun buildStarImportConfirmUiState(
     candidates: List<GitHubRepositoryImportCandidate>,
     verificationStates: Map<String, StarImportApkVerificationUiState>
-): StarImportConfirmSummary {
-    val qualityCounts = candidates.groupingBy { candidate ->
-        GitHubStarImportClassifier.classify(candidate)
-    }.eachCount()
-    val verificationCounts = candidates.groupingBy { candidate ->
-        verificationStates[candidate.trackedApp.id]?.verification?.status
-    }.eachCount()
+): StarImportConfirmUiState {
+    val qualityCounts = EnumMap<GitHubStarImportQuality, Int>(GitHubStarImportQuality::class.java)
+    val verificationCounts =
+        EnumMap<GitHubStarImportApkVerificationStatus, Int>(GitHubStarImportApkVerificationStatus::class.java)
+    val grouped = EnumMap<StarImportConfirmGroupKey, MutableList<GitHubRepositoryImportCandidate>>(
+        StarImportConfirmGroupKey::class.java
+    )
+    var unverifiedCount = 0
+
+    candidates.forEach { candidate ->
+        val verificationStatus = verificationStates[candidate.trackedApp.id]?.verification?.status
+        val quality = GitHubStarImportClassifier.classify(candidate)
+        qualityCounts[quality] = (qualityCounts[quality] ?: 0) + 1
+        if (verificationStatus == null) {
+            unverifiedCount += 1
+        } else {
+            verificationCounts[verificationStatus] = (verificationCounts[verificationStatus] ?: 0) + 1
+        }
+        val groupKey =
+            when {
+                verificationStatus == GitHubStarImportApkVerificationStatus.HasApk ->
+                    StarImportConfirmGroupKey.VerifiedApk
+
+                verificationStatus == GitHubStarImportApkVerificationStatus.NoApk ||
+                    verificationStatus == GitHubStarImportApkVerificationStatus.Failed ->
+                    StarImportConfirmGroupKey.NoApkOrFailed
+
+                quality == GitHubStarImportQuality.OtherPlatform ||
+                    quality == GitHubStarImportQuality.ArchivedOrFork ->
+                    StarImportConfirmGroupKey.OtherPlatformOrArchived
+
+                else -> StarImportConfirmGroupKey.Unverified
+            }
+        grouped.getOrPut(groupKey) { ArrayList() } += candidate
+    }
+
     val otherPlatformCount = qualityCounts[GitHubStarImportQuality.OtherPlatform] ?: 0
     val archivedOrForkCount = qualityCounts[GitHubStarImportQuality.ArchivedOrFork] ?: 0
     val noApkCount = verificationCounts[GitHubStarImportApkVerificationStatus.NoApk] ?: 0
     val failedCount = verificationCounts[GitHubStarImportApkVerificationStatus.Failed] ?: 0
-    return StarImportConfirmSummary(
-        likelyAndroidCount = qualityCounts[GitHubStarImportQuality.LikelyAndroid] ?: 0,
-        needsReviewCount = qualityCounts[GitHubStarImportQuality.NeedsReview] ?: 0,
-        otherPlatformCount = otherPlatformCount,
-        archivedOrForkCount = archivedOrForkCount,
-        hasApkCount = verificationCounts[GitHubStarImportApkVerificationStatus.HasApk] ?: 0,
-        noApkCount = noApkCount,
-        unverifiedCount = verificationCounts[null] ?: 0,
-        riskyCount = otherPlatformCount + archivedOrForkCount + noApkCount + failedCount
-    )
-}
-
-private fun buildStarImportConfirmGroups(
-    candidates: List<GitHubRepositoryImportCandidate>,
-    verificationStates: Map<String, StarImportApkVerificationUiState>
-): List<StarImportConfirmGroup> {
-    val grouped = candidates.groupBy { candidate ->
-        val verificationStatus = verificationStates[candidate.trackedApp.id]?.verification?.status
-        val quality = GitHubStarImportClassifier.classify(candidate)
-        when {
-            verificationStatus == GitHubStarImportApkVerificationStatus.HasApk ->
-                StarImportConfirmGroupKey.VerifiedApk
-
-            verificationStatus == GitHubStarImportApkVerificationStatus.NoApk ||
-                    verificationStatus == GitHubStarImportApkVerificationStatus.Failed ->
-                StarImportConfirmGroupKey.NoApkOrFailed
-
-            quality == GitHubStarImportQuality.OtherPlatform ||
-                    quality == GitHubStarImportQuality.ArchivedOrFork ->
-                StarImportConfirmGroupKey.OtherPlatformOrArchived
-
-            else -> StarImportConfirmGroupKey.Unverified
-        }
-    }
-    return StarImportConfirmGroupKey.entries.mapNotNull { key ->
+    val summary =
+        StarImportConfirmSummary(
+            likelyAndroidCount = qualityCounts[GitHubStarImportQuality.LikelyAndroid] ?: 0,
+            needsReviewCount = qualityCounts[GitHubStarImportQuality.NeedsReview] ?: 0,
+            otherPlatformCount = otherPlatformCount,
+            archivedOrForkCount = archivedOrForkCount,
+            hasApkCount = verificationCounts[GitHubStarImportApkVerificationStatus.HasApk] ?: 0,
+            noApkCount = noApkCount,
+            unverifiedCount = unverifiedCount,
+            riskyCount = otherPlatformCount + archivedOrForkCount + noApkCount + failedCount
+        )
+    val groups = StarImportConfirmGroupKey.entries.mapNotNull { key ->
         val items = grouped[key].orEmpty()
         if (items.isEmpty()) return@mapNotNull null
         StarImportConfirmGroup(
@@ -286,6 +297,7 @@ private fun buildStarImportConfirmGroups(
             initiallyExpanded = key.initiallyExpanded
         )
     }
+    return StarImportConfirmUiState(summary = summary, groups = groups)
 }
 
 private enum class StarImportConfirmGroupKey(
@@ -327,6 +339,11 @@ private data class StarImportConfirmGroup(
     val summaryRes: Int,
     val color: androidx.compose.ui.graphics.Color,
     val initiallyExpanded: Boolean
+)
+
+private data class StarImportConfirmUiState(
+    val summary: StarImportConfirmSummary,
+    val groups: List<StarImportConfirmGroup>
 )
 
 private data class StarImportConfirmSummary(

@@ -121,6 +121,32 @@ internal fun GitHubApkInfoSheet(
                 }
             }
             if (info != null) {
+                val nativeAbiValues =
+                    remember(info.nativeAbis, normalizedQuery) {
+                        info.nativeAbis.filterStringsByQuery(normalizedQuery)
+                    }
+                val permissionValues =
+                    remember(info.permissions, normalizedQuery) {
+                        info.permissions.filterStringsByQuery(normalizedQuery)
+                    }
+                val permissionColors =
+                    remember(info.permissions) {
+                        info.permissions.associateWith { permission -> permissionRiskColor(permission) }
+                    }
+                val featureValues =
+                    remember(info.features, normalizedQuery) {
+                        info.features.filterStringsByQuery(normalizedQuery)
+                    }
+                val metadataValues =
+                    remember(info.metadata, normalizedQuery) {
+                        info.metadata.map { metadata ->
+                            if (metadata.value.isBlank()) metadata.name else "${metadata.name}: ${metadata.value}"
+                        }.filterStringsByQuery(normalizedQuery)
+                    }
+                val filteredManifestNodes =
+                    remember(info.manifestNodes, normalizedQuery) {
+                        info.manifestNodes.filterNodesByQuery(normalizedQuery)
+                    }
                 ApkInfoActionRow(
                     backdrop = backdrop,
                     loading = loading,
@@ -155,30 +181,28 @@ internal fun GitHubApkInfoSheet(
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_abi),
                     empty = stringResource(R.string.github_apk_info_empty_abi),
-                    values = info.nativeAbis.filterStringsByQuery(normalizedQuery)
+                    values = nativeAbiValues
                 )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_permissions),
                     empty = stringResource(R.string.github_apk_info_empty_permissions),
-                    values = info.permissions.filterStringsByQuery(normalizedQuery),
-                    colors = info.permissions.associateWith { permissionRiskColor(it) }
+                    values = permissionValues,
+                    colors = permissionColors
                 )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_features),
                     empty = stringResource(R.string.github_apk_info_empty_features),
-                    values = info.features.filterStringsByQuery(normalizedQuery)
+                    values = featureValues
                 )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_metadata),
                     empty = stringResource(R.string.github_apk_info_empty_metadata),
-                    values = info.metadata.map { metadata ->
-                        if (metadata.value.isBlank()) metadata.name else "${metadata.name}: ${metadata.value}"
-                    }.filterStringsByQuery(normalizedQuery)
+                    values = metadataValues
                 )
                 SignatureSection(info.signatureInfo, normalizedQuery)
                 ApkInfoMeaningSection()
                 ManifestTreeSection(
-                    nodes = info.manifestNodes.filterNodesByQuery(normalizedQuery),
+                    nodes = filteredManifestNodes,
                     query = normalizedQuery
                 )
             }
@@ -286,10 +310,16 @@ private fun ApkTrustReportSection(
     installedInfo: GitHubInstalledPackageInfo?
 ) {
     val strings = apkDifferenceStrings()
-    val permissions = info.permissions
-    val exportedComponents = info.manifestNodes.filter { node -> node.isExportedComponent() }
-    val exportedWithoutPermission = exportedComponents.filter { node ->
-        node.attributes["permission"].isNullOrBlank()
+    val trustStats = remember(info) {
+        ApkTrustReportStats(
+            sensitivePermissionCount = info.permissions.count { permission ->
+                permissionRiskColor(permission) == GitHubStatusPalette.Error
+            },
+            exportedComponentCount = info.manifestNodes.count { node -> node.isExportedComponent() },
+            exportedWithoutPermissionCount = info.manifestNodes.count { node ->
+                node.isExportedComponent() && node.attributes["permission"].isNullOrBlank()
+            }
+        )
     }
     val signals = buildList {
         addAll(buildApkDifferenceSignals(info, installedInfo, strings))
@@ -308,8 +338,7 @@ private fun ApkTrustReportSection(
                 )
             )
         }
-        val sensitiveCount =
-            permissions.count { permissionRiskColor(it) == GitHubStatusPalette.Error }
+        val sensitiveCount = trustStats.sensitivePermissionCount
         if (sensitiveCount > 0) {
             add(
                 ApkDifferenceSignal(
@@ -321,22 +350,22 @@ private fun ApkTrustReportSection(
                 )
             )
         }
-        if (exportedWithoutPermission.isNotEmpty()) {
+        if (trustStats.exportedWithoutPermissionCount > 0) {
             add(
                 ApkDifferenceSignal(
                     stringResource(
                         R.string.github_apk_info_trust_exported_without_permission,
-                        exportedWithoutPermission.size
+                        trustStats.exportedWithoutPermissionCount
                     ),
                     GitHubStatusPalette.Error
                 )
             )
-        } else if (exportedComponents.isNotEmpty()) {
+        } else if (trustStats.exportedComponentCount > 0) {
             add(
                 ApkDifferenceSignal(
                     stringResource(
                         R.string.github_apk_info_trust_exported_components,
-                        exportedComponents.size
+                        trustStats.exportedComponentCount
                     ),
                     GitHubStatusPalette.Cache
                 )
@@ -356,6 +385,12 @@ private fun ApkTrustReportSection(
         }
     }
 }
+
+private data class ApkTrustReportStats(
+    val sensitivePermissionCount: Int,
+    val exportedComponentCount: Int,
+    val exportedWithoutPermissionCount: Int
+)
 
 @Composable
 private fun InstalledPackageSection(
@@ -503,7 +538,9 @@ private fun ManifestTreeSection(
         }
         return
     }
-    val groups = nodes.groupBy { it.groupLabelRes() }
+    val groups = remember(nodes) {
+        nodes.groupBy { it.groupLabelRes() }
+    }
     val expanded = remember(nodes) {
         mutableStateMapOf<Int, Boolean>().apply {
             groups.keys.forEach { key -> put(key, key == R.string.github_apk_info_group_exported) }

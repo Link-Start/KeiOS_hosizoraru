@@ -181,6 +181,43 @@ fun OsPage(
                 ),
             )
         },
+        onOperationFailed = { error ->
+            context.showToast(
+                context.getString(
+                    R.string.common_export_failed_with_reason,
+                    error.message ?: error.javaClass.simpleName,
+                ),
+            )
+        },
+        onShellCommandCardSaved = {
+            context.showToast(textBundle.shellCardSavedToast)
+            overlayState.onShowShellCommandCardEditorChange(false)
+            overlayState.onShowShellCardDeleteConfirmChange(false)
+        },
+        onShellCommandCardSaveFailed = {
+            context.showToast(textBundle.shellCardCommandRequiredToast)
+        },
+        onShellCommandCardDeleted = { cardId ->
+            shellCommandCardExpanded.remove(cardId)
+            overlayState.onEditingShellCommandCardIdChange(null)
+            overlayState.onShowShellCommandCardEditorChange(false)
+            context.showToast(textBundle.shellCardDeletedToast)
+        },
+        onActivityShortcutCardSaved = {
+            context.showToast(R.string.os_google_system_service_toast_saved)
+            overlayState.onShowActivityShortcutEditorChange(false)
+            overlayState.onShowActivitySuggestionSheetChange(false)
+            overlayState.onShowActivityCardDeleteConfirmChange(false)
+            overlayState.onEditingActivityShortcutBuiltInChange(false)
+        },
+        onActivityShortcutCardDeleted = { cardId ->
+            activityCardExpanded.remove(cardId)
+            overlayState.onEditingActivityShortcutCardIdChange(null)
+            overlayState.onShowActivityShortcutEditorChange(false)
+            overlayState.onShowActivitySuggestionSheetChange(false)
+            overlayState.onEditingActivityShortcutBuiltInChange(false)
+            context.showToast(textBundle.activityCardDeletedToast)
+        },
     )
     val sectionStates = runtimeState.sectionStates
     val actionState =
@@ -378,10 +415,7 @@ fun OsPage(
                 overlayTransferActions = overlayTransferActions,
                 cardTransferState = cardTransferState,
                 textBundle = textBundle,
-                onShellCommandCardsChange = osPageViewModel::updateShellCommandCards,
-                onRemoveShellCommandCardExpanded = { shellCommandCardExpanded.remove(it) },
-                onActivityShortcutCardsChange = osPageViewModel::updateActivityShortcutCards,
-                onRemoveActivityCardExpanded = { activityCardExpanded.remove(it) },
+                osPageViewModel = osPageViewModel,
             )
             OsPageMainList(
                 context = context,

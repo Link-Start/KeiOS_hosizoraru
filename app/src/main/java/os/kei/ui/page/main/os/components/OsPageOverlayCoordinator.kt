@@ -7,6 +7,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import kotlinx.coroutines.CoroutineScope
 import os.kei.R
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
+import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -30,10 +31,7 @@ internal fun OsPageOverlayCoordinator(
     actionState: OsPageActionState,
     overlayTransferActions: OsPageOverlayTransferActions,
     cardTransferState: OsPageCardTransferState,
-    onShellCommandCardsChange: (List<OsShellCommandCard>) -> Unit,
-    onRemoveShellCommandCardExpanded: (String) -> Unit,
-    onActivityShortcutCardsChange: (List<OsActivityShortcutCard>) -> Unit,
-    onRemoveActivityCardExpanded: (String) -> Unit
+    osPageViewModel: OsPageViewModel,
 ) {
     OsPageOverlayHost(
         context = context,
@@ -61,22 +59,16 @@ internal fun OsPageOverlayCoordinator(
         onImportAllShellCards = overlayTransferActions.onImportAllShellCards,
         applyShellCommandCardVisibility = actionState.applyShellCommandCardVisibility,
         editShellCommandCardTitle = textBundle.editShellCommandCardTitle,
-        onShellCommandCardsChange = onShellCommandCardsChange,
-        onRemoveShellCommandCardExpanded = onRemoveShellCommandCardExpanded,
         shellCardCommandRequiredToast = textBundle.shellCardCommandRequiredToast,
-        shellCardSavedToast = textBundle.shellCardSavedToast,
-        shellCardDeletedToast = textBundle.shellCardDeletedToast,
         shellCardDeleteDialogTitle = textBundle.shellCardDeleteDialogTitle,
         addActivityCardTitle = textBundle.addActivityCardTitle,
         editActivityCardTitle = textBundle.editActivityCardTitle,
         noMatchedResultsText = textBundle.noMatchedResultsText,
         activitySuggestionState = activitySuggestionState,
-        onActivityShortcutCardsChange = onActivityShortcutCardsChange,
-        onRemoveActivityCardExpanded = onRemoveActivityCardExpanded,
         googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
         googleSystemServiceDefaultTitle = textBundle.googleSystemServiceDefaultTitle,
         googleSystemServiceDefaultIntentFlags = textBundle.googleSystemServiceDefaultIntentFlags,
-        activityCardDeletedToast = textBundle.activityCardDeletedToast,
-        activityCardDeleteDialogTitle = textBundle.activityCardDeleteDialogTitle
+        activityCardDeleteDialogTitle = textBundle.activityCardDeleteDialogTitle,
+        osPageViewModel = osPageViewModel,
     )
 }

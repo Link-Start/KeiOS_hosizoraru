@@ -27,6 +27,7 @@ import kotlinx.coroutines.sync.Mutex
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
+import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
@@ -59,6 +60,24 @@ internal sealed interface OsPageEvent {
     data class ExportFailed(
         val error: Throwable,
     ) : OsPageEvent
+
+    data class OperationFailed(
+        val error: Throwable,
+    ) : OsPageEvent
+
+    data object ShellCommandCardSaved : OsPageEvent
+
+    data class ShellCommandCardDeleted(
+        val cardId: String,
+    ) : OsPageEvent
+
+    data object ActivityShortcutCardSaved : OsPageEvent
+
+    data class ActivityShortcutCardDeleted(
+        val cardId: String,
+    ) : OsPageEvent
+
+    data object ShellCommandCardSaveFailed : OsPageEvent
 }
 
 internal data class OsActivitySuggestionUiState(
@@ -77,6 +96,7 @@ internal class OsPageViewModel : ViewModel() {
 
     private val repository = OsPageRepository()
     private val exportRepository = OsPageExportRepository()
+    private val cardRepository = OsPageCardRepository()
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
     private var activitySuggestionJob: Job? = null
@@ -447,7 +467,7 @@ internal class OsPageViewModel : ViewModel() {
                 )
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ExportFailed(error))
+                _events.emit(OsPageEvent.OperationFailed(error))
             }
         }
     }
@@ -467,7 +487,7 @@ internal class OsPageViewModel : ViewModel() {
                 )
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ExportFailed(error))
+                _events.emit(OsPageEvent.OperationFailed(error))
             }
         }
     }
@@ -515,7 +535,7 @@ internal class OsPageViewModel : ViewModel() {
                 )
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ExportFailed(error))
+                _events.emit(OsPageEvent.OperationFailed(error))
             } finally {
                 _runtimeState.update { state -> state.copy(exportingCard = null) }
             }
@@ -626,6 +646,93 @@ internal class OsPageViewModel : ViewModel() {
                 onFailure(error)
             } finally {
                 onComplete()
+            }
+        }
+    }
+
+    fun saveShellCommandCardEdit(
+        cardId: String,
+        title: String,
+        subtitle: String,
+        command: String,
+    ) {
+        viewModelScope.launch {
+            try {
+                val updatedCards =
+                    cardRepository.saveShellCommandCardEdit(
+                        cardId = cardId,
+                        title = title,
+                        subtitle = subtitle,
+                        command = command,
+                    )
+                if (updatedCards == null) {
+                    _events.emit(OsPageEvent.ShellCommandCardSaveFailed)
+                    return@launch
+                }
+                repository.updateShellCommandCards(updatedCards)
+                _events.emit(OsPageEvent.ShellCommandCardSaved)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.ShellCommandCardSaveFailed)
+            }
+        }
+    }
+
+    fun deleteShellCommandCard(cardId: String) {
+        viewModelScope.launch {
+            try {
+                val updatedCards = cardRepository.deleteShellCommandCard(cardId)
+                repository.updateShellCommandCards(updatedCards)
+                _events.emit(OsPageEvent.ShellCommandCardDeleted(cardId))
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.ExportFailed(error))
+            }
+        }
+    }
+
+    fun saveActivityShortcutCard(
+        editMode: OsActivityCardEditMode,
+        editingCardId: String?,
+        draft: OsGoogleSystemServiceConfig,
+        defaults: OsGoogleSystemServiceConfig,
+    ) {
+        viewModelScope.launch {
+            try {
+                val updatedCards =
+                    cardRepository.saveActivityShortcutCard(
+                        cards = persistentState.value.activityShortcutCards,
+                        editMode = editMode,
+                        editingCardId = editingCardId,
+                        draft = draft,
+                        defaults = defaults,
+                    )
+                repository.updateActivityShortcutCards(updatedCards)
+                _events.emit(OsPageEvent.ActivityShortcutCardSaved)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.ExportFailed(error))
+            }
+        }
+    }
+
+    fun deleteActivityShortcutCard(
+        cardId: String,
+        defaults: OsGoogleSystemServiceConfig,
+    ) {
+        viewModelScope.launch {
+            try {
+                val updatedCards =
+                    cardRepository.deleteActivityShortcutCard(
+                        cards = persistentState.value.activityShortcutCards,
+                        cardId = cardId,
+                        defaults = defaults,
+                    )
+                repository.updateActivityShortcutCards(updatedCards)
+                _events.emit(OsPageEvent.ActivityShortcutCardDeleted(cardId))
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.ExportFailed(error))
             }
         }
     }

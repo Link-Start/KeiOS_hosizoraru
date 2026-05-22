@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
+import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.defaultOsShellCommandCardTitle
@@ -49,40 +50,26 @@ internal fun OsPageOverlayHost(
     onImportAllShellCards: () -> Unit,
     applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit,
     editShellCommandCardTitle: String,
-    onShellCommandCardsChange: (List<OsShellCommandCard>) -> Unit,
-    onRemoveShellCommandCardExpanded: (String) -> Unit,
     shellCardCommandRequiredToast: String,
-    shellCardSavedToast: String,
-    shellCardDeletedToast: String,
     shellCardDeleteDialogTitle: String,
     addActivityCardTitle: String,
     editActivityCardTitle: String,
     noMatchedResultsText: String,
     activitySuggestionState: OsActivitySuggestionUiState,
-    onActivityShortcutCardsChange: (List<OsActivityShortcutCard>) -> Unit,
-    onRemoveActivityCardExpanded: (String) -> Unit,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     googleSystemServiceDefaultTitle: String,
     googleSystemServiceDefaultIntentFlags: String,
-    activityCardDeletedToast: String,
     activityCardDeleteDialogTitle: String,
+    osPageViewModel: OsPageViewModel,
 ) {
     val editorActions =
         rememberOsPageOverlayEditorActions(
             context = context,
-            scope = scope,
+            osPageViewModel = osPageViewModel,
             overlayState = overlayState,
-            activityShortcutCards = activityShortcutCards,
-            onActivityShortcutCardsChange = onActivityShortcutCardsChange,
-            onRemoveActivityCardExpanded = onRemoveActivityCardExpanded,
             googleSystemServiceDefaults = googleSystemServiceDefaults,
             googleSystemServiceDefaultIntentFlags = googleSystemServiceDefaultIntentFlags,
-            onShellCommandCardsChange = onShellCommandCardsChange,
-            onRemoveShellCommandCardExpanded = onRemoveShellCommandCardExpanded,
             shellCardCommandRequiredToast = shellCardCommandRequiredToast,
-            shellCardSavedToast = shellCardSavedToast,
-            shellCardDeletedToast = shellCardDeletedToast,
-            activityCardDeletedToast = activityCardDeletedToast,
         )
     val editedShellCommandCard =
         shellCommandCards.firstOrNull { card ->

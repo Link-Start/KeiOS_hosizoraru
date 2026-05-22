@@ -232,39 +232,6 @@ internal suspend fun applyOsShellCommandCardVisibility(
     updateCards(updatedCards)
 }
 
-internal suspend fun saveOsShellCommandCardEdit(
-    cardId: String,
-    title: String,
-    subtitle: String,
-    command: String,
-): List<OsShellCommandCard>? =
-    withContext(AppDispatchers.osOperations) {
-        OsShellCommandCardStore.updateCard(
-            cardId = cardId,
-            title = title,
-            subtitle = subtitle,
-            command = command,
-        ) ?: return@withContext null
-        OsShellCommandCardStore.loadCards()
-    }
-
-internal suspend fun deleteOsShellCommandCard(cardId: String): List<OsShellCommandCard> =
-    withContext(AppDispatchers.osOperations) {
-        OsShellCommandCardStore.deleteCard(cardId)
-    }
-
-internal suspend fun saveOsActivityShortcutCards(
-    cards: List<OsActivityShortcutCard>,
-    defaults: OsGoogleSystemServiceConfig,
-) {
-    withContext(AppDispatchers.osOperations) {
-        OsActivityShortcutCardStore.saveCards(
-            cards = cards,
-            defaults = defaults,
-        )
-    }
-}
-
 internal suspend fun runOsShellCommandCard(
     card: OsShellCommandCard,
     context: Context,

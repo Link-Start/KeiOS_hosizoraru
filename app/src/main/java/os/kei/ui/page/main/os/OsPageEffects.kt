@@ -26,9 +26,21 @@ internal fun BindOsPageEvents(
     events: SharedFlow<OsPageEvent>,
     onLaunchExportDocument: (String, String) -> Unit,
     onExportFailed: (Throwable) -> Unit,
+    onOperationFailed: (Throwable) -> Unit,
+    onShellCommandCardSaved: () -> Unit,
+    onShellCommandCardSaveFailed: () -> Unit,
+    onShellCommandCardDeleted: (String) -> Unit,
+    onActivityShortcutCardSaved: () -> Unit,
+    onActivityShortcutCardDeleted: (String) -> Unit,
 ) {
     val currentLaunchExportDocument = rememberUpdatedState(onLaunchExportDocument)
     val currentExportFailed = rememberUpdatedState(onExportFailed)
+    val currentOperationFailed = rememberUpdatedState(onOperationFailed)
+    val currentShellCommandCardSaved = rememberUpdatedState(onShellCommandCardSaved)
+    val currentShellCommandCardSaveFailed = rememberUpdatedState(onShellCommandCardSaveFailed)
+    val currentShellCommandCardDeleted = rememberUpdatedState(onShellCommandCardDeleted)
+    val currentActivityShortcutCardSaved = rememberUpdatedState(onActivityShortcutCardSaved)
+    val currentActivityShortcutCardDeleted = rememberUpdatedState(onActivityShortcutCardDeleted)
     LaunchedEffect(events) {
         events.collect { event ->
             when (event) {
@@ -38,6 +50,30 @@ internal fun BindOsPageEvents(
 
                 is OsPageEvent.ExportFailed -> {
                     currentExportFailed.value(event.error)
+                }
+
+                is OsPageEvent.OperationFailed -> {
+                    currentOperationFailed.value(event.error)
+                }
+
+                OsPageEvent.ShellCommandCardSaved -> {
+                    currentShellCommandCardSaved.value()
+                }
+
+                OsPageEvent.ShellCommandCardSaveFailed -> {
+                    currentShellCommandCardSaveFailed.value()
+                }
+
+                is OsPageEvent.ShellCommandCardDeleted -> {
+                    currentShellCommandCardDeleted.value(event.cardId)
+                }
+
+                OsPageEvent.ActivityShortcutCardSaved -> {
+                    currentActivityShortcutCardSaved.value()
+                }
+
+                is OsPageEvent.ActivityShortcutCardDeleted -> {
+                    currentActivityShortcutCardDeleted.value(event.cardId)
                 }
             }
         }

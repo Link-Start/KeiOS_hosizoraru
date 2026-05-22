@@ -32,6 +32,11 @@ internal fun BindOsPageEvents(
     onShellCommandCardDeleted: (String) -> Unit,
     onActivityShortcutCardSaved: () -> Unit,
     onActivityShortcutCardDeleted: (String) -> Unit,
+    onShellCommandCardCommandRequired: () -> Unit,
+    onShellCommandCardNoPermission: () -> Unit,
+    onShellCommandCardRunCompleted: () -> Unit,
+    onShellCommandCardRunFailed: (Throwable) -> Unit,
+    onRefreshCompleted: (Boolean) -> Unit,
 ) {
     val currentLaunchExportDocument = rememberUpdatedState(onLaunchExportDocument)
     val currentExportFailed = rememberUpdatedState(onExportFailed)
@@ -41,6 +46,11 @@ internal fun BindOsPageEvents(
     val currentShellCommandCardDeleted = rememberUpdatedState(onShellCommandCardDeleted)
     val currentActivityShortcutCardSaved = rememberUpdatedState(onActivityShortcutCardSaved)
     val currentActivityShortcutCardDeleted = rememberUpdatedState(onActivityShortcutCardDeleted)
+    val currentShellCommandCardCommandRequired = rememberUpdatedState(onShellCommandCardCommandRequired)
+    val currentShellCommandCardNoPermission = rememberUpdatedState(onShellCommandCardNoPermission)
+    val currentShellCommandCardRunCompleted = rememberUpdatedState(onShellCommandCardRunCompleted)
+    val currentShellCommandCardRunFailed = rememberUpdatedState(onShellCommandCardRunFailed)
+    val currentRefreshCompleted = rememberUpdatedState(onRefreshCompleted)
     LaunchedEffect(events) {
         events.collect { event ->
             when (event) {
@@ -74,6 +84,26 @@ internal fun BindOsPageEvents(
 
                 is OsPageEvent.ActivityShortcutCardDeleted -> {
                     currentActivityShortcutCardDeleted.value(event.cardId)
+                }
+
+                OsPageEvent.ShellCommandCardCommandRequired -> {
+                    currentShellCommandCardCommandRequired.value()
+                }
+
+                OsPageEvent.ShellCommandCardNoPermission -> {
+                    currentShellCommandCardNoPermission.value()
+                }
+
+                OsPageEvent.ShellCommandCardRunCompleted -> {
+                    currentShellCommandCardRunCompleted.value()
+                }
+
+                is OsPageEvent.ShellCommandCardRunFailed -> {
+                    currentShellCommandCardRunFailed.value(event.error)
+                }
+
+                is OsPageEvent.RefreshCompleted -> {
+                    currentRefreshCompleted.value(event.refreshed)
                 }
             }
         }

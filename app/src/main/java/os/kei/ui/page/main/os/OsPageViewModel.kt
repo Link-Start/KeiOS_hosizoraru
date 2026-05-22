@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
@@ -78,6 +79,20 @@ internal sealed interface OsPageEvent {
     ) : OsPageEvent
 
     data object ShellCommandCardSaveFailed : OsPageEvent
+
+    data object ShellCommandCardCommandRequired : OsPageEvent
+
+    data object ShellCommandCardNoPermission : OsPageEvent
+
+    data object ShellCommandCardRunCompleted : OsPageEvent
+
+    data class ShellCommandCardRunFailed(
+        val error: Throwable,
+    ) : OsPageEvent
+
+    data class RefreshCompleted(
+        val refreshed: Boolean,
+    ) : OsPageEvent
 }
 
 internal data class OsActivitySuggestionUiState(
@@ -98,6 +113,8 @@ internal class OsPageViewModel : ViewModel() {
     private val exportRepository = OsPageExportRepository()
     private val cardRepository = OsPageCardRepository()
     private val visibilityRepository = OsPageVisibilityRepository()
+    private val shellCommandRepository = OsPageShellCommandRepository()
+    private val refreshRepository = OsPageRefreshRepository()
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
     private var activitySuggestionJob: Job? = null
@@ -430,26 +447,6 @@ internal class OsPageViewModel : ViewModel() {
         _runtimeState.update { state -> state.copy(cachePersisted = value) }
     }
 
-    fun updateRefreshing(value: Boolean) {
-        _runtimeState.update { state -> state.copy(refreshing = value) }
-    }
-
-    fun updateRefreshProgress(value: Float) {
-        _runtimeState.update { state -> state.copy(refreshProgress = value.coerceIn(0f, 1f)) }
-    }
-
-    fun updateRunningShellCommandCardIds(value: Set<String>) {
-        _runtimeState.update { state -> state.copy(runningShellCommandCardIds = value) }
-    }
-
-    fun updateActivityShortcutCards(cards: List<OsActivityShortcutCard>) {
-        repository.updateActivityShortcutCards(cards)
-    }
-
-    fun updateShellCommandCards(cards: List<OsShellCommandCard>) {
-        repository.updateShellCommandCards(cards)
-    }
-
     fun applySectionCardVisibility(
         card: OsSectionCard,
         visible: Boolean,
@@ -521,6 +518,86 @@ internal class OsPageViewModel : ViewModel() {
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
                 _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun runShellCommandCard(
+        card: OsShellCommandCard,
+        shizukuApiUtils: ShizukuApiUtils,
+        shellRunNoOutputText: String,
+    ) {
+        val command = card.command.trim()
+        if (command.isBlank()) {
+            _events.tryEmit(OsPageEvent.ShellCommandCardCommandRequired)
+            return
+        }
+        if (runtimeState.value.runningShellCommandCardIds.contains(card.id)) return
+        if (!shizukuApiUtils.canUseCommand()) {
+            shizukuApiUtils.requestPermissionIfNeeded()
+            _events.tryEmit(OsPageEvent.ShellCommandCardNoPermission)
+            return
+        }
+        _runtimeState.update { state ->
+            state.copy(runningShellCommandCardIds = state.runningShellCommandCardIds + card.id)
+        }
+        viewModelScope.launch {
+            try {
+                val output =
+                    shellCommandRepository
+                        .runCommand(
+                            shizukuApiUtils = shizukuApiUtils,
+                            command = command,
+                        ).orEmpty()
+                        .trim()
+                        .ifBlank { shellRunNoOutputText }
+                val updatedCards =
+                    shellCommandRepository.saveRunResult(
+                        cardId = card.id,
+                        output = output,
+                    )
+                repository.updateShellCommandCards(updatedCards)
+                _events.emit(OsPageEvent.ShellCommandCardRunCompleted)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.ShellCommandCardRunFailed(error))
+            } finally {
+                _runtimeState.update { state ->
+                    state.copy(runningShellCommandCardIds = state.runningShellCommandCardIds - card.id)
+                }
+            }
+        }
+    }
+
+    fun refreshAllSections(
+        ensureLoad: suspend (SectionKind, Boolean) -> Unit,
+    ) {
+        if (runtimeState.value.refreshing) return
+        viewModelScope.launch {
+            _runtimeState.update { state ->
+                state.copy(
+                    refreshing = true,
+                    refreshProgress = 0f,
+                )
+            }
+            try {
+                val targets =
+                    refreshRepository.refreshableSections(
+                        persistentState.value.uiSnapshot.visibleCards,
+                    )
+                val sectionCount = targets.size.coerceAtLeast(1)
+                targets.forEachIndexed { index, section ->
+                    ensureLoad(section, true)
+                    _runtimeState.update { state ->
+                        state.copy(refreshProgress = (index + 1).toFloat() / sectionCount.toFloat())
+                    }
+                }
+                _events.emit(OsPageEvent.RefreshCompleted(refreshed = targets.isNotEmpty()))
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            } finally {
+                _runtimeState.update { state -> state.copy(refreshing = false) }
             }
         }
     }

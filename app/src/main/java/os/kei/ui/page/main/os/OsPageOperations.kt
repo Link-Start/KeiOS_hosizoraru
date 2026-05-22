@@ -10,11 +10,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ensureEditorActivityShortcutDraft
@@ -90,83 +87,6 @@ internal suspend fun ensureOsSectionLoaded(
                 sectionLoadDeferreds.remove(section)
             }
         }
-    }
-}
-
-internal suspend fun runOsShellCommandCard(
-    card: OsShellCommandCard,
-    context: Context,
-    shizukuApiUtils: ShizukuApiUtils,
-    shellCardCommandRequiredToast: String,
-    shellCardRunCompletedToast: String,
-    shellRunNoPermissionToast: String,
-    shellRunNoOutputText: String,
-    runningCardIdsProvider: () -> Set<String>,
-    updateRunningCardIds: (Set<String>) -> Unit,
-    onCardsReload: (List<OsShellCommandCard>) -> Unit,
-    runFailedMessage: (Throwable) -> String,
-) {
-    val command = card.command.trim()
-    if (command.isBlank()) {
-        context.showToast(shellCardCommandRequiredToast)
-        return
-    }
-    if (runningCardIdsProvider().contains(card.id)) return
-    if (!shizukuApiUtils.canUseCommand()) {
-        shizukuApiUtils.requestPermissionIfNeeded()
-        context.showToast(shellRunNoPermissionToast)
-        return
-    }
-    updateRunningCardIds(runningCardIdsProvider() + card.id)
-    try {
-        val output =
-            withContext(AppDispatchers.osOperations) {
-                shizukuApiUtils.execCommandCancellable(
-                    command = command,
-                    timeoutMs = 300_000L,
-                )
-            }.orEmpty().trim().ifBlank { shellRunNoOutputText }
-        val updatedCards = withContext(AppDispatchers.osOperations) {
-            OsShellCommandCardStore.updateCardRunResult(
-                cardId = card.id,
-                runOutput = output,
-            )
-            OsShellCommandCardStore.loadCards()
-        }
-        onCardsReload(updatedCards)
-        context.showLiquidToastOnly(shellCardRunCompletedToast)
-    } catch (throwable: CancellationException) {
-        throw throwable
-    } catch (throwable: Throwable) {
-        context.showToast(runFailedMessage(throwable))
-    } finally {
-        updateRunningCardIds(runningCardIdsProvider() - card.id)
-    }
-}
-
-internal suspend fun refreshAllOsSections(
-    context: Context,
-    visibleCardsProvider: () -> Set<OsSectionCard>,
-    setRefreshing: (Boolean) -> Unit,
-    setRefreshProgress: (Float) -> Unit,
-    ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    noRefreshableCardText: String,
-    refreshCompletedText: String,
-) {
-    setRefreshing(true)
-    setRefreshProgress(0f)
-    try {
-        val targets = SectionKind.entries.filter { visibleSectionKinds(visibleCardsProvider()).contains(it) }
-        val sectionCount = targets.size.coerceAtLeast(1)
-        targets.forEachIndexed { index, section ->
-            ensureLoad(section, true)
-            setRefreshProgress((index + 1).toFloat() / sectionCount.toFloat())
-        }
-        context.showToast(
-            if (targets.isEmpty()) noRefreshableCardText else refreshCompletedText,
-        )
-    } finally {
-        setRefreshing(false)
     }
 }
 

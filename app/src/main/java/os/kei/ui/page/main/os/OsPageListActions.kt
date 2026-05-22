@@ -2,8 +2,6 @@ package os.kei.ui.page.main.os
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellRunnerActivity
@@ -32,7 +30,6 @@ internal data class OsPageMainListActions(
 
 internal fun createOsPageMainListActions(
     context: Context,
-    scope: CoroutineScope,
     textBundle: OsPageTextBundle,
     overlayState: OsPageOverlayState,
     actionState: OsPageActionState,
@@ -53,7 +50,7 @@ internal fun createOsPageMainListActions(
             overlayState.onShowShellCommandCardEditorChange(true)
         },
         onRunShellCommandCard = { card ->
-            scope.launch { actionState.runShellCommandCard(card) }
+            actionState.runShellCommandCard(card)
         },
         onActivityCardExpandedChange = { cardId, expanded ->
             activityCardExpanded[cardId] = expanded
@@ -101,7 +98,7 @@ internal fun createOsPageMainListActions(
                 ensureLoad = actionState.ensureLoad,
             )
         },
-        onRefreshAll = { scope.launch { actionState.refreshAllSections() } },
+        onRefreshAll = actionState.refreshAllSections,
         onOpenAddActivityShortcutCard = {
             overlayState.onActivityCardEditModeChange(OsActivityCardEditMode.Add)
             overlayState.onEditingActivityShortcutCardIdChange(null)

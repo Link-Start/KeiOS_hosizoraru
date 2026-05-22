@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.shizuku.ShizukuApiUtils
@@ -218,6 +219,32 @@ fun OsPage(
             overlayState.onEditingActivityShortcutBuiltInChange(false)
             context.showToast(textBundle.activityCardDeletedToast)
         },
+        onShellCommandCardCommandRequired = {
+            context.showToast(textBundle.shellCardCommandRequiredToast)
+        },
+        onShellCommandCardNoPermission = {
+            context.showToast(textBundle.shellRunNoPermissionText)
+        },
+        onShellCommandCardRunCompleted = {
+            context.showLiquidToastOnly(textBundle.shellCardRunCompletedToast)
+        },
+        onShellCommandCardRunFailed = { error ->
+            context.showToast(
+                context.getString(
+                    R.string.os_shell_card_toast_run_failed,
+                    error.javaClass.simpleName,
+                ),
+            )
+        },
+        onRefreshCompleted = { refreshed ->
+            context.showToast(
+                if (refreshed) {
+                    textBundle.refreshCompletedText
+                } else {
+                    textBundle.noRefreshableCardText
+                },
+            )
+        },
     )
     val sectionStates = runtimeState.sectionStates
     val actionState =
@@ -234,17 +261,7 @@ fun OsPage(
             updateSection = osPageViewModel::updateSection,
             onCachePersistedChanged = osPageViewModel::updateCachePersisted,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
-            updateShellCommandCards = osPageViewModel::updateShellCommandCards,
-            runningShellCommandCardIdsProvider = { runtimeState.runningShellCommandCardIds },
-            onRunningShellCommandCardIdsChange = osPageViewModel::updateRunningShellCommandCardIds,
-            onRefreshingChange = osPageViewModel::updateRefreshing,
-            onRefreshProgressChange = osPageViewModel::updateRefreshProgress,
-            shellCardCommandRequiredToast = textBundle.shellCardCommandRequiredToast,
-            shellCardRunCompletedToast = textBundle.shellCardRunCompletedToast,
-            shellRunNoPermissionText = textBundle.shellRunNoPermissionText,
             shellRunNoOutputText = textBundle.shellRunNoOutputText,
-            noRefreshableCardText = textBundle.noRefreshableCardText,
-            refreshCompletedText = textBundle.refreshCompletedText,
         )
 
     BindOsCardExpandedStateMaps(
@@ -350,7 +367,6 @@ fun OsPage(
     val mainListActions =
         remember(
             context,
-            scope,
             textBundle,
             overlayState,
             actionState,
@@ -362,7 +378,6 @@ fun OsPage(
         ) {
             createOsPageMainListActions(
                 context = context,
-                scope = scope,
                 textBundle = textBundle,
                 overlayState = overlayState,
                 actionState = actionState,
@@ -388,7 +403,7 @@ fun OsPage(
             onOpenCardManager = { overlayState.onShowCardManagerChange(true) },
             onOpenActivityVisibilityManager = { overlayState.onShowActivityVisibilityManagerChange(true) },
             onOpenShellCardVisibilityManager = { overlayState.onShowShellCardVisibilityManagerChange(true) },
-            onRefresh = { scope.launch { actionState.refreshAllSections() } },
+            onRefresh = actionState.refreshAllSections,
             onTitleClick = onShowBottomBar,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
         ) { innerPadding ->

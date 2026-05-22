@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
@@ -77,6 +79,53 @@ internal class OsPageViewModel : ViewModel() {
     private val _rowsDerivedState = MutableStateFlow(OsPageRowsUiDerivedState.Empty)
     val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = _rowsDerivedState.asStateFlow()
 
+    private val queryState: StateFlow<OsPageQueryState> =
+        combine(queryInput, queryApplied) { input, applied ->
+            OsPageQueryState(
+                input = input,
+                applied = applied,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = OsPageQueryState(),
+        )
+
+    private val coreUiState: StateFlow<OsPageCoreUiState> =
+        combine(
+            persistentState,
+            runtimeState,
+            activitySuggestionState,
+            queryState,
+        ) { persistent, runtime, activitySuggestion, query ->
+            OsPageCoreUiState(
+                persistentState = persistent,
+                runtimeState = runtime,
+                activitySuggestionState = activitySuggestion,
+                queryState = query,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = OsPageCoreUiState(),
+        )
+
+    val uiState: StateFlow<OsPageUiState> =
+        combine(coreUiState, rowsDerivedState) { core, rows ->
+            OsPageUiState(
+                persistentState = core.persistentState,
+                runtimeState = core.runtimeState,
+                activitySuggestionState = core.activitySuggestionState,
+                queryInput = core.queryState.input,
+                queryApplied = core.queryState.applied,
+                rowsDerivedState = rows,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = OsPageUiState(),
+        )
+
     init {
         viewModelScope.launch {
             _queryInput
@@ -90,6 +139,18 @@ internal class OsPageViewModel : ViewModel() {
                             normalized.length < MIN_FILTER_QUERY_LENGTH -> ""
                             else -> normalized
                         }
+                }
+        }
+        viewModelScope.launch {
+            combine(_queryApplied, persistentState, _runtimeState) { query, persistent, runtime ->
+                buildRowsDerivationInput(
+                    queryApplied = query,
+                    uiSnapshot = persistent.uiSnapshot,
+                    sectionStates = runtime.sectionStates,
+                )
+            }.distinctUntilChanged()
+                .collectLatest { input ->
+                    applyRowsDerivedState(input)
                 }
         }
     }
@@ -198,19 +259,23 @@ internal class OsPageViewModel : ViewModel() {
     }
 
     fun requestRowsDerivedState(input: OsPageRowsDerivationInput) {
-        val current = _rowsDerivedState.value
-        if (current.input == input && !current.deriving) return
         rowsDerivationJob?.cancel()
         rowsDerivationJob =
             viewModelScope.launch {
-                _rowsDerivedState.update { state ->
-                    state.copy(
-                        input = input,
-                        deriving = true,
-                    )
-                }
-                _rowsDerivedState.value = repository.buildRowsDerivedState(input)
+                applyRowsDerivedState(input)
             }
+    }
+
+    private suspend fun applyRowsDerivedState(input: OsPageRowsDerivationInput) {
+        val current = _rowsDerivedState.value
+        if (current.input == input && !current.deriving) return
+        _rowsDerivedState.update { state ->
+            state.copy(
+                input = input,
+                deriving = true,
+            )
+        }
+        _rowsDerivedState.value = repository.buildRowsDerivedState(input)
     }
 
     fun updateVisibleCards(cards: Set<OsSectionCard>) {

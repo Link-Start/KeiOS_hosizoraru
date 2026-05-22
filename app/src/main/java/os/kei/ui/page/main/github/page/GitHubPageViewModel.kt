@@ -3,11 +3,13 @@ package os.kei.ui.page.main.github.page
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.BuildConfig
@@ -42,6 +45,23 @@ internal data class GitHubTrackTransferUiState(
     val tracksExporting: Boolean = false,
     val tracksImporting: Boolean = false,
     val pendingExport: GitHubTrackedExportRequest? = null
+)
+
+@Immutable
+private data class GitHubPageUiCoreSnapshot(
+    val transferState: GitHubTrackTransferUiState = GitHubTrackTransferUiState(),
+    val installedOnlineShareTargets: List<OnlineShareTargetOption> = emptyList(),
+    val checkLogicDownloaderOptions: List<DownloaderOption> = emptyList(),
+    val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
+)
+
+@Immutable
+internal data class GitHubPageUiSnapshot(
+    val transferState: GitHubTrackTransferUiState = GitHubTrackTransferUiState(),
+    val installedOnlineShareTargets: List<OnlineShareTargetOption> = emptyList(),
+    val checkLogicDownloaderOptions: List<DownloaderOption> = emptyList(),
+    val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
+    val appPickerDerivedState: GitHubTrackAppPickerDerivedState = GitHubTrackAppPickerDerivedState.Empty,
 )
 
 internal sealed interface GitHubTrackedExportStartResult {
@@ -87,6 +107,40 @@ internal class GitHubPageViewModel : ViewModel() {
         MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
     val appPickerDerivedState: StateFlow<GitHubTrackAppPickerDerivedState> =
         _appPickerDerivedState.asStateFlow()
+
+    private val coreUiState: StateFlow<GitHubPageUiCoreSnapshot> =
+        combine(
+            transferState,
+            installedOnlineShareTargets,
+            checkLogicDownloaderOptions,
+            contentDerivedState,
+        ) { transfer, shareTargets, downloaderOptions, content ->
+            GitHubPageUiCoreSnapshot(
+                transferState = transfer,
+                installedOnlineShareTargets = shareTargets,
+                checkLogicDownloaderOptions = downloaderOptions,
+                contentDerivedState = content,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = GitHubPageUiCoreSnapshot(),
+        )
+
+    val uiState: StateFlow<GitHubPageUiSnapshot> =
+        combine(coreUiState, appPickerDerivedState) { core, appPicker ->
+            GitHubPageUiSnapshot(
+                transferState = core.transferState,
+                installedOnlineShareTargets = core.installedOnlineShareTargets,
+                checkLogicDownloaderOptions = core.checkLogicDownloaderOptions,
+                contentDerivedState = core.contentDerivedState,
+                appPickerDerivedState = appPicker,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = GitHubPageUiSnapshot(),
+        )
 
     fun pageState(searchBarHideThresholdPx: Float): GitHubPageState {
         val current = pageState

@@ -86,11 +86,12 @@ fun GitHubPage(
     val state = rememberGitHubPageState(githubPageViewModel)
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var consumedExternalActionsSheetToken by rememberSaveable { mutableIntStateOf(0) }
-    val transferState by githubPageViewModel.transferState.collectAsStateWithLifecycle()
-    val installedOnlineShareTargets by githubPageViewModel.installedOnlineShareTargets.collectAsStateWithLifecycle()
-    val checkLogicDownloaderOptions by githubPageViewModel.checkLogicDownloaderOptions.collectAsStateWithLifecycle()
-    val contentDerivedState by githubPageViewModel.contentDerivedState.collectAsStateWithLifecycle()
-    val appPickerDerivedState by githubPageViewModel.appPickerDerivedState.collectAsStateWithLifecycle()
+    val pageUiState by githubPageViewModel.uiState.collectAsStateWithLifecycle()
+    val transferState = pageUiState.transferState
+    val installedOnlineShareTargets = pageUiState.installedOnlineShareTargets
+    val checkLogicDownloaderOptions = pageUiState.checkLogicDownloaderOptions
+    val contentDerivedState = pageUiState.contentDerivedState
+    val appPickerDerivedState = pageUiState.appPickerDerivedState
     val isGitHubPageDataActive = runtime.contentReady && runtime.isDataActive
     LaunchedEffect(isGitHubPageDataActive) {
         githubPageViewModel.setPageDataActive(isGitHubPageDataActive)

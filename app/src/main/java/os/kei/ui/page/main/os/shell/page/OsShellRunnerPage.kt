@@ -44,9 +44,10 @@ fun OsShellRunnerPage(
     val textBundle = rememberOsShellRunnerTextBundle()
     val pageState = rememberOsShellRunnerPageStateHolder()
     val shellRunnerViewModel: OsShellRunnerViewModel = viewModel()
-    val persistentState by shellRunnerViewModel.persistentState.collectAsStateWithLifecycle()
-    val chromePrefs by shellRunnerViewModel.chromePrefs.collectAsStateWithLifecycle()
-    val commandExecutionState by shellRunnerViewModel.commandExecutionState.collectAsStateWithLifecycle()
+    val uiState by shellRunnerViewModel.uiState.collectAsStateWithLifecycle()
+    val persistentState = uiState.persistentState
+    val chromePrefs = uiState.chromePrefs
+    val commandExecutionState = uiState.commandExecutionState
     OsShellRunnerRouteEffects(
         context = context,
         shellRunnerViewModel = shellRunnerViewModel,

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -52,6 +53,23 @@ internal class OsShellRunnerViewModel : ViewModel() {
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
                 initialValue = repository.observeChromePrefs().value,
             )
+
+    val uiState: StateFlow<OsShellRunnerUiState> =
+        combine(
+            persistentState,
+            chromePrefs,
+            commandExecutionState,
+        ) { persistent, chrome, commandExecution ->
+            OsShellRunnerUiState(
+                persistentState = persistent,
+                chromePrefs = chrome,
+                commandExecutionState = commandExecution,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = OsShellRunnerUiState(),
+        )
 
     fun loadPersistentState(
         commandStoppedText: String,

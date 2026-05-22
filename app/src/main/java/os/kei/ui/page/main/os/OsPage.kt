@@ -77,12 +77,13 @@ fun OsPage(
             builtInShellCommandCards = textBundle.builtInShellCommandCards,
         )
     }
-    val persistentState by osPageViewModel.persistentState.collectAsStateWithLifecycle()
-    val runtimeState by osPageViewModel.runtimeState.collectAsStateWithLifecycle()
-    val activitySuggestionState by osPageViewModel.activitySuggestionState.collectAsStateWithLifecycle()
-    val queryInput by osPageViewModel.queryInput.collectAsStateWithLifecycle()
-    val queryApplied by osPageViewModel.queryApplied.collectAsStateWithLifecycle()
-    val rowsDerivedState by osPageViewModel.rowsDerivedState.collectAsStateWithLifecycle()
+    val pageUiState by osPageViewModel.uiState.collectAsStateWithLifecycle()
+    val persistentState = pageUiState.persistentState
+    val runtimeState = pageUiState.runtimeState
+    val activitySuggestionState = pageUiState.activitySuggestionState
+    val queryInput = pageUiState.queryInput
+    val queryApplied = pageUiState.queryApplied
+    val rowsDerivedState = pageUiState.rowsDerivedState
     val uiSnapshot = persistentState.uiSnapshot
     val topInfoExpanded = uiSnapshot.topInfoExpanded
     val shellRunnerExpanded = uiSnapshot.shellRunnerExpanded
@@ -275,36 +276,6 @@ fun OsPage(
             cachePersisted = runtimeState.cachePersisted,
             runningShellCommandCardIds = runtimeState.runningShellCommandCardIds,
         )
-    val rowsDerivationInput =
-        remember(
-            routeState.queryApplied,
-            routeState.sectionStates,
-            topInfoExpanded,
-            systemTableExpanded,
-            secureTableExpanded,
-            globalTableExpanded,
-            androidPropsExpanded,
-            javaPropsExpanded,
-            linuxEnvExpanded,
-        ) {
-            OsPageRowsDerivationInput(
-                queryApplied = routeState.queryApplied,
-                sectionStates = routeState.sectionStates,
-                expansionFlags =
-                    OsPageExpansionFlags(
-                        topInfoExpanded = topInfoExpanded,
-                        systemTableExpanded = systemTableExpanded,
-                        secureTableExpanded = secureTableExpanded,
-                        globalTableExpanded = globalTableExpanded,
-                        androidPropsExpanded = androidPropsExpanded,
-                        javaPropsExpanded = javaPropsExpanded,
-                        linuxEnvExpanded = linuxEnvExpanded,
-                    ),
-            )
-        }
-    LaunchedEffect(rowsDerivationInput) {
-        osPageViewModel.requestRowsDerivedState(rowsDerivationInput)
-    }
 
     val derivedState =
         rememberOsPageDerivedState(

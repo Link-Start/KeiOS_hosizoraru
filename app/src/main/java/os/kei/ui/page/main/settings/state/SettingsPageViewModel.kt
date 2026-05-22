@@ -6,8 +6,11 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.export.ExportJobResult
@@ -30,6 +33,12 @@ internal data class SettingsLogUiState(
     val pendingExportFileName: String? = null
 )
 
+@Immutable
+internal data class SettingsDiagnosticsUiState(
+    val cacheState: SettingsCacheUiState = SettingsCacheUiState(),
+    val logState: SettingsLogUiState = SettingsLogUiState(),
+)
+
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
 
@@ -38,6 +47,18 @@ internal class SettingsPageViewModel : ViewModel() {
 
     private val _logState = MutableStateFlow(SettingsLogUiState())
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
+
+    val diagnosticsUiState: StateFlow<SettingsDiagnosticsUiState> =
+        combine(cacheState, logState) { cache, log ->
+            SettingsDiagnosticsUiState(
+                cacheState = cache,
+                logState = log,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = SettingsDiagnosticsUiState(),
+        )
 
     private val diagnosticsCoordinator = SettingsDiagnosticsCoordinator(
         repository = repository,

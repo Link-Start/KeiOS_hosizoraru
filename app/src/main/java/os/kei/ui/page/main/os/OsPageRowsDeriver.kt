@@ -34,6 +34,26 @@ internal class OsPageRowsDerivationInput(
     }
 }
 
+internal fun buildRowsDerivationInput(
+    queryApplied: String,
+    uiSnapshot: OsUiSnapshot,
+    sectionStates: Map<SectionKind, SectionState>,
+): OsPageRowsDerivationInput =
+    OsPageRowsDerivationInput(
+        queryApplied = queryApplied,
+        sectionStates = sectionStates,
+        expansionFlags =
+            OsPageExpansionFlags(
+                topInfoExpanded = uiSnapshot.topInfoExpanded,
+                systemTableExpanded = uiSnapshot.systemTableExpanded,
+                secureTableExpanded = uiSnapshot.secureTableExpanded,
+                globalTableExpanded = uiSnapshot.globalTableExpanded,
+                androidPropsExpanded = uiSnapshot.androidPropsExpanded,
+                javaPropsExpanded = uiSnapshot.javaPropsExpanded,
+                linuxEnvExpanded = uiSnapshot.linuxEnvExpanded,
+            ),
+    )
+
 @Immutable
 internal data class OsPageRowsUiDerivedState(
     val input: OsPageRowsDerivationInput? = null,

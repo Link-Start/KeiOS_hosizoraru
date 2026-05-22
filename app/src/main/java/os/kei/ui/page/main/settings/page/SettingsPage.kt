@@ -132,12 +132,11 @@ fun SettingsPage(
     val scope = rememberCoroutineScope()
     var shizukuRefreshToken by remember { mutableIntStateOf(0) }
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
-    val cacheState by settingsPageViewModel.cacheState.collectAsStateWithLifecycle()
-    val logState by settingsPageViewModel.logState.collectAsStateWithLifecycle()
+    val diagnosticsUiState by settingsPageViewModel.diagnosticsUiState.collectAsStateWithLifecycle()
     val routeState =
         rememberSettingsPageRouteState(
-            cacheState = cacheState,
-            logState = logState,
+            cacheState = diagnosticsUiState.cacheState,
+            logState = diagnosticsUiState.logState,
         )
     val pageUiState = rememberSettingsPageUiState()
     val backgroundController =

@@ -2,18 +2,22 @@ package os.kei.ui.page.main.settings.state
 
 import android.content.Context
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import os.kei.core.export.ExportJobResult
+import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
@@ -23,14 +27,13 @@ internal data class SettingsCacheUiState(
     val cacheEntries: List<CacheEntrySummary>? = emptyList(),
     val cacheEntriesLoading: Boolean = false,
     val clearingCacheId: String? = null,
-    val clearingAllCaches: Boolean = false
+    val clearingAllCaches: Boolean = false,
 )
 
 internal data class SettingsLogUiState(
     val logStats: AppLogStore.Stats = AppLogStore.Stats.Empty,
     val exportingLogZip: Boolean = false,
     val clearingLogs: Boolean = false,
-    val pendingExportFileName: String? = null
 )
 
 @Immutable
@@ -38,6 +41,25 @@ internal data class SettingsDiagnosticsUiState(
     val cacheState: SettingsCacheUiState = SettingsCacheUiState(),
     val logState: SettingsLogUiState = SettingsLogUiState(),
 )
+
+internal sealed interface SettingsPageEvent {
+    data class Toast(
+        @param:StringRes val messageRes: Int,
+    ) : SettingsPageEvent
+
+    data class LiquidToast(
+        @param:StringRes val messageRes: Int,
+    ) : SettingsPageEvent
+
+    data class FailureToast(
+        @param:StringRes val messageRes: Int,
+        val reason: String,
+    ) : SettingsPageEvent
+
+    data class LaunchLogExport(
+        val fileName: String,
+    ) : SettingsPageEvent
+}
 
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
@@ -47,6 +69,8 @@ internal class SettingsPageViewModel : ViewModel() {
 
     private val _logState = MutableStateFlow(SettingsLogUiState())
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
+    private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
+    val events: SharedFlow<SettingsPageEvent> = _events.asSharedFlow()
 
     val diagnosticsUiState: StateFlow<SettingsDiagnosticsUiState> =
         combine(cacheState, logState) { cache, log ->
@@ -60,12 +84,13 @@ internal class SettingsPageViewModel : ViewModel() {
             initialValue = SettingsDiagnosticsUiState(),
         )
 
-    private val diagnosticsCoordinator = SettingsDiagnosticsCoordinator(
-        repository = repository,
-        scope = viewModelScope,
-        cacheState = _cacheState,
-        logState = _logState,
-    )
+    private val diagnosticsCoordinator =
+        SettingsDiagnosticsCoordinator(
+            repository = repository,
+            scope = viewModelScope,
+            cacheState = _cacheState,
+            logState = _logState,
+        )
 
     fun bindDiagnostics(
         context: Context,
@@ -85,15 +110,24 @@ internal class SettingsPageViewModel : ViewModel() {
         diagnosticsCoordinator.reloadCacheEntries(context)
     }
 
-    suspend fun clearAllCaches(context: Context): Result<Unit> {
-        return diagnosticsCoordinator.clearAllCaches(context)
+    fun requestClearAllCaches(context: Context) {
+        viewModelScope.launch {
+            val result = diagnosticsCoordinator.clearAllCaches(context)
+            if (result.isSuccess) {
+                _events.emit(SettingsPageEvent.LiquidToast(R.string.settings_cache_toast_cleared_all))
+            } else {
+                _events.emit(SettingsPageEvent.FailureToast(R.string.settings_cache_toast_clear_all_failed, result.reasonName()))
+            }
+        }
     }
 
-    suspend fun clearCache(
+    fun requestClearCache(
         context: Context,
-        cacheId: String
-    ): Result<Unit> {
-        return diagnosticsCoordinator.clearCache(context, cacheId)
+        cacheId: String,
+    ) {
+        viewModelScope.launch {
+            diagnosticsCoordinator.clearCache(context, cacheId)
+        }
     }
 
     fun reloadLogStats(context: Context) {
@@ -105,40 +139,52 @@ internal class SettingsPageViewModel : ViewModel() {
         viewModelScope.launch {
             val fileName = repository.buildLogExportFileName()
             _logState.update { state ->
-                state.copy(
-                    exportingLogZip = true,
-                    pendingExportFileName = fileName
-                )
+                state.copy(exportingLogZip = true)
             }
+            _events.emit(SettingsPageEvent.LaunchLogExport(fileName))
         }
-    }
-
-    fun consumePendingExportFileName(): String? {
-        val fileName = _logState.value.pendingExportFileName
-        _logState.update { state -> state.copy(pendingExportFileName = null) }
-        return fileName
     }
 
     fun finishLogExport() {
         _logState.update { state ->
-            state.copy(
-                exportingLogZip = false,
-                pendingExportFileName = null
-            )
+            state.copy(exportingLogZip = false)
         }
     }
 
-    suspend fun exportLogZip(
+    fun completeLogExport(
         context: Context,
-        uri: Uri
-    ): ExportJobResult {
-        return repository.exportLogZip(
-            context = context.applicationContext,
-            uri = uri
-        )
+        uri: Uri?,
+    ) {
+        if (uri == null) {
+            finishLogExport()
+            return
+        }
+        viewModelScope.launch {
+            val result =
+                repository.exportLogZip(
+                    context = context.applicationContext,
+                    uri = uri,
+                )
+            finishLogExport()
+            if (result.isSuccess) {
+                _events.emit(SettingsPageEvent.Toast(R.string.settings_log_toast_exported))
+            } else {
+                _events.emit(SettingsPageEvent.FailureToast(R.string.settings_log_toast_export_failed, result.errorPreview))
+            }
+            reloadLogStats(context)
+        }
     }
 
-    suspend fun clearLogs(context: Context): Result<Unit> {
-        return diagnosticsCoordinator.clearLogs(context)
+    fun requestClearLogs(context: Context) {
+        viewModelScope.launch {
+            val result = diagnosticsCoordinator.clearLogs(context)
+            if (result.isSuccess) {
+                _events.emit(SettingsPageEvent.LiquidToast(R.string.settings_log_toast_cleared))
+            } else {
+                _events.emit(SettingsPageEvent.FailureToast(R.string.settings_log_toast_clear_failed, result.reasonName()))
+            }
+        }
     }
 }
+
+private fun Result<*>.reasonName(): String = exceptionOrNull()?.javaClass?.simpleName ?: "Unknown"

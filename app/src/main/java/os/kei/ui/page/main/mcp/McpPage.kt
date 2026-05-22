@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
@@ -31,8 +30,6 @@ import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.mcp.server.McpServerManager
-import os.kei.mcp.server.SKILL_RESOURCE_URI
-import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.mcp.state.rememberMcpPageOverviewState
@@ -56,7 +53,6 @@ fun McpPage(
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
@@ -64,7 +60,6 @@ fun McpPage(
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
     val unknownText = stringResource(R.string.common_unknown)
-    val resourceCopiedText = stringResource(R.string.mcp_toast_resource_copied)
 
     val isDark = isSystemInDarkTheme()
     val titleColor = MiuixTheme.colorScheme.onBackground
@@ -99,34 +94,6 @@ fun McpPage(
         mutableStateOf(hasMcpLocalNetworkPermission(context))
     }
     var startAfterLocalNetworkPermission by remember { mutableStateOf(false) }
-    var refreshRunning by remember { mutableStateOf(false) }
-
-    fun launchServerToggle() {
-        scope.launch {
-            when (val result = mcpPageViewModel.toggleServer(mcpServerManager)) {
-                McpToggleServerResult.InvalidPort -> {
-                    context.showToast(R.string.common_port_invalid)
-                }
-
-                is McpToggleServerResult.Failed -> {
-                    context.showToast(
-                        context.resolveString(
-                            R.string.mcp_toast_start_failed,
-                            result.reason ?: unknownText,
-                        ),
-                    )
-                }
-
-                McpToggleServerResult.Started -> {
-                    context.showLiquidToastOnly(R.string.mcp_toast_service_started)
-                }
-
-                McpToggleServerResult.Stopped -> {
-                    context.showLiquidToastOnly(R.string.mcp_toast_service_stopped)
-                }
-            }
-        }
-    }
 
     val localNetworkPermissionLauncher =
         rememberLauncherForActivityResult(
@@ -145,7 +112,7 @@ fun McpPage(
             val shouldStartServer = startAfterLocalNetworkPermission && localNetworkPermissionGranted
             startAfterLocalNetworkPermission = false
             if (shouldStartServer && !mcpServerManager.uiState.value.running) {
-                launchServerToggle()
+                mcpPageViewModel.requestToggleServer(mcpServerManager)
             }
         }
     val toggleServer: () -> Unit = toggleServer@{
@@ -161,126 +128,75 @@ fun McpPage(
             return@toggleServer
         }
         startAfterLocalNetworkPermission = false
-        launchServerToggle()
-    }
-    val copyCurrentConfig: () -> Unit = {
-        scope.launch {
-            val json =
-                mcpPageViewModel.buildConfigJson(
-                    manager = mcpServerManager,
-                    serverState = uiState,
-                )
-            copyToClipboard(context, "mcp-config", json)
-            context.showLiquidToastOnly(R.string.mcp_toast_config_copied)
-        }
-    }
-    val copySkillResource: () -> Unit = {
-        copyToClipboard(context, "mcp-skill-resource", SKILL_RESOURCE_URI)
-        context.showLiquidToastOnly(resourceCopiedText)
-    }
-    val copyWorkflowResource: () -> Unit = {
-        copyToClipboard(context, "mcp-workflow-resource", WORKFLOW_RESOURCE_URI)
-        context.showLiquidToastOnly(resourceCopiedText)
-    }
-    val refreshMcpNow: () -> Unit = {
-        if (!refreshRunning) {
-            scope.launch {
-                refreshRunning = true
-                try {
-                    mcpPageViewModel.refreshNow(mcpServerManager)
-                    context.showLiquidToastOnly(R.string.common_refreshed)
-                } finally {
-                    refreshRunning = false
-                }
-            }
-        }
-    }
-    val saveServiceConfig: () -> Unit = {
-        scope.launch {
-            when (val result = mcpPageViewModel.saveConfig(mcpServerManager)) {
-                McpSaveConfigResult.InvalidPort -> {
-                    context.showToast(R.string.common_port_invalid)
-                }
-
-                is McpSaveConfigResult.Failed -> {
-                    context.showToast(
-                        context.resolveString(
-                            R.string.common_save_failed_with_reason,
-                            result.reason ?: unknownText,
-                        ),
-                    )
-                }
-
-                McpSaveConfigResult.Success -> {
-                    context.showToast(R.string.mcp_toast_saved_requires_restart)
-                    mcpPageViewModel.updateEditSheetVisible(false)
-                    mcpPageViewModel.syncServiceDraft(mcpServerManager.uiState.value, force = true)
-                }
-            }
-        }
-    }
-    val sendTestNotification: () -> Unit = {
-        scope.launch {
-            mcpPageViewModel
-                .sendTestNotification(mcpServerManager)
-                .onSuccess {
-                    context.showToast(R.string.mcp_toast_test_notification_sent)
-                }.onFailure {
-                    context.showToast(
-                        context.resolveString(
-                            R.string.common_send_failed_with_reason,
-                            it.message ?: unknownText,
-                        ),
-                    )
-                }
-        }
-    }
-    val resetConfig: () -> Unit = {
-        scope.launch {
-            val requiresRestart = mcpPageViewModel.resetConfigPreservingToken(mcpServerManager)
-            context.showToast(
-                context.resolveString(
-                    if (requiresRestart) {
-                        R.string.mcp_toast_config_reset_requires_restart
-                    } else {
-                        R.string.mcp_toast_config_reset
-                    },
-                ),
-            )
-            mcpPageViewModel.updateResetConfigConfirmVisible(false)
-        }
-    }
-    val resetToken: () -> Unit = {
-        scope.launch {
-            mcpPageViewModel.resetToken(mcpServerManager)
-            context.showToast(R.string.mcp_toast_token_reset_reconnect)
-            mcpPageViewModel.updateResetTokenConfirmVisible(false)
-        }
+        mcpPageViewModel.requestToggleServer(mcpServerManager)
     }
     val logsExportLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("application/json"),
         ) { uri ->
-            val request = mcpPageViewModel.consumePendingLogsExport()
-            if (uri == null || request == null) {
-                mcpPageViewModel.finishLogsExport()
-                return@rememberLauncherForActivityResult
-            }
-            scope.launch {
-                val result =
+            mcpPageViewModel.completeLogsExport(
+                contentResolver = context.contentResolver,
+                uri = uri,
+                state = currentUiState,
+            )
+        }
+    LaunchedEffect(mcpPageViewModel, logsExportLauncher, context, unknownText) {
+        mcpPageViewModel.events.collect { event ->
+            when (event) {
+                is McpPageEvent.Toast -> {
+                    context.showToast(event.messageRes)
+                }
+
+                is McpPageEvent.LiquidToast -> {
+                    context.showLiquidToastOnly(event.messageRes)
+                }
+
+                is McpPageEvent.StartFailed -> {
+                    context.showToast(
+                        context.resolveString(
+                            R.string.mcp_toast_start_failed,
+                            event.reason ?: unknownText,
+                        ),
+                    )
+                }
+
+                is McpPageEvent.SaveFailed -> {
+                    context.showToast(
+                        context.resolveString(
+                            R.string.common_save_failed_with_reason,
+                            event.reason ?: unknownText,
+                        ),
+                    )
+                }
+
+                is McpPageEvent.SendFailed -> {
+                    context.showToast(
+                        context.resolveString(
+                            R.string.common_send_failed_with_reason,
+                            event.reason ?: unknownText,
+                        ),
+                    )
+                }
+
+                is McpPageEvent.LogsExportFailed -> {
+                    context.showToast(
+                        context.resolveString(
+                            R.string.mcp_toast_logs_export_failed,
+                            event.reason,
+                        ),
+                    )
+                }
+
+                is McpPageEvent.CopyText -> {
+                    copyToClipboard(context, event.label, event.text)
+                    context.showLiquidToastOnly(event.successRes)
+                }
+
+                is McpPageEvent.LaunchLogsExport -> {
                     runCatching {
-                        mcpPageViewModel.exportLogs(
-                            contentResolver = context.contentResolver,
-                            uri = uri,
-                            request = request,
-                            state = currentUiState,
-                        )
-                    }
-                mcpPageViewModel.finishLogsExport()
-                result
-                    .onSuccess {
-                        context.showLiquidToastOnly(R.string.mcp_toast_logs_exported)
+                        logsExportLauncher.launch(event.fileName)
                     }.onFailure {
+                        mcpPageViewModel.finishLogsExport()
                         context.showToast(
                             context.resolveString(
                                 R.string.mcp_toast_logs_export_failed,
@@ -288,17 +204,19 @@ fun McpPage(
                             ),
                         )
                     }
+                }
             }
         }
+    }
     val actions =
         McpPageActions(
             onToggleServer = toggleServer,
             onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
             onControlExpandedChange = mcpPageViewModel::updateControlExpanded,
-            onSendTestNotification = sendTestNotification,
+            onSendTestNotification = { mcpPageViewModel.requestSendTestNotification(mcpServerManager) },
             onShowResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(true) },
-            onCopySkillResource = copySkillResource,
-            onCopyWorkflowResource = copyWorkflowResource,
+            onCopySkillResource = mcpPageViewModel::requestCopySkillResource,
+            onCopyWorkflowResource = mcpPageViewModel::requestCopyWorkflowResource,
             onToolsSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
             onToolEntrypointsExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
             onRuntimeToolsExpandedChange = mcpPageViewModel::updateRuntimeToolsExpanded,
@@ -323,22 +241,18 @@ fun McpPage(
                     )
                 }
             },
-            onClearLogs = {
-                scope.launch {
-                    mcpPageViewModel.clearLogs(mcpServerManager)
-                }
-            },
-            onCopyCurrentConfig = copyCurrentConfig,
-            onRefreshNow = refreshMcpNow,
-            onSaveServiceConfig = saveServiceConfig,
+            onClearLogs = { mcpPageViewModel.requestClearLogs(mcpServerManager) },
+            onCopyCurrentConfig = { mcpPageViewModel.requestCopyCurrentConfig(mcpServerManager, uiState) },
+            onRefreshNow = { mcpPageViewModel.requestRefreshNow(mcpServerManager) },
+            onSaveServiceConfig = { mcpPageViewModel.requestSaveConfig(mcpServerManager) },
             onServerNameChange = mcpPageViewModel::updateServerName,
             onPortTextChange = mcpPageViewModel::updatePortText,
             onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
             onDismissEditSheet = { mcpPageViewModel.updateEditSheetVisible(false) },
             onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) },
-            onResetConfig = resetConfig,
+            onResetConfig = { mcpPageViewModel.requestResetConfig(mcpServerManager) },
             onDismissResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(false) },
-            onResetToken = resetToken,
+            onResetToken = { mcpPageViewModel.requestResetToken(mcpServerManager) },
             onDismissResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(false) },
         )
     val serverNameHint = context.resolveString(R.string.mcp_input_service_name_hint)
@@ -413,7 +327,7 @@ fun McpPage(
                 titleColor = titleColor,
                 subtitleColor = subtitleColor,
                 isDark = isDark,
-                refreshRunning = refreshRunning,
+                refreshRunning = pageUiState.refreshRunning,
                 actions = actions,
             )
         }

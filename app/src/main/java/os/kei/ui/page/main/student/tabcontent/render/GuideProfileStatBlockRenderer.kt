@@ -63,7 +63,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
-    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
     preferCapsule: Boolean
 ) {
     if (infoRows.isEmpty() && galleryItems.isEmpty()) return

@@ -70,7 +70,7 @@ internal fun BaStudentGuidePagerPage(
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (String, String) -> Unit,
     onSaveMediaPack: (List<Pair<String, String>>, String) -> Unit,
-    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
     onToggleVoicePlayback: (String) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,

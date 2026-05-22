@@ -156,7 +156,6 @@ fun SettingsPage(
     BindSettingsPageEffects(
         context = context,
         lifecycleOwner = lifecycleOwner,
-        scope = scope,
         settingsPageViewModel = settingsPageViewModel,
         batteryOptimizationController = batteryOptimizationController,
         permissionKeepAliveController = permissionKeepAliveController,
@@ -225,9 +224,7 @@ fun SettingsPage(
 
     BindSettingsLogExportAction(
         context = context,
-        scope = scope,
         settingsPageViewModel = settingsPageViewModel,
-        pendingExportFileName = routeState.logState.pendingExportFileName,
     )
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -409,7 +406,6 @@ fun SettingsPage(
     val settingsSearchCardInput =
         SettingsSearchCardRenderInput(
             context = context,
-            scope = scope,
             settingsPageViewModel = settingsPageViewModel,
             sectionContracts = sectionContracts,
             backgroundController = backgroundController,

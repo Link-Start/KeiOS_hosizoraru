@@ -2,20 +2,27 @@ package os.kei.ui.page.main.mcp
 
 import android.content.ContentResolver
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.R
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerUiState
+import os.kei.mcp.server.SKILL_RESOURCE_URI
+import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
 
@@ -42,6 +49,7 @@ internal data class McpPageUiState(
     val toolsSearchQuery: String = "",
     val logsExpanded: Boolean = false,
     val logsExporting: Boolean = false,
+    val refreshRunning: Boolean = false,
     val pendingLogsExport: McpLogsExportRequest? = null,
     val showResetTokenConfirm: Boolean = false,
     val showResetConfigConfirm: Boolean = false,
@@ -61,12 +69,50 @@ internal data class McpPageRouteState(
     val toolBuckets: McpToolBuckets = McpToolBuckets.Empty,
 )
 
+internal sealed interface McpPageEvent {
+    data class Toast(
+        @param:StringRes val messageRes: Int,
+    ) : McpPageEvent
+
+    data class LiquidToast(
+        @param:StringRes val messageRes: Int,
+    ) : McpPageEvent
+
+    data class StartFailed(
+        val reason: String?,
+    ) : McpPageEvent
+
+    data class SaveFailed(
+        val reason: String?,
+    ) : McpPageEvent
+
+    data class SendFailed(
+        val reason: String?,
+    ) : McpPageEvent
+
+    data class LogsExportFailed(
+        val reason: String,
+    ) : McpPageEvent
+
+    data class CopyText(
+        val label: String,
+        val text: String,
+        @param:StringRes val successRes: Int,
+    ) : McpPageEvent
+
+    data class LaunchLogsExport(
+        val fileName: String,
+    ) : McpPageEvent
+}
+
 internal class McpPageViewModel : ViewModel() {
     private val repository = McpPageRepository()
     private val _uiState = MutableStateFlow(McpPageUiState())
     val uiState: StateFlow<McpPageUiState> = _uiState.asStateFlow()
     private val _toolBuckets = MutableStateFlow(McpToolBuckets.Empty)
     val toolBuckets: StateFlow<McpToolBuckets> = _toolBuckets.asStateFlow()
+    private val _events = MutableSharedFlow<McpPageEvent>(replay = 0, extraBufferCapacity = 8)
+    val events: SharedFlow<McpPageEvent> = _events.asSharedFlow()
     private var toolBucketsInput: McpToolBucketInput? = null
     private var toolBucketsJob: Job? = null
 
@@ -191,9 +237,10 @@ internal class McpPageViewModel : ViewModel() {
                     ),
             )
         }
+        _events.tryEmit(McpPageEvent.LaunchLogsExport(fileName))
     }
 
-    fun consumePendingLogsExport(): McpLogsExportRequest? {
+    private fun consumePendingLogsExport(): McpLogsExportRequest? {
         val request = _uiState.value.pendingLogsExport
         _uiState.update { state -> state.copy(pendingLogsExport = null) }
         return request
@@ -208,35 +255,190 @@ internal class McpPageViewModel : ViewModel() {
         }
     }
 
-    suspend fun toggleServer(manager: McpServerManager): McpToggleServerResult =
+    fun requestToggleServer(manager: McpServerManager) {
+        viewModelScope.launch {
+            when (val result = toggleServer(manager)) {
+                McpToggleServerResult.InvalidPort -> _events.emit(McpPageEvent.Toast(R.string.common_port_invalid))
+                is McpToggleServerResult.Failed -> _events.emit(McpPageEvent.StartFailed(result.reason))
+                McpToggleServerResult.Started -> _events.emit(McpPageEvent.LiquidToast(R.string.mcp_toast_service_started))
+                McpToggleServerResult.Stopped -> _events.emit(McpPageEvent.LiquidToast(R.string.mcp_toast_service_stopped))
+            }
+        }
+    }
+
+    fun requestCopyCurrentConfig(
+        manager: McpServerManager,
+        serverState: McpServerUiState,
+    ) {
+        viewModelScope.launch {
+            val json =
+                buildConfigJson(
+                    manager = manager,
+                    serverState = serverState,
+                )
+            _events.emit(
+                McpPageEvent.CopyText(
+                    label = "mcp-config",
+                    text = json,
+                    successRes = R.string.mcp_toast_config_copied,
+                ),
+            )
+        }
+    }
+
+    fun requestCopySkillResource() {
+        _events.tryEmit(
+            McpPageEvent.CopyText(
+                label = "mcp-skill-resource",
+                text = SKILL_RESOURCE_URI,
+                successRes = R.string.mcp_toast_resource_copied,
+            ),
+        )
+    }
+
+    fun requestCopyWorkflowResource() {
+        _events.tryEmit(
+            McpPageEvent.CopyText(
+                label = "mcp-workflow-resource",
+                text = WORKFLOW_RESOURCE_URI,
+                successRes = R.string.mcp_toast_resource_copied,
+            ),
+        )
+    }
+
+    fun requestRefreshNow(manager: McpServerManager) {
+        if (_uiState.value.refreshRunning) return
+        _uiState.update { state -> state.copy(refreshRunning = true) }
+        viewModelScope.launch {
+            try {
+                refreshNow(manager)
+                _events.emit(McpPageEvent.LiquidToast(R.string.common_refreshed))
+            } finally {
+                _uiState.update { state -> state.copy(refreshRunning = false) }
+            }
+        }
+    }
+
+    fun requestSaveConfig(manager: McpServerManager) {
+        viewModelScope.launch {
+            when (val result = saveConfig(manager)) {
+                McpSaveConfigResult.InvalidPort -> {
+                    _events.emit(McpPageEvent.Toast(R.string.common_port_invalid))
+                }
+
+                is McpSaveConfigResult.Failed -> {
+                    _events.emit(McpPageEvent.SaveFailed(result.reason))
+                }
+
+                McpSaveConfigResult.Success -> {
+                    _events.emit(McpPageEvent.Toast(R.string.mcp_toast_saved_requires_restart))
+                    updateEditSheetVisible(false)
+                    syncServiceDraft(manager.uiState.value, force = true)
+                }
+            }
+        }
+    }
+
+    fun requestSendTestNotification(manager: McpServerManager) {
+        viewModelScope.launch {
+            sendTestNotification(manager)
+                .onSuccess {
+                    _events.emit(McpPageEvent.Toast(R.string.mcp_toast_test_notification_sent))
+                }.onFailure {
+                    _events.emit(McpPageEvent.SendFailed(it.message))
+                }
+        }
+    }
+
+    fun requestResetConfig(manager: McpServerManager) {
+        viewModelScope.launch {
+            val requiresRestart = resetConfigPreservingToken(manager)
+            _events.emit(
+                McpPageEvent.Toast(
+                    if (requiresRestart) {
+                        R.string.mcp_toast_config_reset_requires_restart
+                    } else {
+                        R.string.mcp_toast_config_reset
+                    },
+                ),
+            )
+            updateResetConfigConfirmVisible(false)
+        }
+    }
+
+    fun requestResetToken(manager: McpServerManager) {
+        viewModelScope.launch {
+            resetToken(manager)
+            _events.emit(McpPageEvent.Toast(R.string.mcp_toast_token_reset_reconnect))
+            updateResetTokenConfirmVisible(false)
+        }
+    }
+
+    fun requestClearLogs(manager: McpServerManager) {
+        viewModelScope.launch {
+            clearLogs(manager)
+        }
+    }
+
+    fun completeLogsExport(
+        contentResolver: ContentResolver,
+        uri: Uri?,
+        state: McpServerUiState,
+    ) {
+        val request = consumePendingLogsExport()
+        if (uri == null || request == null) {
+            finishLogsExport()
+            return
+        }
+        viewModelScope.launch {
+            val result =
+                runCatching {
+                    exportLogs(
+                        contentResolver = contentResolver,
+                        uri = uri,
+                        request = request,
+                        state = state,
+                    )
+                }
+            finishLogsExport()
+            result
+                .onSuccess {
+                    _events.emit(McpPageEvent.LiquidToast(R.string.mcp_toast_logs_exported))
+                }.onFailure {
+                    _events.emit(McpPageEvent.LogsExportFailed(it.javaClass.simpleName))
+                }
+        }
+    }
+
+    private suspend fun toggleServer(manager: McpServerManager): McpToggleServerResult =
         repository.toggleServer(
             manager = manager,
             draft = _uiState.value.serviceDraft,
         )
 
-    suspend fun saveConfig(manager: McpServerManager): McpSaveConfigResult =
+    private suspend fun saveConfig(manager: McpServerManager): McpSaveConfigResult =
         repository.saveConfig(
             manager = manager,
             draft = _uiState.value.serviceDraft,
         )
 
-    suspend fun resetConfigPreservingToken(manager: McpServerManager): Boolean = repository.resetConfigPreservingToken(manager)
+    private suspend fun resetConfigPreservingToken(manager: McpServerManager): Boolean = repository.resetConfigPreservingToken(manager)
 
-    suspend fun resetToken(manager: McpServerManager) {
+    private suspend fun resetToken(manager: McpServerManager) {
         repository.resetToken(manager)
     }
 
-    suspend fun sendTestNotification(manager: McpServerManager): Result<Unit> = repository.sendTestNotification(manager)
+    private suspend fun sendTestNotification(manager: McpServerManager): Result<Unit> = repository.sendTestNotification(manager)
 
-    suspend fun refreshNow(manager: McpServerManager) {
+    private suspend fun refreshNow(manager: McpServerManager) {
         repository.refreshNow(manager)
     }
 
-    suspend fun clearLogs(manager: McpServerManager) {
+    private suspend fun clearLogs(manager: McpServerManager) {
         repository.clearLogs(manager)
     }
 
-    suspend fun buildConfigJson(
+    private suspend fun buildConfigJson(
         manager: McpServerManager,
         serverState: McpServerUiState,
     ): String =
@@ -246,7 +448,7 @@ internal class McpPageViewModel : ViewModel() {
             draft = _uiState.value.serviceDraft,
         )
 
-    suspend fun exportLogs(
+    private suspend fun exportLogs(
         contentResolver: ContentResolver,
         uri: Uri,
         request: McpLogsExportRequest,

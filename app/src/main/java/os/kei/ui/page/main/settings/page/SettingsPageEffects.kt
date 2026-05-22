@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.settings.page
 
 import android.content.Context
@@ -12,9 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import os.kei.core.log.AppLogLevel
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
@@ -25,7 +25,6 @@ import kotlin.time.Duration.Companion.milliseconds
 internal fun BindSettingsPageEffects(
     context: Context,
     lifecycleOwner: LifecycleOwner,
-    scope: CoroutineScope,
     settingsPageViewModel: SettingsPageViewModel,
     batteryOptimizationController: SettingsBatteryOptimizationController,
     permissionKeepAliveController: SettingsPermissionKeepAliveController,
@@ -33,7 +32,7 @@ internal fun BindSettingsPageEffects(
     shizukuStatus: String,
     cacheDiagnosticsEnabled: Boolean,
     logLevel: AppLogLevel,
-    shizukuRefreshToken: Int
+    shizukuRefreshToken: Int,
 ) {
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
     val latestShizukuStatus = rememberUpdatedState(shizukuStatus)
@@ -41,33 +40,34 @@ internal fun BindSettingsPageEffects(
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
     }
     DisposableEffect(lifecycleOwner, batteryOptimizationController, permissionKeepAliveController) {
-        val observer = LifecycleEventObserver { _, event ->
-            pageActive = when (event) {
-                Lifecycle.Event.ON_START,
-                Lifecycle.Event.ON_RESUME -> true
-                Lifecycle.Event.ON_STOP,
-                Lifecycle.Event.ON_DESTROY -> false
-                else -> pageActive
-            }
-            if (event == Lifecycle.Event.ON_RESUME) {
-                batteryOptimizationController.refresh()
-                scope.launch {
-                    permissionKeepAliveController.refresh(
-                        notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                        shizukuStatus = latestShizukuStatus.value
-                    )
+        val observer =
+            LifecycleEventObserver { _, event ->
+                pageActive =
+                    when (event) {
+                        Lifecycle.Event.ON_START,
+                        Lifecycle.Event.ON_RESUME,
+                        -> true
+
+                        Lifecycle.Event.ON_STOP,
+                        Lifecycle.Event.ON_DESTROY,
+                        -> false
+
+                        else -> pageActive
+                    }
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    batteryOptimizationController.refresh()
                 }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    LaunchedEffect(notificationPermissionGranted, shizukuStatus) {
+    LaunchedEffect(pageActive, notificationPermissionGranted, shizukuStatus) {
+        if (!pageActive) return@LaunchedEffect
         permissionKeepAliveController.refresh(
             notificationPermissionGranted = notificationPermissionGranted,
-            shizukuStatus = shizukuStatus
+            shizukuStatus = shizukuStatus,
         )
     }
     LaunchedEffect(context, pageActive, cacheDiagnosticsEnabled, logLevel) {
@@ -83,7 +83,7 @@ internal fun BindSettingsPageEffects(
         repeat(8) {
             permissionKeepAliveController.refresh(
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                shizukuStatus = latestShizukuStatus.value
+                shizukuStatus = latestShizukuStatus.value,
             )
             delay(400.milliseconds)
         }

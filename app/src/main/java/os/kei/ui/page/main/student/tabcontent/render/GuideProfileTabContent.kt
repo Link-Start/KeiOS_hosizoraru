@@ -46,7 +46,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
-    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
 ) {
     val guide = info
     if (guide == null) {

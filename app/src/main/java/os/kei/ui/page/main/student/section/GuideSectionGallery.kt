@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.section
 
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -61,12 +58,11 @@ internal fun GuideGalleryCardItem(
     bgmFavoriteStudentImageUrl: String = "",
     bgmFavoriteSourceUrl: String = "",
     bgmFavoriteAudioUrls: Set<String> = emptySet(),
-    onToggleBgmFavorite: (suspend (GuideBgmFavoriteItem) -> Boolean)? = null,
+    onToggleBgmFavorite: ((GuideBgmFavoriteItem) -> Unit)? = null,
     mediaAdaptiveRotationEnabled: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val normalizedMediaType = item.mediaType.lowercase()
     val isInteractiveFurnitureAnimated = remember(item.title, item.mediaUrl, item.imageUrl) {
         isInteractiveFurnitureAnimatedGalleryItem(item)
@@ -166,8 +162,6 @@ internal fun GuideGalleryCardItem(
             R.string.guide_bgm_cd_favorite
         }
     )
-    val favoriteAddedText = stringResource(R.string.guide_bgm_toast_favorite_added)
-    val favoriteRemovedText = stringResource(R.string.guide_bgm_toast_favorite_removed)
     val bgmFavoriteItem = remember(
         favoriteAudioUrl,
         displayTitle,
@@ -241,13 +235,7 @@ internal fun GuideGalleryCardItem(
             isBgmFavorite = isBgmFavorite,
             bgmFavoriteContentDescription = favoriteContentDescription,
             onToggleBgmFavorite = {
-                val toggleFavorite = onToggleBgmFavorite
-                if (toggleFavorite != null) {
-                    coroutineScope.launch {
-                        val added = toggleFavorite(bgmFavoriteItem)
-                        context.showToast(if (added) favoriteAddedText else favoriteRemovedText)
-                    }
-                }
+                onToggleBgmFavorite?.invoke(bgmFavoriteItem)
             },
             showAudioLoopAction = showAudioLoopAction,
             onToggleAudioLoop = {

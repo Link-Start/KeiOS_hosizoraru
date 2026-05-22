@@ -242,55 +242,64 @@ fun AboutPage(
                 ) { showBottomBar = it }
             }
     }
-    val selectAboutCategory: (Int) -> Unit = { index ->
-        val target = index.coerceIn(0, categories.lastIndex)
-        val stablePageIndex =
-            if (pagerState.isScrollInProgress) {
-                pagerState.targetPage
-            } else {
-                pagerState.settledPage
-            }
-        if (target != stablePageIndex) {
-            selectedCategoryIndex = target
-            tabJumpJob?.cancel()
-            tabJumpJob =
-                scope.launch {
-                    val distance = abs(target - stablePageIndex)
-                    if (distance > 1) {
-                        farJumpAlpha.snapTo(1f)
-                        farJumpAlpha.animateTo(
-                            targetValue = 0.92f,
-                            animationSpec =
-                                tween(
-                                    durationMillis =
-                                        resolvedMotionDuration(
-                                            AppMotionTokens.farJumpDimMs,
-                                            transitionAnimationsEnabled,
-                                        ),
-                                ),
-                        )
+    val selectAboutCategory =
+        remember(
+            categories,
+            pagerState,
+            transitionAnimationsEnabled,
+            farJumpAlpha,
+            scope,
+        ) {
+            { index: Int ->
+                val target = index.coerceIn(0, categories.lastIndex)
+                val stablePageIndex =
+                    if (pagerState.isScrollInProgress) {
+                        pagerState.targetPage
+                    } else {
+                        pagerState.settledPage
                     }
-                    pagerState.animateToPage(
-                        target = target,
-                        animationsEnabled = transitionAnimationsEnabled,
-                        durationMillis = aboutPagerSwitchDurationMillis(distance),
-                    )
-                    if (distance > 1) {
-                        farJumpAlpha.animateTo(
-                            targetValue = 1f,
-                            animationSpec =
-                                tween(
-                                    durationMillis =
-                                        resolvedMotionDuration(
-                                            AppMotionTokens.farJumpRestoreMs,
-                                            transitionAnimationsEnabled,
+                if (target != stablePageIndex) {
+                    selectedCategoryIndex = target
+                    tabJumpJob?.cancel()
+                    tabJumpJob =
+                        scope.launch {
+                            val distance = abs(target - stablePageIndex)
+                            if (distance > 1) {
+                                farJumpAlpha.snapTo(1f)
+                                farJumpAlpha.animateTo(
+                                    targetValue = 0.92f,
+                                    animationSpec =
+                                        tween(
+                                            durationMillis =
+                                                resolvedMotionDuration(
+                                                    AppMotionTokens.farJumpDimMs,
+                                                    transitionAnimationsEnabled,
+                                                ),
                                         ),
-                                ),
-                        )
-                    }
+                                )
+                            }
+                            pagerState.animateToPage(
+                                target = target,
+                                animationsEnabled = transitionAnimationsEnabled,
+                                durationMillis = aboutPagerSwitchDurationMillis(distance),
+                            )
+                            if (distance > 1) {
+                                farJumpAlpha.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec =
+                                        tween(
+                                            durationMillis =
+                                                resolvedMotionDuration(
+                                                    AppMotionTokens.farJumpRestoreMs,
+                                                    transitionAnimationsEnabled,
+                                                ),
+                                        ),
+                                )
+                            }
+                        }
                 }
+            }
         }
-    }
 
     BackHandler(enabled = searchExpanded) {
         searchExpanded = false

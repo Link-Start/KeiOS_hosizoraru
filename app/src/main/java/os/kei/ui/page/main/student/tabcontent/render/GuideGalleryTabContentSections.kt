@@ -44,7 +44,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
-    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit
 ) {
     if (!error.isNullOrBlank()) {
         item { GuideGalleryErrorCard(error = error) }

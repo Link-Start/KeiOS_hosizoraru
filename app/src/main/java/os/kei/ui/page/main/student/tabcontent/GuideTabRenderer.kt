@@ -35,7 +35,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
-    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
     onToggleVoicePlayback: (String) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit
 ) {

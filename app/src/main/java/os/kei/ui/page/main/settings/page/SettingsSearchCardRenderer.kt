@@ -3,11 +3,6 @@ package os.kei.ui.page.main.settings.page
 import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import os.kei.R
-import os.kei.core.ext.showLiquidToastOnly
-import os.kei.core.ext.showToast
 import os.kei.core.log.AppLogLevel
 import os.kei.ui.page.main.feedback.FeedbackIssueActivity
 import os.kei.ui.page.main.settings.section.SettingsAnimationSection
@@ -29,7 +24,10 @@ internal fun LazyListScope.settingsCardItem(
     card: SettingsSearchCard,
     input: SettingsSearchCardRenderInput,
 ) {
-    item(key = "settings_card_${card.name}") {
+    item(
+        key = "settings_card_${card.name}",
+        contentType = "settings_card",
+    ) {
         when (card) {
             SettingsSearchCard.Permissions -> {
                 SettingsPermissionKeepAliveSection(
@@ -177,7 +175,6 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
 
 internal data class SettingsSearchCardRenderInput(
     val context: Context,
-    val scope: CoroutineScope,
     val settingsPageViewModel: SettingsPageViewModel,
     val sectionContracts: SettingsSectionContractBundle,
     val backgroundController: SettingsBackgroundController,
@@ -197,37 +194,15 @@ internal data class SettingsSearchCardRenderInput(
     val onSliderInteractionChanged: (Boolean) -> Unit,
 ) {
     fun clearAllCaches() {
-        scope.launch {
-            val result = settingsPageViewModel.clearAllCaches(context)
-            if (result.isSuccess) {
-                context.showLiquidToastOnly(R.string.settings_cache_toast_cleared_all)
-            } else {
-                val reason =
-                    result.exceptionOrNull()?.javaClass?.simpleName
-                        ?: context.getString(R.string.common_unknown)
-                context.showToast(context.getString(R.string.settings_cache_toast_clear_all_failed, reason))
-            }
-        }
+        settingsPageViewModel.requestClearAllCaches(context)
     }
 
     fun clearCache(cacheId: String) {
-        scope.launch {
-            settingsPageViewModel.clearCache(context, cacheId)
-        }
+        settingsPageViewModel.requestClearCache(context, cacheId)
     }
 
     fun clearLogs() {
-        scope.launch {
-            val result = settingsPageViewModel.clearLogs(context)
-            if (result.isSuccess) {
-                context.showLiquidToastOnly(R.string.settings_log_toast_cleared)
-            } else {
-                val reason =
-                    result.exceptionOrNull()?.javaClass?.simpleName
-                        ?: context.getString(R.string.common_unknown)
-                context.showToast(context.getString(R.string.settings_log_toast_clear_failed, reason))
-            }
-        }
+        settingsPageViewModel.requestClearLogs(context)
     }
 
     fun openFeedbackIssue() {

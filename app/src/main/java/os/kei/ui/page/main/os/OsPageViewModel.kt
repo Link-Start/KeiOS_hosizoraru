@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -23,7 +22,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
@@ -52,49 +50,6 @@ internal data class OsPageRuntimeState(
     val exportingCard: OsSectionCard? = null,
 )
 
-internal sealed interface OsPageEvent {
-    data class LaunchExportDocument(
-        val fileName: String,
-        val content: String,
-    ) : OsPageEvent
-
-    data class ExportFailed(
-        val error: Throwable,
-    ) : OsPageEvent
-
-    data class OperationFailed(
-        val error: Throwable,
-    ) : OsPageEvent
-
-    data object ShellCommandCardSaved : OsPageEvent
-
-    data class ShellCommandCardDeleted(
-        val cardId: String,
-    ) : OsPageEvent
-
-    data object ActivityShortcutCardSaved : OsPageEvent
-
-    data class ActivityShortcutCardDeleted(
-        val cardId: String,
-    ) : OsPageEvent
-
-    data object ShellCommandCardSaveFailed : OsPageEvent
-
-    data object ShellCommandCardCommandRequired : OsPageEvent
-
-    data object ShellCommandCardNoPermission : OsPageEvent
-
-    data object ShellCommandCardRunCompleted : OsPageEvent
-
-    data class ShellCommandCardRunFailed(
-        val error: Throwable,
-    ) : OsPageEvent
-
-    data class RefreshCompleted(
-        val refreshed: Boolean,
-    ) : OsPageEvent
-}
-
 internal data class OsActivitySuggestionUiState(
     val packageSuggestions: List<ShortcutInstalledAppOption> = emptyList(),
     val packageSuggestionsLoading: Boolean = false,
@@ -115,8 +70,7 @@ internal class OsPageViewModel : ViewModel() {
     private val visibilityRepository = OsPageVisibilityRepository()
     private val shellCommandRepository = OsPageShellCommandRepository()
     private val refreshRepository = OsPageRefreshRepository()
-    internal val sectionLoadMutex = Mutex()
-    internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
+    private val sectionLoadRepository = OsPageSectionLoadRepository()
     private var activitySuggestionJob: Job? = null
     private var rowsDerivationJob: Job? = null
 
@@ -432,6 +386,45 @@ internal class OsPageViewModel : ViewModel() {
         }
     }
 
+    suspend fun ensureSectionLoaded(
+        section: SectionKind,
+        forceRefresh: Boolean,
+        context: Context,
+        shizukuStatus: String,
+        shizukuApiUtils: ShizukuApiUtils,
+    ) {
+        val currentState = runtimeState.value.sectionStates[section] ?: SectionState()
+        val visibleCards = persistentState.value.uiSnapshot.visibleCards
+        if (!sectionLoadRepository.shouldLoad(section, forceRefresh, visibleCards, currentState)) return
+        updateSection(section) { it.copy(loading = true, loadFailed = false) }
+        try {
+            when (val result = sectionLoadRepository.loadSection(
+                section = section,
+                forceRefresh = forceRefresh,
+                visibleCardsProvider = { persistentState.value.uiSnapshot.visibleCards },
+                context = context.applicationContext,
+                shizukuStatus = shizukuStatus,
+                shizukuApiUtils = shizukuApiUtils,
+            )) {
+                OsSectionLoadResult.Joined -> Unit
+                is OsSectionLoadResult.Loaded -> {
+                    updateSection(section) {
+                        it.copy(
+                            rows = result.rows,
+                            loading = false,
+                            loadedFresh = true,
+                            loadFailed = false,
+                        )
+                    }
+                    _runtimeState.update { state -> state.copy(cachePersisted = result.cachePersisted) }
+                }
+            }
+        } catch (error: Throwable) {
+            error.rethrowIfCancellation()
+            updateSection(section) { it.copy(loading = false, loadFailed = true) }
+        }
+    }
+
     fun invalidateShizukuSections() {
         listOf(
             SectionKind.SYSTEM,
@@ -441,10 +434,6 @@ internal class OsPageViewModel : ViewModel() {
         ).forEach { section ->
             updateSection(section) { it.copy(loadedFresh = false) }
         }
-    }
-
-    fun updateCachePersisted(value: Boolean) {
-        _runtimeState.update { state -> state.copy(cachePersisted = value) }
     }
 
     fun applySectionCardVisibility(

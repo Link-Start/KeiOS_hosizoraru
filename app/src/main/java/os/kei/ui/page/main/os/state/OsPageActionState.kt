@@ -1,17 +1,11 @@
 package os.kei.ui.page.main.os.state
 
 import android.content.Context
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.sync.Mutex
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.SectionKind
-import os.kei.ui.page.main.os.SectionState
-import os.kei.ui.page.main.os.ensureOsSectionLoaded
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.state.PageActionState
 
@@ -26,33 +20,19 @@ internal data class OsPageActionState(
 
 internal fun createOsPageActionState(
     context: Context,
-    scope: CoroutineScope,
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
     osPageViewModel: OsPageViewModel,
-    sectionLoadMutex: Mutex,
-    sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>>,
-    visibleCardsProvider: () -> Set<OsSectionCard>,
-    sectionStatesProvider: () -> Map<SectionKind, SectionState>,
-    updateSection: (SectionKind, (SectionState) -> SectionState) -> Unit,
-    onCachePersistedChanged: (Boolean) -> Unit,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     shellRunNoOutputText: String,
 ): OsPageActionState {
     val ensureLoad: suspend (SectionKind, Boolean) -> Unit = { section, forceRefresh ->
-        ensureOsSectionLoaded(
+        osPageViewModel.ensureSectionLoaded(
             section = section,
             forceRefresh = forceRefresh,
-            visibleCardsProvider = visibleCardsProvider,
-            sectionStatesProvider = sectionStatesProvider,
-            sectionLoadMutex = sectionLoadMutex,
-            sectionLoadDeferreds = sectionLoadDeferreds,
-            scope = scope,
             context = context,
             shizukuStatus = shizukuStatus,
             shizukuApiUtils = shizukuApiUtils,
-            updateSection = updateSection,
-            onCachePersistedChanged = onCachePersistedChanged,
         )
     }
 

@@ -250,16 +250,9 @@ fun OsPage(
     val actionState =
         createOsPageActionState(
             context = context,
-            scope = scope,
             shizukuStatus = shizukuStatus,
             shizukuApiUtils = shizukuApiUtils,
             osPageViewModel = osPageViewModel,
-            sectionLoadMutex = osPageViewModel.sectionLoadMutex,
-            sectionLoadDeferreds = osPageViewModel.sectionLoadDeferreds,
-            visibleCardsProvider = { visibleCards },
-            sectionStatesProvider = { sectionStates },
-            updateSection = osPageViewModel::updateSection,
-            onCachePersistedChanged = osPageViewModel::updateCachePersisted,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             shellRunNoOutputText = textBundle.shellRunNoOutputText,
         )

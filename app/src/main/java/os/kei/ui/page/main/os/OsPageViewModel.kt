@@ -97,6 +97,7 @@ internal class OsPageViewModel : ViewModel() {
     private val repository = OsPageRepository()
     private val exportRepository = OsPageExportRepository()
     private val cardRepository = OsPageCardRepository()
+    private val visibilityRepository = OsPageVisibilityRepository()
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
     private var activitySuggestionJob: Job? = null
@@ -449,6 +450,81 @@ internal class OsPageViewModel : ViewModel() {
         repository.updateShellCommandCards(cards)
     }
 
+    fun applySectionCardVisibility(
+        card: OsSectionCard,
+        visible: Boolean,
+        ensureLoad: suspend (SectionKind, Boolean) -> Unit,
+    ) {
+        val updatedVisibleCards =
+            visibilityRepository.updatedVisibleCards(
+                currentVisibleCards = persistentState.value.uiSnapshot.visibleCards,
+                card = card,
+                visible = visible,
+            )
+        repository.updateVisibleCards(updatedVisibleCards)
+        applyHiddenSectionUiState(card = card, visible = visible)
+        viewModelScope.launch {
+            try {
+                val cachePersisted =
+                    visibilityRepository.persistSectionCardVisibility(
+                        card = card,
+                        visible = visible,
+                        visibleCards = updatedVisibleCards,
+                    )
+                _runtimeState.update { state -> state.copy(cachePersisted = cachePersisted) }
+                if (visible) {
+                    sectionKindByCard(card)?.let { section ->
+                        ensureLoad(section, true)
+                    }
+                }
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun applyActivityCardVisibility(
+        cardId: String,
+        visible: Boolean,
+        defaults: OsGoogleSystemServiceConfig,
+    ) {
+        viewModelScope.launch {
+            try {
+                val updatedCards =
+                    visibilityRepository.setActivityCardVisible(
+                        cards = persistentState.value.activityShortcutCards,
+                        cardId = cardId,
+                        visible = visible,
+                        defaults = defaults,
+                    )
+                repository.updateActivityShortcutCards(updatedCards)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun applyShellCommandCardVisibility(
+        cardId: String,
+        visible: Boolean,
+    ) {
+        viewModelScope.launch {
+            try {
+                val updatedCards =
+                    visibilityRepository.setShellCommandCardVisible(
+                        cardId = cardId,
+                        visible = visible,
+                    )
+                repository.updateShellCommandCards(updatedCards)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
     fun prepareActivityCardsExport(
         defaults: OsGoogleSystemServiceConfig,
     ) {
@@ -767,6 +843,42 @@ internal class OsPageViewModel : ViewModel() {
 
     fun updateLinuxEnvExpanded(value: Boolean) {
         repository.updateLinuxEnvExpanded(value)
+    }
+
+    private fun applyHiddenSectionUiState(
+        card: OsSectionCard,
+        visible: Boolean,
+    ) {
+        if (visible) return
+        when (card) {
+            OsSectionCard.TOP_INFO -> repository.updateTopInfoExpanded(false)
+            OsSectionCard.SHELL_RUNNER -> repository.updateShellRunnerExpanded(false)
+            OsSectionCard.GOOGLE_SYSTEM_SERVICE -> Unit
+            OsSectionCard.SYSTEM -> {
+                repository.updateSystemTableExpanded(false)
+                updateSection(SectionKind.SYSTEM) { SectionState() }
+            }
+            OsSectionCard.SECURE -> {
+                repository.updateSecureTableExpanded(false)
+                updateSection(SectionKind.SECURE) { SectionState() }
+            }
+            OsSectionCard.GLOBAL -> {
+                repository.updateGlobalTableExpanded(false)
+                updateSection(SectionKind.GLOBAL) { SectionState() }
+            }
+            OsSectionCard.ANDROID -> {
+                repository.updateAndroidPropsExpanded(false)
+                updateSection(SectionKind.ANDROID) { SectionState() }
+            }
+            OsSectionCard.JAVA -> {
+                repository.updateJavaPropsExpanded(false)
+                updateSection(SectionKind.JAVA) { SectionState() }
+            }
+            OsSectionCard.LINUX -> {
+                repository.updateLinuxEnvExpanded(false)
+                updateSection(SectionKind.LINUX) { SectionState() }
+            }
+        }
     }
 
     override fun onCleared() {

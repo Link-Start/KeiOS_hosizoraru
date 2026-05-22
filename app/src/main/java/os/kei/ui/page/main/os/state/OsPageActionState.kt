@@ -8,17 +8,14 @@ import os.kei.R
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
+import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.SectionState
-import os.kei.ui.page.main.os.applyOsActivityCardVisibility
-import os.kei.ui.page.main.os.applyOsCardVisibility
-import os.kei.ui.page.main.os.applyOsShellCommandCardVisibility
 import os.kei.ui.page.main.os.ensureOsSectionLoaded
 import os.kei.ui.page.main.os.refreshAllOsSections
 import os.kei.ui.page.main.os.runOsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.state.PageActionState
 
 internal data class OsPageActionState(
@@ -35,23 +32,13 @@ internal fun createOsPageActionState(
     scope: CoroutineScope,
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
+    osPageViewModel: OsPageViewModel,
     sectionLoadMutex: Mutex,
     sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>>,
     visibleCardsProvider: () -> Set<OsSectionCard>,
     sectionStatesProvider: () -> Map<SectionKind, SectionState>,
     updateSection: (SectionKind, (SectionState) -> SectionState) -> Unit,
     onCachePersistedChanged: (Boolean) -> Unit,
-    updateVisibleCards: (Set<OsSectionCard>) -> Unit,
-    setTopInfoExpanded: (Boolean) -> Unit,
-    setShellRunnerExpanded: (Boolean) -> Unit,
-    setSystemTableExpanded: (Boolean) -> Unit,
-    setSecureTableExpanded: (Boolean) -> Unit,
-    setGlobalTableExpanded: (Boolean) -> Unit,
-    setAndroidPropsExpanded: (Boolean) -> Unit,
-    setJavaPropsExpanded: (Boolean) -> Unit,
-    setLinuxEnvExpanded: (Boolean) -> Unit,
-    activityShortcutCardsProvider: () -> List<OsActivityShortcutCard>,
-    updateActivityShortcutCards: (List<OsActivityShortcutCard>) -> Unit,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     updateShellCommandCards: (List<OsShellCommandCard>) -> Unit,
     runningShellCommandCardIdsProvider: () -> Set<String>,
@@ -83,41 +70,25 @@ internal fun createOsPageActionState(
     }
 
     val applyCardVisibility: suspend (OsSectionCard, Boolean) -> Unit = { card, visible ->
-        applyOsCardVisibility(
+        osPageViewModel.applySectionCardVisibility(
             card = card,
             visible = visible,
-            currentVisibleCards = visibleCardsProvider(),
-            updateVisibleCards = updateVisibleCards,
-            setTopInfoExpanded = setTopInfoExpanded,
-            setShellRunnerExpanded = setShellRunnerExpanded,
-            setSystemTableExpanded = setSystemTableExpanded,
-            setSecureTableExpanded = setSecureTableExpanded,
-            setGlobalTableExpanded = setGlobalTableExpanded,
-            setAndroidPropsExpanded = setAndroidPropsExpanded,
-            setJavaPropsExpanded = setJavaPropsExpanded,
-            setLinuxEnvExpanded = setLinuxEnvExpanded,
-            updateSection = updateSection,
             ensureLoad = ensureLoad,
-            visibleCardsProvider = visibleCardsProvider,
-            onCachePersistedChanged = onCachePersistedChanged,
         )
     }
 
     val applyActivityCardVisibility: suspend (String, Boolean) -> Unit = { cardId, visible ->
-        applyOsActivityCardVisibility(
+        osPageViewModel.applyActivityCardVisibility(
             cardId = cardId,
             visible = visible,
-            currentCards = activityShortcutCardsProvider(),
             defaults = googleSystemServiceDefaults,
-            updateCards = updateActivityShortcutCards,
         )
     }
 
     val applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit = { cardId, visible ->
-        applyOsShellCommandCardVisibility(
+        osPageViewModel.applyShellCommandCardVisibility(
             cardId = cardId,
             visible = visible,
-            updateCards = updateShellCommandCards,
         )
     }
 

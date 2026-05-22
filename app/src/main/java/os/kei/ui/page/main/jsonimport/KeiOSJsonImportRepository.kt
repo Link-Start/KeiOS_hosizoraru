@@ -3,14 +3,13 @@ package os.kei.ui.page.main.jsonimport
 import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 import os.kei.core.concurrency.AppDispatchers
 
 internal class KeiOSJsonImportRepository(
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     private val sourceReader = KeiOSJsonImportSourceReader(ioDispatcher)
     private val githubPlanner = KeiOSJsonImportGitHubPlanner(ioDispatcher, defaultDispatcher)

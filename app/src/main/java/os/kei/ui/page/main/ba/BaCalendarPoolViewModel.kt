@@ -6,10 +6,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 
 @Immutable
@@ -17,7 +22,7 @@ internal data class BaCalendarUiState(
     val entries: List<BaCalendarEntry> = emptyList(),
     val loading: Boolean = true,
     val error: String? = null,
-    val lastSyncMs: Long = 0L
+    val lastSyncMs: Long = 0L,
 )
 
 @Immutable
@@ -25,7 +30,19 @@ internal data class BaPoolUiState(
     val entries: List<BaPoolEntry> = emptyList(),
     val loading: Boolean = true,
     val error: String? = null,
-    val lastSyncMs: Long = 0L
+    val lastSyncMs: Long = 0L,
+)
+
+@Immutable
+internal data class BaCalendarPoolRouteState(
+    val calendarUiState: BaCalendarUiState = BaCalendarUiState(),
+    val poolUiState: BaPoolUiState = BaPoolUiState(),
+)
+
+@Immutable
+internal data class BaCalendarPoolSettingsUiState(
+    val snapshot: BaPageSnapshot = BaPageSnapshot(),
+    val loaded: Boolean = false,
 )
 
 private data class BaCalendarRequestKey(
@@ -33,7 +50,7 @@ private data class BaCalendarRequestKey(
     val serverIndex: Int,
     val reloadSignal: Int,
     val calendarRefreshIntervalHours: Int,
-    val hydrationReady: Boolean
+    val hydrationReady: Boolean,
 )
 
 private data class BaPoolRequestKey(
@@ -41,11 +58,11 @@ private data class BaPoolRequestKey(
     val serverIndex: Int,
     val reloadSignal: Int,
     val calendarRefreshIntervalHours: Int,
-    val hydrationReady: Boolean
+    val hydrationReady: Boolean,
 )
 
 internal class BaCalendarPoolViewModel(
-    application: Application
+    application: Application,
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
 
@@ -55,60 +72,91 @@ internal class BaCalendarPoolViewModel(
     private val _poolUiState = MutableStateFlow(BaPoolUiState())
     val poolUiState: StateFlow<BaPoolUiState> = _poolUiState.asStateFlow()
 
+    private val _settingsUiState = MutableStateFlow(BaCalendarPoolSettingsUiState())
+    val settingsUiState: StateFlow<BaCalendarPoolSettingsUiState> = _settingsUiState.asStateFlow()
+
+    val routeState: StateFlow<BaCalendarPoolRouteState> =
+        combine(calendarUiState, poolUiState) { calendar, pool ->
+            BaCalendarPoolRouteState(
+                calendarUiState = calendar,
+                poolUiState = pool,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = BaCalendarPoolRouteState(),
+        )
+
     private var calendarJob: Job? = null
     private var poolJob: Job? = null
     private var lastCalendarRequestKey: BaCalendarRequestKey? = null
     private var lastPoolRequestKey: BaPoolRequestKey? = null
-    private val imageWarmCoordinator = BaCalendarPoolImageWarmCoordinator(
-        scope = viewModelScope,
-        context = appContext
-    )
+    private val imageWarmCoordinator =
+        BaCalendarPoolImageWarmCoordinator(
+            scope = viewModelScope,
+            context = appContext,
+        )
+
+    init {
+        viewModelScope.launch {
+            _settingsUiState.value =
+                BaCalendarPoolSettingsUiState(
+                    snapshot = BaCalendarPoolRepository.loadSettingsSnapshotAsync(),
+                    loaded = true,
+                )
+        }
+    }
 
     fun syncCalendar(
         isPageActive: Boolean,
         serverIndex: Int,
         reloadSignal: Int,
         calendarRefreshIntervalHours: Int,
-        hydrationReady: Boolean
+        hydrationReady: Boolean,
     ) {
-        val key = BaCalendarRequestKey(
-            isPageActive = isPageActive,
-            serverIndex = serverIndex,
-            reloadSignal = reloadSignal,
-            calendarRefreshIntervalHours = calendarRefreshIntervalHours,
-            hydrationReady = hydrationReady
-        )
-        val previousKey = lastCalendarRequestKey
-        if (key == previousKey) return
-        lastCalendarRequestKey = key
-        calendarJob?.cancel()
-        calendarJob = viewModelScope.launch {
-            val current = _calendarUiState.value
-            val showLoading = current.entries.isEmpty() ||
-                    reloadSignal > 0 ||
-                    previousKey?.serverIndex != serverIndex
-            _calendarUiState.value = current.copy(loading = showLoading, error = null)
-            val snapshot = BaCalendarPoolRepository.syncCalendar(
-                context = appContext,
+        val key =
+            BaCalendarRequestKey(
                 isPageActive = isPageActive,
                 serverIndex = serverIndex,
                 reloadSignal = reloadSignal,
                 calendarRefreshIntervalHours = calendarRefreshIntervalHours,
-                hydrationReady = hydrationReady
+                hydrationReady = hydrationReady,
             )
-            _calendarUiState.value = BaCalendarUiState(
-                entries = snapshot.entries,
-                loading = snapshot.loading,
-                error = snapshot.error,
-                lastSyncMs = snapshot.lastSyncMs
-            )
-            if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
-                imageWarmCoordinator.scheduleCalendar(
-                    serverIndex = serverIndex,
-                    entries = snapshot.imageWarmEntries
-                )
+        val previousKey = lastCalendarRequestKey
+        if (key == previousKey) return
+        lastCalendarRequestKey = key
+        calendarJob?.cancel()
+        calendarJob =
+            viewModelScope.launch {
+                val current = _calendarUiState.value
+                val showLoading =
+                    current.entries.isEmpty() ||
+                        reloadSignal > 0 ||
+                        previousKey?.serverIndex != serverIndex
+                _calendarUiState.value = current.copy(loading = showLoading, error = null)
+                val snapshot =
+                    BaCalendarPoolRepository.syncCalendar(
+                        context = appContext,
+                        isPageActive = isPageActive,
+                        serverIndex = serverIndex,
+                        reloadSignal = reloadSignal,
+                        calendarRefreshIntervalHours = calendarRefreshIntervalHours,
+                        hydrationReady = hydrationReady,
+                    )
+                _calendarUiState.value =
+                    BaCalendarUiState(
+                        entries = snapshot.entries,
+                        loading = snapshot.loading,
+                        error = snapshot.error,
+                        lastSyncMs = snapshot.lastSyncMs,
+                    )
+                if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
+                    imageWarmCoordinator.scheduleCalendar(
+                        serverIndex = serverIndex,
+                        entries = snapshot.imageWarmEntries,
+                    )
+                }
             }
-        }
     }
 
     fun syncPool(
@@ -116,45 +164,62 @@ internal class BaCalendarPoolViewModel(
         serverIndex: Int,
         reloadSignal: Int,
         calendarRefreshIntervalHours: Int,
-        hydrationReady: Boolean
+        hydrationReady: Boolean,
     ) {
-        val key = BaPoolRequestKey(
-            isPageActive = isPageActive,
-            serverIndex = serverIndex,
-            reloadSignal = reloadSignal,
-            calendarRefreshIntervalHours = calendarRefreshIntervalHours,
-            hydrationReady = hydrationReady
-        )
-        val previousKey = lastPoolRequestKey
-        if (key == previousKey) return
-        lastPoolRequestKey = key
-        poolJob?.cancel()
-        poolJob = viewModelScope.launch {
-            val current = _poolUiState.value
-            val showLoading = current.entries.isEmpty() ||
-                    reloadSignal > 0 ||
-                    previousKey?.serverIndex != serverIndex
-            _poolUiState.value = current.copy(loading = showLoading, error = null)
-            val snapshot = BaCalendarPoolRepository.syncPool(
-                context = appContext,
+        val key =
+            BaPoolRequestKey(
                 isPageActive = isPageActive,
                 serverIndex = serverIndex,
                 reloadSignal = reloadSignal,
                 calendarRefreshIntervalHours = calendarRefreshIntervalHours,
-                hydrationReady = hydrationReady
+                hydrationReady = hydrationReady,
             )
-            _poolUiState.value = BaPoolUiState(
-                entries = snapshot.entries,
-                loading = snapshot.loading,
-                error = snapshot.error,
-                lastSyncMs = snapshot.lastSyncMs
-            )
-            if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
-                imageWarmCoordinator.schedulePool(
-                    serverIndex = serverIndex,
-                    entries = snapshot.imageWarmEntries
-                )
+        val previousKey = lastPoolRequestKey
+        if (key == previousKey) return
+        lastPoolRequestKey = key
+        poolJob?.cancel()
+        poolJob =
+            viewModelScope.launch {
+                val current = _poolUiState.value
+                val showLoading =
+                    current.entries.isEmpty() ||
+                        reloadSignal > 0 ||
+                        previousKey?.serverIndex != serverIndex
+                _poolUiState.value = current.copy(loading = showLoading, error = null)
+                val snapshot =
+                    BaCalendarPoolRepository.syncPool(
+                        context = appContext,
+                        isPageActive = isPageActive,
+                        serverIndex = serverIndex,
+                        reloadSignal = reloadSignal,
+                        calendarRefreshIntervalHours = calendarRefreshIntervalHours,
+                        hydrationReady = hydrationReady,
+                    )
+                _poolUiState.value =
+                    BaPoolUiState(
+                        entries = snapshot.entries,
+                        loading = snapshot.loading,
+                        error = snapshot.error,
+                        lastSyncMs = snapshot.lastSyncMs,
+                    )
+                if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
+                    imageWarmCoordinator.schedulePool(
+                        serverIndex = serverIndex,
+                        entries = snapshot.imageWarmEntries,
+                    )
+                }
             }
+    }
+
+    fun saveServerIndex(index: Int) {
+        val normalizedIndex = index.coerceIn(0, 2)
+        _settingsUiState.update { state ->
+            state.copy(
+                snapshot = state.snapshot.copy(serverIndex = normalizedIndex),
+            )
+        }
+        viewModelScope.launch {
+            BaCalendarPoolRepository.saveServerIndexAsync(normalizedIndex)
         }
     }
 }

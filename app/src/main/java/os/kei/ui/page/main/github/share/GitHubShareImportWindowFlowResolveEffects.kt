@@ -5,11 +5,8 @@ package os.kei.ui.page.main.github.share
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.system.AppPackageChangedEvents
-import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 
 @Composable
 internal fun GitHubShareImportWindowResolveEffects(
@@ -34,6 +31,7 @@ internal fun GitHubShareImportWindowResolveEffects(
         startGitHubShareImportIncomingResolve(
             context = context,
             flowState = flowState,
+            windowCoordinator = windowCoordinator,
             incomingGitHubShareText = incomingGitHubShareText,
             onIncomingGitHubShareConsumed = onIncomingGitHubShareConsumed,
             onMinimizeActiveFlow = onMinimizeActiveFlow,
@@ -85,6 +83,7 @@ private suspend fun awaitGitHubShareImportPendingResolution(
 private suspend fun startGitHubShareImportIncomingResolve(
     context: Context,
     flowState: GitHubShareImportWindowFlowStateHolder,
+    windowCoordinator: GitHubShareImportWindowCoordinator,
     incomingGitHubShareText: String?,
     onIncomingGitHubShareConsumed: () -> Unit,
     onMinimizeActiveFlow: (() -> Unit)?,
@@ -95,9 +94,7 @@ private suspend fun startGitHubShareImportIncomingResolve(
     flowState.updateIncomingResolveRunning(true)
     onIncomingGitHubShareConsumed()
     flowState.clearActiveFlowForIncomingResolve()
-    withContext(AppDispatchers.githubNetwork) {
-        GitHubShareImportFlowStore.clearActiveFlow()
-    }
+    windowCoordinator.clearActiveFlow()
     try {
         flowState.updateResolving(true)
         flowState.updatePhase(GitHubShareImportPhase.Resolving)

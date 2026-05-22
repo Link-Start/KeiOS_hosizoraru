@@ -17,13 +17,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.extractGuideWebLinks
 import os.kei.ui.page.main.student.guideLocalizedLabel
@@ -212,9 +211,8 @@ internal fun GuideGalleryCardItem(
     )
 
     val imageProgressState = remember(displayImageUrl) {
-        MutableStateFlow(if (displayImageUrl.isBlank()) 1f else 0f)
+        GuideMediaProgressState(if (displayImageUrl.isBlank()) 1f else 0f)
     }
-    val imageProgress by imageProgressState.collectAsStateWithLifecycle()
     var imageLoading by remember(displayImageUrl) { mutableStateOf(displayImageUrl.isNotBlank()) }
 
     val content: @Composable (Modifier) -> Unit = { contentModifier ->
@@ -230,7 +228,6 @@ internal fun GuideGalleryCardItem(
             canSaveMedia = canSaveMedia,
             saveTargetUrl = saveTargetUrl,
             isImageType = isImageType,
-            imageProgress = imageProgress,
             imageLoading = imageLoading,
             onImageLoadingChanged = { loading -> imageLoading = loading },
             imageProgressState = imageProgressState,

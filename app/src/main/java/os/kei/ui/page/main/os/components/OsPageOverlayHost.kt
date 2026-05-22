@@ -70,6 +70,7 @@ internal fun OsPageOverlayHost(
     val editorActions =
         rememberOsPageOverlayEditorActions(
             context = context,
+            scope = scope,
             overlayState = overlayState,
             activityShortcutCards = activityShortcutCards,
             onActivityShortcutCardsChange = onActivityShortcutCardsChange,

@@ -8,9 +8,14 @@ import os.kei.core.concurrency.AppDispatchers
 internal class BaGuideBgmFavoriteRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
 ) {
-    fun favoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = GuideBgmFavoriteStore.favoritesFlow()
+    fun favoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = GuideBgmFavoriteStore.observeFavoritesState()
 
     fun favoritesSnapshot(): List<GuideBgmFavoriteItem> = GuideBgmFavoriteStore.favoritesSnapshot()
+
+    suspend fun hydrateFavorites(): List<GuideBgmFavoriteItem> =
+        withContext(ioDispatcher) {
+            GuideBgmFavoriteStore.favoritesSnapshot()
+        }
 
     fun playbackSnapshot(): GuideBgmFavoritePlaybackSnapshot =
         runCatching {

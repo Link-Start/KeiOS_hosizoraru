@@ -36,6 +36,7 @@ internal fun buildBaGuideCatalogRouteStateFlow(
     bgmCacheSnapshot: StateFlow<BaGuideFavoriteBgmCacheSnapshot>,
     favoriteBgmOfflineCacheState: StateFlow<BaGuideFavoriteBgmOfflineCacheUiState>,
     nativeBgmMediaNotificationEnabled: StateFlow<Boolean>,
+    transferSettings: StateFlow<BaGuideCatalogTransferSettingsUiState>,
 ): StateFlow<BaGuideCatalogRouteState> {
     val routeCoreState =
         combine(
@@ -102,7 +103,8 @@ internal fun buildBaGuideCatalogRouteStateFlow(
     return combine(
         routeLibraryState,
         nativeBgmMediaNotificationEnabled,
-    ) { libraryState, nativeBgmMediaNotificationEnabled ->
+        transferSettings,
+    ) { libraryState, nativeBgmMediaNotificationEnabled, transferSettings ->
         BaGuideCatalogRouteState(
             catalogDataState = libraryState.core.catalogDataState,
             catalogListDerivedStates = libraryState.core.catalogListDerivedStates,
@@ -114,6 +116,7 @@ internal fun buildBaGuideCatalogRouteStateFlow(
             bgmCacheSnapshot = libraryState.bgmCacheSnapshot,
             favoriteBgmOfflineCacheState = libraryState.favoriteBgmOfflineCacheState,
             nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+            transferSettings = transferSettings,
         )
     }.stateIn(
         scope = scope,
@@ -130,6 +133,7 @@ internal fun buildBaGuideCatalogRouteStateFlow(
                 bgmCacheSnapshot = bgmCacheSnapshot.value,
                 favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState.value,
                 nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled.value,
+                transferSettings = transferSettings.value,
             ),
     )
 }

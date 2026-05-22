@@ -6,21 +6,21 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
-import kotlinx.coroutines.flow.Flow
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogEvent
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 
 @Composable
 internal fun BaGuideCatalogPageEventEffects(
     context: Context,
-    events: Flow<BaGuideCatalogEvent>,
+    catalogViewModel: BaGuideCatalogViewModel,
     onImportPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit,
 ) {
     val latestOnImportPreviewStateChange = rememberUpdatedState(onImportPreviewStateChange)
-    LaunchedEffect(context, events) {
-        events.collect { event ->
+    LaunchedEffect(context, catalogViewModel) {
+        catalogViewModel.events.collect { event ->
             when (event) {
                 is BaGuideCatalogEvent.BgmCacheBatchDone -> {
                     context.showToast(

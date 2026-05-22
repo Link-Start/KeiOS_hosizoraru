@@ -1,13 +1,8 @@
 package os.kei.ui.page.main.github.share
 
 import android.content.Context
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
-import os.kei.feature.github.data.local.GitHubShareImportFlowStore
-import os.kei.feature.github.data.local.GitHubTrackStore
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class GitHubShareImportStoredFlowSnapshot(
@@ -38,43 +33,14 @@ internal sealed interface GitHubShareImportRestoreResult {
 }
 
 internal class GitHubShareImportWindowCoordinator(
-    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val repository: GitHubShareImportWindowRepository = GitHubShareImportWindowRepository(),
     private val clock: GitHubShareImportClock = GitHubSystemShareImportClock,
 ) {
-    suspend fun loadStoredSnapshot(): GitHubShareImportStoredFlowSnapshot =
-        withContext(ioDispatcher) {
-            val pendingTrack = GitHubTrackStore.loadPendingShareImportTrack()
-            val preview =
-                GitHubShareImportFlowStore
-                    .loadActivePreview()
-                    ?.toShareImportPreview()
-            val managedInstallProgress =
-                GitHubShareImportFlowStore
-                    .loadActiveManagedInstall()
-                    ?.toManagedInstallProgress()
-            val attachCandidate =
-                GitHubShareImportFlowStore
-                    .loadActiveAttachCandidate()
-                    ?.toShareImportAttachCandidate()
-            GitHubShareImportStoredFlowSnapshot(
-                pendingTrack = pendingTrack,
-                preview = if (pendingTrack == null) preview else null,
-                managedInstallProgress = if (pendingTrack == null) managedInstallProgress else null,
-                attachCandidate =
-                    if (pendingTrack == null && preview == null) {
-                        attachCandidate
-                    } else {
-                        null
-                    },
-            )
-        }
+    suspend fun loadStoredSnapshot(): GitHubShareImportStoredFlowSnapshot = repository.loadStoredSnapshot()
 
     suspend fun restoreActiveFlow(context: Context): GitHubShareImportRestoreResult {
         val appContext = context.applicationContext
-        val pending =
-            withContext(ioDispatcher) {
-                GitHubTrackStore.loadPendingShareImportTrack()
-            }
+        val pending = repository.loadPendingTrack()
         if (pending == null) {
             val snapshot = loadStoredSnapshot()
             snapshot.preview?.let { preview ->
@@ -93,9 +59,7 @@ internal class GitHubShareImportWindowCoordinator(
                 GitHubShareImportFlowCoordinator.cancelActiveFlow(appContext),
             )
         }
-        withContext(ioDispatcher) {
-            GitHubShareImportFlowStore.clearActiveFlow()
-        }
+        repository.clearActiveFlow()
         return GitHubShareImportRestoreResult.Coordinator(
             GitHubShareImportFlowCoordinator.refreshPendingInstall(appContext),
         )
@@ -108,10 +72,7 @@ internal class GitHubShareImportWindowCoordinator(
         val appContext = context.applicationContext
         var attempts = 0
         while (true) {
-            val pending =
-                withContext(ioDispatcher) {
-                    GitHubTrackStore.loadPendingShareImportTrack()
-                } ?: return ShareImportCoordinatorResult.None
+            val pending = repository.loadPendingTrack() ?: return ShareImportCoordinatorResult.None
             if (pending.armedAtMillis != armedAtMillis) return ShareImportCoordinatorResult.None
             val age = (clock.nowMs() - pending.armedAtMillis).coerceAtLeast(0L)
             if (age > shareImportTrackMaxAgeMs) {
@@ -136,11 +97,10 @@ internal class GitHubShareImportWindowCoordinator(
         }
     }
 
-    suspend fun hasAttachDuplicate(candidate: GitHubPendingShareImportAttachCandidate): Boolean {
-        val candidateId = "${candidate.owner}/${candidate.repo}|${candidate.packageName}"
-        return withContext(ioDispatcher) {
-            GitHubTrackStore.load().any { it.id == candidateId }
-        }
+    suspend fun hasAttachDuplicate(candidate: GitHubPendingShareImportAttachCandidate): Boolean = repository.hasAttachDuplicate(candidate)
+
+    suspend fun clearActiveFlow() {
+        repository.clearActiveFlow()
     }
 
     private companion object {

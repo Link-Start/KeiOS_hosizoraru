@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
@@ -72,12 +73,16 @@ internal class BaGuideCatalogViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = repository.bgmFavoritesSnapshot(),
+                initialValue = emptyList(),
             )
     private val _nativeBgmMediaNotificationEnabled =
-        MutableStateFlow(repository.loadNativeBgmMediaNotificationEnabled())
+        MutableStateFlow(false)
     val nativeBgmMediaNotificationEnabled: StateFlow<Boolean> =
         _nativeBgmMediaNotificationEnabled.asStateFlow()
+    private val _transferSettings =
+        MutableStateFlow(BaGuideCatalogTransferSettingsUiState())
+    val transferSettings: StateFlow<BaGuideCatalogTransferSettingsUiState> =
+        _transferSettings.asStateFlow()
 
     private val _catalogListDerivedStates =
         MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())
@@ -121,11 +126,21 @@ internal class BaGuideCatalogViewModel(
             bgmCacheSnapshot = bgmCacheSnapshot,
             favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
             nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+            transferSettings = transferSettings,
         )
 
     init {
         viewModelScope.launch {
             _catalogFavoriteEntries.value = repository.loadCatalogFavorites()
+        }
+        viewModelScope.launch {
+            repository.hydrateBgmFavorites()
+        }
+        viewModelScope.launch {
+            _nativeBgmMediaNotificationEnabled.value = repository.loadNativeBgmMediaNotificationEnabled()
+        }
+        viewModelScope.launch {
+            _transferSettings.value = BaGuideCatalogTransferSettingsRepository.loadSettings()
         }
     }
 
@@ -267,11 +282,42 @@ internal class BaGuideCatalogViewModel(
         }
     }
 
+    fun requestGuideDetailTab(
+        sourceUrl: String,
+        tab: GuideBottomTab,
+    ) {
+        repository.requestGuideDetailTab(sourceUrl, tab)
+    }
+
     fun setNativeBgmMediaNotificationEnabled(enabled: Boolean) {
         if (_nativeBgmMediaNotificationEnabled.value == enabled) return
         _nativeBgmMediaNotificationEnabled.value = enabled
         viewModelScope.launch {
             repository.saveNativeBgmMediaNotificationEnabled(enabled)
+        }
+    }
+
+    fun setTransferMediaSaveCustomEnabled(enabled: Boolean) {
+        if (_transferSettings.value.mediaSaveCustomEnabled == enabled) return
+        _transferSettings.update { state -> state.copy(mediaSaveCustomEnabled = enabled) }
+        viewModelScope.launch {
+            BaGuideCatalogTransferSettingsRepository.saveMediaSaveCustomEnabled(enabled)
+        }
+    }
+
+    fun setTransferMediaSaveFixedTreeUri(uri: String) {
+        if (_transferSettings.value.mediaSaveFixedTreeUri == uri) return
+        _transferSettings.update { state -> state.copy(mediaSaveFixedTreeUri = uri) }
+        viewModelScope.launch {
+            BaGuideCatalogTransferSettingsRepository.saveMediaSaveFixedTreeUri(uri)
+        }
+    }
+
+    fun clearTransferMediaSaveFixedTreeUri() {
+        if (_transferSettings.value.mediaSaveFixedTreeUri.isEmpty()) return
+        _transferSettings.update { state -> state.copy(mediaSaveFixedTreeUri = "") }
+        viewModelScope.launch {
+            BaGuideCatalogTransferSettingsRepository.clearMediaSaveFixedTreeUri()
         }
     }
 

@@ -9,10 +9,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
 import os.kei.core.io.readTextFromUriLimited
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
@@ -55,14 +55,24 @@ internal fun rememberOsPageCardTransferState(
         ) { uri: Uri? ->
             val content = overlayState.pendingExportContent
             if (uri == null || content.isNullOrBlank()) return@rememberLauncherForActivityResult
-            runCatching {
-                context.contentResolver.openOutputStream(uri)?.bufferedWriter().use { writer ->
-                    writer?.write(content)
+            scope.launch {
+                runCatching {
+                    withContext(AppDispatchers.fileIo) {
+                        context.contentResolver.openOutputStream(uri)?.bufferedWriter().use { writer ->
+                            checkNotNull(writer) { "openOutputStream returned null" }
+                            writer.write(content)
+                        }
+                    }
+                }.onSuccess {
+                    context.showToast(exportSuccessText)
+                }.onFailure {
+                    context.showToast(
+                        context.getString(
+                            R.string.common_export_failed_with_reason,
+                            it.javaClass.simpleName,
+                        )
+                    )
                 }
-            }.onSuccess {
-                context.showToast(exportSuccessText)
-            }.onFailure {
-                context.showToast(context.getString(R.string.common_export_failed_with_reason, it.javaClass.simpleName))
             }
         }
 
@@ -130,12 +140,13 @@ internal fun rememberOsPageCardTransferState(
             scope.launch {
                 runCatching {
                     val raw =
-                        context.contentResolver
-                            .readTextFromUriLimited(
+                        withContext(AppDispatchers.fileIo) {
+                            context.contentResolver.readTextFromUriLimited(
                                 uri = uri,
                                 maxBytes = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES,
                             ).text
-                    withContext(Dispatchers.Default) {
+                        }
+                    withContext(AppDispatchers.uiDerivation) {
                         OsCardTransferService.buildImportPreview(
                             raw = raw,
                             target = target,

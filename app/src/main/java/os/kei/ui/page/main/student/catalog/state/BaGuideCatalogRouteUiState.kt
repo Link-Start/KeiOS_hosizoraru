@@ -18,4 +18,6 @@ internal data class BaGuideCatalogRouteState(
     val favoriteBgmOfflineCacheState: BaGuideFavoriteBgmOfflineCacheUiState =
         BaGuideFavoriteBgmOfflineCacheUiState(),
     val nativeBgmMediaNotificationEnabled: Boolean = false,
+    val transferSettings: BaGuideCatalogTransferSettingsUiState =
+        BaGuideCatalogTransferSettingsUiState(),
 )

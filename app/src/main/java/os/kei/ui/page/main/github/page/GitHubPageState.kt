@@ -229,6 +229,45 @@ internal class GitHubPageState(
             }
         }
 
+    fun applyPersistedUiState(snapshot: GitHubPagePersistedUiState) {
+        val defaultPageUiState = GitHubPageUiState()
+        val defaultActionsState = GitHubActionsSectionExpansionState()
+        val defaultOverviewState = GitHubOverviewUiState()
+        if (trackedFilterMode == defaultPageUiState.trackedFilterMode) {
+            trackedFilterMode = snapshot.pageUiState.trackedFilterMode
+        }
+        if (sortMode == defaultPageUiState.sortMode) {
+            sortMode = snapshot.pageUiState.sortMode
+        }
+        if (sortDirection == defaultPageUiState.sortDirection) {
+            sortDirection = snapshot.pageUiState.sortDirection
+        }
+        if (actionsBranchesExpanded == defaultActionsState.branchesExpanded) {
+            actionsBranchesExpanded = snapshot.actionsSectionExpansionState.branchesExpanded
+        }
+        if (actionsWorkflowsExpanded == defaultActionsState.workflowsExpanded) {
+            actionsWorkflowsExpanded = snapshot.actionsSectionExpansionState.workflowsExpanded
+        }
+        if (actionsRunsExpanded == defaultActionsState.runsExpanded) {
+            actionsRunsExpanded = snapshot.actionsSectionExpansionState.runsExpanded
+        }
+        if (overviewExpanded == defaultOverviewState.expanded) {
+            overviewExpanded = snapshot.overviewUiState.expanded
+        }
+        if (overviewVisibleEntries == defaultOverviewState.visibleEntries) {
+            overviewVisibleEntries = snapshot.overviewUiState.visibleEntries
+        }
+        if (trackedLocalVersionExpanded.isEmpty()) {
+            trackedLocalVersionExpanded.putAll(snapshot.trackedReleaseExpansionState.localVersionExpanded)
+        }
+        if (trackedStableVersionExpanded.isEmpty()) {
+            trackedStableVersionExpanded.putAll(snapshot.trackedReleaseExpansionState.stableVersionExpanded)
+        }
+        if (trackedPreReleaseVersionExpanded.isEmpty()) {
+            trackedPreReleaseVersionExpanded.putAll(snapshot.trackedReleaseExpansionState.preReleaseVersionExpanded)
+        }
+    }
+
     fun updateScrollBounds(
         canScrollBackward: Boolean,
         canScrollForward: Boolean,

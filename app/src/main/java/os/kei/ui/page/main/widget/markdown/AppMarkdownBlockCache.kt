@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.widget.markdown
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 
 private const val APP_MARKDOWN_BLOCK_CACHE_MAX_ENTRIES = 24
 
@@ -48,7 +48,7 @@ internal suspend fun parseCachedAppMarkdownBlocks(
         contentHash = markdown.hashCode()
     )
     AppMarkdownBlockCache.get(cacheKey)?.let { return it }
-    val blocks = withContext(Dispatchers.Default) {
+    val blocks = withContext(AppDispatchers.uiDerivation) {
         parseAppMarkdownBlocks(markdown, preserveLineBreaks = preserveLineBreaks)
     }
     AppMarkdownBlockCache.put(cacheKey, blocks)

@@ -11,19 +11,19 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.student.BaGuideBgmMediaButtonPreferences
 import os.kei.ui.page.main.student.BaGuideBgmMediaSessionService
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 
 internal class BaGuideBgmNativeMediaController(
     context: Context,
-    artworkDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val volumeProvider: () -> Float,
+    artworkDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ) {
     private val appContext = context.applicationContext
     private val mainExecutor = appContext.mainExecutor
@@ -43,36 +43,43 @@ internal class BaGuideBgmNativeMediaController(
         queueMode: BaGuideBgmQueueMode,
         startPositionMs: Long,
         playWhenReady: Boolean? = null,
-        restart: Boolean = false
+        restart: Boolean = false,
     ) {
         val artworkGeneration = nextArtworkHydrationGeneration()
         val mediaItems = queue.toBaGuideBgmMediaItems(appContext)
         if (mediaItems.isEmpty()) return
-        val targetMediaId = normalizeGuideMediaSource(selectedAudioUrl)
-            .takeIf { it.isNotBlank() }
-            ?: mediaItems.first().mediaId
-        val targetIndex = mediaItems.indexOfFirst { it.mediaId == targetMediaId }
-            .takeIf { it >= 0 }
-            ?: 0
+        val targetMediaId =
+            normalizeGuideMediaSource(selectedAudioUrl)
+                .takeIf { it.isNotBlank() }
+                ?: mediaItems.first().mediaId
+        val targetIndex =
+            mediaItems
+                .indexOfFirst { it.mediaId == targetMediaId }
+                .takeIf { it >= 0 }
+                ?: 0
         val safeStartPositionMs = if (restart) 0L else startPositionMs.coerceAtLeast(0L)
         submit { mediaController ->
-            val currentIds = (0 until mediaController.mediaItemCount)
-                .map { index -> mediaController.getMediaItemAt(index).mediaId }
+            val currentIds =
+                (0 until mediaController.mediaItemCount)
+                    .map { index -> mediaController.getMediaItemAt(index).mediaId }
             val nextIds = mediaItems.map { item -> item.mediaId }
             val currentMediaId = mediaController.currentMediaItem?.mediaId.orEmpty()
-            val preservedIndex = currentIds.indexOf(currentMediaId)
-                .takeIf { index ->
-                    playWhenReady == null &&
+            val preservedIndex =
+                currentIds
+                    .indexOf(currentMediaId)
+                    .takeIf { index ->
+                        playWhenReady == null &&
                             !restart &&
                             index >= 0 &&
                             currentMediaId in nextIds
-                }
+                    }
             val resolvedIndex = preservedIndex ?: targetIndex
-            val resolvedStartPositionMs = if (preservedIndex != null) {
-                mediaController.currentPosition.coerceAtLeast(0L)
-            } else {
-                safeStartPositionMs
-            }
+            val resolvedStartPositionMs =
+                if (preservedIndex != null) {
+                    mediaController.currentPosition.coerceAtLeast(0L)
+                } else {
+                    safeStartPositionMs
+                }
             if (
                 currentIds != nextIds ||
                 currentMediaId != mediaItems[resolvedIndex].mediaId ||
@@ -84,7 +91,7 @@ internal class BaGuideBgmNativeMediaController(
             }
             mediaController.repeatMode =
                 BaGuideBgmMediaButtonPreferences.nativeRepeatMode(queueMode)
-            mediaController.volume = GuideBgmFavoritePlaybackStore.volume()
+            mediaController.volume = volumeProvider().coerceIn(0f, 1f)
             when (playWhenReady) {
                 true -> mediaController.play()
                 false -> mediaController.pause()
@@ -94,7 +101,7 @@ internal class BaGuideBgmNativeMediaController(
         scheduleArtworkHydration(
             generation = artworkGeneration,
             queue = queue,
-            selectedAudioUrl = selectedAudioUrl
+            selectedAudioUrl = selectedAudioUrl,
         )
     }
 
@@ -106,9 +113,10 @@ internal class BaGuideBgmNativeMediaController(
         submit { mediaController ->
             val duration = mediaController.duration.coerceAtLeast(0L)
             if (duration <= 0L) return@submit
-            val position = (duration * progress.coerceIn(0f, 1f))
-                .toLong()
-                .coerceIn(0L, duration)
+            val position =
+                (duration * progress.coerceIn(0f, 1f))
+                    .toLong()
+                    .coerceIn(0L, duration)
             mediaController.seekTo(position)
         }
     }
@@ -133,9 +141,10 @@ internal class BaGuideBgmNativeMediaController(
     }
 
     fun runtimeState(): BaGuideBgmPlaybackRuntimeState {
-        val mediaController = controller ?: return BaGuideBgmPlaybackRuntimeState(
-            volume = GuideBgmFavoritePlaybackStore.volume()
-        )
+        val mediaController =
+            controller ?: return BaGuideBgmPlaybackRuntimeState(
+                volume = volumeProvider().coerceIn(0f, 1f),
+            )
         return runCatching {
             val duration = mediaController.duration.coerceAtLeast(0L)
             val position = mediaController.currentPosition.coerceAtLeast(0L)
@@ -145,10 +154,10 @@ internal class BaGuideBgmNativeMediaController(
                 isPlaying = mediaController.isPlaying,
                 isBuffering = mediaController.playbackState == Player.STATE_BUFFERING,
                 isEnded = mediaController.playbackState == Player.STATE_ENDED,
-                volume = mediaController.volume.coerceIn(0f, 1f)
+                volume = mediaController.volume.coerceIn(0f, 1f),
             )
         }.getOrDefault(
-            BaGuideBgmPlaybackRuntimeState(volume = GuideBgmFavoritePlaybackStore.volume())
+            BaGuideBgmPlaybackRuntimeState(volume = volumeProvider().coerceIn(0f, 1f)),
         )
     }
 
@@ -192,14 +201,13 @@ internal class BaGuideBgmNativeMediaController(
         futureToCancel?.cancel(true)
     }
 
-    private fun nextArtworkHydrationGeneration(): Long {
-        return synchronized(lock) {
+    private fun nextArtworkHydrationGeneration(): Long =
+        synchronized(lock) {
             artworkHydrationJob?.cancel()
             artworkHydrationJob = null
             artworkHydrationGeneration += 1L
             artworkHydrationGeneration
         }
-    }
 
     private fun cancelArtworkHydration() {
         synchronized(lock) {
@@ -212,24 +220,25 @@ internal class BaGuideBgmNativeMediaController(
     private fun scheduleArtworkHydration(
         generation: Long,
         queue: List<GuideBgmFavoriteItem>,
-        selectedAudioUrl: String
+        selectedAudioUrl: String,
     ) {
         val targets = queue.orderedArtworkHydrationTargets(selectedAudioUrl)
         if (targets.isEmpty()) return
-        val job = artworkScope.launch {
-            targets.forEach { favorite ->
-                if (!isArtworkHydrationCurrent(generation)) return@launch
-                val mediaId = normalizeGuideMediaSource(favorite.audioUrl)
-                val artworkData =
-                    BaGuideBgmMediaArtworkPayloadResolver.resolve(appContext, favorite)
-                        ?: return@forEach
-                if (!isArtworkHydrationCurrent(generation)) return@launch
-                submit { mediaController ->
-                    if (!isArtworkHydrationCurrent(generation)) return@submit
-                    mediaController.replaceArtworkMetadata(mediaId, artworkData)
+        val job =
+            artworkScope.launch {
+                targets.forEach { favorite ->
+                    if (!isArtworkHydrationCurrent(generation)) return@launch
+                    val mediaId = normalizeGuideMediaSource(favorite.audioUrl)
+                    val artworkData =
+                        BaGuideBgmMediaArtworkPayloadResolver.resolve(appContext, favorite)
+                            ?: return@forEach
+                    if (!isArtworkHydrationCurrent(generation)) return@launch
+                    submit { mediaController ->
+                        if (!isArtworkHydrationCurrent(generation)) return@submit
+                        mediaController.replaceArtworkMetadata(mediaId, artworkData)
+                    }
                 }
             }
-        }
         synchronized(lock) {
             if (artworkHydrationGeneration == generation) {
                 artworkHydrationJob = job
@@ -239,19 +248,19 @@ internal class BaGuideBgmNativeMediaController(
         }
     }
 
-    private fun isArtworkHydrationCurrent(generation: Long): Boolean {
-        return synchronized(lock) {
+    private fun isArtworkHydrationCurrent(generation: Long): Boolean =
+        synchronized(lock) {
             artworkHydrationGeneration == generation
         }
-    }
 
     private fun MediaController.replaceArtworkMetadata(
         mediaId: String,
-        artworkData: ByteArray
+        artworkData: ByteArray,
     ) {
-        val index = (0 until mediaItemCount)
-            .firstOrNull { itemIndex -> getMediaItemAt(itemIndex).mediaId == mediaId }
-            ?: return
+        val index =
+            (0 until mediaItemCount)
+                .firstOrNull { itemIndex -> getMediaItemAt(itemIndex).mediaId == mediaId }
+                ?: return
         val currentItem = getMediaItemAt(index)
         if (currentItem.mediaMetadata.artworkData?.contentEquals(artworkData) == true) return
         replaceMediaItem(index, currentItem.withArtworkData(artworkData))
@@ -275,55 +284,59 @@ internal class BaGuideBgmNativeMediaController(
 
     private fun ensureControllerLocked() {
         if (controllerFuture != null) return
-        val token = SessionToken(
-            appContext,
-            ComponentName(appContext, BaGuideBgmMediaSessionService::class.java)
-        )
-        controllerFuture = MediaController.Builder(appContext, token)
-            .setApplicationLooper(appContext.mainLooper)
-            .buildAsync()
-            .also { future ->
-                future.addListener(
-                    {
-                        val connected = runCatching { future.get() }.getOrNull()
-                        if (connected == null) {
-                            synchronized(lock) {
-                                if (controllerFuture == future) controllerFuture = null
-                                pendingCommands.clear()
-                            }
-                            return@addListener
-                        }
-                        val commands = synchronized(lock) {
-                            if (controllerFuture == future) controllerFuture = null
-                            controller = connected
-                            buildList {
-                                while (pendingCommands.isNotEmpty()) {
-                                    add(pendingCommands.removeFirst())
+        val token =
+            SessionToken(
+                appContext,
+                ComponentName(appContext, BaGuideBgmMediaSessionService::class.java),
+            )
+        controllerFuture =
+            MediaController
+                .Builder(appContext, token)
+                .setApplicationLooper(appContext.mainLooper)
+                .buildAsync()
+                .also { future ->
+                    future.addListener(
+                        {
+                            val connected = runCatching { future.get() }.getOrNull()
+                            if (connected == null) {
+                                synchronized(lock) {
+                                    if (controllerFuture == future) controllerFuture = null
+                                    pendingCommands.clear()
                                 }
+                                return@addListener
                             }
-                        }
-                        commands.forEach { command ->
-                            runCatching { command(connected) }
-                        }
-                    },
-                    mainExecutor
-                )
-            }
+                            val commands =
+                                synchronized(lock) {
+                                    if (controllerFuture == future) controllerFuture = null
+                                    controller = connected
+                                    buildList {
+                                        while (pendingCommands.isNotEmpty()) {
+                                            add(pendingCommands.removeFirst())
+                                        }
+                                    }
+                                }
+                            commands.forEach { command ->
+                                runCatching { command(connected) }
+                            }
+                        },
+                        mainExecutor,
+                    )
+                }
     }
-
 }
 
 private const val MAX_NATIVE_ARTWORK_HYDRATION_TARGETS = 8
 
 internal fun List<GuideBgmFavoriteItem>.orderedArtworkHydrationTargets(
     selectedAudioUrl: String,
-    maxCount: Int = MAX_NATIVE_ARTWORK_HYDRATION_TARGETS
+    maxCount: Int = MAX_NATIVE_ARTWORK_HYDRATION_TARGETS,
 ): List<GuideBgmFavoriteItem> {
     if (isEmpty() || maxCount <= 0) return emptyList()
     val selectedMediaId = normalizeGuideMediaSource(selectedAudioUrl)
-    val selectedIndex = indexOfFirst { favorite ->
-        normalizeGuideMediaSource(favorite.audioUrl) == selectedMediaId
-    }.takeIf { it >= 0 } ?: 0
+    val selectedIndex =
+        indexOfFirst { favorite ->
+            normalizeGuideMediaSource(favorite.audioUrl) == selectedMediaId
+        }.takeIf { it >= 0 } ?: 0
     return indices
         .asSequence()
         .map { offset -> (selectedIndex + offset) % size }
@@ -334,9 +347,11 @@ internal fun List<GuideBgmFavoriteItem>.orderedArtworkHydrationTargets(
 }
 
 private fun MediaItem.withArtworkData(artworkData: ByteArray): MediaItem {
-    val metadata = mediaMetadata.buildUpon()
-        .setArtworkData(artworkData, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
-        .build()
+    val metadata =
+        mediaMetadata
+            .buildUpon()
+            .setArtworkData(artworkData, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+            .build()
     return buildUpon()
         .setMediaMetadata(metadata)
         .build()

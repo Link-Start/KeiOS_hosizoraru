@@ -1,7 +1,8 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section.gallery
 
 import android.content.Context
-import os.kei.core.ext.showToast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,17 +19,17 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import kotlinx.coroutines.delay
 import os.kei.R
-import os.kei.ui.page.main.student.GuideBgmLoopStore
-import os.kei.ui.page.main.student.GuideBgmPlayerStore
+import os.kei.core.ext.showToast
+import os.kei.ui.page.main.student.GuideGalleryAudioPlaybackRepository
 import kotlin.time.Duration.Companion.milliseconds
 
 @Stable
 internal class GuideGalleryAudioPlayerState(
     val audioTargetUrl: String,
     private val context: Context,
-    private val audioLoopScopeKey: String
+    private val playbackRepository: GuideGalleryAudioPlaybackRepository,
 ) {
-    var player by mutableStateOf<Player?>(GuideBgmPlayerStore.getExisting(audioLoopScopeKey, audioTargetUrl))
+    var player by mutableStateOf<Player?>(playbackRepository.existingPlayer())
         private set
     var isPlaying by mutableStateOf(false)
     var isBuffering by mutableStateOf(false)
@@ -37,9 +38,7 @@ internal class GuideGalleryAudioPlayerState(
     var durationMs by mutableLongStateOf(0L)
     var seekProgress by mutableStateOf<Float?>(null)
     var loadError by mutableStateOf<String?>(null)
-    var loopEnabled by mutableStateOf(
-        audioTargetUrl.isNotBlank() && GuideBgmLoopStore.isEnabled(audioLoopScopeKey, audioTargetUrl)
-    )
+    var loopEnabled by mutableStateOf(playbackRepository.isLoopEnabled())
 
     val resolvedDurationMs: Long
         get() = maxOf(durationMs, player?.duration?.coerceAtLeast(0L) ?: 0L)
@@ -51,10 +50,11 @@ internal class GuideGalleryAudioPlayerState(
         get() {
             val preview = seekProgress?.coerceIn(0f, 1f)
             val resolvedDuration = resolvedDurationMs
-            val resolvedPosition = when {
-                preview != null && resolvedDuration > 0L -> (resolvedDuration * preview).toLong()
-                else -> positionMs
-            }.coerceAtLeast(0L)
+            val resolvedPosition =
+                when {
+                    preview != null && resolvedDuration > 0L -> (resolvedDuration * preview).toLong()
+                    else -> positionMs
+                }.coerceAtLeast(0L)
             return if (resolvedDuration > 0L) {
                 resolvedPosition.coerceAtMost(resolvedDuration)
             } else {
@@ -68,35 +68,31 @@ internal class GuideGalleryAudioPlayerState(
 
     fun updateLoopEnabled(enabled: Boolean) {
         loopEnabled = enabled
-        GuideBgmLoopStore.setEnabled(
-            scopeKey = audioLoopScopeKey,
-            audioUrl = audioTargetUrl,
-            enabled = enabled
-        )
+        playbackRepository.setLoopEnabled(enabled)
         player?.repeatMode = if (enabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
     }
 
     private fun ensurePlayer(): Player? {
         val existing = player
         if (existing != null) return existing
-        val created = GuideBgmPlayerStore.getOrCreate(
-            context = context,
-            scopeKey = audioLoopScopeKey,
-            audioUrl = audioTargetUrl
-        ) ?: return null
+        val created = playbackRepository.getOrCreatePlayer() ?: return null
         created.repeatMode = if (loopEnabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         player = created
         return created
     }
 
-    fun play(context: Context, restart: Boolean = false) {
-        val currentPlayer = ensurePlayer() ?: run {
-            context.showToast(R.string.guide_media_audio_url_invalid)
-            return
-        }
+    fun play(
+        context: Context,
+        restart: Boolean = false,
+    ) {
+        val currentPlayer =
+            ensurePlayer() ?: run {
+                context.showToast(R.string.guide_media_audio_url_invalid)
+                return
+            }
         runCatching {
             loadError = null
-            GuideBgmPlayerStore.pauseScopeExcept(audioLoopScopeKey, audioTargetUrl)
+            playbackRepository.pauseScopeExcept()
             if (currentPlayer.currentMediaItem == null) {
                 currentPlayer.setMediaItem(MediaItem.fromUri(audioTargetUrl))
                 currentPlayer.prepare()
@@ -112,10 +108,11 @@ internal class GuideGalleryAudioPlayerState(
     }
 
     fun togglePlay(context: Context) {
-        val currentPlayer = ensurePlayer() ?: run {
-            context.showToast(R.string.guide_media_audio_url_invalid)
-            return
-        }
+        val currentPlayer =
+            ensurePlayer() ?: run {
+                context.showToast(R.string.guide_media_audio_url_invalid)
+                return
+            }
         runCatching {
             loadError = null
             if (currentPlayer.isPlaying) {
@@ -138,20 +135,24 @@ internal class GuideGalleryAudioPlayerState(
     }
 
     fun finishSeek(fraction: Float) {
-        val currentPlayer = player ?: run {
-            seekProgress = null
-            return
-        }
-        val duration = maxOf(
-            resolvedDurationMs,
-            currentPlayer.duration.coerceAtLeast(0L)
-        )
+        val currentPlayer =
+            player ?: run {
+                seekProgress = null
+                return
+            }
+        val duration =
+            maxOf(
+                resolvedDurationMs,
+                currentPlayer.duration.coerceAtLeast(0L),
+            )
         if (duration <= 0L) {
             seekProgress = null
             return
         }
-        val targetMs = (duration * fraction.coerceIn(0f, 1f)).toLong()
-            .coerceIn(0L, duration)
+        val targetMs =
+            (duration * fraction.coerceIn(0f, 1f))
+                .toLong()
+                .coerceIn(0L, duration)
         runCatching { currentPlayer.seekTo(targetMs) }
         durationMs = duration
         positionMs = targetMs
@@ -164,14 +165,20 @@ internal class GuideGalleryAudioPlayerState(
 internal fun rememberGuideGalleryAudioPlayerState(
     context: Context,
     audioLoopScopeKey: String,
-    audioTargetUrl: String
+    audioTargetUrl: String,
 ): GuideGalleryAudioPlayerState {
     val appContext = remember(context) { context.applicationContext }
     return remember(audioLoopScopeKey, audioTargetUrl, appContext) {
+        val playbackRepository =
+            GuideGalleryAudioPlaybackRepository(
+                context = appContext,
+                scopeKey = audioLoopScopeKey,
+                audioUrl = audioTargetUrl,
+            )
         GuideGalleryAudioPlayerState(
             audioTargetUrl = audioTargetUrl,
             context = appContext,
-            audioLoopScopeKey = audioLoopScopeKey
+            playbackRepository = playbackRepository,
         )
     }
 }
@@ -179,16 +186,17 @@ internal fun rememberGuideGalleryAudioPlayerState(
 @Composable
 internal fun BindGuideGalleryAudioPlayerEffects(
     state: GuideGalleryAudioPlayerState,
-    onPlaybackEnded: () -> Unit = {}
+    onPlaybackEnded: () -> Unit = {},
 ) {
     val player = state.player
     val latestOnPlaybackEnded by rememberUpdatedState(onPlaybackEnded)
     LaunchedEffect(player, state.loopEnabled) {
-        player?.repeatMode = if (state.loopEnabled) {
-            Player.REPEAT_MODE_ONE
-        } else {
-            Player.REPEAT_MODE_OFF
-        }
+        player?.repeatMode =
+            if (state.loopEnabled) {
+                Player.REPEAT_MODE_ONE
+            } else {
+                Player.REPEAT_MODE_OFF
+            }
     }
     DisposableEffect(player, state.audioTargetUrl, state.loopEnabled) {
         val currentPlayer = player ?: return@DisposableEffect onDispose { }
@@ -198,71 +206,78 @@ internal fun BindGuideGalleryAudioPlayerEffects(
             state.durationMs = initialDuration
         }
         val initialPosition = currentPlayer.currentPosition.coerceAtLeast(0L)
-        state.positionMs = if (state.durationMs > 0L) {
-            initialPosition.coerceAtMost(state.durationMs)
-        } else {
-            initialPosition
-        }
-        state.playProgress = if (state.durationMs > 0L) {
-            (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
-        } else {
-            0f
-        }
-        val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(isPlayingNow: Boolean) {
-                state.isPlaying = isPlayingNow
+        state.positionMs =
+            if (state.durationMs > 0L) {
+                initialPosition.coerceAtMost(state.durationMs)
+            } else {
+                initialPosition
             }
+        state.playProgress =
+            if (state.durationMs > 0L) {
+                (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+        val listener =
+            object : Player.Listener {
+                override fun onIsPlayingChanged(isPlayingNow: Boolean) {
+                    state.isPlaying = isPlayingNow
+                }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_BUFFERING -> state.isBuffering = true
-                    Player.STATE_READY -> {
-                        state.isBuffering = false
-                        val duration = currentPlayer.duration
-                        if (duration > 0L) {
-                            state.durationMs = duration
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    when (playbackState) {
+                        Player.STATE_BUFFERING -> {
+                            state.isBuffering = true
                         }
-                        val position = currentPlayer.currentPosition
-                        if (position >= 0L) {
-                            state.positionMs = if (state.durationMs > 0L) {
-                                position.coerceAtMost(state.durationMs)
-                            } else {
-                                position
+
+                        Player.STATE_READY -> {
+                            state.isBuffering = false
+                            val duration = currentPlayer.duration
+                            if (duration > 0L) {
+                                state.durationMs = duration
+                            }
+                            val position = currentPlayer.currentPosition
+                            if (position >= 0L) {
+                                state.positionMs =
+                                    if (state.durationMs > 0L) {
+                                        position.coerceAtMost(state.durationMs)
+                                    } else {
+                                        position
+                                    }
+                            }
+                        }
+
+                        Player.STATE_ENDED -> {
+                            if (state.loopEnabled && currentPlayer.repeatMode == Player.REPEAT_MODE_ONE) {
+                                return
+                            }
+                            state.isBuffering = false
+                            state.isPlaying = false
+                            state.playProgress = 1f
+                            val duration = currentPlayer.duration
+                            if (duration > 0L) {
+                                state.durationMs = duration
+                                state.positionMs = duration
+                            }
+                            latestOnPlaybackEnded()
+                        }
+
+                        Player.STATE_IDLE -> {
+                            state.isBuffering = false
+                            if (!currentPlayer.isPlaying) {
+                                state.playProgress = 0f
+                                state.positionMs = 0L
                             }
                         }
                     }
+                }
 
-                    Player.STATE_ENDED -> {
-                        if (state.loopEnabled && currentPlayer.repeatMode == Player.REPEAT_MODE_ONE) {
-                            return
-                        }
-                        state.isBuffering = false
-                        state.isPlaying = false
-                        state.playProgress = 1f
-                        val duration = currentPlayer.duration
-                        if (duration > 0L) {
-                            state.durationMs = duration
-                            state.positionMs = duration
-                        }
-                        latestOnPlaybackEnded()
-                    }
-
-                    Player.STATE_IDLE -> {
-                        state.isBuffering = false
-                        if (!currentPlayer.isPlaying) {
-                            state.playProgress = 0f
-                            state.positionMs = 0L
-                        }
-                    }
+                override fun onPlayerError(error: PlaybackException) {
+                    state.isBuffering = false
+                    state.isPlaying = false
+                    state.loadError = error.errorCodeName
                 }
             }
-
-            override fun onPlayerError(error: PlaybackException) {
-                state.isBuffering = false
-                state.isPlaying = false
-                state.loadError = error.errorCodeName
-            }
-        }
         currentPlayer.addListener(listener)
         onDispose { currentPlayer.removeListener(listener) }
     }
@@ -271,14 +286,15 @@ internal fun BindGuideGalleryAudioPlayerEffects(
         state.isPlaying,
         state.isBuffering,
         state.seekProgress,
-        player
+        player,
     ) {
-        val currentPlayer = player ?: run {
-            state.playProgress = 0f
-            state.positionMs = 0L
-            state.durationMs = 0L
-            return@LaunchedEffect
-        }
+        val currentPlayer =
+            player ?: run {
+                state.playProgress = 0f
+                state.positionMs = 0L
+                state.durationMs = 0L
+                return@LaunchedEffect
+            }
 
         if (state.seekProgress != null) return@LaunchedEffect
 
@@ -288,16 +304,18 @@ internal fun BindGuideGalleryAudioPlayerEffects(
                 state.durationMs = duration
             }
             val position = currentPlayer.currentPosition.coerceAtLeast(0L)
-            state.positionMs = if (state.durationMs > 0L) {
-                position.coerceAtMost(state.durationMs)
-            } else {
-                position
-            }
-            state.playProgress = if (state.durationMs > 0L) {
-                (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
-            } else {
-                0f
-            }
+            state.positionMs =
+                if (state.durationMs > 0L) {
+                    position.coerceAtMost(state.durationMs)
+                } else {
+                    position
+                }
+            state.playProgress =
+                if (state.durationMs > 0L) {
+                    (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
             return@LaunchedEffect
         }
 
@@ -307,20 +325,22 @@ internal fun BindGuideGalleryAudioPlayerEffects(
             if (duration > 0L) {
                 state.durationMs = duration
             }
-            state.positionMs = if (position >= 0L) {
-                if (state.durationMs > 0L) {
-                    position.coerceAtMost(state.durationMs)
+            state.positionMs =
+                if (position >= 0L) {
+                    if (state.durationMs > 0L) {
+                        position.coerceAtMost(state.durationMs)
+                    } else {
+                        position
+                    }
                 } else {
-                    position
+                    0L
                 }
-            } else {
-                0L
-            }
-            state.playProgress = if (state.durationMs > 0L) {
-                (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
-            } else {
-                0f
-            }
+            state.playProgress =
+                if (state.durationMs > 0L) {
+                    (state.positionMs.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
             delay(200.milliseconds)
         }
     }

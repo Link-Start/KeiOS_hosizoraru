@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -17,13 +18,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.model.BottomPage
-import os.kei.ui.page.main.student.BaStudentGuideStore
+import os.kei.ui.page.main.student.page.state.BaStudentGuideRepository
 
 @Composable
 fun MainScreen(
@@ -46,6 +48,8 @@ fun MainScreen(
     val currentOnCheckOrRequestShizuku by rememberUpdatedState(hostCallbacks.onCheckOrRequestShizuku)
     val currentOnAppThemeModeChanged by rememberUpdatedState(hostCallbacks.onAppThemeModeChanged)
     val prefsViewModel: MainScreenPrefsViewModel = viewModel()
+    val mainScope = rememberCoroutineScope()
+    val studentGuideRepository = remember { BaStudentGuideRepository() }
     var localRequestedBottomPage by rememberSaveable { mutableStateOf<String?>(null) }
     var localRequestedBottomPageToken by rememberSaveable { mutableIntStateOf(0) }
     val externalBottomPageRequested = !hostState.requestedBottomPage.isNullOrBlank()
@@ -92,8 +96,10 @@ fun MainScreen(
         poolGuideMissingText = poolGuideMissingText,
         externalOpenFailureText = externalOpenFailureText,
         onNavigateToCanonicalGuide = { canonicalGuideUrl ->
-            BaStudentGuideStore.setCurrentUrl(canonicalGuideUrl)
-            navigator.push(KeiosRoute.BaStudentGuide(nonce = System.nanoTime()))
+            mainScope.launch {
+                studentGuideRepository.saveCurrentUrlAsync(canonicalGuideUrl)
+                navigator.push(KeiosRoute.BaStudentGuide(nonce = System.nanoTime()))
+            }
         }
     )
     val pagerCoordinator =

@@ -3,8 +3,8 @@ package os.kei.ui.page.main.student.catalog.component
 import android.content.Context
 import android.graphics.Bitmap
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import java.io.ByteArrayOutputStream
@@ -31,7 +31,7 @@ internal object BaGuideBgmMediaArtworkPayloadResolver {
         bitmapLoader: (suspend (Context, String) -> Bitmap?) = { ctx, url ->
             GameKeeMediaImageLoader.loadCatalogIcon(ctx, url)
         },
-        defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+        defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
     ): ByteArray? {
         return resolveUrl(
             context = context,
@@ -47,7 +47,7 @@ internal object BaGuideBgmMediaArtworkPayloadResolver {
         bitmapLoader: suspend (Context, String) -> Bitmap? = { ctx, url ->
             GameKeeMediaImageLoader.loadCatalogIcon(ctx, url)
         },
-        defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+        defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
     ): ByteArray? {
         val key = artworkUrl.trim()
         if (key.isBlank()) return null

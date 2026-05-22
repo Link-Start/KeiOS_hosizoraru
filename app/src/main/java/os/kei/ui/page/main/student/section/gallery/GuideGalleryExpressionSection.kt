@@ -39,16 +39,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.R
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.student.BaGuideGalleryItem
+import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.student.GuideVideoControlAction
 import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
@@ -60,7 +59,6 @@ import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
 import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -216,9 +214,8 @@ fun GuideGalleryExpressionCardItem(
         expressionDragAccumPx += delta
     }
     val imageProgressState = remember(displayImageUrl) {
-        MutableStateFlow(if (displayImageUrl.isBlank()) 1f else 0f)
+        GuideMediaProgressState(if (displayImageUrl.isBlank()) 1f else 0f)
     }
-    val imageProgress by imageProgressState.collectAsStateWithLifecycle()
     var imageLoading by remember(displayImageUrl) { mutableStateOf(displayImageUrl.isNotBlank()) }
     val packDownloadIcon = appLucidePackageIcon()
     val fullscreenIcon = appLucideFullscreenIcon()
@@ -380,15 +377,9 @@ fun GuideGalleryExpressionCardItem(
                     )
                 }
                 if (isImageType && displayImageUrl.isNotBlank()) {
-                    val imageProgressValue = if (imageLoading) imageProgress.coerceIn(0f, 1f) else 1f
-                    val progressForegroundColor = if (imageProgressValue >= 0.999f) Color(0xFF34C759) else Color(0xFF3B82F6)
-                    val progressBackgroundColor = if (imageProgressValue >= 0.999f) Color(0x5534C759) else Color(0x553B82F6)
-                    LiquidCircularProgressBar(
-                        progress = { imageProgressValue },
-                        size = 18.dp,
-                        strokeWidth = 2.dp,
-                        activeColor = progressForegroundColor,
-                        inactiveColor = progressBackgroundColor
+                    GuideGalleryImageProgressBadge(
+                        imageLoading = imageLoading,
+                        imageProgressState = imageProgressState,
                     )
                 }
             }

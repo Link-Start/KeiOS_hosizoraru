@@ -70,9 +70,9 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                 return@rememberLauncherForActivityResult
             }
             persistGuideMediaTreePermission(result.data, treeUri, context.contentResolver)
-            BaStudentGuideMediaSaveRepository.saveFixedTreeUri(treeUri.toString())
             pendingFixedSaveRequest = null
             pageScope.launch {
+                BaStudentGuideMediaSaveRepository.saveFixedTreeUri(treeUri.toString())
                 val targetUri =
                     createUniqueDocumentUriInTreeAsync(
                         context = context,
@@ -105,21 +105,24 @@ internal fun rememberBaStudentGuideMediaSaveAction(
                     context.showToast(R.string.guide_media_save_empty)
                 }
 
-                BaStudentGuideMediaSaveRepository.loadSaveLocation().useFixedLocation -> {
-                    dispatchFixedGuideMediaSaveRequest(
-                        request = request,
-                        context = context,
-                        pageScope = pageScope,
-                        onRequestFolder = {
-                            pendingFixedSaveRequest = request
-                            fixedFolderLauncher.launch(guideMediaFolderPickerIntent(withInitialDownload = it))
-                        },
-                    )
-                }
-
                 else -> {
-                    pendingCustomSaveRequest = request
-                    customSaveLauncher.launch(createGuideMediaDocumentIntent(request))
+                    pageScope.launch {
+                        val saveLocation = BaStudentGuideMediaSaveRepository.loadSaveLocation()
+                        if (saveLocation.useFixedLocation) {
+                            dispatchFixedGuideMediaSaveRequest(
+                                request = request,
+                                context = context,
+                                saveLocation = saveLocation,
+                                onRequestFolder = {
+                                    pendingFixedSaveRequest = request
+                                    fixedFolderLauncher.launch(guideMediaFolderPickerIntent(withInitialDownload = it))
+                                },
+                            )
+                        } else {
+                            pendingCustomSaveRequest = request
+                            customSaveLauncher.launch(createGuideMediaDocumentIntent(request))
+                        }
+                    }
                 }
             }
         }
@@ -180,9 +183,9 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                 return@rememberLauncherForActivityResult
             }
             persistGuideMediaTreePermission(result.data, treeUri, context.contentResolver)
-            BaStudentGuideMediaSaveRepository.saveFixedTreeUri(treeUri.toString())
             pendingFixedPackSaveRequest = null
             pageScope.launch {
+                BaStudentGuideMediaSaveRepository.saveFixedTreeUri(treeUri.toString())
                 saveGuideMediaPackToTree(
                     context = context,
                     request = request,
@@ -207,21 +210,24 @@ internal fun rememberBaStudentGuideMediaPackSaveAction(
                     context.showToast(R.string.guide_media_save_empty)
                 }
 
-                BaStudentGuideMediaSaveRepository.loadSaveLocation().useFixedLocation -> {
-                    dispatchFixedGuideMediaPackSaveRequest(
-                        request = request,
-                        context = context,
-                        pageScope = pageScope,
-                        onRequestFolder = {
-                            pendingFixedPackSaveRequest = request
-                            fixedFolderPackSaveLauncher.launch(guideMediaFolderPickerIntent(withInitialDownload = it))
-                        },
-                    )
-                }
-
                 else -> {
-                    pendingCustomPackSaveRequest = request
-                    customPackSaveLauncher.launch(request.fileName)
+                    pageScope.launch {
+                        val saveLocation = BaStudentGuideMediaSaveRepository.loadSaveLocation()
+                        if (saveLocation.useFixedLocation) {
+                            dispatchFixedGuideMediaPackSaveRequest(
+                                request = request,
+                                context = context,
+                                saveLocation = saveLocation,
+                                onRequestFolder = {
+                                    pendingFixedPackSaveRequest = request
+                                    fixedFolderPackSaveLauncher.launch(guideMediaFolderPickerIntent(withInitialDownload = it))
+                                },
+                            )
+                        } else {
+                            pendingCustomPackSaveRequest = request
+                            customPackSaveLauncher.launch(request.fileName)
+                        }
+                    }
                 }
             }
         }
@@ -268,15 +274,14 @@ private fun persistGuideMediaTreePermission(
     }
 }
 
-private fun dispatchFixedGuideMediaSaveRequest(
+private suspend fun dispatchFixedGuideMediaSaveRequest(
     request: GuideMediaSaveRequest,
     context: android.content.Context,
-    pageScope: CoroutineScope,
+    saveLocation: BaStudentGuideMediaSaveLocation,
     onRequestFolder: (Boolean) -> Unit,
 ) {
     val fixedTreeUri =
-        BaStudentGuideMediaSaveRepository
-            .loadSaveLocation()
+        saveLocation
             .fixedTreeUriRaw
             .takeIf { it.isNotBlank() }
             ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
@@ -284,36 +289,33 @@ private fun dispatchFixedGuideMediaSaveRequest(
         onRequestFolder(true)
         return
     }
-    pageScope.launch {
-        val targetUri =
-            createUniqueDocumentUriInTreeAsync(
-                context = context,
-                treeUri = fixedTreeUri,
-                mimeType = request.mimeType,
-                fileName = request.fileName,
-            )
-        val success =
-            targetUri?.let { uri ->
-                copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
-            } == true
-        if (success) {
-            context.showToast(context.resolveString(R.string.guide_media_save_success, request.fileName))
-        } else {
-            BaStudentGuideMediaSaveRepository.clearFixedTreeUri()
-            onRequestFolder(false)
-        }
+    val targetUri =
+        createUniqueDocumentUriInTreeAsync(
+            context = context,
+            treeUri = fixedTreeUri,
+            mimeType = request.mimeType,
+            fileName = request.fileName,
+        )
+    val success =
+        targetUri?.let { uri ->
+            copyGuideMediaToUriAsync(context, request.sourceUrl, uri)
+        } == true
+    if (success) {
+        context.showToast(context.resolveString(R.string.guide_media_save_success, request.fileName))
+    } else {
+        BaStudentGuideMediaSaveRepository.clearFixedTreeUri()
+        onRequestFolder(false)
     }
 }
 
-private fun dispatchFixedGuideMediaPackSaveRequest(
+private suspend fun dispatchFixedGuideMediaPackSaveRequest(
     request: GuideMediaPackSaveRequest,
     context: android.content.Context,
-    pageScope: CoroutineScope,
+    saveLocation: BaStudentGuideMediaSaveLocation,
     onRequestFolder: (Boolean) -> Unit,
 ) {
     val fixedTreeUri =
-        BaStudentGuideMediaSaveRepository
-            .loadSaveLocation()
+        saveLocation
             .fixedTreeUriRaw
             .takeIf { it.isNotBlank() }
             ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
@@ -321,24 +323,22 @@ private fun dispatchFixedGuideMediaPackSaveRequest(
         onRequestFolder(true)
         return
     }
-    pageScope.launch {
-        saveGuideMediaPackToTree(
-            context = context,
-            request = request,
-            treeUri = fixedTreeUri,
-            onNeedFolder = {
-                BaStudentGuideMediaSaveRepository.clearFixedTreeUri()
-                onRequestFolder(false)
-            },
-        )
-    }
+    saveGuideMediaPackToTree(
+        context = context,
+        request = request,
+        treeUri = fixedTreeUri,
+        onNeedFolder = {
+            BaStudentGuideMediaSaveRepository.clearFixedTreeUri()
+            onRequestFolder(false)
+        },
+    )
 }
 
 private suspend fun saveGuideMediaPackToTree(
     context: android.content.Context,
     request: GuideMediaPackSaveRequest,
     treeUri: android.net.Uri,
-    onNeedFolder: () -> Unit,
+    onNeedFolder: suspend () -> Unit,
 ) {
     val targetUri =
         createUniqueDocumentUriInTreeAsync(

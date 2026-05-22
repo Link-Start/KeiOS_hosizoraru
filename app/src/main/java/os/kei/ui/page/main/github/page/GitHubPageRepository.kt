@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -35,12 +36,19 @@ import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.ui.page.main.github.GitHubTrackedFilterMode
+import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
+import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.picker.filterAndSortGitHubTrackAppCandidates
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.section.GitHubOverviewUiState
+import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
+import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
@@ -78,6 +86,14 @@ internal data class GitHubActiveShareImportFlow(
     val pendingTrack: GitHubPendingShareImportTrack?,
     val attachCandidate: GitHubPendingShareImportAttachCandidate?,
     val result: GitHubShareImportResult?
+)
+
+@Immutable
+internal data class GitHubPagePersistedUiState(
+    val pageUiState: GitHubPageUiState = GitHubPageUiState(),
+    val actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
+    val overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
+    val trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState(),
 )
 
 internal class GitHubPageRepository(
@@ -126,6 +142,23 @@ internal class GitHubPageRepository(
         }
     }
 
+    suspend fun loadPersistedUiState(): GitHubPagePersistedUiState {
+        return withContext(AppDispatchers.githubLocal) {
+            GitHubPagePersistedUiState(
+                pageUiState = GitHubPageUiStateStore.load(),
+                actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
+                overviewUiState = GitHubOverviewUiStateStore.load(),
+                trackedReleaseExpansionState = GitHubTrackedReleaseUiStateStore.load(),
+            )
+        }
+    }
+
+    suspend fun saveTrackedFilterMode(value: GitHubTrackedFilterMode) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubPageUiStateStore.setTrackedFilterMode(value)
+        }
+    }
+
     suspend fun queryOnlineShareTargets(
         context: Context,
         input: GitHubOnlineShareTargetInput
@@ -151,6 +184,12 @@ internal class GitHubPageRepository(
 
     suspend fun saveRefreshIntervalHours(hours: Int) =
         trackRepository.saveRefreshIntervalHours(hours)
+
+    suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences =
+        trackRepository.loadAppPickerPreferences()
+
+    suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) =
+        trackRepository.saveAppPickerPreferences(preferences)
 
     suspend fun saveTrackedItems(
         context: Context,

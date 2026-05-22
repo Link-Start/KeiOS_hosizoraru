@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -29,10 +30,9 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
-import os.kei.ui.page.main.student.catalog.component.resolvePlaybackArtworkImageUrl
+import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
-import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 
 @Composable
@@ -54,11 +54,26 @@ internal fun BaGuideFavoriteBgmMusicContent(
     onRequestOfflineCache: (List<GuideBgmFavoriteItem>, Boolean, Boolean) -> Unit,
     onToggleFavoriteCache: (GuideBgmFavoriteItem, List<GuideBgmFavoriteItem>) -> Unit,
     onOpenGuide: (String) -> Unit,
+    onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
 ) {
     val contentBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    val playbackRuntimeState by playbackCoordinator.runtimeStateFlow.collectAsStateWithLifecycle()
+    val playbackChromeState by remember(playbackCoordinator) {
+        playbackCoordinator.runtimeStateFlow
+            .map { runtimeState ->
+                BaGuideFavoriteBgmPlaybackChromeState(
+                    isPlaying = runtimeState.isPlaying,
+                    volume = runtimeState.volume,
+                )
+            }.distinctUntilChanged()
+    }.collectAsStateWithLifecycle(
+        initialValue =
+            BaGuideFavoriteBgmPlaybackChromeState(
+                isPlaying = playbackCoordinator.runtimeState.isPlaying,
+                volume = playbackCoordinator.runtimeState.volume,
+            ),
+    )
     val displayedFavorites = derivedState.displayedFavorites
     val favoriteOfflineCacheState =
         rememberBaGuideFavoriteBgmOfflineCacheState(
@@ -145,9 +160,9 @@ internal fun BaGuideFavoriteBgmMusicContent(
             accent = accent,
             tracks = tracks,
             currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
-            isPlaying = playbackRuntimeState.isPlaying,
+            isPlaying = playbackChromeState.isPlaying,
             repeatEnabled = playbackState.queueMode == BaGuideBgmQueueMode.SingleLoop,
-            playbackVolume = playbackRuntimeState.volume,
+            playbackVolume = playbackChromeState.volume,
             isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
             onRepeatClick = { playbackCoordinator.toggleQueueMode() },
             onPlayPauseClick = {
@@ -187,7 +202,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
             },
             onTrackShareClick = { track ->
                 favoritesByTrackId[track.id]?.let { favorite ->
-                    GuideDetailTabRequestStore.request(favorite.sourceUrl, GuideBottomTab.Gallery)
+                    onRequestGuideDetailTab(favorite.sourceUrl, GuideBottomTab.Gallery)
                     onOpenGuide(favorite.sourceUrl)
                 }
             },
@@ -208,7 +223,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
             contentBackdrop = contentBackdrop,
             artworkImageUrl =
                 selectedFavorite
-                    ?.resolvePlaybackArtworkImageUrl()
+                    ?.resolveStudentArtworkImageUrl(catalog)
                     .orEmpty(),
             showAlbumTitle = false,
             promoteSectionTitle = true,
@@ -216,6 +231,11 @@ internal fun BaGuideFavoriteBgmMusicContent(
         )
     }
 }
+
+private data class BaGuideFavoriteBgmPlaybackChromeState(
+    val isPlaying: Boolean,
+    val volume: Float,
+)
 
 private fun GuideBgmFavoriteItem.toBaGuideBgmTrack(playbackSnapshot: GuideBgmFavoritePlaybackSnapshot): BaGuideBgmTrack {
     val durationMs = playbackSnapshot.progressFor(audioUrl)?.durationMs ?: 0L

@@ -22,15 +22,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.BuildConfig
 import os.kei.core.ui.snapshot.AppSnapshotFlowManager
+import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
-import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
-import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
-import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val pendingShareImportCardTickMs = 15_000L
@@ -53,6 +51,7 @@ private data class GitHubPageUiCoreSnapshot(
     val installedOnlineShareTargets: List<OnlineShareTargetOption> = emptyList(),
     val checkLogicDownloaderOptions: List<DownloaderOption> = emptyList(),
     val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
+    val appPickerPreferences: GitHubAppPickerPreferences = GitHubAppPickerPreferences(),
 )
 
 @Immutable
@@ -62,6 +61,7 @@ internal data class GitHubPageUiSnapshot(
     val checkLogicDownloaderOptions: List<DownloaderOption> = emptyList(),
     val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
     val appPickerDerivedState: GitHubTrackAppPickerDerivedState = GitHubTrackAppPickerDerivedState.Empty,
+    val appPickerPreferences: GitHubAppPickerPreferences = GitHubAppPickerPreferences(),
 )
 
 internal sealed interface GitHubTrackedExportStartResult {
@@ -103,6 +103,10 @@ internal class GitHubPageViewModel : ViewModel() {
     val checkLogicDownloaderOptions: StateFlow<List<DownloaderOption>> =
         _checkLogicDownloaderOptions.asStateFlow()
 
+    private val _appPickerPreferences = MutableStateFlow(GitHubAppPickerPreferences())
+    val appPickerPreferences: StateFlow<GitHubAppPickerPreferences> =
+        _appPickerPreferences.asStateFlow()
+
     private val _appPickerDerivedState =
         MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
     val appPickerDerivedState: StateFlow<GitHubTrackAppPickerDerivedState> =
@@ -114,12 +118,14 @@ internal class GitHubPageViewModel : ViewModel() {
             installedOnlineShareTargets,
             checkLogicDownloaderOptions,
             contentDerivedState,
-        ) { transfer, shareTargets, downloaderOptions, content ->
+            appPickerPreferences,
+        ) { transfer, shareTargets, downloaderOptions, content, appPickerPreferences ->
             GitHubPageUiCoreSnapshot(
                 transferState = transfer,
                 installedOnlineShareTargets = shareTargets,
                 checkLogicDownloaderOptions = downloaderOptions,
                 contentDerivedState = content,
+                appPickerPreferences = appPickerPreferences,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -135,6 +141,7 @@ internal class GitHubPageViewModel : ViewModel() {
                 checkLogicDownloaderOptions = core.checkLogicDownloaderOptions,
                 contentDerivedState = core.contentDerivedState,
                 appPickerDerivedState = appPicker,
+                appPickerPreferences = core.appPickerPreferences,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -142,18 +149,26 @@ internal class GitHubPageViewModel : ViewModel() {
             initialValue = GitHubPageUiSnapshot(),
         )
 
+    init {
+        viewModelScope.launch {
+            _appPickerPreferences.value = repository.loadAppPickerPreferences()
+        }
+    }
+
     fun pageState(searchBarHideThresholdPx: Float): GitHubPageState {
         val current = pageState
         if (current != null) return current
         return GitHubPageState(
             searchBarHideThresholdPx = searchBarHideThresholdPx,
-            pageUiState = GitHubPageUiStateStore.load(),
-            actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
-            overviewUiState = GitHubOverviewUiStateStore.load(),
-            trackedReleaseExpansionState = GitHubTrackedReleaseUiStateStore.load()
         ).also {
             pageState = it
             bindContentState(it)
+            viewModelScope.launch {
+                val persistedState = repository.loadPersistedUiState()
+                if (pageState === it) {
+                    it.applyPersistedUiState(persistedState)
+                }
+            }
         }
     }
 
@@ -218,6 +233,14 @@ internal class GitHubPageViewModel : ViewModel() {
                 if (appPickerStateInput != input) return@launch
                 _appPickerDerivedState.value = derivedState
             }
+    }
+
+    fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) {
+        if (_appPickerPreferences.value == preferences) return
+        _appPickerPreferences.value = preferences
+        viewModelScope.launch {
+            repository.saveAppPickerPreferences(preferences)
+        }
     }
 
     suspend fun beginTrackedExport(
@@ -351,7 +374,7 @@ internal class GitHubPageViewModel : ViewModel() {
                 val derived = repository.buildContentState(input)
                 if (shouldResetFailedTrackedFilter(input, derived)) {
                     state.trackedFilterMode = GitHubTrackedFilterMode.All
-                    GitHubPageUiStateStore.setTrackedFilterMode(GitHubTrackedFilterMode.All)
+                    repository.saveTrackedFilterMode(GitHubTrackedFilterMode.All)
                     _contentDerivedState.value = repository.buildContentState(
                         input.copy(trackedFilterMode = GitHubTrackedFilterMode.All)
                     )

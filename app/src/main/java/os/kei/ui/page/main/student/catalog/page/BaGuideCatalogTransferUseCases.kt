@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
@@ -41,7 +40,7 @@ internal suspend fun buildBaGuideCatalogImportPreviewAsync(
     currentFavorites: Map<Long, Long>,
     bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ): BaGuideCatalogImportPreviewState {
     val raw =
         readBaGuideCatalogImportTextAsync(
@@ -106,7 +105,7 @@ internal suspend fun applyBaGuideCatalogFavoritesImportAsync(
     preview: BaGuideCatalogImportPreviewState,
     bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ): BaGuideCatalogImportApplyResult =
     coroutineScope {
         val studentFavorites =
@@ -157,7 +156,7 @@ internal suspend fun readBaGuideCatalogImportTextAsync(
 
 internal suspend fun buildCatalogFavoritesExportJsonAsync(
     favorites: Map<Long, Long>,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ): String =
     withContext(parseDispatcher) {
         buildCatalogFavoritesExportJson(favorites)
@@ -167,7 +166,7 @@ internal suspend fun buildCatalogAllFavoritesExportJsonAsync(
     favorites: Map<Long, Long>,
     bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ): String {
     val bgmFavoritesJson =
         withContext(ioDispatcher) {

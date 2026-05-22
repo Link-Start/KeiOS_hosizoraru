@@ -3,13 +3,13 @@ package os.kei.ui.page.main.student.catalog.state
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
@@ -32,6 +32,7 @@ import os.kei.ui.page.main.student.catalog.page.buildCatalogAllFavoritesExportJs
 import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJsonAsync
 import os.kei.ui.page.main.student.catalog.selectedCatalogFilterOptionsForDefinitions
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 import kotlin.coroutines.cancellation.CancellationException
 
 internal data class BaGuideCatalogLoadResult(
@@ -41,7 +42,7 @@ internal data class BaGuideCatalogLoadResult(
 
 internal class BaGuideCatalogRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
-    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val refreshIntervalLoader: () -> Int = BASettingsStore::loadCalendarRefreshIntervalHours,
     private val cachedBundleLoader: () -> BaGuideCatalogBundle? = ::loadCachedBaGuideCatalogBundle,
     private val catalogFetcher: suspend (
@@ -58,7 +59,8 @@ internal class BaGuideCatalogRepository(
 ) {
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = bgmFavoriteRepository.favoritesFlow()
 
-    fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> = bgmFavoriteRepository.favoritesSnapshot()
+    suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> =
+        bgmFavoriteRepository.hydrateFavorites()
 
     fun bgmPlaybackSnapshot() = bgmFavoriteRepository.playbackSnapshot()
 
@@ -111,7 +113,10 @@ internal class BaGuideCatalogRepository(
             bgmFavoriteRepository = bgmFavoriteRepository,
         )
 
-    fun loadNativeBgmMediaNotificationEnabled(): Boolean = BASettingsStore.loadNativeBgmMediaNotificationEnabled()
+    suspend fun loadNativeBgmMediaNotificationEnabled(): Boolean =
+        withContext(ioDispatcher) {
+            BASettingsStore.loadNativeBgmMediaNotificationEnabled()
+        }
 
     suspend fun saveNativeBgmMediaNotificationEnabled(enabled: Boolean) {
         withContext(ioDispatcher) {
@@ -123,6 +128,13 @@ internal class BaGuideCatalogRepository(
 
     suspend fun removeBgmFavorite(audioUrl: String) {
         bgmFavoriteRepository.removeFavorite(audioUrl)
+    }
+
+    fun requestGuideDetailTab(
+        sourceUrl: String,
+        tab: GuideBottomTab,
+    ) {
+        GuideDetailTabRequestStore.request(sourceUrl, tab)
     }
 
     suspend fun loadCatalog(

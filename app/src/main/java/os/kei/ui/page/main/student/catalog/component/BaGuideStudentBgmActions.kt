@@ -8,7 +8,6 @@ import os.kei.core.ext.showToast
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
 
 internal data class BaGuideStudentBgmActions(
     val openStudentGuide: (BaGuideCatalogEntry) -> Unit,
@@ -29,6 +28,7 @@ internal fun rememberBaGuideStudentBgmActions(
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     setNowPlayingVisible: (Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
+    onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
     onToggleFavorite: (GuideBgmFavoriteItem) -> Unit,
     onRemoveFavorite: (String) -> Unit,
     bgmMissingText: String,
@@ -36,6 +36,7 @@ internal fun rememberBaGuideStudentBgmActions(
 ): BaGuideStudentBgmActions {
     val currentSetNowPlayingVisible = rememberUpdatedState(setNowPlayingVisible)
     val currentOnOpenGuide = rememberUpdatedState(onOpenGuide)
+    val currentOnRequestGuideDetailTab = rememberUpdatedState(onRequestGuideDetailTab)
     val currentOnToggleFavorite = rememberUpdatedState(onToggleFavorite)
     val currentOnRemoveFavorite = rememberUpdatedState(onRemoveFavorite)
     return remember(
@@ -49,12 +50,12 @@ internal fun rememberBaGuideStudentBgmActions(
         bgmResolveFailedText,
     ) {
         fun openStudentGuide(entry: BaGuideCatalogEntry) {
-            GuideDetailTabRequestStore.request(entry.detailUrl, GuideBottomTab.Gallery)
+            currentOnRequestGuideDetailTab.value(entry.detailUrl, GuideBottomTab.Gallery)
             currentOnOpenGuide.value(entry.detailUrl)
         }
 
         fun openFavoriteGuide(favorite: GuideBgmFavoriteItem) {
-            GuideDetailTabRequestStore.request(favorite.sourceUrl, GuideBottomTab.Gallery)
+            currentOnRequestGuideDetailTab.value(favorite.sourceUrl, GuideBottomTab.Gallery)
             currentOnOpenGuide.value(favorite.sourceUrl)
         }
 

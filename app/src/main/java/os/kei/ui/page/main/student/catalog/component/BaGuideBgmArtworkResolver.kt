@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.catalog.component
 
-import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -20,11 +19,7 @@ internal fun GuideBgmFavoriteItem.resolveStudentArtworkImageUrl(
 }
 
 internal fun GuideBgmFavoriteItem.resolvePlaybackArtworkImageUrl(): String {
-    val guideOverviewImageUrl = BaStudentGuideStore.loadInfoSnapshot(sourceUrl)
-        .info
-        ?.imageUrl
-        .orEmpty()
-    return sequenceOf(guideOverviewImageUrl, studentImageUrl, imageUrl)
+    return sequenceOf(studentImageUrl, imageUrl)
         .map { it.trim() }
         .firstOrNull { it.isNotBlank() }
         .orEmpty()

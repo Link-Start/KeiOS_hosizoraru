@@ -36,11 +36,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun GitHubPendingShareImportCard(
     pending: GitHubPendingShareImportTrack,
+    nowMillis: Long,
     repoOverlapCount: Int,
     onOpen: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val nowMillis = System.currentTimeMillis()
     val ageMinutes = ((nowMillis - pending.armedAtMillis).coerceAtLeast(0L) / 60_000L).toInt()
     val remainingMinutes = shareImportRemainingMinutes(pending.armedAtMillis, nowMillis)
     AppSurfaceCard(

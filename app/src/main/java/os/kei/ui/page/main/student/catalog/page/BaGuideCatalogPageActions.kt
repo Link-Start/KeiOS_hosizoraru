@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListInput
@@ -23,6 +24,7 @@ internal class BaGuideCatalogPageActions(
     val onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
     val onRemoveBgmFavorite: (String) -> Unit,
     val onRemoveBgmFavoriteWithToast: (String) -> Unit,
+    val onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
     val onSetNativeBgmMediaNotificationEnabled: (Boolean) -> Unit,
     val onRequestFavoriteBgmOfflineCache: (List<GuideBgmFavoriteItem>, Boolean, Boolean) -> Unit,
     val onToggleFavoriteBgmOfflineCache: (GuideBgmFavoriteItem, List<GuideBgmFavoriteItem>) -> Unit,
@@ -31,6 +33,9 @@ internal class BaGuideCatalogPageActions(
     val onCleanInvalidBgmCache: (List<GuideBgmFavoriteItem>) -> Unit,
     val onRequestImportPreview: (Uri?, BaGuideCatalogImportKind) -> Unit,
     val onConfirmFavoritesImport: (BaGuideCatalogImportPreviewState) -> Unit,
+    val onSetTransferMediaSaveCustomEnabled: (Boolean) -> Unit,
+    val onSetTransferMediaSaveFixedTreeUri: (String) -> Unit,
+    val onClearTransferMediaSaveFixedTreeUri: () -> Unit,
     val buildCatalogFavoritesExportJson: BaGuideCatalogJsonExportPayloadBuilder,
     val buildCatalogAllFavoritesExportJson: BaGuideCatalogJsonExportPayloadBuilder,
     val buildBgmFavoritesExportJson: BaGuideCatalogJsonExportPayloadBuilder,
@@ -62,6 +67,7 @@ internal fun rememberBaGuideCatalogPageActions(catalogViewModel: BaGuideCatalogV
                     showToast = true,
                 )
             },
+            onRequestGuideDetailTab = catalogViewModel::requestGuideDetailTab,
             onSetNativeBgmMediaNotificationEnabled = catalogViewModel::setNativeBgmMediaNotificationEnabled,
             onRequestFavoriteBgmOfflineCache = catalogViewModel::requestFavoriteBgmOfflineCache,
             onToggleFavoriteBgmOfflineCache = catalogViewModel::toggleFavoriteBgmOfflineCache,
@@ -70,6 +76,9 @@ internal fun rememberBaGuideCatalogPageActions(catalogViewModel: BaGuideCatalogV
             onCleanInvalidBgmCache = catalogViewModel::cleanInvalidBgmCache,
             onRequestImportPreview = catalogViewModel::requestCatalogImportPreview,
             onConfirmFavoritesImport = catalogViewModel::confirmCatalogFavoritesImport,
+            onSetTransferMediaSaveCustomEnabled = catalogViewModel::setTransferMediaSaveCustomEnabled,
+            onSetTransferMediaSaveFixedTreeUri = catalogViewModel::setTransferMediaSaveFixedTreeUri,
+            onClearTransferMediaSaveFixedTreeUri = catalogViewModel::clearTransferMediaSaveFixedTreeUri,
             buildCatalogFavoritesExportJson = catalogViewModel::buildCatalogFavoritesExportJson,
             buildCatalogAllFavoritesExportJson = catalogViewModel::buildCatalogAllFavoritesExportJson,
             buildBgmFavoritesExportJson = catalogViewModel::buildBgmFavoritesExportJson,

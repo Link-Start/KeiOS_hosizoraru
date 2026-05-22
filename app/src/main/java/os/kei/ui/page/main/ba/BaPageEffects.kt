@@ -81,9 +81,7 @@ internal fun BaPageCommonEffects(
     }
 
     LaunchedEffect(isPageActive, listState, office, runtimeTickerCoordinator) {
-        office.ensureRegenBase()
-        office.ensureCafeHourBase()
-        office.clampCafeStoredToCap()
+        runtimePersistenceCoordinator.submit(office.normalizeRuntimeState())
         if (isPageActive) {
             val nowMs = System.currentTimeMillis()
             onUiNowMsChange(nowMs)

@@ -42,6 +42,7 @@ internal data class BaStudentGuideUiState(
     val bgmFavoriteAudioUrls: Set<String> = emptySet(),
     val isNpcSatelliteGuide: Boolean = false,
     val mediaSettings: BaStudentGuideMediaSettings = BaStudentGuideMediaSettings(),
+    val requestedInitialBottomTab: GuideBottomTab? = null,
 )
 
 private data class BaStudentGuideBinding(
@@ -51,6 +52,12 @@ private data class BaStudentGuideBinding(
     val refreshFailedKeepCacheText: String,
 )
 
+private data class BaStudentGuideAuxUiState(
+    val isNpcSatelliteGuide: Boolean = false,
+    val mediaSettings: BaStudentGuideMediaSettings = BaStudentGuideMediaSettings(),
+    val requestedInitialBottomTab: GuideBottomTab? = null,
+)
+
 internal class BaStudentGuideViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
@@ -58,18 +65,13 @@ internal class BaStudentGuideViewModel(
     private val repository = BaStudentGuideRepository()
     private var binding: BaStudentGuideBinding? = null
     private var loadJob: Job? = null
+    private var currentUrlLoadJob: Job? = null
+    private var currentUrlSaveJob: Job? = null
     private var npcSatelliteResolveJob: Job? = null
     private var prefetchJob: Job? = null
     private var lastLoadedSourceUrl: String = ""
 
-    private val initialSourceUrl = repository.loadCurrentUrl()
-    private val _dataState =
-        MutableStateFlow(
-            BaStudentGuideDataUiState(
-                sourceUrl = initialSourceUrl,
-                loading = initialSourceUrl.isNotBlank(),
-            ),
-        )
+    private val _dataState = MutableStateFlow(BaStudentGuideDataUiState())
     val dataState: StateFlow<BaStudentGuideDataUiState> = _dataState.asStateFlow()
 
     private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
@@ -82,24 +84,46 @@ internal class BaStudentGuideViewModel(
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = repository.bgmFavoritesSnapshot().toAudioUrlSet(),
+                initialValue = emptySet(),
             )
     private val _isNpcSatelliteGuide = MutableStateFlow(false)
     private val _mediaSettings = MutableStateFlow(BaStudentGuideMediaSettings())
+    private val _requestedInitialBottomTab = MutableStateFlow<GuideBottomTab?>(null)
+    private val auxState: StateFlow<BaStudentGuideAuxUiState> =
+        combine(
+            _isNpcSatelliteGuide,
+            _mediaSettings,
+            _requestedInitialBottomTab,
+        ) { isNpcSatelliteGuide, mediaSettings, requestedInitialBottomTab ->
+            BaStudentGuideAuxUiState(
+                isNpcSatelliteGuide = isNpcSatelliteGuide,
+                mediaSettings = mediaSettings,
+                requestedInitialBottomTab = requestedInitialBottomTab,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue =
+                BaStudentGuideAuxUiState(
+                    isNpcSatelliteGuide = _isNpcSatelliteGuide.value,
+                    mediaSettings = _mediaSettings.value,
+                    requestedInitialBottomTab = _requestedInitialBottomTab.value,
+                ),
+        )
     val uiState: StateFlow<BaStudentGuideUiState> =
         combine(
             dataState,
             prefetchState,
             bgmFavoriteAudioUrls,
-            _isNpcSatelliteGuide,
-            _mediaSettings,
-        ) { dataState, prefetchState, bgmFavoriteAudioUrls, isNpcSatelliteGuide, mediaSettings ->
+            auxState,
+        ) { dataState, prefetchState, bgmFavoriteAudioUrls, auxState ->
             BaStudentGuideUiState(
                 dataState = dataState,
                 prefetchState = prefetchState,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
-                isNpcSatelliteGuide = isNpcSatelliteGuide,
-                mediaSettings = mediaSettings,
+                isNpcSatelliteGuide = auxState.isNpcSatelliteGuide,
+                mediaSettings = auxState.mediaSettings,
+                requestedInitialBottomTab = auxState.requestedInitialBottomTab,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -109,8 +133,9 @@ internal class BaStudentGuideViewModel(
                     dataState = _dataState.value,
                     prefetchState = _prefetchState.value,
                     bgmFavoriteAudioUrls = bgmFavoriteAudioUrls.value,
-                    isNpcSatelliteGuide = _isNpcSatelliteGuide.value,
-                    mediaSettings = _mediaSettings.value,
+                    isNpcSatelliteGuide = auxState.value.isNpcSatelliteGuide,
+                    mediaSettings = auxState.value.mediaSettings,
+                    requestedInitialBottomTab = auxState.value.requestedInitialBottomTab,
                 ),
         )
 
@@ -118,7 +143,10 @@ internal class BaStudentGuideViewModel(
         viewModelScope.launch {
             _mediaSettings.value = repository.loadMediaSettings()
         }
-        resolveNpcSatelliteGuideForCurrent()
+        viewModelScope.launch {
+            repository.hydrateBgmFavorites()
+        }
+        loadStoredCurrentGuide()
     }
 
     fun bind(
@@ -134,16 +162,6 @@ internal class BaStudentGuideViewModel(
                 loadFailedText = loadFailedText,
                 refreshFailedKeepCacheText = refreshFailedKeepCacheText,
             )
-        val latestStored = repository.loadCurrentUrl()
-        if (latestStored.isNotBlank() && latestStored != _dataState.value.sourceUrl) {
-            _dataState.value =
-                BaStudentGuideDataUiState(
-                    sourceUrl = latestStored,
-                    loading = true,
-                )
-            _isNpcSatelliteGuide.value = false
-            lastLoadedSourceUrl = ""
-        }
         val bindingChanged = binding != next
         binding = next
         val currentSourceUrl = _dataState.value.sourceUrl
@@ -162,9 +180,14 @@ internal class BaStudentGuideViewModel(
     fun openGuide(rawSourceUrl: String) {
         val target = normalizeGuideUrl(rawSourceUrl)
         if (target.isBlank() || target == _dataState.value.sourceUrl) return
-        repository.saveCurrentUrl(target)
+        currentUrlSaveJob?.cancel()
+        currentUrlSaveJob =
+            viewModelScope.launch {
+                repository.saveCurrentUrlAsync(target)
+            }
         lastLoadedSourceUrl = ""
         _isNpcSatelliteGuide.value = false
+        _requestedInitialBottomTab.value = repository.consumeInitialBottomTab(target)
         _dataState.value =
             BaStudentGuideDataUiState(
                 sourceUrl = target,
@@ -175,6 +198,44 @@ internal class BaStudentGuideViewModel(
             manualRefresh = false,
             allowInitialDelay = false,
         )
+    }
+
+    fun requestInitialBottomTabHandled() {
+        _requestedInitialBottomTab.value = null
+    }
+
+    private fun loadStoredCurrentGuide() {
+        currentUrlLoadJob?.cancel()
+        currentUrlLoadJob =
+            viewModelScope.launch {
+                val storedSourceUrl = repository.loadCurrentUrlAsync()
+                if (storedSourceUrl.isBlank()) {
+                    _dataState.update { state ->
+                        if (state.sourceUrl.isBlank()) state.copy(loading = false) else state
+                    }
+                    return@launch
+                }
+                if (_dataState.value.sourceUrl.isNotBlank()) return@launch
+                _requestedInitialBottomTab.value = repository.consumeInitialBottomTab(storedSourceUrl)
+                _dataState.value =
+                    BaStudentGuideDataUiState(
+                        sourceUrl = storedSourceUrl,
+                        loading = true,
+                    )
+                _isNpcSatelliteGuide.value = false
+                lastLoadedSourceUrl = ""
+                resolveNpcSatelliteGuideFor(
+                    sourceUrl = storedSourceUrl,
+                    info = null,
+                )
+                if (binding != null) {
+                    loadGuide(
+                        sourceUrl = storedSourceUrl,
+                        manualRefresh = false,
+                        allowInitialDelay = true,
+                    )
+                }
+            }
     }
 
     fun requestRefresh() {

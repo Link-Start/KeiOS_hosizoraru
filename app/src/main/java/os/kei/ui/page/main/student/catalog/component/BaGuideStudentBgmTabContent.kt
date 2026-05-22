@@ -33,10 +33,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
@@ -69,6 +71,7 @@ internal fun BaGuideStudentBgmTabContent(
     onRemoveBgmFavorite: (String) -> Unit,
     showNowPlayingOverlay: Boolean = true,
     onOpenGuide: (String) -> Unit,
+    onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -80,7 +83,11 @@ internal fun BaGuideStudentBgmTabContent(
     val lookupStates by lookupCoordinator.states.collectAsStateWithLifecycle()
     val tabState = rememberBaGuideStudentBgmTabStateHolder(searchQuery)
     val selectedAudioUrl = playbackState.selectedAudioUrl
-    val playbackRuntimeState by playbackCoordinator.runtimeStateFlow.collectAsStateWithLifecycle()
+    val selectedPlaybackIsPlaying by remember(playbackCoordinator) {
+        playbackCoordinator.runtimeStateFlow
+            .map { runtime -> runtime.isPlaying }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = playbackCoordinator.runtimeState.isPlaying)
     val queueMode = playbackState.queueMode
     val bgmMissingText = stringResource(R.string.ba_catalog_student_bgm_toast_missing)
     val bgmResolveFailedText = stringResource(R.string.ba_catalog_student_bgm_toast_resolve_failed)
@@ -146,6 +153,7 @@ internal fun BaGuideStudentBgmTabContent(
             playbackCoordinator = playbackCoordinator,
             setNowPlayingVisible = ::setNowPlayingVisible,
             onOpenGuide = onOpenGuide,
+            onRequestGuideDetailTab = onRequestGuideDetailTab,
             onToggleFavorite = onToggleBgmFavorite,
             onRemoveFavorite = onRemoveBgmFavorite,
             bgmMissingText = bgmMissingText,
@@ -179,21 +187,6 @@ internal fun BaGuideStudentBgmTabContent(
     }
     val selectedIndex = displayedPlayableFavorites.indexOfFirst { it.audioUrl == selectedAudioUrl }
     val selectedFavorite = displayedPlayableFavorites.getOrNull(selectedIndex)
-    val displayedPlaybackRuntimeState =
-        remember(playbackRuntimeState, tabState.seekPreviewProgress) {
-            val previewProgress = tabState.seekPreviewProgress
-            if (previewProgress != null && playbackRuntimeState.durationMs > 0L) {
-                val durationMs = playbackRuntimeState.durationMs
-                playbackRuntimeState.copy(
-                    positionMs =
-                        (durationMs * previewProgress.coerceIn(0f, 1f))
-                            .toLong()
-                            .coerceIn(0L, durationMs),
-                )
-            } else {
-                playbackRuntimeState
-            }
-        }
     val showNowPlaying = showNowPlayingOverlay && selectedFavorite != null && tabState.nowPlayingVisible
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomChromePadding =
@@ -331,7 +324,7 @@ internal fun BaGuideStudentBgmTabContent(
                         entry = entry,
                         lookupState = row.displayState,
                         selected = selected,
-                        playing = selected && playbackRuntimeState.isPlaying,
+                        playing = selected && selectedPlaybackIsPlaying,
                         favorite = row.favorite,
                         accent = accent,
                         onOpenGuide = { actions.openStudentGuide(entry) },
@@ -356,9 +349,10 @@ internal fun BaGuideStudentBgmTabContent(
                     ),
         ) {
             selectedFavorite?.let { favorite ->
-                BaGuideBgmMiniPlayer(
+                BaGuideStudentBgmNowPlayingMiniPlayer(
+                    playbackCoordinator = playbackCoordinator,
                     favorite = favorite,
-                    runtimeState = displayedPlaybackRuntimeState,
+                    seekPreviewProgress = tabState.seekPreviewProgress,
                     queueIndex = selectedIndex.coerceAtLeast(0),
                     queueSize = displayedPlayableFavorites.size,
                     queueMode = queueMode,
@@ -383,7 +377,7 @@ internal fun BaGuideStudentBgmTabContent(
                     onSeekFinished = {
                         val seekProgress =
                             tabState.seekPreviewProgress
-                                ?: displayedPlaybackRuntimeState.progress
+                                ?: playbackCoordinator.runtimeState.progress
                         playbackCoordinator.seek(favorite, seekProgress)
                         tabState.updateSeekPreviewProgress(null)
                     },

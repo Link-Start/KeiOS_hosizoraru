@@ -39,8 +39,19 @@ internal object BaCalendarPoolRepository {
 
     fun loadSettingsSnapshot() = BASettingsStore.loadSnapshot()
 
+    suspend fun loadSettingsSnapshotAsync() =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.loadSnapshot()
+        }
+
     fun saveServerIndex(index: Int) {
         BASettingsStore.saveServerIndex(index)
+    }
+
+    suspend fun saveServerIndexAsync(index: Int) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveServerIndex(index)
+        }
     }
 
     suspend fun syncCalendar(
@@ -76,10 +87,13 @@ internal object BaCalendarPoolRepository {
             )
         val now = plan.nowMs
         val cachedEntries =
-            if (hasCache) {
-                runCatching { decodeBaCalendarEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
-            } else {
-                emptyList()
+            withContext(AppDispatchers.baFetch) {
+                if (hasCache) {
+                    runCatching { decodeBaCalendarEntries(cacheSnapshot.raw, now) }
+                        .getOrElse { emptyList() }
+                } else {
+                    emptyList()
+                }
             }
         val cachedEntriesWithLocalImages =
             BaCalendarPoolCacheWriter.hydrateCalendarImages(
@@ -213,18 +227,21 @@ internal object BaCalendarPoolRepository {
                 refreshIntervalHours = calendarRefreshIntervalHours,
             )
         val now = plan.nowMs
-        val decodedCachedEntries =
-            if (hasCache) {
-                runCatching { decodeBaPoolEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
-            } else {
-                emptyList()
-            }
         val cachedEntries =
-            poolStudentGuideUrlRepository.resolve(
-                serverIndex = serverIndex,
-                entries = decodedCachedEntries,
-                allowCatalogNetwork = false,
-            )
+            withContext(AppDispatchers.baFetch) {
+                val decodedCachedEntries =
+                    if (hasCache) {
+                        runCatching { decodeBaPoolEntries(cacheSnapshot.raw, now) }
+                            .getOrElse { emptyList() }
+                    } else {
+                        emptyList()
+                    }
+                poolStudentGuideUrlRepository.resolve(
+                    serverIndex = serverIndex,
+                    entries = decodedCachedEntries,
+                    allowCatalogNetwork = false,
+                )
+            }
         val cachedEntriesWithLocalImages =
             BaCalendarPoolCacheWriter.hydratePoolImages(
                 context = context,

@@ -19,6 +19,7 @@ import os.kei.feature.github.domain.GitHubStarImportApkVerifier
 import os.kei.feature.github.domain.GitHubStarImportApplier
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
+import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
@@ -48,6 +49,7 @@ internal sealed interface StarImportLoadResult {
 
 internal class GitHubStarImportPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val snapshotLoader: () -> GitHubTrackSnapshot = GitHubTrackStore::loadSnapshot,
     private val discoverySourceFactory: (String) -> GitHubRepositoryDiscoverySource = { apiToken ->
         GitHubRepositoryDiscoveryRepository(apiToken = apiToken)
@@ -59,6 +61,64 @@ internal class GitHubStarImportPageRepository(
         )
     }
 ) {
+    suspend fun loadInitialState(): GitHubStarImportUiState {
+        return withContext(ioDispatcher) {
+            val snapshot = snapshotLoader()
+            val savedDraft = GitHubStarImportDraftStore.load()
+            GitHubStarImportUiState(
+                source = savedDraft.source,
+                apiTokenAvailable = snapshot.lookupConfig.apiToken.isNotBlank(),
+                usernameInput = savedDraft.usernameInput,
+                listUrlInput = savedDraft.listUrlInput,
+                filterInput = savedDraft.filterInput,
+                viewFilter = savedDraft.viewFilter,
+                qualityFilters = savedDraft.qualityFilters,
+                conflictStrategy = savedDraft.conflictStrategy,
+                selectedIds = savedDraft.selectedIds,
+            )
+        }
+    }
+
+    suspend fun loadApiTokenAvailable(): Boolean {
+        return withContext(ioDispatcher) {
+            snapshotLoader().lookupConfig.apiToken.isNotBlank()
+        }
+    }
+
+    suspend fun saveDraft(draft: GitHubStarImportDraft) {
+        withContext(ioDispatcher) {
+            GitHubStarImportDraftStore.save(draft)
+        }
+    }
+
+    suspend fun clearDraftSelection() {
+        withContext(ioDispatcher) {
+            GitHubStarImportDraftStore.clearSelection()
+        }
+    }
+
+    suspend fun buildCandidateListUiState(
+        candidates: List<GitHubRepositoryImportCandidate>,
+        filterInput: String,
+        viewFilter: StarImportViewFilter,
+        qualityFilters: Set<GitHubStarImportQuality>,
+        conflictStrategy: StarImportConflictStrategy,
+        selectedIds: Set<String>,
+        verificationStates: Map<String, StarImportApkVerificationUiState>,
+    ): StarImportCandidateListUiState {
+        return withContext(defaultDispatcher) {
+            buildStarImportCandidateListUiState(
+                candidates = candidates,
+                filterInput = filterInput,
+                viewFilter = viewFilter,
+                qualityFilters = qualityFilters,
+                conflictStrategy = conflictStrategy,
+                selectedIds = selectedIds,
+                verificationStates = verificationStates,
+            )
+        }
+    }
+
     suspend fun loadPreview(
         request: StarImportLoadRequest,
         onProgress: suspend (StarImportProgress) -> Unit = {}

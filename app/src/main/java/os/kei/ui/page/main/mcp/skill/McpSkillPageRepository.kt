@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.mcp.skill
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.mcp.skill.state.McpSkillPageContentState
@@ -19,7 +18,7 @@ internal data class McpSkillPageContentRequest(
 
 internal class McpSkillPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.mcpServer,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     suspend fun loadContent(
         manager: McpServerManager,

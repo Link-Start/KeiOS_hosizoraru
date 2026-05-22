@@ -3,7 +3,6 @@ package os.kei.ui.page.main.student.catalog
 import android.content.Context
 import androidx.annotation.StringRes
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -159,7 +158,7 @@ internal fun clearBaGuideCatalogCache(context: Context? = null) {
 internal suspend fun fetchBaGuideCatalogBundle(
     forceRefresh: Boolean = false,
     networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ): BaGuideCatalogBundle {
     if (!forceRefresh) {
         val cached =
@@ -249,7 +248,7 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     networkBatchSize: Int = BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE,
     requestThrottleMs: Long = BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS,
     networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     onBundleUpdated: (BaGuideCatalogBundle) -> Unit = {},
 ): BaGuideCatalogBundle {
     if (source.entriesByTab.values.all { it.isEmpty() }) return source

@@ -59,8 +59,9 @@ fun McpPage(
     val scope = rememberCoroutineScope()
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
-    val pageUiState by mcpPageViewModel.uiState.collectAsStateWithLifecycle()
-    val mcpToolBuckets by mcpPageViewModel.toolBuckets.collectAsStateWithLifecycle()
+    val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
+    val pageUiState = routeState.pageUiState
+    val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
     val unknownText = stringResource(R.string.common_unknown)
     val resourceCopiedText = stringResource(R.string.mcp_toast_resource_copied)

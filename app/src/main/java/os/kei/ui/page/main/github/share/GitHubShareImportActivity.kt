@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.WindowManager
-import os.kei.core.ext.showToast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,11 +22,11 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import os.kei.MainActivity
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
-import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
@@ -43,10 +42,13 @@ class GitHubShareImportActivity : ComponentActivity() {
     private var incomingGitHubShareToken by mutableIntStateOf(0)
     private var shareImportResumeToken by mutableIntStateOf(0)
     private var shareImportDisplayState by mutableStateOf(
-        GitHubShareImportActivityDisplayState.Hidden
+        GitHubShareImportActivityDisplayState.Hidden,
     )
     private var sendInstallInProgress by mutableStateOf(false)
     private var flowActivityBackNeedsInterception by mutableStateOf(false)
+    private var incomingShareResolveToken = 0
+    private var notificationPermissionRequestReady = false
+    private val shareImportRepository = GitHubShareImportWindowRepository()
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -69,27 +71,30 @@ class GitHubShareImportActivity : ComponentActivity() {
 
             val appThemeMode = UiPrefs.getAppThemeMode()
             val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-            val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-                transitionAnimationsEnabled = transitionAnimationsEnabled,
-                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
-            )
-            val colorSchemeMode = when (appThemeMode) {
-                AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
-                AppThemeMode.LIGHT -> ColorSchemeMode.Light
-                AppThemeMode.DARK -> ColorSchemeMode.Dark
-            }
+            val predictiveBackPolicy =
+                PredictiveBackOemCompat.currentPolicy(
+                    transitionAnimationsEnabled = transitionAnimationsEnabled,
+                    predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
+                )
+            val colorSchemeMode =
+                when (appThemeMode) {
+                    AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
+                    AppThemeMode.LIGHT -> ColorSchemeMode.Light
+                    AppThemeMode.DARK -> ColorSchemeMode.Dark
+                }
             val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
                 ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
                     CompositionLocalProvider(
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
+                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                     ) {
                         KeiOSActivityRootBackHandler(
-                            needsInterception = displayState == GitHubShareImportActivityDisplayState.SendingInstall ||
+                            needsInterception =
+                                displayState == GitHubShareImportActivityDisplayState.SendingInstall ||
                                     flowActivityBackNeedsInterception,
-                            onBack = { finishSafely() }
+                            onBack = { finishSafely() },
                         )
                         Box(modifier = Modifier.fillMaxSize()) {
                             when (displayState) {
@@ -117,13 +122,16 @@ class GitHubShareImportActivity : ComponentActivity() {
                                         },
                                         onMinimizeActiveFlow = { finishSafely() },
                                         onClosePendingArmedSheet = { finishSafely() },
-                                        onIdleWithNoPendingFlow = { finishSafely() }
+                                        onIdleWithNoPendingFlow = { finishSafely() },
                                     )
                                 }
 
                                 GitHubShareImportActivityDisplayState.Hidden,
                                 GitHubShareImportActivityDisplayState.SendingInstall,
-                                GitHubShareImportActivityDisplayState.Finish -> Unit
+                                GitHubShareImportActivityDisplayState.Finish,
+                                -> {
+                                    Unit
+                                }
                             }
                         }
                     }
@@ -142,12 +150,15 @@ class GitHubShareImportActivity : ComponentActivity() {
     }
 
     private fun consumeIncomingShareIntent(intent: Intent?) {
+        incomingShareResolveToken += 1
+        notificationPermissionRequestReady = false
         if (intent?.action == ACTION_RESUME_SHARE_IMPORT) {
             sendInstallInProgress = false
             flowActivityBackNeedsInterception = false
             incomingGitHubShareText = null
             applyShareImportDisplayState(GitHubShareImportActivityDisplayState.Sheet)
             shareImportResumeToken += 1
+            notificationPermissionRequestReady = true
             return
         }
         if (intent?.action == ACTION_SEND_INSTALL_SHARE_IMPORT) {
@@ -164,20 +175,43 @@ class GitHubShareImportActivity : ComponentActivity() {
             finishSafely()
             return
         }
-        val sharedText = intent?.getStringExtra(Intent.EXTRA_TEXT)
-            ?.trim()
-            ?.takeIf { it.isNotBlank() }
-            ?: run {
-                applyShareImportDisplayState(GitHubShareImportActivityDisplayState.Finish)
-                finishSafely()
-                return
-            }
-        val lookupConfig = GitHubTrackStore.loadLookupConfig()
-        val displayState = GitHubShareImportActivityLaunchPolicy.forIncomingShare(
-            sharedText = sharedText,
-            lookupConfig = lookupConfig
-        )
+        val sharedText =
+            intent
+                ?.getStringExtra(Intent.EXTRA_TEXT)
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: run {
+                    applyShareImportDisplayState(GitHubShareImportActivityDisplayState.Finish)
+                    finishSafely()
+                    return
+                }
+        val resolveToken = incomingShareResolveToken
+        incomingGitHubShareText = null
+        applyShareImportDisplayState(GitHubShareImportActivityDisplayState.Hidden)
+        lifecycleScope.launch {
+            val lookupConfig = shareImportRepository.loadLookupConfig()
+            if (resolveToken != incomingShareResolveToken || isFinishing) return@launch
+            val displayState =
+                GitHubShareImportActivityLaunchPolicy.forIncomingShare(
+                    sharedText = sharedText,
+                    lookupConfig = lookupConfig,
+                )
+            applyResolvedIncomingShare(
+                sharedText = sharedText,
+                lookupConfig = lookupConfig,
+                displayState = displayState,
+            )
+        }
+    }
+
+    private fun applyResolvedIncomingShare(
+        sharedText: String,
+        lookupConfig: GitHubLookupConfig,
+        displayState: GitHubShareImportActivityDisplayState,
+    ) {
         applyShareImportDisplayState(displayState)
+        notificationPermissionRequestReady = displayState != GitHubShareImportActivityDisplayState.Finish
+        requestNotificationPermissionIfNeededForActiveFlow()
         when (displayState) {
             GitHubShareImportActivityDisplayState.Finish -> {
                 finishSafely()
@@ -187,7 +221,7 @@ class GitHubShareImportActivity : ComponentActivity() {
                 incomingGitHubShareText = null
                 startIncomingShareInBackground(
                     sharedText = sharedText,
-                    lookupConfig = lookupConfig
+                    lookupConfig = lookupConfig,
                 )
             }
 
@@ -196,19 +230,21 @@ class GitHubShareImportActivity : ComponentActivity() {
                 incomingGitHubShareToken += 1
             }
 
-            GitHubShareImportActivityDisplayState.SendingInstall -> Unit
+            GitHubShareImportActivityDisplayState.SendingInstall -> {
+                Unit
+            }
         }
     }
 
     private fun startIncomingShareInBackground(
         sharedText: String,
-        lookupConfig: GitHubLookupConfig
+        lookupConfig: GitHubLookupConfig,
     ) {
         lifecycleScope.launch {
             GitHubShareImportFlowCoordinator.startIncomingShare(
                 context = this@GitHubShareImportActivity,
                 sharedText = sharedText,
-                lookupConfig = lookupConfig
+                lookupConfig = lookupConfig,
             )
             if (shareImportDisplayState == GitHubShareImportActivityDisplayState.Hidden) {
                 finishSafely()
@@ -230,17 +266,18 @@ class GitHubShareImportActivity : ComponentActivity() {
     }
 
     private fun openGitHubPage(): Boolean {
-        val targetIntent = Intent(this, MainActivity::class.java).apply {
-            putExtra(
-                MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
-                MainActivity.TARGET_BOTTOM_PAGE_GITHUB
-            )
-            addFlags(
-                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_ACTIVITY_NEW_TASK
-            )
-        }
+        val targetIntent =
+            Intent(this, MainActivity::class.java).apply {
+                putExtra(
+                    MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
+                    MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+                )
+                addFlags(
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                        Intent.FLAG_ACTIVITY_NEW_TASK,
+                )
+            }
         return runCatching {
             startActivity(targetIntent)
             true
@@ -250,9 +287,9 @@ class GitHubShareImportActivity : ComponentActivity() {
                     Intent(this, MainActivity::class.java).apply {
                         putExtra(
                             MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
-                            MainActivity.TARGET_BOTTOM_PAGE_GITHUB
+                            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
                         )
-                    }
+                    },
                 )
                 true
             }.getOrDefault(false)
@@ -274,12 +311,14 @@ class GitHubShareImportActivity : ComponentActivity() {
 
     private fun clearShareImportWindowDim() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        window.attributes = window.attributes.apply {
-            dimAmount = 0f
-        }
+        window.attributes =
+            window.attributes.apply {
+                dimAmount = 0f
+            }
     }
 
     private fun requestNotificationPermissionIfNeededForActiveFlow() {
+        if (!notificationPermissionRequestReady) return
         if (sendInstallInProgress) return
         if (
             shareImportDisplayState == GitHubShareImportActivityDisplayState.SendingInstall ||

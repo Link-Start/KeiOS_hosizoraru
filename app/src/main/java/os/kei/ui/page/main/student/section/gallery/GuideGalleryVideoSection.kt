@@ -22,10 +22,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.flow.MutableStateFlow
 import os.kei.R
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.student.BaGuideGalleryItem
+import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideVideoControlAction
 import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
 import os.kei.ui.page.main.student.guideLocalizedLabel
@@ -208,7 +208,7 @@ internal fun GuideInlineVideoPlayer(
     controlActionToken: Int = 0,
     onIsPlayingChange: (Boolean) -> Unit = {},
     onBufferingChange: (Boolean) -> Unit = {},
-    previewProgressState: MutableStateFlow<Float>? = null,
+    previewProgressState: GuideMediaProgressState? = null,
     onPreviewLoadingChanged: ((Boolean) -> Unit)? = null,
     showCollapsedPreview: Boolean = true
 ) {
@@ -242,7 +242,7 @@ internal fun GuideInlineVideoPlayer(
             onIsPlayingChange
         ) {
             if (!showCollapsedPreview) {
-                previewProgressState?.value = 1f
+                previewProgressState?.set(1f)
                 onPreviewLoadingChanged?.invoke(false)
             }
             onBufferingChange(false)

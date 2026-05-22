@@ -147,6 +147,7 @@ internal fun GitHubMainContent(
                         ) {
                             GitHubPendingShareImportCard(
                                 pending = shareImport.pendingTrack,
+                                nowMillis = shareImport.pendingNowMillis,
                                 repoOverlapCount = shareImport.pendingRepoOverlapCount,
                                 onOpen = actions.onOpenShareImportFlow,
                                 onCancel = actions.onCancelPendingShareImportTrack,

@@ -332,6 +332,7 @@ fun GitHubPage(
                     pendingResult = state.pendingShareImportResult,
                     showPendingCard = contentDerivedState.showPendingShareImportCard,
                     pendingRepoOverlapCount = contentDerivedState.pendingShareImportRepoOverlapCount,
+                    pendingNowMillis = contentDerivedState.pendingShareImportNowMillis,
                 ),
             actions =
                 GitHubMainContentActions(
@@ -404,11 +405,13 @@ fun GitHubPage(
             installedOnlineShareTargets = installedOnlineShareTargets,
             checkLogicDownloaderOptions = checkLogicDownloaderOptions,
             appPickerDerivedState = appPickerDerivedState,
+            appPickerPreferences = pageUiState.appPickerPreferences,
             hasKeiOsSelfTrack = contentDerivedState.hasKeiOsSelfTrack,
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
             onRequestAppPickerState = githubPageViewModel::requestAppPickerState,
+            onAppPickerPreferencesChange = githubPageViewModel::saveAppPickerPreferences,
             onConfirmTrackImport = transferCallbacks.onConfirmTrackImport,
         )
     }

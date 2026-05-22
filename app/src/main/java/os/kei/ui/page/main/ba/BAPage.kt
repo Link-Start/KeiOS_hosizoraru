@@ -14,6 +14,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -25,6 +26,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -32,6 +34,7 @@ import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
@@ -60,6 +63,7 @@ fun BAPage(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val pageScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdropEffectsEnabled =
@@ -80,29 +84,38 @@ fun BAPage(
             stringResource(R.string.ba_server_jp),
         )
     val cafeLevelOptions = remember { (1..10).toList() }
+    val officeViewModel: BaOfficeViewModel = viewModel()
 
     // Reset once per cold process start so app relaunch always lands at BA top.
     LaunchedEffect(Unit) {
         if (!BASessionState.didResetScrollOnThisProcess) {
-            BaOfficeRepository.clearListScrollState()
+            officeViewModel.clearListScrollState()
             listState.scrollToItem(0)
             BASessionState.didResetScrollOnThisProcess = true
         }
     }
 
-    val officeViewModel: BaOfficeViewModel = viewModel()
-    val initialSnapshot = officeViewModel.initialSnapshot
+    val defaultBaSnapshot = remember { BaPageSnapshot() }
+    val officeSnapshotUiState by officeViewModel.snapshotUiState.collectAsStateWithLifecycle()
+    val initialSnapshot = officeSnapshotUiState.snapshot
     val office = officeViewModel.office
-    val ui = rememberBaPageUiController(initialSnapshot)
+    val ui = rememberBaPageUiController(defaultBaSnapshot)
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
-    val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
-    val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
+    val calendarPoolRouteState by calendarPoolViewModel.routeState.collectAsStateWithLifecycle()
+    val calendarUiState = calendarPoolRouteState.calendarUiState
+    val poolUiState = calendarPoolRouteState.poolUiState
     val baRouteState =
         ui.routeState(
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
         )
     val baClockState = ui.clockState()
+
+    LaunchedEffect(officeSnapshotUiState.loaded, initialSnapshot) {
+        if (officeSnapshotUiState.loaded && ui.matchesSnapshot(defaultBaSnapshot)) {
+            ui.applySnapshot(initialSnapshot)
+        }
+    }
 
     val officeName =
         when (baRouteState.serverIndex) {
@@ -133,7 +146,8 @@ fun BAPage(
             showCalendarPoolImages = baRouteState.showCalendarPoolImages,
             calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
         )
-    val savedNotificationSettingsSheetState = buildSavedBaNotificationSettingsSheetState(office)
+    val savedNotificationSettingsSheetState =
+        buildBaNotificationSettingsSheetState(ui.savedNotificationDraftState())
     val pageContentState =
         buildBaPageContentState(
             isPageActive = runtime.isPageActive,
@@ -163,7 +177,7 @@ fun BAPage(
     }
 
     fun closeNotificationSettingsSheet() {
-        ui.closeNotificationSettingsSheet(office)
+        ui.closeNotificationSettingsSheet()
     }
 
     fun openDebugSheet() {
@@ -183,22 +197,24 @@ fun BAPage(
     }
 
     fun refreshAllBaData() {
-        office.applyRuntimeTickAndPersist()
+        runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         refreshCalendar(force = true)
         refreshPool(force = true)
+    }
+
+    LaunchedEffect(officeViewModel) {
+        officeViewModel.serverRestoreEvents.collect { event ->
+            ui.serverIndex = event.serverIndex
+            refreshCalendar(force = true)
+            refreshPool(force = true)
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    val savedServerIndex = BaOfficeRepository.loadServerIndex()
-                    if (savedServerIndex != ui.serverIndex) {
-                        ui.serverIndex = savedServerIndex
-                        office.loadIdForServer(savedServerIndex)
-                        refreshCalendar(force = true)
-                        refreshPool(force = true)
-                    }
+                    officeViewModel.restoreServerFromStore(ui.serverIndex)
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -212,6 +228,8 @@ fun BAPage(
             context = context,
             office = office,
             ui = ui,
+            scope = pageScope,
+            runtimePersistenceCoordinator = runtimePersistenceCoordinator,
             settingsSheetState = settingsSheetState,
             onRefreshCalendar = ::refreshCalendar,
             onRefreshPool = ::refreshPool,
@@ -223,6 +241,8 @@ fun BAPage(
             context = context,
             office = office,
             ui = ui,
+            scope = pageScope,
+            runtimePersistenceCoordinator = runtimePersistenceCoordinator,
             notificationSettingsSheetState = notificationSettingsSheetState,
         )
     }
@@ -232,6 +252,7 @@ fun BAPage(
             context = context,
             office = office,
             ui = ui,
+            scope = pageScope,
             onRefreshCalendar = { refreshCalendar(force = true) },
             onRefreshPool = { refreshPool(force = true) },
             onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
@@ -395,6 +416,7 @@ fun BAPage(
             onCalendarRefreshIntervalSelected = { hours ->
                 applyBaCalendarRefreshInterval(
                     ui = ui,
+                    scope = pageScope,
                     hours = hours,
                     calendarLastSyncMs = baRouteState.calendarUiState.lastSyncMs,
                     onRefreshCalendar = { refreshCalendar(force = true) },
@@ -446,7 +468,11 @@ fun BAPage(
                 office.sendApTestNotification(context = context, showToast = true)
             },
             onSendCafeApTestNotification = {
-                office.sendCafeApTestNotification(context = context, showToast = true)
+                office.sendCafeApTestNotification(
+                    context = context,
+                    showToast = true,
+                    onRuntimeUpdate = runtimePersistenceCoordinator::submit,
+                )
             },
             onSendCafeVisitTestNotification = {
                 office.sendCafeVisitTestNotification(
@@ -567,7 +593,9 @@ fun BAPage(
             },
             useRealCalendarPoolData = ui.debugUseRealCalendarPoolData,
             onUseRealCalendarPoolDataChange = { ui.debugUseRealCalendarPoolData = it },
-            onTestCafePlus3Hours = { office.testCafePlus3Hours(context) },
+            onTestCafePlus3Hours = {
+                runtimePersistenceCoordinator.submit(office.testCafePlus3Hours(context))
+            },
             onDismissRequest = ::closeDebugSheet,
         )
     }

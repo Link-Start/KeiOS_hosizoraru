@@ -15,6 +15,7 @@ internal data class BaRuntimePersistenceUpdate(
     val apSyncMs: Long? = null,
     val cafeStoredAp: Double? = null,
     val cafeLastHourMs: Long? = null,
+    val cafeApLastNotifiedLevel: Int? = null,
     val apLastNotifiedLevel: Int? = null,
     val notifyHomeOverview: Boolean = false,
 ) {
@@ -25,6 +26,7 @@ internal data class BaRuntimePersistenceUpdate(
             apSyncMs = newer.apSyncMs ?: apSyncMs,
             cafeStoredAp = newer.cafeStoredAp ?: cafeStoredAp,
             cafeLastHourMs = newer.cafeLastHourMs ?: cafeLastHourMs,
+            cafeApLastNotifiedLevel = newer.cafeApLastNotifiedLevel ?: cafeApLastNotifiedLevel,
             apLastNotifiedLevel = newer.apLastNotifiedLevel ?: apLastNotifiedLevel,
             notifyHomeOverview = notifyHomeOverview || newer.notifyHomeOverview,
         )
@@ -46,7 +48,14 @@ internal data class BaRuntimePersistenceUpdate(
                 notifyHomeOverview = notifyHomeOverview,
             )
         }
+        cafeApLastNotifiedLevel?.let(BaOfficeRepository::saveCafeApLastNotifiedLevel)
         apLastNotifiedLevel?.let(BaOfficeRepository::saveApLastNotifiedLevel)
+    }
+
+    suspend fun persistAsync(ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch) {
+        withContext(ioDispatcher) {
+            persist()
+        }
     }
 }
 

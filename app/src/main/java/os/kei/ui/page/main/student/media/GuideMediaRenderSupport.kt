@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,7 +30,18 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+
+@Stable
+internal class GuideMediaProgressState(initialProgress: Float) {
+    private val mutableProgress = MutableStateFlow(initialProgress.coerceIn(0f, 1f))
+    val progress: StateFlow<Float> = mutableProgress
+
+    fun set(value: Float) {
+        mutableProgress.value = value.coerceIn(0f, 1f)
+    }
+}
 
 internal fun normalizeGuideMediaSource(raw: String): String {
     val value = raw.trim()
@@ -66,7 +78,7 @@ private class GuideMediaProgressThrottler(
     private var lastProgress: Float = -1f
 
     fun update(
-        progressState: MutableStateFlow<Float>?,
+        progressState: GuideMediaProgressState?,
         downloadedBytes: Long,
         totalBytes: Long
     ) {
@@ -81,14 +93,14 @@ private class GuideMediaProgressThrottler(
         if (!shouldEmit) return
         lastProgress = progress
         lastEmitAtMs = now
-        progressState.value = progress
+        progressState.set(progress)
     }
 
-    fun finish(progressState: MutableStateFlow<Float>?) {
+    fun finish(progressState: GuideMediaProgressState?) {
         progressState ?: return
         lastProgress = 1f
         lastEmitAtMs = SystemClock.elapsedRealtime()
-        progressState.value = 1f
+        progressState.set(1f)
     }
 }
 
@@ -150,18 +162,18 @@ fun GuideRemoteImage(
 }
 
 @Composable
-fun GuideRemoteImageAdaptive(
+internal fun GuideRemoteImageAdaptive(
     imageUrl: String,
     modifier: Modifier = Modifier,
     maxDecodeDimension: Int = 2048,
-    progressState: MutableStateFlow<Float>? = null,
+    progressState: GuideMediaProgressState? = null,
     onLoadingChanged: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) {
         LaunchedEffect(progressState, onLoadingChanged) {
-            progressState?.value = 1f
+            progressState?.set(1f)
             onLoadingChanged?.invoke(false)
         }
         return
@@ -178,7 +190,7 @@ fun GuideRemoteImageAdaptive(
                 value = target
                 return@produceState
             }
-            progressState?.value = 0f
+            progressState?.set(0f)
             onLoadingChanged?.invoke(true)
             val warmed = GameKeeMediaImageLoader.resolveInlineGifTarget(context, target)
             value = warmed.ifBlank { target }
@@ -191,15 +203,15 @@ fun GuideRemoteImageAdaptive(
             contentDescription = null,
             contentScale = ContentScale.Fit,
             onLoading = {
-                progressState?.value = 0.24f
+                progressState?.set(0.24f)
                 onLoadingChanged?.invoke(true)
             },
             onSuccess = {
-                progressState?.value = 1f
+                progressState?.set(1f)
                 onLoadingChanged?.invoke(false)
             },
             onError = {
-                progressState?.value = 1f
+                progressState?.set(1f)
                 onLoadingChanged?.invoke(false)
             },
             modifier = modifier
@@ -212,7 +224,7 @@ fun GuideRemoteImageAdaptive(
     var retainedBitmap by remember(target) { mutableStateOf<Bitmap?>(null) }
     val progressThrottler = remember(target, progressState) { GuideMediaProgressThrottler() }
     val bitmap by produceState<Bitmap?>(initialValue = retainedBitmap, target) {
-        progressState?.value = 0f
+        progressState?.set(0f)
         onLoadingChanged?.invoke(true)
         val loadedBitmap = runCatching {
             GameKeeMediaImageLoader.loadGuideBitmap(

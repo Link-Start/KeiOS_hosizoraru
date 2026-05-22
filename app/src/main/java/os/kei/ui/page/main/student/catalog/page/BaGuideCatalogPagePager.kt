@@ -187,6 +187,7 @@ private fun BaGuideCatalogPageTabContent(
                 onRemoveBgmFavorite = pageActions.onRemoveBgmFavoriteWithToast,
                 showNowPlayingOverlay = false,
                 onOpenGuide = onOpenGuide,
+                onRequestGuideDetailTab = pageActions.onRequestGuideDetailTab,
             )
         }
 
@@ -209,6 +210,7 @@ private fun BaGuideCatalogPageTabContent(
                 onRequestOfflineCache = pageActions.onRequestFavoriteBgmOfflineCache,
                 onToggleFavoriteCache = pageActions.onToggleFavoriteBgmOfflineCache,
                 onOpenGuide = onOpenGuide,
+                onRequestGuideDetailTab = pageActions.onRequestGuideDetailTab,
             )
         }
     }

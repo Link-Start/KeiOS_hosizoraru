@@ -2,8 +2,8 @@ package os.kei.ui.page.main.github.page
 
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.isDirectApkTrack
@@ -37,7 +37,7 @@ internal data class GitHubPageContentInput(
 )
 
 internal class GitHubPageContentStateDeriver(
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val dispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     suspend fun build(input: GitHubPageContentInput): GitHubPageContentDerivedState {
         return withContext(dispatcher) {
@@ -198,6 +198,7 @@ internal class GitHubPageContentStateDeriver(
                 appLastUpdatedAtByTrackId = buildAppLastUpdatedAtByTrackId(input),
                 pendingShareImportRepoOverlapCount = pendingShareImportRepoOverlapCount,
                 showPendingShareImportCard = showPendingShareImportCard,
+                pendingShareImportNowMillis = input.nowMillis,
                 trackedItemIdKey = input.trackedItems.joinToString(separator = "\n") { item -> item.id },
                 sortedTrackIds = sortedTrackIds,
                 hasKeiOsSelfTrack = input.trackedItems.any { item ->

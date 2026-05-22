@@ -93,6 +93,7 @@ internal data class GitHubMainContentShareImport(
     val pendingResult: GitHubShareImportResult?,
     val showPendingCard: Boolean,
     val pendingRepoOverlapCount: Int,
+    val pendingNowMillis: Long,
 )
 
 internal data class GitHubMainContentActions(

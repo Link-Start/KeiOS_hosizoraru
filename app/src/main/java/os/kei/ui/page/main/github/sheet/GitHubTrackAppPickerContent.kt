@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
-import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubAppCandidateRow
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
@@ -239,6 +238,7 @@ internal fun GitHubTrackAppPickerContent(
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
     derivedState: GitHubTrackAppPickerDerivedState,
+    appPickerPreferences: GitHubAppPickerPreferences,
     trackedPackageNames: Set<String>,
     editingPackageName: String,
     appListRefreshing: Boolean,
@@ -249,28 +249,28 @@ internal fun GitHubTrackAppPickerContent(
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
     onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
+    onAppPickerPreferencesChange: (GitHubAppPickerPreferences) -> Unit,
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit
 ) {
     val listMaxHeight = (appWindowHeightDp() * 0.60f).coerceIn(340.dp, 680.dp)
-    val savedPreferences = remember { GitHubTrackStore.loadAppPickerPreferences() }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    var includeUserApps by remember {
-        mutableStateOf(savedPreferences.includeUserApps)
+    var includeUserApps by remember(appPickerPreferences) {
+        mutableStateOf(appPickerPreferences.includeUserApps)
     }
-    var includeSystemApps by remember {
-        mutableStateOf(savedPreferences.includeSystemApps)
+    var includeSystemApps by remember(appPickerPreferences) {
+        mutableStateOf(appPickerPreferences.includeSystemApps)
     }
-    var includeTrackedApps by remember {
-        mutableStateOf(savedPreferences.includeTrackedApps)
+    var includeTrackedApps by remember(appPickerPreferences) {
+        mutableStateOf(appPickerPreferences.includeTrackedApps)
     }
-    var sortMode by remember {
-        mutableStateOf(GitHubTrackAppPickerSortMode.fromStorageId(savedPreferences.sortModeId))
+    var sortMode by remember(appPickerPreferences) {
+        mutableStateOf(GitHubTrackAppPickerSortMode.fromStorageId(appPickerPreferences.sortModeId))
     }
-    var sortDirection by remember {
+    var sortDirection by remember(appPickerPreferences) {
         mutableStateOf(
-            GitHubTrackAppPickerSortDirection.fromStorageId(savedPreferences.sortDirectionId)
+            GitHubTrackAppPickerSortDirection.fromStorageId(appPickerPreferences.sortDirectionId)
         )
     }
     var initialAppFocusApplied by remember(selectedApp?.packageName) {
@@ -320,7 +320,7 @@ internal fun GitHubTrackAppPickerContent(
     }
 
     fun saveAppPickerPreferences() {
-        GitHubTrackStore.saveAppPickerPreferences(
+        onAppPickerPreferencesChange(
             GitHubAppPickerPreferences(
                 includeUserApps = includeUserApps,
                 includeSystemApps = includeSystemApps,

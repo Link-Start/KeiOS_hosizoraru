@@ -18,7 +18,6 @@ import os.kei.ui.page.main.os.ensureOsSectionLoaded
 import os.kei.ui.page.main.os.refreshAllOsSections
 import os.kei.ui.page.main.os.runOsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.state.PageActionState
 
@@ -133,7 +132,7 @@ internal fun createOsPageActionState(
             shellRunNoOutputText = shellRunNoOutputText,
             runningCardIdsProvider = runningShellCommandCardIdsProvider,
             updateRunningCardIds = onRunningShellCommandCardIdsChange,
-            onCardsReload = { updateShellCommandCards(OsShellCommandCardStore.loadCards()) },
+            onCardsReload = updateShellCommandCards,
             runFailedMessage = { throwable ->
                 context.getString(
                     R.string.os_shell_card_toast_run_failed,

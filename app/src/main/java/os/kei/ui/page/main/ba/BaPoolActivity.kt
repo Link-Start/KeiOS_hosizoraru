@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -43,6 +44,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
@@ -140,8 +143,10 @@ private fun BaPoolPage(
     )
 
     val context = LocalContext.current
-    val snapshot = remember { BaCalendarPoolRepository.loadSettingsSnapshot() }
+    val pageScope = rememberCoroutineScope()
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
+    val settingsUiState by calendarPoolViewModel.settingsUiState.collectAsStateWithLifecycle()
+    val snapshot = settingsUiState.snapshot
     val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
     val serverOptions =
         listOf(
@@ -150,10 +155,11 @@ private fun BaPoolPage(
             stringResource(R.string.ba_server_jp),
         )
     var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
+    var serverIndexTouched by remember { mutableStateOf(false) }
     var showServerPopup by remember { mutableStateOf(false) }
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var reloadSignal by remember { mutableIntStateOf(0) }
-    var hydrationReady by remember { mutableStateOf(false) }
+    val hydrationReady = settingsUiState.loaded
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
@@ -179,8 +185,10 @@ private fun BaPoolPage(
         }
     val countdownBlue = AppStatusColors.Refreshing
 
-    LaunchedEffect(Unit) {
-        hydrationReady = true
+    LaunchedEffect(settingsUiState.loaded, snapshot.serverIndex, serverIndexTouched) {
+        if (settingsUiState.loaded && !serverIndexTouched) {
+            serverIndex = snapshot.serverIndex
+        }
     }
 
     LaunchedEffect(
@@ -295,13 +303,15 @@ private fun BaPoolPage(
                 onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
+                    serverIndexTouched = true
                     serverIndex = normalized
-                    BaCalendarPoolRepository.saveServerIndex(normalized)
+                    calendarPoolViewModel.saveServerIndex(normalized)
                     showServerPopup = false
                 },
                 onOpenPoolStudentGuide = { url ->
                     openBaPoolGuideLink(
                         context = context,
+                        scope = pageScope,
                         rawUrl = url,
                         onOpenGuide = onOpenGuide,
                     )
@@ -446,6 +456,7 @@ private val baGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$""", RegexO
 
 private fun openBaPoolGuideLink(
     context: Context,
+    scope: CoroutineScope,
     rawUrl: String,
     onOpenGuide: () -> Unit,
 ) {
@@ -460,8 +471,10 @@ private fun openBaPoolGuideLink(
     if (hostAccepted && baGuideDetailPathRegex.matches(uri?.path.orEmpty())) {
         val contentId = extractGuideContentIdFromUrl(normalized)
         if (contentId != null && contentId > 0L) {
-            BaStudentGuideRepository().saveCurrentUrl("https://www.gamekee.com/ba/tj/$contentId.html")
-            onOpenGuide()
+            scope.launch {
+                BaStudentGuideRepository().saveCurrentUrlAsync("https://www.gamekee.com/ba/tj/$contentId.html")
+                onOpenGuide()
+            }
             return
         }
         context.showToast(R.string.main_toast_pool_guide_missing)

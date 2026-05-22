@@ -3,12 +3,14 @@ package os.kei.ui.page.main.mcp
 import android.content.ContentResolver
 import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerUiState
+import os.kei.ui.page.main.mcp.state.McpToolBucketInput
+import os.kei.ui.page.main.mcp.state.McpToolBuckets
+import os.kei.ui.page.main.mcp.state.deriveMcpToolBuckets
 import os.kei.ui.page.main.mcp.util.buildMcpLogsExportJson
-import os.kei.core.concurrency.AppDispatchers
 
 internal data class McpServiceDraft(
     val serverName: String,
@@ -31,7 +33,7 @@ internal sealed interface McpSaveConfigResult {
 
 internal class McpPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.mcpServer,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     suspend fun toggleServer(
         manager: McpServerManager,
@@ -99,6 +101,12 @@ internal class McpPageRepository(
     suspend fun clearLogs(manager: McpServerManager) {
         withContext(defaultDispatcher) {
             manager.clearLogs()
+        }
+    }
+
+    suspend fun deriveToolBuckets(input: McpToolBucketInput): McpToolBuckets {
+        return withContext(defaultDispatcher) {
+            deriveMcpToolBuckets(input)
         }
     }
 

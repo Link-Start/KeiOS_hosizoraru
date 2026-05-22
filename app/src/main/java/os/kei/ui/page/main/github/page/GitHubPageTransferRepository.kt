@@ -3,7 +3,6 @@ package os.kei.ui.page.main.github.page
 import android.content.ContentResolver
 import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
@@ -14,7 +13,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 
 internal class GitHubPageTransferRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     suspend fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload {
         return withContext(defaultDispatcher) {

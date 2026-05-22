@@ -2,27 +2,29 @@ package os.kei.ui.page.main.mcp
 
 import android.content.ContentResolver
 import android.net.Uri
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
-import os.kei.ui.page.main.mcp.state.deriveMcpToolBuckets
 
 internal data class McpLogsExportRequest(
     val generatedAt: String,
     val fileName: String,
 )
 
+@Immutable
 internal data class McpPageUiState(
     val portText: String = "38888",
     val allowExternal: Boolean = false,
@@ -53,6 +55,12 @@ internal data class McpPageUiState(
             )
 }
 
+@Immutable
+internal data class McpPageRouteState(
+    val pageUiState: McpPageUiState = McpPageUiState(),
+    val toolBuckets: McpToolBuckets = McpToolBuckets.Empty,
+)
+
 internal class McpPageViewModel : ViewModel() {
     private val repository = McpPageRepository()
     private val _uiState = MutableStateFlow(McpPageUiState())
@@ -61,6 +69,18 @@ internal class McpPageViewModel : ViewModel() {
     val toolBuckets: StateFlow<McpToolBuckets> = _toolBuckets.asStateFlow()
     private var toolBucketsInput: McpToolBucketInput? = null
     private var toolBucketsJob: Job? = null
+
+    val routeState: StateFlow<McpPageRouteState> =
+        combine(uiState, toolBuckets) { pageState, buckets ->
+            McpPageRouteState(
+                pageUiState = pageState,
+                toolBuckets = buckets,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = McpPageRouteState(),
+        )
 
     fun syncServiceDraft(
         serverState: McpServerUiState,
@@ -138,10 +158,7 @@ internal class McpPageViewModel : ViewModel() {
         toolBucketsJob?.cancel()
         toolBucketsJob =
             viewModelScope.launch {
-                val derived =
-                    withContext(Dispatchers.Default) {
-                        deriveMcpToolBuckets(input)
-                    }
+                val derived = repository.deriveToolBuckets(input)
                 if (toolBucketsInput == input) {
                     _toolBuckets.value = derived
                 }

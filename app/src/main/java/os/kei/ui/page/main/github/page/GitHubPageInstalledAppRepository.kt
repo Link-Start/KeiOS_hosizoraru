@@ -3,7 +3,6 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.AppIconCache
@@ -16,7 +15,7 @@ import os.kei.ui.page.main.github.query.queryOnlineShareTargetOptions
 
 internal class GitHubPageInstalledAppRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     suspend fun queryOnlineShareTargets(
         context: Context,

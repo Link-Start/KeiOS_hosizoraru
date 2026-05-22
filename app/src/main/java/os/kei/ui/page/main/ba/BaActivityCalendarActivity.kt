@@ -97,8 +97,9 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
     )
 
     val context = LocalContext.current
-    val snapshot = remember { BaCalendarPoolRepository.loadSettingsSnapshot() }
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
+    val settingsUiState by calendarPoolViewModel.settingsUiState.collectAsStateWithLifecycle()
+    val snapshot = settingsUiState.snapshot
     val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
     val serverOptions =
         listOf(
@@ -107,10 +108,11 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
             stringResource(R.string.ba_server_jp),
         )
     var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
+    var serverIndexTouched by remember { mutableStateOf(false) }
     var showServerPopup by remember { mutableStateOf(false) }
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var reloadSignal by remember { mutableIntStateOf(0) }
-    var hydrationReady by remember { mutableStateOf(false) }
+    val hydrationReady = settingsUiState.loaded
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
@@ -136,8 +138,10 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
         }
     val countdownBlue = AppStatusColors.Refreshing
 
-    LaunchedEffect(Unit) {
-        hydrationReady = true
+    LaunchedEffect(settingsUiState.loaded, snapshot.serverIndex, serverIndexTouched) {
+        if (settingsUiState.loaded && !serverIndexTouched) {
+            serverIndex = snapshot.serverIndex
+        }
     }
 
     LaunchedEffect(serverIndex, reloadSignal, snapshot.calendarRefreshIntervalHours, hydrationReady) {
@@ -247,8 +251,9 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
                 onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
+                    serverIndexTouched = true
                     serverIndex = normalized
-                    BaCalendarPoolRepository.saveServerIndex(normalized)
+                    calendarPoolViewModel.saveServerIndex(normalized)
                     showServerPopup = false
                 },
                 onOpenCalendarLink = { url ->

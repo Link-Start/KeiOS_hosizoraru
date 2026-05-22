@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.ba
 
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
@@ -57,15 +59,30 @@ internal object BaSettingsPersistenceRepository {
         return hasAnyImageInEncodedCache(raw)
     }
 
+    suspend fun hasAnyImageInCalendarCacheAsync(serverIdx: Int): Boolean =
+        withContext(AppDispatchers.baFetch) {
+            hasAnyImageInCalendarCache(serverIdx)
+        }
+
     fun hasAnyImageInPoolCache(serverIdx: Int): Boolean {
         val (raw, _) = BASettingsStore.loadPoolCache(serverIdx)
         return hasAnyImageInEncodedCache(raw)
     }
 
+    suspend fun hasAnyImageInPoolCacheAsync(serverIdx: Int): Boolean =
+        withContext(AppDispatchers.baFetch) {
+            hasAnyImageInPoolCache(serverIdx)
+        }
+
     fun calendarCacheIsBlank(serverIndex: Int): Boolean {
         val (raw, _) = BASettingsStore.loadCalendarCache(serverIndex)
         return raw.isBlank()
     }
+
+    suspend fun calendarCacheIsBlankAsync(serverIndex: Int): Boolean =
+        withContext(AppDispatchers.baFetch) {
+            calendarCacheIsBlank(serverIndex)
+        }
 
     fun loadCalendarPoolNotificationSettings(): BaCalendarPoolNotificationSettingsSnapshot =
         BaCalendarPoolNotificationSettingsSnapshot(
@@ -117,6 +134,19 @@ internal object BaSettingsPersistenceRepository {
         )
     }
 
+    suspend fun persistSettingsDraftAsync(
+        sheetState: BaSettingsSheetState,
+        currentShowEndedActivities: Boolean,
+        currentShowCalendarPoolImages: Boolean,
+    ): BaSettingsPersistenceResult =
+        withContext(AppDispatchers.baFetch) {
+            persistSettingsDraft(
+                sheetState = sheetState,
+                currentShowEndedActivities = currentShowEndedActivities,
+                currentShowCalendarPoolImages = currentShowCalendarPoolImages,
+            )
+        }
+
     fun persistNotificationSettingsDraft(sheetState: BaNotificationSettingsSheetState): BaNotificationSettingsPersistenceResult {
         val savedThreshold =
             sheetState.apNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
@@ -160,6 +190,13 @@ internal object BaSettingsPersistenceRepository {
         )
     }
 
+    suspend fun persistNotificationSettingsDraftAsync(
+        sheetState: BaNotificationSettingsSheetState,
+    ): BaNotificationSettingsPersistenceResult =
+        withContext(AppDispatchers.baFetch) {
+            persistNotificationSettingsDraft(sheetState)
+        }
+
     fun persistRefreshInterval(
         hours: Int,
         calendarLastSyncMs: Long,
@@ -173,24 +210,67 @@ internal object BaSettingsPersistenceRepository {
         )
     }
 
+    suspend fun persistRefreshIntervalAsync(
+        hours: Int,
+        calendarLastSyncMs: Long,
+        nowMs: Long = System.currentTimeMillis(),
+    ): BaRefreshIntervalPersistenceResult =
+        withContext(AppDispatchers.baFetch) {
+            persistRefreshInterval(
+                hours = hours,
+                calendarLastSyncMs = calendarLastSyncMs,
+                nowMs = nowMs,
+            )
+        }
+
     fun resetCafeApLastNotifiedLevel() {
         BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+    }
+
+    suspend fun resetCafeApLastNotifiedLevelAsync() {
+        withContext(AppDispatchers.baFetch) {
+            resetCafeApLastNotifiedLevel()
+        }
     }
 
     fun resetArenaRefreshLastNotifiedSlot() {
         BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
     }
 
+    suspend fun resetArenaRefreshLastNotifiedSlotAsync() {
+        withContext(AppDispatchers.baFetch) {
+            resetArenaRefreshLastNotifiedSlot()
+        }
+    }
+
     fun saveArenaRefreshLastNotifiedSlot(slotMs: Long) {
         BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(slotMs)
+    }
+
+    suspend fun saveArenaRefreshLastNotifiedSlotAsync(slotMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            saveArenaRefreshLastNotifiedSlot(slotMs)
+        }
     }
 
     fun resetCafeVisitLastNotifiedSlot() {
         BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
     }
 
+    suspend fun resetCafeVisitLastNotifiedSlotAsync() {
+        withContext(AppDispatchers.baFetch) {
+            resetCafeVisitLastNotifiedSlot()
+        }
+    }
+
     fun saveCafeVisitLastNotifiedSlot(slotMs: Long) {
         BASettingsStore.saveCafeVisitLastNotifiedSlotMs(slotMs)
+    }
+
+    suspend fun saveCafeVisitLastNotifiedSlotAsync(slotMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            saveCafeVisitLastNotifiedSlot(slotMs)
+        }
     }
 
     private fun hasAnyImageInEncodedCache(raw: String): Boolean {

@@ -85,7 +85,7 @@ fun BaGuideCatalogPage(
     val pageActions = rememberBaGuideCatalogPageActions(catalogViewModel)
     BaGuideCatalogPageEventEffects(
         context = context,
-        events = catalogViewModel.events,
+        catalogViewModel = catalogViewModel,
         onImportPreviewStateChange = pageState::updateImportPreviewState,
     )
     BaGuideCatalogPageBindEffects(
@@ -159,10 +159,14 @@ fun BaGuideCatalogPage(
     }
     val transferExportAction =
         rememberBaGuideCatalogJsonExportAction(
-            context,
-            pageScope,
-            exportDoneText,
-            exportFailedText,
+            context = context,
+            pageScope = pageScope,
+            transferSettings = routeState.transferSettings,
+            exportDoneText = exportDoneText,
+            exportFailedText = exportFailedText,
+            onMediaSaveCustomEnabledChange = pageActions.onSetTransferMediaSaveCustomEnabled,
+            onMediaSaveFixedTreeUriSelected = pageActions.onSetTransferMediaSaveFixedTreeUri,
+            onMediaSaveFixedTreeUriCleared = pageActions.onClearTransferMediaSaveFixedTreeUri,
         )
     val importActions =
         rememberBaGuideCatalogImportActions(

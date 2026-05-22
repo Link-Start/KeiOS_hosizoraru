@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -72,6 +73,7 @@ internal fun GitHubTrackEditSheet(
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
     appPickerDerivedState: GitHubTrackAppPickerDerivedState,
+    appPickerPreferences: GitHubAppPickerPreferences,
     trackedPackageNames: Set<String>,
     appListRefreshing: Boolean,
     addAppPickerRememberedFirstVisibleItemIndex: Int,
@@ -97,6 +99,7 @@ internal fun GitHubTrackEditSheet(
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
     onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
+    onAppPickerPreferencesChange: (GitHubAppPickerPreferences) -> Unit,
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit,
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
@@ -190,6 +193,7 @@ internal fun GitHubTrackEditSheet(
                     selectedApp = selectedApp,
                     appList = appList,
                     derivedState = appPickerDerivedState,
+                    appPickerPreferences = appPickerPreferences,
                     trackedPackageNames = trackedPackageNames,
                     editingPackageName = editingTrackedItem?.packageName.orEmpty(),
                     appListRefreshing = appListRefreshing,
@@ -201,6 +205,7 @@ internal fun GitHubTrackEditSheet(
                     onPickerExpandedChange = onPickerExpandedChange,
                     onRefreshAppList = onRefreshAppList,
                     onRequestAppPickerState = onRequestAppPickerState,
+                    onAppPickerPreferencesChange = onAppPickerPreferencesChange,
                     onAddAppPickerScrollPositionChange = onAddAppPickerScrollPositionChange,
                     onSelectedAppChange = onSelectedAppChange,
                 )

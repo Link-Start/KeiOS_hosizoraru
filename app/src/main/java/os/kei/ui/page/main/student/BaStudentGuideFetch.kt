@@ -2,7 +2,6 @@ package os.kei.ui.page.main.student
 
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.feature.ba.data.remote.GameKeeBaContentSource
 import os.kei.feature.ba.data.remote.GameKeeBaContentDetail
@@ -210,7 +209,7 @@ fun fetchGuideInfo(sourceUrl: String): BaStudentGuideInfo {
 suspend fun fetchGuideInfoAsync(
     sourceUrl: String,
     networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
-    parseDispatcher: CoroutineDispatcher = Dispatchers.Default
+    parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ): BaStudentGuideInfo {
     val apiResult = runCatchingCancellable {
         fetchGuideInfoByApiAsync(

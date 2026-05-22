@@ -21,7 +21,7 @@ import androidx.media3.common.Player
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.flow.MutableStateFlow
+import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -33,7 +33,7 @@ import top.yukonga.miuix.kmp.icon.extended.Replace
 internal fun GuideInlineVideoPreview(
     previewImageUrl: String,
     onOpenFullscreen: () -> Unit,
-    previewProgressState: MutableStateFlow<Float>?,
+    previewProgressState: GuideMediaProgressState?,
     onPreviewLoadingChanged: ((Boolean) -> Unit)?
 ) {
     if (previewImageUrl.isNotBlank()) {
@@ -48,7 +48,7 @@ internal fun GuideInlineVideoPreview(
         }
     } else {
         LaunchedEffect(previewProgressState, onPreviewLoadingChanged) {
-            previewProgressState?.value = 1f
+            previewProgressState?.set(1f)
             onPreviewLoadingChanged?.invoke(false)
         }
     }

@@ -1,23 +1,20 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import android.content.Context
+import os.kei.ui.page.main.student.BaGuideBgmPlaybackRepository
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
 
 internal enum class BaGuideBgmPlaybackBackendMode {
     Lightweight,
-    NativeMedia
+    NativeMedia,
 }
 
-internal fun resolveBaGuideBgmPlaybackBackendMode(
-    nativeMediaNotificationEnabled: Boolean
-): BaGuideBgmPlaybackBackendMode {
-    return if (nativeMediaNotificationEnabled) {
+internal fun resolveBaGuideBgmPlaybackBackendMode(nativeMediaNotificationEnabled: Boolean): BaGuideBgmPlaybackBackendMode =
+    if (nativeMediaNotificationEnabled) {
         BaGuideBgmPlaybackBackendMode.NativeMedia
     } else {
         BaGuideBgmPlaybackBackendMode.Lightweight
     }
-}
 
 internal interface BaGuideBgmPlaybackBackend {
     val mode: BaGuideBgmPlaybackBackendMode
@@ -26,14 +23,14 @@ internal interface BaGuideBgmPlaybackBackend {
         queue: List<GuideBgmFavoriteItem>,
         selectedAudioUrl: String,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     )
 
     fun prepare(
         favorite: GuideBgmFavoriteItem,
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     )
 
     fun play(
@@ -41,14 +38,14 @@ internal interface BaGuideBgmPlaybackBackend {
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
         startPositionMs: Long,
-        restart: Boolean
+        restart: Boolean,
     )
 
     fun toggle(
         favorite: GuideBgmFavoriteItem,
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     )
 
     fun pause(favorite: GuideBgmFavoriteItem): BaGuideBgmPlaybackRuntimeState
@@ -56,17 +53,17 @@ internal interface BaGuideBgmPlaybackBackend {
     fun seek(
         favorite: GuideBgmFavoriteItem,
         queueMode: BaGuideBgmQueueMode,
-        progress: Float
+        progress: Float,
     ): BaGuideBgmPlaybackRuntimeState
 
     fun updateVolume(
         favorite: GuideBgmFavoriteItem,
-        volume: Float
+        volume: Float,
     ): BaGuideBgmPlaybackRuntimeState
 
     fun applyQueueMode(
         favorite: GuideBgmFavoriteItem,
-        queueMode: BaGuideBgmQueueMode
+        queueMode: BaGuideBgmQueueMode,
     )
 
     fun runtimeState(favorite: GuideBgmFavoriteItem?): BaGuideBgmPlaybackRuntimeState
@@ -81,7 +78,8 @@ internal interface BaGuideBgmPlaybackBackend {
 }
 
 internal class BaGuideBgmLightweightPlaybackBackend(
-    private val context: Context
+    private val context: Context,
+    private val playbackRepository: BaGuideBgmPlaybackRepository,
 ) : BaGuideBgmPlaybackBackend {
     override val mode: BaGuideBgmPlaybackBackendMode = BaGuideBgmPlaybackBackendMode.Lightweight
 
@@ -89,16 +87,22 @@ internal class BaGuideBgmLightweightPlaybackBackend(
         queue: List<GuideBgmFavoriteItem>,
         selectedAudioUrl: String,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) = Unit
 
     override fun prepare(
         favorite: GuideBgmFavoriteItem,
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
-        prepareFavoriteBgmPlayback(context, favorite, queueMode, startPositionMs)
+        prepareFavoriteBgmPlayback(
+            context = context,
+            favorite = favorite,
+            queueMode = queueMode,
+            startPositionMs = startPositionMs,
+            savedVolume = playbackRepository.volume(),
+        )
     }
 
     override fun play(
@@ -106,55 +110,73 @@ internal class BaGuideBgmLightweightPlaybackBackend(
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
         startPositionMs: Long,
-        restart: Boolean
+        restart: Boolean,
     ) {
-        playFavoriteBgm(context, favorite, queueMode, startPositionMs, restart)
+        playFavoriteBgm(
+            context = context,
+            favorite = favorite,
+            queueMode = queueMode,
+            startPositionMs = startPositionMs,
+            restart = restart,
+            savedVolume = playbackRepository.volume(),
+        )
     }
 
     override fun toggle(
         favorite: GuideBgmFavoriteItem,
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
-        toggleFavoriteBgmPlayback(context, favorite, queueMode, startPositionMs)
+        toggleFavoriteBgmPlayback(
+            context = context,
+            favorite = favorite,
+            queueMode = queueMode,
+            startPositionMs = startPositionMs,
+            savedVolume = playbackRepository.volume(),
+        )
     }
 
-    override fun pause(favorite: GuideBgmFavoriteItem): BaGuideBgmPlaybackRuntimeState {
-        return pauseFavoriteBgmPlayback(context, favorite)
-    }
+    override fun pause(favorite: GuideBgmFavoriteItem): BaGuideBgmPlaybackRuntimeState =
+        pauseFavoriteBgmPlayback(
+            context = context,
+            favorite = favorite,
+            savedVolume = playbackRepository.volume(),
+        )
 
     override fun seek(
         favorite: GuideBgmFavoriteItem,
         queueMode: BaGuideBgmQueueMode,
-        progress: Float
-    ): BaGuideBgmPlaybackRuntimeState {
-        return seekFavoriteBgmPlayback(context, favorite, queueMode, progress)
-    }
+        progress: Float,
+    ): BaGuideBgmPlaybackRuntimeState =
+        seekFavoriteBgmPlayback(
+            context = context,
+            favorite = favorite,
+            queueMode = queueMode,
+            progress = progress,
+            savedVolume = playbackRepository.volume(),
+        )
 
     override fun updateVolume(
         favorite: GuideBgmFavoriteItem,
-        volume: Float
-    ): BaGuideBgmPlaybackRuntimeState {
-        return updateFavoriteBgmVolume(context, favorite, volume)
-    }
+        volume: Float,
+    ): BaGuideBgmPlaybackRuntimeState = updateFavoriteBgmVolume(context, favorite, volume)
 
     override fun applyQueueMode(
         favorite: GuideBgmFavoriteItem,
-        queueMode: BaGuideBgmQueueMode
+        queueMode: BaGuideBgmQueueMode,
     ) {
         applyFavoriteBgmQueueMode(context, favorite, queueMode)
     }
 
-    override fun runtimeState(favorite: GuideBgmFavoriteItem?): BaGuideBgmPlaybackRuntimeState {
-        return favorite
-            ?.let { favoriteBgmRuntimeState(context, it) }
-            ?: BaGuideBgmPlaybackRuntimeState(volume = GuideBgmFavoritePlaybackStore.volume())
-    }
+    override fun runtimeState(favorite: GuideBgmFavoriteItem?): BaGuideBgmPlaybackRuntimeState =
+        favorite
+            ?.let { favoriteBgmRuntimeState(context, it, savedVolume = playbackRepository.volume()) }
+            ?: BaGuideBgmPlaybackRuntimeState(volume = playbackRepository.volume())
 }
 
 internal class BaGuideBgmNativePlaybackBackend(
-    private val controller: BaGuideBgmNativeMediaController
+    private val controller: BaGuideBgmNativeMediaController,
 ) : BaGuideBgmPlaybackBackend {
     override val mode: BaGuideBgmPlaybackBackendMode = BaGuideBgmPlaybackBackendMode.NativeMedia
 
@@ -162,7 +184,7 @@ internal class BaGuideBgmNativePlaybackBackend(
         queue: List<GuideBgmFavoriteItem>,
         selectedAudioUrl: String,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
         controller.syncQueue(queue, selectedAudioUrl, queueMode, startPositionMs)
     }
@@ -171,7 +193,7 @@ internal class BaGuideBgmNativePlaybackBackend(
         favorite: GuideBgmFavoriteItem,
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
         controller.syncQueue(queue, favorite.audioUrl, queueMode, startPositionMs)
     }
@@ -181,7 +203,7 @@ internal class BaGuideBgmNativePlaybackBackend(
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
         startPositionMs: Long,
-        restart: Boolean
+        restart: Boolean,
     ) {
         controller.syncQueue(
             queue = queue,
@@ -189,7 +211,7 @@ internal class BaGuideBgmNativePlaybackBackend(
             queueMode = queueMode,
             startPositionMs = startPositionMs,
             playWhenReady = true,
-            restart = restart
+            restart = restart,
         )
     }
 
@@ -197,7 +219,7 @@ internal class BaGuideBgmNativePlaybackBackend(
         favorite: GuideBgmFavoriteItem,
         queue: List<GuideBgmFavoriteItem>,
         queueMode: BaGuideBgmQueueMode,
-        startPositionMs: Long
+        startPositionMs: Long,
     ) {
         val current = controller.runtimeState()
         if (current.isPlaying) {
@@ -215,7 +237,7 @@ internal class BaGuideBgmNativePlaybackBackend(
     override fun seek(
         favorite: GuideBgmFavoriteItem,
         queueMode: BaGuideBgmQueueMode,
-        progress: Float
+        progress: Float,
     ): BaGuideBgmPlaybackRuntimeState {
         controller.seekToProgress(progress)
         return controller.runtimeState()
@@ -223,32 +245,25 @@ internal class BaGuideBgmNativePlaybackBackend(
 
     override fun updateVolume(
         favorite: GuideBgmFavoriteItem,
-        volume: Float
+        volume: Float,
     ): BaGuideBgmPlaybackRuntimeState {
         val safeVolume = volume.coerceIn(0f, 1f)
-        GuideBgmFavoritePlaybackStore.saveVolume(safeVolume)
         controller.updateVolume(safeVolume)
         return controller.runtimeState().copy(volume = safeVolume)
     }
 
     override fun applyQueueMode(
         favorite: GuideBgmFavoriteItem,
-        queueMode: BaGuideBgmQueueMode
+        queueMode: BaGuideBgmQueueMode,
     ) {
         controller.updateRepeatMode(queueMode)
     }
 
-    override fun runtimeState(favorite: GuideBgmFavoriteItem?): BaGuideBgmPlaybackRuntimeState {
-        return controller.runtimeState()
-    }
+    override fun runtimeState(favorite: GuideBgmFavoriteItem?): BaGuideBgmPlaybackRuntimeState = controller.runtimeState()
 
-    override fun currentAudioUrl(): String {
-        return controller.currentAudioUrl()
-    }
+    override fun currentAudioUrl(): String = controller.currentAudioUrl()
 
-    override fun currentQueueMode(): BaGuideBgmQueueMode? {
-        return controller.currentQueueMode()
-    }
+    override fun currentQueueMode(): BaGuideBgmQueueMode? = controller.currentQueueMode()
 
     override fun disconnect() {
         controller.disconnect()

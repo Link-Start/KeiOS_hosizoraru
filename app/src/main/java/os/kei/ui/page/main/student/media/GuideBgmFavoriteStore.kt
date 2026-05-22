@@ -48,6 +48,9 @@ internal object GuideBgmFavoriteStore {
         return favoritesState.asStateFlow()
     }
 
+    fun observeFavoritesState(): StateFlow<List<GuideBgmFavoriteItem>> =
+        favoritesState.asStateFlow()
+
     fun favoritesSnapshot(): List<GuideBgmFavoriteItem> {
         ensureLoaded()
         return favoritesState.value

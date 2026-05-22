@@ -1,23 +1,60 @@
 package os.kei.ui.page.main.ba
 
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+
+internal data class BaOfficeIdentity(
+    val nickname: String,
+    val friendCode: String,
+)
 
 internal object BaOfficeRepository {
     fun loadSnapshot(): BaPageSnapshot = BASettingsStore.loadSnapshot()
 
+    suspend fun loadSnapshotAsync(): BaPageSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.loadSnapshot()
+        }
+
     fun loadServerIndex(): Int = BASettingsStore.loadServerIndex()
+
+    suspend fun loadServerIndexAsync(): Int =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.loadServerIndex()
+        }
 
     fun clearListScrollState() {
         BASettingsStore.clearListScrollState()
+    }
+
+    suspend fun clearListScrollStateAsync() {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.clearListScrollState()
+        }
     }
 
     fun loadIdNickname(serverIndex: Int): String = BASettingsStore.loadIdNickname(serverIndex)
 
     fun loadIdFriendCode(serverIndex: Int): String = BASettingsStore.loadIdFriendCode(serverIndex)
 
+    suspend fun loadIdentityForServer(serverIndex: Int): BaOfficeIdentity =
+        withContext(AppDispatchers.baFetch) {
+            BaOfficeIdentity(
+                nickname = BASettingsStore.loadIdNickname(serverIndex),
+                friendCode = BASettingsStore.loadIdFriendCode(serverIndex),
+            )
+        }
+
     fun saveIdIndependentByServerEnabled(enabled: Boolean) {
         BASettingsStore.saveIdIndependentByServerEnabled(enabled)
+    }
+
+    suspend fun saveIdIndependentByServerEnabledAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveIdIndependentByServerEnabled(enabled)
+        }
     }
 
     fun saveIdNickname(
@@ -27,11 +64,29 @@ internal object BaOfficeRepository {
         BASettingsStore.saveIdNickname(name, serverIndex)
     }
 
+    suspend fun saveIdNicknameAsync(
+        name: String,
+        serverIndex: Int? = null,
+    ) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveIdNickname(name, serverIndex)
+        }
+    }
+
     fun saveIdFriendCode(
         code: String,
         serverIndex: Int? = null,
     ) {
         BASettingsStore.saveIdFriendCode(code, serverIndex)
+    }
+
+    suspend fun saveIdFriendCodeAsync(
+        code: String,
+        serverIndex: Int? = null,
+    ) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveIdFriendCode(code, serverIndex)
+        }
     }
 
     fun saveApRegenBaseMs(epochMs: Long) {
@@ -58,6 +113,12 @@ internal object BaOfficeRepository {
         BASettingsStore.saveApLimit(limit)
     }
 
+    suspend fun saveApLimitAsync(limit: Int) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveApLimit(limit)
+        }
+    }
+
     fun saveCafeLevel(level: Int) {
         BASettingsStore.saveCafeLevel(level)
     }
@@ -66,24 +127,66 @@ internal object BaOfficeRepository {
         BASettingsStore.saveServerIndex(index)
     }
 
+    suspend fun saveServerIndexAsync(index: Int) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveServerIndex(index)
+        }
+    }
+
     fun saveCafeVisitLastNotifiedSlotMs(slotMs: Long) {
         BASettingsStore.saveCafeVisitLastNotifiedSlotMs(slotMs)
+    }
+
+    suspend fun saveCafeVisitLastNotifiedSlotMsAsync(slotMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCafeVisitLastNotifiedSlotMs(slotMs)
+        }
     }
 
     fun saveArenaRefreshLastNotifiedSlotMs(slotMs: Long) {
         BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(slotMs)
     }
 
+    suspend fun saveArenaRefreshLastNotifiedSlotMsAsync(slotMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(slotMs)
+        }
+    }
+
+    suspend fun saveCafeLevelAsync(level: Int) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCafeLevel(level)
+        }
+    }
+
     fun saveCoffeeHeadpatMs(epochMs: Long) {
         BASettingsStore.saveCoffeeHeadpatMs(epochMs)
+    }
+
+    suspend fun saveCoffeeHeadpatMsAsync(epochMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCoffeeHeadpatMs(epochMs)
+        }
     }
 
     fun saveCoffeeInvite1UsedMs(epochMs: Long) {
         BASettingsStore.saveCoffeeInvite1UsedMs(epochMs)
     }
 
+    suspend fun saveCoffeeInvite1UsedMsAsync(epochMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCoffeeInvite1UsedMs(epochMs)
+        }
+    }
+
     fun saveCoffeeInvite2UsedMs(epochMs: Long) {
         BASettingsStore.saveCoffeeInvite2UsedMs(epochMs)
+    }
+
+    suspend fun saveCoffeeInvite2UsedMsAsync(epochMs: Long) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCoffeeInvite2UsedMs(epochMs)
+        }
     }
 
     fun saveRuntimeState(

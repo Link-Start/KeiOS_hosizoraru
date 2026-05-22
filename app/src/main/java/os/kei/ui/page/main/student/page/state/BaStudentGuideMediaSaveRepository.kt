@@ -1,5 +1,7 @@
 package os.kei.ui.page.main.student.page.state
 
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 
 internal data class BaStudentGuideMediaSaveLocation(
@@ -8,17 +10,21 @@ internal data class BaStudentGuideMediaSaveLocation(
 )
 
 internal object BaStudentGuideMediaSaveRepository {
-    fun loadSaveLocation(): BaStudentGuideMediaSaveLocation =
-        BaStudentGuideMediaSaveLocation(
-            useFixedLocation = BASettingsStore.loadMediaSaveCustomEnabled(),
-            fixedTreeUriRaw = BASettingsStore.loadMediaSaveFixedTreeUri(),
-        )
+    suspend fun loadSaveLocation(): BaStudentGuideMediaSaveLocation =
+        withContext(AppDispatchers.baFetch) {
+            BaStudentGuideMediaSaveLocation(
+                useFixedLocation = BASettingsStore.loadMediaSaveCustomEnabled(),
+                fixedTreeUriRaw = BASettingsStore.loadMediaSaveFixedTreeUri(),
+            )
+        }
 
-    fun saveFixedTreeUri(treeUriRaw: String) {
-        BASettingsStore.saveMediaSaveFixedTreeUri(treeUriRaw)
+    suspend fun saveFixedTreeUri(treeUriRaw: String) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveMediaSaveFixedTreeUri(treeUriRaw)
+        }
     }
 
-    fun clearFixedTreeUri() {
-        BASettingsStore.saveMediaSaveFixedTreeUri("")
+    suspend fun clearFixedTreeUri() {
+        saveFixedTreeUri("")
     }
 }

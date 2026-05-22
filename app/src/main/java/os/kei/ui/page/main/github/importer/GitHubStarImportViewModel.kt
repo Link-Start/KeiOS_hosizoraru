@@ -5,8 +5,6 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -18,10 +16,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.domain.GitHubStarImportClassifier
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
@@ -89,9 +84,8 @@ internal sealed interface GitHubStarImportEvent {
 
 internal class GitHubStarImportViewModel(
     private val repository: GitHubStarImportPageRepository = GitHubStarImportPageRepository(),
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(loadInitialState())
+    private val _uiState = MutableStateFlow(GitHubStarImportUiState())
     val uiState: StateFlow<GitHubStarImportUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<GitHubStarImportEvent>(
@@ -106,13 +100,24 @@ internal class GitHubStarImportViewModel(
     private var previewJob: Job? = null
     private var verifyJob: Job? = null
     private var importJob: Job? = null
+    private var draftSaveJob: Job? = null
+    private var draftMutatedAfterLaunch = false
 
     init {
         viewModelScope.launch {
+            val initialState = repository.loadInitialState()
+            if (!draftMutatedAfterLaunch) {
+                _uiState.value = initialState
+                rebuildListState()
+            } else {
+                _uiState.update { state -> state.copy(apiTokenAvailable = initialState.apiTokenAvailable) }
+            }
+        }
+        viewModelScope.launch {
             GitHubTrackStoreSignals.version.collect {
-                val snapshot = withContext(AppDispatchers.githubNetwork) { GitHubTrackStore.loadSnapshot() }
+                val apiTokenAvailable = repository.loadApiTokenAvailable()
                 _uiState.update { state ->
-                    state.copy(apiTokenAvailable = snapshot.lookupConfig.apiToken.isNotBlank())
+                    state.copy(apiTokenAvailable = apiTokenAvailable)
                 }
             }
         }
@@ -429,7 +434,8 @@ internal class GitHubStarImportViewModel(
             }
             _uiState.update { it.copy(importing = false) }
             result.onSuccess { applyResult ->
-                GitHubStarImportDraftStore.clearSelection()
+                draftSaveJob?.cancel()
+                repository.clearDraftSelection()
                 _events.emit(GitHubStarImportEvent.Imported(applyResult))
                 _events.emit(GitHubStarImportEvent.Close)
             }.onFailure { throwable ->
@@ -463,8 +469,9 @@ internal class GitHubStarImportViewModel(
     }
 
     private fun saveDraft() {
+        draftMutatedAfterLaunch = true
         val state = _uiState.value
-        GitHubStarImportDraftStore.save(
+        val draft =
             GitHubStarImportDraft(
                 source = state.source,
                 usernameInput = state.usernameInput,
@@ -473,50 +480,38 @@ internal class GitHubStarImportViewModel(
                 viewFilter = state.viewFilter,
                 qualityFilters = state.qualityFilters,
                 conflictStrategy = state.conflictStrategy,
-                selectedIds = state.selectedIds
+                selectedIds = state.selectedIds,
             )
-        )
+        draftSaveJob?.cancel()
+        draftSaveJob = viewModelScope.launch {
+            delay(STAR_IMPORT_DRAFT_SAVE_DEBOUNCE_MS.milliseconds)
+            repository.saveDraft(draft)
+        }
     }
 
     private fun rebuildListState() {
         listDeriveJob?.cancel()
         val snapshot = _uiState.value
         listDeriveJob = viewModelScope.launch {
-            val derived = withContext(defaultDispatcher) {
-                buildStarImportCandidateListUiState(
+            val derived =
+                repository.buildCandidateListUiState(
                     candidates = snapshot.candidates,
                     filterInput = snapshot.filterInput,
                     viewFilter = snapshot.viewFilter,
                     qualityFilters = snapshot.qualityFilters,
                     conflictStrategy = snapshot.conflictStrategy,
                     selectedIds = snapshot.selectedIds,
-                    verificationStates = snapshot.apkVerificationStates
+                    verificationStates = snapshot.apkVerificationStates,
                 )
-            }
             _uiState.update { state ->
                 state.copy(listUiState = derived)
             }
         }
     }
 
-    private fun loadInitialState(): GitHubStarImportUiState {
-        val snapshot = GitHubTrackStore.loadSnapshot()
-        val savedDraft = GitHubStarImportDraftStore.load()
-        return GitHubStarImportUiState(
-            source = savedDraft.source,
-            apiTokenAvailable = snapshot.lookupConfig.apiToken.isNotBlank(),
-            usernameInput = savedDraft.usernameInput,
-            listUrlInput = savedDraft.listUrlInput,
-            filterInput = savedDraft.filterInput,
-            viewFilter = savedDraft.viewFilter,
-            qualityFilters = savedDraft.qualityFilters,
-            conflictStrategy = savedDraft.conflictStrategy,
-            selectedIds = savedDraft.selectedIds
-        )
-    }
-
     private companion object {
         const val STAR_IMPORT_FILTER_DEBOUNCE_MS = 150L
+        const val STAR_IMPORT_DRAFT_SAVE_DEBOUNCE_MS = 120L
         const val MAX_APK_VERIFICATION_BATCH = 30
     }
 }

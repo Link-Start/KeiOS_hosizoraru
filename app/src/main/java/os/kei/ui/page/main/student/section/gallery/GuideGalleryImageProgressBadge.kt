@@ -1,0 +1,31 @@
+@file:Suppress("FunctionName")
+
+package os.kei.ui.page.main.student.section.gallery
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import os.kei.ui.page.main.student.GuideMediaProgressState
+import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+
+@Composable
+internal fun GuideGalleryImageProgressBadge(
+    imageLoading: Boolean,
+    imageProgressState: GuideMediaProgressState,
+) {
+    val imageProgress by imageProgressState.progress.collectAsStateWithLifecycle()
+    val imageProgressValue = if (imageLoading) imageProgress.coerceIn(0f, 1f) else 1f
+    val progressForegroundColor =
+        if (imageProgressValue >= 0.999f) Color(0xFF34C759) else Color(0xFF3B82F6)
+    val progressBackgroundColor =
+        if (imageProgressValue >= 0.999f) Color(0x5534C759) else Color(0x553B82F6)
+    LiquidCircularProgressBar(
+        progress = { imageProgressValue },
+        size = 18.dp,
+        strokeWidth = 2.dp,
+        activeColor = progressForegroundColor,
+        inactiveColor = progressBackgroundColor,
+    )
+}

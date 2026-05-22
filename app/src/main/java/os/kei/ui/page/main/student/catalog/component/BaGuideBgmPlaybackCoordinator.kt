@@ -18,8 +18,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.student.BaGuideBgmPlaybackClock
+import os.kei.ui.page.main.student.BaGuideBgmPlaybackRepository
+import os.kei.ui.page.main.student.BaGuideBgmSystemPlaybackClock
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackStore
+import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackProgress
+import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
+import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -48,12 +54,17 @@ internal data class BaGuideBgmPlaybackUiState(
 
 internal class BaGuideBgmPlaybackCoordinator(
     private val context: Context,
+    private val playbackRepository: BaGuideBgmPlaybackRepository = BaGuideBgmPlaybackRepository(),
+    private val clock: BaGuideBgmPlaybackClock = BaGuideBgmSystemPlaybackClock,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
 ) {
-    private val lightweightBackend = BaGuideBgmLightweightPlaybackBackend(context)
+    private val lightweightBackend = BaGuideBgmLightweightPlaybackBackend(context, playbackRepository)
     private val nativeBackend =
         BaGuideBgmNativePlaybackBackend(
-            BaGuideBgmNativeMediaController(context),
+            BaGuideBgmNativeMediaController(
+                context = context,
+                volumeProvider = playbackRepository::volume,
+            ),
         )
     private val scope = CoroutineScope(SupervisorJob() + mainDispatcher)
     private val _uiState = MutableStateFlow(BaGuideBgmPlaybackUiState())
@@ -63,6 +74,7 @@ internal class BaGuideBgmPlaybackCoordinator(
     private var lastProgressPersistPositionMs = Long.MIN_VALUE
     private var lastProgressPersistPlaying: Boolean? = null
     private var lastProgressPersistAtMs = 0L
+    private var playbackSnapshot = GuideBgmFavoritePlaybackSnapshot.Empty
 
     val uiState: StateFlow<BaGuideBgmPlaybackUiState> = _uiState.asStateFlow()
     val sessionState: StateFlow<BaGuideBgmPlaybackUiState> = _uiState.asStateFlow()
@@ -196,18 +208,21 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     fun restoreSnapshot() {
-        val snapshot = GuideBgmFavoritePlaybackStore.snapshot()
-        val queueModeName =
-            snapshot.queueModeName
-                .takeIf { saved -> BaGuideBgmQueueMode.entries.any { it.name == saved } }
-                ?: BaGuideBgmQueueMode.Continuous.name
-        _uiState.update { state ->
-            state.copy(
-                selectedAudioUrl = snapshot.selectedAudioUrl,
-                queueModeName = queueModeName,
-            )
+        scope.launch {
+            val snapshot = playbackRepository.loadSnapshot()
+            playbackSnapshot = snapshot
+            val queueModeName =
+                snapshot.queueModeName
+                    .takeIf { saved -> BaGuideBgmQueueMode.entries.any { it.name == saved } }
+                    ?: BaGuideBgmQueueMode.Continuous.name
+            _uiState.update { state ->
+                state.copy(
+                    selectedAudioUrl = snapshot.selectedAudioUrl,
+                    queueModeName = queueModeName,
+                )
+            }
+            setRuntimeState(BaGuideBgmPlaybackRuntimeState(volume = snapshot.volume), force = true)
         }
-        setRuntimeState(BaGuideBgmPlaybackRuntimeState(volume = snapshot.volume), force = true)
     }
 
     fun select(audioUrl: String) {
@@ -302,6 +317,7 @@ internal class BaGuideBgmPlaybackCoordinator(
     ): BaGuideBgmPlaybackRuntimeState {
         val nextState = activeBackend.updateVolume(favorite, volume)
         setRuntimeState(nextState, force = true)
+        persistVolume(nextState.volume)
         return nextState
     }
 
@@ -392,7 +408,15 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     private fun persistSelection(audioUrl: String = selectedAudioUrl) {
-        GuideBgmFavoritePlaybackStore.saveSelection(audioUrl, queueModeName)
+        val normalizedAudioUrl = normalizeGuideMediaSource(audioUrl)
+        playbackSnapshot =
+            playbackSnapshot.copy(
+                selectedAudioUrl = normalizedAudioUrl,
+                queueModeName = queueModeName,
+            )
+        scope.launch(AppDispatchers.media) {
+            playbackRepository.saveSelection(normalizedAudioUrl, queueModeName)
+        }
     }
 
     private fun setRuntimeState(
@@ -418,7 +442,7 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     private fun resumePosition(favorite: GuideBgmFavoriteItem): Long =
-        GuideBgmFavoritePlaybackStore
+        playbackSnapshot
             .progressFor(favorite.audioUrl)
             ?.resumePositionMs
             ?: 0L
@@ -429,7 +453,7 @@ internal class BaGuideBgmPlaybackCoordinator(
         force: Boolean = false,
     ) {
         if (state.durationMs > 0L || state.positionMs > 0L || state.isPlaying) {
-            val now = System.currentTimeMillis()
+            val now = clock.nowMs()
             val shouldPersist =
                 force ||
                     favorite.audioUrl != lastProgressPersistAudioUrl ||
@@ -438,16 +462,47 @@ internal class BaGuideBgmPlaybackCoordinator(
                     state.isEnded ||
                     now - lastProgressPersistAtMs >= BGM_PROGRESS_SAVE_INTERVAL_MS
             if (!shouldPersist) return
-            GuideBgmFavoritePlaybackStore.saveProgress(
-                audioUrl = favorite.audioUrl,
-                positionMs = state.positionMs,
-                durationMs = state.durationMs,
-                isPlaying = state.isPlaying,
-            )
+            val normalizedAudioUrl = normalizeGuideMediaSource(favorite.audioUrl)
+            if (normalizedAudioUrl.isBlank()) return
+            playbackSnapshot =
+                playbackSnapshot.copy(
+                    progressByAudioUrl =
+                        playbackSnapshot.progressByAudioUrl +
+                            (
+                                normalizedAudioUrl to
+                                    GuideBgmFavoritePlaybackProgress(
+                                        audioUrl = normalizedAudioUrl,
+                                        positionMs = state.positionMs,
+                                        durationMs = state.durationMs,
+                                        updatedAtMs = now.coerceAtLeast(1L),
+                                        lastPlayedAtMs =
+                                            if (state.isPlaying) {
+                                                now.coerceAtLeast(1L)
+                                            } else {
+                                                playbackSnapshot.progressFor(normalizedAudioUrl)?.lastPlayedAtMs ?: 0L
+                                            },
+                                    )
+                            ),
+                )
+            scope.launch(AppDispatchers.media) {
+                playbackRepository.saveProgress(
+                    audioUrl = favorite.audioUrl,
+                    positionMs = state.positionMs,
+                    durationMs = state.durationMs,
+                    isPlaying = state.isPlaying,
+                    nowMs = now,
+                )
+            }
             lastProgressPersistAudioUrl = favorite.audioUrl
             lastProgressPersistPositionMs = state.positionMs
             lastProgressPersistPlaying = state.isPlaying
             lastProgressPersistAtMs = now
+        }
+    }
+
+    private fun persistVolume(volume: Float) {
+        scope.launch(AppDispatchers.media) {
+            playbackRepository.saveVolume(volume)
         }
     }
 }
@@ -467,8 +522,11 @@ internal fun rememberBaGuideBgmPlaybackCoordinator(
 ): BaGuideBgmPlaybackCoordinator {
     val coordinator =
         remember(context) {
-            BaGuideBgmPlaybackCoordinator(context).apply { restoreSnapshot() }
+            BaGuideBgmPlaybackCoordinator(context)
         }
+    LaunchedEffect(coordinator) {
+        coordinator.restoreSnapshot()
+    }
     LaunchedEffect(coordinator, nativeMediaNotificationEnabled) {
         coordinator.updateNativeMediaNotificationEnabled(nativeMediaNotificationEnabled)
     }

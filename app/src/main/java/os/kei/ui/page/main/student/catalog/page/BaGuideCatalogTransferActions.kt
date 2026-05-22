@@ -11,13 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.ext.showToast
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogTransferSettingsUiState
 
 internal data class BaGuideCatalogTransferSaveLocationState(
     val mediaSaveCustomEnabled: Boolean,
@@ -42,17 +42,17 @@ internal typealias BaGuideCatalogJsonExportPayloadBuilder = suspend () -> String
 internal fun rememberBaGuideCatalogJsonExportAction(
     context: Context,
     pageScope: CoroutineScope,
+    transferSettings: BaGuideCatalogTransferSettingsUiState,
     exportDoneText: String,
     exportFailedText: String,
+    onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
+    onMediaSaveFixedTreeUriSelected: (String) -> Unit,
+    onMediaSaveFixedTreeUriCleared: () -> Unit,
 ): BaGuideCatalogJsonExportAction {
     var pendingSafExportRequest by remember { mutableStateOf<BaGuideCatalogJsonExportRequest?>(null) }
     var pendingFixedExportRequest by remember { mutableStateOf<BaGuideCatalogJsonExportRequest?>(null) }
-    var mediaSaveCustomEnabled by rememberSaveable {
-        mutableStateOf(BaGuideCatalogTransferSettingsRepository.loadMediaSaveCustomEnabled())
-    }
-    var mediaSaveFixedTreeUri by rememberSaveable {
-        mutableStateOf(BaGuideCatalogTransferSettingsRepository.loadMediaSaveFixedTreeUri())
-    }
+    val mediaSaveCustomEnabled = transferSettings.mediaSaveCustomEnabled
+    val mediaSaveFixedTreeUri = transferSettings.mediaSaveFixedTreeUri
 
     val safExportLauncher =
         rememberLauncherForActivityResult(
@@ -106,8 +106,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                     )
                 }
             }
-            BaGuideCatalogTransferSettingsRepository.saveMediaSaveFixedTreeUri(treeUri.toString())
-            mediaSaveFixedTreeUri = treeUri.toString()
+            onMediaSaveFixedTreeUriSelected(treeUri.toString())
             pendingFixedExportRequest = null
             pageScope.launch {
                 val success =
@@ -170,8 +169,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                     request.successToast.ifBlank { exportDoneText },
                 )
             } else {
-                BaGuideCatalogTransferSettingsRepository.clearMediaSaveFixedTreeUri()
-                mediaSaveFixedTreeUri = ""
+                onMediaSaveFixedTreeUriCleared()
                 pendingFixedExportRequest = request
                 launchFixedExportFolderPicker()
             }
@@ -192,6 +190,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
             fixedExportFolderLauncher,
             exportDoneText,
             exportFailedText,
+            onMediaSaveFixedTreeUriCleared,
         ) {
             export@{ payloadBuilder, fileName, successToast ->
                 pageScope.launch {
@@ -223,13 +222,16 @@ internal fun rememberBaGuideCatalogJsonExportAction(
             }
         }
     val saveLocationState =
-        remember(mediaSaveCustomEnabled, mediaSaveFixedTreeUri) {
+        remember(
+            mediaSaveCustomEnabled,
+            mediaSaveFixedTreeUri,
+            onMediaSaveCustomEnabledChange,
+        ) {
             BaGuideCatalogTransferSaveLocationState(
                 mediaSaveCustomEnabled = mediaSaveCustomEnabled,
                 mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
                 onMediaSaveCustomEnabledChange = { enabled ->
-                    mediaSaveCustomEnabled = enabled
-                    BaGuideCatalogTransferSettingsRepository.saveMediaSaveCustomEnabled(enabled)
+                    onMediaSaveCustomEnabledChange(enabled)
                 },
                 onPickMediaSaveLocation = {
                     pendingFixedExportRequest = null

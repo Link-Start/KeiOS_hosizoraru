@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -26,7 +25,7 @@ private const val ISSUE_API_URL = "https://api.github.com/repos/hosizoraru/KeiOS
 
 internal class FeedbackIssueRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val httpClient: OkHttpClient = SharedHttpClient.base
 ) {
     suspend fun loadDeviceInfo(context: Context): FeedbackDeviceInfo {

@@ -1,16 +1,19 @@
 package os.kei.ui.page.main.mcp.state
 
+import androidx.compose.runtime.Immutable
 import os.kei.mcp.server.McpToolCatalog
 import os.kei.mcp.server.McpToolDomains
 import os.kei.mcp.server.McpToolMeta
 import os.kei.mcp.server.McpToolVisibility
 import java.util.Locale
 
+@Immutable
 internal data class McpToolBucketInput(
     val tools: List<McpToolMeta>,
     val searchQuery: String,
 )
 
+@Immutable
 internal data class McpToolBuckets(
     val entrypointTools: List<McpToolMeta>,
     val runtimeTools: List<McpToolMeta>,

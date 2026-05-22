@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
@@ -11,6 +13,7 @@ internal class BaOfficeActionCoordinator(
     private val context: Context,
     private val office: BaOfficeController,
     private val ui: BaPageUiController,
+    private val scope: CoroutineScope,
     private val onRefreshCalendar: () -> Unit,
     private val onRefreshPool: () -> Unit,
     private val onOpenCalendarLink: (String) -> Unit,
@@ -30,26 +33,26 @@ internal class BaOfficeActionCoordinator(
             onCafeLevelChange = ::selectCafeLevel,
             onServerSelected = ::selectServer,
             onClaimCafeStoredAp = ::claimCafeStoredAp,
-            onTouchHead = { office.touchHead(ui.serverIndex) },
-            onForceResetHeadpatCooldown = { office.forceResetHeadpatCooldown() },
-            onUseInviteTicket1 = { office.useInviteTicket1() },
-            onForceResetInviteTicket1Cooldown = { office.forceResetInviteTicket1Cooldown() },
-            onUseInviteTicket2 = { office.useInviteTicket2() },
-            onForceResetInviteTicket2Cooldown = { office.forceResetInviteTicket2Cooldown() },
+            onTouchHead = { persistCooldown(office.touchHead(ui.serverIndex)) },
+            onForceResetHeadpatCooldown = { persistCooldown(office.forceResetHeadpatCooldown()) },
+            onUseInviteTicket1 = { persistCooldown(office.useInviteTicket1()) },
+            onForceResetInviteTicket1Cooldown = { persistCooldown(office.forceResetInviteTicket1Cooldown()) },
+            onUseInviteTicket2 = { persistCooldown(office.useInviteTicket2()) },
+            onForceResetInviteTicket2Cooldown = { persistCooldown(office.forceResetInviteTicket2Cooldown()) },
             onRefreshCalendar = onRefreshCalendar,
             onOpenCalendarLink = onOpenCalendarLink,
             onRefreshPool = onRefreshPool,
             onOpenPoolStudentGuide = onOpenPoolStudentGuide,
             onOpenGuideCatalog = onOpenGuideCatalog,
             onIdNicknameInputChange = { office.idNicknameInput = it },
-            onSaveIdNickname = { office.saveIdNicknameFromInput(ui.serverIndex) },
+            onSaveIdNickname = { persistIdentity(office.saveIdNicknameFromInput(ui.serverIndex)) },
             onIdFriendCodeInputChange = { office.idFriendCodeInput = it },
-            onSaveIdFriendCode = { office.saveIdFriendCodeFromInput(context, ui.serverIndex) },
+            onSaveIdFriendCode = { persistIdentity(office.saveIdFriendCodeFromInput(context, ui.serverIndex)) },
         )
 
     private fun saveApCurrentInput() {
         val finalValue = office.apCurrentInput.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 0
-        office.updateCurrentAp(finalValue, markSync = true)
+        persistRuntime(office.updateCurrentAp(finalValue, markSync = true))
         AppBackgroundScheduler.scheduleBaApThreshold(context)
         office.apCurrentInput = finalValue.toString()
     }
@@ -58,37 +61,70 @@ internal class BaOfficeActionCoordinator(
         val finalValue =
             office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
                 ?: BA_AP_LIMIT_MAX
-        office.updateApLimit(finalValue)
-        office.applyApRegen()
+        val limitUpdate = office.updateApLimit(finalValue)
+        scope.launch {
+            BaOfficeRepository.saveApLimitAsync(limitUpdate.limit)
+            limitUpdate.runtimeUpdate?.persistAsync()
+            office.applyApRegen()?.persistAsync()
+        }
         AppBackgroundScheduler.scheduleBaApThreshold(context)
         office.apLimitInput = finalValue.toString()
     }
 
     private fun selectCafeLevel(level: Int) {
         val normalized = level.coerceIn(1, 10)
-        office.applyCafeStorage()
+        val storageUpdate = office.applyCafeStorageUpdate()
         office.cafeLevel = normalized
-        office.clampCafeStoredToCap()
-        BaOfficeRepository.saveCafeLevel(normalized)
+        val clampUpdate = office.clampCafeStoredToCapUpdate()
+        scope.launch {
+            storageUpdate?.persistAsync()
+            BaOfficeRepository.saveCafeLevelAsync(normalized)
+            clampUpdate?.persistAsync()
+        }
         ui.sheetCafeLevel = normalized
         ui.showCafeLevelPopup = false
     }
 
     private fun selectServer(selected: Int) {
         ui.serverIndex = selected
-        BaOfficeRepository.saveServerIndex(selected)
-        office.loadIdForServer(selected)
+        scope.launch {
+            BaOfficeRepository.saveServerIndexAsync(selected)
+            if (office.idIndependentByServer) {
+                office.applyIdentity(BaOfficeRepository.loadIdentityForServer(selected))
+            }
+            AppBackgroundScheduler.scheduleBaApThreshold(context)
+        }
         resetCafeVisitBaselineIfNeeded(selected)
         resetArenaRefreshBaselineIfNeeded(selected)
         onRefreshCalendar()
         onRefreshPool()
-        AppBackgroundScheduler.scheduleBaApThreshold(context)
         ui.showOverviewServerPopup = false
     }
 
     private fun claimCafeStoredAp() {
-        office.claimCafeStoredAp(context)
+        persistRuntime(office.claimCafeStoredAp(context))
         AppBackgroundScheduler.scheduleBaApThreshold(context)
+    }
+
+    private fun persistRuntime(update: BaRuntimePersistenceUpdate?) {
+        if (update == null) return
+        scope.launch {
+            update.persistAsync()
+        }
+    }
+
+    private fun persistIdentity(update: BaOfficeIdentityPersistenceUpdate?) {
+        if (update == null) return
+        scope.launch {
+            update.persistAsync()
+        }
+    }
+
+    private fun persistCooldown(update: BaOfficeCooldownPersistenceUpdate?) {
+        if (update == null) return
+        scope.launch {
+            update.persistAsync()
+        }
     }
 
     private fun resetCafeVisitBaselineIfNeeded(serverIndex: Int) {
@@ -99,7 +135,9 @@ internal class BaOfficeActionCoordinator(
                 serverIndex = serverIndex,
             )
         office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
-        BaOfficeRepository.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
+        scope.launch {
+            BaOfficeRepository.saveCafeVisitLastNotifiedSlotMsAsync(baselineSlotMs)
+        }
     }
 
     private fun resetArenaRefreshBaselineIfNeeded(serverIndex: Int) {
@@ -110,6 +148,8 @@ internal class BaOfficeActionCoordinator(
                 serverIndex = serverIndex,
             )
         office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
-        BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMs(baselineSlotMs)
+        scope.launch {
+            BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMsAsync(baselineSlotMs)
+        }
     }
 }

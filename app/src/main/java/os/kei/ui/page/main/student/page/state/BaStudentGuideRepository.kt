@@ -2,7 +2,6 @@ package os.kei.ui.page.main.student.page.state
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
@@ -12,6 +11,7 @@ import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
@@ -32,22 +32,27 @@ internal data class BaStudentGuideMediaSettings(
 
 internal class BaStudentGuideRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
-    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
 ) {
     private val npcSatelliteGuideFlagCache = ConcurrentHashMap<Long, Boolean>()
 
-    fun loadCurrentUrl(): String = BaStudentGuideStore.loadCurrentUrl()
+    suspend fun loadCurrentUrlAsync(): String =
+        withContext(ioDispatcher) {
+            BaStudentGuideStore.loadCurrentUrl()
+        }
 
-    fun saveCurrentUrl(sourceUrl: String) {
-        BaStudentGuideStore.setCurrentUrl(sourceUrl)
+    suspend fun saveCurrentUrlAsync(sourceUrl: String) {
+        withContext(ioDispatcher) {
+            BaStudentGuideStore.setCurrentUrl(sourceUrl)
+        }
     }
 
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
         bgmFavoriteRepository.favoritesFlow()
 
-    fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> =
-        bgmFavoriteRepository.favoritesSnapshot()
+    suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> =
+        bgmFavoriteRepository.hydrateFavorites()
 
     suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
         bgmFavoriteRepository.toggleFavorite(item)
@@ -58,6 +63,9 @@ internal class BaStudentGuideRepository(
                 mediaAdaptiveRotationEnabled = BASettingsStore.loadMediaAdaptiveRotationEnabled(),
             )
         }
+
+    fun consumeInitialBottomTab(sourceUrl: String): GuideBottomTab? =
+        GuideDetailTabRequestStore.consume(sourceUrl)
 
     suspend fun resolveNpcSatelliteGuide(
         sourceUrl: String,

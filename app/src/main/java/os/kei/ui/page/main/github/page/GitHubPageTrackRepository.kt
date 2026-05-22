@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -44,6 +45,18 @@ internal class GitHubPageTrackRepository(
     suspend fun loadRefreshIntervalHours(): Int {
         return withContext(ioDispatcher) {
             GitHubTrackStore.loadRefreshIntervalHours()
+        }
+    }
+
+    suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences {
+        return withContext(ioDispatcher) {
+            GitHubTrackStore.loadAppPickerPreferences()
+        }
+    }
+
+    suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) {
+        withContext(ioDispatcher) {
+            GitHubTrackStore.saveAppPickerPreferences(preferences)
         }
     }
 

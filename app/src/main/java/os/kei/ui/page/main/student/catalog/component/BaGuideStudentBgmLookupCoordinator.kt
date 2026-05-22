@@ -2,7 +2,6 @@ package os.kei.ui.page.main.student.catalog.component
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -15,11 +14,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import kotlin.coroutines.cancellation.CancellationException
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmResolveRepository
+import kotlin.coroutines.cancellation.CancellationException
 
 private const val BGM_CACHE_PREWARM_BATCH_SIZE = 32
 private const val BGM_CACHE_PREWARM_PARALLELISM = 4
@@ -27,18 +26,17 @@ private const val BGM_CACHE_PREWARM_PARALLELISM = 4
 internal class BaGuideStudentBgmLookupCoordinator(
     private val scope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
-    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    private val repository: BaGuideStudentBgmResolveRepository =
+        BaGuideStudentBgmResolveRepository(
+            ioDispatcher = ioDispatcher,
+            parseDispatcher = parseDispatcher,
+        ),
     private val cachedLoader: suspend (BaGuideCatalogEntry) -> BaGuideStudentBgmResolvedItem? = { entry ->
-        withContext(ioDispatcher) {
-            loadCachedStudentBgmFavorite(entry)
-        }
+        repository.loadCachedFavorite(entry)
     },
     private val networkLoader: suspend (BaGuideCatalogEntry) -> BaGuideStudentBgmResolvedItem? = { entry ->
-        fetchStudentBgmFavoriteAsync(
-            entry = entry,
-            networkDispatcher = ioDispatcher,
-            parseDispatcher = parseDispatcher
-        )
+        repository.fetchFavorite(entry)
     }
 ) {
     private val _states = MutableStateFlow<Map<Long, BaGuideStudentBgmLookupState>>(emptyMap())

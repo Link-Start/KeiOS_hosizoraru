@@ -140,7 +140,73 @@ internal class BaPageUiController(
     var sheetShowEndedPools by mutableStateOf(snapshot.showEndedPools)
     var sheetShowEndedActivities by mutableStateOf(snapshot.showEndedActivities)
     var sheetShowCalendarPoolImages by mutableStateOf(snapshot.showCalendarPoolImages)
+    private var savedNotificationDraft by mutableStateOf(snapshot.toNotificationDraftState())
     var consumedScrollToTopSignal by mutableIntStateOf(0)
+
+    fun matchesSnapshot(snapshot: BaPageSnapshot): Boolean =
+        serverIndex == snapshot.serverIndex &&
+            showEndedPools == snapshot.showEndedPools &&
+            showEndedActivities == snapshot.showEndedActivities &&
+            showCalendarPoolImages == snapshot.showCalendarPoolImages &&
+            mediaAdaptiveRotationEnabled == snapshot.mediaAdaptiveRotationEnabled &&
+            mediaSaveCustomEnabled == snapshot.mediaSaveCustomEnabled &&
+            mediaSaveFixedTreeUri == snapshot.mediaSaveFixedTreeUri &&
+            idIndependentByServer == snapshot.idIndependentByServer &&
+            calendarRefreshIntervalHours == snapshot.calendarRefreshIntervalHours &&
+            sheetCafeLevel == snapshot.cafeLevel &&
+            sheetApNotifyEnabled == snapshot.apNotifyEnabled &&
+            sheetCafeApNotifyEnabled == snapshot.cafeApNotifyEnabled &&
+            sheetArenaRefreshNotifyEnabled == snapshot.arenaRefreshNotifyEnabled &&
+            sheetCafeVisitNotifyEnabled == snapshot.cafeVisitNotifyEnabled &&
+            sheetCalendarUpcomingNotifyEnabled == snapshot.calendarUpcomingNotifyEnabled &&
+            sheetCalendarEndingNotifyEnabled == snapshot.calendarEndingNotifyEnabled &&
+            sheetPoolUpcomingNotifyEnabled == snapshot.poolUpcomingNotifyEnabled &&
+            sheetPoolEndingNotifyEnabled == snapshot.poolEndingNotifyEnabled &&
+            sheetCalendarPoolChangeNotifyEnabled == snapshot.calendarPoolChangeNotifyEnabled &&
+            sheetCalendarPoolNotifyLeadHours == snapshot.calendarPoolNotifyLeadHours &&
+            sheetApNotifyThresholdText == snapshot.apNotifyThreshold.toString() &&
+            sheetCafeApNotifyThresholdText == snapshot.cafeApNotifyThreshold.toString() &&
+            sheetMediaAdaptiveRotationEnabled == snapshot.mediaAdaptiveRotationEnabled &&
+            sheetMediaSaveCustomEnabled == snapshot.mediaSaveCustomEnabled &&
+            sheetMediaSaveFixedTreeUri == snapshot.mediaSaveFixedTreeUri &&
+            sheetIdIndependentByServer == snapshot.idIndependentByServer &&
+            sheetShowEndedPools == snapshot.showEndedPools &&
+            sheetShowEndedActivities == snapshot.showEndedActivities &&
+            sheetShowCalendarPoolImages == snapshot.showCalendarPoolImages &&
+            savedNotificationDraft == snapshot.toNotificationDraftState()
+
+    fun applySnapshot(snapshot: BaPageSnapshot) {
+        serverIndex = snapshot.serverIndex
+        showEndedPools = snapshot.showEndedPools
+        showEndedActivities = snapshot.showEndedActivities
+        showCalendarPoolImages = snapshot.showCalendarPoolImages
+        mediaAdaptiveRotationEnabled = snapshot.mediaAdaptiveRotationEnabled
+        mediaSaveCustomEnabled = snapshot.mediaSaveCustomEnabled
+        mediaSaveFixedTreeUri = snapshot.mediaSaveFixedTreeUri
+        idIndependentByServer = snapshot.idIndependentByServer
+        calendarRefreshIntervalHours = snapshot.calendarRefreshIntervalHours
+        sheetCafeLevel = snapshot.cafeLevel
+        sheetApNotifyEnabled = snapshot.apNotifyEnabled
+        sheetCafeApNotifyEnabled = snapshot.cafeApNotifyEnabled
+        sheetArenaRefreshNotifyEnabled = snapshot.arenaRefreshNotifyEnabled
+        sheetCafeVisitNotifyEnabled = snapshot.cafeVisitNotifyEnabled
+        sheetCalendarUpcomingNotifyEnabled = snapshot.calendarUpcomingNotifyEnabled
+        sheetCalendarEndingNotifyEnabled = snapshot.calendarEndingNotifyEnabled
+        sheetPoolUpcomingNotifyEnabled = snapshot.poolUpcomingNotifyEnabled
+        sheetPoolEndingNotifyEnabled = snapshot.poolEndingNotifyEnabled
+        sheetCalendarPoolChangeNotifyEnabled = snapshot.calendarPoolChangeNotifyEnabled
+        sheetCalendarPoolNotifyLeadHours = snapshot.calendarPoolNotifyLeadHours
+        sheetApNotifyThresholdText = snapshot.apNotifyThreshold.toString()
+        sheetCafeApNotifyThresholdText = snapshot.cafeApNotifyThreshold.toString()
+        sheetMediaAdaptiveRotationEnabled = snapshot.mediaAdaptiveRotationEnabled
+        sheetMediaSaveCustomEnabled = snapshot.mediaSaveCustomEnabled
+        sheetMediaSaveFixedTreeUri = snapshot.mediaSaveFixedTreeUri
+        sheetIdIndependentByServer = snapshot.idIndependentByServer
+        sheetShowEndedPools = snapshot.showEndedPools
+        sheetShowEndedActivities = snapshot.showEndedActivities
+        sheetShowCalendarPoolImages = snapshot.showCalendarPoolImages
+        savedNotificationDraft = snapshot.toNotificationDraftState()
+    }
 
     fun routeState(
         calendarUiState: BaCalendarUiState,
@@ -215,6 +281,13 @@ internal class BaPageUiController(
             cafeApNotifyThresholdText = sheetCafeApNotifyThresholdText,
         )
 
+    fun savedNotificationDraftState(): BaPageNotificationDraftState = savedNotificationDraft
+
+    fun applySavedNotificationDraft(draft: BaPageNotificationDraftState) {
+        savedNotificationDraft = draft
+        applyNotificationDraft(draft)
+    }
+
     fun refreshCalendar(force: Boolean = false) {
         if (force) baCalendarReloadSignal += 1
     }
@@ -257,9 +330,9 @@ internal class BaPageUiController(
         showNotificationSettingsSheet = true
     }
 
-    fun closeNotificationSettingsSheet(office: BaOfficeController) {
+    fun closeNotificationSettingsSheet() {
         showNotificationSettingsSheet = false
-        loadNotificationDraft(office)
+        applyNotificationDraft(savedNotificationDraft)
     }
 
     fun openDebugSheet() {
@@ -273,21 +346,49 @@ internal class BaPageUiController(
     }
 
     private fun loadNotificationDraft(office: BaOfficeController) {
-        val calendarPoolNotifications = BaSettingsPersistenceRepository.loadCalendarPoolNotificationSettings()
-        sheetApNotifyEnabled = office.apNotifyEnabled
-        sheetCafeApNotifyEnabled = office.cafeApNotifyEnabled
-        sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
-        sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-        sheetCalendarUpcomingNotifyEnabled = calendarPoolNotifications.calendarUpcomingNotifyEnabled
-        sheetCalendarEndingNotifyEnabled = calendarPoolNotifications.calendarEndingNotifyEnabled
-        sheetPoolUpcomingNotifyEnabled = calendarPoolNotifications.poolUpcomingNotifyEnabled
-        sheetPoolEndingNotifyEnabled = calendarPoolNotifications.poolEndingNotifyEnabled
-        sheetCalendarPoolChangeNotifyEnabled = calendarPoolNotifications.calendarPoolChangeNotifyEnabled
-        sheetCalendarPoolNotifyLeadHours = calendarPoolNotifications.calendarPoolNotifyLeadHours
-        sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
-        sheetCafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString()
+        savedNotificationDraft =
+            savedNotificationDraft.copy(
+                apNotifyEnabled = office.apNotifyEnabled,
+                cafeApNotifyEnabled = office.cafeApNotifyEnabled,
+                arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+                cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+                apNotifyThresholdText = office.apNotifyThreshold.toString(),
+                cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
+            )
+        applyNotificationDraft(savedNotificationDraft)
+    }
+
+    private fun applyNotificationDraft(draft: BaPageNotificationDraftState) {
+        sheetApNotifyEnabled = draft.apNotifyEnabled
+        sheetCafeApNotifyEnabled = draft.cafeApNotifyEnabled
+        sheetArenaRefreshNotifyEnabled = draft.arenaRefreshNotifyEnabled
+        sheetCafeVisitNotifyEnabled = draft.cafeVisitNotifyEnabled
+        sheetCalendarUpcomingNotifyEnabled = draft.calendarUpcomingNotifyEnabled
+        sheetCalendarEndingNotifyEnabled = draft.calendarEndingNotifyEnabled
+        sheetPoolUpcomingNotifyEnabled = draft.poolUpcomingNotifyEnabled
+        sheetPoolEndingNotifyEnabled = draft.poolEndingNotifyEnabled
+        sheetCalendarPoolChangeNotifyEnabled = draft.calendarPoolChangeNotifyEnabled
+        sheetCalendarPoolNotifyLeadHours = draft.calendarPoolNotifyLeadHours
+        sheetApNotifyThresholdText = draft.apNotifyThresholdText
+        sheetCafeApNotifyThresholdText = draft.cafeApNotifyThresholdText
     }
 }
 
 @Composable
 internal fun rememberBaPageUiController(snapshot: BaPageSnapshot): BaPageUiController = remember(snapshot) { BaPageUiController(snapshot) }
+
+private fun BaPageSnapshot.toNotificationDraftState(): BaPageNotificationDraftState =
+    BaPageNotificationDraftState(
+        apNotifyEnabled = apNotifyEnabled,
+        cafeApNotifyEnabled = cafeApNotifyEnabled,
+        arenaRefreshNotifyEnabled = arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = cafeVisitNotifyEnabled,
+        calendarUpcomingNotifyEnabled = calendarUpcomingNotifyEnabled,
+        calendarEndingNotifyEnabled = calendarEndingNotifyEnabled,
+        poolUpcomingNotifyEnabled = poolUpcomingNotifyEnabled,
+        poolEndingNotifyEnabled = poolEndingNotifyEnabled,
+        calendarPoolChangeNotifyEnabled = calendarPoolChangeNotifyEnabled,
+        calendarPoolNotifyLeadHours = calendarPoolNotifyLeadHours,
+        apNotifyThresholdText = apNotifyThreshold.toString(),
+        cafeApNotifyThresholdText = cafeApNotifyThreshold.toString(),
+    )

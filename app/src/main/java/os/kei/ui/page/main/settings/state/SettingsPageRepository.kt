@@ -3,7 +3,6 @@ package os.kei.ui.page.main.settings.state
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import os.kei.core.export.ExportJobResult
 import os.kei.core.log.AppLogStore
@@ -16,7 +15,7 @@ import os.kei.core.concurrency.AppDispatchers
 
 internal class SettingsPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     suspend fun listCacheEntries(context: Context): List<CacheEntrySummary> {
         return withContext(ioDispatcher) {

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -35,11 +36,13 @@ internal fun GitHubPageSheetHost(
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     checkLogicDownloaderOptions: List<DownloaderOption>,
     appPickerDerivedState: GitHubTrackAppPickerDerivedState,
+    appPickerPreferences: GitHubAppPickerPreferences,
     hasKeiOsSelfTrack: Boolean,
     tracksExporting: Boolean,
     tracksImporting: Boolean,
     onEnsureKeiOsSelfTrack: () -> Unit,
     onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
+    onAppPickerPreferencesChange: (GitHubAppPickerPreferences) -> Unit,
     onConfirmTrackImport: () -> Unit
 ) {
     val trackedPackageNames =
@@ -332,6 +335,7 @@ internal fun GitHubPageSheetHost(
         selectedApp = state.selectedApp,
         appList = state.appList,
         appPickerDerivedState = appPickerDerivedState,
+        appPickerPreferences = appPickerPreferences,
         trackedPackageNames = trackedPackageNames,
         appListRefreshing = state.appListRefreshing,
         addAppPickerRememberedFirstVisibleItemIndex = state.addTrackAppPickerFirstVisibleItemIndex,
@@ -382,6 +386,7 @@ internal fun GitHubPageSheetHost(
         onPickerExpandedChange = actions::setTrackAppPickerExpanded,
         onRefreshAppList = actions::refreshTrackAppList,
         onRequestAppPickerState = onRequestAppPickerState,
+        onAppPickerPreferencesChange = onAppPickerPreferencesChange,
         onAddAppPickerScrollPositionChange = { index, offset ->
             state.addTrackAppPickerFirstVisibleItemIndex = index
             state.addTrackAppPickerFirstVisibleItemScrollOffset = offset

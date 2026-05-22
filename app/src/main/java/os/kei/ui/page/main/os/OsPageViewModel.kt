@@ -28,12 +28,7 @@ import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.state.OsCardImportTarget
-import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
-import os.kei.ui.page.main.os.transfer.OsCardImportError
-import os.kei.ui.page.main.os.transfer.OsCardImportException
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
-import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
-import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
 
 @OptIn(FlowPreview::class)
 internal class OsPageViewModel : ViewModel() {
@@ -126,6 +121,28 @@ internal class OsPageViewModel : ViewModel() {
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = OsPageUiState(),
+        )
+    private val transferCoordinator =
+        OsPageTransferCoordinator(
+            scope = viewModelScope,
+            repository = repository,
+            exportRepository = exportRepository,
+            persistentState = persistentState,
+            runtimeState = runtimeState,
+            runtimeMutableState = _runtimeState,
+            events = _events,
+        )
+    private val cardCoordinator =
+        OsPageCardCoordinator(
+            scope = viewModelScope,
+            repository = repository,
+            cardRepository = cardRepository,
+            visibilityRepository = visibilityRepository,
+            shellCommandRepository = shellCommandRepository,
+            persistentState = persistentState,
+            runtimeState = runtimeState,
+            runtimeMutableState = _runtimeState,
+            events = _events,
         )
 
     init {
@@ -511,89 +528,29 @@ internal class OsPageViewModel : ViewModel() {
         cardId: String,
         visible: Boolean,
         defaults: OsGoogleSystemServiceConfig,
-    ) {
-        viewModelScope.launch {
-            try {
-                val updatedCards =
-                    visibilityRepository.setActivityCardVisible(
-                        cards = persistentState.value.activityShortcutCards,
-                        cardId = cardId,
-                        visible = visible,
-                        defaults = defaults,
-                    )
-                repository.updateActivityShortcutCards(updatedCards)
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            }
-        }
-    }
+    ) = cardCoordinator.applyActivityCardVisibility(
+        cardId = cardId,
+        visible = visible,
+        defaults = defaults,
+    )
 
     fun applyShellCommandCardVisibility(
         cardId: String,
         visible: Boolean,
-    ) {
-        viewModelScope.launch {
-            try {
-                val updatedCards =
-                    visibilityRepository.setShellCommandCardVisible(
-                        cardId = cardId,
-                        visible = visible,
-                    )
-                repository.updateShellCommandCards(updatedCards)
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            }
-        }
-    }
+    ) = cardCoordinator.applyShellCommandCardVisibility(
+        cardId = cardId,
+        visible = visible,
+    )
 
     fun runShellCommandCard(
         card: OsShellCommandCard,
         shizukuApiUtils: ShizukuApiUtils,
         shellRunNoOutputText: String,
-    ) {
-        val command = card.command.trim()
-        if (command.isBlank()) {
-            _events.tryEmit(OsPageEvent.ShellCommandCardCommandRequired)
-            return
-        }
-        if (runtimeState.value.runningShellCommandCardIds.contains(card.id)) return
-        if (!shizukuApiUtils.canUseCommand()) {
-            shizukuApiUtils.requestPermissionIfNeeded()
-            _events.tryEmit(OsPageEvent.ShellCommandCardNoPermission)
-            return
-        }
-        _runtimeState.update { state ->
-            state.copy(runningShellCommandCardIds = state.runningShellCommandCardIds + card.id)
-        }
-        viewModelScope.launch {
-            try {
-                val output =
-                    shellCommandRepository
-                        .runCommand(
-                            shizukuApiUtils = shizukuApiUtils,
-                            command = command,
-                        ).orEmpty()
-                        .trim()
-                        .ifBlank { shellRunNoOutputText }
-                val updatedCards =
-                    shellCommandRepository.saveRunResult(
-                        cardId = card.id,
-                        output = output,
-                    )
-                repository.updateShellCommandCards(updatedCards)
-                _events.emit(OsPageEvent.ShellCommandCardRunCompleted)
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ShellCommandCardRunFailed(error))
-            } finally {
-                _runtimeState.update { state ->
-                    state.copy(runningShellCommandCardIds = state.runningShellCommandCardIds - card.id)
-                }
-            }
-        }
-    }
+    ) = cardCoordinator.runShellCommandCard(
+        card = card,
+        shizukuApiUtils = shizukuApiUtils,
+        shellRunNoOutputText = shellRunNoOutputText,
+    )
 
     fun refreshAllSections(
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
@@ -630,46 +587,9 @@ internal class OsPageViewModel : ViewModel() {
 
     fun prepareActivityCardsExport(
         defaults: OsGoogleSystemServiceConfig,
-    ) {
-        viewModelScope.launch {
-            try {
-                val content =
-                    repository.buildActivityCardsExportJson(
-                        cards = persistentState.value.activityShortcutCards,
-                        defaults = defaults,
-                    )
-                _events.emit(
-                    OsPageEvent.LaunchExportDocument(
-                        fileName = "keios-os-activity-cards.json",
-                        content = content,
-                    ),
-                )
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            }
-        }
-    }
+    ) = transferCoordinator.prepareActivityCardsExport(defaults)
 
-    fun prepareShellCardsExport() {
-        viewModelScope.launch {
-            try {
-                val content =
-                    repository.buildShellCardsExportJson(
-                        cards = persistentState.value.shellCommandCards,
-                    )
-                _events.emit(
-                    OsPageEvent.LaunchExportDocument(
-                        fileName = "keios-os-shell-cards.json",
-                        content = content,
-                    ),
-                )
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            }
-        }
-    }
+    fun prepareShellCardsExport() = transferCoordinator.prepareShellCardsExport()
 
     fun prepareSectionCardExport(
         card: OsSectionCard,
@@ -677,69 +597,23 @@ internal class OsPageViewModel : ViewModel() {
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         shizukuStatus: String,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    ) {
-        if (runtimeState.value.exportingCard != null) return
-        _runtimeState.update { state -> state.copy(exportingCard = card) }
-        viewModelScope.launch {
-            try {
-                when (card) {
-                    OsSectionCard.TOP_INFO -> {
-                        visibleSectionKinds(persistentState.value.uiSnapshot.visibleCards).forEach { section ->
-                            ensureLoad(section, false)
-                        }
-                    }
-
-                    else -> {
-                        sectionKindByCard(card)?.let { section ->
-                            ensureLoad(section, false)
-                        }
-                    }
-                }
-                val document =
-                    exportRepository.buildSectionCardExport(
-                        OsPageSectionCardExportRequest(
-                            card = card,
-                            sectionStates = runtimeState.value.sectionStates,
-                            activityShortcutCards = persistentState.value.activityShortcutCards,
-                            googleSystemServiceDefaults = googleSystemServiceDefaults,
-                            context = context.applicationContext,
-                            shizukuStatus = shizukuStatus,
-                        ),
-                    )
-                _events.emit(
-                    OsPageEvent.LaunchExportDocument(
-                        fileName = document.fileName,
-                        content = document.content,
-                    ),
-                )
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            } finally {
-                _runtimeState.update { state -> state.copy(exportingCard = null) }
-            }
-        }
-    }
+    ) = transferCoordinator.prepareSectionCardExport(
+        card = card,
+        context = context,
+        googleSystemServiceDefaults = googleSystemServiceDefaults,
+        shizukuStatus = shizukuStatus,
+        ensureLoad = ensureLoad,
+    )
 
     fun writeCardExportContent(
         contentResolver: ContentResolver,
         uri: Uri,
         content: String,
-    ) {
-        viewModelScope.launch {
-            try {
-                repository.writeExportContent(
-                    contentResolver = contentResolver,
-                    uri = uri,
-                    content = content,
-                )
-                _events.emit(OsPageEvent.CardExportWritten)
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.CardExportWriteFailed(error))
-            }
-        }
-    }
+    ) = transferCoordinator.writeCardExportContent(
+        contentResolver = contentResolver,
+        uri = uri,
+        content = content,
+    )
 
     fun requestCardImportPreview(
         contentResolver: ContentResolver,
@@ -748,164 +622,60 @@ internal class OsPageViewModel : ViewModel() {
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
-    ) {
-        viewModelScope.launch {
-            try {
-                val raw =
-                    repository.readImportContent(
-                        contentResolver = contentResolver,
-                        uri = uri,
-                    )
-                val state = persistentState.value
-                val preview =
-                    repository.buildCardImportPreview(
-                        raw = raw,
-                        target = target,
-                        activityShortcutCards = state.activityShortcutCards,
-                        shellCommandCards = state.shellCommandCards,
-                        googleSystemServiceDefaults = googleSystemServiceDefaults,
-                        googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
-                        builtInActivityShortcutCards = builtInActivityShortcutCards,
-                    )
-                _events.emit(OsPageEvent.CardImportPreviewReady(preview))
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.CardImportFailed(error))
-            } finally {
-                _events.emit(OsPageEvent.CardTransferCompleted)
-            }
-        }
-    }
+    ) = transferCoordinator.requestCardImportPreview(
+        contentResolver = contentResolver,
+        uri = uri,
+        target = target,
+        googleSystemServiceDefaults = googleSystemServiceDefaults,
+        googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+        builtInActivityShortcutCards = builtInActivityShortcutCards,
+    )
 
     fun confirmCardImport(
         preview: OsCardImportPreview,
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
-    ) {
-        viewModelScope.launch {
-            try {
-                when (val payload = preview.payload) {
-                    is OsActivityCardImportPayload -> {
-                        val result =
-                            repository.applyActivityCardImport(
-                                payload = payload,
-                                existingCards = persistentState.value.activityShortcutCards,
-                                defaults = googleSystemServiceDefaults,
-                                builtInSampleDefaults = googleSettingsBuiltInSampleDefaults,
-                                builtInActivityShortcutCards = builtInActivityShortcutCards,
-                            )
-                        repository.updateActivityShortcutCards(result.cards)
-                        _events.emit(OsPageEvent.ActivityCardsImported(result))
-                    }
-
-                    is OsShellCardImportPayload -> {
-                        val result =
-                            repository.applyShellCardImport(
-                                payload = payload,
-                                existingCards = persistentState.value.shellCommandCards,
-                            )
-                        repository.updateShellCommandCards(result.cards)
-                        _events.emit(OsPageEvent.ShellCardsImported(result))
-                    }
-
-                    is OsUnknownCardImportPayload -> throw OsCardImportException(OsCardImportError.NoImportableData)
-                }
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.CardImportFailed(error))
-            } finally {
-                _events.emit(OsPageEvent.CardTransferCompleted)
-            }
-        }
-    }
+    ) = transferCoordinator.confirmCardImport(
+        preview = preview,
+        googleSystemServiceDefaults = googleSystemServiceDefaults,
+        googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+        builtInActivityShortcutCards = builtInActivityShortcutCards,
+    )
 
     fun saveShellCommandCardEdit(
         cardId: String,
         title: String,
         subtitle: String,
         command: String,
-    ) {
-        viewModelScope.launch {
-            try {
-                val updatedCards =
-                    cardRepository.saveShellCommandCardEdit(
-                        cardId = cardId,
-                        title = title,
-                        subtitle = subtitle,
-                        command = command,
-                    )
-                if (updatedCards == null) {
-                    _events.emit(OsPageEvent.ShellCommandCardSaveFailed)
-                    return@launch
-                }
-                repository.updateShellCommandCards(updatedCards)
-                _events.emit(OsPageEvent.ShellCommandCardSaved)
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ShellCommandCardSaveFailed)
-            }
-        }
-    }
+    ) = cardCoordinator.saveShellCommandCardEdit(
+        cardId = cardId,
+        title = title,
+        subtitle = subtitle,
+        command = command,
+    )
 
-    fun deleteShellCommandCard(cardId: String) {
-        viewModelScope.launch {
-            try {
-                val updatedCards = cardRepository.deleteShellCommandCard(cardId)
-                repository.updateShellCommandCards(updatedCards)
-                _events.emit(OsPageEvent.ShellCommandCardDeleted(cardId))
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ExportFailed(error))
-            }
-        }
-    }
+    fun deleteShellCommandCard(cardId: String) = cardCoordinator.deleteShellCommandCard(cardId)
 
     fun saveActivityShortcutCard(
         editMode: OsActivityCardEditMode,
         editingCardId: String?,
         draft: OsGoogleSystemServiceConfig,
         defaults: OsGoogleSystemServiceConfig,
-    ) {
-        viewModelScope.launch {
-            try {
-                val updatedCards =
-                    cardRepository.saveActivityShortcutCard(
-                        cards = persistentState.value.activityShortcutCards,
-                        editMode = editMode,
-                        editingCardId = editingCardId,
-                        draft = draft,
-                        defaults = defaults,
-                    )
-                repository.updateActivityShortcutCards(updatedCards)
-                _events.emit(OsPageEvent.ActivityShortcutCardSaved)
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ExportFailed(error))
-            }
-        }
-    }
+    ) = cardCoordinator.saveActivityShortcutCard(
+        editMode = editMode,
+        editingCardId = editingCardId,
+        draft = draft,
+        defaults = defaults,
+    )
 
     fun deleteActivityShortcutCard(
         cardId: String,
         defaults: OsGoogleSystemServiceConfig,
-    ) {
-        viewModelScope.launch {
-            try {
-                val updatedCards =
-                    cardRepository.deleteActivityShortcutCard(
-                        cards = persistentState.value.activityShortcutCards,
-                        cardId = cardId,
-                        defaults = defaults,
-                    )
-                repository.updateActivityShortcutCards(updatedCards)
-                _events.emit(OsPageEvent.ActivityShortcutCardDeleted(cardId))
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.ExportFailed(error))
-            }
-        }
-    }
+    ) = cardCoordinator.deleteActivityShortcutCard(
+        cardId = cardId,
+        defaults = defaults,
+    )
 
     fun updateTopInfoExpanded(value: Boolean) {
         repository.updateTopInfoExpanded(value)

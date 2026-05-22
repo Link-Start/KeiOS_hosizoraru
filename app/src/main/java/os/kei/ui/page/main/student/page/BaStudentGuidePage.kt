@@ -19,7 +19,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -45,6 +44,7 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
+import os.kei.ui.page.main.student.page.state.BindBaStudentGuideMediaSaveEvents
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideForegroundAudioGuard
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePagerSyncEffects
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePlayerLifecycleEffects
@@ -178,7 +178,6 @@ fun BaStudentGuidePage(
     val activeBottomTab = bottomTabsList.getOrElse(pagerState.currentPage) { GuideBottomTab.Archive }
     val settledBottomTab = bottomTabsList.getOrElse(pagerState.settledPage) { GuideBottomTab.Archive }
     val guideStaticPrefetchEnabled = info != null && !loading && error == null
-    val pageScope = rememberCoroutineScope()
     val syncProgress =
         rememberGuideSyncProgress(
             loading = loading,
@@ -252,15 +251,16 @@ fun BaStudentGuidePage(
     val voicePlayerController = rememberBaStudentGuideVoicePlayerController(sourceUrl)
     val saveGuideMediaAction =
         rememberBaStudentGuideMediaSaveAction(
-            pageScope = pageScope,
+            guideViewModel = guideViewModel,
             currentStudentNamePrefix = { info?.title?.trim().orEmpty() },
         )
     val saveGuideMediaPackAction =
         rememberBaStudentGuideMediaPackSaveAction(
-            pageScope = pageScope,
+            guideViewModel = guideViewModel,
             currentStudentNamePrefix = { info?.title?.trim().orEmpty() },
         )
 
+    BindBaStudentGuideMediaSaveEvents(guideViewModel = guideViewModel)
     BindBaStudentGuidePlayerLifecycleEffects(
         sourceUrl = sourceUrl,
         voicePlayerController = voicePlayerController,

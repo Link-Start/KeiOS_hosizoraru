@@ -1,11 +1,14 @@
 package os.kei.ui.page.main.student.page.state
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +22,8 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.ui.page.main.student.page.support.GuideMediaPackSaveRequest
+import os.kei.ui.page.main.student.page.support.GuideMediaSaveRequest
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaStudentGuideDataUiState(
@@ -70,12 +75,18 @@ internal class BaStudentGuideViewModel(
     private var npcSatelliteResolveJob: Job? = null
     private var prefetchJob: Job? = null
     private var lastLoadedSourceUrl: String = ""
+    private val mediaSaveCoordinator =
+        BaStudentGuideMediaSaveCoordinator(
+            appContext = appContext,
+            scope = viewModelScope,
+        )
 
     private val _dataState = MutableStateFlow(BaStudentGuideDataUiState())
     val dataState: StateFlow<BaStudentGuideDataUiState> = _dataState.asStateFlow()
 
     private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
     val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
+    val events: SharedFlow<BaStudentGuideEvent> = mediaSaveCoordinator.events
     val bgmFavoriteAudioUrls: StateFlow<Set<String>> =
         repository
             .bgmFavoritesFlow()
@@ -250,6 +261,58 @@ internal class BaStudentGuideViewModel(
 
     suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
         repository.toggleBgmFavorite(item)
+
+    fun requestMediaSave(
+        rawMediaUrl: String,
+        rawTitle: String,
+        studentNamePrefix: String,
+    ) = mediaSaveCoordinator.requestMediaSave(
+        rawMediaUrl = rawMediaUrl,
+        rawTitle = rawTitle,
+        studentNamePrefix = studentNamePrefix,
+    )
+
+    fun requestMediaPackSave(
+        rawItems: List<Pair<String, String>>,
+        rawPackTitle: String,
+        studentNamePrefix: String,
+    ) = mediaSaveCoordinator.requestMediaPackSave(
+        rawItems = rawItems,
+        rawPackTitle = rawPackTitle,
+        studentNamePrefix = studentNamePrefix,
+    )
+
+    fun completeCustomMediaSave(
+        request: GuideMediaSaveRequest,
+        targetUri: Uri,
+    ) = mediaSaveCoordinator.completeCustomMediaSave(
+        request = request,
+        targetUri = targetUri,
+    )
+
+    fun completeFixedMediaSave(
+        request: GuideMediaSaveRequest,
+        treeUri: Uri,
+    ) = mediaSaveCoordinator.completeFixedMediaSave(
+        request = request,
+        treeUri = treeUri,
+    )
+
+    fun completeCustomMediaPackSave(
+        request: GuideMediaPackSaveRequest,
+        targetUri: Uri,
+    ) = mediaSaveCoordinator.completeCustomMediaPackSave(
+        request = request,
+        targetUri = targetUri,
+    )
+
+    fun completeFixedMediaPackSave(
+        request: GuideMediaPackSaveRequest,
+        treeUri: Uri,
+    ) = mediaSaveCoordinator.completeFixedMediaPackSave(
+        request = request,
+        treeUri = treeUri,
+    )
 
     fun syncStaticImagePrefetch(
         info: BaStudentGuideInfo?,
@@ -440,6 +503,11 @@ internal class BaStudentGuideViewModel(
             }
         }
     }
+
+}
+
+private fun Throwable.rethrowIfCancellation() {
+    if (this is CancellationException) throw this
 }
 
 private fun List<GuideBgmFavoriteItem>.toAudioUrlSet(): Set<String> =

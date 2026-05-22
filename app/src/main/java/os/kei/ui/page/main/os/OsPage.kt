@@ -24,8 +24,10 @@ import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
+import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.state.createOsPageActionState
 import os.kei.ui.page.main.os.state.rememberOsPageCardTransferState
+import os.kei.ui.page.main.os.state.rememberOsPageCardTransferEventActions
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayTransferActions
 import os.kei.ui.page.main.os.state.rememberOsPageUiContext
@@ -150,13 +152,9 @@ fun OsPage(
             context = context,
             osPageViewModel = osPageViewModel,
             overlayState = overlayState,
-            activityCardExpanded = activityCardExpanded,
-            shellCommandCardExpanded = shellCommandCardExpanded,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             googleSettingsBuiltInSampleDefaults = textBundle.googleSettingsBuiltInSampleDefaults,
             builtInActivityShortcutCards = textBundle.builtInActivityShortcutCards,
-            cardImportFailedWithReason = textBundle.cardImportFailedWithReason,
-            exportSuccessText = textBundle.exportSuccessText,
         )
     val overlayTransferActions =
         rememberOsPageOverlayTransferActions(
@@ -165,6 +163,14 @@ fun OsPage(
             overlayState = overlayState,
             cardTransferState = cardTransferState,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
+        )
+    val cardTransferEventActions =
+        rememberOsPageCardTransferEventActions(
+            context = context,
+            overlayState = overlayState,
+            activityCardExpanded = activityCardExpanded,
+            shellCommandCardExpanded = shellCommandCardExpanded,
+            textBundle = textBundle,
         )
     BindOsPageEvents(
         events = osPageViewModel.events,
@@ -182,7 +188,15 @@ fun OsPage(
                 ),
             )
         },
+        onCardExportWritten = cardTransferEventActions.onExportWritten,
+        onCardExportWriteFailed = cardTransferEventActions.onExportWriteFailed,
+        onCardImportPreviewReady = cardTransferEventActions.onImportPreviewReady,
+        onCardImportFailed = cardTransferEventActions.onImportFailed,
+        onCardTransferCompleted = cardTransferEventActions.onTransferCompleted,
+        onActivityCardsImported = cardTransferEventActions.onActivityCardsImported,
+        onShellCardsImported = cardTransferEventActions.onShellCardsImported,
         onOperationFailed = { error ->
+            overlayState.onCardTransferInProgressChange(false)
             context.showToast(
                 context.getString(
                     R.string.common_export_failed_with_reason,
@@ -244,6 +258,37 @@ fun OsPage(
                     textBundle.noRefreshableCardText
                 },
             )
+        },
+        onLaunchActivityShortcut = { config ->
+            runCatching {
+                launchGoogleSystemServiceActivity(
+                    context = context,
+                    config = config,
+                    defaults = textBundle.googleSystemServiceDefaults,
+                )
+            }.onFailure { error ->
+                context.showToast(
+                    context.getString(
+                        R.string.os_google_system_service_toast_open_failed,
+                        error.javaClass.simpleName,
+                    ),
+                )
+            }
+        },
+        onActivityShortcutInvalidTarget = {
+            context.showToast(R.string.os_google_system_service_toast_invalid_target)
+        },
+        onShowActivityShortcutEditor = { request ->
+            overlayState.onActivityCardEditModeChange(request.editMode)
+            overlayState.onEditingActivityShortcutCardIdChange(request.editingCardId)
+            overlayState.onEditingActivityShortcutBuiltInChange(request.editingBuiltIn)
+            overlayState.onActivityShortcutDraftChange(request.draft)
+            overlayState.onShowActivityShortcutEditorChange(true)
+        },
+        onShowShellCommandCardEditor = { card ->
+            overlayState.onEditingShellCommandCardIdChange(card.id)
+            overlayState.onShellCommandCardDraftChange(card)
+            overlayState.onShowShellCommandCardEditorChange(true)
         },
     )
     val sectionStates = runtimeState.sectionStates
@@ -361,7 +406,6 @@ fun OsPage(
         remember(
             context,
             textBundle,
-            overlayState,
             actionState,
             routeState,
             shizukuStatus,
@@ -372,7 +416,6 @@ fun OsPage(
             createOsPageMainListActions(
                 context = context,
                 textBundle = textBundle,
-                overlayState = overlayState,
                 actionState = actionState,
                 routeState = routeState,
                 shizukuStatus = shizukuStatus,

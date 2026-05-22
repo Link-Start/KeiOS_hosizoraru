@@ -2,14 +2,10 @@ package os.kei.ui.page.main.os
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
-import os.kei.R
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellRunnerActivity
-import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.os.state.OsPageActionState
-import os.kei.ui.page.main.os.state.OsPageOverlayState
 import os.kei.ui.page.main.os.state.OsPageTextBundle
 
 @Immutable
@@ -31,7 +27,6 @@ internal data class OsPageMainListActions(
 internal fun createOsPageMainListActions(
     context: Context,
     textBundle: OsPageTextBundle,
-    overlayState: OsPageOverlayState,
     actionState: OsPageActionState,
     routeState: OsPageRouteState,
     shizukuStatus: String,
@@ -44,11 +39,7 @@ internal fun createOsPageMainListActions(
         onShellCommandCardExpandedChange = { cardId, expanded ->
             shellCommandCardExpanded[cardId] = expanded
         },
-        onOpenShellCommandCardEditor = { card ->
-            overlayState.onEditingShellCommandCardIdChange(card.id)
-            overlayState.onShellCommandCardDraftChange(card)
-            overlayState.onShowShellCommandCardEditorChange(true)
-        },
+        onOpenShellCommandCardEditor = osPageViewModel::openShellCommandCardEditor,
         onRunShellCommandCard = { card ->
             actionState.runShellCommandCard(card)
         },
@@ -56,28 +47,15 @@ internal fun createOsPageMainListActions(
             activityCardExpanded[cardId] = expanded
         },
         onOpenActivityShortcutCard = { card ->
-            openOsActivityShortcutCard(
-                context = context,
+            osPageViewModel.openActivityShortcutCard(
                 card = card,
                 defaults = textBundle.googleSystemServiceDefaults,
-                invalidTargetMessage = context.getString(R.string.os_google_system_service_toast_invalid_target),
-                openFailedMessage = { error ->
-                    context.getString(
-                        R.string.os_google_system_service_toast_open_failed,
-                        error.javaClass.simpleName
-                    )
-                }
             )
         },
         onOpenActivityShortcutCardEditor = { card ->
-            beginEditingOsActivityShortcutCard(
+            osPageViewModel.openActivityShortcutCardEditor(
                 card = card,
                 defaults = textBundle.googleSystemServiceDefaults,
-                onEditModeChange = overlayState.onActivityCardEditModeChange,
-                onEditingCardIdChange = overlayState.onEditingActivityShortcutCardIdChange,
-                onEditingBuiltInChange = overlayState.onEditingActivityShortcutBuiltInChange,
-                onDraftChange = overlayState.onActivityShortcutDraftChange,
-                onShowEditorChange = overlayState.onShowActivityShortcutEditorChange
             )
         },
         isCardVisible = { card -> isCardVisible(routeState.visibleCards, card) },
@@ -100,13 +78,7 @@ internal fun createOsPageMainListActions(
         },
         onRefreshAll = actionState.refreshAllSections,
         onOpenAddActivityShortcutCard = {
-            overlayState.onActivityCardEditModeChange(OsActivityCardEditMode.Add)
-            overlayState.onEditingActivityShortcutCardIdChange(null)
-            overlayState.onEditingActivityShortcutBuiltInChange(false)
-            overlayState.onActivityShortcutDraftChange(
-                createDefaultActivityShortcutDraft(textBundle.googleSystemServiceDefaults)
-            )
-            overlayState.onShowActivityShortcutEditorChange(true)
+            osPageViewModel.openAddActivityShortcutCardEditor(textBundle.googleSystemServiceDefaults)
         }
     )
 }

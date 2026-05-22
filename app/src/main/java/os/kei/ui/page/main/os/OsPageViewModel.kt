@@ -23,13 +23,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
-import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.state.OsCardImportTarget
 import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
@@ -38,24 +34,6 @@ import os.kei.ui.page.main.os.transfer.OsCardImportException
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
 import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
-
-internal data class OsPageRuntimeState(
-    val sectionStates: Map<SectionKind, SectionState> = defaultOsSectionStates(),
-    val cacheLoaded: Boolean = false,
-    val cachePersisted: Boolean = false,
-    val uiStatePersistenceReady: Boolean = false,
-    val refreshing: Boolean = false,
-    val refreshProgress: Float = 0f,
-    val runningShellCommandCardIds: Set<String> = emptySet(),
-    val exportingCard: OsSectionCard? = null,
-)
-
-internal data class OsActivitySuggestionUiState(
-    val packageSuggestions: List<ShortcutInstalledAppOption> = emptyList(),
-    val packageSuggestionsLoading: Boolean = false,
-    val classSuggestions: List<ShortcutActivityClassOption> = emptyList(),
-    val classSuggestionsLoading: Boolean = false,
-)
 
 @OptIn(FlowPreview::class)
 internal class OsPageViewModel : ViewModel() {
@@ -71,6 +49,7 @@ internal class OsPageViewModel : ViewModel() {
     private val shellCommandRepository = OsPageShellCommandRepository()
     private val refreshRepository = OsPageRefreshRepository()
     private val sectionLoadRepository = OsPageSectionLoadRepository()
+    private val activityShortcutRepository = OsPageActivityShortcutRepository()
     private var activitySuggestionJob: Job? = null
     private var rowsDerivationJob: Job? = null
 
@@ -202,6 +181,64 @@ internal class OsPageViewModel : ViewModel() {
                 builtInShellCommandCards = builtInShellCommandCards,
             )
         }
+    }
+
+    fun openActivityShortcutCard(
+        card: OsActivityShortcutCard,
+        defaults: OsGoogleSystemServiceConfig,
+    ) {
+        viewModelScope.launch {
+            try {
+                val normalized =
+                    activityShortcutRepository.normalizeForOpen(
+                        card = card,
+                        defaults = defaults,
+                    )
+                if (normalized.packageName.isBlank()) {
+                    _events.emit(OsPageEvent.ActivityShortcutInvalidTarget)
+                    return@launch
+                }
+                _events.emit(OsPageEvent.LaunchActivityShortcut(normalized))
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun openActivityShortcutCardEditor(
+        card: OsActivityShortcutCard,
+        defaults: OsGoogleSystemServiceConfig,
+    ) {
+        viewModelScope.launch {
+            try {
+                val request =
+                    activityShortcutRepository.buildEditRequest(
+                        card = card,
+                        defaults = defaults,
+                    )
+                _events.emit(OsPageEvent.ShowActivityShortcutEditor(request))
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun openAddActivityShortcutCardEditor(defaults: OsGoogleSystemServiceConfig) {
+        viewModelScope.launch {
+            try {
+                val request = activityShortcutRepository.buildAddRequest(defaults)
+                _events.emit(OsPageEvent.ShowActivityShortcutEditor(request))
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun openShellCommandCardEditor(card: OsShellCommandCard) {
+        _events.tryEmit(OsPageEvent.ShowShellCommandCardEditor(card))
     }
 
     fun requestActivitySuggestions(
@@ -688,8 +725,6 @@ internal class OsPageViewModel : ViewModel() {
         contentResolver: ContentResolver,
         uri: Uri,
         content: String,
-        onSuccess: () -> Unit,
-        onFailure: (Throwable) -> Unit,
     ) {
         viewModelScope.launch {
             try {
@@ -698,10 +733,10 @@ internal class OsPageViewModel : ViewModel() {
                     uri = uri,
                     content = content,
                 )
-                onSuccess()
+                _events.emit(OsPageEvent.CardExportWritten)
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                onFailure(error)
+                _events.emit(OsPageEvent.CardExportWriteFailed(error))
             }
         }
     }
@@ -713,9 +748,6 @@ internal class OsPageViewModel : ViewModel() {
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
-        onPreview: (OsCardImportPreview) -> Unit,
-        onFailure: (Throwable) -> Unit,
-        onComplete: () -> Unit,
     ) {
         viewModelScope.launch {
             try {
@@ -735,12 +767,12 @@ internal class OsPageViewModel : ViewModel() {
                         googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
                         builtInActivityShortcutCards = builtInActivityShortcutCards,
                     )
-                onPreview(preview)
+                _events.emit(OsPageEvent.CardImportPreviewReady(preview))
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                onFailure(error)
+                _events.emit(OsPageEvent.CardImportFailed(error))
             } finally {
-                onComplete()
+                _events.emit(OsPageEvent.CardTransferCompleted)
             }
         }
     }
@@ -750,10 +782,6 @@ internal class OsPageViewModel : ViewModel() {
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
         googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
-        onActivityImported: (OsActivityCardImportMergeResult) -> Unit,
-        onShellImported: (OsShellCardImportMergeResult) -> Unit,
-        onFailure: (Throwable) -> Unit,
-        onComplete: () -> Unit,
     ) {
         viewModelScope.launch {
             try {
@@ -768,7 +796,7 @@ internal class OsPageViewModel : ViewModel() {
                                 builtInActivityShortcutCards = builtInActivityShortcutCards,
                             )
                         repository.updateActivityShortcutCards(result.cards)
-                        onActivityImported(result)
+                        _events.emit(OsPageEvent.ActivityCardsImported(result))
                     }
 
                     is OsShellCardImportPayload -> {
@@ -778,16 +806,16 @@ internal class OsPageViewModel : ViewModel() {
                                 existingCards = persistentState.value.shellCommandCards,
                             )
                         repository.updateShellCommandCards(result.cards)
-                        onShellImported(result)
+                        _events.emit(OsPageEvent.ShellCardsImported(result))
                     }
 
                     is OsUnknownCardImportPayload -> throw OsCardImportException(OsCardImportError.NoImportableData)
                 }
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                onFailure(error)
+                _events.emit(OsPageEvent.CardImportFailed(error))
             } finally {
-                onComplete()
+                _events.emit(OsPageEvent.CardTransferCompleted)
             }
         }
     }
@@ -953,16 +981,6 @@ internal class OsPageViewModel : ViewModel() {
         super.onCleared()
     }
 }
-
-private fun defaultOsSectionStates(): Map<SectionKind, SectionState> =
-    mapOf(
-        SectionKind.SYSTEM to SectionState(),
-        SectionKind.SECURE to SectionState(),
-        SectionKind.GLOBAL to SectionState(),
-        SectionKind.ANDROID to SectionState(),
-        SectionKind.JAVA to SectionState(),
-        SectionKind.LINUX to SectionState(),
-    )
 
 private fun Throwable.rethrowIfCancellation() {
     if (this is CancellationException) throw this

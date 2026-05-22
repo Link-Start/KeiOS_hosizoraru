@@ -209,6 +209,49 @@ fun BAPage(
             refreshPool(force = true)
         }
     }
+    LaunchedEffect(officeViewModel, context) {
+        officeViewModel.events.collect { event ->
+            when (event) {
+                is BaOfficeEvent.SettingsSaved -> {
+                    runtimePersistenceCoordinator.submit(event.clampUpdate)
+                    ui.showEndedPools = event.persisted.showEndedPools
+                    ui.showEndedActivities = event.persisted.showEndedActivities
+                    ui.showCalendarPoolImages = event.persisted.showCalendarPoolImages
+                    ui.mediaAdaptiveRotationEnabled = event.persisted.mediaAdaptiveRotationEnabled
+                    ui.mediaSaveCustomEnabled = event.persisted.mediaSaveCustomEnabled
+                    ui.mediaSaveFixedTreeUri = event.persisted.mediaSaveFixedTreeUri
+                    ui.idIndependentByServer = event.persisted.idIndependentByServer
+                    if (event.refreshCalendar) refreshCalendar(force = true)
+                    if (event.refreshPool) refreshPool(force = true)
+                    runtimePersistenceCoordinator.submit(event.runtimeUpdate)
+                    ui.closeSettingsSheet(office)
+                }
+
+                is BaOfficeEvent.NotificationSettingsSaved -> {
+                    runtimePersistenceCoordinator.submit(event.runtimeUpdate)
+                    ui.applySavedNotificationDraft(event.savedDraft)
+                    ui.closeNotificationSettingsSheet()
+                }
+
+                is BaOfficeEvent.RefreshIntervalSaved -> {
+                    ui.calendarRefreshIntervalHours = event.hours
+                    if (event.shouldRefresh) {
+                        refreshCalendar(force = true)
+                        refreshPool(force = true)
+                    }
+                }
+
+                is BaOfficeEvent.OperationFailed -> {
+                    context.showToast(
+                        context.getString(
+                            R.string.common_save_failed_with_reason,
+                            event.error.message ?: event.error.javaClass.simpleName,
+                        ),
+                    )
+                }
+            }
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer =
@@ -224,26 +267,20 @@ fun BAPage(
     }
 
     fun saveSettings() {
-        saveBaPageSettings(
-            context = context,
-            office = office,
-            ui = ui,
-            scope = pageScope,
-            runtimePersistenceCoordinator = runtimePersistenceCoordinator,
-            settingsSheetState = settingsSheetState,
-            onRefreshCalendar = ::refreshCalendar,
-            onRefreshPool = ::refreshPool,
+        runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
+        officeViewModel.saveSettings(
+            sheetState = settingsSheetState,
+            currentShowEndedActivities = ui.showEndedActivities,
+            currentShowCalendarPoolImages = ui.showCalendarPoolImages,
+            serverIndex = ui.serverIndex,
         )
     }
 
     fun saveNotificationSettings() {
-        saveBaNotificationSettings(
-            context = context,
-            office = office,
-            ui = ui,
-            scope = pageScope,
-            runtimePersistenceCoordinator = runtimePersistenceCoordinator,
-            notificationSettingsSheetState = notificationSettingsSheetState,
+        runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
+        officeViewModel.saveNotificationSettings(
+            sheetState = notificationSettingsSheetState,
+            serverIndex = ui.serverIndex,
         )
     }
 
@@ -414,13 +451,9 @@ fun BAPage(
             onShowEndedPoolsChange = { ui.sheetShowEndedPools = it },
             onShowCalendarPoolImagesChange = { ui.sheetShowCalendarPoolImages = it },
             onCalendarRefreshIntervalSelected = { hours ->
-                applyBaCalendarRefreshInterval(
-                    ui = ui,
-                    scope = pageScope,
+                officeViewModel.saveRefreshInterval(
                     hours = hours,
                     calendarLastSyncMs = baRouteState.calendarUiState.lastSyncMs,
-                    onRefreshCalendar = { refreshCalendar(force = true) },
-                    onRefreshPool = { refreshPool(force = true) },
                 )
             },
             hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,

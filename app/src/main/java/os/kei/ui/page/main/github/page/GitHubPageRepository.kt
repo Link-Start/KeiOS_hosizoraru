@@ -37,14 +37,15 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
+import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
-import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.picker.filterAndSortGitHubTrackAppCandidates
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.section.GitHubOverviewEntry
 import os.kei.ui.page.main.github.section.GitHubOverviewUiState
 import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
@@ -65,19 +66,23 @@ internal data class GitHubTrackEditorDraft(
     val updateIntervalMode: GitHubTrackedUpdateIntervalMode,
     val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,
-    val appList: List<InstalledAppItem>
+    val appList: List<InstalledAppItem>,
 )
 
 internal sealed interface GitHubTrackEditorResult {
-    data class Ready(val item: GitHubTrackedApp) : GitHubTrackEditorResult
+    data class Ready(
+        val item: GitHubTrackedApp,
+    ) : GitHubTrackEditorResult
+
     data object InvalidRepository : GitHubTrackEditorResult
+
     data object InvalidPackageName : GitHubTrackEditorResult
 }
 
 @Immutable
 internal data class GitHubOnlineShareTargetInput(
     val shouldResolve: Boolean,
-    val appList: List<InstalledAppItem>
+    val appList: List<InstalledAppItem>,
 )
 
 @Immutable
@@ -85,7 +90,7 @@ internal data class GitHubActiveShareImportFlow(
     val preview: GitHubShareImportPreview?,
     val pendingTrack: GitHubPendingShareImportTrack?,
     val attachCandidate: GitHubPendingShareImportAttachCandidate?,
-    val result: GitHubShareImportResult?
+    val result: GitHubShareImportResult?,
 )
 
 @Immutable
@@ -98,31 +103,32 @@ internal data class GitHubPagePersistedUiState(
 
 internal class GitHubPageRepository(
     ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
-    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
+    private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ) {
     private val contentStateDeriver = GitHubPageContentStateDeriver(defaultDispatcher)
     private val trackRepository = GitHubPageTrackRepository(ioDispatcher)
-    private val installedAppRepository = GitHubPageInstalledAppRepository(
-        ioDispatcher = ioDispatcher,
-        defaultDispatcher = defaultDispatcher
-    )
+    private val installedAppRepository =
+        GitHubPageInstalledAppRepository(
+            ioDispatcher = ioDispatcher,
+            defaultDispatcher = defaultDispatcher,
+        )
     private val refreshRepository = GitHubPageRefreshRepository(ioDispatcher)
-    private val transferRepository = GitHubPageTransferRepository(
-        ioDispatcher = ioDispatcher,
-        defaultDispatcher = defaultDispatcher
-    )
-    private val discoveryRepository = GitHubPageDiscoveryRepository(
-        ioDispatcher = ioDispatcher,
-        defaultDispatcher = defaultDispatcher
-    )
+    private val transferRepository =
+        GitHubPageTransferRepository(
+            ioDispatcher = ioDispatcher,
+            defaultDispatcher = defaultDispatcher,
+        )
+    private val discoveryRepository =
+        GitHubPageDiscoveryRepository(
+            ioDispatcher = ioDispatcher,
+            defaultDispatcher = defaultDispatcher,
+        )
     private val assetBridge = GitHubPageAssetBridge(ioDispatcher)
 
-    suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState {
-        return contentStateDeriver.build(input)
-    }
+    suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState = contentStateDeriver.build(input)
 
-    suspend fun buildAppPickerState(input: GitHubTrackAppPickerInput): GitHubTrackAppPickerDerivedState {
-        return withContext(defaultDispatcher) {
+    suspend fun buildAppPickerState(input: GitHubTrackAppPickerInput): GitHubTrackAppPickerDerivedState =
+        withContext(defaultDispatcher) {
             GitHubTrackAppPickerDerivedState(
                 filteredApps =
                     filterAndSortGitHubTrackAppCandidates(
@@ -140,10 +146,9 @@ internal class GitHubPageRepository(
                 input = input,
             )
         }
-    }
 
-    suspend fun loadPersistedUiState(): GitHubPagePersistedUiState {
-        return withContext(AppDispatchers.githubLocal) {
+    suspend fun loadPersistedUiState(): GitHubPagePersistedUiState =
+        withContext(AppDispatchers.githubLocal) {
             GitHubPagePersistedUiState(
                 pageUiState = GitHubPageUiStateStore.load(),
                 actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
@@ -151,7 +156,6 @@ internal class GitHubPageRepository(
                 trackedReleaseExpansionState = GitHubTrackedReleaseUiStateStore.load(),
             )
         }
-    }
 
     suspend fun saveTrackedFilterMode(value: GitHubTrackedFilterMode) {
         withContext(AppDispatchers.githubLocal) {
@@ -159,37 +163,77 @@ internal class GitHubPageRepository(
         }
     }
 
+    suspend fun saveOverviewExpanded(value: Boolean) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubOverviewUiStateStore.setExpanded(value)
+        }
+    }
+
+    suspend fun saveOverviewVisibleEntries(entries: Set<GitHubOverviewEntry>) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubOverviewUiStateStore.setVisibleEntries(entries)
+        }
+    }
+
+    suspend fun saveTrackedStableVersionExpanded(
+        itemId: String,
+        value: Boolean,
+    ) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubTrackedReleaseUiStateStore.setStableVersionExpanded(itemId, value)
+        }
+    }
+
+    suspend fun saveTrackedLocalVersionExpanded(
+        itemId: String,
+        value: Boolean,
+    ) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubTrackedReleaseUiStateStore.setLocalVersionExpanded(itemId, value)
+        }
+    }
+
+    suspend fun saveTrackedPreReleaseVersionExpanded(
+        itemId: String,
+        value: Boolean,
+    ) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)
+        }
+    }
+
+    suspend fun removeTrackedReleaseExpansion(itemId: String) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubTrackedReleaseUiStateStore.remove(itemId)
+        }
+    }
+
+    suspend fun retainTrackedReleaseExpansion(validItemIds: Set<String>) {
+        withContext(AppDispatchers.githubLocal) {
+            GitHubTrackedReleaseUiStateStore.retain(validItemIds)
+        }
+    }
+
     suspend fun queryOnlineShareTargets(
         context: Context,
-        input: GitHubOnlineShareTargetInput
-    ): List<OnlineShareTargetOption> {
-        return installedAppRepository.queryOnlineShareTargets(context, input)
-    }
+        input: GitHubOnlineShareTargetInput,
+    ): List<OnlineShareTargetOption> = installedAppRepository.queryOnlineShareTargets(context, input)
 
-    suspend fun queryDownloaders(context: Context): List<DownloaderOption> {
-        return installedAppRepository.queryDownloaders(context)
-    }
+    suspend fun queryDownloaders(context: Context): List<DownloaderOption> = installedAppRepository.queryDownloaders(context)
 
-    suspend fun loadTrackSnapshot(): GitHubTrackSnapshot =
-        trackRepository.loadTrackSnapshot()
+    suspend fun loadTrackSnapshot(): GitHubTrackSnapshot = trackRepository.loadTrackSnapshot()
 
-    suspend fun loadLookupConfig(): GitHubLookupConfig =
-        trackRepository.loadLookupConfig()
+    suspend fun loadLookupConfig(): GitHubLookupConfig = trackRepository.loadLookupConfig()
 
-    suspend fun saveLookupConfig(config: GitHubLookupConfig) =
-        trackRepository.saveLookupConfig(config)
+    suspend fun saveLookupConfig(config: GitHubLookupConfig) = trackRepository.saveLookupConfig(config)
 
-    suspend fun loadRefreshIntervalHours(): Int =
-        trackRepository.loadRefreshIntervalHours()
+    suspend fun loadRefreshIntervalHours(): Int = trackRepository.loadRefreshIntervalHours()
 
-    suspend fun saveRefreshIntervalHours(hours: Int) =
-        trackRepository.saveRefreshIntervalHours(hours)
+    suspend fun saveRefreshIntervalHours(hours: Int) = trackRepository.saveRefreshIntervalHours(hours)
 
-    suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences =
-        trackRepository.loadAppPickerPreferences()
+    suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences = trackRepository.loadAppPickerPreferences()
 
-    suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) =
-        trackRepository.saveAppPickerPreferences(preferences)
+    suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) = trackRepository.saveAppPickerPreferences(preferences)
 
     suspend fun saveTrackedItems(
         context: Context,
@@ -198,7 +242,7 @@ internal class GitHubPageRepository(
         trackedAddedAtById: Map<String, Long>,
         trackedModifiedAtById: Map<String, Long>,
         refreshTrackIds: Set<String> = emptySet(),
-        emitStoreSignal: Boolean = true
+        emitStoreSignal: Boolean = true,
     ) = trackRepository.saveTrackedItems(
         context = context,
         items = items,
@@ -206,43 +250,33 @@ internal class GitHubPageRepository(
         trackedAddedAtById = trackedAddedAtById,
         trackedModifiedAtById = trackedModifiedAtById,
         refreshTrackIds = refreshTrackIds,
-        emitStoreSignal = emitStoreSignal
+        emitStoreSignal = emitStoreSignal,
     )
 
     suspend fun saveCheckCache(
         states: Map<String, GitHubCheckCacheEntry>,
-        refreshTimestamp: Long
+        refreshTimestamp: Long,
     ) = trackRepository.saveCheckCache(states, refreshTimestamp)
 
-    suspend fun clearCheckCache() =
-        trackRepository.clearCheckCache()
+    suspend fun clearCheckCache() = trackRepository.clearCheckCache()
 
-    suspend fun clearPendingShareImportTrack() =
-        trackRepository.clearPendingShareImportTrack()
+    suspend fun clearPendingShareImportTrack() = trackRepository.clearPendingShareImportTrack()
 
-    suspend fun clearActiveShareImportFlow() =
-        trackRepository.clearActiveShareImportFlow()
+    suspend fun clearActiveShareImportFlow() = trackRepository.clearActiveShareImportFlow()
 
-    suspend fun clearShareImportResult() =
-        trackRepository.clearShareImportResult()
+    suspend fun clearShareImportResult() = trackRepository.clearShareImportResult()
 
-    suspend fun saveShareImportResult(result: GitHubShareImportResult) =
-        trackRepository.saveShareImportResult(result)
+    suspend fun saveShareImportResult(result: GitHubShareImportResult) = trackRepository.saveShareImportResult(result)
 
-    suspend fun loadActiveShareImportFlow(): GitHubActiveShareImportFlow =
-        trackRepository.loadActiveShareImportFlow()
+    suspend fun loadActiveShareImportFlow(): GitHubActiveShareImportFlow = trackRepository.loadActiveShareImportFlow()
 
-    fun scheduleGitHubRefresh(context: Context) =
-        trackRepository.scheduleGitHubRefresh(context)
+    fun scheduleGitHubRefresh(context: Context) = trackRepository.scheduleGitHubRefresh(context)
 
-    fun currentTrackStoreSignalVersion(): Long =
-        trackRepository.currentTrackStoreSignalVersion()
+    fun currentTrackStoreSignalVersion(): Long = trackRepository.currentTrackStoreSignalVersion()
 
-    fun trackStoreSignalVersions(): StateFlow<Long> =
-        trackRepository.trackStoreSignalVersions()
+    fun trackStoreSignalVersions(): StateFlow<Long> = trackRepository.trackStoreSignalVersions()
 
-    fun buildAppListPermissionIntent(context: Context): Intent? =
-        installedAppRepository.buildAppListPermissionIntent(context)
+    fun buildAppListPermissionIntent(context: Context): Intent? = installedAppRepository.buildAppListPermissionIntent(context)
 
     suspend fun consumeTrackRefreshRequests(validTrackIds: Set<String>): Set<String> =
         trackRepository.consumeTrackRefreshRequests(validTrackIds)
@@ -251,35 +285,37 @@ internal class GitHubPageRepository(
         context: Context,
         forceRefresh: Boolean,
         includeSystemApps: Boolean = true,
-        pinnedSystemPackageNames: Set<String> = emptySet()
-    ): List<InstalledAppItem> = installedAppRepository.queryInstalledLaunchableApps(
-        context = context,
-        forceRefresh = forceRefresh,
-        includeSystemApps = includeSystemApps,
-        pinnedSystemPackageNames = pinnedSystemPackageNames
-    )
+        pinnedSystemPackageNames: Set<String> = emptySet(),
+    ): List<InstalledAppItem> =
+        installedAppRepository.queryInstalledLaunchableApps(
+            context = context,
+            forceRefresh = forceRefresh,
+            includeSystemApps = includeSystemApps,
+            pinnedSystemPackageNames = pinnedSystemPackageNames,
+        )
 
     suspend fun preloadAppIcons(
         context: Context,
-        packageNames: List<String>
+        packageNames: List<String>,
     ) = installedAppRepository.preloadAppIcons(context, packageNames)
 
     suspend fun localVersionInfoOrNull(
         context: Context,
-        packageName: String
+        packageName: String,
     ) = installedAppRepository.localVersionInfoOrNull(context, packageName)
 
     suspend fun evaluateTrackedApp(
         context: Context,
         item: GitHubTrackedApp,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false
-    ): VersionCheckUi = refreshRepository.evaluateTrackedApp(
-        context = context,
-        item = item,
-        profilePurposeOverride = profilePurposeOverride,
-        forceRefresh = forceRefresh
-    )
+        forceRefresh: Boolean = false,
+    ): VersionCheckUi =
+        refreshRepository.evaluateTrackedApp(
+            context = context,
+            item = item,
+            profilePurposeOverride = profilePurposeOverride,
+            forceRefresh = forceRefresh,
+        )
 
     suspend fun notifyRefreshProgress(
         context: Context,
@@ -287,14 +323,14 @@ internal class GitHubPageRepository(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
     ) = refreshRepository.notifyRefreshProgress(
         context = context,
         current = current,
         total = total,
         preReleaseUpdateCount = preReleaseUpdateCount,
         updatableCount = updatableCount,
-        failedCount = failedCount
+        failedCount = failedCount,
     )
 
     suspend fun notifyRefreshCompleted(
@@ -302,13 +338,13 @@ internal class GitHubPageRepository(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
     ) = refreshRepository.notifyRefreshCompleted(
         context = context,
         total = total,
         preReleaseUpdateCount = preReleaseUpdateCount,
         updatableCount = updatableCount,
-        failedCount = failedCount
+        failedCount = failedCount,
     )
 
     suspend fun notifyRefreshCancelled(
@@ -317,85 +353,71 @@ internal class GitHubPageRepository(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
     ) = refreshRepository.notifyRefreshCancelled(
         context = context,
         current = current,
         total = total,
         preReleaseUpdateCount = preReleaseUpdateCount,
         updatableCount = updatableCount,
-        failedCount = failedCount
+        failedCount = failedCount,
     )
 
-    fun cancelRefreshNotification(context: Context) =
-        refreshRepository.cancelRefreshNotification(context)
+    fun cancelRefreshNotification(context: Context) = refreshRepository.cancelRefreshNotification(context)
 
-    suspend fun clearReleaseStrategyCaches() =
-        refreshRepository.clearReleaseStrategyCaches()
+    suspend fun clearReleaseStrategyCaches() = refreshRepository.clearReleaseStrategyCaches()
 
-    suspend fun clearAllAssetCache() =
-        assetBridge.clearAllAssetCache()
+    suspend fun clearAllAssetCache() = assetBridge.clearAllAssetCache()
 
-    suspend fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload =
-        transferRepository.parseTrackedItemsImport(raw)
+    suspend fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload = transferRepository.parseTrackedItemsImport(raw)
 
     suspend fun buildTrackedItemsImportPreview(
         payload: GitHubTrackedItemsImportPayload,
-        existingItems: List<GitHubTrackedApp>
-    ): GitHubTrackImportPreview = transferRepository.buildTrackedItemsImportPreview(
-        payload = payload,
-        existingItems = existingItems
-    )
+        existingItems: List<GitHubTrackedApp>,
+    ): GitHubTrackImportPreview =
+        transferRepository.buildTrackedItemsImportPreview(
+            payload = payload,
+            existingItems = existingItems,
+        )
 
-    suspend fun buildStrategyBenchmarkTargets(
-        items: List<GitHubTrackedApp>
-    ): List<GitHubRepoTarget> =
+    suspend fun buildStrategyBenchmarkTargets(items: List<GitHubTrackedApp>): List<GitHubRepoTarget> =
         discoveryRepository.buildStrategyBenchmarkTargets(items)
 
     suspend fun runStrategyBenchmark(
         targets: List<GitHubRepoTarget>,
-        apiToken: String
-    ): GitHubStrategyBenchmarkReport =
-        discoveryRepository.runStrategyBenchmark(targets, apiToken)
+        apiToken: String,
+    ): GitHubStrategyBenchmarkReport = discoveryRepository.runStrategyBenchmark(targets, apiToken)
 
-    suspend fun checkCredential(
-        apiToken: String
-    ): GitHubStrategyLoadTrace<GitHubApiCredentialStatus> =
+    suspend fun checkCredential(apiToken: String): GitHubStrategyLoadTrace<GitHubApiCredentialStatus> =
         discoveryRepository.checkCredential(apiToken)
 
-    suspend fun buildTrackedItem(draft: GitHubTrackEditorDraft): GitHubTrackEditorResult =
-        discoveryRepository.buildTrackedItem(draft)
+    suspend fun buildTrackedItem(draft: GitHubTrackEditorDraft): GitHubTrackEditorResult = discoveryRepository.buildTrackedItem(draft)
 
     suspend fun previewStarredRepositoryImport(
         request: GitHubStarredRepositoryImportRequest,
-        existingItems: List<GitHubTrackedApp>
-    ): Result<GitHubStarredRepositoryImportPreview> =
-        discoveryRepository.previewStarredRepositoryImport(request, existingItems)
+        existingItems: List<GitHubTrackedApp>,
+    ): Result<GitHubStarredRepositoryImportPreview> = discoveryRepository.previewStarredRepositoryImport(request, existingItems)
 
     suspend fun searchRepositoriesForApp(
         request: GitHubAppRepositorySearchRequest,
-        existingItems: List<GitHubTrackedApp>
-    ): Result<GitHubAppRepositorySearchResult> =
-        discoveryRepository.searchRepositoriesForApp(request, existingItems)
+        existingItems: List<GitHubTrackedApp>,
+    ): Result<GitHubAppRepositorySearchResult> = discoveryRepository.searchRepositoriesForApp(request, existingItems)
 
-    suspend fun scanPackageNameFromLatestStableApk(
-        request: GitHubApkPackageNameScanRequest
-    ): Result<GitHubApkPackageNameScanResult> =
+    suspend fun scanPackageNameFromLatestStableApk(request: GitHubApkPackageNameScanRequest): Result<GitHubApkPackageNameScanResult> =
         discoveryRepository.scanPackageNameFromLatestStableApk(request)
 
     suspend fun scanPackageNameFromDirectApk(
         repoUrl: String,
-        lookupConfig: GitHubLookupConfig
-    ): Result<GitHubApkPackageNameScanResult> =
-        discoveryRepository.scanPackageNameFromDirectApk(repoUrl, lookupConfig)
+        lookupConfig: GitHubLookupConfig,
+    ): Result<GitHubApkPackageNameScanResult> = discoveryRepository.scanPackageNameFromDirectApk(repoUrl, lookupConfig)
 
-    suspend fun scanRepositoryFromPackage(
-        request: GitHubPackageRepositoryScanRequest
-    ): Result<GitHubPackageRepositoryScanResult> =
+    suspend fun scanRepositoryFromPackage(request: GitHubPackageRepositoryScanRequest): Result<GitHubPackageRepositoryScanResult> =
         discoveryRepository.scanRepositoryFromPackage(request)
 
-    fun buildReleaseUrl(owner: String, repo: String): String =
-        assetBridge.buildReleaseUrl(owner, repo)
+    fun buildReleaseUrl(
+        owner: String,
+        repo: String,
+    ): String = assetBridge.buildReleaseUrl(owner, repo)
 
     fun buildAssetCacheKey(
         owner: String,
@@ -405,34 +427,32 @@ internal class GitHubPageRepository(
         preferHtml: Boolean,
         aggressiveFiltering: Boolean,
         includeAllAssets: Boolean,
-        hasApiToken: Boolean
-    ): String = assetBridge.buildAssetCacheKey(
-        owner = owner,
-        repo = repo,
-        rawTag = rawTag,
-        releaseUrl = releaseUrl,
-        preferHtml = preferHtml,
-        aggressiveFiltering = aggressiveFiltering,
-        includeAllAssets = includeAllAssets,
-        hasApiToken = hasApiToken
-    )
+        hasApiToken: Boolean,
+    ): String =
+        assetBridge.buildAssetCacheKey(
+            owner = owner,
+            repo = repo,
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            preferHtml = preferHtml,
+            aggressiveFiltering = aggressiveFiltering,
+            includeAllAssets = includeAllAssets,
+            hasApiToken = hasApiToken,
+        )
 
     suspend fun loadAssetBundle(
         cacheKey: String,
-        refreshIntervalHours: Int
-    ): GitHubReleaseAssetBundle? =
-        assetBridge.loadAssetBundle(cacheKey, refreshIntervalHours)
+        refreshIntervalHours: Int,
+    ): GitHubReleaseAssetBundle? = assetBridge.loadAssetBundle(cacheKey, refreshIntervalHours)
 
     suspend fun saveAssetBundle(
         cacheKey: String,
-        bundle: GitHubReleaseAssetBundle
+        bundle: GitHubReleaseAssetBundle,
     ) = assetBridge.saveAssetBundle(cacheKey, bundle)
 
-    suspend fun clearAssetCache(cacheKey: String) =
-        assetBridge.clearAssetCache(cacheKey)
+    suspend fun clearAssetCache(cacheKey: String) = assetBridge.clearAssetCache(cacheKey)
 
-    suspend fun clearAssetCaches(cacheKeys: List<String>) =
-        assetBridge.clearAssetCaches(cacheKeys)
+    suspend fun clearAssetCaches(cacheKeys: List<String>) = assetBridge.clearAssetCaches(cacheKeys)
 
     suspend fun fetchApkAssets(
         owner: String,
@@ -442,44 +462,44 @@ internal class GitHubPageRepository(
         preferHtml: Boolean,
         aggressiveFiltering: Boolean,
         includeAllAssets: Boolean,
-        apiToken: String
-    ): Result<GitHubReleaseAssetBundle> = assetBridge.fetchApkAssets(
-        owner = owner,
-        repo = repo,
-        rawTag = rawTag,
-        releaseUrl = releaseUrl,
-        preferHtml = preferHtml,
-        aggressiveFiltering = aggressiveFiltering,
-        includeAllAssets = includeAllAssets,
-        apiToken = apiToken
-    )
+        apiToken: String,
+    ): Result<GitHubReleaseAssetBundle> =
+        assetBridge.fetchApkAssets(
+            owner = owner,
+            repo = repo,
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            preferHtml = preferHtml,
+            aggressiveFiltering = aggressiveFiltering,
+            includeAllAssets = includeAllAssets,
+            apiToken = apiToken,
+        )
 
     suspend fun fetchReleaseNotesTargets(
         owner: String,
         repo: String,
-        apiToken: String
-    ): Result<List<GitHubReleaseNotesTarget>> =
-        assetBridge.fetchReleaseNotesTargets(owner, repo, apiToken)
+        apiToken: String,
+    ): Result<List<GitHubReleaseNotesTarget>> = assetBridge.fetchReleaseNotesTargets(owner, repo, apiToken)
 
     suspend fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,
         useApiAssetUrl: Boolean,
-        apiToken: String
+        apiToken: String,
     ): String = assetBridge.resolvePreferredDownloadUrl(asset, useApiAssetUrl, apiToken)
 
     suspend fun buildTrackedItemsExportJson(
         items: List<GitHubTrackedApp>,
-        exportedAtMillis: Long
+        exportedAtMillis: Long,
     ): String = transferRepository.buildTrackedItemsExportJson(items, exportedAtMillis)
 
     suspend fun writeText(
         contentResolver: ContentResolver,
         uri: Uri,
-        content: String
+        content: String,
     ) = transferRepository.writeText(contentResolver, uri, content)
 
     suspend fun readText(
         contentResolver: ContentResolver,
-        uri: Uri
+        uri: Uri,
     ): String = transferRepository.readText(contentResolver, uri)
 }

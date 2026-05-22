@@ -145,13 +145,9 @@ fun OsPage(
     val cardTransferState =
         rememberOsPageCardTransferState(
             context = context,
-            scope = scope,
+            osPageViewModel = osPageViewModel,
             overlayState = overlayState,
-            activityShortcutCards = activityShortcutCards,
-            onActivityShortcutCardsChange = osPageViewModel::updateActivityShortcutCards,
             activityCardExpanded = activityCardExpanded,
-            shellCommandCards = shellCommandCards,
-            onShellCommandCardsChange = osPageViewModel::updateShellCommandCards,
             shellCommandCardExpanded = shellCommandCardExpanded,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             googleSettingsBuiltInSampleDefaults = textBundle.googleSettingsBuiltInSampleDefaults,
@@ -162,10 +158,9 @@ fun OsPage(
     val overlayTransferActions =
         rememberOsPageOverlayTransferActions(
             context = context,
+            osPageViewModel = osPageViewModel,
             overlayState = overlayState,
             cardTransferState = cardTransferState,
-            activityShortcutCards = activityShortcutCards,
-            shellCommandCards = shellCommandCards,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
         )
     val sectionStates = runtimeState.sectionStates

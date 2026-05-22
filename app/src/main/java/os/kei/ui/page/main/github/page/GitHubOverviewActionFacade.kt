@@ -1,22 +1,30 @@
 package os.kei.ui.page.main.github.page
 
+import kotlinx.coroutines.launch
+import os.kei.ui.page.main.github.page.action.GitHubPageActionEnvironment
 import os.kei.ui.page.main.github.section.GitHubOverviewEntry
-import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import os.kei.ui.page.main.github.section.defaultGitHubOverviewEntries
 import os.kei.ui.page.main.github.section.orDefaultGitHubOverviewEntries
 
 internal class GitHubOverviewActionFacade(
-    private val state: GitHubPageState,
+    private val env: GitHubPageActionEnvironment,
 ) {
+    private val state: GitHubPageState
+        get() = env.state
+
     fun setOverviewExpanded(value: Boolean) {
         state.overviewExpanded = value
-        GitHubOverviewUiStateStore.setExpanded(value)
+        env.scope.launch {
+            env.repository.saveOverviewExpanded(value)
+        }
     }
 
     fun openOverviewEntrySheet() {
         state.showOverviewEntrySheet = true
         state.overviewExpanded = true
-        GitHubOverviewUiStateStore.setExpanded(true)
+        env.scope.launch {
+            env.repository.saveOverviewExpanded(true)
+        }
     }
 
     fun closeOverviewEntrySheet() {
@@ -35,12 +43,16 @@ internal class GitHubOverviewActionFacade(
                 (current - entry).ifEmpty { setOf(entry) }
             }
         state.overviewVisibleEntries = next
-        GitHubOverviewUiStateStore.setVisibleEntries(next)
+        env.scope.launch {
+            env.repository.saveOverviewVisibleEntries(next)
+        }
     }
 
     fun resetOverviewEntries() {
         val defaults = defaultGitHubOverviewEntries()
         state.overviewVisibleEntries = defaults
-        GitHubOverviewUiStateStore.setVisibleEntries(defaults)
+        env.scope.launch {
+            env.repository.saveOverviewVisibleEntries(defaults)
+        }
     }
 }

@@ -2,28 +2,18 @@ package os.kei.ui.page.main.os.state
 
 import android.content.Context
 import android.net.Uri
-import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
-import os.kei.core.io.readTextFromUriLimited
+import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
-import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.OsPageViewModel
+import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
+import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
-import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
-import os.kei.ui.page.main.os.transfer.OsCardImportError
-import os.kei.ui.page.main.os.transfer.OsCardImportException
-import os.kei.ui.page.main.os.transfer.OsCardTransferService
-import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
-import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
 import os.kei.ui.page.main.os.transfer.localizedOsCardImportMessage
 
 internal data class OsPageCardTransferState(
@@ -35,13 +25,9 @@ internal data class OsPageCardTransferState(
 @Composable
 internal fun rememberOsPageCardTransferState(
     context: Context,
-    scope: CoroutineScope,
+    osPageViewModel: OsPageViewModel,
     overlayState: OsPageOverlayState,
-    activityShortcutCards: List<OsActivityShortcutCard>,
-    onActivityShortcutCardsChange: (List<OsActivityShortcutCard>) -> Unit,
     activityCardExpanded: SnapshotStateMap<String, Boolean>,
-    shellCommandCards: List<OsShellCommandCard>,
-    onShellCommandCardsChange: (List<OsShellCommandCard>) -> Unit,
     shellCommandCardExpanded: SnapshotStateMap<String, Boolean>,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
@@ -55,37 +41,25 @@ internal fun rememberOsPageCardTransferState(
         ) { uri: Uri? ->
             val content = overlayState.pendingExportContent
             if (uri == null || content.isNullOrBlank()) return@rememberLauncherForActivityResult
-            scope.launch {
-                runCatching {
-                    withContext(AppDispatchers.fileIo) {
-                        context.contentResolver.openOutputStream(uri)?.bufferedWriter().use { writer ->
-                            checkNotNull(writer) { "openOutputStream returned null" }
-                            writer.write(content)
-                        }
-                    }
-                }.onSuccess {
+            osPageViewModel.writeCardExportContent(
+                contentResolver = context.contentResolver,
+                uri = uri,
+                content = content,
+                onSuccess = {
                     context.showToast(exportSuccessText)
-                }.onFailure {
+                },
+                onFailure = {
                     context.showToast(
                         context.getString(
                             R.string.common_export_failed_with_reason,
                             it.javaClass.simpleName,
-                        )
+                        ),
                     )
-                }
-            }
+                },
+            )
         }
 
-    fun applyActivityImport(payload: OsActivityCardImportPayload) {
-        val result =
-            OsCardTransferService.applyActivityImport(
-                payload = payload,
-                existingCards = activityShortcutCards,
-                defaults = googleSystemServiceDefaults,
-                builtInSampleDefaults = googleSettingsBuiltInSampleDefaults,
-                builtInActivityShortcutCards = builtInActivityShortcutCards,
-            )
-        onActivityShortcutCardsChange(result.cards)
+    fun handleActivityImportResult(result: OsActivityCardImportMergeResult) {
         val validIds = result.cards.mapTo(mutableSetOf()) { it.id }
         activityCardExpanded.keys.retainAll(validIds)
         if (!validIds.contains(overlayState.editingActivityShortcutCardId.orEmpty())) {
@@ -103,13 +77,7 @@ internal fun rememberOsPageCardTransferState(
         )
     }
 
-    fun applyShellImport(payload: OsShellCardImportPayload) {
-        val result =
-            OsCardTransferService.applyShellImport(
-                payload = payload,
-                existingCards = shellCommandCards,
-            )
-        onShellCommandCardsChange(result.cards)
+    fun handleShellImportResult(result: OsShellCardImportMergeResult) {
         val validIds = result.cards.mapTo(mutableSetOf()) { it.id }
         shellCommandCardExpanded.keys.retainAll(validIds)
         if (!validIds.contains(overlayState.editingShellCommandCardId.orEmpty())) {
@@ -137,38 +105,28 @@ internal fun rememberOsPageCardTransferState(
                 overlayState.onCardTransferInProgressChange(false)
                 return@rememberLauncherForActivityResult
             }
-            scope.launch {
-                runCatching {
-                    val raw =
-                        withContext(AppDispatchers.fileIo) {
-                            context.contentResolver.readTextFromUriLimited(
-                                uri = uri,
-                                maxBytes = DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES,
-                            ).text
-                        }
-                    withContext(AppDispatchers.uiDerivation) {
-                        OsCardTransferService.buildImportPreview(
-                            raw = raw,
-                            target = target,
-                            activityShortcutCards = activityShortcutCards,
-                            shellCommandCards = shellCommandCards,
-                            googleSystemServiceDefaults = googleSystemServiceDefaults,
-                            googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
-                            builtInActivityShortcutCards = builtInActivityShortcutCards,
-                        )
-                    }
-                }.onSuccess { preview ->
+            osPageViewModel.requestCardImportPreview(
+                contentResolver = context.contentResolver,
+                uri = uri,
+                target = target,
+                googleSystemServiceDefaults = googleSystemServiceDefaults,
+                googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+                builtInActivityShortcutCards = builtInActivityShortcutCards,
+                onPreview = { preview ->
                     overlayState.onPendingCardImportPreviewChange(preview)
-                }.onFailure { error ->
+                },
+                onFailure = { error ->
                     context.showToast(
                         String.format(
                             cardImportFailedWithReason,
                             error.localizedOsCardImportMessage(context),
-                        )
+                        ),
                     )
-                }
-                overlayState.onCardTransferInProgressChange(false)
-            }
+                },
+                onComplete = {
+                    overlayState.onCardTransferInProgressChange(false)
+                },
+            )
         }
 
     val confirmPendingImport: () -> Unit = confirmPendingImport@{
@@ -177,25 +135,27 @@ internal fun rememberOsPageCardTransferState(
             overlayState.onPendingCardImportPreviewChange(null)
             return@confirmPendingImport
         }
-        scope.launch {
-            overlayState.onCardTransferInProgressChange(true)
-            runCatching {
-                when (val payload = preview.payload) {
-                    is OsActivityCardImportPayload -> applyActivityImport(payload)
-                    is OsShellCardImportPayload -> applyShellImport(payload)
-                    is OsUnknownCardImportPayload -> throw OsCardImportException(OsCardImportError.NoImportableData)
-                }
-            }.onFailure { error ->
+        overlayState.onCardTransferInProgressChange(true)
+        osPageViewModel.confirmCardImport(
+            preview = preview,
+            googleSystemServiceDefaults = googleSystemServiceDefaults,
+            googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+            builtInActivityShortcutCards = builtInActivityShortcutCards,
+            onActivityImported = ::handleActivityImportResult,
+            onShellImported = ::handleShellImportResult,
+            onFailure = { error ->
                 context.showToast(
                     String.format(
                         cardImportFailedWithReason,
                         error.localizedOsCardImportMessage(context),
-                    )
+                    ),
                 )
-            }
-            overlayState.onPendingCardImportPreviewChange(null)
-            overlayState.onCardTransferInProgressChange(false)
-        }
+            },
+            onComplete = {
+                overlayState.onPendingCardImportPreviewChange(null)
+                overlayState.onCardTransferInProgressChange(false)
+            },
+        )
     }
 
     return OsPageCardTransferState(

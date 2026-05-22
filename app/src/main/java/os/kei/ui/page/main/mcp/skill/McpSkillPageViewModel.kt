@@ -20,14 +20,17 @@ internal class McpSkillPageViewModel : ViewModel() {
 
     fun loadContent(
         manager: McpServerManager,
-        request: McpSkillPageContentRequest
+        request: McpSkillPageContentRequest,
     ) {
         if (lastRequest == request && _contentState.value.markdown.isNotBlank()) return
         if (lastRequest == request && loadJob?.isActive == true) return
         lastRequest = request
         loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            _contentState.value = repository.loadContent(manager, request)
-        }
+        loadJob =
+            viewModelScope.launch {
+                _contentState.value = repository.loadContent(manager, request)
+            }
     }
+
+    suspend fun buildConfigJson(manager: McpServerManager): String = repository.buildConfigJson(manager)
 }

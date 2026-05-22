@@ -13,7 +13,6 @@ import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppTy
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isValidForTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.toShareImportPreview
 import os.kei.ui.page.main.github.share.toShareImportResult
@@ -146,7 +145,7 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
     state.trackedItems.addAll(trackSnapshot.items)
     val validItemIds = trackSnapshot.items.map { it.id }.toSet()
     state.retainTrackedUiState(validItemIds)
-    GitHubTrackedReleaseUiStateStore.retain(validItemIds)
+    repository.retainTrackedReleaseExpansion(validItemIds)
     state.trackedFirstInstallAtByPackage.clear()
     state.trackedFirstInstallAtByPackage.putAll(trackSnapshot.trackedFirstInstallAtByPackage)
     state.retainTrackedFirstInstallAtByTrackedItems()

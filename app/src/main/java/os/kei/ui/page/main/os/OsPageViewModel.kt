@@ -1,8 +1,11 @@
 package os.kei.ui.page.main.os
 
+import android.content.ContentResolver
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -18,11 +21,20 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
+import os.kei.ui.page.main.os.state.OsCardImportTarget
+import os.kei.ui.page.main.os.transfer.OsActivityCardImportPayload
+import os.kei.ui.page.main.os.transfer.OsCardImportError
+import os.kei.ui.page.main.os.transfer.OsCardImportException
+import os.kei.ui.page.main.os.transfer.OsCardImportPreview
+import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
+import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
 
 internal data class OsPageRuntimeState(
     val sectionStates: Map<SectionKind, SectionState> = defaultOsSectionStates(),
@@ -398,6 +410,152 @@ internal class OsPageViewModel : ViewModel() {
         repository.updateShellCommandCards(cards)
     }
 
+    fun prepareActivityCardsExport(
+        defaults: OsGoogleSystemServiceConfig,
+        onReady: (String) -> Unit,
+        onFailure: (Throwable) -> Unit,
+    ) {
+        viewModelScope.launch {
+            try {
+                val content =
+                    repository.buildActivityCardsExportJson(
+                        cards = persistentState.value.activityShortcutCards,
+                        defaults = defaults,
+                    )
+                onReady(content)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                onFailure(error)
+            }
+        }
+    }
+
+    fun prepareShellCardsExport(
+        onReady: (String) -> Unit,
+        onFailure: (Throwable) -> Unit,
+    ) {
+        viewModelScope.launch {
+            try {
+                val content =
+                    repository.buildShellCardsExportJson(
+                        cards = persistentState.value.shellCommandCards,
+                    )
+                onReady(content)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                onFailure(error)
+            }
+        }
+    }
+
+    fun writeCardExportContent(
+        contentResolver: ContentResolver,
+        uri: Uri,
+        content: String,
+        onSuccess: () -> Unit,
+        onFailure: (Throwable) -> Unit,
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.writeExportContent(
+                    contentResolver = contentResolver,
+                    uri = uri,
+                    content = content,
+                )
+                onSuccess()
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                onFailure(error)
+            }
+        }
+    }
+
+    fun requestCardImportPreview(
+        contentResolver: ContentResolver,
+        uri: Uri,
+        target: OsCardImportTarget,
+        googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
+        googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
+        builtInActivityShortcutCards: List<OsActivityShortcutCard>,
+        onPreview: (OsCardImportPreview) -> Unit,
+        onFailure: (Throwable) -> Unit,
+        onComplete: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            try {
+                val raw =
+                    repository.readImportContent(
+                        contentResolver = contentResolver,
+                        uri = uri,
+                    )
+                val state = persistentState.value
+                val preview =
+                    repository.buildCardImportPreview(
+                        raw = raw,
+                        target = target,
+                        activityShortcutCards = state.activityShortcutCards,
+                        shellCommandCards = state.shellCommandCards,
+                        googleSystemServiceDefaults = googleSystemServiceDefaults,
+                        googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+                        builtInActivityShortcutCards = builtInActivityShortcutCards,
+                    )
+                onPreview(preview)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                onFailure(error)
+            } finally {
+                onComplete()
+            }
+        }
+    }
+
+    fun confirmCardImport(
+        preview: OsCardImportPreview,
+        googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
+        googleSettingsBuiltInSampleDefaults: OsGoogleSystemServiceConfig,
+        builtInActivityShortcutCards: List<OsActivityShortcutCard>,
+        onActivityImported: (OsActivityCardImportMergeResult) -> Unit,
+        onShellImported: (OsShellCardImportMergeResult) -> Unit,
+        onFailure: (Throwable) -> Unit,
+        onComplete: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            try {
+                when (val payload = preview.payload) {
+                    is OsActivityCardImportPayload -> {
+                        val result =
+                            repository.applyActivityCardImport(
+                                payload = payload,
+                                existingCards = persistentState.value.activityShortcutCards,
+                                defaults = googleSystemServiceDefaults,
+                                builtInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+                                builtInActivityShortcutCards = builtInActivityShortcutCards,
+                            )
+                        repository.updateActivityShortcutCards(result.cards)
+                        onActivityImported(result)
+                    }
+
+                    is OsShellCardImportPayload -> {
+                        val result =
+                            repository.applyShellCardImport(
+                                payload = payload,
+                                existingCards = persistentState.value.shellCommandCards,
+                            )
+                        repository.updateShellCommandCards(result.cards)
+                        onShellImported(result)
+                    }
+
+                    is OsUnknownCardImportPayload -> throw OsCardImportException(OsCardImportError.NoImportableData)
+                }
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                onFailure(error)
+            } finally {
+                onComplete()
+            }
+        }
+    }
+
     fun updateTopInfoExpanded(value: Boolean) {
         repository.updateTopInfoExpanded(value)
     }
@@ -446,3 +604,7 @@ private fun defaultOsSectionStates(): Map<SectionKind, SectionState> =
         SectionKind.JAVA to SectionState(),
         SectionKind.LINUX to SectionState(),
     )
+
+private fun Throwable.rethrowIfCancellation() {
+    if (this is CancellationException) throw this
+}

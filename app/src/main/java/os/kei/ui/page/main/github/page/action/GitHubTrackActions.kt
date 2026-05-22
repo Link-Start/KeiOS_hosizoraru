@@ -16,7 +16,6 @@ import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppTy
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
 import os.kei.ui.page.main.github.page.GitHubTrackEditorResult
-import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 
 internal class GitHubTrackActions(
     private val env: GitHubPageActionEnvironment,
@@ -340,7 +339,9 @@ internal class GitHubTrackActions(
                     state.trackedLocalVersionExpanded.remove(editing.id)
                     state.trackedStableVersionExpanded.remove(editing.id)
                     state.trackedPreReleaseVersionExpanded.remove(editing.id)
-                    GitHubTrackedReleaseUiStateStore.remove(editing.id)
+                    scope.launch {
+                        repository.removeTrackedReleaseExpansion(editing.id)
+                    }
                     state.trackedAddedAtById.remove(editing.id)
                     state.trackedModifiedAtById.remove(editing.id)
                     GitHubActionsRecommendedRunStore.remove(editing.id)
@@ -386,7 +387,9 @@ internal class GitHubTrackActions(
                 state.trackedLocalVersionExpanded.remove(deleting.id)
                 state.trackedStableVersionExpanded.remove(deleting.id)
                 state.trackedPreReleaseVersionExpanded.remove(deleting.id)
-                GitHubTrackedReleaseUiStateStore.remove(deleting.id)
+                scope.launch {
+                    repository.removeTrackedReleaseExpansion(deleting.id)
+                }
                 state.trackedAddedAtById.remove(deleting.id)
                 state.trackedModifiedAtById.remove(deleting.id)
                 GitHubActionsRecommendedRunStore.remove(deleting.id)

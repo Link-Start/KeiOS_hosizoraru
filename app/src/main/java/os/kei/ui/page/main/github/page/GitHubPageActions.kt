@@ -27,7 +27,6 @@ import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.section.GitHubOverviewEntry
-import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 
 internal class GitHubPageActions(
     context: Context,
@@ -52,7 +51,7 @@ internal class GitHubPageActions(
     private val configActions = GitHubConfigActions(env, refreshActions, assetActions)
     private val trackActions = GitHubTrackActions(env, refreshActions, assetActions)
     private val debugNotificationActions = GitHubDebugNotificationActionFacade(env)
-    private val overviewActions = GitHubOverviewActionFacade(state)
+    private val overviewActions = GitHubOverviewActionFacade(env)
     private val shareImportActions = GitHubShareImportActionFacade(env)
     private val packageChangedActions = GitHubPackageChangedActionFacade(env, refreshActions, assetActions)
 
@@ -101,7 +100,9 @@ internal class GitHubPageActions(
         value: Boolean,
     ) {
         env.state.trackedStableVersionExpanded[itemId] = value
-        GitHubTrackedReleaseUiStateStore.setStableVersionExpanded(itemId, value)
+        env.scope.launch {
+            env.repository.saveTrackedStableVersionExpanded(itemId, value)
+        }
     }
 
     fun setTrackedLocalVersionExpanded(
@@ -109,7 +110,9 @@ internal class GitHubPageActions(
         value: Boolean,
     ) {
         env.state.trackedLocalVersionExpanded[itemId] = value
-        GitHubTrackedReleaseUiStateStore.setLocalVersionExpanded(itemId, value)
+        env.scope.launch {
+            env.repository.saveTrackedLocalVersionExpanded(itemId, value)
+        }
     }
 
     fun setTrackedPreReleaseVersionExpanded(
@@ -117,7 +120,9 @@ internal class GitHubPageActions(
         value: Boolean,
     ) {
         env.state.trackedPreReleaseVersionExpanded[itemId] = value
-        GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)
+        env.scope.launch {
+            env.repository.saveTrackedPreReleaseVersionExpanded(itemId, value)
+        }
     }
 
     fun setSortMode(value: GitHubSortMode) {

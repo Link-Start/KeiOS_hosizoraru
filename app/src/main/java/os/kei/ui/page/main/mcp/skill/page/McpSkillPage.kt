@@ -1,18 +1,22 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.mcp.skill.page
 
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.mcp.server.McpServerManager
@@ -31,9 +35,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun McpSkillPage(
     mcpServerManager: McpServerManager,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val textBundle = rememberMcpSkillPageTextBundle()
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -44,24 +49,27 @@ fun McpSkillPage(
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val topBarBackdrop = rememberLayerBackdrop()
     val viewModel: McpSkillPageViewModel = viewModel()
-    val contentRequest = McpSkillPageContentRequest(
-        emptyMarkdown = textBundle.emptyMarkdown,
-        defaultRootTitle = textBundle.defaultRootTitle,
-        defaultOverviewTitle = textBundle.defaultOverviewTitle,
-        defaultContentTitle = textBundle.defaultContentTitle,
-        emptyContentText = textBundle.emptyContentText
-    )
+    val contentRequest =
+        McpSkillPageContentRequest(
+            emptyMarkdown = textBundle.emptyMarkdown,
+            defaultRootTitle = textBundle.defaultRootTitle,
+            defaultOverviewTitle = textBundle.defaultOverviewTitle,
+            defaultContentTitle = textBundle.defaultContentTitle,
+            emptyContentText = textBundle.emptyContentText,
+        )
     LaunchedEffect(mcpServerManager, contentRequest) {
         viewModel.loadContent(
             manager = mcpServerManager,
-            request = contentRequest
+            request = contentRequest,
         )
     }
     val contentState by viewModel.contentState.collectAsStateWithLifecycle()
     val copyCurrentConfig: () -> Unit = {
-        val json = mcpServerManager.buildConfigJson()
-        copyToClipboard(context, "mcp-config", json)
-        context.showToast(context.resolveString(R.string.mcp_toast_config_copied))
+        scope.launch {
+            val json = viewModel.buildConfigJson(mcpServerManager)
+            copyToClipboard(context, "mcp-config", json)
+            context.showToast(context.resolveString(R.string.mcp_toast_config_copied))
+        }
     }
 
     AppPageScaffold(
@@ -75,9 +83,9 @@ fun McpSkillPage(
                 icon = MiuixIcons.Regular.Back,
                 contentDescription = textBundle.pageTitle,
                 onClick = onBack,
-                backdrop = topBarBackdrop
+                backdrop = topBarBackdrop,
             )
-        }
+        },
     ) { innerPadding ->
         McpSkillContentList(
             innerPadding = innerPadding,
@@ -91,9 +99,10 @@ fun McpSkillPage(
             subtitleColor = subtitleColor,
             accentColor = accentColor,
             codeColor = codeColor,
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(topBarBackdrop)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(topBarBackdrop),
         )
     }
 }

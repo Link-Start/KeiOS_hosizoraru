@@ -6,7 +6,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import os.kei.R
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -26,12 +25,18 @@ internal class GitHubRefreshActions(
     internal val clock get() = env.clock
     private val localAppSyncActions = GitHubLocalAppSyncActions(env)
     private val actionsRunRefreshCoordinator = GitHubActionsRecommendedRunRefreshCoordinator(env)
+    private val singleItemActions =
+        GitHubSingleRefreshActions(
+            owner = this,
+            assetActions = assetActions,
+            actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
+        )
     private val backgroundRefreshCoordinator =
         GitHubBackgroundRefreshCoordinator(
             env = env,
             actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
             refreshItem = { request ->
-                refreshItemNow(
+                singleItemActions.refreshItemNow(
                     item = request.item,
                     showToastOnError = false,
                     keepCurrentVisualWhileRefreshing = true,
@@ -306,7 +311,7 @@ internal class GitHubRefreshActions(
         localAppSyncActions.syncLocalAppStateWithInstalledApps(
             forceRefreshApps = forceRefreshApps,
             onShouldRefreshItem = { item ->
-                refreshItem(item = item, showToastOnError = false)
+                singleItemActions.refreshItem(item = item, showToastOnError = false)
             },
         )
 
@@ -318,16 +323,14 @@ internal class GitHubRefreshActions(
         forceRefresh: Boolean = false,
         onUpdated: ((VersionCheckUi) -> Unit)? = null,
     ): Job =
-        scope.launch {
-            refreshItemNow(
-                item = item,
-                showToastOnError = showToastOnError,
-                keepCurrentVisualWhileRefreshing = keepCurrentVisualWhileRefreshing,
-                profilePurposeOverride = profilePurposeOverride,
-                forceRefresh = forceRefresh,
-                onUpdated = onUpdated,
-            )
-        }
+        singleItemActions.refreshItem(
+            item = item,
+            showToastOnError = showToastOnError,
+            keepCurrentVisualWhileRefreshing = keepCurrentVisualWhileRefreshing,
+            profilePurposeOverride = profilePurposeOverride,
+            forceRefresh = forceRefresh,
+            onUpdated = onUpdated,
+        )
 
     suspend fun refreshItemNow(
         item: GitHubTrackedApp,
@@ -338,43 +341,16 @@ internal class GitHubRefreshActions(
         persistAfterUpdate: Boolean = true,
         refreshActionsAfterUpdate: Boolean = true,
         onUpdated: ((VersionCheckUi) -> Unit)? = null,
-    ) {
-        val previousState = state.checkStates[item.id] ?: VersionCheckUi()
-        assetActions.clearApkAssetCacheNow(
-            item = item,
-            itemState = previousState,
-            allowLatestReleaseFallback = true,
-        )
-        val checkingMessage = context.getString(R.string.github_msg_checking)
-        state.checkStates[item.id] =
-            if (keepCurrentVisualWhileRefreshing) {
-                previousState.copy(message = checkingMessage)
-            } else {
-                previousState.copy(
-                    loading = true,
-                    message = checkingMessage,
-                )
-            }
-        val itemState =
-            mergeDirectApkRemoteFallback(
-                item = item,
-                resolvedState =
-                    resolveItemState(
-                        item = item,
-                        profilePurposeOverride = profilePurposeOverride,
-                        forceRefresh = forceRefresh,
-                    ),
-                previousState = previousState,
-            ).copy(checkedAtMillis = clock.nowMs())
-        if (state.trackedItems.none { it.id == item.id }) return
-        if (showToastOnError && itemState.failed) {
-            env.toast(itemState.message)
-        }
-        state.checkStates[item.id] = itemState
-        if (persistAfterUpdate) persistCheckCacheNow()
-        if (refreshActionsAfterUpdate) actionsRunRefreshCoordinator.refreshItemInBackground(item)
-        onUpdated?.invoke(itemState)
-    }
+    ) = singleItemActions.refreshItemNow(
+        item = item,
+        showToastOnError = showToastOnError,
+        keepCurrentVisualWhileRefreshing = keepCurrentVisualWhileRefreshing,
+        profilePurposeOverride = profilePurposeOverride,
+        forceRefresh = forceRefresh,
+        persistAfterUpdate = persistAfterUpdate,
+        refreshActionsAfterUpdate = refreshActionsAfterUpdate,
+        onUpdated = onUpdated,
+    )
 
     fun refreshAllTracked(
         showToast: Boolean = true,

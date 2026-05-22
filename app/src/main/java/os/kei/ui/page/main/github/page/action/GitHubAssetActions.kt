@@ -1,23 +1,14 @@
 package os.kei.ui.page.main.github.page.action
 
-import android.content.pm.PackageManager
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
-import os.kei.feature.github.model.GitHubInstalledPackageInfo
-import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.page.GitHubApkInfoDetailRequest
 import os.kei.ui.page.main.github.page.githubApkInfoKey
-import os.kei.ui.page.main.github.statusActionUrl
 
 internal class GitHubAssetActions(
     private val env: GitHubPageActionEnvironment,
@@ -25,8 +16,6 @@ internal class GitHubAssetActions(
     private val context get() = env.context
     private val scope get() = env.scope
     private val state get() = env.state
-    private val repository get() = env.repository
-    private val clock get() = env.clock
     private val apkInfoRepository = GitHubApkInfoRepository()
     private val cacheActions = GitHubAssetCacheActions(env)
     private val transferActions = GitHubAssetTransferActions(env)
@@ -34,6 +23,17 @@ internal class GitHubAssetActions(
     private val managedInstallRunner = GitHubPageManagedInstallRunner(env, apkInfoRepository)
     private val managedInstallConfirmActions =
         GitHubManagedInstallConfirmActions(env, managedInstallRunner)
+    private val apkInfoActions =
+        GitHubApkInfoActions(
+            env = env,
+            apkInfoRepository = apkInfoRepository,
+            managedInstallConfirmActions = managedInstallConfirmActions,
+        )
+    private val assetPanelActions =
+        GitHubAssetPanelActions(
+            env = env,
+            openExternalUrl = ::openExternalUrl,
+        )
 
     fun dispose() {
         managedInstallConfirmActions.dispose()
@@ -93,7 +93,7 @@ internal class GitHubAssetActions(
                 item = item,
                 asset = asset,
             )
-        loadApkInfo(asset = asset, forceRefresh = forceRefresh)
+        apkInfoActions.loadApkInfo(asset = asset, forceRefresh = forceRefresh)
     }
 
     fun openManagedInstallConfirm(
@@ -104,76 +104,7 @@ internal class GitHubAssetActions(
             item = item,
             asset = asset,
             manifestInfo = state.apkInfoResults[asset.githubApkInfoKey()],
-            onLoadApkInfo = { loadApkInfo(asset = it, forceRefresh = false) },
-        )
-    }
-
-    private fun loadApkInfo(
-        asset: GitHubReleaseAssetFile,
-        forceRefresh: Boolean,
-    ) {
-        val key = asset.githubApkInfoKey()
-        if (forceRefresh) {
-            state.apkInfoResults.remove(key)
-            state.apkInfoInstalledResults.remove(key)
-            state.apkInfoErrors.remove(key)
-        }
-        state.apkInfoResults[key]?.let { cachedInfo ->
-            if (!state.apkInfoInstalledResults.containsKey(key)) {
-                state.apkInfoInstalledResults[key] =
-                    loadInstalledPackageInfo(cachedInfo.packageName)
-            }
-            state.managedInstallConfirmRequest
-                ?.takeIf { it.asset.githubApkInfoKey() == key }
-                ?.let { request -> managedInstallConfirmActions.notifyConfirm(request.item, asset, cachedInfo) }
-            return
-        }
-        if (state.apkInfoLoading[key] == true) return
-        state.apkInfoLoading[key] = true
-        state.apkInfoErrors.remove(key)
-        scope.launch {
-            val result =
-                withContext(AppDispatchers.githubNetwork) {
-                    apkInfoRepository.inspect(
-                        asset = asset,
-                        lookupConfig = state.lookupConfig,
-                        forceRefresh = forceRefresh,
-                    )
-                }
-            state.apkInfoLoading[key] = false
-            result
-                .onSuccess { info ->
-                    state.apkInfoResults[key] = info
-                    state.apkInfoInstalledResults[key] = loadInstalledPackageInfo(info.packageName)
-                    state.managedInstallConfirmRequest
-                        ?.takeIf { it.asset.githubApkInfoKey() == key }
-                        ?.let { request -> managedInstallConfirmActions.notifyConfirm(request.item, asset, info) }
-                }.onFailure { error ->
-                    state.apkInfoErrors[key] = error.message
-                        ?: context.getString(R.string.github_apk_info_error_failed)
-                }
-        }
-    }
-
-    private fun loadInstalledPackageInfo(packageName: String): GitHubInstalledPackageInfo? {
-        val normalizedPackageName = packageName.trim()
-        if (normalizedPackageName.isBlank()) return null
-        val packageInfo =
-            runCatching {
-                context.packageManager.getPackageInfo(
-                    normalizedPackageName,
-                    PackageManager.PackageInfoFlags.of(0),
-                )
-            }.getOrNull() ?: return null
-        val applicationInfo = packageInfo.applicationInfo
-        return GitHubInstalledPackageInfo(
-            packageName = normalizedPackageName,
-            appLabel = applicationInfo?.loadLabel(context.packageManager)?.toString().orEmpty(),
-            versionName = packageInfo.versionName?.trim().orEmpty(),
-            versionCode = packageInfo.longVersionCode,
-            minSdk = applicationInfo?.minSdkVersion ?: -1,
-            targetSdk = applicationInfo?.targetSdkVersion ?: -1,
-            apkSizeBytes = applicationInfo.installedApkSizeBytes(),
+            onLoadApkInfo = { apkInfoActions.loadApkInfo(asset = it, forceRefresh = false) },
         )
     }
 
@@ -273,146 +204,18 @@ internal class GitHubAssetActions(
         requireReleaseNotesBody: Boolean = false,
         bypassPersistedCache: Boolean = false,
     ) {
-        val alwaysLatestRelease = item.alwaysShowLatestReleaseDownloadButton
-        val target =
-            itemState.apkAssetTarget(
-                owner = item.owner,
-                repo = item.repo,
-                context = context,
-                alwaysLatestRelease = alwaysLatestRelease,
-                allowLatestReleaseFallback = allowLatestReleaseFallback,
-            )
-        if (target == null) {
-            if (!openFallbackTarget) {
-                env.toast(R.string.github_toast_no_apk_to_load)
-                return
-            }
-            val fallbackUrl =
-                if (alwaysLatestRelease) {
-                    repository.buildReleaseUrl(item.owner, item.repo)
-                } else {
-                    itemState.statusActionUrl(item.owner, item.repo)
-                }
-            if (fallbackUrl.isNotBlank()) {
-                openExternalUrl(fallbackUrl)
-            } else {
-                env.toast(R.string.github_toast_no_apk_to_load)
-            }
-            return
-        }
-
-        state.apkAssetIncludeAll[item.id] = includeAllAssets
-        val lookupConfig = state.lookupConfig.forTrackedItem(item)
-        val loadingState =
-            if (showAssetPanelLoading) state.apkAssetLoading else state.releaseNotesLoading
-        val errorState =
-            if (showAssetPanelLoading) state.apkAssetErrors else state.releaseNotesErrors
-
-        val cachedBundle = state.apkAssetBundles[item.id]
-        if (
-            toggleOnlyWhenCached &&
-            cachedBundle != null &&
-            isRuntimeCacheFresh(state.apkAssetBundleLoadedAtMs[item.id]) &&
-            state.matchesAssetSourceSignature(cachedBundle, lookupConfig) &&
-            cachedBundle.tagName.equals(target.rawTag, ignoreCase = true) &&
-            cachedBundle.showingAllAssets == includeAllAssets &&
-            (!requireReleaseNotesBody || cachedBundle.releaseNotesBody.isNotBlank())
-        ) {
-            if (expandPanelOnLoad) {
-                state.apkAssetExpanded[item.id] = !(state.apkAssetExpanded[item.id] ?: false)
-            }
-            loadingState[item.id] = false
-            errorState.remove(item.id)
-            return
-        }
-
-        if (expandPanelOnLoad) {
-            state.apkAssetExpanded[item.id] = true
-        }
-        loadingState[item.id] = true
-        errorState.remove(item.id)
-        scope.launch {
-            val preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
-            val refreshIntervalHours = repository.loadRefreshIntervalHours()
-            val assetCacheKey =
-                repository.buildAssetCacheKey(
-                    owner = item.owner,
-                    repo = item.repo,
-                    rawTag = target.rawTag,
-                    releaseUrl = target.releaseUrl,
-                    preferHtml = preferHtml,
-                    aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                    includeAllAssets = includeAllAssets,
-                    hasApiToken = lookupConfig.apiToken.isNotBlank(),
-                )
-            val persistedBundle =
-                if (bypassPersistedCache) {
-                    null
-                } else {
-                    repository.loadAssetBundle(
-                        cacheKey = assetCacheKey,
-                        refreshIntervalHours = refreshIntervalHours,
-                    )
-                }
-            if (
-                persistedBundle != null &&
-                state.matchesAssetSourceSignature(persistedBundle, lookupConfig) &&
-                (!requireReleaseNotesBody || persistedBundle.releaseNotesBody.isNotBlank())
-            ) {
-                loadingState[item.id] = false
-                state.apkAssetBundles[item.id] = persistedBundle
-                state.apkAssetBundleLoadedAtMs[item.id] = clock.nowMs()
-                if (expandPanelOnLoad) {
-                    state.apkAssetErrors[item.id] =
-                        buildEmptyAssetMessage(
-                            label = target.label,
-                            includeAllAssets = includeAllAssets,
-                            assetCount = persistedBundle.assets.size,
-                        )
-                }
-                return@launch
-            } else if (persistedBundle != null) {
-                repository.clearAssetCache(assetCacheKey)
-            }
-            val result =
-                repository.fetchApkAssets(
-                    owner = item.owner,
-                    repo = item.repo,
-                    rawTag = target.rawTag,
-                    releaseUrl = target.releaseUrl,
-                    preferHtml = preferHtml,
-                    aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                    includeAllAssets = includeAllAssets,
-                    apiToken = lookupConfig.apiToken,
-                )
-            loadingState[item.id] = false
-            result
-                .onSuccess { bundle ->
-                    val persistedBundle =
-                        bundle.copy(
-                            sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig),
-                        )
-                    state.apkAssetBundles[item.id] = persistedBundle
-                    state.apkAssetBundleLoadedAtMs[item.id] = clock.nowMs()
-                    scope.launch {
-                        repository.saveAssetBundle(
-                            cacheKey = assetCacheKey,
-                            bundle = persistedBundle,
-                        )
-                    }
-                    if (expandPanelOnLoad) {
-                        state.apkAssetErrors[item.id] =
-                            buildEmptyAssetMessage(
-                                label = target.label,
-                                includeAllAssets = includeAllAssets,
-                                assetCount = persistedBundle.assets.size,
-                            )
-                    }
-                }.onFailure { error ->
-                    errorState[item.id] = error.message
-                        ?: context.getString(R.string.github_error_load_apk_assets_failed)
-                }
-        }
+        assetPanelActions.loadApkAssets(
+            item = item,
+            itemState = itemState,
+            toggleOnlyWhenCached = toggleOnlyWhenCached,
+            includeAllAssets = includeAllAssets,
+            allowLatestReleaseFallback = allowLatestReleaseFallback,
+            expandPanelOnLoad = expandPanelOnLoad,
+            openFallbackTarget = openFallbackTarget,
+            showAssetPanelLoading = showAssetPanelLoading,
+            requireReleaseNotesBody = requireReleaseNotesBody,
+            bypassPersistedCache = bypassPersistedCache,
+        )
     }
 
     fun loadReleaseNotes(
@@ -444,34 +247,5 @@ internal class GitHubAssetActions(
         target: GitHubReleaseNotesTarget,
     ) {
         releaseNotesActions.selectReleaseNotesTarget(item = item, target = target)
-    }
-
-    private fun isRuntimeCacheFresh(
-        loadedAtMs: Long?,
-        nowMs: Long = clock.nowMs(),
-    ): Boolean {
-        val loadedAt = loadedAtMs ?: return false
-        if (loadedAt <= 0L) return false
-        val intervalMs = state.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
-        return (nowMs - loadedAt).coerceAtLeast(0L) < intervalMs
-    }
-
-    private fun buildEmptyAssetMessage(
-        label: String,
-        includeAllAssets: Boolean,
-        assetCount: Int,
-    ): String {
-        if (assetCount > 0) return ""
-        return if (includeAllAssets) {
-            context.getString(
-                R.string.github_msg_assets_no_downloadable_except_source,
-                label,
-            )
-        } else {
-            context.getString(
-                R.string.github_msg_assets_no_downloadable,
-                label,
-            )
-        }
     }
 }

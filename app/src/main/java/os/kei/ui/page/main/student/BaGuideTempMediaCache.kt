@@ -1,11 +1,7 @@
 package os.kei.ui.page.main.student
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
-import androidx.core.net.toUri
-import com.tencent.mmkv.MMKV
-import os.kei.core.prefs.KeiMmkv
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -16,16 +12,10 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import os.kei.feature.ba.data.remote.GameKeeNetworkClient
-import os.kei.feature.ba.data.remote.GameKeeNetworkResult
-import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.core.concurrency.AppDispatchers
 import java.io.File
-import java.io.RandomAccessFile
-import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
-import os.kei.core.concurrency.AppDispatchers
 
 internal data class BaGuideMediaCacheMetadata(
     val sourceUrl: String,
@@ -35,13 +25,13 @@ internal data class BaGuideMediaCacheMetadata(
     val mimeType: String,
     val bytes: Long,
     val lastAccessMs: Long,
-    val valid: Boolean
+    val valid: Boolean,
 )
 
 internal data class BaGuideMediaCacheSessionSummary(
     val count: Int,
     val bytes: Long,
-    val latest: Long
+    val latest: Long,
 )
 
 internal fun scanBaGuideMediaCacheSession(dir: File): BaGuideMediaCacheSessionSummary {
@@ -49,7 +39,8 @@ internal fun scanBaGuideMediaCacheSession(dir: File): BaGuideMediaCacheSessionSu
     var count = 0
     var bytes = 0L
     var latest = 0L
-    dir.walkTopDown()
+    dir
+        .walkTopDown()
         .filter { it.isFile }
         .filterNot { it.name.endsWith(".part", ignoreCase = true) }
         .forEach { file ->
@@ -61,212 +52,165 @@ internal fun scanBaGuideMediaCacheSession(dir: File): BaGuideMediaCacheSessionSu
 }
 
 object BaGuideTempMediaCache {
-    private const val ROOT_DIR = "ba_student_guide_temp_media"
-    private const val MAX_PARALLEL_DOWNLOADS = 3
-    private const val PREFETCH_TASK_BATCH_SIZE = MAX_PARALLEL_DOWNLOADS * 2
-    private const val MAX_TOTAL_CACHE_BYTES = 256L * 1024L * 1024L
-    private const val SESSION_TTL_MS = 72L * 60L * 60L * 1000L
-    private const val PRUNE_MIN_INTERVAL_MS = 30L * 60L * 1000L
-    private const val INDEX_STALE_CHECK_MIN_INTERVAL_MS = 5L * 60L * 1000L
-    private const val VALIDATION_CACHE_MAX_SIZE = 2048
-    private const val INDEX_KV_ID = "ba_student_guide_temp_media_index"
-    private const val INDEX_VERSION = 1
-    private const val KEY_INDEX_VERSION = "index_version"
-    private const val KEY_SESSION_IDS = "session_ids"
-
-    private val indexStore: MMKV by lazy { KeiMmkv.byId(INDEX_KV_ID) }
+    private val cacheIndex = BaGuideTempMediaIndex()
     private val downloadLocks = ConcurrentHashMap<String, DownloadLock>()
-    private val mediaValidationCache = ConcurrentHashMap<String, Boolean>()
-    private val lastPruneAtMs = AtomicLong(0L)
-    private val lastIndexStaleCheckAtMs = AtomicLong(0L)
 
     private data class DownloadLock(
         val mutex: Mutex = Mutex(),
-        val users: AtomicInteger = AtomicInteger(0)
+        val users: AtomicInteger = AtomicInteger(0),
     )
 
-    private fun rootDir(context: Context): File = File(context.cacheDir, ROOT_DIR)
+    suspend fun prefetchForGuide(
+        context: Context,
+        sourceUrl: String,
+        rawUrls: List<String>,
+        forceReDownload: Boolean = false,
+        ioDispatcher: CoroutineDispatcher = AppDispatchers.media,
+    ) = withContext(ioDispatcher) {
+        val dir = baGuideTempMediaSessionDir(context, sourceUrl)
+        dir.mkdirs()
+        val targets =
+            rawUrls
+                .map(::baGuideNormalizeMediaTarget)
+                .filter { it.isNotBlank() }
+                .distinct()
+        if (targets.isEmpty()) return@withContext
 
-    private fun sessionId(sourceUrl: String): String = sha1(sourceUrl).take(16)
-
-    private fun sessionDir(context: Context, sourceUrl: String): File = File(context.cacheDir, "$ROOT_DIR/${sessionId(sourceUrl)}")
-
-    private fun sessionDirById(context: Context, id: String): File = File(context.cacheDir, "$ROOT_DIR/$id")
-
-    private fun normalizeTarget(raw: String): String {
-        return normalizeGuideUrl(raw.trim()).trim()
-    }
-
-    private fun withForceNetworkQuery(url: String): String {
-        val value = url.trim()
-        if (value.isBlank()) return value
-        if (!value.startsWith("http://") && !value.startsWith("https://")) return value
-        val mark = "__keios_force_ts=${System.currentTimeMillis()}"
-        val suffix = if (value.contains("?")) "&$mark" else "?$mark"
-        return value + suffix
-    }
-
-    private fun looksLikeGifUrl(url: String): Boolean {
-        val normalized = url.trim()
-        if (normalized.isBlank()) return false
-        if (Regex("""\.gif(\?.*)?(#.*)?$""", RegexOption.IGNORE_CASE).containsMatchIn(normalized)) return true
-        val lower = normalized.lowercase()
-        return lower.contains("format=gif") || lower.contains("image/gif")
-    }
-
-    private fun looksLikeVideoUrl(url: String): Boolean {
-        val normalized = url.trim()
-        if (normalized.isBlank()) return false
-        val lower = normalized.lowercase()
-        return lower.endsWith(".mp4") ||
-            lower.endsWith(".webm") ||
-            lower.endsWith(".mov") ||
-            lower.endsWith(".m3u8") ||
-            lower.contains(".mp4?") ||
-            lower.contains(".webm?") ||
-            lower.contains(".mov?") ||
-            lower.contains(".m3u8?")
-    }
-
-    private fun looksLikeAudioUrl(url: String): Boolean {
-        val normalized = url.trim()
-        if (normalized.isBlank()) return false
-        val lower = normalized.lowercase()
-        return lower.endsWith(".mp3") ||
-            lower.endsWith(".ogg") ||
-            lower.endsWith(".wav") ||
-            lower.endsWith(".m4a") ||
-            lower.endsWith(".aac") ||
-            lower.contains(".mp3?") ||
-            lower.contains(".ogg?") ||
-            lower.contains(".wav?") ||
-            lower.contains(".m4a?") ||
-            lower.contains(".aac?")
-    }
-
-    private fun hasGifHeader(file: File): Boolean {
-        if (!file.exists() || file.length() < 6L) return false
-        return runCatching {
-            file.inputStream().use { input ->
-                val header = ByteArray(6)
-                if (input.read(header) != 6) return@runCatching false
-                val magic = String(header)
-                magic == "GIF87a" || magic == "GIF89a"
+        coroutineScope {
+            val semaphore = Semaphore(BA_GUIDE_TEMP_MEDIA_MAX_PARALLEL_DOWNLOADS)
+            targets.chunked(BA_GUIDE_TEMP_MEDIA_PREFETCH_TASK_BATCH_SIZE).forEach { batch ->
+                ensureActive()
+                batch
+                    .map { url ->
+                        async {
+                            semaphore.withPermit {
+                                withDownloadLock(sourceUrl = sourceUrl, normalizedUrl = url) {
+                                    ensureActive()
+                                    val file = baGuideTempMediaTargetFile(context, sourceUrl, url)
+                                    if (!forceReDownload && BaGuideTempMediaValidation.isUsableCachedMedia(url, file)) {
+                                        return@withDownloadLock
+                                    }
+                                    val downloaded =
+                                        BaGuideTempMediaDownload.downloadWithValidation(
+                                            normalizedUrl = url,
+                                            targetFile = file,
+                                            forceReDownload = forceReDownload,
+                                        )
+                                    if (!downloaded) {
+                                        runCatching { file.delete() }
+                                    }
+                                }
+                            }
+                        }
+                    }.awaitAll()
             }
-        }.getOrDefault(false)
-    }
-
-    private fun hasGifTrailer(file: File): Boolean {
-        if (!file.exists() || file.length() < 2L) return false
-        return runCatching {
-            RandomAccessFile(file, "r").use { raf ->
-                raf.seek(file.length() - 1L)
-                raf.read() == 0x3B
-            }
-        }.getOrDefault(false)
-    }
-
-    private fun hasDecodableImageBounds(file: File): Boolean {
-        if (!file.exists() || file.length() <= 0L) return false
-        return runCatching {
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(file.absolutePath, options)
-            options.outWidth > 0 && options.outHeight > 0
-        }.getOrDefault(false)
-    }
-
-    private fun isUsableCachedMedia(url: String, file: File): Boolean {
-        if (!file.exists() || file.length() <= 0L) return false
-        val cacheKey = mediaValidationCacheKey(url, file)
-        mediaValidationCache[cacheKey]?.let { cached -> return cached }
-        val valid = validateCachedMediaFile(url, file)
-        if (mediaValidationCache.size >= VALIDATION_CACHE_MAX_SIZE) {
-            mediaValidationCache.clear()
         }
-        mediaValidationCache[cacheKey] = valid
-        return valid
+        cacheIndex.rebuildSessionIndex(context, sourceUrl)
+        cacheIndex.pruneTempCache(context)
     }
 
-    private fun mediaValidationCacheKey(url: String, file: File): String {
-        return buildString {
-            append(url)
-            append('|')
-            append(file.absolutePath)
-            append('|')
-            append(file.length())
-            append('|')
-            append(file.lastModified())
+    fun resolveCachedUrl(
+        context: Context,
+        sourceUrl: String,
+        rawUrl: String,
+    ): String {
+        val normalized = baGuideNormalizeMediaTarget(rawUrl)
+        if (normalized.isBlank()) return normalized
+        val file = baGuideTempMediaTargetFile(context, sourceUrl, normalized)
+        if (BaGuideTempMediaValidation.isUsableCachedMedia(normalized, file)) {
+            touchCachedFile(file)
+            return Uri.fromFile(file).toString()
         }
-    }
-
-    private fun validateCachedMediaFile(url: String, file: File): Boolean {
-        val strictGif = looksLikeGifUrl(url) || file.extension.equals("gif", ignoreCase = true)
-        val fileLooksLikeGif = hasGifHeader(file)
-        if (strictGif || fileLooksLikeGif) {
-            return fileLooksLikeGif && hasGifTrailer(file)
+        if (file.exists()) {
+            runCatching { file.delete() }
         }
-        val mediaIsVideoOrAudio = looksLikeVideoUrl(url) || looksLikeAudioUrl(url)
-        if (mediaIsVideoOrAudio) return true
-        return hasDecodableImageBounds(file)
+        return normalized
     }
 
-    private fun looksLikeImageUrl(url: String): Boolean {
-        val normalized = url.trim()
-        if (normalized.isBlank()) return false
-        if (looksLikeVideoUrl(normalized) || looksLikeAudioUrl(normalized)) return false
-        if (looksLikeGifUrl(normalized)) return true
-        val fromPath = runCatching { normalized.toUri().lastPathSegment.orEmpty() }
-            .getOrDefault("")
-            .substringAfterLast('.', "")
-            .lowercase()
-        return fromPath in setOf("png", "jpg", "jpeg", "webp", "gif", "bmp", "avif")
-    }
+    fun cachedMediaBytes(
+        context: Context,
+        sourceUrl: String,
+        rawUrl: String,
+    ): Long = cachedMediaMetadata(context, sourceUrl, rawUrl).bytes
 
-    private fun downloadWithValidation(
-        normalizedUrl: String,
-        targetFile: File,
-        forceReDownload: Boolean
-    ): Boolean {
-        val strictGif = looksLikeGifUrl(normalizedUrl) || targetFile.extension.equals("gif", ignoreCase = true)
-        val retryCount = when {
-            strictGif -> 3
-            looksLikeImageUrl(normalizedUrl) -> 2
-            else -> 1
+    internal fun cachedMediaMetadata(
+        context: Context,
+        sourceUrl: String,
+        rawUrl: String,
+    ): BaGuideMediaCacheMetadata {
+        val normalized = baGuideNormalizeMediaTarget(rawUrl)
+        if (normalized.isBlank()) {
+            return BaGuideMediaCacheMetadata(
+                sourceUrl = sourceUrl,
+                normalizedUrl = "",
+                fileName = "",
+                extension = "",
+                mimeType = "",
+                bytes = 0L,
+                lastAccessMs = 0L,
+                valid = false,
+            )
         }
-        repeat(retryCount) { attempt ->
-            if (targetFile.exists()) {
-                runCatching { targetFile.delete() }
-            }
-            val requestUrl = when {
-                forceReDownload -> withForceNetworkQuery(normalizedUrl)
-                attempt > 0 -> withForceNetworkQuery(normalizedUrl)
-                else -> normalizedUrl
-            }
-            val ok = GameKeeNetworkClient.downloadToFile(
-                requestUrl,
-                targetFile
-            ) is GameKeeNetworkResult.Success
-            if (ok && isUsableCachedMedia(normalizedUrl, targetFile)) {
-                return true
-            }
-            runCatching { targetFile.delete() }
-        }
-        return false
+        val file = baGuideTempMediaTargetFile(context, sourceUrl, normalized)
+        val valid = BaGuideTempMediaValidation.isUsableCachedMedia(normalized, file)
+        val extension = file.extension.lowercase()
+        return BaGuideMediaCacheMetadata(
+            sourceUrl = sourceUrl,
+            normalizedUrl = normalized,
+            fileName = file.name,
+            extension = extension,
+            mimeType = baGuideTempMediaMimeTypeForExtension(extension),
+            bytes = if (valid) file.length().coerceAtLeast(0L) else 0L,
+            lastAccessMs = file.lastModified().takeIf { file.exists() } ?: 0L,
+            valid = valid,
+        )
     }
 
-    private fun lockKey(sourceUrl: String, normalizedUrl: String): String {
-        return "${sessionId(sourceUrl)}|${sha1(normalizedUrl)}"
+    fun clearGuideCache(
+        context: Context,
+        sourceUrl: String,
+    ) {
+        runCatching { baGuideTempMediaSessionDir(context, sourceUrl).deleteRecursively() }
+        cacheIndex.removeSessionIndex(sourceUrl)
     }
+
+    fun clearMediaCache(
+        context: Context,
+        sourceUrl: String,
+        rawUrl: String,
+    ) {
+        val normalized = baGuideNormalizeMediaTarget(rawUrl)
+        if (normalized.isBlank()) return
+        runCatching {
+            val file = baGuideTempMediaTargetFile(context, sourceUrl, normalized)
+            if (file.exists()) file.delete()
+        }
+        cacheIndex.rebuildSessionIndex(context, sourceUrl)
+    }
+
+    fun clearAll(context: Context) {
+        runCatching { baGuideTempMediaRootDir(context).deleteRecursively() }
+        cacheIndex.clearIndex()
+    }
+
+    fun cacheFileCount(context: Context): Int = cacheIndex.loadIndexSummary(context).count
+
+    fun cacheTotalBytes(context: Context): Long = cacheIndex.loadIndexSummary(context).bytes
+
+    fun latestModifiedAtMs(context: Context): Long = cacheIndex.loadIndexSummary(context).latest
+
+    internal fun activeDownloadLockCount(): Int = downloadLocks.size
 
     private suspend fun <T> withDownloadLock(
         sourceUrl: String,
         normalizedUrl: String,
-        block: suspend () -> T
+        block: suspend () -> T,
     ): T {
         val key = lockKey(sourceUrl, normalizedUrl)
-        val lock = downloadLocks.compute(key) { _, current ->
-            (current ?: DownloadLock()).also { it.users.incrementAndGet() }
-        } ?: error("download lock unavailable")
+        val lock =
+            downloadLocks.compute(key) { _, current ->
+                (current ?: DownloadLock()).also { it.users.incrementAndGet() }
+            } ?: error("download lock unavailable")
         return try {
             lock.mutex.withLock { block() }
         } finally {
@@ -282,436 +226,14 @@ object BaGuideTempMediaCache {
         }
     }
 
-    internal fun activeDownloadLockCount(): Int = downloadLocks.size
-
-    private fun fileExtFromUrl(url: String): String {
-        val normalized = url.substringBefore('?').substringBefore('#')
-        val fromPath = runCatching { normalized.toUri().lastPathSegment.orEmpty() }
-            .getOrDefault("")
-            .substringAfterLast('.', "")
-            .lowercase()
-        val ext = when (fromPath) {
-            "png", "jpg", "jpeg", "webp", "gif", "bmp",
-            "mp4", "webm", "mov", "m3u8",
-            "ogg", "mp3", "wav", "m4a", "aac", "flac" -> fromPath
-            else -> when {
-                looksLikeGifUrl(url) -> "gif"
-                looksLikeAudioUrl(url) -> "ogg"
-                looksLikeVideoUrl(url) -> "mp4"
-                else -> "bin"
-            }
-        }
-        return ".$ext"
-    }
-
-    private fun targetFile(context: Context, sourceUrl: String, normalizedUrl: String): File {
-        val name = sha1(normalizedUrl) + fileExtFromUrl(normalizedUrl)
-        return File(sessionDir(context, sourceUrl), name)
-    }
-
-    suspend fun prefetchForGuide(
-        context: Context,
+    private fun lockKey(
         sourceUrl: String,
-        rawUrls: List<String>,
-        forceReDownload: Boolean = false,
-        ioDispatcher: CoroutineDispatcher = AppDispatchers.media
-    ) = withContext(ioDispatcher) {
-        val dir = sessionDir(context, sourceUrl)
-        dir.mkdirs()
-        val targets = rawUrls
-            .map(::normalizeTarget)
-            .filter { it.isNotBlank() }
-            .distinct()
-        if (targets.isEmpty()) return@withContext
-
-        coroutineScope {
-            val semaphore = Semaphore(MAX_PARALLEL_DOWNLOADS)
-            targets.chunked(PREFETCH_TASK_BATCH_SIZE).forEach { batch ->
-                ensureActive()
-                batch.map { url ->
-                    async {
-                        semaphore.withPermit {
-                            withDownloadLock(sourceUrl = sourceUrl, normalizedUrl = url) {
-                                ensureActive()
-                                val file = targetFile(context, sourceUrl, url)
-                                if (!forceReDownload && isUsableCachedMedia(url, file)) return@withDownloadLock
-                                val downloaded = downloadWithValidation(
-                                    normalizedUrl = url,
-                                    targetFile = file,
-                                    forceReDownload = forceReDownload
-                                )
-                                if (!downloaded) {
-                                    runCatching { file.delete() }
-                                }
-                            }
-                        }
-                    }
-                }.awaitAll()
-            }
-        }
-        rebuildSessionIndex(context, sourceUrl)
-        pruneTempCache(context)
-    }
-
-    fun resolveCachedUrl(
-        context: Context,
-        sourceUrl: String,
-        rawUrl: String
-    ): String {
-        val normalized = normalizeTarget(rawUrl)
-        if (normalized.isBlank()) return normalized
-        val file = targetFile(context, sourceUrl, normalized)
-        if (isUsableCachedMedia(normalized, file)) {
-            touchCachedFile(file)
-            return Uri.fromFile(file).toString()
-        }
-        if (file.exists()) {
-            runCatching { file.delete() }
-        }
-        return normalized
-    }
-
-    fun cachedMediaBytes(
-        context: Context,
-        sourceUrl: String,
-        rawUrl: String
-    ): Long {
-        return cachedMediaMetadata(context, sourceUrl, rawUrl).bytes
-    }
-
-    internal fun cachedMediaMetadata(
-        context: Context,
-        sourceUrl: String,
-        rawUrl: String
-    ): BaGuideMediaCacheMetadata {
-        val normalized = normalizeTarget(rawUrl)
-        if (normalized.isBlank()) {
-            return BaGuideMediaCacheMetadata(
-                sourceUrl = sourceUrl,
-                normalizedUrl = "",
-                fileName = "",
-                extension = "",
-                mimeType = "",
-                bytes = 0L,
-                lastAccessMs = 0L,
-                valid = false
-            )
-        }
-        val file = targetFile(context, sourceUrl, normalized)
-        val valid = isUsableCachedMedia(normalized, file)
-        val extension = file.extension.lowercase()
-        return BaGuideMediaCacheMetadata(
-            sourceUrl = sourceUrl,
-            normalizedUrl = normalized,
-            fileName = file.name,
-            extension = extension,
-            mimeType = mimeTypeForExtension(extension),
-            bytes = if (valid) file.length().coerceAtLeast(0L) else 0L,
-            lastAccessMs = file.lastModified().takeIf { file.exists() } ?: 0L,
-            valid = valid
-        )
-    }
-
-    fun clearGuideCache(context: Context, sourceUrl: String) {
-        runCatching { sessionDir(context, sourceUrl).deleteRecursively() }
-        removeSessionIndex(sourceUrl)
-    }
-
-    fun clearMediaCache(
-        context: Context,
-        sourceUrl: String,
-        rawUrl: String
-    ) {
-        val normalized = normalizeTarget(rawUrl)
-        if (normalized.isBlank()) return
-        runCatching {
-            val file = targetFile(context, sourceUrl, normalized)
-            if (file.exists()) file.delete()
-        }
-        rebuildSessionIndex(context, sourceUrl)
-    }
-
-    fun clearAll(context: Context) {
-        runCatching { rootDir(context).deleteRecursively() }
-        clearIndex()
-    }
-
-    fun cacheFileCount(context: Context): Int {
-        return loadIndexSummary(context).count
-    }
-
-    fun cacheTotalBytes(context: Context): Long {
-        return loadIndexSummary(context).bytes
-    }
-
-    fun latestModifiedAtMs(context: Context): Long {
-        return loadIndexSummary(context).latest
-    }
-
-    private data class MediaSummary(
-        val count: Int,
-        val bytes: Long,
-        val latest: Long
-    )
-
-    private data class SessionSummary(
-        val count: Int,
-        val bytes: Long,
-        val latest: Long
-    )
-
-    private fun sessionCountKey(id: String): String = "s_${id}_c"
-    private fun sessionBytesKey(id: String): String = "s_${id}_b"
-    private fun sessionLatestKey(id: String): String = "s_${id}_m"
-
-    private fun loadSessionIds(kv: MMKV = indexStore): MutableSet<String> {
-        val raw = kv.decodeString(KEY_SESSION_IDS, "").orEmpty()
-        if (raw.isBlank()) return mutableSetOf()
-        return raw.split(',')
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .toMutableSet()
-    }
-
-    private fun saveSessionIds(ids: Set<String>, kv: MMKV = indexStore) {
-        val encoded = ids.filter { it.isNotBlank() }.sorted().joinToString(",")
-        kv.encode(KEY_SESSION_IDS, encoded)
-    }
-
-    private fun readSessionSummary(id: String, kv: MMKV = indexStore): SessionSummary? {
-        if (!kv.containsKey(sessionCountKey(id)) || !kv.containsKey(sessionBytesKey(id))) return null
-        val count = kv.decodeInt(sessionCountKey(id), -1)
-        val bytes = kv.decodeLong(sessionBytesKey(id), -1L)
-        if (count < 0 || bytes < 0L) return null
-        return SessionSummary(
-            count = count,
-            bytes = bytes,
-            latest = kv.decodeLong(sessionLatestKey(id), 0L).coerceAtLeast(0L)
-        )
-    }
-
-    private fun writeSessionSummary(id: String, summary: SessionSummary, kv: MMKV = indexStore) {
-        val ids = loadSessionIds(kv)
-        if (summary.count <= 0 || summary.bytes <= 0L) {
-            ids.remove(id)
-            kv.removeValueForKey(sessionCountKey(id))
-            kv.removeValueForKey(sessionBytesKey(id))
-            kv.removeValueForKey(sessionLatestKey(id))
-        } else {
-            ids.add(id)
-            kv.encode(sessionCountKey(id), summary.count)
-            kv.encode(sessionBytesKey(id), summary.bytes)
-            kv.encode(sessionLatestKey(id), summary.latest.coerceAtLeast(0L))
-        }
-        saveSessionIds(ids, kv)
-        kv.encode(KEY_INDEX_VERSION, INDEX_VERSION)
-    }
-
-    private fun clearIndex() {
-        val kv = indexStore
-        loadSessionIds(kv).forEach { id ->
-            kv.removeValueForKey(sessionCountKey(id))
-            kv.removeValueForKey(sessionBytesKey(id))
-            kv.removeValueForKey(sessionLatestKey(id))
-        }
-        kv.removeValueForKey(KEY_SESSION_IDS)
-        kv.removeValueForKey(KEY_INDEX_VERSION)
-        kv.trim()
-        lastIndexStaleCheckAtMs.set(System.currentTimeMillis())
-    }
-
-    private fun removeSessionIndex(sourceUrl: String) {
-        val id = sessionId(sourceUrl)
-        writeSessionSummary(
-            id = id,
-            summary = SessionSummary(count = 0, bytes = 0L, latest = 0L)
-        )
-    }
-
-    private fun scanSessionSummary(dir: File): SessionSummary {
-        val summary = scanBaGuideMediaCacheSession(dir)
-        return SessionSummary(
-            count = summary.count,
-            bytes = summary.bytes,
-            latest = summary.latest
-        )
-    }
-
-    private fun rebuildSessionIndex(context: Context, sourceUrl: String) {
-        val id = sessionId(sourceUrl)
-        val summary = scanSessionSummary(sessionDirById(context, id))
-        writeSessionSummary(id, summary)
-    }
-
-    private fun rebuildAllIndex(context: Context): MediaSummary {
-        val root = rootDir(context)
-        if (!root.exists()) {
-            clearIndex()
-            return MediaSummary(count = 0, bytes = 0L, latest = 0L)
-        }
-        val kv = indexStore
-        val discoveredIds = mutableSetOf<String>()
-        root.listFiles()
-            .orEmpty()
-            .filter { it.isDirectory }
-            .forEach { dir ->
-                val id = dir.name.trim()
-                if (id.isBlank()) return@forEach
-                val summary = scanSessionSummary(dir)
-                discoveredIds.add(id)
-                writeSessionSummary(id, summary, kv)
-            }
-        val staleIds = loadSessionIds(kv) - discoveredIds
-        staleIds.forEach { staleId ->
-            writeSessionSummary(
-                id = staleId,
-                summary = SessionSummary(count = 0, bytes = 0L, latest = 0L),
-                kv = kv
-            )
-        }
-        lastIndexStaleCheckAtMs.set(System.currentTimeMillis())
-        return aggregateSummaryFromIndex(kv)
-    }
-
-    private fun pruneTempCache(context: Context) {
-        val now = System.currentTimeMillis()
-        val lastPrune = lastPruneAtMs.get()
-        if (lastPrune > 0L && now - lastPrune < PRUNE_MIN_INTERVAL_MS) return
-        if (!lastPruneAtMs.compareAndSet(lastPrune, now)) return
-
-        val root = rootDir(context)
-        if (!root.exists()) {
-            clearIndex()
-            return
-        }
-        data class SessionCandidate(
-            val id: String,
-            val dir: File,
-            val summary: SessionSummary
-        )
-        val candidates = root.listFiles()
-            .orEmpty()
-            .filter { it.isDirectory }
-            .map { dir ->
-                SessionCandidate(
-                    id = dir.name.trim(),
-                    dir = dir,
-                    summary = scanSessionSummary(dir)
-                )
-            }
-            .filter { it.id.isNotBlank() }
-            .toMutableList()
-
-        candidates
-            .filter { candidate ->
-                candidate.summary.count <= 0 ||
-                    candidate.summary.bytes <= 0L ||
-                    (candidate.summary.latest > 0L && now - candidate.summary.latest > SESSION_TTL_MS)
-            }
-            .forEach { candidate ->
-                runCatching { candidate.dir.deleteRecursively() }
-            }
-
-        val survivors = candidates
-            .filter { it.dir.exists() }
-            .sortedBy { it.summary.latest }
-            .toMutableList()
-        var totalBytes = survivors.sumOf { it.summary.bytes.coerceAtLeast(0L) }
-        while (totalBytes > MAX_TOTAL_CACHE_BYTES && survivors.isNotEmpty()) {
-            val victim = survivors.removeAt(0)
-            totalBytes -= victim.summary.bytes.coerceAtLeast(0L)
-            runCatching { victim.dir.deleteRecursively() }
-        }
-        rebuildAllIndex(context)
-    }
-
-    private fun aggregateSummaryFromIndex(kv: MMKV = indexStore): MediaSummary {
-        val ids = loadSessionIds(kv)
-        if (ids.isEmpty()) return MediaSummary(count = 0, bytes = 0L, latest = 0L)
-        var totalCount = 0
-        var totalBytes = 0L
-        var latest = 0L
-        ids.forEach { id ->
-            val session = readSessionSummary(id, kv) ?: return@forEach
-            totalCount += session.count
-            totalBytes += session.bytes
-            latest = maxOf(latest, session.latest)
-        }
-        return MediaSummary(
-            count = totalCount.coerceAtLeast(0),
-            bytes = totalBytes.coerceAtLeast(0L),
-            latest = latest.coerceAtLeast(0L)
-        )
-    }
-
-    private fun loadIndexSummary(context: Context): MediaSummary {
-        val kv = indexStore
-        val root = rootDir(context)
-        val hasIndex = kv.decodeInt(KEY_INDEX_VERSION, 0) == INDEX_VERSION
-        val hasSessions = loadSessionIds(kv).isNotEmpty()
-        return when {
-            !root.exists() -> {
-                if (hasSessions || hasIndex) clearIndex()
-                MediaSummary(count = 0, bytes = 0L, latest = 0L)
-            }
-            !hasIndex -> rebuildAllIndex(context)
-            !hasSessions -> {
-                val hasFiles = root.listFiles().orEmpty().any { it.isDirectory }
-                if (hasFiles) rebuildAllIndex(context) else MediaSummary(count = 0, bytes = 0L, latest = 0L)
-            }
-            shouldCheckIndexedSessions() && hasStaleIndexedSessions(context, kv) -> rebuildAllIndex(context)
-            else -> aggregateSummaryFromIndex(kv)
-        }
-    }
-
-    private fun shouldCheckIndexedSessions(): Boolean {
-        val now = System.currentTimeMillis()
-        val lastCheck = lastIndexStaleCheckAtMs.get()
-        if (lastCheck > 0L && now - lastCheck < INDEX_STALE_CHECK_MIN_INTERVAL_MS) return false
-        return lastIndexStaleCheckAtMs.compareAndSet(lastCheck, now)
-    }
-
-    private fun hasStaleIndexedSessions(context: Context, kv: MMKV = indexStore): Boolean {
-        return loadSessionIds(kv).any { id ->
-            val stored = readSessionSummary(id, kv) ?: return@any true
-            val scanned = scanSessionSummary(sessionDirById(context, id))
-            stored != scanned
-        }
-    }
+        normalizedUrl: String,
+    ): String = "${baGuideTempMediaSessionId(sourceUrl)}|${baGuideTempMediaSha1(normalizedUrl)}"
 
     private fun touchCachedFile(file: File) {
         runCatching {
-            if (file.exists()) file.setLastModified(System.currentTimeMillis())
-        }
-    }
-
-    private fun mimeTypeForExtension(extension: String): String {
-        return when (extension.lowercase()) {
-            "png" -> "image/png"
-            "jpg", "jpeg" -> "image/jpeg"
-            "webp" -> "image/webp"
-            "gif" -> "image/gif"
-            "bmp" -> "image/bmp"
-            "avif" -> "image/avif"
-            "mp4" -> "video/mp4"
-            "webm" -> "video/webm"
-            "mov" -> "video/quicktime"
-            "m3u8" -> "application/vnd.apple.mpegurl"
-            "mp3" -> "audio/mpeg"
-            "ogg" -> "audio/ogg"
-            "wav" -> "audio/wav"
-            "m4a" -> "audio/mp4"
-            "aac" -> "audio/aac"
-            "flac" -> "audio/flac"
-            else -> "application/octet-stream"
-        }
-    }
-
-    private fun sha1(raw: String): String {
-        val md = MessageDigest.getInstance("SHA-1")
-        val bytes = md.digest(raw.toByteArray())
-        return buildString(bytes.size * 2) {
-            bytes.forEach { b -> append("%02x".format(b)) }
+            if (file.exists()) file.setLastModified(BaGuideSystemMediaCacheClock.nowMs())
         }
     }
 }

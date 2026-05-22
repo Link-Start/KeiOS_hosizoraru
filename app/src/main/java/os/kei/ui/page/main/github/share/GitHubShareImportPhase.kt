@@ -7,65 +7,65 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 
 internal enum class GitHubShareImportPhase(
     @param:StringRes val labelRes: Int,
-    val color: Color
+    val color: Color,
 ) {
     Idle(
         labelRes = R.string.github_share_import_phase_idle,
-        color = GitHubStatusPalette.Stable
+        color = GitHubStatusPalette.Stable,
     ),
     Resolving(
         labelRes = R.string.github_share_import_phase_resolving,
-        color = GitHubStatusPalette.Active
+        color = GitHubStatusPalette.Active,
     ),
     AssetReady(
         labelRes = R.string.github_share_import_phase_asset_ready,
-        color = GitHubStatusPalette.Update
+        color = GitHubStatusPalette.Update,
     ),
     Delivering(
         labelRes = R.string.github_share_import_phase_delivering,
-        color = GitHubStatusPalette.Active
+        color = GitHubStatusPalette.Active,
     ),
     InstallDownloading(
         labelRes = R.string.github_share_import_phase_install_downloading,
-        color = GitHubStatusPalette.Active
+        color = GitHubStatusPalette.Active,
     ),
     Installing(
         labelRes = R.string.github_share_import_phase_installing,
-        color = GitHubStatusPalette.Active
+        color = GitHubStatusPalette.Active,
     ),
     InstallReady(
         labelRes = R.string.github_share_import_phase_install_ready,
-        color = GitHubStatusPalette.Update
+        color = GitHubStatusPalette.Update,
     ),
     InstallCommitting(
         labelRes = R.string.github_share_import_phase_install_committing,
-        color = GitHubStatusPalette.Active
+        color = GitHubStatusPalette.Active,
     ),
     WaitingInstall(
         labelRes = R.string.github_share_import_phase_waiting_install,
-        color = GitHubStatusPalette.PreRelease
+        color = GitHubStatusPalette.PreRelease,
     ),
     InstallDetected(
         labelRes = R.string.github_share_import_phase_install_detected,
-        color = GitHubStatusPalette.Update
+        color = GitHubStatusPalette.Update,
     ),
     AddingTrack(
         labelRes = R.string.github_share_import_phase_adding_track,
-        color = GitHubStatusPalette.Active
+        color = GitHubStatusPalette.Active,
     ),
     Added(
         labelRes = R.string.github_share_import_phase_added,
-        color = GitHubStatusPalette.Update
+        color = GitHubStatusPalette.Update,
     ),
     Failed(
         labelRes = R.string.github_share_import_phase_failed,
-        color = GitHubStatusPalette.Error
-    )
+        color = GitHubStatusPalette.Error,
+    ),
 }
 
 internal fun shareImportRemainingMinutes(
     armedAtMillis: Long,
-    nowMillis: Long = System.currentTimeMillis()
+    nowMillis: Long = GitHubSystemShareImportClock.nowMs(),
 ): Int {
     val expiresAtMillis = armedAtMillis + shareImportTrackMaxAgeMs
     val remainingMs = (expiresAtMillis - nowMillis).coerceAtLeast(0L)

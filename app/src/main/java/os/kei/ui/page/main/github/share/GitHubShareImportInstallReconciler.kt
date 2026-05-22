@@ -8,17 +8,17 @@ import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubTrackStore
 
 internal class GitHubShareImportInstallReconciler(
-    private val context: Context
+    private val context: Context,
+    private val clock: GitHubShareImportClock = GitHubSystemShareImportClock,
 ) {
-    suspend fun reconcileRecentInstall(
-        pendingTrack: GitHubPendingShareImportTrackRecord
-    ): ShareImportInstallReconcileResult {
+    suspend fun reconcileRecentInstall(pendingTrack: GitHubPendingShareImportTrackRecord): ShareImportInstallReconcileResult {
         return withContext(AppDispatchers.githubNetwork) {
-            val packageSnapshot = findRecentInstalledCandidateForPendingTrack(context, pendingTrack)
-                ?: return@withContext ShareImportInstallReconcileResult.None
+            val packageSnapshot =
+                findRecentInstalledCandidateForPendingTrack(context, pendingTrack)
+                    ?: return@withContext ShareImportInstallReconcileResult.None
             packageSnapshot.toReconcileResult(
                 pendingTrack = pendingTrack,
-                eventAction = "reconciled"
+                eventAction = "reconciled",
             )
         }
     }
@@ -26,7 +26,7 @@ internal class GitHubShareImportInstallReconciler(
     suspend fun reconcilePackageEvent(
         pendingTrack: GitHubPendingShareImportTrackRecord,
         event: AppPackageChangedEvent,
-        currentCandidate: GitHubPendingShareImportAttachCandidate?
+        currentCandidate: GitHubPendingShareImportAttachCandidate?,
     ): ShareImportInstallReconcileResult {
         val packageName = event.packageName.trim()
         if (packageName.isBlank()) return ShareImportInstallReconcileResult.None
@@ -42,13 +42,14 @@ internal class GitHubShareImportInstallReconciler(
             return ShareImportInstallReconcileResult.None
         }
         return withContext(AppDispatchers.githubNetwork) {
-            val packageSnapshot = loadInstalledPackageSnapshot(context, packageName)
-                ?: return@withContext ShareImportInstallReconcileResult.None
+            val packageSnapshot =
+                loadInstalledPackageSnapshot(context, packageName)
+                    ?: return@withContext ShareImportInstallReconcileResult.None
             if (
                 !isShareImportAttachEventValid(
                     event = event,
                     armedAtMillis = pendingTrack.armedAtMillis,
-                    packageLastUpdateTimeMs = packageSnapshot.lastUpdateTimeMs
+                    packageLastUpdateTimeMs = packageSnapshot.lastUpdateTimeMs,
                 )
             ) {
                 return@withContext ShareImportInstallReconcileResult.None
@@ -64,7 +65,7 @@ internal class GitHubShareImportInstallReconciler(
             packageSnapshot.toReconcileResult(
                 pendingTrack = pendingTrack,
                 eventAction = event.action,
-                detectedAtMillis = event.atMillis
+                detectedAtMillis = event.atMillis,
             )
         }
     }
@@ -72,16 +73,17 @@ internal class GitHubShareImportInstallReconciler(
     private fun ShareImportInstalledPackageSnapshot.toReconcileResult(
         pendingTrack: GitHubPendingShareImportTrackRecord,
         eventAction: String,
-        detectedAtMillis: Long = System.currentTimeMillis()
+        detectedAtMillis: Long = clock.nowMs(),
     ): ShareImportInstallReconcileResult {
-        val candidate = pendingTrack.toAttachCandidate(
-            packageSnapshot = this,
-            eventAction = eventAction,
-            detectedAtMillis = detectedAtMillis
-        )
+        val candidate =
+            pendingTrack.toAttachCandidate(
+                packageSnapshot = this,
+                eventAction = eventAction,
+                detectedAtMillis = detectedAtMillis,
+            )
         return if (candidate.hasDuplicateTrackedItem()) {
             ShareImportInstallReconcileResult.Duplicate(
-                candidate.copy(eventAction = "duplicate")
+                candidate.copy(eventAction = "duplicate"),
             )
         } else {
             ShareImportInstallReconcileResult.Detected(candidate)
@@ -89,19 +91,21 @@ internal class GitHubShareImportInstallReconciler(
     }
 
     private fun GitHubPendingShareImportAttachCandidate.hasDuplicateTrackedItem(): Boolean {
-        val duplicateId = "${owner}/${repo}|${packageName}"
+        val duplicateId = "$owner/$repo|$packageName"
         return GitHubTrackStore.load().any { it.id == duplicateId }
     }
 }
 
 internal sealed interface ShareImportInstallReconcileResult {
     data object None : ShareImportInstallReconcileResult
+
     data object Expired : ShareImportInstallReconcileResult
+
     data class Duplicate(
-        val candidate: GitHubPendingShareImportAttachCandidate
+        val candidate: GitHubPendingShareImportAttachCandidate,
     ) : ShareImportInstallReconcileResult
 
     data class Detected(
-        val candidate: GitHubPendingShareImportAttachCandidate
+        val candidate: GitHubPendingShareImportAttachCandidate,
     ) : ShareImportInstallReconcileResult
 }

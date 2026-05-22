@@ -101,15 +101,15 @@ internal fun BaGuideBgmFloatingBottomChrome(
             searchFocusRequester.requestFocus()
         }
     }
-    val searchMode =
-        resolveBaGuideBgmBottomChromeMode(
+    val presentation =
+        BaGuideBgmChromePresentationDeriver.derive(
             searchVisible = searchVisible,
             searchInputActive = searchInputActive,
             compact = scrollState.isCompact,
         )
     val transition =
         updateTransition(
-            targetState = searchMode,
+            targetState = presentation.mode,
             label = "ba_catalog_bgm_bottom_chrome",
         )
     val animationSpec =
@@ -211,7 +211,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     val dockCompactProgress = dockCompactAlpha.coerceIn(0f, 1f)
     val miniExpandedProgress = miniExpandedAlpha.coerceIn(0f, 1f)
     val miniCompactProgress = miniCompactAlpha.coerceIn(0f, 1f)
-    val searchFieldVisible = searchMode.isSearchMode
+    val searchFieldVisible = presentation.searchFieldVisible
 
     BoxWithConstraints(
         modifier =
@@ -493,29 +493,6 @@ private fun boundedDp(
     min: Dp,
     max: Dp,
 ): Dp = value.value.coerceIn(min.value, max.value).dp
-
-internal enum class BaGuideBgmBottomChromeMode {
-    Expanded,
-    Compact,
-    SearchExpanded,
-    SearchInput,
-    ;
-
-    val isSearchMode: Boolean
-        get() = this == SearchExpanded || this == SearchInput
-}
-
-internal fun resolveBaGuideBgmBottomChromeMode(
-    searchVisible: Boolean,
-    searchInputActive: Boolean,
-    compact: Boolean,
-): BaGuideBgmBottomChromeMode =
-    when {
-        searchInputActive -> BaGuideBgmBottomChromeMode.SearchInput
-        searchVisible -> BaGuideBgmBottomChromeMode.SearchExpanded
-        compact -> BaGuideBgmBottomChromeMode.Compact
-        else -> BaGuideBgmBottomChromeMode.Expanded
-    }
 
 private val BaGuideBgmChromeControlHeight = AppChromeTokens.floatingBottomBarOuterHeight
 private val BaGuideBgmChromeStackGap = AppChromeTokens.pageSectionGap

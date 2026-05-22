@@ -1,15 +1,17 @@
+@file:Suppress("PropertyName")
+
 package os.kei.ui.page.main.github.share
 
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import os.kei.core.ext.showToast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.download.AppPrivateDownloadManager
+import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.core.system.getInstalledPackageInfosSafely
@@ -32,16 +34,16 @@ import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.state.toCacheEntry
 import os.kei.ui.page.main.github.state.toUi
 
-
 internal const val shareImportTrackMaxAgeMs = 25 * 60 * 1000L
 internal const val shareImportTrackUpdateToleranceMs = 2 * 60 * 1000L
 internal const val shareImportMinHandleIntervalMs = 1200L
 
-internal val shareImportAttachActions = setOf(
-    Intent.ACTION_PACKAGE_ADDED,
-    Intent.ACTION_PACKAGE_REPLACED,
-    Intent.ACTION_PACKAGE_CHANGED
-)
+internal val shareImportAttachActions =
+    setOf(
+        Intent.ACTION_PACKAGE_ADDED,
+        Intent.ACTION_PACKAGE_REPLACED,
+        Intent.ACTION_PACKAGE_CHANGED,
+    )
 
 internal data class ShareImportInstalledPackageSnapshot(
     val packageName: String,
@@ -49,15 +51,15 @@ internal data class ShareImportInstalledPackageSnapshot(
     val versionName: String = "",
     val versionCode: String = "",
     val lastUpdateTimeMs: Long,
-    val firstInstallTimeMs: Long
+    val firstInstallTimeMs: Long,
 )
 
 internal fun GitHubPendingShareImportTrackRecord.toAttachCandidate(
     packageSnapshot: ShareImportInstalledPackageSnapshot,
     eventAction: String,
-    detectedAtMillis: Long = System.currentTimeMillis()
-): GitHubPendingShareImportAttachCandidate {
-    return GitHubPendingShareImportAttachCandidate(
+    detectedAtMillis: Long = GitHubSystemShareImportClock.nowMs(),
+): GitHubPendingShareImportAttachCandidate =
+    GitHubPendingShareImportAttachCandidate(
         projectUrl = projectUrl,
         owner = owner,
         repo = repo,
@@ -67,43 +69,58 @@ internal fun GitHubPendingShareImportTrackRecord.toAttachCandidate(
         versionCode = packageSnapshot.versionCode,
         eventAction = eventAction,
         detectedAtMillis = detectedAtMillis,
-        firstInstallTimeMs = packageSnapshot.firstInstallTimeMs
+        firstInstallTimeMs = packageSnapshot.firstInstallTimeMs,
     )
-}
 
 internal sealed interface ShareImportDeliveryResult {
-    data class Success(val toastResId: Int) : ShareImportDeliveryResult
-    data class Failure(val toastResId: Int) : ShareImportDeliveryResult
+    data class Success(
+        val toastResId: Int,
+    ) : ShareImportDeliveryResult
+
+    data class Failure(
+        val toastResId: Int,
+    ) : ShareImportDeliveryResult
 }
 
 internal sealed interface ShareImportAttachResult {
-    data class Added(val appLabel: String) : ShareImportAttachResult
+    data class Added(
+        val appLabel: String,
+    ) : ShareImportAttachResult
+
     data object Duplicate : ShareImportAttachResult
-    data class Failed(val message: String) : ShareImportAttachResult
+
+    data class Failed(
+        val message: String,
+    ) : ShareImportAttachResult
 }
+
 internal suspend fun sendAssetToConfiguredChannel(
     context: Context,
     lookupConfig: GitHubLookupConfig,
     asset: GitHubReleaseAssetFile,
-    newTask: Boolean = false
+    newTask: Boolean = false,
 ): ShareImportDeliveryResult {
-    val resolvedUrl = SafeExternalIntents.httpsExternalUrlOrNull(
-        resolvePreferredAssetUrl(lookupConfig, asset)
-    ) ?: return ShareImportDeliveryResult.Failure(R.string.github_toast_open_downloader_failed)
+    val resolvedUrl =
+        SafeExternalIntents.httpsExternalUrlOrNull(
+            resolvePreferredAssetUrl(lookupConfig, asset),
+        ) ?: return ShareImportDeliveryResult.Failure(R.string.github_toast_open_downloader_failed)
     val onlineSharePackage = lookupConfig.onlineShareTargetPackage.trim()
     if (onlineSharePackage.isNotBlank()) {
-        val intent = SafeExternalIntents.textShareIntent(
-            text = resolvedUrl,
-            subject = asset.name,
-            targetPackage = onlineSharePackage,
-            extras = mapOf(
-                "channel" to "Online",
-                "extra_channel" to "Online",
-                "online_channel" to true
-            )
-        ).apply {
-            if (newTask) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        val intent =
+            SafeExternalIntents
+                .textShareIntent(
+                    text = resolvedUrl,
+                    subject = asset.name,
+                    targetPackage = onlineSharePackage,
+                    extras =
+                        mapOf(
+                            "channel" to "Online",
+                            "extra_channel" to "Online",
+                            "online_channel" to true,
+                        ),
+                ).apply {
+                    if (newTask) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
         return runCatching {
             context.startActivity(intent)
             ShareImportDeliveryResult.Success(R.string.github_toast_downloader_selected)
@@ -136,8 +153,8 @@ internal suspend fun sendAssetToConfiguredChannel(
                 context = context,
                 url = resolvedUrl,
                 targetPackage = preferredPackage,
-                newTask = newTask
-            )
+                newTask = newTask,
+            ),
         )
         ShareImportDeliveryResult.Success(R.string.github_toast_downloader_selected)
     }.recoverCatching {
@@ -150,71 +167,76 @@ internal suspend fun sendAssetToConfiguredChannel(
 
 internal suspend fun resolvePreferredAssetUrl(
     lookupConfig: GitHubLookupConfig,
-    asset: GitHubReleaseAssetFile
+    asset: GitHubReleaseAssetFile,
 ): String {
     val token = lookupConfig.apiToken.trim()
     val preferApiAsset = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
     return withContext(AppDispatchers.githubNetwork) {
-        GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-            asset = asset,
-            useApiAssetUrl = preferApiAsset,
-            apiToken = token
-        ).getOrElse { asset.downloadUrl }
+        GitHubReleaseAssetRepository
+            .resolvePreferredDownloadUrl(
+                asset = asset,
+                useApiAssetUrl = preferApiAsset,
+                apiToken = token,
+            ).getOrElse { asset.downloadUrl }
     }
 }
 
 internal suspend fun scanShareImportAssetPackageName(
     asset: GitHubReleaseAssetFile,
     lookupConfig: GitHubLookupConfig,
-    scanner: GitHubApkPackageNameScanner = GitHubApkPackageNameScanner(
-        GitHubApkPackageNameScanRepository()
-    )
-): Result<String> {
-    return scanShareImportAssetManifestInfo(
+    scanner: GitHubApkPackageNameScanner =
+        GitHubApkPackageNameScanner(
+            GitHubApkPackageNameScanRepository(),
+        ),
+): Result<String> =
+    scanShareImportAssetManifestInfo(
         asset = asset,
         lookupConfig = lookupConfig,
-        scanner = scanner
+        scanner = scanner,
     ).map { info ->
         info.packageName.trim()
     }
-}
 
 internal suspend fun scanShareImportAssetManifestInfo(
     asset: GitHubReleaseAssetFile,
     lookupConfig: GitHubLookupConfig,
     apkInfoRepository: GitHubApkInfoRepository = GitHubApkInfoRepository(),
-    scanner: GitHubApkPackageNameScanner = GitHubApkPackageNameScanner(
-        GitHubApkPackageNameScanRepository()
-    )
+    scanner: GitHubApkPackageNameScanner =
+        GitHubApkPackageNameScanner(
+            GitHubApkPackageNameScanRepository(),
+        ),
 ): Result<GitHubApkManifestInfo> {
-    apkInfoRepository.inspect(
-        asset = asset,
-        lookupConfig = lookupConfig
-    ).getOrNull()?.let { info ->
-        return Result.success(info)
-    }
+    apkInfoRepository
+        .inspect(
+            asset = asset,
+            lookupConfig = lookupConfig,
+        ).getOrNull()
+        ?.let { info ->
+            return Result.success(info)
+        }
     return scanner.scanAssetManifestInfo(
         asset = asset,
-        lookupConfig = lookupConfig
+        lookupConfig = lookupConfig,
     )
 }
 
 internal fun enqueueWithSystemDownloadManager(
     context: Context,
     url: String,
-    fileName: String
+    fileName: String,
 ) {
     AppPrivateDownloadManager.enqueueHttpsDownload(
         context = context,
         url = url,
-        fileName = fileName
+        fileName = fileName,
     )
 }
 
 internal suspend fun attachCandidateToTracked(
     context: Context,
     candidate: GitHubPendingShareImportAttachCandidate,
-    prefetchLatestCheck: Boolean = true
+    prefetchLatestCheck: Boolean = true,
+    clock: GitHubShareImportClock = GitHubSystemShareImportClock,
 ): ShareImportAttachResult {
     return withContext(AppDispatchers.githubNetwork) {
         val trackedItems = GitHubTrackStore.load().toMutableList()
@@ -223,19 +245,22 @@ internal suspend fun attachCandidateToTracked(
             return@withContext ShareImportAttachResult.Duplicate
         }
 
-        val trackedItem = GitHubTrackedApp(
-            repoUrl = candidate.projectUrl,
-            owner = candidate.owner,
-            repo = candidate.repo,
-            packageName = candidate.packageName,
-            appLabel = candidate.appLabel.ifBlank { candidate.packageName },
-            localAppType = GitHubVersionUtils.localVersionInfoOrNull(
-                context = context,
-                packageName = candidate.packageName
-            )?.let { info ->
-                GitHubTrackedLocalAppType.fromSystemFlag(info.isSystemApp)
-            } ?: GitHubTrackedLocalAppType.Unknown
-        )
+        val trackedItem =
+            GitHubTrackedApp(
+                repoUrl = candidate.projectUrl,
+                owner = candidate.owner,
+                repo = candidate.repo,
+                packageName = candidate.packageName,
+                appLabel = candidate.appLabel.ifBlank { candidate.packageName },
+                localAppType =
+                    GitHubVersionUtils
+                        .localVersionInfoOrNull(
+                            context = context,
+                            packageName = candidate.packageName,
+                        )?.let { info ->
+                            GitHubTrackedLocalAppType.fromSystemFlag(info.isSystemApp)
+                        } ?: GitHubTrackedLocalAppType.Unknown,
+            )
         trackedItems.add(trackedItem)
         GitHubTrackStore.save(trackedItems)
         saveTrackedFirstInstallAtFallback(candidate)
@@ -245,15 +270,17 @@ internal suspend fun attachCandidateToTracked(
 
         if (prefetchLatestCheck) {
             runCatching {
-                val nowMs = System.currentTimeMillis()
-                val refreshedUi = GitHubReleaseCheckService
-                    .evaluateTrackedApp(context, trackedItem)
-                    .toUi()
-                    .copy(checkedAtMillis = nowMs)
+                val nowMs = clock.nowMs()
+                val refreshedUi =
+                    GitHubReleaseCheckService
+                        .evaluateTrackedApp(context, trackedItem)
+                        .toUi()
+                        .copy(checkedAtMillis = nowMs)
                 val (cache, _) = GitHubTrackStore.loadCheckCache()
-                val updatedCache = cache.toMutableMap().apply {
-                    put(trackedItem.id, refreshedUi.toCacheEntry())
-                }
+                val updatedCache =
+                    cache.toMutableMap().apply {
+                        put(trackedItem.id, refreshedUi.toCacheEntry())
+                    }
                 GitHubTrackStore.saveCheckCache(updatedCache, nowMs)
             }
         }
@@ -266,9 +293,10 @@ internal suspend fun attachCandidateToTracked(
 internal fun saveTrackedFirstInstallAtFallback(candidate: GitHubPendingShareImportAttachCandidate) {
     val packageName = candidate.packageName.trim()
     if (packageName.isBlank()) return
-    val firstInstallAtMillis = candidate.firstInstallTimeMs
-        .takeIf { it > 0L }
-        ?: candidate.detectedAtMillis
+    val firstInstallAtMillis =
+        candidate.firstInstallTimeMs
+            .takeIf { it > 0L }
+            ?: candidate.detectedAtMillis
     if (firstInstallAtMillis <= 0L) return
 
     val existing = GitHubTrackStore.loadTrackedFirstInstallAtByPackage().toMutableMap()
@@ -281,11 +309,12 @@ internal fun saveTrackedFirstInstallAtFallback(candidate: GitHubPendingShareImpo
 
 internal fun saveTrackedAddedAtFallback(
     trackId: String,
-    detectedAtMillis: Long
+    detectedAtMillis: Long,
+    clock: GitHubShareImportClock = GitHubSystemShareImportClock,
 ) {
     val normalizedTrackId = trackId.trim()
     if (normalizedTrackId.isBlank()) return
-    val addedAtMillis = detectedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
+    val addedAtMillis = detectedAtMillis.takeIf { it > 0L } ?: clock.nowMs()
     val existing = GitHubTrackStore.loadTrackedAddedAtById().toMutableMap()
     val current = existing[normalizedTrackId]
     if (current == null || current <= 0L || addedAtMillis < current) {
@@ -296,11 +325,12 @@ internal fun saveTrackedAddedAtFallback(
 
 internal fun saveTrackedModifiedAtFallback(
     trackId: String,
-    detectedAtMillis: Long
+    detectedAtMillis: Long,
+    clock: GitHubShareImportClock = GitHubSystemShareImportClock,
 ) {
     val normalizedTrackId = trackId.trim()
     if (normalizedTrackId.isBlank()) return
-    val modifiedAtMillis = detectedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
+    val modifiedAtMillis = detectedAtMillis.takeIf { it > 0L } ?: clock.nowMs()
     val existing = GitHubTrackStore.loadTrackedModifiedAtById().toMutableMap()
     existing[normalizedTrackId] = modifiedAtMillis
     GitHubTrackStore.saveTrackedModifiedAtById(existing)
@@ -308,45 +338,51 @@ internal fun saveTrackedModifiedAtFallback(
 
 internal suspend fun loadInstalledPackageSnapshot(
     context: Context,
-    packageName: String
-): ShareImportInstalledPackageSnapshot? {
-    return withContext(AppDispatchers.githubNetwork) {
+    packageName: String,
+): ShareImportInstalledPackageSnapshot? =
+    withContext(AppDispatchers.githubNetwork) {
         loadInstalledPackageSnapshotBlocking(context, packageName)
     }
-}
 
 private fun loadInstalledPackageSnapshotBlocking(
     context: Context,
-    packageName: String
+    packageName: String,
 ): ShareImportInstalledPackageSnapshot? {
     val normalizedPackageName = packageName.trim()
     if (normalizedPackageName.isBlank()) return null
     val pm = context.packageManager
-    val info = runCatching {
-        pm.getPackageInfo(normalizedPackageName, PackageManager.PackageInfoFlags.of(0))
-    }.getOrNull() ?: return null
+    val info =
+        runCatching {
+            pm.getPackageInfo(normalizedPackageName, PackageManager.PackageInfoFlags.of(0))
+        }.getOrNull() ?: return null
 
-    val label = runCatching {
-        val appInfo = info.applicationInfo ?: pm.getApplicationInfo(
-            normalizedPackageName,
-            PackageManager.ApplicationInfoFlags.of(0)
-        )
-        pm.getApplicationLabel(appInfo).toString().trim()
-    }.getOrDefault("")
+    val label =
+        runCatching {
+            val appInfo =
+                info.applicationInfo ?: pm.getApplicationInfo(
+                    normalizedPackageName,
+                    PackageManager.ApplicationInfoFlags.of(0),
+                )
+            pm.getApplicationLabel(appInfo).toString().trim()
+        }.getOrDefault("")
 
     return ShareImportInstalledPackageSnapshot(
         packageName = normalizedPackageName,
         appLabel = label,
         versionName = info.versionName?.trim().orEmpty(),
-        versionCode = info.longVersionCode.takeIf { it > 0L }?.toString().orEmpty(),
+        versionCode =
+            info.longVersionCode
+                .takeIf { it > 0L }
+                ?.toString()
+                .orEmpty(),
         lastUpdateTimeMs = info.lastUpdateTime,
-        firstInstallTimeMs = info.firstInstallTime
+        firstInstallTimeMs = info.firstInstallTime,
     )
 }
 
 internal fun findRecentInstalledCandidateForPendingTrack(
     context: Context,
-    pendingTrack: GitHubPendingShareImportTrackRecord
+    pendingTrack: GitHubPendingShareImportTrackRecord,
 ): ShareImportInstalledPackageSnapshot? {
     val expectedPackageName = pendingTrack.packageName.trim()
     if (expectedPackageName.isNotBlank()) {
@@ -354,7 +390,7 @@ internal fun findRecentInstalledCandidateForPendingTrack(
             ?.takeIf { snapshot ->
                 isShareImportExactPackageMatch(
                     pendingTrack = pendingTrack,
-                    packageSnapshot = snapshot
+                    packageSnapshot = snapshot,
                 )
             }
     }
@@ -362,62 +398,69 @@ internal fun findRecentInstalledCandidateForPendingTrack(
     val pm = context.packageManager
     val installed = pm.getInstalledPackageInfosSafely()
 
-    val candidates = installed.asSequence()
-        .filter { info ->
-            val packageName = info.packageName.trim()
-            packageName.isNotBlank() &&
-                packageName != context.packageName &&
-                pm.getLaunchIntentForPackage(packageName) != null
-        }
-        .mapNotNull { info ->
-            val packageName = info.packageName.trim()
-            val updateTime = info.lastUpdateTime
-            if (updateTime <= 0L) return@mapNotNull null
-            if (updateTime < (pendingTrack.armedAtMillis - shareImportTrackUpdateToleranceMs)) {
-                return@mapNotNull null
-            }
-            val appLabel = runCatching {
-                val appInfo = info.applicationInfo ?: pm.getApplicationInfo(
-                    packageName,
-                    PackageManager.ApplicationInfoFlags.of(0)
-                )
-                pm.getApplicationLabel(appInfo).toString().trim()
-            }.getOrDefault("")
+    val candidates =
+        installed
+            .asSequence()
+            .filter { info ->
+                val packageName = info.packageName.trim()
+                packageName.isNotBlank() &&
+                    packageName != context.packageName &&
+                    pm.getLaunchIntentForPackage(packageName) != null
+            }.mapNotNull { info ->
+                val packageName = info.packageName.trim()
+                val updateTime = info.lastUpdateTime
+                if (updateTime <= 0L) return@mapNotNull null
+                if (updateTime < (pendingTrack.armedAtMillis - shareImportTrackUpdateToleranceMs)) {
+                    return@mapNotNull null
+                }
+                val appLabel =
+                    runCatching {
+                        val appInfo =
+                            info.applicationInfo ?: pm.getApplicationInfo(
+                                packageName,
+                                PackageManager.ApplicationInfoFlags.of(0),
+                            )
+                        pm.getApplicationLabel(appInfo).toString().trim()
+                    }.getOrDefault("")
 
-            ShareImportInstalledPackageSnapshot(
-                packageName = packageName,
-                appLabel = appLabel,
-                versionCode = info.longVersionCode.takeIf { it > 0L }?.toString().orEmpty(),
-                lastUpdateTimeMs = updateTime,
-                firstInstallTimeMs = info.firstInstallTime
-            )
-        }
-        .toList()
+                ShareImportInstalledPackageSnapshot(
+                    packageName = packageName,
+                    appLabel = appLabel,
+                    versionCode =
+                        info.longVersionCode
+                            .takeIf { it > 0L }
+                            ?.toString()
+                            .orEmpty(),
+                    lastUpdateTimeMs = updateTime,
+                    firstInstallTimeMs = info.firstInstallTime,
+                )
+            }.toList()
 
     return selectRecentInstalledCandidateForPendingTrack(
         pendingTrack = pendingTrack,
-        candidates = candidates
+        candidates = candidates,
     )
 }
 
 internal fun selectRecentInstalledCandidateForPendingTrack(
     pendingTrack: GitHubPendingShareImportTrackRecord,
-    candidates: List<ShareImportInstalledPackageSnapshot>
+    candidates: List<ShareImportInstalledPackageSnapshot>,
 ): ShareImportInstalledPackageSnapshot? {
     val expectedPackageName = pendingTrack.packageName.trim()
     if (expectedPackageName.isNotBlank()) {
         return candidates.firstOrNull { candidate ->
             isShareImportExactPackageMatch(
                 pendingTrack = pendingTrack,
-                packageSnapshot = candidate
+                packageSnapshot = candidate,
             )
         }
     }
 
-    val eligible = topRecentEligibleInstalledCandidates(
-        pendingTrack = pendingTrack,
-        candidates = candidates
-    )
+    val eligible =
+        topRecentEligibleInstalledCandidates(
+            pendingTrack = pendingTrack,
+            candidates = candidates,
+        )
 
     if (eligible.isEmpty()) return null
     if (eligible.size >= 2) {
@@ -433,7 +476,7 @@ internal fun selectRecentInstalledCandidateForPendingTrack(
 
 private fun topRecentEligibleInstalledCandidates(
     pendingTrack: GitHubPendingShareImportTrackRecord,
-    candidates: List<ShareImportInstalledPackageSnapshot>
+    candidates: List<ShareImportInstalledPackageSnapshot>,
 ): List<ShareImportInstalledPackageSnapshot> {
     var first: ShareImportInstalledPackageSnapshot? = null
     var second: ShareImportInstalledPackageSnapshot? = null
@@ -466,7 +509,7 @@ private fun topRecentEligibleInstalledCandidates(
 
 internal fun isShareImportExactPackageMatch(
     pendingTrack: GitHubPendingShareImportTrackRecord,
-    packageSnapshot: ShareImportInstalledPackageSnapshot
+    packageSnapshot: ShareImportInstalledPackageSnapshot,
 ): Boolean {
     val expectedPackageName = pendingTrack.packageName.trim()
     if (expectedPackageName.isBlank()) return false
@@ -478,7 +521,7 @@ internal fun isShareImportExactPackageMatch(
 internal fun isShareImportAttachEventValid(
     event: AppPackageChangedEvent,
     armedAtMillis: Long,
-    packageLastUpdateTimeMs: Long
+    packageLastUpdateTimeMs: Long,
 ): Boolean {
     if (event.action == Intent.ACTION_PACKAGE_ADDED || event.action == Intent.ACTION_PACKAGE_REPLACED) {
         return true
@@ -491,7 +534,7 @@ internal fun isShareImportAttachEventValid(
 internal fun toast(
     context: Context,
     resId: Int,
-    vararg args: Any
+    vararg args: Any,
 ) {
     context.showToast(context.getString(resId, *args))
 }

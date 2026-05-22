@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
@@ -24,11 +25,10 @@ import os.kei.ui.page.main.student.section.GuideGalleryCardItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoRows
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileSectionHeader
-import com.kyant.backdrop.backdrops.LayerBackdrop
 
 internal fun LazyListScope.guideProfileCard(
     addTopSpacing: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     if (addTopSpacing) {
         item { Spacer(modifier = Modifier.height(10.dp)) }
@@ -37,13 +37,14 @@ internal fun LazyListScope.guideProfileCard(
         GuideLiquidCard(
             modifier = Modifier.fillMaxWidth(),
             surfaceColor = Color(0x223B82F6),
-            onClick = {}
+            onClick = {},
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 content()
             }
@@ -64,7 +65,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
-    preferCapsule: Boolean
+    preferCapsule: Boolean,
 ) {
     if (infoRows.isEmpty() && galleryItems.isEmpty()) return
     guideProfileCard(addTopSpacing = true) {
@@ -74,7 +75,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
             GuideProfileInfoItem(
                 key = row.key,
                 value = value,
-                preferCapsule = preferCapsule
+                preferCapsule = preferCapsule,
             )
         }
         galleryItems.forEachIndexed { index, galleryItem ->
@@ -92,7 +93,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
                         BaGuideTempMediaCache.resolveCachedUrl(
                             context = context,
                             sourceUrl = sourceUrl,
-                            rawUrl = raw
+                            rawUrl = raw,
                         )
                     }
                 },
@@ -100,7 +101,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
                 showMediaTypeLabel = false,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
                 onToggleBgmFavorite = onToggleBgmFavorite,
-                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             )
         }
     }

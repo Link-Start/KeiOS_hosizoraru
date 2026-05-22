@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:backing-property-naming")
+
 package os.kei.ui.page.main.student.page.state
 
 import android.app.Application
@@ -7,10 +9,12 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -86,7 +90,8 @@ internal class BaStudentGuideViewModel(
 
     private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
     val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
-    val events: SharedFlow<BaStudentGuideEvent> = mediaSaveCoordinator.events
+    private val mutableEvents = MutableSharedFlow<BaStudentGuideEvent>(replay = 0, extraBufferCapacity = 8)
+    val events: SharedFlow<BaStudentGuideEvent> = mutableEvents.asSharedFlow()
     val bgmFavoriteAudioUrls: StateFlow<Set<String>> =
         repository
             .bgmFavoritesFlow()
@@ -156,6 +161,11 @@ internal class BaStudentGuideViewModel(
         }
         viewModelScope.launch {
             repository.hydrateBgmFavorites()
+        }
+        viewModelScope.launch {
+            mediaSaveCoordinator.events.collect { event ->
+                mutableEvents.emit(event)
+            }
         }
         loadStoredCurrentGuide()
     }
@@ -259,8 +269,18 @@ internal class BaStudentGuideViewModel(
         )
     }
 
-    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
-        repository.toggleBgmFavorite(item)
+    fun requestToggleBgmFavorite(item: GuideBgmFavoriteItem) {
+        viewModelScope.launch {
+            val added = repository.toggleBgmFavorite(item)
+            mutableEvents.emit(
+                if (added) {
+                    BaStudentGuideEvent.BgmFavoriteAdded
+                } else {
+                    BaStudentGuideEvent.BgmFavoriteRemoved
+                },
+            )
+        }
+    }
 
     fun requestMediaSave(
         rawMediaUrl: String,
@@ -387,11 +407,12 @@ internal class BaStudentGuideViewModel(
                 _dataState.update { state ->
                     if (state.sourceUrl == sourceUrl) {
                         lastLoadedSourceUrl = sourceUrl
-                        val nextState = state.copy(
-                            info = result.info,
-                            loading = false,
-                            error = result.error,
-                        )
+                        val nextState =
+                            state.copy(
+                                info = result.info,
+                                loading = false,
+                                error = result.error,
+                            )
                         resolveNpcSatelliteGuideFor(sourceUrl, result.info)
                         nextState
                     } else {
@@ -503,12 +524,10 @@ internal class BaStudentGuideViewModel(
             }
         }
     }
-
 }
 
 private fun Throwable.rethrowIfCancellation() {
     if (this is CancellationException) throw this
 }
 
-private fun List<GuideBgmFavoriteItem>.toAudioUrlSet(): Set<String> =
-    mapTo(hashSetOf()) { it.audioUrl }
+private fun List<GuideBgmFavoriteItem>.toAudioUrlSet(): Set<String> = mapTo(hashSetOf()) { it.audioUrl }

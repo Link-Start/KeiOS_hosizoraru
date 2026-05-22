@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.os.components
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -90,6 +91,7 @@ internal fun OsPageMainList(
     onOpenShellCommandCardEditor: (OsShellCommandCard) -> Unit,
     onRunShellCommandCard: (OsShellCommandCard) -> Unit,
     activityShortcutCards: List<OsActivityShortcutCard>,
+    activityIconBitmaps: Map<String, Bitmap>,
     defaultActivityCardTitle: String,
     activityCardExpanded: Map<String, Boolean>,
     onActivityCardExpandedChange: (String, Boolean) -> Unit,
@@ -453,6 +455,7 @@ internal fun OsPageMainList(
 
             addShortcutActivityCards(
                 cards = activityShortcutCards,
+                iconBitmaps = activityIconBitmaps,
                 contentBackdrop = contentBackdrop,
                 defaultCardTitle = defaultActivityCardTitle,
                 expandedStates = activityCardExpanded,

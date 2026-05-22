@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section
 
 import androidx.compose.foundation.combinedClickable
@@ -64,37 +66,41 @@ internal fun GuideGalleryCardItem(
 ) {
     val context = LocalContext.current
     val normalizedMediaType = item.mediaType.lowercase()
-    val isInteractiveFurnitureAnimated = remember(item.title, item.mediaUrl, item.imageUrl) {
-        isInteractiveFurnitureAnimatedGalleryItem(item)
-    }
-    val disableFullscreenAutoRotate = remember(
-        item.title,
-        item.mediaUrl,
-        item.imageUrl,
-        isInteractiveFurnitureAnimated
-    ) {
-        isInteractiveFurnitureGalleryItem(item) && !isInteractiveFurnitureAnimated
-    }
-    val preferredImageRaw = remember(
-        item.imageUrl,
-        item.mediaUrl,
-        normalizedMediaType,
-        isInteractiveFurnitureAnimated
-    ) {
-        when {
-            normalizedMediaType == "video" || normalizedMediaType == "audio" -> item.imageUrl
-            isInteractiveFurnitureAnimated && item.mediaUrl.isNotBlank() -> item.mediaUrl
-            item.imageUrl.isNotBlank() -> item.imageUrl
-            else -> item.mediaUrl
+    val isInteractiveFurnitureAnimated =
+        remember(item.title, item.mediaUrl, item.imageUrl) {
+            isInteractiveFurnitureAnimatedGalleryItem(item)
         }
-    }
-    val mediaTypeLabel = when (normalizedMediaType) {
-        "video" -> ""
-        "audio" -> ""
-        "live2d" -> "Live2D"
-        "imageset" -> stringResource(R.string.guide_gallery_image_set)
-        else -> ""
-    }
+    val disableFullscreenAutoRotate =
+        remember(
+            item.title,
+            item.mediaUrl,
+            item.imageUrl,
+            isInteractiveFurnitureAnimated,
+        ) {
+            isInteractiveFurnitureGalleryItem(item) && !isInteractiveFurnitureAnimated
+        }
+    val preferredImageRaw =
+        remember(
+            item.imageUrl,
+            item.mediaUrl,
+            normalizedMediaType,
+            isInteractiveFurnitureAnimated,
+        ) {
+            when {
+                normalizedMediaType == "video" || normalizedMediaType == "audio" -> item.imageUrl
+                isInteractiveFurnitureAnimated && item.mediaUrl.isNotBlank() -> item.mediaUrl
+                item.imageUrl.isNotBlank() -> item.imageUrl
+                else -> item.mediaUrl
+            }
+        }
+    val mediaTypeLabel =
+        when (normalizedMediaType) {
+            "video" -> ""
+            "audio" -> ""
+            "live2d" -> "Live2D"
+            "imageset" -> stringResource(R.string.guide_gallery_image_set)
+            else -> ""
+        }
     val displayImageUrl = mediaUrlResolver(preferredImageRaw)
     val displayMediaUrl = mediaUrlResolver(item.mediaUrl.ifBlank { preferredImageRaw })
     val noteText = item.note.trim()
@@ -102,91 +108,104 @@ internal fun GuideGalleryCardItem(
     val notePlainText = remember(noteText) { stripGuideWebLinks(noteText) }
     val fallbackGalleryTitle = stringResource(R.string.guide_gallery_item_fallback)
     val audioBgmPrefix = stringResource(R.string.ba_catalog_bgm_track_fallback)
-    val displayTitle = remember(item.title, normalizedMediaType, fallbackGalleryTitle, audioBgmPrefix) {
-        normalizeGalleryDisplayTitle(
-            title = item.title,
-            mediaType = normalizedMediaType,
-            fallbackTitle = fallbackGalleryTitle,
-            audioBgmPrefix = audioBgmPrefix
-        )
-    }
+    val displayTitle =
+        remember(item.title, normalizedMediaType, fallbackGalleryTitle, audioBgmPrefix) {
+            normalizeGalleryDisplayTitle(
+                title = item.title,
+                mediaType = normalizedMediaType,
+                fallbackTitle = fallbackGalleryTitle,
+                audioBgmPrefix = audioBgmPrefix,
+            )
+        }
     val localizedDisplayTitle = guideLocalizedLabel(displayTitle, R.string.guide_gallery_item_fallback)
-    val saveTargetUrl = remember(
-        normalizedMediaType,
-        displayImageUrl,
-        displayMediaUrl,
-        isInteractiveFurnitureAnimated
-    ) {
-        when (normalizedMediaType) {
-            "video", "audio" -> displayMediaUrl.ifBlank { displayImageUrl }
-            else -> {
-                if (isInteractiveFurnitureAnimated && displayMediaUrl.isNotBlank()) {
-                    displayMediaUrl
-                } else {
-                    displayImageUrl.ifBlank { displayMediaUrl }
+    val saveTargetUrl =
+        remember(
+            normalizedMediaType,
+            displayImageUrl,
+            displayMediaUrl,
+            isInteractiveFurnitureAnimated,
+        ) {
+            when (normalizedMediaType) {
+                "video", "audio" -> {
+                    displayMediaUrl.ifBlank { displayImageUrl }
+                }
+
+                else -> {
+                    if (isInteractiveFurnitureAnimated && displayMediaUrl.isNotBlank()) {
+                        displayMediaUrl
+                    } else {
+                        displayImageUrl.ifBlank { displayMediaUrl }
+                    }
                 }
             }
         }
-    }
     val canSaveMedia = showSaveAction && saveTargetUrl.isNotBlank()
     val isImageType = normalizedMediaType != "video" && normalizedMediaType != "audio"
-    val canOpenMedia = item.mediaUrl.isNotBlank() &&
-        normalizeGuideMediaSource(displayMediaUrl) != normalizeGuideMediaSource(displayImageUrl)
+    val canOpenMedia =
+        item.mediaUrl.isNotBlank() &&
+            normalizeGuideMediaSource(displayMediaUrl) != normalizeGuideMediaSource(displayImageUrl)
 
-    val gestureState = rememberGuideGalleryGestureState(
-        displayMediaUrl = displayMediaUrl,
-        normalizedMediaType = normalizedMediaType,
-        displayImageUrl = displayImageUrl
-    )
-
-    val audioTargetUrl = remember(normalizedMediaType, displayMediaUrl) {
-        if (normalizedMediaType == "audio") normalizeGuideMediaSource(displayMediaUrl) else ""
-    }
-    val favoriteAudioUrl = remember(normalizedMediaType, item.mediaUrl, displayMediaUrl) {
-        if (normalizedMediaType == "audio") {
-            normalizeGuideMediaSource(item.mediaUrl.ifBlank { displayMediaUrl })
-        } else {
-            ""
-        }
-    }
-    val canFavoriteBgm = showBgmFavoriteAction &&
-        onToggleBgmFavorite != null &&
-        normalizedMediaType == "audio" &&
-        favoriteAudioUrl.isNotBlank() &&
-        isGuideBgmFavoriteCandidateTitle(item.title, displayTitle)
-    val isBgmFavorite = canFavoriteBgm && favoriteAudioUrl in bgmFavoriteAudioUrls
-    val favoriteContentDescription = stringResource(
-        if (isBgmFavorite) {
-            R.string.guide_bgm_cd_unfavorite
-        } else {
-            R.string.guide_bgm_cd_favorite
-        }
-    )
-    val bgmFavoriteItem = remember(
-        favoriteAudioUrl,
-        displayTitle,
-        bgmFavoriteStudentTitle,
-        bgmFavoriteStudentImageUrl,
-        displayImageUrl,
-        bgmFavoriteSourceUrl,
-        notePlainText
-    ) {
-        GuideBgmFavoriteItem(
-            audioUrl = favoriteAudioUrl,
-            title = displayTitle,
-            studentTitle = bgmFavoriteStudentTitle,
-            studentImageUrl = bgmFavoriteStudentImageUrl,
-            imageUrl = displayImageUrl,
-            sourceUrl = bgmFavoriteSourceUrl,
-            note = notePlainText,
-            favoritedAtMs = 0L
+    val gestureState =
+        rememberGuideGalleryGestureState(
+            displayMediaUrl = displayMediaUrl,
+            normalizedMediaType = normalizedMediaType,
+            displayImageUrl = displayImageUrl,
         )
-    }
-    val audioState = rememberGuideGalleryAudioPlayerState(
-        context = context,
-        audioLoopScopeKey = audioLoopScopeKey,
-        audioTargetUrl = audioTargetUrl
-    )
+
+    val audioTargetUrl =
+        remember(normalizedMediaType, displayMediaUrl) {
+            if (normalizedMediaType == "audio") normalizeGuideMediaSource(displayMediaUrl) else ""
+        }
+    val favoriteAudioUrl =
+        remember(normalizedMediaType, item.mediaUrl, displayMediaUrl) {
+            if (normalizedMediaType == "audio") {
+                normalizeGuideMediaSource(item.mediaUrl.ifBlank { displayMediaUrl })
+            } else {
+                ""
+            }
+        }
+    val canFavoriteBgm =
+        showBgmFavoriteAction &&
+            onToggleBgmFavorite != null &&
+            normalizedMediaType == "audio" &&
+            favoriteAudioUrl.isNotBlank() &&
+            isGuideBgmFavoriteCandidateTitle(item.title, displayTitle)
+    val isBgmFavorite = canFavoriteBgm && favoriteAudioUrl in bgmFavoriteAudioUrls
+    val favoriteContentDescription =
+        stringResource(
+            if (isBgmFavorite) {
+                R.string.guide_bgm_cd_unfavorite
+            } else {
+                R.string.guide_bgm_cd_favorite
+            },
+        )
+    val bgmFavoriteItem =
+        remember(
+            favoriteAudioUrl,
+            displayTitle,
+            bgmFavoriteStudentTitle,
+            bgmFavoriteStudentImageUrl,
+            displayImageUrl,
+            bgmFavoriteSourceUrl,
+            notePlainText,
+        ) {
+            GuideBgmFavoriteItem(
+                audioUrl = favoriteAudioUrl,
+                title = displayTitle,
+                studentTitle = bgmFavoriteStudentTitle,
+                studentImageUrl = bgmFavoriteStudentImageUrl,
+                imageUrl = displayImageUrl,
+                sourceUrl = bgmFavoriteSourceUrl,
+                note = notePlainText,
+                favoritedAtMs = 0L,
+            )
+        }
+    val audioState =
+        rememberGuideGalleryAudioPlayerState(
+            context = context,
+            audioLoopScopeKey = audioLoopScopeKey,
+            audioTargetUrl = audioTargetUrl,
+        )
     LaunchedEffect(audioState, audioLoopEnabledOverride) {
         audioLoopEnabledOverride?.let { forced ->
             if (audioState.loopEnabled != forced) {
@@ -201,12 +220,13 @@ internal fun GuideGalleryCardItem(
     }
     BindGuideGalleryAudioPlayerEffects(
         state = audioState,
-        onPlaybackEnded = onAudioPlaybackEnded
+        onPlaybackEnded = onAudioPlaybackEnded,
     )
 
-    val imageProgressState = remember(displayImageUrl) {
-        GuideMediaProgressState(if (displayImageUrl.isBlank()) 1f else 0f)
-    }
+    val imageProgressState =
+        remember(displayImageUrl) {
+            GuideMediaProgressState(if (displayImageUrl.isBlank()) 1f else 0f)
+        }
     var imageLoading by remember(displayImageUrl) { mutableStateOf(displayImageUrl.isNotBlank()) }
 
     val content: @Composable (Modifier) -> Unit = { contentModifier ->
@@ -244,37 +264,39 @@ internal fun GuideGalleryCardItem(
             },
             audioState = audioState,
             gestureState = gestureState,
-            modifier = contentModifier
+            modifier = contentModifier,
         )
     }
 
     if (embedded) {
         content(
             modifier
-                .fillMaxWidth()
+                .fillMaxWidth(),
         )
     } else {
-        val clickableModifier = if (onClick != null || onLongClick != null) {
-            Modifier.combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = { onClick?.invoke() },
-                onLongClick = onLongClick
-            )
-        } else {
-            Modifier
-        }
+        val clickableModifier =
+            if (onClick != null || onLongClick != null) {
+                Modifier.combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick,
+                )
+            } else {
+                Modifier
+            }
         GuideLiquidCard(
-            modifier = modifier
-                .fillMaxWidth()
-                .then(clickableModifier),
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .then(clickableModifier),
             surfaceColor = Color(0x223B82F6),
-            isInteractive = false
+            isInteractive = false,
         ) {
             content(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
             )
         }
     }
@@ -284,7 +306,7 @@ internal fun GuideGalleryCardItem(
             imageUrl = displayImageUrl,
             allowAutoRotate = !disableFullscreenAutoRotate,
             mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-            onDismiss = { gestureState.showImageFullscreen = false }
+            onDismiss = { gestureState.showImageFullscreen = false },
         )
     }
 }

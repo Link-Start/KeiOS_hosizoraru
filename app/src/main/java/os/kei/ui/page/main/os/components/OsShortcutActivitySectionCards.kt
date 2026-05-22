@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.os.components
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyListScope
@@ -10,6 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.os.osActivityShortcutIconKey
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
@@ -19,6 +21,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 
 internal fun LazyListScope.addShortcutActivityCards(
     cards: List<OsActivityShortcutCard>,
+    iconBitmaps: Map<String, Bitmap>,
     contentBackdrop: LayerBackdrop,
     defaultCardTitle: String,
     expandedStates: Map<String, Boolean>,
@@ -36,10 +39,16 @@ internal fun LazyListScope.addShortcutActivityCards(
                 expanded = expandedStates[card.id] == true,
                 onExpandedChange = { expanded -> onExpandedChange(card.id, expanded) },
                 headerStartAction = {
+                    val iconKey =
+                        osActivityShortcutIconKey(
+                            packageName = shortcutConfig.packageName,
+                            className = shortcutConfig.className,
+                        )
                     ShortcutActivityIcon(
                         packageName = shortcutConfig.packageName,
                         className = shortcutConfig.className,
                         size = 24.dp,
+                        bitmap = iconBitmaps[iconKey],
                         fallbackToPackageIcon = true,
                     )
                 },

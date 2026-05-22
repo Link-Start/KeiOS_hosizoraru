@@ -44,8 +44,8 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
-import os.kei.ui.page.main.student.page.state.BindBaStudentGuideMediaSaveEvents
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideForegroundAudioGuard
+import os.kei.ui.page.main.student.page.state.BindBaStudentGuideMediaSaveEvents
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePagerSyncEffects
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePlayerLifecycleEffects
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePrefetchEffects
@@ -413,7 +413,7 @@ fun BaStudentGuidePage(
                 onOpenGuide = pageActions.openGuideInPage,
                 onSaveMedia = pageActions.saveGuideMedia,
                 onSaveMediaPack = pageActions.saveGuideMediaPack,
-                onToggleBgmFavorite = guideViewModel::toggleBgmFavorite,
+                onToggleBgmFavorite = guideViewModel::requestToggleBgmFavorite,
                 onToggleVoicePlayback = pageActions.toggleVoicePlayback,
                 onScrollBoundsChange = { canScrollBackward, canScrollForward ->
                     activePageCanScrollBackward = canScrollBackward

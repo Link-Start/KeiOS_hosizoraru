@@ -11,9 +11,9 @@ import os.kei.ui.page.main.state.PageActionState
 
 internal data class OsPageActionState(
     val ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    val applyCardVisibility: suspend (OsSectionCard, Boolean) -> Unit,
-    val applyActivityCardVisibility: suspend (String, Boolean) -> Unit,
-    val applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit,
+    val applyCardVisibility: (OsSectionCard, Boolean) -> Unit,
+    val applyActivityCardVisibility: (String, Boolean) -> Unit,
+    val applyShellCommandCardVisibility: (String, Boolean) -> Unit,
     val runShellCommandCard: (OsShellCommandCard) -> Unit,
     val refreshAllSections: () -> Unit,
 ) : PageActionState
@@ -36,7 +36,7 @@ internal fun createOsPageActionState(
         )
     }
 
-    val applyCardVisibility: suspend (OsSectionCard, Boolean) -> Unit = { card, visible ->
+    val applyCardVisibility: (OsSectionCard, Boolean) -> Unit = { card, visible ->
         osPageViewModel.applySectionCardVisibility(
             card = card,
             visible = visible,
@@ -44,7 +44,7 @@ internal fun createOsPageActionState(
         )
     }
 
-    val applyActivityCardVisibility: suspend (String, Boolean) -> Unit = { cardId, visible ->
+    val applyActivityCardVisibility: (String, Boolean) -> Unit = { cardId, visible ->
         osPageViewModel.applyActivityCardVisibility(
             cardId = cardId,
             visible = visible,
@@ -52,7 +52,7 @@ internal fun createOsPageActionState(
         )
     }
 
-    val applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit = { cardId, visible ->
+    val applyShellCommandCardVisibility: (String, Boolean) -> Unit = { cardId, visible ->
         osPageViewModel.applyShellCommandCardVisibility(
             cardId = cardId,
             visible = visible,

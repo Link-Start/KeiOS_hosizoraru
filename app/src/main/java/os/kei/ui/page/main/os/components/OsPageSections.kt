@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.os.components
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.osActivityShortcutIconKey
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
@@ -128,6 +130,7 @@ internal fun OsActivityVisibilityManagerSheet(
     sheetBackdrop: LayerBackdrop,
     activityHintText: String,
     cards: List<OsActivityShortcutCard>,
+    activityIconBitmaps: Map<String, Bitmap>,
     defaultCardTitle: String,
     transferInProgress: Boolean,
     onExportAllCards: () -> Unit,
@@ -194,6 +197,7 @@ internal fun OsActivityVisibilityManagerSheet(
             ActivityVisibilityGroup(
                 title = stringResource(R.string.os_visibility_group_built_in),
                 items = builtInItems,
+                activityIconBitmaps = activityIconBitmaps,
                 emptySearchActive = query.isNotBlank() && filteredActivityVisibilityItems.isEmpty(),
                 noMatchedResultsText = stringResource(R.string.common_no_matched_results),
                 onCardVisibilityChange = onCardVisibilityChange,
@@ -201,6 +205,7 @@ internal fun OsActivityVisibilityManagerSheet(
             ActivityVisibilityGroup(
                 title = stringResource(R.string.os_visibility_group_custom),
                 items = customItems,
+                activityIconBitmaps = activityIconBitmaps,
                 emptySearchActive = false,
                 noMatchedResultsText = stringResource(R.string.common_no_matched_results),
                 onCardVisibilityChange = onCardVisibilityChange,
@@ -248,6 +253,7 @@ internal fun OsActivityVisibilityManagerSheet(
 private fun ActivityVisibilityGroup(
     title: String,
     items: List<OsActivityVisibilityItem>,
+    activityIconBitmaps: Map<String, Bitmap>,
     emptySearchActive: Boolean,
     noMatchedResultsText: String,
     onCardVisibilityChange: (String, Boolean) -> Unit,
@@ -267,6 +273,7 @@ private fun ActivityVisibilityGroup(
         items.forEach { item ->
             ActivityVisibilityRow(
                 item = item,
+                activityIconBitmaps = activityIconBitmaps,
                 onCardVisibilityChange = onCardVisibilityChange,
             )
         }
@@ -276,6 +283,7 @@ private fun ActivityVisibilityGroup(
 @Composable
 private fun ActivityVisibilityRow(
     item: OsActivityVisibilityItem,
+    activityIconBitmaps: Map<String, Bitmap>,
     onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SheetControlRow(
@@ -289,10 +297,16 @@ private fun ActivityVisibilityRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (item.packageName.isNotBlank() || item.className.isNotBlank()) {
+                    val iconKey =
+                        osActivityShortcutIconKey(
+                            packageName = item.packageName,
+                            className = item.className,
+                        )
                     ShortcutActivityIcon(
                         packageName = item.packageName,
                         className = item.className,
                         size = 18.dp,
+                        bitmap = activityIconBitmaps[iconKey],
                     )
                 } else {
                     Icon(

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os
 
 import android.content.Context
@@ -17,10 +19,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
+import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 
@@ -184,16 +187,16 @@ internal fun BindOsPageEvents(
 internal fun BindOsExpandedStatePersistence(
     ready: Boolean,
     snapshotProvider: () -> OsUiSnapshot,
-    persistSnapshot: suspend (OsUiSnapshot) -> Unit
+    persistSnapshot: suspend (OsUiSnapshot) -> Unit,
 ) {
     val currentSnapshotProvider = rememberUpdatedState(snapshotProvider)
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(ready, snapshotFlowManager) {
         if (!ready) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow {
-            currentSnapshotProvider.value()
-        }
-            .debounce(200)
+        snapshotFlowManager
+            .snapshotFlow {
+                currentSnapshotProvider.value()
+            }.debounce(200)
             .distinctUntilChanged()
             .collectLatest { snapshot ->
                 persistSnapshot(snapshot)
@@ -204,7 +207,7 @@ internal fun BindOsExpandedStatePersistence(
 @Composable
 internal fun BindOsScrollToTopEffect(
     scrollToTopSignal: Int,
-    listState: LazyListState
+    listState: LazyListState,
 ) {
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) listState.animateScrollToItem(0)
@@ -214,14 +217,15 @@ internal fun BindOsScrollToTopEffect(
 @Composable
 internal fun BindOsShellCardReloadOnResume(
     lifecycleOwner: LifecycleOwner,
-    reloadCards: () -> Unit
+    reloadCards: () -> Unit,
 ) {
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                reloadCards()
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    reloadCards()
+                }
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
@@ -233,7 +237,7 @@ internal fun BindOsShellCardReloadOnResume(
 internal fun BindOsInitialCacheLoad(
     ready: Boolean,
     isPageActive: Boolean,
-    hydrateInitialCache: suspend (Boolean) -> Unit
+    hydrateInitialCache: suspend (Boolean) -> Unit,
 ) {
     LaunchedEffect(ready) {
         if (!ready) return@LaunchedEffect
@@ -244,7 +248,7 @@ internal fun BindOsInitialCacheLoad(
 @Composable
 internal fun BindOsShizukuInvalidation(
     shizukuReady: Boolean,
-    onInvalidate: () -> Unit
+    onInvalidate: () -> Unit,
 ) {
     LaunchedEffect(shizukuReady) {
         onInvalidate()
@@ -262,7 +266,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     androidPropsExpanded: Boolean,
     javaPropsExpanded: Boolean,
     linuxEnvExpanded: Boolean,
-    ensureLoad: suspend (SectionKind) -> Unit
+    ensureLoad: suspend (SectionKind) -> Unit,
 ) {
     BindOsSectionLoadEffect(
         expanded = systemTableExpanded,
@@ -271,7 +275,7 @@ internal fun BindOsVisibleSectionLoadEffects(
         visibleCards = visibleCards,
         card = OsSectionCard.SYSTEM,
         section = SectionKind.SYSTEM,
-        ensureLoad = ensureLoad
+        ensureLoad = ensureLoad,
     )
     BindOsSectionLoadEffect(
         expanded = secureTableExpanded,
@@ -280,7 +284,7 @@ internal fun BindOsVisibleSectionLoadEffects(
         visibleCards = visibleCards,
         card = OsSectionCard.SECURE,
         section = SectionKind.SECURE,
-        ensureLoad = ensureLoad
+        ensureLoad = ensureLoad,
     )
     BindOsSectionLoadEffect(
         expanded = globalTableExpanded,
@@ -289,7 +293,7 @@ internal fun BindOsVisibleSectionLoadEffects(
         visibleCards = visibleCards,
         card = OsSectionCard.GLOBAL,
         section = SectionKind.GLOBAL,
-        ensureLoad = ensureLoad
+        ensureLoad = ensureLoad,
     )
     BindOsSectionLoadEffect(
         expanded = androidPropsExpanded,
@@ -298,7 +302,7 @@ internal fun BindOsVisibleSectionLoadEffects(
         visibleCards = visibleCards,
         card = OsSectionCard.ANDROID,
         section = SectionKind.ANDROID,
-        ensureLoad = ensureLoad
+        ensureLoad = ensureLoad,
     )
     BindOsSectionLoadEffect(
         expanded = javaPropsExpanded,
@@ -307,7 +311,7 @@ internal fun BindOsVisibleSectionLoadEffects(
         visibleCards = visibleCards,
         card = OsSectionCard.JAVA,
         section = SectionKind.JAVA,
-        ensureLoad = ensureLoad
+        ensureLoad = ensureLoad,
     )
     BindOsSectionLoadEffect(
         expanded = linuxEnvExpanded,
@@ -316,7 +320,7 @@ internal fun BindOsVisibleSectionLoadEffects(
         visibleCards = visibleCards,
         card = OsSectionCard.LINUX,
         section = SectionKind.LINUX,
-        ensureLoad = ensureLoad
+        ensureLoad = ensureLoad,
     )
 }
 
@@ -328,7 +332,7 @@ private fun BindOsSectionLoadEffect(
     visibleCards: Set<OsSectionCard>,
     card: OsSectionCard,
     section: SectionKind,
-    ensureLoad: suspend (SectionKind) -> Unit
+    ensureLoad: suspend (SectionKind) -> Unit,
 ) {
     LaunchedEffect(expanded, visibleCards, cacheLoaded, isDataActive) {
         if (!cacheLoaded) return@LaunchedEffect
@@ -367,12 +371,44 @@ internal fun BindOsActivitySuggestionLoadEffect(
 }
 
 @Composable
+internal fun BindOsActivityShortcutIconPreloadEffect(
+    active: Boolean,
+    activityShortcutCards: List<OsActivityShortcutCard>,
+    showActivitySuggestionSheet: Boolean,
+    activityShortcutDraftPackageName: String,
+    classSuggestions: List<ShortcutActivityClassOption>,
+    context: Context,
+    requestActivityShortcutIcons: (Context, List<OsActivityShortcutIconRequest>) -> Unit,
+) {
+    LaunchedEffect(
+        active,
+        activityShortcutCards,
+        showActivitySuggestionSheet,
+        activityShortcutDraftPackageName,
+        classSuggestions,
+    ) {
+        if (!active) return@LaunchedEffect
+        val requests =
+            activityShortcutIconRequests(activityShortcutCards) +
+                if (showActivitySuggestionSheet) {
+                    activitySuggestionIconRequests(
+                        packageName = activityShortcutDraftPackageName,
+                        classSuggestions = classSuggestions,
+                    )
+                } else {
+                    emptyList()
+                }
+        requestActivityShortcutIcons(context, requests)
+    }
+}
+
+@Composable
 internal fun BindOsCardExpandedStateMaps(
     activityShortcutCards: List<OsActivityShortcutCard>,
     activityCardExpanded: MutableMap<String, Boolean>,
     initialGoogleSystemServiceExpanded: Boolean,
     shellCommandCards: List<OsShellCommandCard>,
-    shellCommandCardExpanded: MutableMap<String, Boolean>
+    shellCommandCardExpanded: MutableMap<String, Boolean>,
 ) {
     LaunchedEffect(activityShortcutCards, initialGoogleSystemServiceExpanded) {
         val currentIds = activityShortcutCards.map { it.id }.toSet()
@@ -382,9 +418,10 @@ internal fun BindOsCardExpandedStateMaps(
             }
         }
         activityShortcutCards.forEachIndexed { index, card ->
-            val usesStoredDefaultExpansion = index == 0 && (
-                card.id == LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID ||
-                    card.id == BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
+            val usesStoredDefaultExpansion =
+                index == 0 && (
+                    card.id == LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID ||
+                        card.id == BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
                 )
             if (usesStoredDefaultExpansion) {
                 activityCardExpanded[card.id] = initialGoogleSystemServiceExpanded

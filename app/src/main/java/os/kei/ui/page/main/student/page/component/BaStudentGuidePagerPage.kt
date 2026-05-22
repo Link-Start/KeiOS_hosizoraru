@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.page.component
 
 import androidx.compose.foundation.layout.Box
@@ -74,61 +76,64 @@ internal fun BaStudentGuidePagerPage(
     onToggleVoicePlayback: (String) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
-    onSelectedVoiceLanguageChange: (String) -> Unit
+    onSelectedVoiceLanguageChange: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val tabRenderState = remember(
-        pageIndex,
-        bottomTabs,
-        pagerState.currentPage,
-        pagerState.settledPage,
-        pagerState.targetPage,
-        includeTargetPageInHeavyRender,
-        playingVoiceUrl,
-        isVoicePlaying,
-        voicePlayProgress,
-        selectedVoiceLanguage
-    ) {
-        resolveBaStudentGuideTabRenderState(
-            pageIndex = pageIndex,
-            bottomTabs = bottomTabs,
-            currentPage = pagerState.currentPage,
-            settledPage = pagerState.settledPage,
-            targetPage = pagerState.targetPage,
-            includeTargetPageInHeavyRender = includeTargetPageInHeavyRender,
-            playingVoiceUrl = playingVoiceUrl,
-            isVoicePlaying = isVoicePlaying,
-            voicePlayProgress = voicePlayProgress,
-            selectedVoiceLanguage = selectedVoiceLanguage
-        )
-    }
-    val pageListState = rememberSaveable(
-        sourceUrl,
-        tabRenderState.activeBottomTab.name,
-        saver = LazyListState.Saver
-    ) {
-        LazyListState()
-    }
-    val pageBackdrop: LayerBackdrop = key("page-$activationCount-$sourceUrl-$pageIndex") {
-        rememberLayerBackdrop {
-            drawRect(surfaceColor)
-            drawContent()
+    val tabRenderState =
+        remember(
+            pageIndex,
+            bottomTabs,
+            pagerState.currentPage,
+            pagerState.settledPage,
+            pagerState.targetPage,
+            includeTargetPageInHeavyRender,
+            playingVoiceUrl,
+            isVoicePlaying,
+            voicePlayProgress,
+            selectedVoiceLanguage,
+        ) {
+            resolveBaStudentGuideTabRenderState(
+                pageIndex = pageIndex,
+                bottomTabs = bottomTabs,
+                currentPage = pagerState.currentPage,
+                settledPage = pagerState.settledPage,
+                targetPage = pagerState.targetPage,
+                includeTargetPageInHeavyRender = includeTargetPageInHeavyRender,
+                playingVoiceUrl = playingVoiceUrl,
+                isVoicePlaying = isVoicePlaying,
+                voicePlayProgress = voicePlayProgress,
+                selectedVoiceLanguage = selectedVoiceLanguage,
+            )
         }
-    }
+    val pageListState =
+        rememberSaveable(
+            sourceUrl,
+            tabRenderState.activeBottomTab.name,
+            saver = LazyListState.Saver,
+        ) {
+            LazyListState()
+        }
+    val pageBackdrop: LayerBackdrop =
+        key("page-$activationCount-$sourceUrl-$pageIndex") {
+            rememberLayerBackdrop {
+                drawRect(surfaceColor)
+                drawContent()
+            }
+        }
     val isActivePage = pageIndex == pagerState.currentPage
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(pageListState, isActivePage, snapshotFlowManager) {
         if (!isActivePage) return@LaunchedEffect
         var lastScrollBounds: Pair<Boolean, Boolean>? = null
         var lastScrollInProgress: Boolean? = null
-        snapshotFlowManager.snapshotFlow {
-            Triple(
-                pageListState.canScrollBackward,
-                pageListState.canScrollForward,
-                pageListState.isScrollInProgress
-            )
-        }
-            .distinctUntilChanged()
+        snapshotFlowManager
+            .snapshotFlow {
+                Triple(
+                    pageListState.canScrollBackward,
+                    pageListState.canScrollForward,
+                    pageListState.isScrollInProgress,
+                )
+            }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward, scrolling) ->
                 val nextScrollBounds = canScrollBackward to canScrollForward
                 if (lastScrollBounds != nextScrollBounds) {
@@ -145,39 +150,45 @@ internal fun BaStudentGuidePagerPage(
     Box(modifier = Modifier.fillMaxSize()) {
         if (tabRenderState.shouldRenderHeavyContent) {
             val activeBottomTabLabel = stringResource(tabRenderState.activeBottomTab.labelRes)
-            val headerState = remember(
-                tabRenderState.activeBottomTab,
-                activeBottomTabLabel,
-                sourceUrl,
-                info,
-                error
-            ) {
-                buildBaStudentGuidePagerHeaderState(
-                    tabLabel = activeBottomTabLabel,
-                    sourceUrl = sourceUrl,
-                    info = info,
-                    error = error
-                )
-            }
+            val headerState =
+                remember(
+                    tabRenderState.activeBottomTab,
+                    activeBottomTabLabel,
+                    sourceUrl,
+                    info,
+                    error,
+                ) {
+                    buildBaStudentGuidePagerHeaderState(
+                        tabLabel = activeBottomTabLabel,
+                        sourceUrl = sourceUrl,
+                        info = info,
+                        error = error,
+                    )
+                }
 
             LazyColumn(
                 state = pageListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                    bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                    start = 16.dp,
-                    end = 16.dp
-                )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection),
+                contentPadding =
+                    PaddingValues(
+                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                        bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                    ),
             ) {
                 item {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement =
+                            androidx.compose.foundation.layout.Arrangement
+                                .spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
@@ -186,7 +197,7 @@ internal fun BaStudentGuidePagerPage(
                                 color = MiuixTheme.colorScheme.onBackground,
                                 fontSize = AppTypographyTokens.SectionTitle.fontSize,
                                 lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                                fontWeight = AppTypographyTokens.SectionTitle.fontWeight
+                                fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
                             )
                         }
                         if (headerState.showSyncIndicator) {
@@ -195,7 +206,7 @@ internal fun BaStudentGuidePagerPage(
                                 size = 18.dp,
                                 strokeWidth = 2.dp,
                                 activeColor = headerState.indicatorColor,
-                                inactiveColor = headerState.indicatorColor.copy(alpha = 0.30f)
+                                inactiveColor = headerState.indicatorColor.copy(alpha = 0.30f),
                             )
                         }
                     }
@@ -207,7 +218,7 @@ internal fun BaStudentGuidePagerPage(
                             backdrop = pageBackdrop,
                             title = stringResource(R.string.guide_empty_student_title),
                             subtitle = stringResource(R.string.guide_empty_student_subtitle),
-                            accent = accent
+                            accent = accent,
                         )
                     }
                 } else {
@@ -234,17 +245,18 @@ internal fun BaStudentGuidePagerPage(
                         onSaveMediaPack = onSaveMediaPack,
                         onToggleBgmFavorite = onToggleBgmFavorite,
                         onToggleVoicePlayback = onToggleVoicePlayback,
-                        onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange
+                        onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange,
                     )
                 }
             }
         }
 
         BaStudentGuidePagerLoadingOverlay(
-            visible = tabRenderState.shouldRenderHeavyContent &&
-                sourceUrl.isNotBlank() &&
-                info == null &&
-                error.isNullOrBlank(),
+            visible =
+                tabRenderState.shouldRenderHeavyContent &&
+                    sourceUrl.isNotBlank() &&
+                    info == null &&
+                    error.isNullOrBlank(),
             innerPadding = innerPadding,
             accent = accent,
         )
@@ -259,15 +271,16 @@ private fun BaStudentGuidePagerLoadingOverlay(
 ) {
     if (!visible) return
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                bottom = innerPadding.calculateBottomPadding(),
-                start = 20.dp,
-                end = 20.dp
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(
+                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                    bottom = innerPadding.calculateBottomPadding(),
+                    start = 20.dp,
+                    end = 20.dp,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         AppAronaLoadingPanel(accent = accent)
     }

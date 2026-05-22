@@ -1,5 +1,8 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
+import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
@@ -30,6 +33,7 @@ internal fun OsActivityShortcutEditorHost(
     packageSuggestionQuery: String,
     onPackageSuggestionQueryChange: (String) -> Unit,
     classSuggestions: List<ShortcutActivityClassOption>,
+    activityIconBitmaps: Map<String, Bitmap>,
     classSuggestionsLoading: Boolean,
     classSuggestionQuery: String,
     onClassSuggestionQueryChange: (String) -> Unit,
@@ -39,7 +43,7 @@ internal fun OsActivityShortcutEditorHost(
     onApplyExplicitActionRecommendation: () -> Unit,
     onApplyImplicitActionRecommendation: () -> Unit,
     onApplyExplicitCategoryRecommendation: () -> Unit,
-    onApplyImplicitCategoryRecommendation: () -> Unit
+    onApplyImplicitCategoryRecommendation: () -> Unit,
 ) {
     OsGoogleSystemServiceEditorSheet(
         show = showEditor,
@@ -54,7 +58,7 @@ internal fun OsActivityShortcutEditorHost(
         onDelete = onDeleteEditor,
         onDismissRequest = onDismissEditor,
         onDismissFinished = onDismissEditorFinished,
-        onSave = onSaveEditor
+        onSave = onSaveEditor,
     )
 
     OsGoogleSystemServiceSuggestionSheet(
@@ -67,6 +71,7 @@ internal fun OsActivityShortcutEditorHost(
         packageSuggestionQuery = packageSuggestionQuery,
         onPackageSuggestionQueryChange = onPackageSuggestionQueryChange,
         classSuggestions = classSuggestions,
+        activityIconBitmaps = activityIconBitmaps,
         classSuggestionsLoading = classSuggestionsLoading,
         classSuggestionQuery = classSuggestionQuery,
         onClassSuggestionQueryChange = onClassSuggestionQueryChange,
@@ -76,6 +81,6 @@ internal fun OsActivityShortcutEditorHost(
         onApplyExplicitActionRecommendation = onApplyExplicitActionRecommendation,
         onApplyImplicitActionRecommendation = onApplyImplicitActionRecommendation,
         onApplyExplicitCategoryRecommendation = onApplyExplicitCategoryRecommendation,
-        onApplyImplicitCategoryRecommendation = onApplyImplicitCategoryRecommendation
+        onApplyImplicitCategoryRecommendation = onApplyImplicitCategoryRecommendation,
     )
 }

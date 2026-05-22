@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.os
 
+import android.graphics.Bitmap
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 
@@ -19,6 +20,11 @@ internal data class OsActivitySuggestionUiState(
     val packageSuggestionsLoading: Boolean = false,
     val classSuggestions: List<ShortcutActivityClassOption> = emptyList(),
     val classSuggestionsLoading: Boolean = false,
+)
+
+internal data class OsActivityShortcutIconUiState(
+    val bitmaps: Map<String, Bitmap> = emptyMap(),
+    val missingKeys: Set<String> = emptySet(),
 )
 
 internal fun defaultOsSectionStates(): Map<SectionKind, SectionState> =

@@ -3,10 +3,9 @@
 package os.kei.ui.page.main.os.components
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
@@ -26,29 +25,29 @@ import os.kei.ui.page.main.os.state.rememberOsPageOverlayEditorActions
 @Composable
 internal fun OsPageOverlayHost(
     context: Context,
-    scope: CoroutineScope,
     sheetBackdrop: LayerBackdrop,
     overlayState: OsPageOverlayState,
     visibleCardsTitle: String,
     visibleCardsHint: String,
     visibleCards: Set<OsSectionCard>,
-    applyCardVisibility: suspend (OsSectionCard, Boolean) -> Unit,
+    applyCardVisibility: (OsSectionCard, Boolean) -> Unit,
     visibleActivitiesTitle: String,
     visibleActivitiesDesc: String,
     activityShortcutCards: List<OsActivityShortcutCard>,
+    activityIconBitmaps: Map<String, Bitmap>,
     defaultActivityCardTitle: String,
     cardTransferInProgress: Boolean,
     cardTransferState: OsPageCardTransferState,
     onExportAllActivityCards: () -> Unit,
     onImportAllActivityCards: () -> Unit,
-    applyActivityCardVisibility: suspend (String, Boolean) -> Unit,
+    applyActivityCardVisibility: (String, Boolean) -> Unit,
     visibleShellCardsTitle: String,
     visibleShellCardsDesc: String,
     shellRunnerVisible: Boolean,
     shellCommandCards: List<OsShellCommandCard>,
     onExportAllShellCards: () -> Unit,
     onImportAllShellCards: () -> Unit,
-    applyShellCommandCardVisibility: suspend (String, Boolean) -> Unit,
+    applyShellCommandCardVisibility: (String, Boolean) -> Unit,
     editShellCommandCardTitle: String,
     shellCardCommandRequiredToast: String,
     shellCardDeleteDialogTitle: String,
@@ -104,12 +103,13 @@ internal fun OsPageOverlayHost(
         visibleCards = visibleCards,
         onDismissCardManager = { overlayState.onShowCardManagerChange(false) },
         onCardVisibilityChange = { card, checked ->
-            scope.launch { applyCardVisibility(card, checked) }
+            applyCardVisibility(card, checked)
         },
         showActivityVisibilityManager = overlayState.showActivityVisibilityManager,
         visibleActivitiesTitle = visibleActivitiesTitle,
         activityHintText = visibleActivitiesDesc,
         activityShortcutCards = activityShortcutCards,
+        activityIconBitmaps = activityIconBitmaps,
         defaultActivityCardTitle = defaultActivityCardTitle,
         cardTransferInProgress = cardTransferInProgress,
         pendingCardImportPreview = overlayState.pendingCardImportPreview,
@@ -117,21 +117,21 @@ internal fun OsPageOverlayHost(
         onImportAllActivityCards = onImportAllActivityCards,
         onDismissActivityVisibilityManager = { overlayState.onShowActivityVisibilityManagerChange(false) },
         onActivityCardVisibilityChange = { cardId, checked ->
-            scope.launch { applyActivityCardVisibility(cardId, checked) }
+            applyActivityCardVisibility(cardId, checked)
         },
         showShellCardVisibilityManager = overlayState.showShellCardVisibilityManager,
         visibleShellCardsTitle = visibleShellCardsTitle,
         visibleShellCardsDesc = visibleShellCardsDesc,
         shellRunnerVisible = shellRunnerVisible,
         onShellRunnerVisibilityChange = { checked ->
-            scope.launch { applyCardVisibility(OsSectionCard.SHELL_RUNNER, checked) }
+            applyCardVisibility(OsSectionCard.SHELL_RUNNER, checked)
         },
         shellCommandCards = shellCommandCards,
         onExportAllShellCards = onExportAllShellCards,
         onImportAllShellCards = onImportAllShellCards,
         onDismissShellVisibilityManager = { overlayState.onShowShellCardVisibilityManagerChange(false) },
         onShellCommandCardVisibilityChange = { cardId, checked ->
-            scope.launch { applyShellCommandCardVisibility(cardId, checked) }
+            applyShellCommandCardVisibility(cardId, checked)
         },
         showShellCommandCardEditor = overlayState.showShellCommandCardEditor,
         editShellCommandCardTitle = editShellCommandCardTitle,

@@ -1,15 +1,20 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.osActivityShortcutIconKey
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
@@ -23,7 +28,6 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -38,6 +42,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
     packageSuggestionQuery: String,
     onPackageSuggestionQueryChange: (String) -> Unit,
     classSuggestions: List<ShortcutActivityClassOption>,
+    activityIconBitmaps: Map<String, Bitmap>,
     classSuggestionsLoading: Boolean,
     classSuggestionQuery: String,
     onClassSuggestionQueryChange: (String) -> Unit,
@@ -47,18 +52,19 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
     onApplyExplicitActionRecommendation: () -> Unit,
     onApplyImplicitActionRecommendation: () -> Unit,
     onApplyExplicitCategoryRecommendation: () -> Unit,
-    onApplyImplicitCategoryRecommendation: () -> Unit
+    onApplyImplicitCategoryRecommendation: () -> Unit,
 ) {
-    val uiState = rememberOsGoogleSystemServiceSuggestionUiState(
-        target = target,
-        draft = draft,
-        packageSuggestions = packageSuggestions,
-        packageSuggestionsLoading = packageSuggestionsLoading,
-        packageSuggestionQuery = packageSuggestionQuery,
-        classSuggestions = classSuggestions,
-        classSuggestionsLoading = classSuggestionsLoading,
-        classSuggestionQuery = classSuggestionQuery
-    )
+    val uiState =
+        rememberOsGoogleSystemServiceSuggestionUiState(
+            target = target,
+            draft = draft,
+            packageSuggestions = packageSuggestions,
+            packageSuggestionsLoading = packageSuggestionsLoading,
+            packageSuggestionQuery = packageSuggestionQuery,
+            classSuggestions = classSuggestions,
+            classSuggestionsLoading = classSuggestionsLoading,
+            classSuggestionQuery = classSuggestionQuery,
+        )
 
     SnapshotWindowBottomSheet(
         show = show,
@@ -70,9 +76,9 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
-        }
+        },
     ) {
         SheetContentColumn(verticalSpacing = 10.dp) {
             if (uiState.showPackageSearch) {
@@ -84,7 +90,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     variant = GlassVariant.SheetInput,
                     textColor = MiuixTheme.colorScheme.primary,
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             if (uiState.showClassSearch) {
@@ -96,12 +102,12 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     variant = GlassVariant.SheetInput,
                     textColor = MiuixTheme.colorScheme.primary,
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             if (uiState.showActionRecommendations) {
                 SheetSectionTitle(
-                    text = stringResource(R.string.os_google_system_service_recommend_section)
+                    text = stringResource(R.string.os_google_system_service_recommend_section),
                 )
                 SheetChoiceCard(
                     title = stringResource(R.string.os_google_system_service_action_recommend_explicit_title),
@@ -112,7 +118,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     selectedAccentColor = MiuixTheme.colorScheme.primary,
                     unselectedTitleColor = Color(0xFF16A34A),
                     summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null
+                    selectedLabel = null,
                 )
                 SheetChoiceCard(
                     title = stringResource(R.string.os_google_system_service_action_recommend_implicit_title),
@@ -123,12 +129,12 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     selectedAccentColor = MiuixTheme.colorScheme.primary,
                     unselectedTitleColor = Color(0xFF16A34A),
                     summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null
+                    selectedLabel = null,
                 )
             }
             if (uiState.showCategoryRecommendations) {
                 SheetSectionTitle(
-                    text = stringResource(R.string.os_google_system_service_recommend_section)
+                    text = stringResource(R.string.os_google_system_service_recommend_section),
                 )
                 SheetChoiceCard(
                     title = stringResource(R.string.os_google_system_service_category_recommend_explicit_title),
@@ -139,7 +145,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     selectedAccentColor = MiuixTheme.colorScheme.primary,
                     unselectedTitleColor = Color(0xFF16A34A),
                     summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null
+                    selectedLabel = null,
                 )
                 SheetChoiceCard(
                     title = stringResource(R.string.os_google_system_service_category_recommend_implicit_title),
@@ -150,84 +156,94 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     selectedAccentColor = MiuixTheme.colorScheme.primary,
                     unselectedTitleColor = Color(0xFF16A34A),
                     summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null
+                    selectedLabel = null,
                 )
             }
             if (uiState.showPackageLoading) {
                 Text(
                     text = stringResource(R.string.common_loading),
-                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
                 )
             }
             if (uiState.showClassLoading) {
                 Text(
                     text = stringResource(R.string.common_loading),
-                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
                 )
             }
             uiState.orderedSuggestions.forEach { suggestion ->
                 val selected = uiState.isCurrentSuggestionSelected(suggestion)
-                val leading = when (target) {
-                    ShortcutSuggestionField.PackageName -> {
-                        @Composable {
-                            AppIcon(
-                                packageName = suggestion.value.trim(),
-                                size = 24.dp
-                            )
-                        }
-                    }
-
-                    ShortcutSuggestionField.ClassName -> {
-                        if (suggestion.value.trim().isBlank()) {
-                            null
-                        } else {
+                val leading =
+                    when (target) {
+                        ShortcutSuggestionField.PackageName -> {
                             @Composable {
-                                ShortcutActivityIcon(
-                                    packageName = draft.packageName,
-                                    className = suggestion.value,
+                                AppIcon(
+                                    packageName = suggestion.value.trim(),
                                     size = 24.dp,
-                                    fallbackToPackageIcon = true
                                 )
                             }
                         }
-                    }
 
-                    else -> null
-                }
-                val classSuggestionWarning = target == ShortcutSuggestionField.ClassName &&
-                    (suggestion.value.trim().isBlank() || suggestion.classItemExported)
+                        ShortcutSuggestionField.ClassName -> {
+                            if (suggestion.value.trim().isBlank()) {
+                                null
+                            } else {
+                                val iconKey =
+                                    osActivityShortcutIconKey(draft.packageName, suggestion.value)
+                                val iconBitmap = activityIconBitmaps[iconKey]
+                                @Composable {
+                                    ShortcutActivityIcon(
+                                        packageName = draft.packageName,
+                                        className = suggestion.value,
+                                        size = 24.dp,
+                                        bitmap = iconBitmap,
+                                        fallbackToPackageIcon = true,
+                                    )
+                                }
+                            }
+                        }
+
+                        else -> {
+                            null
+                        }
+                    }
+                val classSuggestionWarning =
+                    target == ShortcutSuggestionField.ClassName &&
+                        (suggestion.value.trim().isBlank() || suggestion.classItemExported)
                 SheetChoiceCard(
                     title = suggestion.label,
                     summary = suggestion.summary,
                     selected = selected,
                     onSelect = { onApplySuggestion(suggestion) },
                     selectedAccentColor = MiuixTheme.colorScheme.primary,
-                    unselectedTitleColor = if (classSuggestionWarning) {
-                        Color(0xFFDC2626)
-                    } else if (target == ShortcutSuggestionField.ClassName) {
-                        Color(0xFF16A34A)
-                    } else {
-                        MiuixTheme.colorScheme.onBackground
-                    },
-                    summaryColor = if (classSuggestionWarning) {
-                        Color(0xFFDC2626)
-                    } else if (target == ShortcutSuggestionField.ClassName) {
-                        Color(0xFF16A34A)
-                    } else {
-                        MiuixTheme.colorScheme.onBackgroundVariant
-                    },
+                    unselectedTitleColor =
+                        if (classSuggestionWarning) {
+                            Color(0xFFDC2626)
+                        } else if (target == ShortcutSuggestionField.ClassName) {
+                            Color(0xFF16A34A)
+                        } else {
+                            MiuixTheme.colorScheme.onBackground
+                        },
+                    summaryColor =
+                        if (classSuggestionWarning) {
+                            Color(0xFFDC2626)
+                        } else if (target == ShortcutSuggestionField.ClassName) {
+                            Color(0xFF16A34A)
+                        } else {
+                            MiuixTheme.colorScheme.onBackgroundVariant
+                        },
                     selectedLabel = null,
-                    leading = leading
+                    leading = leading,
                 )
             }
             if (uiState.showPackageNoResult || uiState.showClassNoResult) {
                 Text(
                     text = noMatchedResultsText,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
                 )
             }
             SheetDescriptionText(
-                text = stringResource(R.string.os_google_system_service_suggestion_sheet_desc)
+                text = stringResource(R.string.os_google_system_service_suggestion_sheet_desc),
             )
         }
     }

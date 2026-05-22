@@ -3,13 +3,11 @@ package os.kei.ui.page.main.os.state
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
@@ -19,7 +17,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal data class OsPageUiContext(
     val context: Context,
     val density: Density,
-    val scope: CoroutineScope,
     val textBundle: OsPageTextBundle,
     val backdrops: MainPageBackdropSet,
     val topBarMaterialBackdrop: Color,
@@ -30,30 +27,29 @@ internal data class OsPageUiContext(
     val refreshingColor: Color,
     val syncedColor: Color,
     val surfaceColor: Color,
-    val searchBarHideThresholdPx: Float
+    val searchBarHideThresholdPx: Float,
 )
 
 @Composable
 internal fun rememberOsPageUiContext(
     enableFullBackdropEffects: Boolean,
-    enableTopBarBackdropEffects: Boolean = enableFullBackdropEffects
+    enableTopBarBackdropEffects: Boolean = enableFullBackdropEffects,
 ): OsPageUiContext {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
     val textBundle = rememberOsPageTextBundle()
     val isDark = isSystemInDarkTheme()
-    val backdrops = rememberMainPageBackdropSet(
-        keyPrefix = "os",
-        refreshOnCompositionEnter = true,
-        distinctLayers = enableFullBackdropEffects
-    )
+    val backdrops =
+        rememberMainPageBackdropSet(
+            keyPrefix = "os",
+            refreshOnCompositionEnter = true,
+            distinctLayers = enableFullBackdropEffects,
+        )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = enableTopBarBackdropEffects)
     val searchBarHideThresholdPx = with(density) { 28.dp.toPx() }
     return OsPageUiContext(
         context = context,
         density = density,
-        scope = scope,
         textBundle = textBundle,
         backdrops = backdrops,
         topBarMaterialBackdrop = topBarMaterialBackdrop,
@@ -64,6 +60,6 @@ internal fun rememberOsPageUiContext(
         refreshingColor = AppStatusColors.Refreshing,
         syncedColor = AppStatusColors.Fresh,
         surfaceColor = MiuixTheme.colorScheme.surface,
-        searchBarHideThresholdPx = searchBarHideThresholdPx
+        searchBarHideThresholdPx = searchBarHideThresholdPx,
     )
 }

@@ -1,10 +1,12 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.CoroutineScope
 import os.kei.R
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsPageViewModel
@@ -20,12 +22,12 @@ import os.kei.ui.page.main.os.state.OsPageTextBundle
 @Composable
 internal fun OsPageOverlayCoordinator(
     context: Context,
-    scope: CoroutineScope,
     sheetBackdrop: LayerBackdrop,
     overlayState: OsPageOverlayState,
     textBundle: OsPageTextBundle,
     visibleCards: Set<OsSectionCard>,
     activityShortcutCards: List<OsActivityShortcutCard>,
+    activityIconBitmaps: Map<String, Bitmap>,
     shellCommandCards: List<OsShellCommandCard>,
     activitySuggestionState: OsActivitySuggestionUiState,
     actionState: OsPageActionState,
@@ -35,7 +37,6 @@ internal fun OsPageOverlayCoordinator(
 ) {
     OsPageOverlayHost(
         context = context,
-        scope = scope,
         sheetBackdrop = sheetBackdrop,
         overlayState = overlayState,
         visibleCardsTitle = textBundle.visibleCardsTitle,
@@ -45,6 +46,7 @@ internal fun OsPageOverlayCoordinator(
         visibleActivitiesTitle = textBundle.visibleActivitiesTitle,
         visibleActivitiesDesc = stringResource(R.string.os_sheet_visible_activities_desc),
         activityShortcutCards = activityShortcutCards,
+        activityIconBitmaps = activityIconBitmaps,
         defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
         cardTransferInProgress = overlayState.cardTransferInProgress,
         cardTransferState = cardTransferState,

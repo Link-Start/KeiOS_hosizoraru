@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.page.component
 
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,11 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import os.kei.ui.page.main.student.BaStudentGuideInfo
-import os.kei.ui.page.main.student.GuideBottomTab
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 
 @Composable
 internal fun BaStudentGuidePagerContent(
@@ -49,18 +51,19 @@ internal fun BaStudentGuidePagerContent(
     onToggleVoicePlayback: (String) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
-    onSelectedVoiceLanguageChange: (String) -> Unit
+    onSelectedVoiceLanguageChange: (String) -> Unit,
 ) {
     HorizontalPager(
         state = pagerState,
         key = { index -> bottomTabs.getOrNull(index)?.name ?: "stale-$index" },
         overscrollEffect = null,
         beyondViewportPageCount = guidePagerBeyondViewportPageCount,
-        modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer { alpha = farJumpAlpha }
-            .layerBackdrop(topBarBackdrop)
-            .layerBackdrop(navBackdrop)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = farJumpAlpha }
+                .layerBackdrop(topBarBackdrop)
+                .layerBackdrop(navBackdrop),
     ) { pageIndex ->
         BaStudentGuidePagerPage(
             sourceUrl = sourceUrl,
@@ -92,7 +95,7 @@ internal fun BaStudentGuidePagerContent(
             onToggleVoicePlayback = onToggleVoicePlayback,
             onScrollBoundsChange = onScrollBoundsChange,
             onListScrollInProgressChange = onListScrollInProgressChange,
-            onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange
+            onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange,
         )
     }
 }

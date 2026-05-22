@@ -19,15 +19,15 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
-import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
 import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.state.createOsPageActionState
-import os.kei.ui.page.main.os.state.rememberOsPageCardTransferState
 import os.kei.ui.page.main.os.state.rememberOsPageCardTransferEventActions
+import os.kei.ui.page.main.os.state.rememberOsPageCardTransferState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayTransferActions
 import os.kei.ui.page.main.os.state.rememberOsPageUiContext
@@ -58,7 +58,6 @@ fun OsPage(
         )
     val context = uiContext.context
     val density = uiContext.density
-    val scope = uiContext.scope
     val textBundle = uiContext.textBundle
     val isDark = uiContext.isDark
     val inactive = uiContext.inactiveColor
@@ -83,6 +82,7 @@ fun OsPage(
         )
     }
     val pageUiState by osPageViewModel.uiState.collectAsStateWithLifecycle()
+    val activityIconState by osPageViewModel.activityIconState.collectAsStateWithLifecycle()
     val persistentState = pageUiState.persistentState
     val runtimeState = pageUiState.runtimeState
     val activitySuggestionState = pageUiState.activitySuggestionState
@@ -358,6 +358,15 @@ fun OsPage(
         context = context,
         requestActivitySuggestions = osPageViewModel::requestActivitySuggestions,
     )
+    BindOsActivityShortcutIconPreloadEffect(
+        active = runtime.hasActivated,
+        activityShortcutCards = activityShortcutCards,
+        showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
+        activityShortcutDraftPackageName = overlayState.activityShortcutDraft.packageName,
+        classSuggestions = activitySuggestionState.classSuggestions,
+        context = context,
+        requestActivityShortcutIcons = osPageViewModel::requestActivityShortcutIcons,
+    )
 
     val routeState =
         rememberOsPageRouteState(
@@ -445,11 +454,11 @@ fun OsPage(
         ) { innerPadding ->
             OsPageOverlayCoordinator(
                 context = context,
-                scope = scope,
                 sheetBackdrop = backdrops.sheet,
                 overlayState = overlayState,
                 visibleCards = visibleCards,
                 activityShortcutCards = activityShortcutCards,
+                activityIconBitmaps = activityIconState.bitmaps,
                 shellCommandCards = shellCommandCards,
                 activitySuggestionState = activitySuggestionState,
                 actionState = actionState,
@@ -492,6 +501,7 @@ fun OsPage(
                 onOpenShellCommandCardEditor = mainListActions.onOpenShellCommandCardEditor,
                 onRunShellCommandCard = mainListActions.onRunShellCommandCard,
                 activityShortcutCards = derivedState.visibleActivityShortcutCards,
+                activityIconBitmaps = activityIconState.bitmaps,
                 defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
                 activityCardExpanded = activityCardExpanded,
                 onActivityCardExpandedChange = mainListActions.onActivityCardExpandedChange,

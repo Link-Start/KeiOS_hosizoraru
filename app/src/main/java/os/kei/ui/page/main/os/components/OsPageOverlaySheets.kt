@@ -1,5 +1,8 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.components
 
+import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
@@ -26,6 +29,7 @@ internal fun OsPageOverlaySheets(
     visibleActivitiesTitle: String,
     activityHintText: String,
     activityShortcutCards: List<OsActivityShortcutCard>,
+    activityIconBitmaps: Map<String, Bitmap>,
     defaultActivityCardTitle: String,
     cardTransferInProgress: Boolean,
     onExportAllActivityCards: () -> Unit,
@@ -94,7 +98,7 @@ internal fun OsPageOverlaySheets(
     pendingCardImportPreview: OsCardImportPreview?,
     onDismissCardImportPreview: () -> Unit,
     onCancelCardImportPreview: () -> Unit,
-    onConfirmCardImportPreview: () -> Unit
+    onConfirmCardImportPreview: () -> Unit,
 ) {
     OsCardVisibilityManagerSheet(
         show = showCardManager,
@@ -103,7 +107,7 @@ internal fun OsPageOverlaySheets(
         cardsHintText = cardsHintText,
         onDismissRequest = onDismissCardManager,
         isCardVisible = { card -> isCardVisible(visibleCards, card) },
-        onCardVisibilityChange = onCardVisibilityChange
+        onCardVisibilityChange = onCardVisibilityChange,
     )
     OsActivityVisibilityManagerSheet(
         show = showActivityVisibilityManager,
@@ -111,12 +115,13 @@ internal fun OsPageOverlaySheets(
         sheetBackdrop = sheetBackdrop,
         activityHintText = activityHintText,
         cards = activityShortcutCards,
+        activityIconBitmaps = activityIconBitmaps,
         defaultCardTitle = defaultActivityCardTitle,
         transferInProgress = cardTransferInProgress,
         onExportAllCards = onExportAllActivityCards,
         onImportAllCards = onImportAllActivityCards,
         onDismissRequest = onDismissActivityVisibilityManager,
-        onCardVisibilityChange = onActivityCardVisibilityChange
+        onCardVisibilityChange = onActivityCardVisibilityChange,
     )
     OsShellCommandVisibilityManagerSheet(
         show = showShellCardVisibilityManager,
@@ -130,7 +135,7 @@ internal fun OsPageOverlaySheets(
         onExportAllCards = onExportAllShellCards,
         onImportAllCards = onImportAllShellCards,
         onDismissRequest = onDismissShellVisibilityManager,
-        onCardVisibilityChange = onShellCommandCardVisibilityChange
+        onCardVisibilityChange = onShellCommandCardVisibilityChange,
     )
     OsShellCommandCardEditorSheet(
         show = showShellCommandCardEditor,
@@ -143,7 +148,7 @@ internal fun OsPageOverlaySheets(
         onDelete = onDeleteShellCommandCard,
         onDismissRequest = onDismissShellCommandCardEditor,
         onDismissFinished = onDismissShellCommandCardEditorFinished,
-        onSave = onSaveShellCommandCard
+        onSave = onSaveShellCommandCard,
     )
     OsActivityShortcutEditorHost(
         showEditor = showActivityShortcutEditor,
@@ -166,6 +171,7 @@ internal fun OsPageOverlaySheets(
         packageSuggestionQuery = packageSuggestionQuery,
         onPackageSuggestionQueryChange = onPackageSuggestionQueryChange,
         classSuggestions = classSuggestions,
+        activityIconBitmaps = activityIconBitmaps,
         classSuggestionsLoading = classSuggestionsLoading,
         classSuggestionQuery = classSuggestionQuery,
         onClassSuggestionQueryChange = onClassSuggestionQueryChange,
@@ -175,27 +181,27 @@ internal fun OsPageOverlaySheets(
         onApplyExplicitActionRecommendation = onApplyExplicitActionRecommendation,
         onApplyImplicitActionRecommendation = onApplyImplicitActionRecommendation,
         onApplyExplicitCategoryRecommendation = onApplyExplicitCategoryRecommendation,
-        onApplyImplicitCategoryRecommendation = onApplyImplicitCategoryRecommendation
+        onApplyImplicitCategoryRecommendation = onApplyImplicitCategoryRecommendation,
     )
     OsDeleteConfirmDialog(
         show = showShellCardDeleteConfirm,
         title = shellCardDeleteDialogTitle,
         summary = shellCardDeleteDialogSummary,
         onDismissRequest = onDismissShellCardDeleteConfirm,
-        onConfirmDelete = onConfirmShellCardDelete
+        onConfirmDelete = onConfirmShellCardDelete,
     )
     OsDeleteConfirmDialog(
         show = showActivityCardDeleteConfirm,
         title = activityCardDeleteDialogTitle,
         summary = activityCardDeleteDialogSummary,
         onDismissRequest = onDismissActivityCardDeleteConfirm,
-        onConfirmDelete = onConfirmActivityCardDelete
+        onConfirmDelete = onConfirmActivityCardDelete,
     )
     OsImportPreviewDialog(
         preview = pendingCardImportPreview,
         importInProgress = cardTransferInProgress,
         onDismissRequest = onDismissCardImportPreview,
         onCancel = onCancelCardImportPreview,
-        onConfirmImport = onConfirmCardImportPreview
+        onConfirmImport = onConfirmCardImportPreview,
     )
 }

@@ -45,8 +45,10 @@ internal class OsPageViewModel : ViewModel() {
     private val refreshRepository = OsPageRefreshRepository()
     private val sectionLoadRepository = OsPageSectionLoadRepository()
     private val activityShortcutRepository = OsPageActivityShortcutRepository()
+    private val activityIconRepository = OsActivityShortcutIconRepository()
     private var activitySuggestionJob: Job? = null
     private var rowsDerivationJob: Job? = null
+    private var activityIconLoadingKeys: Set<String> = emptySet()
 
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
@@ -69,6 +71,10 @@ internal class OsPageViewModel : ViewModel() {
     private val _activitySuggestionState = MutableStateFlow(OsActivitySuggestionUiState())
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
         _activitySuggestionState.asStateFlow()
+
+    private val _activityIconState = MutableStateFlow(OsActivityShortcutIconUiState())
+    val activityIconState: StateFlow<OsActivityShortcutIconUiState> =
+        _activityIconState.asStateFlow()
 
     private val _events = MutableSharedFlow<OsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<OsPageEvent> = _events.asSharedFlow()
@@ -343,6 +349,71 @@ internal class OsPageViewModel : ViewModel() {
             }
     }
 
+    fun requestActivityShortcutIcons(
+        context: Context,
+        requests: List<OsActivityShortcutIconRequest>,
+    ) {
+        val normalizedRequests =
+            requests
+                .filter { request ->
+                    request.packageName.isNotBlank() && request.className.isNotBlank()
+                }.distinctBy { request ->
+                    osActivityShortcutIconKey(
+                        packageName = request.packageName,
+                        className = request.className,
+                    )
+                }
+        if (normalizedRequests.isEmpty()) return
+
+        val currentState = _activityIconState.value
+        val missingRequests =
+            normalizedRequests.filter { request ->
+                val key =
+                    osActivityShortcutIconKey(
+                        packageName = request.packageName,
+                        className = request.className,
+                    )
+                !currentState.bitmaps.containsKey(key) &&
+                    !currentState.missingKeys.contains(key) &&
+                    !activityIconLoadingKeys.contains(key) &&
+                    !activityIconRepository.isMissing(key)
+            }
+        if (missingRequests.isEmpty()) return
+
+        val requestedKeys =
+            missingRequests
+                .map { request ->
+                    osActivityShortcutIconKey(
+                        packageName = request.packageName,
+                        className = request.className,
+                    )
+                }.toSet()
+        activityIconLoadingKeys += requestedKeys
+        val appContext = context.applicationContext
+        viewModelScope.launch {
+            try {
+                val result =
+                    activityIconRepository.loadActivityIcons(
+                        context = appContext,
+                        requests = missingRequests,
+                    )
+                _activityIconState.update { state ->
+                    state.copy(
+                        bitmaps = state.bitmaps + result.bitmaps,
+                        missingKeys = state.missingKeys + result.missingKeys,
+                    )
+                }
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _activityIconState.update { state ->
+                    state.copy(missingKeys = state.missingKeys + requestedKeys)
+                }
+            } finally {
+                activityIconLoadingKeys -= requestedKeys
+            }
+        }
+    }
+
     private suspend fun applyRowsDerivedState(input: OsPageRowsDerivationInput) {
         val current = _rowsDerivedState.value
         if (current.input == input && !current.deriving) return
@@ -452,15 +523,21 @@ internal class OsPageViewModel : ViewModel() {
         if (!sectionLoadRepository.shouldLoad(section, forceRefresh, visibleCards, currentState)) return
         updateSection(section) { it.copy(loading = true, loadFailed = false) }
         try {
-            when (val result = sectionLoadRepository.loadSection(
-                section = section,
-                forceRefresh = forceRefresh,
-                visibleCardsProvider = { persistentState.value.uiSnapshot.visibleCards },
-                context = context.applicationContext,
-                shizukuStatus = shizukuStatus,
-                shizukuApiUtils = shizukuApiUtils,
-            )) {
-                OsSectionLoadResult.Joined -> Unit
+            when (
+                val result =
+                    sectionLoadRepository.loadSection(
+                        section = section,
+                        forceRefresh = forceRefresh,
+                        visibleCardsProvider = { persistentState.value.uiSnapshot.visibleCards },
+                        context = context.applicationContext,
+                        shizukuStatus = shizukuStatus,
+                        shizukuApiUtils = shizukuApiUtils,
+                    )
+            ) {
+                OsSectionLoadResult.Joined -> {
+                    Unit
+                }
+
                 is OsSectionLoadResult.Loaded -> {
                     updateSection(section) {
                         it.copy(
@@ -552,9 +629,7 @@ internal class OsPageViewModel : ViewModel() {
         shellRunNoOutputText = shellRunNoOutputText,
     )
 
-    fun refreshAllSections(
-        ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    ) {
+    fun refreshAllSections(ensureLoad: suspend (SectionKind, Boolean) -> Unit) {
         if (runtimeState.value.refreshing) return
         viewModelScope.launch {
             _runtimeState.update { state ->
@@ -585,9 +660,7 @@ internal class OsPageViewModel : ViewModel() {
         }
     }
 
-    fun prepareActivityCardsExport(
-        defaults: OsGoogleSystemServiceConfig,
-    ) = transferCoordinator.prepareActivityCardsExport(defaults)
+    fun prepareActivityCardsExport(defaults: OsGoogleSystemServiceConfig) = transferCoordinator.prepareActivityCardsExport(defaults)
 
     fun prepareShellCardsExport() = transferCoordinator.prepareShellCardsExport()
 
@@ -715,29 +788,43 @@ internal class OsPageViewModel : ViewModel() {
     ) {
         if (visible) return
         when (card) {
-            OsSectionCard.TOP_INFO -> repository.updateTopInfoExpanded(false)
-            OsSectionCard.SHELL_RUNNER -> repository.updateShellRunnerExpanded(false)
-            OsSectionCard.GOOGLE_SYSTEM_SERVICE -> Unit
+            OsSectionCard.TOP_INFO -> {
+                repository.updateTopInfoExpanded(false)
+            }
+
+            OsSectionCard.SHELL_RUNNER -> {
+                repository.updateShellRunnerExpanded(false)
+            }
+
+            OsSectionCard.GOOGLE_SYSTEM_SERVICE -> {
+                Unit
+            }
+
             OsSectionCard.SYSTEM -> {
                 repository.updateSystemTableExpanded(false)
                 updateSection(SectionKind.SYSTEM) { SectionState() }
             }
+
             OsSectionCard.SECURE -> {
                 repository.updateSecureTableExpanded(false)
                 updateSection(SectionKind.SECURE) { SectionState() }
             }
+
             OsSectionCard.GLOBAL -> {
                 repository.updateGlobalTableExpanded(false)
                 updateSection(SectionKind.GLOBAL) { SectionState() }
             }
+
             OsSectionCard.ANDROID -> {
                 repository.updateAndroidPropsExpanded(false)
                 updateSection(SectionKind.ANDROID) { SectionState() }
             }
+
             OsSectionCard.JAVA -> {
                 repository.updateJavaPropsExpanded(false)
                 updateSection(SectionKind.JAVA) { SectionState() }
             }
+
             OsSectionCard.LINUX -> {
                 repository.updateLinuxEnvExpanded(false)
                 updateSection(SectionKind.LINUX) { SectionState() }
@@ -748,6 +835,7 @@ internal class OsPageViewModel : ViewModel() {
     override fun onCleared() {
         activitySuggestionJob?.cancel()
         rowsDerivationJob?.cancel()
+        activityIconLoadingKeys = emptySet()
         super.onCleared()
     }
 }

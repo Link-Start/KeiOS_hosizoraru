@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.tabcontent.render
 
 import android.content.Context
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
@@ -26,7 +29,6 @@ import os.kei.ui.page.main.student.section.gallery.GuideGalleryUnlockLevelCardIt
 import os.kei.ui.page.main.student.section.gallery.GuideGalleryVideoGroupCardItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideGalleryRelatedLinkRows
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileSectionHeader
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -44,7 +46,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
-    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
 ) {
     if (!error.isNullOrBlank()) {
         item { GuideGalleryErrorCard(error = error) }
@@ -61,7 +63,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             BaGuideTempMediaCache.resolveCachedUrl(
                 context = context,
                 sourceUrl = sourceUrl,
-                rawUrl = raw
+                rawUrl = raw,
             )
         }
     }
@@ -88,7 +90,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             item {
                 GuideGalleryUnlockLevelCardItem(
                     level = state.memoryUnlockLevel,
-                    backdrop = backdrop
+                    backdrop = backdrop,
                 )
             }
             item { Spacer(modifier = Modifier.height(10.dp)) }
@@ -105,7 +107,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     onSaveMedia = onSaveMedia,
                     onSaveMediaPack = onSaveMediaPack,
                     mediaUrlResolver = mediaUrlResolver,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
+                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 )
             } else {
                 GuideGalleryCardItem(
@@ -120,7 +122,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     bgmFavoriteSourceUrl = sourceUrl,
                     bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
                     onToggleBgmFavorite = onToggleBgmFavorite,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
+                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 )
             }
         }
@@ -142,7 +144,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                         backdrop = backdrop,
                         onOpenMedia = onOpenExternal,
                         onSaveMedia = onSaveMedia,
-                        mediaUrlResolver = mediaUrlResolver
+                        mediaUrlResolver = mediaUrlResolver,
                     )
                 }
                 renderedCount += 1
@@ -156,7 +158,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                 item {
                     GuideGalleryRelatedLinksCard(
                         rows = state.galleryRelatedLinkRows,
-                        onOpenExternal = onOpenExternal
+                        onOpenExternal = onOpenExternal,
                     )
                 }
                 renderedCount += 1
@@ -177,7 +179,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     backdrop = backdrop,
                     onOpenMedia = onOpenExternal,
                     onSaveMedia = onSaveMedia,
-                    mediaUrlResolver = mediaUrlResolver
+                    mediaUrlResolver = mediaUrlResolver,
                 )
             }
             renderedCount += 1
@@ -195,7 +197,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         item {
             GuideGalleryUnlockLevelCardItem(
                 level = state.memoryUnlockLevel,
-                backdrop = backdrop
+                backdrop = backdrop,
             )
         }
         insertedUnlockLevel = true
@@ -214,7 +216,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                 backdrop = backdrop,
                 onOpenMedia = onOpenExternal,
                 onSaveMedia = onSaveMedia,
-                mediaUrlResolver = mediaUrlResolver
+                mediaUrlResolver = mediaUrlResolver,
             )
         }
         renderedCount += 1
@@ -233,7 +235,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     backdrop = backdrop,
                     onOpenMedia = onOpenExternal,
                     onSaveMedia = onSaveMedia,
-                    mediaUrlResolver = mediaUrlResolver
+                    mediaUrlResolver = mediaUrlResolver,
                 )
             }
             renderedCount += 1
@@ -246,7 +248,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             item {
                 GuideGalleryRelatedLinksCard(
                     rows = state.galleryRelatedLinkRows,
-                    onOpenExternal = onOpenExternal
+                    onOpenExternal = onOpenExternal,
                 )
             }
             renderedCount += 1
@@ -266,7 +268,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                 backdrop = backdrop,
                 onOpenMedia = onOpenExternal,
                 onSaveMedia = onSaveMedia,
-                mediaUrlResolver = mediaUrlResolver
+                mediaUrlResolver = mediaUrlResolver,
             )
         }
         renderedCount += 1
@@ -279,7 +281,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         item {
             GuideGalleryRelatedLinksCard(
                 rows = state.galleryRelatedLinkRows,
-                onOpenExternal = onOpenExternal
+                onOpenExternal = onOpenExternal,
             )
         }
     }
@@ -290,19 +292,20 @@ private fun GuideGalleryErrorCard(error: String) {
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
+        onClick = {},
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = error,
                 color = MiuixTheme.colorScheme.error,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -313,16 +316,17 @@ private fun GuideGalleryEmptyCard() {
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
+        onClick = {},
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Text(
                 text = stringResource(R.string.guide_gallery_empty),
-                color = MiuixTheme.colorScheme.onBackgroundVariant
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
             )
         }
     }
@@ -331,25 +335,26 @@ private fun GuideGalleryEmptyCard() {
 @Composable
 private fun GuideGalleryRelatedLinksCard(
     rows: List<BaGuideRow>,
-    onOpenExternal: (String) -> Unit
+    onOpenExternal: (String) -> Unit,
 ) {
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
+        onClick = {},
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             GuideProfileSectionHeader(
-                title = stringResource(R.string.guide_gallery_related_links)
+                title = stringResource(R.string.guide_gallery_related_links),
             )
             GuideGalleryRelatedLinkRows(
                 rows = rows,
-                onOpenExternal = onOpenExternal
+                onOpenExternal = onOpenExternal,
             )
         }
     }

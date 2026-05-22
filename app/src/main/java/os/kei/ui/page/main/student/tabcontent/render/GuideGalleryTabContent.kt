@@ -22,7 +22,7 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
-    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
 ) {
     val guide = info
     if (guide == null) {
@@ -31,7 +31,7 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
                 backdrop = backdrop,
                 title = tabLabel,
                 subtitle = info?.subtitle?.ifBlank { "GameKee" } ?: "GameKee",
-                accent = accent
+                accent = accent,
             )
         }
         return
@@ -52,6 +52,6 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
         onSaveMediaPack = onSaveMediaPack,
-        onToggleBgmFavorite = onToggleBgmFavorite
+        onToggleBgmFavorite = onToggleBgmFavorite,
     )
 }

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.page.state
 
 import android.app.Activity
@@ -133,6 +135,14 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
 
                 is BaStudentGuideEvent.MediaSaveFailed -> {
                     context.showToast(R.string.guide_media_save_failed)
+                }
+
+                BaStudentGuideEvent.BgmFavoriteAdded -> {
+                    context.showToast(R.string.guide_bgm_toast_favorite_added)
+                }
+
+                BaStudentGuideEvent.BgmFavoriteRemoved -> {
+                    context.showToast(R.string.guide_bgm_toast_favorite_removed)
                 }
             }
         }

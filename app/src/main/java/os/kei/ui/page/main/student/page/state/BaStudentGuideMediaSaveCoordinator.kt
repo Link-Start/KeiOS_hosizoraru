@@ -46,6 +46,10 @@ internal sealed interface BaStudentGuideEvent {
     data class MediaSaveFailed(
         val error: Throwable,
     ) : BaStudentGuideEvent
+
+    data object BgmFavoriteAdded : BaStudentGuideEvent
+
+    data object BgmFavoriteRemoved : BaStudentGuideEvent
 }
 
 internal class BaStudentGuideMediaSaveCoordinator(
@@ -234,15 +238,22 @@ internal class BaStudentGuideMediaSaveCoordinator(
         result: BaStudentGuideFixedMediaPackSaveResult,
     ) {
         when {
-            result.result != null -> mutableEvents.emit(BaStudentGuideEvent.MediaPackSaveCompleted(request, result.result))
-            result.needsFolder -> mutableEvents.emit(BaStudentGuideEvent.RequestFixedMediaPackFolder(request, withInitialDownload = false))
-            else ->
+            result.result != null -> {
+                mutableEvents.emit(BaStudentGuideEvent.MediaPackSaveCompleted(request, result.result))
+            }
+
+            result.needsFolder -> {
+                mutableEvents.emit(BaStudentGuideEvent.RequestFixedMediaPackFolder(request, withInitialDownload = false))
+            }
+
+            else -> {
                 mutableEvents.emit(
                     BaStudentGuideEvent.MediaPackSaveCompleted(
                         request = request,
                         result = GuideMediaPackSaveResult(totalCount = request.entries.size, savedCount = 0),
                     ),
                 )
+            }
         }
     }
 

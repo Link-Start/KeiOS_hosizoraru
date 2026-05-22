@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -19,6 +20,29 @@ import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
+
+@Composable
+internal fun BindOsPageEvents(
+    events: SharedFlow<OsPageEvent>,
+    onLaunchExportDocument: (String, String) -> Unit,
+    onExportFailed: (Throwable) -> Unit,
+) {
+    val currentLaunchExportDocument = rememberUpdatedState(onLaunchExportDocument)
+    val currentExportFailed = rememberUpdatedState(onExportFailed)
+    LaunchedEffect(events) {
+        events.collect { event ->
+            when (event) {
+                is OsPageEvent.LaunchExportDocument -> {
+                    currentLaunchExportDocument.value(event.fileName, event.content)
+                }
+
+                is OsPageEvent.ExportFailed -> {
+                    currentExportFailed.value(event.error)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 @OptIn(FlowPreview::class)

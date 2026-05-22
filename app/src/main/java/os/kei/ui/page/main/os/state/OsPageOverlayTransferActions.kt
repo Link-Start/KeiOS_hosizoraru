@@ -3,8 +3,6 @@ package os.kei.ui.page.main.os.state
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import os.kei.R
-import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
 
@@ -35,20 +33,6 @@ internal fun rememberOsPageOverlayTransferActions(
                 overlayState.onCardTransferInProgressChange(true)
                 osPageViewModel.prepareActivityCardsExport(
                     defaults = googleSystemServiceDefaults,
-                    onReady = { payload ->
-                        overlayState.onPendingExportContentChange(payload)
-                        overlayState.onCardTransferInProgressChange(false)
-                        cardTransferState.exportLauncher.launch("keios-os-activity-cards.json")
-                    },
-                    onFailure = { error ->
-                        overlayState.onCardTransferInProgressChange(false)
-                        context.showToast(
-                            context.getString(
-                                R.string.common_export_failed_with_reason,
-                                error.message ?: error.javaClass.simpleName,
-                            ),
-                        )
-                    },
                 )
             },
             onImportAllActivityCards = {
@@ -59,22 +43,7 @@ internal fun rememberOsPageOverlayTransferActions(
             },
             onExportAllShellCards = {
                 overlayState.onCardTransferInProgressChange(true)
-                osPageViewModel.prepareShellCardsExport(
-                    onReady = { payload ->
-                        overlayState.onPendingExportContentChange(payload)
-                        overlayState.onCardTransferInProgressChange(false)
-                        cardTransferState.exportLauncher.launch("keios-os-shell-cards.json")
-                    },
-                    onFailure = { error ->
-                        overlayState.onCardTransferInProgressChange(false)
-                        context.showToast(
-                            context.getString(
-                                R.string.common_export_failed_with_reason,
-                                error.message ?: error.javaClass.simpleName,
-                            ),
-                        )
-                    },
-                )
+                osPageViewModel.prepareShellCardsExport()
             },
             onImportAllShellCards = {
                 overlayState.onPendingCardImportPreviewChange(null)

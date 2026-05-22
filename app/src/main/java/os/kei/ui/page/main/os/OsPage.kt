@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -163,6 +165,23 @@ fun OsPage(
             cardTransferState = cardTransferState,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
         )
+    BindOsPageEvents(
+        events = osPageViewModel.events,
+        onLaunchExportDocument = { fileName, content ->
+            overlayState.onPendingExportContentChange(content)
+            overlayState.onCardTransferInProgressChange(false)
+            cardTransferState.exportLauncher.launch(fileName)
+        },
+        onExportFailed = { error ->
+            overlayState.onCardTransferInProgressChange(false)
+            context.showToast(
+                context.getString(
+                    R.string.common_export_failed_with_reason,
+                    error.message ?: error.javaClass.simpleName,
+                ),
+            )
+        },
+    )
     val sectionStates = runtimeState.sectionStates
     val actionState =
         createOsPageActionState(
@@ -312,7 +331,7 @@ fun OsPage(
             shizukuStatus,
             activityCardExpanded,
             shellCommandCardExpanded,
-            cardTransferState,
+            osPageViewModel,
         ) {
             createOsPageMainListActions(
                 context = context,
@@ -324,7 +343,7 @@ fun OsPage(
                 shizukuStatus = shizukuStatus,
                 activityCardExpanded = activityCardExpanded,
                 shellCommandCardExpanded = shellCommandCardExpanded,
-                cardTransferState = cardTransferState,
+                osPageViewModel = osPageViewModel,
             )
         }
 
@@ -429,7 +448,7 @@ fun OsPage(
                 onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
                 isCardVisible = mainListActions.isCardVisible,
                 sectionSubtitle = mainListActions.sectionSubtitle,
-                exportingCard = overlayState.exportingCard,
+                exportingCard = runtimeState.exportingCard,
                 onExportCard = mainListActions.onExportCard,
                 onRefreshAll = mainListActions.onRefreshAll,
                 contentBottomPadding = runtime.contentBottomPadding,

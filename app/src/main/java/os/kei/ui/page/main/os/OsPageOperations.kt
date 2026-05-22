@@ -21,9 +21,6 @@ import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.shortcut.ensureEditorActivityShortcutDraft
 import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.shortcut.normalizeActivityShortcutConfig
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 internal suspend fun ensureOsSectionLoaded(
     section: SectionKind,
@@ -343,97 +340,6 @@ internal suspend fun refreshAllOsSections(
     } finally {
         setRefreshing(false)
     }
-}
-
-internal suspend fun exportOsSectionCard(
-    card: OsSectionCard,
-    currentExportingCard: OsSectionCard?,
-    updateExportingCard: (OsSectionCard?) -> Unit,
-    visibleCardsProvider: () -> Set<OsSectionCard>,
-    ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    sectionStatesProvider: () -> Map<SectionKind, SectionState>,
-    activityShortcutCardsProvider: () -> List<OsActivityShortcutCard>,
-    googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-    context: Context,
-    shizukuStatus: String,
-    launchExport: (fileName: String, payload: String) -> Unit,
-    onExportFailed: (Throwable) -> Unit,
-) {
-    if (currentExportingCard != null) return
-    updateExportingCard(card)
-    try {
-        when (card) {
-            OsSectionCard.TOP_INFO -> {
-                visibleSectionKinds(visibleCardsProvider()).forEach { section ->
-                    ensureLoad(section, false)
-                }
-            }
-
-            else -> {
-                sectionKindByCard(card)?.let { section ->
-                    ensureLoad(section, false)
-                }
-            }
-        }
-        val rows =
-            currentRowsForCard(
-                card = card,
-                sectionStates = sectionStatesProvider(),
-                googleSystemServiceConfig =
-                    activityShortcutCardsProvider().firstOrNull()?.config
-                        ?: googleSystemServiceDefaults,
-                googleSystemServiceDefaults = googleSystemServiceDefaults,
-                context = context,
-            )
-        val generatedAt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-        val payload =
-            buildOsCardJson(
-                generatedAt = generatedAt,
-                shizukuStatus = shizukuStatus,
-                cardTitle = card.title(context),
-                rows = rows,
-            )
-        val exportStamp = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.getDefault()).format(Date())
-        val fileName = "keios-os-${exportSlug(card)}-$exportStamp.json"
-        launchExport(fileName, payload)
-    } catch (throwable: Throwable) {
-        onExportFailed(throwable)
-    } finally {
-        updateExportingCard(null)
-    }
-}
-
-internal suspend fun exportOsPageCard(
-    card: OsSectionCard,
-    currentExportingCard: OsSectionCard?,
-    updateExportingCard: (OsSectionCard?) -> Unit,
-    visibleCardsProvider: () -> Set<OsSectionCard>,
-    ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    sectionStatesProvider: () -> Map<SectionKind, SectionState>,
-    activityShortcutCardsProvider: () -> List<OsActivityShortcutCard>,
-    googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-    context: Context,
-    shizukuStatus: String,
-    launchExport: (fileName: String, payload: String) -> Unit,
-) {
-    exportOsSectionCard(
-        card = card,
-        currentExportingCard = currentExportingCard,
-        updateExportingCard = updateExportingCard,
-        visibleCardsProvider = visibleCardsProvider,
-        ensureLoad = ensureLoad,
-        sectionStatesProvider = sectionStatesProvider,
-        activityShortcutCardsProvider = activityShortcutCardsProvider,
-        googleSystemServiceDefaults = googleSystemServiceDefaults,
-        context = context,
-        shizukuStatus = shizukuStatus,
-        launchExport = launchExport,
-        onExportFailed = { throwable ->
-            context.showToast(
-                context.getString(R.string.common_export_failed_with_reason, throwable.javaClass.simpleName),
-            )
-        },
-    )
 }
 
 internal fun openOsActivityShortcutCard(

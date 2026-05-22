@@ -11,7 +11,6 @@ import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.os.state.OsPageActionState
-import os.kei.ui.page.main.os.state.OsPageCardTransferState
 import os.kei.ui.page.main.os.state.OsPageOverlayState
 import os.kei.ui.page.main.os.state.OsPageTextBundle
 
@@ -41,7 +40,7 @@ internal fun createOsPageMainListActions(
     shizukuStatus: String,
     activityCardExpanded: MutableMap<String, Boolean>,
     shellCommandCardExpanded: MutableMap<String, Boolean>,
-    cardTransferState: OsPageCardTransferState
+    osPageViewModel: OsPageViewModel
 ): OsPageMainListActions {
     return OsPageMainListActions(
         onOpenShellRunner = { OsShellRunnerActivity.launch(context) },
@@ -94,24 +93,13 @@ internal fun createOsPageMainListActions(
             )
         },
         onExportCard = { card ->
-            scope.launch {
-                exportOsPageCard(
-                    card = card,
-                    currentExportingCard = overlayState.exportingCard,
-                    updateExportingCard = overlayState.onExportingCardChange,
-                    visibleCardsProvider = { routeState.visibleCards },
-                    ensureLoad = actionState.ensureLoad,
-                    sectionStatesProvider = { routeState.sectionStates },
-                    activityShortcutCardsProvider = { routeState.activityShortcutCards },
-                    googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
-                    context = context,
-                    shizukuStatus = shizukuStatus,
-                    launchExport = { fileName, payload ->
-                        overlayState.onPendingExportContentChange(payload)
-                        cardTransferState.exportLauncher.launch(fileName)
-                    }
-                )
-            }
+            osPageViewModel.prepareSectionCardExport(
+                card = card,
+                context = context,
+                googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
+                shizukuStatus = shizukuStatus,
+                ensureLoad = actionState.ensureLoad,
+            )
         },
         onRefreshAll = { scope.launch { actionState.refreshAllSections() } },
         onOpenAddActivityShortcutCard = {

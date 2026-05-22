@@ -9,9 +9,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -44,7 +47,19 @@ internal data class OsPageRuntimeState(
     val refreshing: Boolean = false,
     val refreshProgress: Float = 0f,
     val runningShellCommandCardIds: Set<String> = emptySet(),
+    val exportingCard: OsSectionCard? = null,
 )
+
+internal sealed interface OsPageEvent {
+    data class LaunchExportDocument(
+        val fileName: String,
+        val content: String,
+    ) : OsPageEvent
+
+    data class ExportFailed(
+        val error: Throwable,
+    ) : OsPageEvent
+}
 
 internal data class OsActivitySuggestionUiState(
     val packageSuggestions: List<ShortcutInstalledAppOption> = emptyList(),
@@ -61,6 +76,7 @@ internal class OsPageViewModel : ViewModel() {
     }
 
     private val repository = OsPageRepository()
+    private val exportRepository = OsPageExportRepository()
     internal val sectionLoadMutex = Mutex()
     internal val sectionLoadDeferreds: MutableMap<SectionKind, Deferred<List<InfoRow>>> = mutableMapOf()
     private var activitySuggestionJob: Job? = null
@@ -87,6 +103,9 @@ internal class OsPageViewModel : ViewModel() {
     private val _activitySuggestionState = MutableStateFlow(OsActivitySuggestionUiState())
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
         _activitySuggestionState.asStateFlow()
+
+    private val _events = MutableSharedFlow<OsPageEvent>(replay = 0, extraBufferCapacity = 8)
+    val events: SharedFlow<OsPageEvent> = _events.asSharedFlow()
 
     private val _rowsDerivedState = MutableStateFlow(OsPageRowsUiDerivedState.Empty)
     val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = _rowsDerivedState.asStateFlow()
@@ -412,8 +431,6 @@ internal class OsPageViewModel : ViewModel() {
 
     fun prepareActivityCardsExport(
         defaults: OsGoogleSystemServiceConfig,
-        onReady: (String) -> Unit,
-        onFailure: (Throwable) -> Unit,
     ) {
         viewModelScope.launch {
             try {
@@ -422,28 +439,85 @@ internal class OsPageViewModel : ViewModel() {
                         cards = persistentState.value.activityShortcutCards,
                         defaults = defaults,
                     )
-                onReady(content)
+                _events.emit(
+                    OsPageEvent.LaunchExportDocument(
+                        fileName = "keios-os-activity-cards.json",
+                        content = content,
+                    ),
+                )
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                onFailure(error)
+                _events.emit(OsPageEvent.ExportFailed(error))
             }
         }
     }
 
-    fun prepareShellCardsExport(
-        onReady: (String) -> Unit,
-        onFailure: (Throwable) -> Unit,
-    ) {
+    fun prepareShellCardsExport() {
         viewModelScope.launch {
             try {
                 val content =
                     repository.buildShellCardsExportJson(
                         cards = persistentState.value.shellCommandCards,
                     )
-                onReady(content)
+                _events.emit(
+                    OsPageEvent.LaunchExportDocument(
+                        fileName = "keios-os-shell-cards.json",
+                        content = content,
+                    ),
+                )
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
-                onFailure(error)
+                _events.emit(OsPageEvent.ExportFailed(error))
+            }
+        }
+    }
+
+    fun prepareSectionCardExport(
+        card: OsSectionCard,
+        context: Context,
+        googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
+        shizukuStatus: String,
+        ensureLoad: suspend (SectionKind, Boolean) -> Unit,
+    ) {
+        if (runtimeState.value.exportingCard != null) return
+        _runtimeState.update { state -> state.copy(exportingCard = card) }
+        viewModelScope.launch {
+            try {
+                when (card) {
+                    OsSectionCard.TOP_INFO -> {
+                        visibleSectionKinds(persistentState.value.uiSnapshot.visibleCards).forEach { section ->
+                            ensureLoad(section, false)
+                        }
+                    }
+
+                    else -> {
+                        sectionKindByCard(card)?.let { section ->
+                            ensureLoad(section, false)
+                        }
+                    }
+                }
+                val document =
+                    exportRepository.buildSectionCardExport(
+                        OsPageSectionCardExportRequest(
+                            card = card,
+                            sectionStates = runtimeState.value.sectionStates,
+                            activityShortcutCards = persistentState.value.activityShortcutCards,
+                            googleSystemServiceDefaults = googleSystemServiceDefaults,
+                            context = context.applicationContext,
+                            shizukuStatus = shizukuStatus,
+                        ),
+                    )
+                _events.emit(
+                    OsPageEvent.LaunchExportDocument(
+                        fileName = document.fileName,
+                        content = document.content,
+                    ),
+                )
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(OsPageEvent.ExportFailed(error))
+            } finally {
+                _runtimeState.update { state -> state.copy(exportingCard = null) }
             }
         }
     }

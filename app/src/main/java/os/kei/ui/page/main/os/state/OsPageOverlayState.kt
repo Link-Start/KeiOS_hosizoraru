@@ -7,7 +7,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
-import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.createDefaultShellCommandCardDraft
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
@@ -73,8 +72,6 @@ internal data class OsPageOverlayState(
     val onPendingCardImportPreviewChange: (OsCardImportPreview?) -> Unit,
     val cardTransferInProgress: Boolean,
     val onCardTransferInProgressChange: (Boolean) -> Unit,
-    val exportingCard: OsSectionCard?,
-    val onExportingCardChange: (OsSectionCard?) -> Unit,
 )
 
 @Composable
@@ -114,7 +111,6 @@ internal fun rememberOsPageOverlayState(
     var pendingImportTarget by remember { mutableStateOf<OsCardImportTarget?>(null) }
     var pendingCardImportPreview by remember { mutableStateOf<OsCardImportPreview?>(null) }
     var cardTransferInProgress by remember { mutableStateOf(false) }
-    var exportingCard by remember { mutableStateOf<OsSectionCard?>(null) }
 
     return remember(
         activityShortcutDraft,
@@ -142,7 +138,6 @@ internal fun rememberOsPageOverlayState(
         pendingImportTarget,
         pendingCardImportPreview,
         cardTransferInProgress,
-        exportingCard,
     ) {
         OsPageOverlayState(
             activityShortcutDraft = activityShortcutDraft,
@@ -203,8 +198,6 @@ internal fun rememberOsPageOverlayState(
             onPendingCardImportPreviewChange = { pendingCardImportPreview = it },
             cardTransferInProgress = cardTransferInProgress,
             onCardTransferInProgressChange = { cardTransferInProgress = it },
-            exportingCard = exportingCard,
-            onExportingCardChange = { exportingCard = it },
         )
     }
 }

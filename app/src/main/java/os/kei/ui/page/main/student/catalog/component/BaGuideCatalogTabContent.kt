@@ -30,6 +30,7 @@ internal fun BaGuideCatalogTabContent(
     tab: BaGuideCatalogTab,
     filterSortState: BaGuideCatalogFilterSortState,
     derivedState: BaGuideCatalogListDerivedState,
+    favoriteCatalogEntries: Map<Long, Long>,
     loading: Boolean,
     error: String?,
     progress: Float,
@@ -42,6 +43,7 @@ internal fun BaGuideCatalogTabContent(
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
+    onToggleFavorite: (Long) -> Unit,
 ) {
     if (!renderHeavyContent) {
         Box(
@@ -117,8 +119,8 @@ internal fun BaGuideCatalogTabContent(
         accent = accent,
         displayedEntries = tabListState.displayedEntries,
         hasMoreEntries = tabListState.hasMoreEntries,
-        favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
+        favoriteCatalogEntries = favoriteCatalogEntries,
         onOpenGuide = onOpenGuide,
-        onToggleFavorite = filterSortState::toggleFavorite,
+        onToggleFavorite = onToggleFavorite,
     )
 }

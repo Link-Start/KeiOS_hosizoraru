@@ -28,6 +28,7 @@ internal fun BaGuideCatalogV2ListContent(
     tab: BaGuideCatalogTab,
     filterSortState: BaGuideCatalogFilterSortState,
     derivedState: BaGuideCatalogListDerivedState,
+    favoriteCatalogEntries: Map<Long, Long>,
     searchQuery: String,
     loading: Boolean,
     error: String?,
@@ -37,6 +38,7 @@ internal fun BaGuideCatalogV2ListContent(
     isPageActive: Boolean,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
+    onToggleFavorite: (Long) -> Unit,
 ) {
     val effectiveLoading = loading || (derivedState.deriving && derivedState.filteredEntries.isEmpty())
     val tabListState =
@@ -119,11 +121,11 @@ internal fun BaGuideCatalogV2ListContent(
             renderBaGuideCatalogEntryListAdapter(
                 displayedEntries = tabListState.displayedEntries,
                 hasMoreEntries = tabListState.hasMoreEntries,
-                favoriteCatalogEntries = filterSortState.favoriteCatalogEntries,
+                favoriteCatalogEntries = favoriteCatalogEntries,
                 accent = accent,
                 loadingMoreText = uiState.loadingMoreText,
                 onOpenGuide = onOpenGuide,
-                onToggleFavorite = filterSortState::toggleFavorite,
+                onToggleFavorite = onToggleFavorite,
             )
         }
     }

@@ -13,7 +13,6 @@ import os.kei.mcp.framework.notification.NotificationHelper
 import os.kei.mcp.framework.notification.SessionNotifierImpl
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
@@ -33,9 +32,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         context: Context,
         serverIndex: Int,
         entry: BaCalendarEntry,
-    ): Boolean {
-        return sendCalendarUpcomingGroup(context, serverIndex, listOf(entry))
-    }
+    ): Boolean = sendCalendarUpcomingGroup(context, serverIndex, listOf(entry))
 
     fun sendCalendarUpcomingGroup(
         context: Context,
@@ -46,22 +43,24 @@ internal object BaCalendarPoolNotificationDispatcher {
         val notifyAtMs = normalizedEntries.firstOrNull()?.beginAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = groupedNotificationId(
-                CALENDAR_UPCOMING_NOTIFICATION_ID_BASE,
-                notifyAtMs
-            ),
-            title = context.getString(R.string.ba_calendar_notify_upcoming_title),
-            content = context.getString(
-                R.string.ba_calendar_notify_upcoming_content,
-                summarizeCalendarEntries(context, normalizedEntries),
-                formatBaDateTimeNoYearInTimeZone(
+            notificationId =
+                groupedNotificationId(
+                    CALENDAR_UPCOMING_NOTIFICATION_ID_BASE,
                     notifyAtMs,
-                    serverRefreshTimeZone(serverIndex)
-                )
-            ),
+                ),
+            title = context.getString(R.string.ba_calendar_notify_upcoming_title),
+            content =
+                context.getString(
+                    R.string.ba_calendar_notify_upcoming_content,
+                    summarizeCalendarEntries(context, normalizedEntries),
+                    formatBaDateTimeNoYearInTimeZone(
+                        notifyAtMs,
+                        serverRefreshTimeZone(serverIndex),
+                    ),
+                ),
             shortText = context.getString(R.string.ba_debug_action_calendar_upcoming_notification),
             deadlineAtMs = notifyAtMs,
-            progressPercent = resolveDeadlineProgressPercent(notifyAtMs)
+            progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
     }
 
@@ -69,9 +68,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         context: Context,
         serverIndex: Int,
         entry: BaCalendarEntry,
-    ): Boolean {
-        return sendCalendarEndingGroup(context, serverIndex, listOf(entry))
-    }
+    ): Boolean = sendCalendarEndingGroup(context, serverIndex, listOf(entry))
 
     fun sendCalendarEndingGroup(
         context: Context,
@@ -82,19 +79,21 @@ internal object BaCalendarPoolNotificationDispatcher {
         val notifyAtMs = normalizedEntries.firstOrNull()?.endAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = groupedNotificationId(
-                CALENDAR_ENDING_NOTIFICATION_ID_BASE,
-                notifyAtMs
-            ),
+            notificationId =
+                groupedNotificationId(
+                    CALENDAR_ENDING_NOTIFICATION_ID_BASE,
+                    notifyAtMs,
+                ),
             title = context.getString(R.string.ba_calendar_notify_ending_title),
-            content = context.getString(
-                R.string.ba_calendar_notify_ending_content,
-                summarizeCalendarEntries(context, normalizedEntries),
-                formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex))
-            ),
+            content =
+                context.getString(
+                    R.string.ba_calendar_notify_ending_content,
+                    summarizeCalendarEntries(context, normalizedEntries),
+                    formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex)),
+                ),
             shortText = context.getString(R.string.ba_debug_action_calendar_ending_notification),
             deadlineAtMs = notifyAtMs,
-            progressPercent = resolveDeadlineProgressPercent(notifyAtMs)
+            progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
     }
 
@@ -102,9 +101,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         context: Context,
         serverIndex: Int,
         entry: BaPoolEntry,
-    ): Boolean {
-        return sendPoolUpcomingGroup(context, serverIndex, listOf(entry))
-    }
+    ): Boolean = sendPoolUpcomingGroup(context, serverIndex, listOf(entry))
 
     fun sendPoolUpcomingGroup(
         context: Context,
@@ -117,17 +114,18 @@ internal object BaCalendarPoolNotificationDispatcher {
             context = context,
             notificationId = groupedNotificationId(POOL_UPCOMING_NOTIFICATION_ID_BASE, notifyAtMs),
             title = context.getString(R.string.ba_pool_notify_upcoming_title),
-            content = context.getString(
-                R.string.ba_pool_notify_upcoming_content,
-                summarizePoolEntries(context, normalizedEntries),
-                formatBaDateTimeNoYearInTimeZone(
-                    notifyAtMs,
-                    serverRefreshTimeZone(serverIndex)
-                )
-            ),
+            content =
+                context.getString(
+                    R.string.ba_pool_notify_upcoming_content,
+                    summarizePoolEntries(context, normalizedEntries),
+                    formatBaDateTimeNoYearInTimeZone(
+                        notifyAtMs,
+                        serverRefreshTimeZone(serverIndex),
+                    ),
+                ),
             shortText = context.getString(R.string.ba_debug_action_pool_upcoming_notification),
             deadlineAtMs = notifyAtMs,
-            progressPercent = resolveDeadlineProgressPercent(notifyAtMs)
+            progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
     }
 
@@ -135,9 +133,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         context: Context,
         serverIndex: Int,
         entry: BaPoolEntry,
-    ): Boolean {
-        return sendPoolEndingGroup(context, serverIndex, listOf(entry))
-    }
+    ): Boolean = sendPoolEndingGroup(context, serverIndex, listOf(entry))
 
     fun sendPoolEndingGroup(
         context: Context,
@@ -150,14 +146,15 @@ internal object BaCalendarPoolNotificationDispatcher {
             context = context,
             notificationId = groupedNotificationId(POOL_ENDING_NOTIFICATION_ID_BASE, notifyAtMs),
             title = context.getString(R.string.ba_pool_notify_ending_title),
-            content = context.getString(
-                R.string.ba_pool_notify_ending_content,
-                summarizePoolEntries(context, normalizedEntries),
-                formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex))
-            ),
+            content =
+                context.getString(
+                    R.string.ba_pool_notify_ending_content,
+                    summarizePoolEntries(context, normalizedEntries),
+                    formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex)),
+                ),
             shortText = context.getString(R.string.ba_debug_action_pool_ending_notification),
             deadlineAtMs = notifyAtMs,
-            progressPercent = resolveDeadlineProgressPercent(notifyAtMs)
+            progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
     }
 
@@ -167,27 +164,28 @@ internal object BaCalendarPoolNotificationDispatcher {
         poolChangeCount: Int,
         detail: String = "",
     ): Boolean {
-        val baseContent = context.getString(
-            R.string.ba_calendar_pool_notify_change_content,
-            calendarChangeCount.coerceAtLeast(0),
-            poolChangeCount.coerceAtLeast(0)
-        )
+        val baseContent =
+            context.getString(
+                R.string.ba_calendar_pool_notify_change_content,
+                calendarChangeCount.coerceAtLeast(0),
+                poolChangeCount.coerceAtLeast(0),
+            )
         return sendLiveUpdate(
             context = context,
             notificationId = CHANGE_NOTIFICATION_ID,
             title = context.getString(R.string.ba_calendar_pool_notify_change_title),
-            content = detail.takeIf { it.isNotBlank() }?.let { "$baseContent · $it" }
-                ?: baseContent,
+            content =
+                detail.takeIf { it.isNotBlank() }?.let { "$baseContent · $it" }
+                    ?: baseContent,
             shortText = context.getString(R.string.ba_debug_action_calendar_pool_change_notification),
             deadlineAtMs = null,
-            progressPercent = 100
+            progressPercent = 100,
         )
     }
 
-    private fun notificationsGranted(context: Context): Boolean {
-        return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-    }
+    private fun notificationsGranted(context: Context): Boolean =
+        context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
 
     @SuppressLint("MissingPermission")
     private fun sendLiveUpdate(
@@ -205,31 +203,32 @@ internal object BaCalendarPoolNotificationDispatcher {
         val openPendingIntent = openBaPendingIntent(context, notificationId)
         val focusOpenPendingIntent = focusOpenBaPendingIntent(context, notificationId)
         val acknowledgePendingIntent = acknowledgePendingIntent(context, notificationId)
-        val payload = McpNotificationPayload(
-            serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
-            running = true,
-            port = progressPercent.coerceIn(0, 100),
-            path = content,
-            clients = 1,
-            ongoing = true,
-            onlyAlertOnce = false,
-            openPendingIntent = openPendingIntent,
-            stopPendingIntent = acknowledgePendingIntent,
-            focusOpenPendingIntent = focusOpenPendingIntent,
-            secondaryActionLabel = context.getString(R.string.common_acknowledge),
-            overrideTitle = title,
-            overrideContent = content,
-            overrideOnlineText = shortText,
-            overrideShortText = shortText,
-            overrideProgressPercent = progressPercent.coerceIn(0, 100),
-            deadlineAtMs = deadlineAtMs
-        )
+        val payload =
+            McpNotificationPayload(
+                serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
+                running = true,
+                port = progressPercent.coerceIn(0, 100),
+                path = content,
+                clients = 1,
+                ongoing = true,
+                onlyAlertOnce = false,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = acknowledgePendingIntent,
+                focusOpenPendingIntent = focusOpenPendingIntent,
+                secondaryActionLabel = context.getString(R.string.common_acknowledge),
+                overrideTitle = title,
+                overrideContent = content,
+                overrideOnlineText = shortText,
+                overrideShortText = shortText,
+                overrideProgressPercent = progressPercent.coerceIn(0, 100),
+                deadlineAtMs = deadlineAtMs,
+            )
         val buildResult = SessionNotifierImpl(helper).build(payload)
         McpNotificationHelper.dispatchNotification(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            useXiaomiMagic = buildResult.useXiaomiMagic,
         )
         return true
     }
@@ -237,37 +236,38 @@ internal object BaCalendarPoolNotificationDispatcher {
     private fun summarizeCalendarEntries(
         context: Context,
         entries: List<BaCalendarEntry>,
-    ): String {
-        return summarizeNames(
+    ): String =
+        summarizeNames(
             context = context,
-            names = entries.map { entry ->
-                entry.title.ifBlank {
-                    context.baCalendarKindLabel(entry.kindId, entry.kindName)
-                }
-            }
+            names =
+                entries.map { entry ->
+                    entry.title.ifBlank {
+                        context.baCalendarKindLabel(entry.kindId, entry.kindName)
+                    }
+                },
         )
-    }
 
     private fun summarizePoolEntries(
         context: Context,
         entries: List<BaPoolEntry>,
-    ): String {
-        return summarizeNames(
+    ): String =
+        summarizeNames(
             context = context,
-            names = entries.map { entry ->
-                entry.name.ifBlank { context.baPoolTagLabel(entry.tagId, entry.tagName) }
-            }
+            names =
+                entries.map { entry ->
+                    entry.name.ifBlank { context.baPoolTagLabel(entry.tagId, entry.tagName) }
+                },
         )
-    }
 
     private fun summarizeNames(
         context: Context,
         names: List<String>,
     ): String {
-        val visibleNames = names
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .take(MAX_VISIBLE_NAMES)
+        val visibleNames =
+            names
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .take(MAX_VISIBLE_NAMES)
         val separator = context.getString(R.string.ba_calendar_pool_notify_name_separator)
         val visibleText = visibleNames.joinToString(separator = separator)
         val remainingCount = (names.size - visibleNames.size).coerceAtLeast(0)
@@ -275,58 +275,75 @@ internal object BaCalendarPoolNotificationDispatcher {
             context.getString(
                 R.string.ba_calendar_pool_notify_name_list_more,
                 visibleText,
-                remainingCount
+                remainingCount,
             )
         } else {
             visibleText
         }
     }
 
-    private fun groupedNotificationId(baseId: Int, notifyAtMs: Long): Int {
+    private fun groupedNotificationId(
+        baseId: Int,
+        notifyAtMs: Long,
+    ): Int {
         val timeBucketHash = (notifyAtMs / 60_000L).hashCode().and(0x7fffffff) % 900_000
         return baseId + timeBucketHash
     }
 
     private fun resolveDeadlineProgressPercent(deadlineAtMs: Long): Int {
         val nowMs = System.currentTimeMillis()
-        val leadMs = BASettingsStore.loadCalendarPoolNotifyLeadHours()
-            .coerceAtLeast(1) * 60L * 60L * 1000L
+        val leadMs =
+            BaSettingsPersistenceRepository
+                .loadCalendarPoolNotificationSettings()
+                .calendarPoolNotifyLeadHours
+                .coerceAtLeast(1) * 60L * 60L * 1000L
         val windowStartMs = deadlineAtMs - leadMs
         return (((nowMs - windowStartMs).coerceAtLeast(0L).toFloat() / leadMs.toFloat()) * 100f)
             .toInt()
             .coerceIn(1, 99)
     }
 
-    private fun openBaPendingIntent(context: Context, notificationId: Int): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
-        }
+    private fun openBaPendingIntent(
+        context: Context,
+        notificationId: Int,
+    ): PendingIntent {
+        val intent =
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
+            }
         return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,
             520_100 + notificationId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
-    private fun focusOpenBaPendingIntent(context: Context, notificationId: Int): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
-        }
+    private fun focusOpenBaPendingIntent(
+        context: Context,
+        notificationId: Int,
+    ): PendingIntent {
+        val intent =
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
+            }
         return PendingIntent.getActivity(
             context,
             522_100 + notificationId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
-    private fun acknowledgePendingIntent(context: Context, notificationId: Int): PendingIntent =
+    private fun acknowledgePendingIntent(
+        context: Context,
+        notificationId: Int,
+    ): PendingIntent =
         MiFocusNotificationActions.markReadPendingIntent(
             context = context,
             notificationId = notificationId,
-            requestCode = 521_100 + notificationId
+            requestCode = 521_100 + notificationId,
         )
 }

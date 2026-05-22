@@ -6,7 +6,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 
 @Stable
 internal class BaGuideCatalogFilterSortState(
@@ -15,7 +14,6 @@ internal class BaGuideCatalogFilterSortState(
     private val showSortPopupState: MutableState<Boolean>,
     private val showFilterPopupState: MutableState<Boolean>,
     private val selectedFiltersRawState: MutableState<String>,
-    private val favoriteCatalogEntriesState: MutableState<Map<Long, Long>>,
 ) {
     var searchQuery: String
         get() = searchQueryState.value
@@ -46,12 +44,6 @@ internal class BaGuideCatalogFilterSortState(
 
     val activeFilterCount: Int
         get() = selectedFilterOptions.values.count { it.isNotEmpty() }
-
-    var favoriteCatalogEntries: Map<Long, Long>
-        get() = favoriteCatalogEntriesState.value
-        private set(value) {
-            favoriteCatalogEntriesState.value = value
-        }
 
     fun selectSortMode(mode: BaGuideCatalogSortMode) {
         sortMode = mode
@@ -92,29 +84,6 @@ internal class BaGuideCatalogFilterSortState(
         selectedFiltersRawState.value = ""
         showFilterPopup = false
     }
-
-    fun toggleFavorite(contentId: Long) {
-        if (contentId <= 0L) return
-        val next = favoriteCatalogEntries.toMutableMap()
-        if (next.containsKey(contentId)) {
-            next.remove(contentId)
-        } else {
-            next[contentId] = System.currentTimeMillis().coerceAtLeast(1L)
-        }
-        val frozen = next.toMap()
-        favoriteCatalogEntries = frozen
-        BaGuideCatalogStore.saveFavorites(frozen)
-    }
-
-    fun replaceFavorites(favorites: Map<Long, Long>) {
-        val normalized =
-            favorites
-                .filterKeys { it > 0L }
-                .filterValues { it > 0L }
-                .toMap()
-        favoriteCatalogEntries = normalized
-        BaGuideCatalogStore.saveFavorites(normalized)
-    }
 }
 
 @Composable
@@ -124,18 +93,12 @@ internal fun rememberBaGuideCatalogFilterSortState(): BaGuideCatalogFilterSortSt
     val showSortPopupState = remember { mutableStateOf(false) }
     val showFilterPopupState = remember { mutableStateOf(false) }
     val selectedFiltersRawState = rememberSaveable { mutableStateOf("") }
-    val favoriteCatalogEntriesState =
-        remember {
-            mutableStateOf(BaGuideCatalogStore.loadFavorites())
-        }
-
     return remember(
         searchQueryState,
         sortModeState,
         showSortPopupState,
         showFilterPopupState,
         selectedFiltersRawState,
-        favoriteCatalogEntriesState,
     ) {
         BaGuideCatalogFilterSortState(
             searchQueryState = searchQueryState,
@@ -143,7 +106,6 @@ internal fun rememberBaGuideCatalogFilterSortState(): BaGuideCatalogFilterSortSt
             showSortPopupState = showSortPopupState,
             showFilterPopupState = showFilterPopupState,
             selectedFiltersRawState = selectedFiltersRawState,
-            favoriteCatalogEntriesState = favoriteCatalogEntriesState,
         )
     }
 }

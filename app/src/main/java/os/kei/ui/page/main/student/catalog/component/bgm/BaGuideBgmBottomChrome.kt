@@ -68,7 +68,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     currentTrackTitle: String,
     artworkImageUrl: String = "",
     isPlaying: Boolean,
-    playbackProgress: Float,
+    playbackProgress: () -> Float,
     onPlaybackProgressChange: (Float) -> Unit,
     onPlaybackProgressChangeFinished: (Float) -> Unit,
     onPlaybackSliderInteractionChanged: (Boolean) -> Unit,

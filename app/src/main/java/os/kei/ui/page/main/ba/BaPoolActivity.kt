@@ -1,9 +1,10 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import os.kei.core.ext.showToast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -43,12 +44,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.card.BaPoolEntryPanel
 import os.kei.ui.page.main.ba.card.BaPoolStatePanel
 import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
@@ -57,10 +58,10 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
+import os.kei.ui.page.main.student.page.state.BaStudentGuideRepository
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
@@ -86,9 +87,10 @@ class BaPoolActivity : ComponentActivity() {
     companion object {
         fun launch(context: Context) {
             val hostActivity = context.findBaHostActivity()
-            val intent = Intent(context, BaPoolActivity::class.java).apply {
-                if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val intent =
+                Intent(context, BaPoolActivity::class.java).apply {
+                    if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
             if (hostActivity != null) {
                 hostActivity.startActivity(intent)
             } else {
@@ -99,14 +101,12 @@ class BaPoolActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BaPoolRoot(
-    onClose: () -> Unit,
-) {
+private fun BaPoolRoot(onClose: () -> Unit) {
     var guideOpen by remember { mutableStateOf(false) }
     var guideNonce by remember { mutableLongStateOf(0L) }
     KeiOSBackNavigationHandler(
         enabled = guideOpen,
-        source = BackNavigationSource.MainRoute
+        source = BackNavigationSource.MainRoute,
     ) {
         guideOpen = false
     }
@@ -136,18 +136,19 @@ private fun BaPoolPage(
 ) {
     KeiOSActivityRootBackHandler(
         needsInterception = false,
-        onBack = onClose
+        onBack = onClose,
     )
 
     val context = LocalContext.current
-    val snapshot = remember { BASettingsStore.loadSnapshot() }
+    val snapshot = remember { BaCalendarPoolRepository.loadSettingsSnapshot() }
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
-    val serverOptions = listOf(
-        stringResource(R.string.ba_server_cn),
-        stringResource(R.string.ba_server_global),
-        stringResource(R.string.ba_server_jp)
-    )
+    val serverOptions =
+        listOf(
+            stringResource(R.string.ba_server_cn),
+            stringResource(R.string.ba_server_global),
+            stringResource(R.string.ba_server_jp),
+        )
     var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
     var showServerPopup by remember { mutableStateOf(false) }
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
@@ -159,15 +160,23 @@ private fun BaPoolPage(
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val accent = MiuixTheme.colorScheme.primary
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
-    val syncText = when {
-        poolUiState.loading -> stringResource(R.string.ba_syncing)
-        poolUiState.lastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
-            poolUiState.lastSyncMs,
-            serverTimeZone
-        )
+    val syncText =
+        when {
+            poolUiState.loading -> {
+                stringResource(R.string.ba_syncing)
+            }
 
-        else -> stringResource(R.string.ba_state_not_synced)
-    }
+            poolUiState.lastSyncMs > 0L -> {
+                formatBaDateTimeNoYearInTimeZone(
+                    poolUiState.lastSyncMs,
+                    serverTimeZone,
+                )
+            }
+
+            else -> {
+                stringResource(R.string.ba_state_not_synced)
+            }
+        }
     val countdownBlue = AppStatusColors.Refreshing
 
     LaunchedEffect(Unit) {
@@ -178,37 +187,40 @@ private fun BaPoolPage(
         serverIndex,
         reloadSignal,
         snapshot.calendarRefreshIntervalHours,
-        hydrationReady
+        hydrationReady,
     ) {
         calendarPoolViewModel.syncPool(
             isPageActive = true,
             serverIndex = serverIndex,
             reloadSignal = reloadSignal,
             calendarRefreshIntervalHours = snapshot.calendarRefreshIntervalHours,
-            hydrationReady = hydrationReady
+            hydrationReady = hydrationReady,
         )
     }
 
-    val refreshIconRotation = if (poolUiState.loading) {
-        val loadingRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
-            .animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 900, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-                label = "ba_pool_refresh_rotation_value",
-            )
-        loadingRotation
-    } else {
-        0f
-    }
+    val refreshIconRotation =
+        if (poolUiState.loading) {
+            val loadingRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
+                .animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 900, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                    label = "ba_pool_refresh_rotation_value",
+                )
+            loadingRotation
+        } else {
+            0f
+        }
 
-    val pageTitle = stringResource(
-        R.string.ba_pool_title_format,
-        serverOptions[serverIndex]
-    )
+    val pageTitle =
+        stringResource(
+            R.string.ba_pool_title_format,
+            serverOptions[serverIndex],
+        )
 
     AppPageScaffold(
         title = pageTitle,
@@ -231,34 +243,37 @@ private fun BaPoolPage(
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.ba_pool_cd_refresh),
                 onClick = { reloadSignal += 1 },
-                iconModifier = Modifier.graphicsLayer {
-                    rotationZ = refreshIconRotation
-                },
+                iconModifier =
+                    Modifier.graphicsLayer {
+                        rotationZ = refreshIconRotation
+                    },
                 width = 52.dp,
                 height = 52.dp,
                 variant = GlassVariant.Bar,
-                iconTint = if (poolUiState.loading) {
-                    countdownBlue
-                } else {
-                    MiuixTheme.colorScheme.primary
-                },
+                iconTint =
+                    if (poolUiState.loading) {
+                        countdownBlue
+                    } else {
+                        MiuixTheme.colorScheme.primary
+                    },
             )
-        }
+        },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MiuixTheme.colorScheme.background,
-                                accent.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.07f),
-                                MiuixTheme.colorScheme.background
-                            )
-                        )
-                    )
-                    .layerBackdrop(pageBackdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.background,
+                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.07f),
+                                        MiuixTheme.colorScheme.background,
+                                    ),
+                            ),
+                        ).layerBackdrop(pageBackdrop),
             )
             BaPoolListContent(
                 innerPadding = innerPadding,
@@ -281,14 +296,14 @@ private fun BaPoolPage(
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
                     serverIndex = normalized
-                    BASettingsStore.saveServerIndex(normalized)
+                    BaCalendarPoolRepository.saveServerIndex(normalized)
                     showServerPopup = false
                 },
                 onOpenPoolStudentGuide = { url ->
                     openBaPoolGuideLink(
                         context = context,
                         rawUrl = url,
-                        onOpenGuide = onOpenGuide
+                        onOpenGuide = onOpenGuide,
                     )
                 },
                 onOpenCalendarLink = { url ->
@@ -323,25 +338,27 @@ private fun BaPoolListContent(
     onOpenCalendarLink: (String) -> Unit,
 ) {
     val nowMs = rememberBaMinuteTickMs(enabled = !loading && error.isNullOrBlank())
-    val visibleEntries = remember(
-        entries,
-        showEndedPools,
-        nowMs
-    ) {
-        filterVisiblePoolEntries(
-            entries = entries,
-            showEndedPools = showEndedPools,
-            nowMs = nowMs
-        )
-    }
+    val visibleEntries =
+        remember(
+            entries,
+            showEndedPools,
+            nowMs,
+        ) {
+            filterVisiblePoolEntries(
+                entries = entries,
+                showEndedPools = showEndedPools,
+                nowMs = nowMs,
+            )
+        }
     AppPageLazyColumn(
         innerPadding = innerPadding,
         state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
         bottomExtra = 40.dp,
-        sectionSpacing = 14.dp
+        sectionSpacing = 14.dp,
     ) {
         item {
             BaCalendarPoolServerPanel(
@@ -369,9 +386,10 @@ private fun BaPoolListContent(
                     BaPoolStatePanel(
                         backdrop = backdrop,
                         text = error,
-                        accentColor = baCalendarPoolSyncNoticeColor(
-                            hasVisibleEntries = visibleEntries.isNotEmpty()
-                        ),
+                        accentColor =
+                            baCalendarPoolSyncNoticeColor(
+                                hasVisibleEntries = visibleEntries.isNotEmpty(),
+                            ),
                         effectsEnabled = true,
                     )
                 }
@@ -381,11 +399,12 @@ private fun BaPoolListContent(
                 item {
                     BaPoolStatePanel(
                         backdrop = backdrop,
-                        text = if (showEndedPools) {
-                            stringResource(R.string.ba_pool_empty_all)
-                        } else {
-                            stringResource(R.string.ba_pool_empty_active)
-                        },
+                        text =
+                            if (showEndedPools) {
+                                stringResource(R.string.ba_pool_empty_all)
+                            } else {
+                                stringResource(R.string.ba_pool_empty_active)
+                            },
                         accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         effectsEnabled = true,
                     )
@@ -396,7 +415,7 @@ private fun BaPoolListContent(
                 items(
                     items = visibleEntries,
                     key = { pool -> pool.id },
-                    contentType = { "ba_pool_entry" }
+                    contentType = { "ba_pool_entry" },
                 ) { pool ->
                     BaPoolEntryPanel(
                         backdrop = backdrop,
@@ -416,17 +435,12 @@ private fun BaPoolListContent(
 }
 
 @Composable
-private fun BaPoolLoadingPanel(
-    accentColor: Color,
-) {
+private fun BaPoolLoadingPanel(accentColor: Color) {
     AppAronaLoadingPanel(accent = accentColor)
 }
 
-internal fun baCalendarPoolSyncNoticeColor(
-    hasVisibleEntries: Boolean,
-): Color {
-    return if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
-}
+internal fun baCalendarPoolSyncNoticeColor(hasVisibleEntries: Boolean): Color =
+    if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
 
 private val baGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$""", RegexOption.IGNORE_CASE)
 
@@ -446,7 +460,7 @@ private fun openBaPoolGuideLink(
     if (hostAccepted && baGuideDetailPathRegex.matches(uri?.path.orEmpty())) {
         val contentId = extractGuideContentIdFromUrl(normalized)
         if (contentId != null && contentId > 0L) {
-            BaStudentGuideStore.setCurrentUrl("https://www.gamekee.com/ba/tj/$contentId.html")
+            BaStudentGuideRepository().saveCurrentUrl("https://www.gamekee.com/ba/tj/$contentId.html")
             onOpenGuide()
             return
         }

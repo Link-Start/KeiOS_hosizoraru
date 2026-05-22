@@ -7,8 +7,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -19,34 +19,30 @@ private const val GITHUB_SHARE_IMPORT_DELIVERY_RUNNER_TAG = "GitHubShareImportDe
 
 internal object GitHubShareImportDeliveryRunner {
     private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.githubNetwork)
+    private val clock: GitHubShareImportClock = GitHubSystemShareImportClock
     private val lock = Any()
     private var activeJob: Job? = null
 
-    fun launchActivePreviewDelivery(context: Context): Boolean {
-        return launchDelivery(context = context)
-    }
+    fun launchActivePreviewDelivery(context: Context): Boolean = launchDelivery(context = context)
 
-    fun launchCurrentDeliveryAction(context: Context): Boolean {
-        return launchDelivery(context = context, preferManagedCommit = true)
-    }
+    fun launchCurrentDeliveryAction(context: Context): Boolean = launchDelivery(context = context, preferManagedCommit = true)
 
     fun launchSelectedPreviewDelivery(
         context: Context,
         preview: GitHubShareImportPreview,
-        selectedAsset: GitHubReleaseAssetFile
-    ): Boolean {
-        return launchDelivery(
+        selectedAsset: GitHubReleaseAssetFile,
+    ): Boolean =
+        launchDelivery(
             context = context,
             selectedPreview = preview,
-            selectedAsset = selectedAsset
+            selectedAsset = selectedAsset,
         )
-    }
 
     private fun launchDelivery(
         context: Context,
         selectedPreview: GitHubShareImportPreview? = null,
         selectedAsset: GitHubReleaseAssetFile? = null,
-        preferManagedCommit: Boolean = false
+        preferManagedCommit: Boolean = false,
     ): Boolean {
         val appContext = context.applicationContext
         synchronized(lock) {
@@ -54,33 +50,34 @@ internal object GitHubShareImportDeliveryRunner {
                 GitHubTrackStoreSignals.notifyChanged()
                 return false
             }
-            val job = scope.launch {
-                try {
-                    persistSelectedPreview(selectedPreview, selectedAsset)
-                    if (preferManagedCommit && shouldCommitActiveManagedInstall()) {
-                        GitHubShareImportFlowCoordinator.continueActiveManagedInstall(appContext)
-                    } else {
-                        GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(
-                            appContext
+            val job =
+                scope.launch {
+                    try {
+                        persistSelectedPreview(selectedPreview, selectedAsset)
+                        if (preferManagedCommit && shouldCommitActiveManagedInstall()) {
+                            GitHubShareImportFlowCoordinator.continueActiveManagedInstall(appContext)
+                        } else {
+                            GitHubShareImportFlowCoordinator.sendActivePreviewAssetToInstaller(
+                                appContext,
+                            )
+                        }
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        AppLogger.e(
+                            GITHUB_SHARE_IMPORT_DELIVERY_RUNNER_TAG,
+                            "Share import background delivery failed",
+                            error,
                         )
+                        GitHubShareImportNotificationHelper.notifyFailed(
+                            appContext,
+                            appContext.getString(
+                                R.string.github_share_import_error_app_managed_install_failed,
+                            ),
+                        )
+                        GitHubTrackStoreSignals.notifyChanged()
                     }
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: Throwable) {
-                    AppLogger.e(
-                        GITHUB_SHARE_IMPORT_DELIVERY_RUNNER_TAG,
-                        "Share import background delivery failed",
-                        error
-                    )
-                    GitHubShareImportNotificationHelper.notifyFailed(
-                        appContext,
-                        appContext.getString(
-                            R.string.github_share_import_error_app_managed_install_failed
-                        )
-                    )
-                    GitHubTrackStoreSignals.notifyChanged()
                 }
-            }
             activeJob = job
             job.invokeOnCompletion {
                 synchronized(lock) {
@@ -94,24 +91,28 @@ internal object GitHubShareImportDeliveryRunner {
     }
 
     private suspend fun shouldCommitActiveManagedInstall(): Boolean {
-        val activeManagedInstall = withContext(AppDispatchers.githubNetwork) {
-            GitHubShareImportFlowStore.loadActiveManagedInstall()
-        } ?: return false
+        val activeManagedInstall =
+            withContext(AppDispatchers.githubNetwork) {
+                GitHubShareImportFlowStore.loadActiveManagedInstall()
+            } ?: return false
         return activeManagedInstall.sessionId > 0 &&
-                activeManagedInstall.progressPhase == GitHubShareImportPhase.InstallReady.name
+            activeManagedInstall.progressPhase == GitHubShareImportPhase.InstallReady.name
     }
 
     private suspend fun persistSelectedPreview(
         preview: GitHubShareImportPreview?,
-        selectedAsset: GitHubReleaseAssetFile?
+        selectedAsset: GitHubReleaseAssetFile?,
     ) {
         if (preview == null || selectedAsset == null) return
-        val selected = preview.copy(
-            selectedAssetName = selectedAsset.name,
-            sendInstallActionEnabled = true
-        )
+        val selected =
+            preview.copy(
+                selectedAssetName = selectedAsset.name,
+                sendInstallActionEnabled = true,
+            )
         withContext(AppDispatchers.githubNetwork) {
-            GitHubShareImportFlowStore.saveActivePreview(selected.toPendingPreviewRecord())
+            GitHubShareImportFlowStore.saveActivePreview(
+                selected.toPendingPreviewRecord(createdAtMillis = clock.nowMs()),
+            )
         }
         GitHubTrackStoreSignals.notifyChanged()
     }

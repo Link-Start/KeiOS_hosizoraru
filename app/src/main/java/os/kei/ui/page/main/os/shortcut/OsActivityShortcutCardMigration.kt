@@ -7,9 +7,7 @@ internal object OsActivityShortcutCardMigration {
         cards: List<OsActivityShortcutCard>,
         builtInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard> =
-            googleSettingsBuiltInCard(
-                builtInSampleDefaults,
-            ),
+            defaultBuiltInActivityShortcutCards(builtInSampleDefaults),
         appendMissingBuiltIns: Boolean = false,
     ): List<OsActivityShortcutCard> =
         migrateBuiltInActivityShortcutCards(
@@ -23,15 +21,14 @@ internal object OsActivityShortcutCardMigration {
         cards: List<OsActivityShortcutCard>,
         builtInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard> =
-            googleSettingsBuiltInCard(
-                builtInSampleDefaults,
-            ),
+            defaultBuiltInActivityShortcutCards(builtInSampleDefaults),
         appendMissingBuiltIns: Boolean = false,
     ): List<OsActivityShortcutCard> {
         val builtIns =
-            builtInActivityShortcutCards.ifEmpty {
-                googleSettingsBuiltInCard(builtInSampleDefaults)
-            }
+            resolveBuiltInActivityShortcutCards(
+                builtInSampleDefaults = builtInSampleDefaults,
+                builtInActivityShortcutCards = builtInActivityShortcutCards,
+            )
         val migrated =
             cards
                 .filterNot { card -> card.id in deprecatedBuiltInActivityCardIds }

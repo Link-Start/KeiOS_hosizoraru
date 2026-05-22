@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.animation.AnimatedVisibility
@@ -16,12 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,10 +45,6 @@ import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
-import kotlin.math.max
-
-private const val STUDENT_BGM_BATCH_SIZE = 20
-private const val STUDENT_BGM_LOAD_MORE_THRESHOLD = 10
 
 @Composable
 internal fun BaGuideStudentBgmTabContent(
@@ -71,29 +65,25 @@ internal fun BaGuideStudentBgmTabContent(
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
     onNowPlayingVisibilityChange: (Boolean) -> Unit,
-    onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
-    onRemoveBgmFavorite: suspend (String) -> Unit,
+    onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
+    onRemoveBgmFavorite: (String) -> Unit,
     showNowPlayingOverlay: Boolean = true,
-    onOpenGuide: (String) -> Unit
+    onOpenGuide: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
-    val lookupCoordinator = remember(pageScope) {
-        BaGuideStudentBgmLookupCoordinator(scope = pageScope)
-    }
+    val lookupCoordinator =
+        remember(pageScope) {
+            BaGuideStudentBgmLookupCoordinator(scope = pageScope)
+        }
     val lookupStates by lookupCoordinator.states.collectAsStateWithLifecycle()
-    var nowPlayingVisible by rememberSaveable { mutableStateOf(false) }
-    var nowPlayingExpanded by remember { mutableStateOf(false) }
-    var sliderInteractionActive by remember { mutableStateOf(false) }
-    var seekPreviewProgress by remember { mutableStateOf<Float?>(null) }
+    val tabState = rememberBaGuideStudentBgmTabStateHolder(searchQuery)
     val selectedAudioUrl = playbackState.selectedAudioUrl
-    val playbackRuntimeState = playbackState.runtimeState
+    val playbackRuntimeState by playbackCoordinator.runtimeStateFlow.collectAsStateWithLifecycle()
     val queueMode = playbackState.queueMode
     val bgmMissingText = stringResource(R.string.ba_catalog_student_bgm_toast_missing)
     val bgmResolveFailedText = stringResource(R.string.ba_catalog_student_bgm_toast_resolve_failed)
-    val favoriteAddedText = stringResource(R.string.guide_bgm_toast_favorite_added)
-    val favoriteRemovedText = stringResource(R.string.guide_bgm_toast_favorite_removed)
 
     val favoriteByNormalizedSourceUrl = derivedState.favoriteByNormalizedSourceUrl
     val favoriteAudioUrls = derivedState.favoriteAudioUrls
@@ -102,65 +92,65 @@ internal fun BaGuideStudentBgmTabContent(
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    var visibleCount by rememberSaveable(searchQuery) { mutableIntStateOf(0) }
-    LaunchedEffect(filteredEntries.size) {
-        visibleCount = minOf(filteredEntries.size, STUDENT_BGM_BATCH_SIZE)
+    LaunchedEffect(filteredEntries.size, tabState) {
+        tabState.resetVisibleCount(filteredEntries.size)
     }
-    LaunchedEffect(isPageActive, listState, filteredEntries.size, snapshotFlowManager) {
+    LaunchedEffect(isPageActive, listState, filteredEntries.size, snapshotFlowManager, tabState) {
         if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager.snapshotFlow {
-            val layoutInfo = listState.layoutInfo
-            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            Triple(
-                lastVisible,
-                layoutInfo.totalItemsCount,
-                layoutInfo.visibleItemsInfo.size.coerceAtLeast(6),
-            )
-        }
-            .distinctUntilChanged()
+        snapshotFlowManager
+            .snapshotFlow {
+                val layoutInfo = listState.layoutInfo
+                val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                Triple(
+                    lastVisible,
+                    layoutInfo.totalItemsCount,
+                    layoutInfo.visibleItemsInfo.size.coerceAtLeast(6),
+                )
+            }.distinctUntilChanged()
             .collect { (lastVisible, totalCount, viewportItems) ->
-                if (visibleCount >= filteredEntries.size) return@collect
+                if (tabState.visibleCount >= filteredEntries.size) return@collect
                 if (totalCount <= 0) return@collect
                 val triggerIndex = (totalCount - 1 - STUDENT_BGM_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
                 if (lastVisible < triggerIndex) return@collect
-                val appendBatch = max(STUDENT_BGM_BATCH_SIZE, viewportItems * 3)
-                    .coerceAtMost(STUDENT_BGM_BATCH_SIZE * 3)
-                visibleCount = minOf(visibleCount + appendBatch, filteredEntries.size)
+                tabState.appendVisibleBatch(
+                    totalCount = filteredEntries.size,
+                    viewportItems = viewportItems,
+                )
             }
     }
-    val displayedEntries = remember(filteredEntries, visibleCount) {
-        if (visibleCount >= filteredEntries.size) {
-            filteredEntries
-        } else {
-            filteredEntries.subList(0, visibleCount)
+    val displayedEntries =
+        remember(filteredEntries, tabState.visibleCount) {
+            if (tabState.visibleCount >= filteredEntries.size) {
+                filteredEntries
+            } else {
+                filteredEntries.subList(0, tabState.visibleCount)
+            }
         }
-    }
 
     fun setNowPlayingVisible(visible: Boolean) {
-        nowPlayingVisible = visible
+        tabState.updateNowPlayingVisible(visible)
         onNowPlayingVisibilityChange(visible && selectedAudioUrl.isNotBlank())
     }
 
     fun setSliderInteractionActive(active: Boolean) {
-        sliderInteractionActive = active
+        tabState.updateSliderInteractionActive(active)
         onSliderInteractionChanged(active)
     }
-    val actions = rememberBaGuideStudentBgmActions(
-        context = context,
-        lookupCoordinator = lookupCoordinator,
-        lookupStates = lookupStates,
-        favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
-        selectedAudioUrl = selectedAudioUrl,
-        playbackCoordinator = playbackCoordinator,
-        setNowPlayingVisible = ::setNowPlayingVisible,
-        onOpenGuide = onOpenGuide,
-        onToggleFavorite = onToggleBgmFavorite,
-        onRemoveFavorite = onRemoveBgmFavorite,
-        bgmMissingText = bgmMissingText,
-        bgmResolveFailedText = bgmResolveFailedText,
-        favoriteAddedText = favoriteAddedText,
-        favoriteRemovedText = favoriteRemovedText
-    )
+    val actions =
+        rememberBaGuideStudentBgmActions(
+            context = context,
+            lookupCoordinator = lookupCoordinator,
+            lookupStates = lookupStates,
+            favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+            selectedAudioUrl = selectedAudioUrl,
+            playbackCoordinator = playbackCoordinator,
+            setNowPlayingVisible = ::setNowPlayingVisible,
+            onOpenGuide = onOpenGuide,
+            onToggleFavorite = onToggleBgmFavorite,
+            onRemoveFavorite = onRemoveBgmFavorite,
+            bgmMissingText = bgmMissingText,
+            bgmResolveFailedText = bgmResolveFailedText,
+        )
 
     val displayedInput =
         remember(
@@ -189,26 +179,29 @@ internal fun BaGuideStudentBgmTabContent(
     }
     val selectedIndex = displayedPlayableFavorites.indexOfFirst { it.audioUrl == selectedAudioUrl }
     val selectedFavorite = displayedPlayableFavorites.getOrNull(selectedIndex)
-    val displayedPlaybackRuntimeState = remember(playbackRuntimeState, seekPreviewProgress) {
-        val previewProgress = seekPreviewProgress
-        if (previewProgress != null && playbackRuntimeState.durationMs > 0L) {
-            val durationMs = playbackRuntimeState.durationMs
-            playbackRuntimeState.copy(
-                positionMs = (durationMs * previewProgress.coerceIn(0f, 1f))
-                    .toLong()
-                    .coerceIn(0L, durationMs)
-            )
-        } else {
-            playbackRuntimeState
+    val displayedPlaybackRuntimeState =
+        remember(playbackRuntimeState, tabState.seekPreviewProgress) {
+            val previewProgress = tabState.seekPreviewProgress
+            if (previewProgress != null && playbackRuntimeState.durationMs > 0L) {
+                val durationMs = playbackRuntimeState.durationMs
+                playbackRuntimeState.copy(
+                    positionMs =
+                        (durationMs * previewProgress.coerceIn(0f, 1f))
+                            .toLong()
+                            .coerceIn(0L, durationMs),
+                )
+            } else {
+                playbackRuntimeState
+            }
         }
-    }
-    val showNowPlaying = showNowPlayingOverlay && selectedFavorite != null && nowPlayingVisible
+    val showNowPlaying = showNowPlayingOverlay && selectedFavorite != null && tabState.nowPlayingVisible
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val listBottomChromePadding = if (showNowPlaying) {
-        navigationBarBottom
-    } else {
-        innerPadding.calculateBottomPadding()
-    }
+    val listBottomChromePadding =
+        if (showNowPlaying) {
+            navigationBarBottom
+        } else {
+            innerPadding.calculateBottomPadding()
+        }
     val nowPlayingBottomPadding = navigationBarBottom + AppChromeTokens.pageSectionGap
 
     LaunchedEffect(catalogSyncedAtMs) {
@@ -219,7 +212,7 @@ internal fun BaGuideStudentBgmTabContent(
         lookupCoordinator.prewarmCached(displayedEntries)
     }
     LaunchedEffect(selectedFavorite?.audioUrl) {
-        seekPreviewProgress = null
+        tabState.updateSeekPreviewProgress(null)
     }
     LaunchedEffect(showNowPlaying) {
         onNowPlayingVisibilityChange(showNowPlaying)
@@ -228,14 +221,14 @@ internal fun BaGuideStudentBgmTabContent(
         if (!isPageActive) return@LaunchedEffect
         var lastScrollBounds: Pair<Boolean, Boolean>? = null
         var lastScrollInProgress: Boolean? = null
-        snapshotFlowManager.snapshotFlow {
-            Triple(
-                listState.canScrollBackward,
-                listState.canScrollForward,
-                listState.isScrollInProgress
-            )
-        }
-            .distinctUntilChanged()
+        snapshotFlowManager
+            .snapshotFlow {
+                Triple(
+                    listState.canScrollBackward,
+                    listState.canScrollForward,
+                    listState.isScrollInProgress,
+                )
+            }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward, scrolling) ->
                 val nextScrollBounds = canScrollBackward to canScrollForward
                 if (lastScrollBounds != nextScrollBounds) {
@@ -255,16 +248,17 @@ internal fun BaGuideStudentBgmTabContent(
         onDispose { onSliderInteractionChanged(false) }
     }
     DisposableEffect(lifecycleOwner, selectedFavorite?.audioUrl) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                if (!playbackCoordinator.keepsPlaybackAfterPageStop) {
-                    selectedFavorite?.let { favorite ->
-                        playbackCoordinator.pause(favorite)
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_STOP) {
+                    if (!playbackCoordinator.keepsPlaybackAfterPageStop) {
+                        selectedFavorite?.let { favorite ->
+                            playbackCoordinator.pause(favorite)
+                        }
                     }
+                    setNowPlayingVisible(false)
                 }
-                setNowPlayingVisible(false)
             }
-        }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
@@ -277,23 +271,26 @@ internal fun BaGuideStudentBgmTabContent(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            userScrollEnabled = !sliderInteractionActive,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
-            contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                bottom = listBottomChromePadding +
-                    AppChromeTokens.pageSectionGap +
-                    if (showNowPlaying) {
-                        if (nowPlayingExpanded) 210.dp else 96.dp
-                    } else {
-                        0.dp
-                    },
-                start = AppChromeTokens.pageHorizontalPadding,
-                end = AppChromeTokens.pageHorizontalPadding
-            ),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            userScrollEnabled = !tabState.sliderInteractionActive,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            contentPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                    bottom =
+                        listBottomChromePadding +
+                            AppChromeTokens.pageSectionGap +
+                            if (showNowPlaying) {
+                                if (tabState.nowPlayingExpanded) 210.dp else 96.dp
+                            } else {
+                                0.dp
+                            },
+                    start = AppChromeTokens.pageHorizontalPadding,
+                    end = AppChromeTokens.pageHorizontalPadding,
+                ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (effectiveLoading && allStudentEntries.isEmpty()) {
                 item(key = "student-bgm-loading") {
@@ -308,7 +305,7 @@ internal fun BaGuideStudentBgmTabContent(
                         favoriteCount = favorites.size,
                         loadingCount = displayedBgmModel.loadingCount,
                         searchActive = searchQuery.isNotBlank(),
-                        accent = accent
+                        accent = accent,
                     )
                 }
             }
@@ -319,14 +316,14 @@ internal fun BaGuideStudentBgmTabContent(
                         backdrop = null,
                         title = stringResource(R.string.ba_catalog_empty_title),
                         subtitle = stringResource(R.string.ba_catalog_empty_subtitle_search),
-                        accent = accent
+                        accent = accent,
                     )
                 }
             } else {
                 items(
                     items = displayedRows,
                     key = { it.entry.contentId },
-                    contentType = { "student_bgm_entry" }
+                    contentType = { "student_bgm_entry" },
                 ) { row ->
                     val entry = row.entry
                     val selected = row.readyAudioUrl == selectedAudioUrl
@@ -339,7 +336,7 @@ internal fun BaGuideStudentBgmTabContent(
                         accent = accent,
                         onOpenGuide = { actions.openStudentGuide(entry) },
                         onPlay = { actions.playEntry(entry) },
-                        onToggleFavorite = { actions.toggleEntryFavorite(entry) }
+                        onToggleFavorite = { actions.toggleEntryFavorite(entry) },
                     )
                 }
             }
@@ -349,13 +346,14 @@ internal fun BaGuideStudentBgmTabContent(
             visible = showNowPlaying,
             enter = appFloatingEnter(),
             exit = appFloatingExit(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(
-                    start = AppChromeTokens.pageHorizontalPadding,
-                    end = AppChromeTokens.pageHorizontalPadding,
-                    bottom = nowPlayingBottomPadding
-                )
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                        bottom = nowPlayingBottomPadding,
+                    ),
         ) {
             selectedFavorite?.let { favorite ->
                 BaGuideBgmMiniPlayer(
@@ -365,8 +363,8 @@ internal fun BaGuideStudentBgmTabContent(
                     queueSize = displayedPlayableFavorites.size,
                     queueMode = queueMode,
                     accent = accent,
-                    expanded = nowPlayingExpanded,
-                    onExpandedChange = { nowPlayingExpanded = it },
+                    expanded = tabState.nowPlayingExpanded,
+                    onExpandedChange = tabState::updateNowPlayingExpanded,
                     onOpenQueue = {
                         pageScope.launch { listState.animateScrollToItem(0) }
                     },
@@ -380,13 +378,14 @@ internal fun BaGuideStudentBgmTabContent(
                         actions.selectQueueOffset(1, true, true)
                     },
                     onSeekChanged = { progress ->
-                        seekPreviewProgress = progress.coerceIn(0f, 1f)
+                        tabState.updateSeekPreviewProgress(progress)
                     },
                     onSeekFinished = {
-                        val seekProgress = seekPreviewProgress
-                            ?: displayedPlaybackRuntimeState.progress
+                        val seekProgress =
+                            tabState.seekPreviewProgress
+                                ?: displayedPlaybackRuntimeState.progress
                         playbackCoordinator.seek(favorite, seekProgress)
-                        seekPreviewProgress = null
+                        tabState.updateSeekPreviewProgress(null)
                     },
                     onVolumeChanged = { volume ->
                         playbackCoordinator.updateVolume(favorite, volume.coerceIn(0f, 1f))
@@ -395,7 +394,7 @@ internal fun BaGuideStudentBgmTabContent(
                     onToggleQueueMode = {
                         playbackCoordinator.toggleQueueMode()
                     },
-                    onOpenGuide = { actions.openFavoriteGuide(favorite) }
+                    onOpenGuide = { actions.openFavoriteGuide(favorite) },
                 )
             }
         }

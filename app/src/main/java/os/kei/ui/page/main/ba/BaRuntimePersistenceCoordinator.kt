@@ -3,11 +3,10 @@ package os.kei.ui.page.main.ba
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.CoroutineDispatcher
-import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.core.concurrency.AppDispatchers
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaRuntimePersistenceUpdate(
@@ -19,8 +18,8 @@ internal data class BaRuntimePersistenceUpdate(
     val apLastNotifiedLevel: Int? = null,
     val notifyHomeOverview: Boolean = false,
 ) {
-    fun mergedWith(newer: BaRuntimePersistenceUpdate): BaRuntimePersistenceUpdate {
-        return BaRuntimePersistenceUpdate(
+    fun mergedWith(newer: BaRuntimePersistenceUpdate): BaRuntimePersistenceUpdate =
+        BaRuntimePersistenceUpdate(
             apCurrent = newer.apCurrent ?: apCurrent,
             apRegenBaseMs = newer.apRegenBaseMs ?: apRegenBaseMs,
             apSyncMs = newer.apSyncMs ?: apSyncMs,
@@ -29,7 +28,6 @@ internal data class BaRuntimePersistenceUpdate(
             apLastNotifiedLevel = newer.apLastNotifiedLevel ?: apLastNotifiedLevel,
             notifyHomeOverview = notifyHomeOverview || newer.notifyHomeOverview,
         )
-    }
 
     fun persist() {
         if (
@@ -39,7 +37,7 @@ internal data class BaRuntimePersistenceUpdate(
             cafeStoredAp != null ||
             cafeLastHourMs != null
         ) {
-            BASettingsStore.saveBaRuntimeState(
+            BaOfficeRepository.saveRuntimeState(
                 apCurrent = apCurrent,
                 apRegenBaseMs = apRegenBaseMs,
                 apSyncMs = apSyncMs,
@@ -48,7 +46,7 @@ internal data class BaRuntimePersistenceUpdate(
                 notifyHomeOverview = notifyHomeOverview,
             )
         }
-        apLastNotifiedLevel?.let(BASettingsStore::saveApLastNotifiedLevel)
+        apLastNotifiedLevel?.let(BaOfficeRepository::saveApLastNotifiedLevel)
     }
 }
 
@@ -81,6 +79,4 @@ internal class BaRuntimePersistenceCoordinator(
 }
 
 @Composable
-internal fun rememberBaRuntimePersistenceCoordinator(): BaRuntimePersistenceCoordinator {
-    return remember { BaRuntimePersistenceCoordinator() }
-}
+internal fun rememberBaRuntimePersistenceCoordinator(): BaRuntimePersistenceCoordinator = remember { BaRuntimePersistenceCoordinator() }

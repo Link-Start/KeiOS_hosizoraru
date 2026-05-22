@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import android.content.Context
@@ -43,7 +45,6 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.card.BaCalendarEntryPanel
 import os.kei.ui.page.main.ba.card.BaCalendarStatePanel
 import os.kei.ui.page.main.ba.card.filterVisibleCalendarEntries
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
@@ -75,9 +76,10 @@ class BaActivityCalendarActivity : ComponentActivity() {
     companion object {
         fun launch(context: Context) {
             val hostActivity = context.findBaHostActivity()
-            val intent = Intent(context, BaActivityCalendarActivity::class.java).apply {
-                if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            val intent =
+                Intent(context, BaActivityCalendarActivity::class.java).apply {
+                    if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
             if (hostActivity != null) {
                 hostActivity.startActivity(intent)
             } else {
@@ -88,23 +90,22 @@ class BaActivityCalendarActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BaActivityCalendarPage(
-    onClose: () -> Unit,
-) {
+private fun BaActivityCalendarPage(onClose: () -> Unit) {
     KeiOSActivityRootBackHandler(
         needsInterception = false,
-        onBack = onClose
+        onBack = onClose,
     )
 
     val context = LocalContext.current
-    val snapshot = remember { BASettingsStore.loadSnapshot() }
+    val snapshot = remember { BaCalendarPoolRepository.loadSettingsSnapshot() }
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
-    val serverOptions = listOf(
-        stringResource(R.string.ba_server_cn),
-        stringResource(R.string.ba_server_global),
-        stringResource(R.string.ba_server_jp)
-    )
+    val serverOptions =
+        listOf(
+            stringResource(R.string.ba_server_cn),
+            stringResource(R.string.ba_server_global),
+            stringResource(R.string.ba_server_jp),
+        )
     var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
     var showServerPopup by remember { mutableStateOf(false) }
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
@@ -116,15 +117,23 @@ private fun BaActivityCalendarPage(
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val accent = MiuixTheme.colorScheme.primary
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
-    val syncText = when {
-        calendarUiState.loading -> stringResource(R.string.ba_syncing)
-        calendarUiState.lastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
-            calendarUiState.lastSyncMs,
-            serverTimeZone
-        )
+    val syncText =
+        when {
+            calendarUiState.loading -> {
+                stringResource(R.string.ba_syncing)
+            }
 
-        else -> stringResource(R.string.ba_state_not_synced)
-    }
+            calendarUiState.lastSyncMs > 0L -> {
+                formatBaDateTimeNoYearInTimeZone(
+                    calendarUiState.lastSyncMs,
+                    serverTimeZone,
+                )
+            }
+
+            else -> {
+                stringResource(R.string.ba_state_not_synced)
+            }
+        }
     val countdownBlue = AppStatusColors.Refreshing
 
     LaunchedEffect(Unit) {
@@ -137,30 +146,33 @@ private fun BaActivityCalendarPage(
             serverIndex = serverIndex,
             reloadSignal = reloadSignal,
             calendarRefreshIntervalHours = snapshot.calendarRefreshIntervalHours,
-            hydrationReady = hydrationReady
+            hydrationReady = hydrationReady,
         )
     }
 
-    val refreshIconRotation = if (calendarUiState.loading) {
-        val loadingRotation by rememberInfiniteTransition(label = "ba_activity_calendar_refresh_rotation")
-            .animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 900, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-                label = "ba_activity_calendar_refresh_rotation_value",
-            )
-        loadingRotation
-    } else {
-        0f
-    }
+    val refreshIconRotation =
+        if (calendarUiState.loading) {
+            val loadingRotation by rememberInfiniteTransition(label = "ba_activity_calendar_refresh_rotation")
+                .animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation = tween(durationMillis = 900, easing = LinearEasing),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                    label = "ba_activity_calendar_refresh_rotation_value",
+                )
+            loadingRotation
+        } else {
+            0f
+        }
 
-    val pageTitle = stringResource(
-        R.string.ba_calendar_title_format,
-        serverOptions[serverIndex]
-    )
+    val pageTitle =
+        stringResource(
+            R.string.ba_calendar_title_format,
+            serverOptions[serverIndex],
+        )
 
     AppPageScaffold(
         title = pageTitle,
@@ -183,34 +195,37 @@ private fun BaActivityCalendarPage(
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.ba_calendar_cd_refresh),
                 onClick = { reloadSignal += 1 },
-                iconModifier = Modifier.graphicsLayer {
-                    rotationZ = refreshIconRotation
-                },
+                iconModifier =
+                    Modifier.graphicsLayer {
+                        rotationZ = refreshIconRotation
+                    },
                 width = 52.dp,
                 height = 52.dp,
                 variant = GlassVariant.Bar,
-                iconTint = if (calendarUiState.loading) {
-                    countdownBlue
-                } else {
-                    MiuixTheme.colorScheme.primary
-                },
+                iconTint =
+                    if (calendarUiState.loading) {
+                        countdownBlue
+                    } else {
+                        MiuixTheme.colorScheme.primary
+                    },
             )
-        }
+        },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MiuixTheme.colorScheme.background,
-                                accent.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.07f),
-                                MiuixTheme.colorScheme.background
-                            )
-                        )
-                    )
-                    .layerBackdrop(pageBackdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.background,
+                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.07f),
+                                        MiuixTheme.colorScheme.background,
+                                    ),
+                            ),
+                        ).layerBackdrop(pageBackdrop),
             )
             BaActivityCalendarListContent(
                 innerPadding = innerPadding,
@@ -233,7 +248,7 @@ private fun BaActivityCalendarPage(
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
                     serverIndex = normalized
-                    BASettingsStore.saveServerIndex(normalized)
+                    BaCalendarPoolRepository.saveServerIndex(normalized)
                     showServerPopup = false
                 },
                 onOpenCalendarLink = { url ->
@@ -267,25 +282,27 @@ private fun BaActivityCalendarListContent(
     onOpenCalendarLink: (String) -> Unit,
 ) {
     val nowMs = rememberBaMinuteTickMs(enabled = !loading && error.isNullOrBlank())
-    val visibleEntries = remember(
-        entries,
-        showEndedActivities,
-        nowMs
-    ) {
-        filterVisibleCalendarEntries(
-            entries = entries,
-            showEndedActivities = showEndedActivities,
-            nowMs = nowMs
-        )
-    }
+    val visibleEntries =
+        remember(
+            entries,
+            showEndedActivities,
+            nowMs,
+        ) {
+            filterVisibleCalendarEntries(
+                entries = entries,
+                showEndedActivities = showEndedActivities,
+                nowMs = nowMs,
+            )
+        }
     AppPageLazyColumn(
         innerPadding = innerPadding,
         state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
         bottomExtra = 40.dp,
-        sectionSpacing = 14.dp
+        sectionSpacing = 14.dp,
     ) {
         item {
             BaCalendarPoolServerPanel(
@@ -315,9 +332,10 @@ private fun BaActivityCalendarListContent(
                     BaCalendarStatePanel(
                         backdrop = backdrop,
                         text = error,
-                        accentColor = baCalendarPoolSyncNoticeColor(
-                            hasVisibleEntries = visibleEntries.isNotEmpty()
-                        ),
+                        accentColor =
+                            baCalendarPoolSyncNoticeColor(
+                                hasVisibleEntries = visibleEntries.isNotEmpty(),
+                            ),
                         effectsEnabled = true,
                     )
                 }
@@ -327,11 +345,12 @@ private fun BaActivityCalendarListContent(
                 item {
                     BaCalendarStatePanel(
                         backdrop = backdrop,
-                        text = if (showEndedActivities) {
-                            stringResource(R.string.ba_calendar_empty_all)
-                        } else {
-                            stringResource(R.string.ba_calendar_empty_active)
-                        },
+                        text =
+                            if (showEndedActivities) {
+                                stringResource(R.string.ba_calendar_empty_all)
+                            } else {
+                                stringResource(R.string.ba_calendar_empty_active)
+                            },
                         accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         effectsEnabled = true,
                     )
@@ -342,7 +361,7 @@ private fun BaActivityCalendarListContent(
                 items(
                     items = visibleEntries,
                     key = { activity -> activity.id },
-                    contentType = { "ba_calendar_entry" }
+                    contentType = { "ba_calendar_entry" },
                 ) { activity ->
                     BaCalendarEntryPanel(
                         backdrop = backdrop,
@@ -361,8 +380,6 @@ private fun BaActivityCalendarListContent(
 }
 
 @Composable
-private fun BaActivityCalendarLoadingPanel(
-    accentColor: Color,
-) {
+private fun BaActivityCalendarLoadingPanel(accentColor: Color) {
     AppAronaLoadingPanel(accent = accentColor)
 }

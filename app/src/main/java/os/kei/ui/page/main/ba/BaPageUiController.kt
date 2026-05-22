@@ -10,9 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
-import os.kei.ui.page.main.state.PageRouteState
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.state.PageRouteState
 
 @Stable
 internal data class BaPageClockState(
@@ -84,8 +83,9 @@ internal data class BaPageRouteState(
     val consumedScrollToTopSignal: Int,
 ) : PageRouteState
 
-
-internal class BaPageUiController(snapshot: BaPageSnapshot) {
+internal class BaPageUiController(
+    snapshot: BaPageSnapshot,
+) {
     var showSettingsSheet by mutableStateOf(false)
     var showNotificationSettingsSheet by mutableStateOf(false)
     var showDebugSheet by mutableStateOf(false)
@@ -145,8 +145,8 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     fun routeState(
         calendarUiState: BaCalendarUiState,
         poolUiState: BaPoolUiState,
-    ): BaPageRouteState {
-        return BaPageRouteState(
+    ): BaPageRouteState =
+        BaPageRouteState(
             showSettingsSheet = showSettingsSheet,
             showNotificationSettingsSheet = showNotificationSettingsSheet,
             showDebugSheet = showDebugSheet,
@@ -171,27 +171,24 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             debugUseRealCalendarPoolData = debugUseRealCalendarPoolData,
             consumedScrollToTopSignal = consumedScrollToTopSignal,
         )
-    }
 
-    fun clockState(): BaPageClockState {
-        return BaPageClockState(
+    fun clockState(): BaPageClockState =
+        BaPageClockState(
             uiNowMs = uiNowMsState,
             uiMinuteMs = uiMinuteMsState,
         )
-    }
 
-    private fun popupState(): BaPagePopupState {
-        return BaPagePopupState(
+    private fun popupState(): BaPagePopupState =
+        BaPagePopupState(
             showOverviewServerPopup = showOverviewServerPopup,
             showCafeLevelPopup = showCafeLevelPopup,
             overviewServerPopupAnchorBounds = overviewServerPopupAnchorBounds,
             cafeLevelPopupAnchorBounds = cafeLevelPopupAnchorBounds,
             showCalendarIntervalPopup = showCalendarIntervalPopup,
         )
-    }
 
-    fun settingsDraftState(): BaPageSettingsDraftState {
-        return BaPageSettingsDraftState(
+    fun settingsDraftState(): BaPageSettingsDraftState =
+        BaPageSettingsDraftState(
             cafeLevel = sheetCafeLevel,
             mediaAdaptiveRotationEnabled = sheetMediaAdaptiveRotationEnabled,
             mediaSaveCustomEnabled = sheetMediaSaveCustomEnabled,
@@ -201,10 +198,9 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             showEndedActivities = sheetShowEndedActivities,
             showCalendarPoolImages = sheetShowCalendarPoolImages,
         )
-    }
 
-    fun notificationDraftState(): BaPageNotificationDraftState {
-        return BaPageNotificationDraftState(
+    fun notificationDraftState(): BaPageNotificationDraftState =
+        BaPageNotificationDraftState(
             apNotifyEnabled = sheetApNotifyEnabled,
             cafeApNotifyEnabled = sheetCafeApNotifyEnabled,
             arenaRefreshNotifyEnabled = sheetArenaRefreshNotifyEnabled,
@@ -218,7 +214,6 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
             apNotifyThresholdText = sheetApNotifyThresholdText,
             cafeApNotifyThresholdText = sheetCafeApNotifyThresholdText,
         )
-    }
 
     fun refreshCalendar(force: Boolean = false) {
         if (force) baCalendarReloadSignal += 1
@@ -278,22 +273,21 @@ internal class BaPageUiController(snapshot: BaPageSnapshot) {
     }
 
     private fun loadNotificationDraft(office: BaOfficeController) {
+        val calendarPoolNotifications = BaSettingsPersistenceRepository.loadCalendarPoolNotificationSettings()
         sheetApNotifyEnabled = office.apNotifyEnabled
         sheetCafeApNotifyEnabled = office.cafeApNotifyEnabled
         sheetArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
         sheetCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-        sheetCalendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled()
-        sheetCalendarEndingNotifyEnabled = BASettingsStore.loadCalendarEndingNotifyEnabled()
-        sheetPoolUpcomingNotifyEnabled = BASettingsStore.loadPoolUpcomingNotifyEnabled()
-        sheetPoolEndingNotifyEnabled = BASettingsStore.loadPoolEndingNotifyEnabled()
-        sheetCalendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled()
-        sheetCalendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours()
+        sheetCalendarUpcomingNotifyEnabled = calendarPoolNotifications.calendarUpcomingNotifyEnabled
+        sheetCalendarEndingNotifyEnabled = calendarPoolNotifications.calendarEndingNotifyEnabled
+        sheetPoolUpcomingNotifyEnabled = calendarPoolNotifications.poolUpcomingNotifyEnabled
+        sheetPoolEndingNotifyEnabled = calendarPoolNotifications.poolEndingNotifyEnabled
+        sheetCalendarPoolChangeNotifyEnabled = calendarPoolNotifications.calendarPoolChangeNotifyEnabled
+        sheetCalendarPoolNotifyLeadHours = calendarPoolNotifications.calendarPoolNotifyLeadHours
         sheetApNotifyThresholdText = office.apNotifyThreshold.toString()
         sheetCafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString()
     }
 }
 
 @Composable
-internal fun rememberBaPageUiController(snapshot: BaPageSnapshot): BaPageUiController {
-    return remember(snapshot) { BaPageUiController(snapshot) }
-}
+internal fun rememberBaPageUiController(snapshot: BaPageSnapshot): BaPageUiController = remember(snapshot) { BaPageUiController(snapshot) }

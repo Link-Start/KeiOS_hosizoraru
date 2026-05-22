@@ -3,11 +3,9 @@ package os.kei.ui.page.main.ba
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import org.json.JSONArray
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
@@ -19,21 +17,7 @@ import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
 import os.kei.ui.page.main.ba.support.fractionalApPart
 import os.kei.ui.page.main.ba.support.normalizeAp
-import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
 import kotlin.math.roundToInt
-
-internal data class BaSettingsPersistenceResult(
-    val savedCafeLevel: Int,
-    val showEndedPools: Boolean,
-    val showEndedActivities: Boolean,
-    val showCalendarPoolImages: Boolean,
-    val mediaAdaptiveRotationEnabled: Boolean,
-    val mediaSaveCustomEnabled: Boolean,
-    val mediaSaveFixedTreeUri: String,
-    val idIndependentByServer: Boolean,
-    val turningEndedActivitiesOn: Boolean,
-    val turningImagesOn: Boolean,
-)
 
 internal fun copyBaFriendCodeToClipboard(
     context: Context,
@@ -41,7 +25,7 @@ internal fun copyBaFriendCodeToClipboard(
 ) {
     val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
     clipboard.setPrimaryClip(
-        ClipData.newPlainText(context.getString(R.string.ba_friend_code_clipboard_label), friendCode)
+        ClipData.newPlainText(context.getString(R.string.ba_friend_code_clipboard_label), friendCode),
     )
     context.showToast(R.string.ba_toast_friend_code_copied)
 }
@@ -56,125 +40,7 @@ internal fun openBaExternalLink(
     }
 }
 
-internal fun hasAnyImageInBaCalendarCache(serverIdx: Int): Boolean {
-    val (raw, _) = BASettingsStore.loadCalendarCache(serverIdx)
-    if (raw.isBlank()) return false
-    return runCatching {
-        val arr = JSONArray(raw)
-        for (i in 0 until arr.length()) {
-            val obj = arr.optJSONObject(i) ?: continue
-            if (normalizeGameKeeImageLink(obj.optString("imageUrl")).isNotBlank()) return@runCatching true
-        }
-        false
-    }.getOrDefault(false)
-}
-
-internal fun hasAnyImageInBaPoolCache(serverIdx: Int): Boolean {
-    val (raw, _) = BASettingsStore.loadPoolCache(serverIdx)
-    if (raw.isBlank()) return false
-    return runCatching {
-        val arr = JSONArray(raw)
-        for (i in 0 until arr.length()) {
-            val obj = arr.optJSONObject(i) ?: continue
-            if (normalizeGameKeeImageLink(obj.optString("imageUrl")).isNotBlank()) return@runCatching true
-        }
-        false
-    }.getOrDefault(false)
-}
-
-internal fun persistBaSettingsDraft(
-    sheetState: BaSettingsSheetState,
-    currentCafeLevel: Int,
-    currentShowEndedActivities: Boolean,
-    currentShowCalendarPoolImages: Boolean,
-): BaSettingsPersistenceResult {
-    val savedCafeLevel = sheetState.cafeLevel.coerceIn(1, 10)
-
-    BASettingsStore.saveCafeLevel(savedCafeLevel)
-    BASettingsStore.savePoolShowEnded(sheetState.showEndedPools)
-    BASettingsStore.saveActivityShowEnded(sheetState.showEndedActivities)
-    BASettingsStore.saveShowCalendarPoolImages(sheetState.showCalendarPoolImages)
-    BASettingsStore.saveMediaAdaptiveRotationEnabled(sheetState.mediaAdaptiveRotationEnabled)
-    BASettingsStore.saveMediaSaveCustomEnabled(sheetState.mediaSaveCustomEnabled)
-    BASettingsStore.saveMediaSaveFixedTreeUri(sheetState.mediaSaveFixedTreeUri)
-    BASettingsStore.saveIdIndependentByServerEnabled(sheetState.idIndependentByServer)
-
-    return BaSettingsPersistenceResult(
-        savedCafeLevel = savedCafeLevel,
-        showEndedPools = sheetState.showEndedPools,
-        showEndedActivities = sheetState.showEndedActivities,
-        showCalendarPoolImages = sheetState.showCalendarPoolImages,
-        mediaAdaptiveRotationEnabled = sheetState.mediaAdaptiveRotationEnabled,
-        mediaSaveCustomEnabled = sheetState.mediaSaveCustomEnabled,
-        mediaSaveFixedTreeUri = sheetState.mediaSaveFixedTreeUri,
-        idIndependentByServer = sheetState.idIndependentByServer,
-        turningEndedActivitiesOn = !currentShowEndedActivities && sheetState.showEndedActivities,
-        turningImagesOn = !currentShowCalendarPoolImages && sheetState.showCalendarPoolImages,
-    )
-}
-
-internal data class BaNotificationSettingsPersistenceResult(
-    val savedThreshold: Int,
-    val savedCafeApThreshold: Int,
-    val cafeApNotifyEnabled: Boolean,
-    val arenaRefreshNotifyEnabled: Boolean,
-    val cafeVisitNotifyEnabled: Boolean,
-    val calendarUpcomingNotifyEnabled: Boolean,
-    val calendarEndingNotifyEnabled: Boolean,
-    val poolUpcomingNotifyEnabled: Boolean,
-    val poolEndingNotifyEnabled: Boolean,
-    val calendarPoolChangeNotifyEnabled: Boolean,
-    val calendarPoolNotifyLeadHours: Int,
-)
-
-internal fun persistBaNotificationSettingsDraft(
-    sheetState: BaNotificationSettingsSheetState,
-): BaNotificationSettingsPersistenceResult {
-    val savedThreshold =
-        sheetState.apNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
-    val savedCafeApThreshold =
-        sheetState.cafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
-
-    BASettingsStore.saveApNotifyEnabled(sheetState.apNotifyEnabled)
-    BASettingsStore.saveCafeApNotifyEnabled(sheetState.cafeApNotifyEnabled)
-    BASettingsStore.saveCafeApNotifyThreshold(savedCafeApThreshold)
-    BASettingsStore.saveArenaRefreshNotifyEnabled(sheetState.arenaRefreshNotifyEnabled)
-    BASettingsStore.saveCafeVisitNotifyEnabled(sheetState.cafeVisitNotifyEnabled)
-    BASettingsStore.saveCalendarUpcomingNotifyEnabled(sheetState.calendarUpcomingNotifyEnabled)
-    BASettingsStore.saveCalendarEndingNotifyEnabled(sheetState.calendarEndingNotifyEnabled)
-    BASettingsStore.savePoolUpcomingNotifyEnabled(sheetState.poolUpcomingNotifyEnabled)
-    BASettingsStore.savePoolEndingNotifyEnabled(sheetState.poolEndingNotifyEnabled)
-    BASettingsStore.saveCalendarPoolChangeNotifyEnabled(sheetState.calendarPoolChangeNotifyEnabled)
-    BASettingsStore.saveCalendarPoolNotifyLeadHours(sheetState.calendarPoolNotifyLeadHours)
-    BASettingsStore.saveApNotifyThreshold(savedThreshold)
-    BASettingsStore.pruneCalendarPoolNotifiedKeysForPolicy(
-        serverIndex = BASettingsStore.loadServerIndex(),
-        leadHours = sheetState.calendarPoolNotifyLeadHours,
-        calendarUpcomingEnabled = sheetState.calendarUpcomingNotifyEnabled,
-        calendarEndingEnabled = sheetState.calendarEndingNotifyEnabled,
-        poolUpcomingEnabled = sheetState.poolUpcomingNotifyEnabled,
-        poolEndingEnabled = sheetState.poolEndingNotifyEnabled,
-        calendarPoolChangeEnabled = sheetState.calendarPoolChangeNotifyEnabled
-    )
-
-    return BaNotificationSettingsPersistenceResult(
-        savedThreshold = savedThreshold,
-        savedCafeApThreshold = savedCafeApThreshold,
-        cafeApNotifyEnabled = sheetState.cafeApNotifyEnabled,
-        arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
-        cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
-        calendarUpcomingNotifyEnabled = sheetState.calendarUpcomingNotifyEnabled,
-        calendarEndingNotifyEnabled = sheetState.calendarEndingNotifyEnabled,
-        poolUpcomingNotifyEnabled = sheetState.poolUpcomingNotifyEnabled,
-        poolEndingNotifyEnabled = sheetState.poolEndingNotifyEnabled,
-        calendarPoolChangeNotifyEnabled = sheetState.calendarPoolChangeNotifyEnabled,
-        calendarPoolNotifyLeadHours = sheetState.calendarPoolNotifyLeadHours,
-    )
-}
-
-internal fun sanitizeBaFriendCodeInput(raw: String): String {
-    return raw.uppercase().filter { it in 'A'..'Z' }.take(8)
-}
+internal fun sanitizeBaFriendCodeInput(raw: String): String = raw.uppercase().filter { it in 'A'..'Z' }.take(8)
 
 internal fun applyBaCurrentApUpdate(
     currentAp: Double,
@@ -196,9 +62,7 @@ internal fun applyBaCurrentApDelta(
     return normalizeAp(currentAp + delta) to nowMs
 }
 
-internal fun coerceBaApLimit(newLimit: Int): Int {
-    return newLimit.coerceIn(0, BA_AP_LIMIT_MAX)
-}
+internal fun coerceBaApLimit(newLimit: Int): Int = newLimit.coerceIn(0, BA_AP_LIMIT_MAX)
 
 internal fun applyBaApRegenTick(
     apLimit: Int,
@@ -217,16 +81,21 @@ internal fun applyBaApRegenTick(
     val gained = (elapsed / BA_AP_REGEN_INTERVAL_MS).toInt()
     if (gained <= 0) return current to ensuredBase
 
-    val pointsUntilStop = kotlin.math.ceil(limit.toDouble() - current).toInt().coerceAtLeast(0)
+    val pointsUntilStop =
+        kotlin.math
+            .ceil(limit.toDouble() - current)
+            .toInt()
+            .coerceAtLeast(0)
     val pointsApplied = gained.coerceAtMost(pointsUntilStop)
     if (pointsApplied <= 0) return current to ensuredBase
 
     val nextAp = normalizeAp(current + pointsApplied.toDouble())
-    val nextBase = if (nextAp >= limit.toDouble()) {
-        nowMs
-    } else {
-        ensuredBase + pointsApplied * BA_AP_REGEN_INTERVAL_MS
-    }
+    val nextBase =
+        if (nextAp >= limit.toDouble()) {
+            nowMs
+        } else {
+            ensuredBase + pointsApplied * BA_AP_REGEN_INTERVAL_MS
+        }
     return nextAp to nextBase
 }
 
@@ -246,11 +115,7 @@ internal fun applyBaCafeStorageTick(
     return normalizeAp((cafeStoredAp + gained).coerceAtMost(cap)) to currentHour
 }
 
-internal fun applyBaCafeClaim(
-    cafeStoredAp: Double,
-): Double {
-    return normalizeAp(cafeStoredAp)
-}
+internal fun applyBaCafeClaim(cafeStoredAp: Double): Double = normalizeAp(cafeStoredAp)
 
 internal fun applyBaCafeDebugGain(
     cafeStoredAp: Double,
@@ -272,9 +137,7 @@ internal fun consumeBaHeadpat(
     return nowMs
 }
 
-internal fun consumeBaInviteTicket(
-    usedMs: Long,
-): Long? {
+internal fun consumeBaInviteTicket(usedMs: Long): Long? {
     val nowMs = System.currentTimeMillis()
     val availableAt = calculateInviteTicketAvailableMs(usedMs)
     if (usedMs > 0L && availableAt > nowMs) return null

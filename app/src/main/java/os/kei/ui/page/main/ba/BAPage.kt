@@ -30,7 +30,6 @@ import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASessionState
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -85,7 +84,7 @@ fun BAPage(
     // Reset once per cold process start so app relaunch always lands at BA top.
     LaunchedEffect(Unit) {
         if (!BASessionState.didResetScrollOnThisProcess) {
-            BASettingsStore.clearListScrollState()
+            BaOfficeRepository.clearListScrollState()
             listState.scrollToItem(0)
             BASessionState.didResetScrollOnThisProcess = true
         }
@@ -134,21 +133,7 @@ fun BAPage(
             showCalendarPoolImages = baRouteState.showCalendarPoolImages,
             calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
         )
-    val savedNotificationSettingsSheetState =
-        BaNotificationSettingsSheetState(
-            apNotifyEnabled = office.apNotifyEnabled,
-            cafeApNotifyEnabled = office.cafeApNotifyEnabled,
-            arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
-            cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
-            calendarUpcomingNotifyEnabled = BASettingsStore.loadCalendarUpcomingNotifyEnabled(),
-            calendarEndingNotifyEnabled = BASettingsStore.loadCalendarEndingNotifyEnabled(),
-            poolUpcomingNotifyEnabled = BASettingsStore.loadPoolUpcomingNotifyEnabled(),
-            poolEndingNotifyEnabled = BASettingsStore.loadPoolEndingNotifyEnabled(),
-            calendarPoolChangeNotifyEnabled = BASettingsStore.loadCalendarPoolChangeNotifyEnabled(),
-            calendarPoolNotifyLeadHours = BASettingsStore.loadCalendarPoolNotifyLeadHours(),
-            apNotifyThresholdText = office.apNotifyThreshold.toString(),
-            cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
-        )
+    val savedNotificationSettingsSheetState = buildSavedBaNotificationSettingsSheetState(office)
     val pageContentState =
         buildBaPageContentState(
             isPageActive = runtime.isPageActive,
@@ -207,7 +192,7 @@ fun BAPage(
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    val savedServerIndex = BASettingsStore.loadServerIndex()
+                    val savedServerIndex = BaOfficeRepository.loadServerIndex()
                     if (savedServerIndex != ui.serverIndex) {
                         ui.serverIndex = savedServerIndex
                         office.loadIdForServer(savedServerIndex)

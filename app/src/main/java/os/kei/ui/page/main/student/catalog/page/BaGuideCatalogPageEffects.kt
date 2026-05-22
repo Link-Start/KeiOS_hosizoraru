@@ -10,47 +10,46 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListInput
-import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListInput
 
 @Composable
 internal fun BaGuideCatalogPageBindEffects(
-    catalogViewModel: BaGuideCatalogViewModel,
+    pageActions: BaGuideCatalogPageActions,
     transitionAnimationsEnabled: Boolean,
     initialFetchDelayMs: Int,
     loadFailedText: String,
     refreshFailedKeepCacheText: String,
 ) {
     LaunchedEffect(
-        catalogViewModel,
+        pageActions,
         transitionAnimationsEnabled,
         initialFetchDelayMs,
         loadFailedText,
         refreshFailedKeepCacheText,
     ) {
-        catalogViewModel.bind(
-            transitionAnimationsEnabled = transitionAnimationsEnabled,
-            initialFetchDelayMs = initialFetchDelayMs,
-            loadFailedText = loadFailedText,
-            refreshFailedKeepCacheText = refreshFailedKeepCacheText,
+        pageActions.bindCatalog(
+            transitionAnimationsEnabled,
+            initialFetchDelayMs,
+            loadFailedText,
+            refreshFailedKeepCacheText,
         )
     }
 }
 
 @Composable
 internal fun BaGuideCatalogPageDerivedEffects(
-    catalogViewModel: BaGuideCatalogViewModel,
+    pageActions: BaGuideCatalogPageActions,
     catalogDataState: BaGuideCatalogDataUiState,
     filterSortState: BaGuideCatalogFilterSortState,
+    catalogFavoriteEntries: Map<Long, Long>,
     favoriteBgms: List<GuideBgmFavoriteItem>,
     pageState: BaGuideCatalogPageStateHolder,
 ) {
     val catalogSortMode = filterSortState.sortMode
-    val catalogFavoriteEntries = filterSortState.favoriteCatalogEntries
     val catalogSelectedFilterOptions = filterSortState.selectedFilterOptions
     LaunchedEffect(
-        catalogViewModel,
+        pageActions,
         catalogDataState.catalog,
         catalogSortMode,
         catalogFavoriteEntries,
@@ -59,7 +58,7 @@ internal fun BaGuideCatalogPageDerivedEffects(
         pageState.npcSearchQuery,
     ) {
         BaGuideCatalogTab.entries.forEach { tab ->
-            catalogViewModel.requestCatalogListDerivedState(
+            pageActions.onRequestCatalogListState(
                 BaGuideCatalogListInput(
                     catalog = catalogDataState.catalog,
                     tab = tab,
@@ -72,12 +71,12 @@ internal fun BaGuideCatalogPageDerivedEffects(
         }
     }
     LaunchedEffect(
-        catalogViewModel,
+        pageActions,
         catalogDataState.catalog,
         favoriteBgms,
         pageState.studentBgmSearchQuery,
     ) {
-        catalogViewModel.requestStudentBgmListDerivedState(
+        pageActions.onRequestStudentBgmListState(
             BaGuideStudentBgmListInput(
                 catalog = catalogDataState.catalog,
                 favorites = favoriteBgms,
@@ -86,11 +85,11 @@ internal fun BaGuideCatalogPageDerivedEffects(
         )
     }
     LaunchedEffect(
-        catalogViewModel,
+        pageActions,
         favoriteBgms,
         pageState.favoriteBgmSearchQuery,
     ) {
-        catalogViewModel.requestFavoriteBgmListDerivedState(
+        pageActions.onRequestFavoriteBgmListState(
             BaGuideFavoriteBgmListInput(
                 favorites = favoriteBgms,
                 searchQuery = pageState.favoriteBgmSearchQuery,

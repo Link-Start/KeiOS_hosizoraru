@@ -3,14 +3,12 @@ package os.kei.ui.page.main.student.catalog.component
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
-import kotlinx.coroutines.launch
 
 internal data class BaGuideStudentBgmActions(
     val openStudentGuide: (BaGuideCatalogEntry) -> Unit,
@@ -18,7 +16,7 @@ internal data class BaGuideStudentBgmActions(
     val playEntry: (BaGuideCatalogEntry) -> Unit,
     val toggleEntryFavorite: (BaGuideCatalogEntry) -> Unit,
     val togglePlayback: (GuideBgmFavoriteItem) -> Unit,
-    val selectQueueOffset: (offset: Int, startPlayback: Boolean, restart: Boolean) -> Unit
+    val selectQueueOffset: (offset: Int, startPlayback: Boolean, restart: Boolean) -> Unit,
 )
 
 @Composable
@@ -31,21 +29,17 @@ internal fun rememberBaGuideStudentBgmActions(
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     setNowPlayingVisible: (Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
-    onToggleFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
-    onRemoveFavorite: suspend (String) -> Unit,
+    onToggleFavorite: (GuideBgmFavoriteItem) -> Unit,
+    onRemoveFavorite: (String) -> Unit,
     bgmMissingText: String,
     bgmResolveFailedText: String,
-    favoriteAddedText: String,
-    favoriteRemovedText: String
 ): BaGuideStudentBgmActions {
-    val actionScope = rememberCoroutineScope()
     val currentSetNowPlayingVisible = rememberUpdatedState(setNowPlayingVisible)
     val currentOnOpenGuide = rememberUpdatedState(onOpenGuide)
     val currentOnToggleFavorite = rememberUpdatedState(onToggleFavorite)
     val currentOnRemoveFavorite = rememberUpdatedState(onRemoveFavorite)
     return remember(
         context,
-        actionScope,
         lookupCoordinator,
         lookupStates,
         favoriteByNormalizedSourceUrl,
@@ -53,8 +47,6 @@ internal fun rememberBaGuideStudentBgmActions(
         playbackCoordinator,
         bgmMissingText,
         bgmResolveFailedText,
-        favoriteAddedText,
-        favoriteRemovedText
     ) {
         fun openStudentGuide(entry: BaGuideCatalogEntry) {
             GuideDetailTabRequestStore.request(entry.detailUrl, GuideBottomTab.Gallery)
@@ -66,37 +58,38 @@ internal fun rememberBaGuideStudentBgmActions(
             currentOnOpenGuide.value(favorite.sourceUrl)
         }
 
-        fun favoriteForEntry(entry: BaGuideCatalogEntry): GuideBgmFavoriteItem? {
-            return favoriteForStudentBgmEntry(
+        fun favoriteForEntry(entry: BaGuideCatalogEntry): GuideBgmFavoriteItem? =
+            favoriteForStudentBgmEntry(
                 entry = entry,
-                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
             )
-        }
 
         fun stateWithFavoriteFallback(
             entry: BaGuideCatalogEntry,
-            lookupState: BaGuideStudentBgmLookupState
-        ): BaGuideStudentBgmLookupState {
-            return studentBgmStateWithFavoriteFallback(
+            lookupState: BaGuideStudentBgmLookupState,
+        ): BaGuideStudentBgmLookupState =
+            studentBgmStateWithFavoriteFallback(
                 entry = entry,
                 lookupState = lookupState,
-                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
             )
-        }
 
         fun resolveEntry(
             entry: BaGuideCatalogEntry,
             allowNetwork: Boolean,
-            onResolved: (BaGuideStudentBgmResolvedItem?) -> Unit
+            onResolved: (BaGuideStudentBgmResolvedItem?) -> Unit,
         ) {
             lookupCoordinator.resolveEntry(
                 entry = entry,
                 allowNetwork = allowNetwork,
-                onResolved = onResolved
+                onResolved = onResolved,
             )
         }
 
-        fun startPlayback(favorite: GuideBgmFavoriteItem, restart: Boolean = false) {
+        fun startPlayback(
+            favorite: GuideBgmFavoriteItem,
+            restart: Boolean = false,
+        ) {
             playbackCoordinator.play(favorite, restart = restart)
             currentSetNowPlayingVisible.value(true)
         }
@@ -112,11 +105,12 @@ internal fun rememberBaGuideStudentBgmActions(
                 if (lookupState !is BaGuideStudentBgmLookupState.Ready) {
                     lookupCoordinator.markReadyFromFavorite(
                         entry = entry,
-                        item = BaGuideStudentBgmResolvedItem(
-                            favorite = favorite,
-                            fromCache = false,
-                            fromFavorite = true
-                        )
+                        item =
+                            BaGuideStudentBgmResolvedItem(
+                                favorite = favorite,
+                                fromCache = false,
+                                fromFavorite = true,
+                            ),
                     )
                 }
                 if (selectedAudioUrl == favorite.audioUrl) {
@@ -143,10 +137,7 @@ internal fun rememberBaGuideStudentBgmActions(
             if (lookupState !is BaGuideStudentBgmLookupState.Ready) {
                 val savedFavorite = favoriteForEntry(entry)
                 if (savedFavorite != null) {
-                    actionScope.launch {
-                        currentOnRemoveFavorite.value(savedFavorite.audioUrl)
-                        context.showToast(favoriteRemovedText)
-                    }
+                    currentOnRemoveFavorite.value(savedFavorite.audioUrl)
                     return
                 }
             }
@@ -156,12 +147,7 @@ internal fun rememberBaGuideStudentBgmActions(
                     context.showToast(bgmResolveFailedText)
                     return@resolveEntry
                 }
-                actionScope.launch {
-                    val added = currentOnToggleFavorite.value(favorite)
-                    context.showToast(
-                        if (added) favoriteAddedText else favoriteRemovedText
-                    )
-                }
+                currentOnToggleFavorite.value(favorite)
             }
         }
 
@@ -175,9 +161,9 @@ internal fun rememberBaGuideStudentBgmActions(
                 playbackCoordinator.selectOffset(
                     offset = offset,
                     startPlayback = startPlayback,
-                    restart = restart
+                    restart = restart,
                 )
-            }
+            },
         )
     }
 }

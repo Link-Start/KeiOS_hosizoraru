@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.background
@@ -39,8 +41,8 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.os.appLucideSkipForwardIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
+import os.kei.ui.page.main.widget.glass.LiquidSurface
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -51,7 +53,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
     currentTrackTitle: String,
     artworkImageUrl: String,
     isPlaying: Boolean,
-    playbackProgress: Float,
+    playbackProgress: () -> Float,
     onPlaybackProgressChange: (Float) -> Unit,
     onPlaybackProgressChangeFinished: (Float) -> Unit,
     onPlaybackSliderInteractionChanged: (Boolean) -> Unit,
@@ -62,16 +64,17 @@ internal fun BaGuideBgmChromeMiniPlayer(
     onNextClick: () -> Unit,
     controlInteractionSource: MutableInteractionSource? = null,
     backdrop: Backdrop,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val expanded = expandedProgress.coerceIn(0f, 1f)
     val compact = compactProgress.coerceIn(0f, 1f)
     val artworkSize = debugBgmLerpDp(38.dp, 42.dp, expanded)
     val artworkCornerRadius = debugBgmLerpDp(10.dp, 11.dp, expanded)
-    val contentPadding = PaddingValues(
-        horizontal = debugBgmLerpDp(10.dp, 14.dp, expanded),
-        vertical = debugBgmLerpDp(8.dp, 7.dp, expanded)
-    )
+    val contentPadding =
+        PaddingValues(
+            horizontal = debugBgmLerpDp(10.dp, 14.dp, expanded),
+            vertical = debugBgmLerpDp(8.dp, 7.dp, expanded),
+        )
     val titleFontSize = debugBgmLerpSp(12f, AppTypographyTokens.Supporting.fontSize.value, expanded)
     val titleLineHeight = debugBgmLerpSp(14f, AppTypographyTokens.Supporting.lineHeight.value, expanded)
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
@@ -80,16 +83,17 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val progressHostHeight = debugBgmLerpDp(0.dp, 20.dp, expanded)
     val sideControlSlotWidth = debugBgmLerpDp(0.dp, 32.dp, expanded)
     val playButtonScale = 1f - compact * 0.02f
-    val playPauseTint = if (isPlaying) {
-        accent.copy(alpha = 0.98f)
-    } else {
-        MiuixTheme.colorScheme.onBackground
-    }
+    val playPauseTint =
+        if (isPlaying) {
+            accent.copy(alpha = 0.98f)
+        } else {
+            MiuixTheme.colorScheme.onBackground
+        }
 
     Row(
         modifier = modifier.padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(itemGap),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         LiquidSurface(
             backdrop = backdrop,
@@ -99,36 +103,38 @@ internal fun BaGuideBgmChromeMiniPlayer(
             chromaticAberration = true,
             isInteractive = false,
             modifier = Modifier.size(artworkSize),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(4.dp)
-                    .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
-                    .background(defaultMiniArtworkBrush(accent))
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
+                        .background(defaultMiniArtworkBrush(accent)),
             )
             if (artworkImageUrl.isNotBlank()) {
                 BaGuideBgmArtworkImage(
                     imageUrl = artworkImageUrl,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp)
-                        .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                            .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp))),
                 )
             } else {
                 Icon(
                     imageVector = appLucideMusicIcon(),
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(debugBgmLerpDp(21.dp, 23.dp, expanded))
+                    modifier = Modifier.size(debugBgmLerpDp(21.dp, 23.dp, expanded)),
                 )
             }
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = currentTrackTitle,
@@ -137,35 +143,37 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 lineHeight = titleLineHeight,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Box(
-                modifier = Modifier
-                    .padding(top = progressTopPadding)
-                    .fillMaxWidth()
-                    .height(progressHostHeight)
-                    .clipToBounds()
-                    .graphicsLayer { alpha = expanded },
-                contentAlignment = Alignment.CenterStart
+                modifier =
+                    Modifier
+                        .padding(top = progressTopPadding)
+                        .fillMaxWidth()
+                        .height(progressHostHeight)
+                        .clipToBounds()
+                        .graphicsLayer { alpha = expanded },
+                contentAlignment = Alignment.CenterStart,
             ) {
                 LiquidMusicProgressSlider(
-                    value = { playbackProgress.coerceIn(0f, 1f) },
+                    value = { playbackProgress().coerceIn(0f, 1f) },
                     onValueChange = onPlaybackProgressChange,
                     onValueChangeFinished = onPlaybackProgressChangeFinished,
                     onInteractionChanged = onPlaybackSliderInteractionChanged,
                     valueRange = 0f..1f,
                     visibilityThreshold = 0.001f,
                     backdrop = backdrop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .height(18.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .height(18.dp),
                 )
             }
         }
         BaGuideBgmChromeMiniPlayerSideControl(
             width = sideControlSlotWidth,
-            progress = expanded
+            progress = expanded,
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideSkipBackIcon(),
@@ -174,37 +182,38 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 size = 32.dp,
                 iconSize = 22.dp,
                 interactionSource = controlInteractionSource,
-                onClick = onPreviousClick
+                onClick = onPreviousClick,
             )
         }
         val playInteractionSource = controlInteractionSource ?: remember { MutableInteractionSource() }
         Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .graphicsLayer {
-                    scaleX = playButtonScale
-                    scaleY = playButtonScale
-                }
-                .clickable(
-                    interactionSource = playInteractionSource,
-                    indication = null,
-                    onClick = onPlayPauseClick
-                ),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .graphicsLayer {
+                        scaleX = playButtonScale
+                        scaleY = playButtonScale
+                    }.clickable(
+                        interactionSource = playInteractionSource,
+                        indication = null,
+                        onClick = onPlayPauseClick,
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
-                contentDescription = stringResource(
-                    if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play
-                ),
+                contentDescription =
+                    stringResource(
+                        if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play,
+                    ),
                 tint = playPauseTint,
-                modifier = Modifier.size(playIconSize)
+                modifier = Modifier.size(playIconSize),
             )
         }
         BaGuideBgmChromeMiniPlayerSideControl(
             width = sideControlSlotWidth,
-            progress = expanded
+            progress = expanded,
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideSkipForwardIcon(),
@@ -213,7 +222,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 size = 32.dp,
                 iconSize = 22.dp,
                 interactionSource = controlInteractionSource,
-                onClick = onNextClick
+                onClick = onNextClick,
             )
         }
     }
@@ -223,16 +232,17 @@ internal fun BaGuideBgmChromeMiniPlayer(
 private fun BaGuideBgmChromeMiniPlayerSideControl(
     width: androidx.compose.ui.unit.Dp,
     progress: Float,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .width(width)
-            .clipToBounds()
-            .graphicsLayer {
-                alpha = progress.coerceIn(0f, 1f)
-            },
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .width(width)
+                .clipToBounds()
+                .graphicsLayer {
+                    alpha = progress.coerceIn(0f, 1f)
+                },
+        contentAlignment = Alignment.Center,
     ) {
         content()
     }
@@ -241,17 +251,16 @@ private fun BaGuideBgmChromeMiniPlayerSideControl(
 private fun debugBgmLerpDp(
     start: androidx.compose.ui.unit.Dp,
     end: androidx.compose.ui.unit.Dp,
-    fraction: Float
+    fraction: Float,
 ) = (start.value + (end.value - start.value) * fraction.coerceIn(0f, 1f)).dp
 
 private fun debugBgmLerpSp(
     start: Float,
     end: Float,
-    fraction: Float
+    fraction: Float,
 ) = (start + (end - start) * fraction.coerceIn(0f, 1f)).sp
 
-private fun defaultMiniArtworkBrush(accent: Color): Brush {
-    return Brush.linearGradient(
-        colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D))
+private fun defaultMiniArtworkBrush(accent: Color): Brush =
+    Brush.linearGradient(
+        colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D)),
     )
-}

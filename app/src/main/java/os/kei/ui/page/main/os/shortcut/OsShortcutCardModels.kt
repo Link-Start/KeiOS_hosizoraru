@@ -30,6 +30,14 @@ internal data class OsActivityShortcutCard(
     val config: OsGoogleSystemServiceConfig,
 )
 
+@Immutable
+internal data class OsActivityCardImportMergeResult(
+    val cards: List<OsActivityShortcutCard>,
+    val addedCount: Int,
+    val updatedCount: Int,
+    val unchangedCount: Int,
+)
+
 internal enum class ShortcutIntentExtraType(
     val rawValue: String,
     val labelResId: Int,

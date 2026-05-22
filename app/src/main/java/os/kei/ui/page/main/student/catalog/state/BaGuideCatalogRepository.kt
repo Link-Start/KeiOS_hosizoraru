@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.catalog.state
 
 import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
@@ -10,23 +11,32 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.component.buildBaGuideStudentBgmDisplayedModel
+import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
+import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
 import os.kei.ui.page.main.student.catalog.filterByQuery
-import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
-import os.kei.ui.page.main.student.catalog.component.buildBaGuideStudentBgmDisplayedModel
 import os.kei.ui.page.main.student.catalog.hydrateBaGuideCatalogReleaseDateIndex
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogBundleComplete
 import os.kei.ui.page.main.student.catalog.isBaGuideCatalogCacheExpired
 import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportApplyResult
+import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
+import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
+import os.kei.ui.page.main.student.catalog.page.applyBaGuideCatalogFavoritesImportAsync
+import os.kei.ui.page.main.student.catalog.page.buildBaGuideCatalogImportPreviewAsync
+import os.kei.ui.page.main.student.catalog.page.buildBgmFavoritesExportJsonAsync
+import os.kei.ui.page.main.student.catalog.page.buildCatalogAllFavoritesExportJsonAsync
+import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJsonAsync
 import os.kei.ui.page.main.student.catalog.selectedCatalogFilterOptionsForDefinitions
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import kotlin.coroutines.cancellation.CancellationException
 
 internal data class BaGuideCatalogLoadResult(
     val catalog: BaGuideCatalogBundle,
-    val error: String?
+    val error: String?,
 )
 
 internal class BaGuideCatalogRepository(
@@ -37,7 +47,7 @@ internal class BaGuideCatalogRepository(
     private val catalogFetcher: suspend (
         forceRefresh: Boolean,
         networkDispatcher: CoroutineDispatcher,
-        parseDispatcher: CoroutineDispatcher
+        parseDispatcher: CoroutineDispatcher,
     ) -> BaGuideCatalogBundle =
         ::fetchBaGuideCatalogBundle,
     private val completeChecker: (BaGuideCatalogBundle?) -> Boolean =
@@ -46,17 +56,62 @@ internal class BaGuideCatalogRepository(
         ::isBaGuideCatalogCacheExpired,
     private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
 ) {
-    fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
-        bgmFavoriteRepository.favoritesFlow()
+    fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = bgmFavoriteRepository.favoritesFlow()
 
-    fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> =
-        bgmFavoriteRepository.favoritesSnapshot()
+    fun bgmFavoritesSnapshot(): List<GuideBgmFavoriteItem> = bgmFavoriteRepository.favoritesSnapshot()
 
-    fun bgmPlaybackSnapshot() =
-        bgmFavoriteRepository.playbackSnapshot()
+    fun bgmPlaybackSnapshot() = bgmFavoriteRepository.playbackSnapshot()
 
-    fun loadNativeBgmMediaNotificationEnabled(): Boolean =
-        BASettingsStore.loadNativeBgmMediaNotificationEnabled()
+    suspend fun loadCatalogFavorites(): Map<Long, Long> =
+        withContext(ioDispatcher) {
+            BaGuideCatalogStore.loadFavorites()
+        }
+
+    suspend fun toggleCatalogFavorite(contentId: Long): Map<Long, Long> =
+        withContext(ioDispatcher) {
+            if (contentId <= 0L) return@withContext BaGuideCatalogStore.loadFavorites()
+            BaGuideCatalogStore.toggleFavorite(contentId)
+            BaGuideCatalogStore.loadFavorites()
+        }
+
+    suspend fun replaceCatalogFavorites(favorites: Map<Long, Long>): Map<Long, Long> =
+        withContext(ioDispatcher) {
+            val normalized =
+                favorites
+                    .filterKeys { it > 0L }
+                    .filterValues { it > 0L }
+                    .toMap()
+            BaGuideCatalogStore.saveFavorites(normalized)
+            normalized
+        }
+
+    suspend fun buildStudentFavoritesExportJson(favorites: Map<Long, Long>): String = buildCatalogFavoritesExportJsonAsync(favorites)
+
+    suspend fun buildAllFavoritesExportJson(favorites: Map<Long, Long>): String = buildCatalogAllFavoritesExportJsonAsync(favorites)
+
+    suspend fun buildBgmFavoritesExportJson(): String = buildBgmFavoritesExportJsonAsync()
+
+    suspend fun buildImportPreview(
+        context: Context,
+        uri: Uri,
+        kind: BaGuideCatalogImportKind,
+        currentFavorites: Map<Long, Long>,
+    ): BaGuideCatalogImportPreviewState =
+        buildBaGuideCatalogImportPreviewAsync(
+            context = context,
+            uri = uri,
+            kind = kind,
+            currentFavorites = currentFavorites,
+            bgmFavoriteRepository = bgmFavoriteRepository,
+        )
+
+    suspend fun applyFavoritesImport(preview: BaGuideCatalogImportPreviewState): BaGuideCatalogImportApplyResult =
+        applyBaGuideCatalogFavoritesImportAsync(
+            preview = preview,
+            bgmFavoriteRepository = bgmFavoriteRepository,
+        )
+
+    fun loadNativeBgmMediaNotificationEnabled(): Boolean = BASettingsStore.loadNativeBgmMediaNotificationEnabled()
 
     suspend fun saveNativeBgmMediaNotificationEnabled(enabled: Boolean) {
         withContext(ioDispatcher) {
@@ -64,8 +119,7 @@ internal class BaGuideCatalogRepository(
         }
     }
 
-    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
-        bgmFavoriteRepository.toggleFavorite(item)
+    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean = bgmFavoriteRepository.toggleFavorite(item)
 
     suspend fun removeBgmFavorite(audioUrl: String) {
         bgmFavoriteRepository.removeFavorite(audioUrl)
@@ -76,78 +130,82 @@ internal class BaGuideCatalogRepository(
         currentCatalog: BaGuideCatalogBundle,
         manualRefresh: Boolean,
         loadFailedText: String,
-        refreshFailedKeepCacheText: String
+        refreshFailedKeepCacheText: String,
     ): BaGuideCatalogLoadResult {
         val now = System.currentTimeMillis()
-        val refreshIntervalHours = withContext(ioDispatcher) {
-            refreshIntervalLoader()
-        }
-        val cachedBundle = withContext(ioDispatcher) {
-            cachedBundleLoader()
-        }
+        val refreshIntervalHours =
+            withContext(ioDispatcher) {
+                refreshIntervalLoader()
+            }
+        val cachedBundle =
+            withContext(ioDispatcher) {
+                cachedBundleLoader()
+            }
         val cacheComplete = completeChecker(cachedBundle)
         val cacheExpired = expiredChecker(cachedBundle, refreshIntervalHours, now)
 
         if (!manualRefresh && cacheComplete && !cacheExpired) {
             return BaGuideCatalogLoadResult(
                 catalog = cachedBundle ?: BaGuideCatalogBundle.EMPTY,
-                error = null
+                error = null,
             )
         }
 
-        val result = try {
-            Result.success(
-                catalogFetcher(
-                    true,
-                    ioDispatcher,
-                    parseDispatcher
+        val result =
+            try {
+                Result.success(
+                    catalogFetcher(
+                        true,
+                        ioDispatcher,
+                        parseDispatcher,
+                    ),
                 )
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Throwable) {
-            Result.failure(error)
-        }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                Result.failure(error)
+            }
         return result.fold(
             onSuccess = { latest ->
                 BaGuideCatalogLoadResult(
                     catalog = latest,
-                    error = null
+                    error = null,
                 )
             },
             onFailure = {
-                val fallback = when {
-                    currentCatalog.entriesByTab.values.any { it.isNotEmpty() } -> currentCatalog
-                    cacheComplete && cachedBundle != null -> cachedBundle
-                    else -> BaGuideCatalogBundle.EMPTY
-                }
+                val fallback =
+                    when {
+                        currentCatalog.entriesByTab.values.any { it.isNotEmpty() } -> currentCatalog
+                        cacheComplete && cachedBundle != null -> cachedBundle
+                        else -> BaGuideCatalogBundle.EMPTY
+                    }
                 BaGuideCatalogLoadResult(
                     catalog = fallback,
-                    error = if (fallback.entriesByTab.values.all { it.isEmpty() }) {
-                        loadFailedText
-                    } else {
-                        refreshFailedKeepCacheText
-                    }
+                    error =
+                        if (fallback.entriesByTab.values.all { it.isEmpty() }) {
+                            loadFailedText
+                        } else {
+                            refreshFailedKeepCacheText
+                        },
                 )
-            }
+            },
         )
     }
 
     suspend fun hydrateReleaseDateIndex(
         source: BaGuideCatalogBundle,
-        onBundleUpdated: (BaGuideCatalogBundle) -> Unit
-    ): BaGuideCatalogBundle {
-        return hydrateBaGuideCatalogReleaseDateIndex(
+        onBundleUpdated: (BaGuideCatalogBundle) -> Unit,
+    ): BaGuideCatalogBundle =
+        hydrateBaGuideCatalogReleaseDateIndex(
             source = source,
             maxNetworkFetchPerPass = CATALOG_RELEASE_DATE_FETCH_LIMIT_PER_PASS,
             networkDispatcher = ioDispatcher,
             parseDispatcher = parseDispatcher,
-            onBundleUpdated = onBundleUpdated
+            onBundleUpdated = onBundleUpdated,
         )
-    }
 
-    suspend fun deriveCatalogListState(input: BaGuideCatalogListInput): BaGuideCatalogListDerivedState {
-        return withContext(parseDispatcher) {
+    suspend fun deriveCatalogListState(input: BaGuideCatalogListInput): BaGuideCatalogListDerivedState =
+        withContext(parseDispatcher) {
             val filterDefinitions =
                 input.catalog
                     .filterDefinitions(input.tab)
@@ -174,10 +232,9 @@ internal class BaGuideCatalogRepository(
                 deriving = false,
             )
         }
-    }
 
-    suspend fun deriveStudentBgmListState(input: BaGuideStudentBgmListInput): BaGuideStudentBgmListDerivedState {
-        return withContext(parseDispatcher) {
+    suspend fun deriveStudentBgmListState(input: BaGuideStudentBgmListInput): BaGuideStudentBgmListDerivedState =
+        withContext(parseDispatcher) {
             val allStudentEntries =
                 input.catalog
                     .entries(BaGuideCatalogTab.Student)
@@ -190,7 +247,7 @@ internal class BaGuideCatalogRepository(
                             put(normalizedSourceUrl, favorite)
                         }
                     }
-            }
+                }
             val favoriteContentIds =
                 favoriteStudentBgmEntryContentIds(
                     entries = allStudentEntries,
@@ -212,10 +269,9 @@ internal class BaGuideCatalogRepository(
                 deriving = false,
             )
         }
-    }
 
-    suspend fun deriveFavoriteBgmListState(input: BaGuideFavoriteBgmListInput): BaGuideFavoriteBgmListDerivedState {
-        return withContext(parseDispatcher) {
+    suspend fun deriveFavoriteBgmListState(input: BaGuideFavoriteBgmListInput): BaGuideFavoriteBgmListDerivedState =
+        withContext(parseDispatcher) {
             BaGuideFavoriteBgmListDerivedState(
                 displayedFavorites =
                     filterAndSortBgmFavorites(
@@ -227,12 +283,9 @@ internal class BaGuideCatalogRepository(
                 deriving = false,
             )
         }
-    }
 
-    suspend fun deriveStudentBgmDisplayedState(
-        input: BaGuideStudentBgmDisplayedInput,
-    ): BaGuideStudentBgmDisplayedDerivedState {
-        return withContext(parseDispatcher) {
+    suspend fun deriveStudentBgmDisplayedState(input: BaGuideStudentBgmDisplayedInput): BaGuideStudentBgmDisplayedDerivedState =
+        withContext(parseDispatcher) {
             BaGuideStudentBgmDisplayedDerivedState(
                 input = input,
                 model =
@@ -245,5 +298,4 @@ internal class BaGuideCatalogRepository(
                 deriving = false,
             )
         }
-    }
 }

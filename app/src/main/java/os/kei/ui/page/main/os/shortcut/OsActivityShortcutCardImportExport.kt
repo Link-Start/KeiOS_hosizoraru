@@ -34,9 +34,7 @@ internal object OsActivityShortcutCardImportExport {
         defaults: OsGoogleSystemServiceConfig,
         builtInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard> =
-            googleSettingsBuiltInCard(
-                builtInSampleDefaults,
-            ),
+            defaultBuiltInActivityShortcutCards(builtInSampleDefaults),
     ): OsActivityCardImportPayload {
         if (root.items.length() == 0) {
             return OsActivityCardImportPayload(
@@ -63,33 +61,12 @@ internal object OsActivityShortcutCardImportExport {
                 builtInActivityShortcutCards = builtInActivityShortcutCards,
                 appendMissingBuiltIns = false,
             )
-        val deduplicated = mutableListOf<OsActivityShortcutCard>()
-        var duplicateCount = 0
-        migrated.forEach { imported ->
-            val targetIndexById = deduplicated.indexOfFirst { it.id == imported.id }
-            val targetIndex =
-                if (targetIndexById >= 0) {
-                    targetIndexById
-                } else {
-                    deduplicated.indexOfFirst { osActivityShortcutMergeKey(it) == osActivityShortcutMergeKey(imported) }
-                }
-            if (targetIndex < 0) {
-                deduplicated += imported
-            } else {
-                val existing = deduplicated[targetIndex]
-                deduplicated[targetIndex] =
-                    imported.copy(
-                        id = existing.id,
-                        isBuiltInSample = existing.isBuiltInSample || imported.isBuiltInSample,
-                    )
-                duplicateCount += 1
-            }
-        }
+        val deduplicated = deduplicateImportedActivityShortcutCards(migrated)
         return OsActivityCardImportPayload(
-            cards = deduplicated,
+            cards = deduplicated.cards,
             sourceCount = root.sourceCount,
             invalidCount = (root.sourceCount - decoded.size).coerceAtLeast(0),
-            duplicateCount = duplicateCount,
+            duplicateCount = deduplicated.duplicateCount,
             fileKind = root.fileKind,
             schemaVersion = root.schemaVersion,
             isLegacyFormat = root.isLegacyFormat,
@@ -102,52 +79,13 @@ internal object OsActivityShortcutCardImportExport {
         defaults: OsGoogleSystemServiceConfig,
         builtInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard> =
-            googleSettingsBuiltInCard(
-                builtInSampleDefaults,
-            ),
-    ): OsActivityCardImportMergeResult {
-        val mergedCards = existingCards.toMutableList()
-        var addedCount = 0
-        var updatedCount = 0
-        var unchangedCount = 0
-        importedCards.forEach { imported ->
-            val targetIndexById = mergedCards.indexOfFirst { it.id == imported.id }
-            val targetIndex =
-                if (targetIndexById >= 0) {
-                    targetIndexById
-                } else {
-                    val importedKey = osActivityShortcutMergeKey(imported)
-                    mergedCards.indexOfFirst { osActivityShortcutMergeKey(it) == importedKey }
-                }
-            if (targetIndex < 0) {
-                mergedCards += imported
-                addedCount += 1
-                return@forEach
-            }
-            val existing = mergedCards[targetIndex]
-            val resolved =
-                imported.copy(
-                    id = existing.id,
-                    isBuiltInSample = existing.isBuiltInSample || imported.isBuiltInSample,
-                )
-            if (osActivityShortcutCardsEquivalent(existing, resolved, defaults)) {
-                unchangedCount += 1
-            } else {
-                mergedCards[targetIndex] = resolved
-                updatedCount += 1
-            }
-        }
-        return OsActivityCardImportMergeResult(
-            cards =
-                OsActivityShortcutCardMigration.migrateBuiltInSampleCards(
-                    cards = mergedCards,
-                    builtInSampleDefaults = builtInSampleDefaults,
-                    builtInActivityShortcutCards = builtInActivityShortcutCards,
-                    appendMissingBuiltIns = false,
-                ),
-            addedCount = addedCount,
-            updatedCount = updatedCount,
-            unchangedCount = unchangedCount,
+            defaultBuiltInActivityShortcutCards(builtInSampleDefaults),
+    ): OsActivityCardImportMergeResult =
+        mergeImportedActivityShortcutCards(
+            existingCards = existingCards,
+            importedCards = importedCards,
+            defaults = defaults,
+            builtInSampleDefaults = builtInSampleDefaults,
+            builtInActivityShortcutCards = builtInActivityShortcutCards,
         )
-    }
 }

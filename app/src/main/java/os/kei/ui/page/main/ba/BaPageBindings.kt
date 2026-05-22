@@ -2,15 +2,14 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import os.kei.core.background.AppBackgroundScheduler
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
 internal fun buildBaSettingsSheetState(
     draft: BaPageSettingsDraftState,
     calendarRefreshIntervalHours: Int,
-): BaSettingsSheetState {
-    return BaSettingsSheetState(
+): BaSettingsSheetState =
+    BaSettingsSheetState(
         cafeLevel = draft.cafeLevel,
         mediaAdaptiveRotationEnabled = draft.mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = draft.mediaSaveCustomEnabled,
@@ -21,12 +20,9 @@ internal fun buildBaSettingsSheetState(
         showCalendarPoolImages = draft.showCalendarPoolImages,
         calendarRefreshIntervalHours = calendarRefreshIntervalHours,
     )
-}
 
-internal fun buildBaNotificationSettingsSheetState(
-    draft: BaPageNotificationDraftState,
-): BaNotificationSettingsSheetState {
-    return BaNotificationSettingsSheetState(
+internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraftState): BaNotificationSettingsSheetState =
+    BaNotificationSettingsSheetState(
         apNotifyEnabled = draft.apNotifyEnabled,
         cafeApNotifyEnabled = draft.cafeApNotifyEnabled,
         arenaRefreshNotifyEnabled = draft.arenaRefreshNotifyEnabled,
@@ -39,6 +35,23 @@ internal fun buildBaNotificationSettingsSheetState(
         calendarPoolNotifyLeadHours = draft.calendarPoolNotifyLeadHours,
         apNotifyThresholdText = draft.apNotifyThresholdText,
         cafeApNotifyThresholdText = draft.cafeApNotifyThresholdText,
+    )
+
+internal fun buildSavedBaNotificationSettingsSheetState(office: BaOfficeController): BaNotificationSettingsSheetState {
+    val calendarPoolNotifications = BaSettingsPersistenceRepository.loadCalendarPoolNotificationSettings()
+    return BaNotificationSettingsSheetState(
+        apNotifyEnabled = office.apNotifyEnabled,
+        cafeApNotifyEnabled = office.cafeApNotifyEnabled,
+        arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+        calendarUpcomingNotifyEnabled = calendarPoolNotifications.calendarUpcomingNotifyEnabled,
+        calendarEndingNotifyEnabled = calendarPoolNotifications.calendarEndingNotifyEnabled,
+        poolUpcomingNotifyEnabled = calendarPoolNotifications.poolUpcomingNotifyEnabled,
+        poolEndingNotifyEnabled = calendarPoolNotifications.poolEndingNotifyEnabled,
+        calendarPoolChangeNotifyEnabled = calendarPoolNotifications.calendarPoolChangeNotifyEnabled,
+        calendarPoolNotifyLeadHours = calendarPoolNotifications.calendarPoolNotifyLeadHours,
+        apNotifyThresholdText = office.apNotifyThreshold.toString(),
+        cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
     )
 }
 
@@ -88,12 +101,12 @@ internal fun saveBaPageSettings(
 ) {
     office.applyRuntimeTickAndPersist()
 
-    val persisted = persistBaSettingsDraft(
-        sheetState = settingsSheetState,
-        currentCafeLevel = office.cafeLevel,
-        currentShowEndedActivities = ui.showEndedActivities,
-        currentShowCalendarPoolImages = ui.showCalendarPoolImages,
-    )
+    val persisted =
+        BaSettingsPersistenceRepository.persistSettingsDraft(
+            sheetState = settingsSheetState,
+            currentShowEndedActivities = ui.showEndedActivities,
+            currentShowCalendarPoolImages = ui.showCalendarPoolImages,
+        )
 
     office.cafeLevel = persisted.savedCafeLevel
     office.clampCafeStoredToCap()
@@ -106,17 +119,18 @@ internal fun saveBaPageSettings(
     ui.idIndependentByServer = persisted.idIndependentByServer
     office.applyIdIndependentByServer(
         serverIndex = ui.serverIndex,
-        enabled = persisted.idIndependentByServer
+        enabled = persisted.idIndependentByServer,
     )
 
     if (persisted.turningEndedActivitiesOn) {
-        val (calendarCacheRaw, _) = BASettingsStore.loadCalendarCache(ui.serverIndex)
-        if (calendarCacheRaw.isBlank()) onRefreshCalendar(true)
+        if (BaSettingsPersistenceRepository.calendarCacheIsBlank(ui.serverIndex)) {
+            onRefreshCalendar(true)
+        }
     }
 
     if (persisted.turningImagesOn) {
-        val calendarHasImage = hasAnyImageInBaCalendarCache(ui.serverIndex)
-        val poolHasImage = hasAnyImageInBaPoolCache(ui.serverIndex)
+        val calendarHasImage = BaSettingsPersistenceRepository.hasAnyImageInCalendarCache(ui.serverIndex)
+        val poolHasImage = BaSettingsPersistenceRepository.hasAnyImageInPoolCache(ui.serverIndex)
         if (!calendarHasImage) onRefreshCalendar(true)
         if (!poolHasImage) onRefreshPool(true)
     }
@@ -137,7 +151,7 @@ internal fun saveBaNotificationSettings(
     val previousCafeApNotifyThreshold = office.cafeApNotifyThreshold
     val previousArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
     val previousCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-    val persisted = persistBaNotificationSettingsDraft(notificationSettingsSheetState)
+    val persisted = BaSettingsPersistenceRepository.persistNotificationSettingsDraft(notificationSettingsSheetState)
 
     office.apNotifyEnabled = notificationSettingsSheetState.apNotifyEnabled
     office.cafeApNotifyEnabled = persisted.cafeApNotifyEnabled
@@ -147,34 +161,36 @@ internal fun saveBaNotificationSettings(
     office.cafeApNotifyThreshold = persisted.savedCafeApThreshold
     if (!office.cafeApNotifyEnabled) {
         office.cafeApLastNotifiedLevel = -1
-        BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+        BaSettingsPersistenceRepository.resetCafeApLastNotifiedLevel()
     } else if (!previousCafeApNotifyEnabled ||
         previousCafeApNotifyThreshold != office.cafeApNotifyThreshold
     ) {
         office.cafeApLastNotifiedLevel = -1
-        BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+        BaSettingsPersistenceRepository.resetCafeApLastNotifiedLevel()
     }
     if (!office.arenaRefreshNotifyEnabled) {
         office.arenaRefreshLastNotifiedSlotMs = 0L
-        BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
+        BaSettingsPersistenceRepository.resetArenaRefreshLastNotifiedSlot()
     } else if (!previousArenaRefreshNotifyEnabled) {
-        val baselineSlotMs = currentArenaRefreshSlotMs(
-            nowMs = System.currentTimeMillis(),
-            serverIndex = ui.serverIndex
-        )
+        val baselineSlotMs =
+            currentArenaRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = ui.serverIndex,
+            )
         office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
-        BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(baselineSlotMs)
+        BaSettingsPersistenceRepository.saveArenaRefreshLastNotifiedSlot(baselineSlotMs)
     }
     if (!office.cafeVisitNotifyEnabled) {
         office.cafeVisitLastNotifiedSlotMs = 0L
-        BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
+        BaSettingsPersistenceRepository.resetCafeVisitLastNotifiedSlot()
     } else if (!previousCafeVisitNotifyEnabled) {
-        val baselineSlotMs = currentCafeStudentRefreshSlotMs(
-            nowMs = System.currentTimeMillis(),
-            serverIndex = ui.serverIndex
-        )
+        val baselineSlotMs =
+            currentCafeStudentRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = ui.serverIndex,
+            )
         office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
-        BASettingsStore.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
+        BaSettingsPersistenceRepository.saveCafeVisitLastNotifiedSlot(baselineSlotMs)
     }
 
     office.applyRuntimeTickAndPersist()
@@ -191,8 +207,8 @@ internal fun buildBaPageContentActions(
     onOpenCalendarLink: (String) -> Unit,
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenGuideCatalog: () -> Unit,
-): BaPageContentActions {
-    return BaOfficeActionCoordinator(
+): BaPageContentActions =
+    BaOfficeActionCoordinator(
         context = context,
         office = office,
         ui = ui,
@@ -202,7 +218,6 @@ internal fun buildBaPageContentActions(
         onOpenPoolStudentGuide = onOpenPoolStudentGuide,
         onOpenGuideCatalog = onOpenGuideCatalog,
     ).buildContentActions()
-}
 
 internal fun applyBaCalendarRefreshInterval(
     ui: BaPageUiController,
@@ -211,10 +226,13 @@ internal fun applyBaCalendarRefreshInterval(
     onRefreshCalendar: () -> Unit,
     onRefreshPool: () -> Unit,
 ) {
-    ui.calendarRefreshIntervalHours = hours
-    BASettingsStore.saveCalendarRefreshIntervalHours(hours)
-    val elapsed = (System.currentTimeMillis() - calendarLastSyncMs).coerceAtLeast(0L)
-    if (calendarLastSyncMs <= 0L || elapsed >= hours * 60L * 60L * 1000L) {
+    val persisted =
+        BaSettingsPersistenceRepository.persistRefreshInterval(
+            hours = hours,
+            calendarLastSyncMs = calendarLastSyncMs,
+        )
+    ui.calendarRefreshIntervalHours = persisted.hours
+    if (persisted.shouldRefresh) {
         onRefreshCalendar()
         onRefreshPool()
     }

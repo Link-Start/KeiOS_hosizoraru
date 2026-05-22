@@ -2,44 +2,71 @@ package os.kei.ui.page.main.os.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputState
 
 internal class OsShellRunnerViewModel : ViewModel() {
     private val repository = OsShellRunnerRepository()
     private var loadJob: Job? = null
+    private var commandJob: Job? = null
+    private var suppressStopOutputAppend = false
+    private val commandExecutionMutableState = MutableStateFlow(OsShellRunnerCommandExecutionState())
+    private val commandSaveMutableState = MutableStateFlow(OsShellRunnerCommandSaveState())
+    private val eventMutableFlow = MutableSharedFlow<OsShellRunnerEvent>(extraBufferCapacity = 8)
 
-    val persistentState: StateFlow<OsShellRunnerPersistentState> = repository.observePersistentState()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = repository.observePersistentState().value
-        )
+    val commandExecutionState: StateFlow<OsShellRunnerCommandExecutionState> =
+        commandExecutionMutableState.asStateFlow()
 
-    val chromePrefs: StateFlow<OsShellRunnerChromePrefs> = repository.observeChromePrefs()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = repository.observeChromePrefs().value
-        )
+    val commandSaveState: StateFlow<OsShellRunnerCommandSaveState> =
+        commandSaveMutableState.asStateFlow()
+
+    val events: SharedFlow<OsShellRunnerEvent> = eventMutableFlow.asSharedFlow()
+
+    val persistentState: StateFlow<OsShellRunnerPersistentState> =
+        repository
+            .observePersistentState()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = repository.observePersistentState().value,
+            )
+
+    val chromePrefs: StateFlow<OsShellRunnerChromePrefs> =
+        repository
+            .observeChromePrefs()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = repository.observeChromePrefs().value,
+            )
 
     fun loadPersistentState(
         commandStoppedText: String,
         outputResultLabel: String,
-        outputTimeLabel: String
+        outputTimeLabel: String,
     ) {
         if (loadJob != null) return
-        loadJob = viewModelScope.launch {
-            repository.loadPersistentState(
-                commandStoppedText = commandStoppedText,
-                outputResultLabel = outputResultLabel,
-                outputTimeLabel = outputTimeLabel
-            )
-        }
+        loadJob =
+            viewModelScope.launch {
+                repository.loadPersistentState(
+                    commandStoppedText = commandStoppedText,
+                    outputResultLabel = outputResultLabel,
+                    outputTimeLabel = outputTimeLabel,
+                )
+            }
     }
 
     fun refreshChromePrefs() {
@@ -64,32 +91,88 @@ internal class OsShellRunnerViewModel : ViewModel() {
         repository.clearOutput()
     }
 
-    suspend fun appendOutput(
+    fun runShellCommand(
         command: String,
-        result: String,
+        timeoutMs: Long,
         commandStoppedText: String,
+        commandCompletedText: String,
+        noOutputText: String,
         outputResultLabel: String,
-        outputTimeLabel: String
+        outputTimeLabel: String,
+        completionToast: Boolean,
+        onRunShellCommand: suspend (String, Long) -> String?,
     ) {
-        repository.appendOutput(
-            command = command,
-            result = result,
-            commandStoppedText = commandStoppedText,
-            outputResultLabel = outputResultLabel,
-            outputTimeLabel = outputTimeLabel
-        )
+        if (commandExecutionMutableState.value.runningCommand) return
+        commandJob =
+            viewModelScope.launch {
+                commandExecutionMutableState.update { it.copy(runningCommand = true) }
+                try {
+                    val output =
+                        runCatching { onRunShellCommand(command, timeoutMs) }
+                            .getOrElse { throwable ->
+                                if (throwable is CancellationException) throw throwable
+                                throwable.localizedMessage?.takeIf { it.isNotBlank() }
+                                    ?: throwable.javaClass.simpleName
+                            }?.takeIf { it.isNotBlank() }
+                            ?: noOutputText
+                    repository.appendOutput(
+                        command = command,
+                        result = output,
+                        commandStoppedText = commandStoppedText,
+                        outputResultLabel = outputResultLabel,
+                        outputTimeLabel = outputTimeLabel,
+                    )
+                    if (completionToast) {
+                        eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(commandCompletedText))
+                    }
+                } catch (_: CancellationException) {
+                    if (suppressStopOutputAppend) {
+                        suppressStopOutputAppend = false
+                    } else {
+                        withContext(NonCancellable) {
+                            repository.appendOutput(
+                                command = command,
+                                result = commandStoppedText,
+                                commandStoppedText = commandStoppedText,
+                                outputResultLabel = outputResultLabel,
+                                outputTimeLabel = outputTimeLabel,
+                            )
+                        }
+                        if (completionToast) {
+                            eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(commandStoppedText))
+                        }
+                    }
+                } finally {
+                    commandExecutionMutableState.update { it.copy(runningCommand = false) }
+                    commandJob = null
+                }
+            }
     }
 
-    suspend fun formatOutput(
+    fun stopShellCommand(showStoppedOutput: Boolean = true) {
+        val job = commandJob ?: return
+        if (!showStoppedOutput) {
+            suppressStopOutputAppend = true
+        }
+        job.cancel(CancellationException("user-stop"))
+    }
+
+    fun formatOutput(
         commandStoppedText: String,
         outputResultLabel: String,
-        outputTimeLabel: String
+        outputTimeLabel: String,
+        formattedToast: String? = null,
     ) {
-        repository.formatOutput(
-            commandStoppedText = commandStoppedText,
-            outputResultLabel = outputResultLabel,
-            outputTimeLabel = outputTimeLabel
-        )
+        viewModelScope.launch {
+            repository.formatOutput(
+                commandStoppedText = commandStoppedText,
+                outputResultLabel = outputResultLabel,
+                outputTimeLabel = outputTimeLabel,
+            )
+            formattedToast
+                ?.takeIf { it.isNotBlank() }
+                ?.let { eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(it)) }
+        }
     }
 
     fun updatePersistInput(enabled: Boolean) {
@@ -116,14 +199,14 @@ internal class OsShellRunnerViewModel : ViewModel() {
         limit: Int,
         commandStoppedText: String,
         outputResultLabel: String,
-        outputTimeLabel: String
+        outputTimeLabel: String,
     ) {
         launchRepositoryUpdate {
             setOutputLimitChars(
                 limit = limit,
                 commandStoppedText = commandStoppedText,
                 outputResultLabel = outputResultLabel,
-                outputTimeLabel = outputTimeLabel
+                outputTimeLabel = outputTimeLabel,
             )
         }
     }
@@ -132,14 +215,14 @@ internal class OsShellRunnerViewModel : ViewModel() {
         mode: OsShellRunnerOutputSaveMode,
         commandStoppedText: String,
         outputResultLabel: String,
-        outputTimeLabel: String
+        outputTimeLabel: String,
     ) {
         launchRepositoryUpdate {
             setOutputSaveMode(
                 mode = mode,
                 commandStoppedText = commandStoppedText,
                 outputResultLabel = outputResultLabel,
-                outputTimeLabel = outputTimeLabel
+                outputTimeLabel = outputTimeLabel,
             )
         }
     }
@@ -188,27 +271,62 @@ internal class OsShellRunnerViewModel : ViewModel() {
         }
     }
 
-    suspend fun latestShellCardSubtitle(command: String): String {
-        return repository.latestShellCardSubtitle(command)
+    fun requestSaveCommandSheet(
+        command: String,
+        commandSaveEmptyToast: String,
+    ) {
+        viewModelScope.launch {
+            val normalizedCommand = command.trim()
+            if (normalizedCommand.isBlank()) {
+                eventMutableFlow.emit(OsShellRunnerEvent.Toast(commandSaveEmptyToast))
+                return@launch
+            }
+            val suggestedSubtitle = repository.latestShellCardSubtitle(normalizedCommand)
+            eventMutableFlow.emit(OsShellRunnerEvent.OpenSaveCommandSheet(suggestedSubtitle))
+        }
     }
 
-    suspend fun createShellCommandCard(
+    fun saveShellCommandCard(
         command: String,
         title: String,
         subtitle: String,
-        runOutput: String
-    ): Boolean {
-        return repository.createShellCommandCard(
-            command = command,
-            title = title,
-            subtitle = subtitle,
-            runOutput = runOutput
-        )
+        runOutput: String,
+        commandSaveEmptyToast: String,
+        saveSheetTitleRequiredToast: String,
+        commandSavedToast: String,
+    ) {
+        if (commandSaveMutableState.value.savingCommandCard) return
+        viewModelScope.launch {
+            val normalizedCommand = command.trim()
+            if (normalizedCommand.isBlank()) {
+                eventMutableFlow.emit(OsShellRunnerEvent.Toast(commandSaveEmptyToast))
+                return@launch
+            }
+            val normalizedTitle = title.trim()
+            if (normalizedTitle.isBlank()) {
+                eventMutableFlow.emit(OsShellRunnerEvent.Toast(saveSheetTitleRequiredToast))
+                return@launch
+            }
+            commandSaveMutableState.update { it.copy(savingCommandCard = true) }
+            try {
+                val saved =
+                    repository.createShellCommandCard(
+                        command = normalizedCommand,
+                        title = normalizedTitle,
+                        subtitle = subtitle.trim(),
+                        runOutput = runOutput,
+                    )
+                if (saved) {
+                    eventMutableFlow.emit(OsShellRunnerEvent.CloseSaveCommandSheet)
+                    eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(commandSavedToast))
+                }
+            } finally {
+                commandSaveMutableState.update { it.copy(savingCommandCard = false) }
+            }
+        }
     }
 
-    private fun launchRepositoryUpdate(
-        update: suspend OsShellRunnerRepository.() -> Unit
-    ) {
+    private fun launchRepositoryUpdate(update: suspend OsShellRunnerRepository.() -> Unit) {
         viewModelScope.launch {
             repository.update()
         }

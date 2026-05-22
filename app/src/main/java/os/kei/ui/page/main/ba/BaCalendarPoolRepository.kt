@@ -3,8 +3,8 @@ package os.kei.ui.page.main.ba
 import android.content.Context
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_CALENDAR_CACHE_SCHEMA_VERSION
 import os.kei.ui.page.main.ba.support.BA_POOL_CACHE_SCHEMA_VERSION
@@ -37,6 +37,12 @@ internal data class BaPoolSyncSnapshot(
 internal object BaCalendarPoolRepository {
     private val poolStudentGuideUrlRepository = BaPoolStudentGuideUrlRepository()
 
+    fun loadSettingsSnapshot() = BASettingsStore.loadSnapshot()
+
+    fun saveServerIndex(index: Int) {
+        BASettingsStore.saveServerIndex(index)
+    }
+
     suspend fun syncCalendar(
         context: Context,
         isPageActive: Boolean,
@@ -50,34 +56,38 @@ internal object BaCalendarPoolRepository {
                 entries = emptyList(),
                 loading = true,
                 error = null,
-                lastSyncMs = 0L
+                lastSyncMs = 0L,
             )
         }
-        val cacheSnapshot = withContext(AppDispatchers.baFetch) {
-            BASettingsStore.loadCalendarCacheSnapshot(serverIndex)
-        }
+        val cacheSnapshot =
+            withContext(AppDispatchers.baFetch) {
+                BASettingsStore.loadCalendarCacheSnapshot(serverIndex)
+            }
         val hasCache = cacheSnapshot.raw.isNotBlank()
-        val plan = BaCalendarPoolSyncPlanner.build(
-            context = context,
-            cacheSyncMs = cacheSnapshot.syncMs,
-            hasCache = hasCache,
-            cacheSchemaVersion = cacheSnapshot.version,
-            expectedSchemaVersion = BA_CALENDAR_CACHE_SCHEMA_VERSION,
-            reloadSignal = reloadSignal,
-            refreshIntervalHours = calendarRefreshIntervalHours
-        )
+        val plan =
+            BaCalendarPoolSyncPlanner.build(
+                context = context,
+                cacheSyncMs = cacheSnapshot.syncMs,
+                hasCache = hasCache,
+                cacheSchemaVersion = cacheSnapshot.version,
+                expectedSchemaVersion = BA_CALENDAR_CACHE_SCHEMA_VERSION,
+                reloadSignal = reloadSignal,
+                refreshIntervalHours = calendarRefreshIntervalHours,
+            )
         val now = plan.nowMs
-        val cachedEntries = if (hasCache) {
-            runCatching { decodeBaCalendarEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
-        } else {
-            emptyList()
-        }
-        val cachedEntriesWithLocalImages = BaCalendarPoolCacheWriter.hydrateCalendarImages(
-            context = context,
-            serverIndex = serverIndex,
-            entries = cachedEntries,
-            localOnly = !plan.networkAvailable
-        )
+        val cachedEntries =
+            if (hasCache) {
+                runCatching { decodeBaCalendarEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
+            } else {
+                emptyList()
+            }
+        val cachedEntriesWithLocalImages =
+            BaCalendarPoolCacheWriter.hydrateCalendarImages(
+                context = context,
+                serverIndex = serverIndex,
+                entries = cachedEntries,
+                localOnly = !plan.networkAvailable,
+            )
 
         if (!plan.shouldRequestNetwork) {
             return BaCalendarSyncSnapshot(
@@ -103,39 +113,42 @@ internal object BaCalendarPoolRepository {
             return BaCalendarSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
-                error = if (plan.hasCache) {
-                    context.getString(R.string.ba_calendar_pool_error_offline_cached)
-                } else {
-                    context.getString(R.string.ba_calendar_pool_error_offline_no_cache)
-                },
+                error =
+                    if (plan.hasCache) {
+                        context.getString(R.string.ba_calendar_pool_error_offline_cached)
+                    } else {
+                        context.getString(R.string.ba_calendar_pool_error_offline_no_cache)
+                    },
                 lastSyncMs = cacheSnapshot.syncMs,
                 imageWarmEntries = cachedEntries,
             )
         }
 
-        val result = withContext(AppDispatchers.baFetch) {
-            runCatching {
-                runWithHardTimeout(15_000L) {
-                    fetchBaCalendarRemoteResult(serverIndex, now)
+        val result =
+            withContext(AppDispatchers.baFetch) {
+                runCatching {
+                    runWithHardTimeout(15_000L) {
+                        fetchBaCalendarRemoteResult(serverIndex, now)
+                    }
                 }
             }
-        }
         if (result.isSuccess) {
             val entries = result.getOrThrow().entries
             if (entries.isNotEmpty()) {
-                val entriesWithLocalImages = BaCalendarPoolCacheWriter.saveCalendarAndHydrateImages(
-                    context = context,
-                    serverIndex = serverIndex,
-                    entries = entries,
-                    nowMs = now
-                )
+                val entriesWithLocalImages =
+                    BaCalendarPoolCacheWriter.saveCalendarAndHydrateImages(
+                        context = context,
+                        serverIndex = serverIndex,
+                        entries = entries,
+                        nowMs = now,
+                    )
                 BaCalendarPoolSyncNotifier.dispatchCalendarSyncNotifications(
                     context = context,
                     serverIndex = serverIndex,
                     previousEntries = cachedEntries,
                     nextEntries = entries,
                     nowMs = now,
-                    hadCache = plan.hasCache
+                    hadCache = plan.hasCache,
                 )
                 return BaCalendarSyncSnapshot(
                     entries = entriesWithLocalImages,
@@ -157,11 +170,12 @@ internal object BaCalendarPoolRepository {
         return BaCalendarSyncSnapshot(
             entries = cachedEntriesWithLocalImages,
             loading = false,
-            error = if (plan.hasCache) {
-                context.getString(R.string.ba_calendar_pool_error_sync_failed_cached)
-            } else {
-                context.getString(R.string.ba_calendar_error_sync_failed)
-            },
+            error =
+                if (plan.hasCache) {
+                    context.getString(R.string.ba_calendar_pool_error_sync_failed_cached)
+                } else {
+                    context.getString(R.string.ba_calendar_error_sync_failed)
+                },
             lastSyncMs = cacheSnapshot.syncMs,
             imageWarmEntries = cachedEntries,
         )
@@ -180,39 +194,44 @@ internal object BaCalendarPoolRepository {
                 entries = emptyList(),
                 loading = true,
                 error = null,
-                lastSyncMs = 0L
+                lastSyncMs = 0L,
             )
         }
-        val cacheSnapshot = withContext(AppDispatchers.baFetch) {
-            BASettingsStore.loadPoolCacheSnapshot(serverIndex)
-        }
+        val cacheSnapshot =
+            withContext(AppDispatchers.baFetch) {
+                BASettingsStore.loadPoolCacheSnapshot(serverIndex)
+            }
         val hasCache = cacheSnapshot.raw.isNotBlank()
-        val plan = BaCalendarPoolSyncPlanner.build(
-            context = context,
-            cacheSyncMs = cacheSnapshot.syncMs,
-            hasCache = hasCache,
-            cacheSchemaVersion = cacheSnapshot.version,
-            expectedSchemaVersion = BA_POOL_CACHE_SCHEMA_VERSION,
-            reloadSignal = reloadSignal,
-            refreshIntervalHours = calendarRefreshIntervalHours
-        )
+        val plan =
+            BaCalendarPoolSyncPlanner.build(
+                context = context,
+                cacheSyncMs = cacheSnapshot.syncMs,
+                hasCache = hasCache,
+                cacheSchemaVersion = cacheSnapshot.version,
+                expectedSchemaVersion = BA_POOL_CACHE_SCHEMA_VERSION,
+                reloadSignal = reloadSignal,
+                refreshIntervalHours = calendarRefreshIntervalHours,
+            )
         val now = plan.nowMs
-        val decodedCachedEntries = if (hasCache) {
-            runCatching { decodeBaPoolEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
-        } else {
-            emptyList()
-        }
-        val cachedEntries = poolStudentGuideUrlRepository.resolve(
-            serverIndex = serverIndex,
-            entries = decodedCachedEntries,
-            allowCatalogNetwork = false
-        )
-        val cachedEntriesWithLocalImages = BaCalendarPoolCacheWriter.hydratePoolImages(
-            context = context,
-            serverIndex = serverIndex,
-            entries = cachedEntries,
-            localOnly = !plan.networkAvailable
-        )
+        val decodedCachedEntries =
+            if (hasCache) {
+                runCatching { decodeBaPoolEntries(cacheSnapshot.raw, now) }.getOrElse { emptyList() }
+            } else {
+                emptyList()
+            }
+        val cachedEntries =
+            poolStudentGuideUrlRepository.resolve(
+                serverIndex = serverIndex,
+                entries = decodedCachedEntries,
+                allowCatalogNetwork = false,
+            )
+        val cachedEntriesWithLocalImages =
+            BaCalendarPoolCacheWriter.hydratePoolImages(
+                context = context,
+                serverIndex = serverIndex,
+                entries = cachedEntries,
+                localOnly = !plan.networkAvailable,
+            )
 
         if (!plan.shouldRequestNetwork) {
             return BaPoolSyncSnapshot(
@@ -238,43 +257,47 @@ internal object BaCalendarPoolRepository {
             return BaPoolSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
-                error = if (plan.hasCache) {
-                    context.getString(R.string.ba_calendar_pool_error_offline_cached)
-                } else {
-                    context.getString(R.string.ba_calendar_pool_error_offline_no_cache)
-                },
+                error =
+                    if (plan.hasCache) {
+                        context.getString(R.string.ba_calendar_pool_error_offline_cached)
+                    } else {
+                        context.getString(R.string.ba_calendar_pool_error_offline_no_cache)
+                    },
                 lastSyncMs = cacheSnapshot.syncMs,
                 imageWarmEntries = cachedEntries,
             )
         }
 
-        val result = withContext(AppDispatchers.baFetch) {
-            runCatching {
-                runWithHardTimeout(15_000L) {
-                    fetchBaPoolRemoteResult(serverIndex, now)
+        val result =
+            withContext(AppDispatchers.baFetch) {
+                runCatching {
+                    runWithHardTimeout(15_000L) {
+                        fetchBaPoolRemoteResult(serverIndex, now)
+                    }
                 }
             }
-        }
         if (result.isSuccess) {
-            val entries = poolStudentGuideUrlRepository.resolve(
-                serverIndex = serverIndex,
-                entries = result.getOrThrow().entries,
-                allowCatalogNetwork = true
-            )
-            if (entries.isNotEmpty()) {
-                val entriesWithLocalImages = BaCalendarPoolCacheWriter.savePoolAndHydrateImages(
-                    context = context,
+            val entries =
+                poolStudentGuideUrlRepository.resolve(
                     serverIndex = serverIndex,
-                    entries = entries,
-                    nowMs = now
+                    entries = result.getOrThrow().entries,
+                    allowCatalogNetwork = true,
                 )
+            if (entries.isNotEmpty()) {
+                val entriesWithLocalImages =
+                    BaCalendarPoolCacheWriter.savePoolAndHydrateImages(
+                        context = context,
+                        serverIndex = serverIndex,
+                        entries = entries,
+                        nowMs = now,
+                    )
                 BaCalendarPoolSyncNotifier.dispatchPoolSyncNotifications(
                     context = context,
                     serverIndex = serverIndex,
                     previousEntries = cachedEntries,
                     nextEntries = entries,
                     nowMs = now,
-                    hadCache = plan.hasCache
+                    hadCache = plan.hasCache,
                 )
                 return BaPoolSyncSnapshot(
                     entries = entriesWithLocalImages,
@@ -296,14 +319,14 @@ internal object BaCalendarPoolRepository {
         return BaPoolSyncSnapshot(
             entries = cachedEntriesWithLocalImages,
             loading = false,
-            error = if (plan.hasCache) {
-                context.getString(R.string.ba_calendar_pool_error_sync_failed_cached)
-            } else {
-                context.getString(R.string.ba_pool_error_sync_failed)
-            },
+            error =
+                if (plan.hasCache) {
+                    context.getString(R.string.ba_calendar_pool_error_sync_failed_cached)
+                } else {
+                    context.getString(R.string.ba_pool_error_sync_failed)
+                },
             lastSyncMs = cacheSnapshot.syncMs,
             imageWarmEntries = cachedEntries,
         )
     }
-
 }

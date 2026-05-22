@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import os.kei.core.background.AppBackgroundScheduler
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
@@ -18,8 +17,8 @@ internal class BaOfficeActionCoordinator(
     private val onOpenPoolStudentGuide: (String) -> Unit,
     private val onOpenGuideCatalog: () -> Unit,
 ) {
-    fun buildContentActions(): BaPageContentActions {
-        return BaPageContentActions(
+    fun buildContentActions(): BaPageContentActions =
+        BaPageContentActions(
             onApCurrentInputChange = { office.apCurrentInput = it },
             onApCurrentDone = ::saveApCurrentInput,
             onApLimitInputChange = { office.apLimitInput = it },
@@ -47,7 +46,6 @@ internal class BaOfficeActionCoordinator(
             onIdFriendCodeInputChange = { office.idFriendCodeInput = it },
             onSaveIdFriendCode = { office.saveIdFriendCodeFromInput(context, ui.serverIndex) },
         )
-    }
 
     private fun saveApCurrentInput() {
         val finalValue = office.apCurrentInput.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 0
@@ -57,8 +55,9 @@ internal class BaOfficeActionCoordinator(
     }
 
     private fun saveApLimitInput() {
-        val finalValue = office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
-            ?: BA_AP_LIMIT_MAX
+        val finalValue =
+            office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
+                ?: BA_AP_LIMIT_MAX
         office.updateApLimit(finalValue)
         office.applyApRegen()
         AppBackgroundScheduler.scheduleBaApThreshold(context)
@@ -70,14 +69,14 @@ internal class BaOfficeActionCoordinator(
         office.applyCafeStorage()
         office.cafeLevel = normalized
         office.clampCafeStoredToCap()
-        BASettingsStore.saveCafeLevel(normalized)
+        BaOfficeRepository.saveCafeLevel(normalized)
         ui.sheetCafeLevel = normalized
         ui.showCafeLevelPopup = false
     }
 
     private fun selectServer(selected: Int) {
         ui.serverIndex = selected
-        BASettingsStore.saveServerIndex(selected)
+        BaOfficeRepository.saveServerIndex(selected)
         office.loadIdForServer(selected)
         resetCafeVisitBaselineIfNeeded(selected)
         resetArenaRefreshBaselineIfNeeded(selected)
@@ -94,21 +93,23 @@ internal class BaOfficeActionCoordinator(
 
     private fun resetCafeVisitBaselineIfNeeded(serverIndex: Int) {
         if (!office.cafeVisitNotifyEnabled) return
-        val baselineSlotMs = currentCafeStudentRefreshSlotMs(
-            nowMs = System.currentTimeMillis(),
-            serverIndex = serverIndex
-        )
+        val baselineSlotMs =
+            currentCafeStudentRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = serverIndex,
+            )
         office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
-        BASettingsStore.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
+        BaOfficeRepository.saveCafeVisitLastNotifiedSlotMs(baselineSlotMs)
     }
 
     private fun resetArenaRefreshBaselineIfNeeded(serverIndex: Int) {
         if (!office.arenaRefreshNotifyEnabled) return
-        val baselineSlotMs = currentArenaRefreshSlotMs(
-            nowMs = System.currentTimeMillis(),
-            serverIndex = serverIndex
-        )
+        val baselineSlotMs =
+            currentArenaRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = serverIndex,
+            )
         office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
-        BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(baselineSlotMs)
+        BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMs(baselineSlotMs)
     }
 }

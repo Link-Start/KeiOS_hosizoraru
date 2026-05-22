@@ -17,9 +17,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.shell.OsShellBehaviorSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellOutputSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellRunnerChromePrefs
-import os.kei.ui.page.main.os.shell.OsShellRunnerOutputSaveMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerSettings
-import os.kei.ui.page.main.os.shell.OsShellRunnerStartupBehavior
 import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerSaveSheet
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
@@ -49,25 +47,7 @@ internal fun OsShellRunnerSheets(
     settings: OsShellRunnerSettings,
     chromePrefs: OsShellRunnerChromePrefs,
     dangerousCommandPreview: String,
-    onDismissSaveSheet: () -> Unit,
-    onSaveSheetDismissFinished: () -> Unit,
-    onConfirmSave: () -> Unit,
-    onDismissBehaviorSettings: () -> Unit,
-    onPersistInputEnabledChange: (Boolean) -> Unit,
-    onTimeoutSecondsChange: (Int) -> Unit,
-    onDangerousCommandConfirmChange: (Boolean) -> Unit,
-    onCompletionToastChange: (Boolean) -> Unit,
-    onStartupBehaviorChange: (OsShellRunnerStartupBehavior) -> Unit,
-    onExitCleanupModeChange: (os.kei.ui.page.main.os.shell.OsShellRunnerExitCleanupMode) -> Unit,
-    onDismissOutputSettings: () -> Unit,
-    onPersistOutputEnabledChange: (Boolean) -> Unit,
-    onAutoFormatOutputChange: (Boolean) -> Unit,
-    onAutoScrollOutputChange: (Boolean) -> Unit,
-    onOutputLimitCharsChange: (Int) -> Unit,
-    onOutputSaveModeChange: (OsShellRunnerOutputSaveMode) -> Unit,
-    onCopyModeChange: (os.kei.ui.page.main.os.shell.OsShellRunnerCopyMode) -> Unit,
-    onDismissDangerousCommand: () -> Unit,
-    onConfirmDangerousCommand: () -> Unit,
+    actions: OsShellRunnerSheetActions,
 ) {
     OsShellRunnerSaveSheet(
         show = showSaveSheet,
@@ -81,42 +61,42 @@ internal fun OsShellRunnerSheets(
         saveSheetSubtitleHint = textBundle.saveSheetSubtitleHint,
         saveSheetTimePlaceholder = textBundle.saveSheetTimePlaceholder,
         saveTitleInput = saveTitleInput,
-        onSaveTitleInputChange = onSaveTitleInputChange,
+        onSaveTitleInputChange = actions.onSaveTitleInputChange,
         saveSubtitleInput = saveSubtitleInput,
-        onSaveSubtitleInputChange = onSaveSubtitleInputChange,
+        onSaveSubtitleInputChange = actions.onSaveSubtitleInputChange,
         hasUnsavedChanges =
             saveTitleInput.trim().isNotBlank() ||
                 saveSubtitleInput.trim() != saveInitialSubtitleInput.trim(),
         shellCommandAccentColor = shellCommandAccentColor,
         shellSuccessAccentColor = shellSuccessAccentColor,
         shellStoppedAccentColor = shellStoppedAccentColor,
-        onDismissRequest = onDismissSaveSheet,
-        onDismissFinished = onSaveSheetDismissFinished,
-        onConfirm = onConfirmSave,
+        onDismissRequest = actions.onDismissSaveSheet,
+        onDismissFinished = actions.onSaveSheetDismissFinished,
+        onConfirm = actions.onConfirmSave,
     )
 
     CompositionLocalProvider(LocalLiquidControlsEnabled provides chromePrefs.liquidSwitchEnabled) {
         OsShellBehaviorSettingsSheet(
             show = showBehaviorSettingsSheet,
-            onDismissRequest = onDismissBehaviorSettings,
+            onDismissRequest = actions.onDismissBehaviorSettings,
             settings = settings,
-            onPersistInputEnabledChange = onPersistInputEnabledChange,
-            onTimeoutSecondsChange = onTimeoutSecondsChange,
-            onDangerousCommandConfirmChange = onDangerousCommandConfirmChange,
-            onCompletionToastChange = onCompletionToastChange,
-            onStartupBehaviorChange = onStartupBehaviorChange,
-            onExitCleanupModeChange = onExitCleanupModeChange,
+            onPersistInputEnabledChange = actions.onPersistInputEnabledChange,
+            onTimeoutSecondsChange = actions.onTimeoutSecondsChange,
+            onDangerousCommandConfirmChange = actions.onDangerousCommandConfirmChange,
+            onCompletionToastChange = actions.onCompletionToastChange,
+            onStartupBehaviorChange = actions.onStartupBehaviorChange,
+            onExitCleanupModeChange = actions.onExitCleanupModeChange,
         )
         OsShellOutputSettingsSheet(
             show = showOutputSettingsSheet,
-            onDismissRequest = onDismissOutputSettings,
+            onDismissRequest = actions.onDismissOutputSettings,
             settings = settings,
-            onPersistOutputEnabledChange = onPersistOutputEnabledChange,
-            onAutoFormatOutputChange = onAutoFormatOutputChange,
-            onAutoScrollOutputChange = onAutoScrollOutputChange,
-            onOutputLimitCharsChange = onOutputLimitCharsChange,
-            onOutputSaveModeChange = onOutputSaveModeChange,
-            onCopyModeChange = onCopyModeChange,
+            onPersistOutputEnabledChange = actions.onPersistOutputEnabledChange,
+            onAutoFormatOutputChange = actions.onAutoFormatOutputChange,
+            onAutoScrollOutputChange = actions.onAutoScrollOutputChange,
+            onOutputLimitCharsChange = actions.onOutputLimitCharsChange,
+            onOutputSaveModeChange = actions.onOutputSaveModeChange,
+            onCopyModeChange = actions.onCopyModeChange,
         )
     }
 
@@ -129,8 +109,8 @@ internal fun OsShellRunnerSheets(
                 dangerousCommandPreview.ifBlank { "-" },
             ),
         confirmText = textBundle.dangerousCommandConfirmText,
-        onDismissRequest = onDismissDangerousCommand,
-        onConfirm = onConfirmDangerousCommand,
+        onDismissRequest = actions.onDismissDangerousCommand,
+        onConfirm = actions.onConfirmDangerousCommand,
     )
 }
 

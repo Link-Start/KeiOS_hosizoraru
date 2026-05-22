@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import os.kei.core.ext.showToast
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -11,7 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import os.kei.R
-import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.core.ext.showToast
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
@@ -90,8 +89,8 @@ internal class BaOfficeController(
 
     fun displayApInputText(): String = displayAp(apCurrent).toString()
 
-    fun state(): BaOfficeState {
-        return BaOfficeState(
+    fun state(): BaOfficeState =
+        BaOfficeState(
             cafeLevel = cafeLevel,
             cafeStoredAp = cafeStoredAp,
             cafeLastHourMs = cafeLastHourMs,
@@ -119,12 +118,11 @@ internal class BaOfficeController(
             idFriendCodeInput = idFriendCodeInput,
             apLastNotifiedLevel = apLastNotifiedLevel,
         )
-    }
 
     fun ensureRegenBase(nowMs: Long = System.currentTimeMillis()) {
         if (apRegenBaseMs <= 0L) {
             apRegenBaseMs = nowMs
-            BASettingsStore.saveApRegenBaseMs(nowMs)
+            BaOfficeRepository.saveApRegenBaseMs(nowMs)
         }
     }
 
@@ -132,7 +130,7 @@ internal class BaOfficeController(
         val currentHour = floorToHourMs(nowMs)
         if (cafeLastHourMs <= 0L || cafeLastHourMs > currentHour) {
             cafeLastHourMs = currentHour
-            BASettingsStore.saveCafeLastHourMs(currentHour)
+            BaOfficeRepository.saveCafeLastHourMs(currentHour)
         }
     }
 
@@ -141,14 +139,14 @@ internal class BaOfficeController(
         val clamped = normalizeAp(cafeStoredAp.coerceIn(0.0, cap))
         if (clamped != cafeStoredAp) {
             cafeStoredAp = clamped
-            BASettingsStore.saveCafeStoredAp(clamped)
+            BaOfficeRepository.saveCafeStoredAp(clamped)
         }
     }
 
     fun loadIdForServer(serverIndex: Int) {
         if (!idIndependentByServer) return
-        idNickname = BASettingsStore.loadIdNickname(serverIndex)
-        idFriendCode = BASettingsStore.loadIdFriendCode(serverIndex)
+        idNickname = BaOfficeRepository.loadIdNickname(serverIndex)
+        idFriendCode = BaOfficeRepository.loadIdFriendCode(serverIndex)
         idNicknameInput = idNickname
         idFriendCodeInput = idFriendCode
     }
@@ -158,13 +156,13 @@ internal class BaOfficeController(
         enabled: Boolean,
     ) {
         idIndependentByServer = enabled
-        BASettingsStore.saveIdIndependentByServerEnabled(enabled)
+        BaOfficeRepository.saveIdIndependentByServerEnabled(enabled)
         if (enabled) {
-            BASettingsStore.saveIdNickname(idNickname, serverIndex)
-            BASettingsStore.saveIdFriendCode(idFriendCode, serverIndex)
+            BaOfficeRepository.saveIdNickname(idNickname, serverIndex)
+            BaOfficeRepository.saveIdFriendCode(idFriendCode, serverIndex)
         } else {
-            BASettingsStore.saveIdNickname(idNickname)
-            BASettingsStore.saveIdFriendCode(idFriendCode)
+            BaOfficeRepository.saveIdNickname(idNickname)
+            BaOfficeRepository.saveIdFriendCode(idFriendCode)
         }
     }
 
@@ -172,10 +170,13 @@ internal class BaOfficeController(
         val sanitized = idNicknameInput.take(10).ifEmpty { BA_DEFAULT_NICKNAME }
         idNickname = sanitized
         idNicknameInput = sanitized
-        BASettingsStore.saveIdNickname(sanitized, serverIndex)
+        BaOfficeRepository.saveIdNickname(sanitized, serverIndex)
     }
 
-    fun saveIdFriendCodeFromInput(context: Context, serverIndex: Int) {
+    fun saveIdFriendCodeFromInput(
+        context: Context,
+        serverIndex: Int,
+    ) {
         val sanitized = sanitizeBaFriendCodeInput(idFriendCodeInput)
         if (sanitized.length != 8) {
             context.showToast(R.string.ba_toast_friend_code_invalid)
@@ -184,20 +185,24 @@ internal class BaOfficeController(
         }
         idFriendCode = sanitized
         idFriendCodeInput = sanitized
-        BASettingsStore.saveIdFriendCode(sanitized, serverIndex)
+        BaOfficeRepository.saveIdFriendCode(sanitized, serverIndex)
     }
 
-    fun updateCurrentAp(newValue: Int, markSync: Boolean) {
-        val (next, nowMs) = applyBaCurrentApUpdate(
-            currentAp = apCurrent,
-            newValue = newValue,
-        )
+    fun updateCurrentAp(
+        newValue: Int,
+        markSync: Boolean,
+    ) {
+        val (next, nowMs) =
+            applyBaCurrentApUpdate(
+                currentAp = apCurrent,
+                newValue = newValue,
+            )
         apCurrent = next
         apRegenBaseMs = nowMs
         if (markSync) {
             apSyncMs = nowMs
         }
-        BASettingsStore.saveBaRuntimeState(
+        BaOfficeRepository.saveRuntimeState(
             apCurrent = next,
             apRegenBaseMs = nowMs,
             apSyncMs = nowMs.takeIf { markSync },
@@ -205,18 +210,22 @@ internal class BaOfficeController(
         )
     }
 
-    fun addCurrentAp(delta: Double, markSync: Boolean) {
-        val result = applyBaCurrentApDelta(
-            currentAp = apCurrent,
-            delta = delta,
-        ) ?: return
+    fun addCurrentAp(
+        delta: Double,
+        markSync: Boolean,
+    ) {
+        val result =
+            applyBaCurrentApDelta(
+                currentAp = apCurrent,
+                delta = delta,
+            ) ?: return
         val (next, nowMs) = result
         apCurrent = next
         apRegenBaseMs = nowMs
         if (markSync) {
             apSyncMs = nowMs
         }
-        BASettingsStore.saveBaRuntimeState(
+        BaOfficeRepository.saveRuntimeState(
             apCurrent = next,
             apRegenBaseMs = nowMs,
             apSyncMs = nowMs.takeIf { markSync },
@@ -227,7 +236,7 @@ internal class BaOfficeController(
     fun updateApLimit(newLimit: Int) {
         val clamped = coerceBaApLimit(newLimit)
         apLimit = clamped
-        BASettingsStore.saveApLimit(clamped)
+        BaOfficeRepository.saveApLimit(clamped)
         ensureRegenBase()
     }
 
@@ -238,19 +247,20 @@ internal class BaOfficeController(
             if (apCurrent < 0.0) {
                 apCurrent = 0.0
             }
-            BASettingsStore.saveBaRuntimeState(
+            BaOfficeRepository.saveRuntimeState(
                 apCurrent = correctedAp,
                 apRegenBaseMs = nowMs,
                 notifyHomeOverview = false,
             )
             return
         }
-        val (nextAp, nextBase) = applyBaApRegenTick(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = nowMs,
-        )
+        val (nextAp, nextBase) =
+            applyBaApRegenTick(
+                apLimit = apLimit,
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
+                nowMs = nowMs,
+            )
         val shouldSaveAp = nextAp != apCurrent
         val shouldSaveBase = nextBase != apRegenBaseMs
         if (shouldSaveAp) {
@@ -260,7 +270,7 @@ internal class BaOfficeController(
             apRegenBaseMs = nextBase
         }
         if (shouldSaveAp || shouldSaveBase) {
-            BASettingsStore.saveBaRuntimeState(
+            BaOfficeRepository.saveRuntimeState(
                 apCurrent = nextAp.takeIf { shouldSaveAp },
                 apRegenBaseMs = nextBase.takeIf { shouldSaveBase },
                 notifyHomeOverview = false,
@@ -274,12 +284,13 @@ internal class BaOfficeController(
         var nextCafeStoredToSave: Double? = null
         var nextCafeHourToSave: Long? = null
 
-        val (nextStoredAp, nextHour) = applyBaCafeStorageTick(
-            cafeStoredAp = cafeStoredAp,
-            cafeLevel = cafeLevel,
-            cafeLastHourMs = cafeLastHourMs,
-            nowMs = nowMs,
-        )
+        val (nextStoredAp, nextHour) =
+            applyBaCafeStorageTick(
+                cafeStoredAp = cafeStoredAp,
+                cafeLevel = cafeLevel,
+                cafeLastHourMs = cafeLastHourMs,
+                nowMs = nowMs,
+            )
         if (nextStoredAp != cafeStoredAp) {
             cafeStoredAp = nextStoredAp
             nextCafeStoredToSave = nextStoredAp
@@ -297,12 +308,13 @@ internal class BaOfficeController(
                 nextApToSave = 0.0
             }
         } else {
-            val (nextAp, nextBase) = applyBaApRegenTick(
-                apLimit = apLimit,
-                apCurrent = apCurrent,
-                apRegenBaseMs = apRegenBaseMs,
-                nowMs = nowMs,
-            )
+            val (nextAp, nextBase) =
+                applyBaApRegenTick(
+                    apLimit = apLimit,
+                    apCurrent = apCurrent,
+                    apRegenBaseMs = apRegenBaseMs,
+                    nowMs = nowMs,
+                )
             if (nextAp != apCurrent) {
                 apCurrent = nextAp
                 nextApToSave = nextAp
@@ -335,12 +347,13 @@ internal class BaOfficeController(
     }
 
     fun applyCafeStorage(nowMs: Long = System.currentTimeMillis()) {
-        val (nextStoredAp, nextHour) = applyBaCafeStorageTick(
-            cafeStoredAp = cafeStoredAp,
-            cafeLevel = cafeLevel,
-            cafeLastHourMs = cafeLastHourMs,
-            nowMs = nowMs,
-        )
+        val (nextStoredAp, nextHour) =
+            applyBaCafeStorageTick(
+                cafeStoredAp = cafeStoredAp,
+                cafeLevel = cafeLevel,
+                cafeLastHourMs = cafeLastHourMs,
+                nowMs = nowMs,
+            )
         val shouldSaveStoredAp = nextStoredAp != cafeStoredAp
         val shouldSaveHour = nextHour != cafeLastHourMs
         if (shouldSaveStoredAp) {
@@ -350,7 +363,7 @@ internal class BaOfficeController(
             cafeLastHourMs = nextHour
         }
         if (shouldSaveStoredAp || shouldSaveHour) {
-            BASettingsStore.saveBaRuntimeState(
+            BaOfficeRepository.saveRuntimeState(
                 cafeStoredAp = nextStoredAp.takeIf { shouldSaveStoredAp },
                 cafeLastHourMs = nextHour.takeIf { shouldSaveHour },
                 notifyHomeOverview = false,
@@ -368,19 +381,20 @@ internal class BaOfficeController(
         addCurrentAp(claim, markSync = true)
         cafeStoredAp = 0.0
         cafeApLastNotifiedLevel = -1
-        BASettingsStore.saveCafeStoredAp(0.0)
-        BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+        BaOfficeRepository.saveCafeStoredAp(0.0)
+        BaOfficeRepository.saveCafeApLastNotifiedLevel(-1)
         context.showToast(context.getString(R.string.ba_toast_cafe_claimed_ap, claim.roundToInt()))
     }
 
     fun testCafePlus3Hours(context: Context) {
         applyCafeStorage()
-        val (nextStoredAp, gainedInt) = applyBaCafeDebugGain(
-            cafeStoredAp = cafeStoredAp,
-            cafeLevel = cafeLevel,
-        )
+        val (nextStoredAp, gainedInt) =
+            applyBaCafeDebugGain(
+                cafeStoredAp = cafeStoredAp,
+                cafeLevel = cafeLevel,
+            )
         cafeStoredAp = nextStoredAp
-        BASettingsStore.saveCafeStoredAp(cafeStoredAp)
+        BaOfficeRepository.saveCafeStoredAp(cafeStoredAp)
         context.showToast(context.getString(R.string.ba_toast_cafe_debug_added, gainedInt))
     }
 
@@ -392,39 +406,40 @@ internal class BaOfficeController(
     }
 
     fun touchHead(serverIndex: Int) {
-        val consumedAt = consumeBaHeadpat(
-            coffeeHeadpatMs = coffeeHeadpatMs,
-            serverIndex = serverIndex,
-        ) ?: return
+        val consumedAt =
+            consumeBaHeadpat(
+                coffeeHeadpatMs = coffeeHeadpatMs,
+                serverIndex = serverIndex,
+            ) ?: return
         coffeeHeadpatMs = consumedAt
-        BASettingsStore.saveCoffeeHeadpatMs(consumedAt)
+        BaOfficeRepository.saveCoffeeHeadpatMs(consumedAt)
     }
 
     fun forceResetHeadpatCooldown() {
         coffeeHeadpatMs = 0L
-        BASettingsStore.saveCoffeeHeadpatMs(0L)
+        BaOfficeRepository.saveCoffeeHeadpatMs(0L)
     }
 
     fun useInviteTicket1() {
         val consumedAt = consumeBaInviteTicket(coffeeInvite1UsedMs) ?: return
         coffeeInvite1UsedMs = consumedAt
-        BASettingsStore.saveCoffeeInvite1UsedMs(consumedAt)
+        BaOfficeRepository.saveCoffeeInvite1UsedMs(consumedAt)
     }
 
     fun forceResetInviteTicket1Cooldown() {
         coffeeInvite1UsedMs = 0L
-        BASettingsStore.saveCoffeeInvite1UsedMs(0L)
+        BaOfficeRepository.saveCoffeeInvite1UsedMs(0L)
     }
 
     fun useInviteTicket2() {
         val consumedAt = consumeBaInviteTicket(coffeeInvite2UsedMs) ?: return
         coffeeInvite2UsedMs = consumedAt
-        BASettingsStore.saveCoffeeInvite2UsedMs(consumedAt)
+        BaOfficeRepository.saveCoffeeInvite2UsedMs(consumedAt)
     }
 
     fun forceResetInviteTicket2Cooldown() {
         coffeeInvite2UsedMs = 0L
-        BASettingsStore.saveCoffeeInvite2UsedMs(0L)
+        BaOfficeRepository.saveCoffeeInvite2UsedMs(0L)
     }
 
     fun sendApTestNotification(
@@ -435,12 +450,13 @@ internal class BaOfficeController(
         val currentDisplay = displayAp(apCurrent)
         val limitDisplay = apLimit.coerceIn(0, BA_AP_MAX)
         val thresholdDisplay = apNotifyThreshold.coerceIn(0, BA_AP_MAX)
-        val sent = BaApNotificationDispatcher.send(
-            context = context,
-            currentDisplay = currentDisplay,
-            limitDisplay = limitDisplay,
-            thresholdDisplay = thresholdDisplay
-        )
+        val sent =
+            BaApNotificationDispatcher.send(
+                context = context,
+                currentDisplay = currentDisplay,
+                limitDisplay = limitDisplay,
+                thresholdDisplay = thresholdDisplay,
+            )
         if (!sent) {
             if (showToast) {
                 context.showToast(R.string.ba_toast_notification_permission_required)
@@ -448,13 +464,14 @@ internal class BaOfficeController(
             return false
         }
         if (showToast) {
-            val notifyText = context.getString(
-                if (thresholdTriggered) {
-                    R.string.ba_toast_ap_threshold_notification_sent
-                } else {
-                    R.string.ba_toast_ap_notification_sent
-                }
-            )
+            val notifyText =
+                context.getString(
+                    if (thresholdTriggered) {
+                        R.string.ba_toast_ap_threshold_notification_sent
+                    } else {
+                        R.string.ba_toast_ap_notification_sent
+                    },
+                )
             context.showToast(notifyText)
         }
         return true
@@ -468,12 +485,13 @@ internal class BaOfficeController(
         val currentDisplay = displayAp(cafeStoredAp)
         val limitDisplay = displayAp(cafeStorageCap(cafeLevel))
         val thresholdDisplay = cafeApNotifyThreshold.coerceIn(0, limitDisplay)
-        val sent = BaCafeApNotificationDispatcher.send(
-            context = context,
-            currentDisplay = currentDisplay,
-            limitDisplay = limitDisplay,
-            thresholdDisplay = thresholdDisplay
-        )
+        val sent =
+            BaCafeApNotificationDispatcher.send(
+                context = context,
+                currentDisplay = currentDisplay,
+                limitDisplay = limitDisplay,
+                thresholdDisplay = thresholdDisplay,
+            )
         if (!sent) {
             if (showToast) {
                 context.showToast(R.string.ba_toast_notification_permission_required)
@@ -491,15 +509,17 @@ internal class BaOfficeController(
         serverIndex: Int,
         showToast: Boolean = true,
     ): Boolean {
-        val slotMs = currentCafeStudentRefreshSlotMs(
-            nowMs = System.currentTimeMillis(),
-            serverIndex = serverIndex
-        )
-        val sent = BaCafeVisitNotificationDispatcher.send(
-            context = context,
-            serverIndex = serverIndex,
-            slotMs = slotMs
-        )
+        val slotMs =
+            currentCafeStudentRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = serverIndex,
+            )
+        val sent =
+            BaCafeVisitNotificationDispatcher.send(
+                context = context,
+                serverIndex = serverIndex,
+                slotMs = slotMs,
+            )
         if (!sent) {
             if (showToast) {
                 context.showToast(R.string.ba_toast_notification_permission_required)
@@ -517,15 +537,17 @@ internal class BaOfficeController(
         serverIndex: Int,
         showToast: Boolean = true,
     ): Boolean {
-        val slotMs = currentArenaRefreshSlotMs(
-            nowMs = System.currentTimeMillis(),
-            serverIndex = serverIndex
-        )
-        val sent = BaArenaRefreshNotificationDispatcher.send(
-            context = context,
-            serverIndex = serverIndex,
-            slotMs = slotMs
-        )
+        val slotMs =
+            currentArenaRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = serverIndex,
+            )
+        val sent =
+            BaArenaRefreshNotificationDispatcher.send(
+                context = context,
+                serverIndex = serverIndex,
+                slotMs = slotMs,
+            )
         if (!sent) {
             if (showToast) {
                 context.showToast(R.string.ba_toast_notification_permission_required)
@@ -547,8 +569,4 @@ internal class BaOfficeController(
 }
 
 @Composable
-internal fun rememberBaOfficeController(
-    snapshot: BaPageSnapshot,
-): BaOfficeController {
-    return remember(snapshot) { BaOfficeController(snapshot) }
-}
+internal fun rememberBaOfficeController(snapshot: BaPageSnapshot): BaOfficeController = remember(snapshot) { BaOfficeController(snapshot) }

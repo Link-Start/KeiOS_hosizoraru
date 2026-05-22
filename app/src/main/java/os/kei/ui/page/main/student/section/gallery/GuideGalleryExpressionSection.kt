@@ -143,6 +143,7 @@ fun GuideGalleryExpressionCardItem(
     onSaveMedia: (url: String, title: String) -> Unit = { _, _ -> },
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit = { _, _ -> },
     mediaUrlResolver: (String) -> String = { it },
+    mediaAdaptiveRotationEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) return
@@ -494,6 +495,7 @@ fun GuideGalleryExpressionCardItem(
     if (showImageFullscreen && isImageType && displayImageUrl.isNotBlank()) {
         GuideImageFullscreenDialog(
             imageUrl = displayImageUrl,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             onDismiss = { showImageFullscreen = false }
         )
     }

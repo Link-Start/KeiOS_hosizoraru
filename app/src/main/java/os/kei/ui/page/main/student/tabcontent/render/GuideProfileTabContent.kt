@@ -16,7 +16,6 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.isNpcSatelliteLikeGuide
 import os.kei.ui.page.main.student.tabcontent.profile.GuideGiftPreferenceGrid
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoRows
@@ -42,6 +41,8 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     sourceUrl: String,
     galleryCacheRevision: Int,
     bgmFavoriteAudioUrls: Set<String>,
+    isNpcSatelliteGuide: Boolean,
+    mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
@@ -71,7 +72,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         return
     }
 
-    if (guide.isNpcSatelliteLikeGuide()) {
+    if (isNpcSatelliteGuide) {
         renderGuideNpcSatelliteProfileContent(
             guide = guide,
             error = error,
@@ -228,6 +229,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         sourceUrl = sourceUrl,
         galleryCacheRevision = galleryCacheRevision,
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
         onToggleBgmFavorite = onToggleBgmFavorite,
@@ -243,6 +245,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         sourceUrl = sourceUrl,
         galleryCacheRevision = galleryCacheRevision,
         bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
         onOpenExternal = onOpenExternal,
         onSaveMedia = onSaveMedia,
         onToggleBgmFavorite = onToggleBgmFavorite,

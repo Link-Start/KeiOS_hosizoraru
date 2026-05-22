@@ -60,6 +60,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     sourceUrl: String,
     galleryCacheRevision: Int,
     bgmFavoriteAudioUrls: Set<String>,
+    mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onToggleBgmFavorite: suspend (GuideBgmFavoriteItem) -> Boolean,
@@ -98,7 +99,8 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
                 embedded = true,
                 showMediaTypeLabel = false,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
-                onToggleBgmFavorite = onToggleBgmFavorite
+                onToggleBgmFavorite = onToggleBgmFavorite,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
             )
         }
     }

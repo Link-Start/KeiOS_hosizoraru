@@ -12,6 +12,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,19 +41,25 @@ import androidx.media3.ui.PlayerView
 import os.kei.R
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.UiPrefs
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.back.rememberFullscreenBackNavigationGestureState
 import os.kei.ui.page.main.student.section.gallery.BindGuideVideoForegroundPlaybackGuard
+import os.kei.ui.page.main.student.section.gallery.GuideFullscreenMediaRepository
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
 
 class GuideVideoFullscreenActivity : ComponentActivity() {
+    private val mediaRepository = GuideFullscreenMediaRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = resolveVideoFullscreenOrientation()
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED
+        lifecycleScope.launch {
+            val mediaAdaptiveRotationEnabled = mediaRepository.loadMediaAdaptiveRotationEnabled()
+            requestedOrientation = resolveVideoFullscreenOrientation(mediaAdaptiveRotationEnabled)
+        }
         enableEdgeToEdge()
 
         val normalizedUrl = normalizeGuideMediaSource(
@@ -79,8 +86,7 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
         }
     }
 
-    private fun resolveVideoFullscreenOrientation(): Int {
-        val mediaAdaptiveRotationEnabled = BASettingsStore.loadMediaAdaptiveRotationEnabled()
+    private fun resolveVideoFullscreenOrientation(mediaAdaptiveRotationEnabled: Boolean): Int {
         if (mediaAdaptiveRotationEnabled) {
             return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }

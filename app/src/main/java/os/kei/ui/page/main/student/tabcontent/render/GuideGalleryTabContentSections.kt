@@ -40,6 +40,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     studentImageUrl: String,
     galleryCacheRevision: Int,
     bgmFavoriteAudioUrls: Set<String>,
+    mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
@@ -103,7 +104,8 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     onOpenMedia = onOpenExternal,
                     onSaveMedia = onSaveMedia,
                     onSaveMediaPack = onSaveMediaPack,
-                    mediaUrlResolver = mediaUrlResolver
+                    mediaUrlResolver = mediaUrlResolver,
+                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
                 )
             } else {
                 GuideGalleryCardItem(
@@ -117,7 +119,8 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     bgmFavoriteStudentImageUrl = studentImageUrl,
                     bgmFavoriteSourceUrl = sourceUrl,
                     bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
-                    onToggleBgmFavorite = onToggleBgmFavorite
+                    onToggleBgmFavorite = onToggleBgmFavorite,
+                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
                 )
             }
         }

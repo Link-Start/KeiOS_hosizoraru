@@ -29,7 +29,8 @@ internal fun LazyListScope.renderGuideSkillsTabContent(
     info: BaStudentGuideInfo?,
     error: String?,
     backdrop: LayerBackdrop,
-    accent: Color
+    accent: Color,
+    mediaAdaptiveRotationEnabled: Boolean,
 ) {
     val guide = info
     if (guide == null) {
@@ -122,7 +123,8 @@ internal fun LazyListScope.renderGuideSkillsTabContent(
         item {
             GuideWeaponCardItem(
                 card = weapon,
-                backdrop = backdrop
+                backdrop = backdrop,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
             )
         }
     }

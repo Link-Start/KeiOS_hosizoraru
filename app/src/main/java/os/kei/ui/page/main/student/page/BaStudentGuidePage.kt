@@ -125,9 +125,7 @@ fun BaStudentGuidePage(
     val scrollBehavior = MiuixScrollBehavior()
 
     val guideViewModel: BaStudentGuideViewModel = viewModel()
-    val guideDataState by guideViewModel.dataState.collectAsStateWithLifecycle()
-    val guidePrefetchState by guideViewModel.prefetchState.collectAsStateWithLifecycle()
-    val bgmFavoriteAudioUrls by guideViewModel.bgmFavoriteAudioUrls.collectAsStateWithLifecycle()
+    val guideUiState by guideViewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -142,6 +140,9 @@ fun BaStudentGuidePage(
             refreshFailedKeepCacheText = refreshFailedKeepCacheText,
         )
     }
+    val guideDataState = guideUiState.dataState
+    val guidePrefetchState = guideUiState.prefetchState
+    val bgmFavoriteAudioUrls = guideUiState.bgmFavoriteAudioUrls
     val sourceUrl = guideDataState.sourceUrl
     val info = guideDataState.info
     val loading = guideDataState.loading
@@ -407,6 +408,8 @@ fun BaStudentGuidePage(
                 isVoicePlaying = isVoicePlaying,
                 voicePlayProgress = voicePlayProgress,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                isNpcSatelliteGuide = guideUiState.isNpcSatelliteGuide,
+                mediaAdaptiveRotationEnabled = guideUiState.mediaSettings.mediaAdaptiveRotationEnabled,
                 includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
                 guidePagerBeyondViewportPageCount = preloadPolicy.guidePagerBeyondViewportPageCount,
                 nestedScrollConnection = scrollBehavior.nestedScrollConnection,

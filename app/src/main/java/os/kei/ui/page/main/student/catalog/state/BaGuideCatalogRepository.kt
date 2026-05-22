@@ -270,19 +270,28 @@ internal class BaGuideCatalogRepository(
             )
         }
 
-    suspend fun deriveFavoriteBgmListState(input: BaGuideFavoriteBgmListInput): BaGuideFavoriteBgmListDerivedState =
-        withContext(parseDispatcher) {
+    suspend fun deriveFavoriteBgmListState(input: BaGuideFavoriteBgmListInput): BaGuideFavoriteBgmListDerivedState {
+        val metadataIndex =
+            withContext(ioDispatcher) {
+                runCatching {
+                    BaGuideBgmFavoriteMetadataIndex.build(input.favorites)
+                }.getOrDefault(BaGuideBgmFavoriteMetadataIndex.Empty)
+            }
+        return withContext(parseDispatcher) {
             BaGuideFavoriteBgmListDerivedState(
                 displayedFavorites =
                     filterAndSortBgmFavorites(
                         favorites = input.favorites,
                         searchQuery = input.searchQuery,
                         sortMode = input.sortMode,
+                        metadataIndex = metadataIndex,
                     ),
+                metadataIndex = metadataIndex,
                 playbackSnapshot = bgmPlaybackSnapshot(),
                 deriving = false,
             )
         }
+    }
 
     suspend fun deriveStudentBgmDisplayedState(input: BaGuideStudentBgmDisplayedInput): BaGuideStudentBgmDisplayedDerivedState =
         withContext(parseDispatcher) {

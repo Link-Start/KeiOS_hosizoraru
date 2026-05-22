@@ -122,6 +122,7 @@ internal data class BaGuideStudentBgmDisplayedDerivedState(
 @Immutable
 internal data class BaGuideFavoriteBgmListDerivedState(
     val displayedFavorites: List<GuideBgmFavoriteItem> = emptyList(),
+    val metadataIndex: BaGuideBgmFavoriteMetadataIndex = BaGuideBgmFavoriteMetadataIndex.Empty,
     val playbackSnapshot: GuideBgmFavoritePlaybackSnapshot =
         GuideBgmFavoritePlaybackSnapshot(
             selectedAudioUrl = "",

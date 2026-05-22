@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -35,6 +36,14 @@ internal data class BaStudentGuidePrefetchUiState(
     val galleryCacheRevision: Int = 0,
 )
 
+internal data class BaStudentGuideUiState(
+    val dataState: BaStudentGuideDataUiState = BaStudentGuideDataUiState(),
+    val prefetchState: BaStudentGuidePrefetchUiState = BaStudentGuidePrefetchUiState(),
+    val bgmFavoriteAudioUrls: Set<String> = emptySet(),
+    val isNpcSatelliteGuide: Boolean = false,
+    val mediaSettings: BaStudentGuideMediaSettings = BaStudentGuideMediaSettings(),
+)
+
 private data class BaStudentGuideBinding(
     val transitionAnimationsEnabled: Boolean,
     val initialFetchDelayMs: Int,
@@ -49,6 +58,7 @@ internal class BaStudentGuideViewModel(
     private val repository = BaStudentGuideRepository()
     private var binding: BaStudentGuideBinding? = null
     private var loadJob: Job? = null
+    private var npcSatelliteResolveJob: Job? = null
     private var prefetchJob: Job? = null
     private var lastLoadedSourceUrl: String = ""
 
@@ -74,6 +84,42 @@ internal class BaStudentGuideViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = repository.bgmFavoritesSnapshot().toAudioUrlSet(),
             )
+    private val _isNpcSatelliteGuide = MutableStateFlow(false)
+    private val _mediaSettings = MutableStateFlow(BaStudentGuideMediaSettings())
+    val uiState: StateFlow<BaStudentGuideUiState> =
+        combine(
+            dataState,
+            prefetchState,
+            bgmFavoriteAudioUrls,
+            _isNpcSatelliteGuide,
+            _mediaSettings,
+        ) { dataState, prefetchState, bgmFavoriteAudioUrls, isNpcSatelliteGuide, mediaSettings ->
+            BaStudentGuideUiState(
+                dataState = dataState,
+                prefetchState = prefetchState,
+                bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                isNpcSatelliteGuide = isNpcSatelliteGuide,
+                mediaSettings = mediaSettings,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue =
+                BaStudentGuideUiState(
+                    dataState = _dataState.value,
+                    prefetchState = _prefetchState.value,
+                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls.value,
+                    isNpcSatelliteGuide = _isNpcSatelliteGuide.value,
+                    mediaSettings = _mediaSettings.value,
+                ),
+        )
+
+    init {
+        viewModelScope.launch {
+            _mediaSettings.value = repository.loadMediaSettings()
+        }
+        resolveNpcSatelliteGuideForCurrent()
+    }
 
     fun bind(
         transitionAnimationsEnabled: Boolean,
@@ -95,6 +141,7 @@ internal class BaStudentGuideViewModel(
                     sourceUrl = latestStored,
                     loading = true,
                 )
+            _isNpcSatelliteGuide.value = false
             lastLoadedSourceUrl = ""
         }
         val bindingChanged = binding != next
@@ -117,6 +164,7 @@ internal class BaStudentGuideViewModel(
         if (target.isBlank() || target == _dataState.value.sourceUrl) return
         repository.saveCurrentUrl(target)
         lastLoadedSourceUrl = ""
+        _isNpcSatelliteGuide.value = false
         _dataState.value =
             BaStudentGuideDataUiState(
                 sourceUrl = target,
@@ -215,13 +263,50 @@ internal class BaStudentGuideViewModel(
                 _dataState.update { state ->
                     if (state.sourceUrl == sourceUrl) {
                         lastLoadedSourceUrl = sourceUrl
-                        state.copy(
+                        val nextState = state.copy(
                             info = result.info,
                             loading = false,
                             error = result.error,
                         )
+                        resolveNpcSatelliteGuideFor(sourceUrl, result.info)
+                        nextState
                     } else {
                         state
+                    }
+                }
+            }
+    }
+
+    private fun resolveNpcSatelliteGuideForCurrent() {
+        val state = _dataState.value
+        resolveNpcSatelliteGuideFor(
+            sourceUrl = state.sourceUrl,
+            info = state.info,
+        )
+    }
+
+    private fun resolveNpcSatelliteGuideFor(
+        sourceUrl: String,
+        info: BaStudentGuideInfo?,
+    ) {
+        if (sourceUrl.isBlank()) {
+            npcSatelliteResolveJob?.cancel()
+            _isNpcSatelliteGuide.value = false
+            return
+        }
+        npcSatelliteResolveJob?.cancel()
+        npcSatelliteResolveJob =
+            viewModelScope.launch {
+                val resolved =
+                    repository.resolveNpcSatelliteGuide(
+                        sourceUrl = sourceUrl,
+                        info = info,
+                    )
+                _isNpcSatelliteGuide.update { current ->
+                    if (_dataState.value.sourceUrl == sourceUrl) {
+                        resolved
+                    } else {
+                        current
                     }
                 }
             }

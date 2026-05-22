@@ -22,16 +22,17 @@ import os.kei.ui.page.main.student.GuideRemoteImage
 import os.kei.ui.page.main.student.buildCombatMetaItems
 import os.kei.ui.page.main.student.buildProfileMetaItems
 import os.kei.ui.page.main.student.component.GuideLiquidCard
-import os.kei.ui.page.main.student.isNpcSatelliteGuideSource
-import os.kei.ui.page.main.student.isNpcSatelliteLikeGuide
 import os.kei.ui.page.main.student.section.GuideCombatMetaTile
 import os.kei.ui.page.main.student.section.GuideProfileMetaLine
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal fun LazyListScope.renderGuideArchiveTabContent(info: BaStudentGuideInfo?) {
+internal fun LazyListScope.renderGuideArchiveTabContent(
+    info: BaStudentGuideInfo?,
+    isNpcSatelliteGuide: Boolean,
+) {
     val guideInfo = info
-    if (guideInfo?.isNpcSatelliteLikeGuide() == true) {
+    if (guideInfo != null && isNpcSatelliteGuide) {
         renderGuideNpcSatelliteArchiveContent(guideInfo)
         item { Spacer(modifier = Modifier.height(10.dp)) }
         return
@@ -51,10 +52,7 @@ internal fun LazyListScope.renderGuideArchiveTabContent(info: BaStudentGuideInfo
             onClick = {},
         ) {
             if (guide != null) {
-                val useNpcPortraitTopCrop =
-                    remember(guide.sourceUrl, guide.syncedAtMs) {
-                        isNpcSatelliteGuideSource(guide.sourceUrl)
-                    }
+                val useNpcPortraitTopCrop = isNpcSatelliteGuide
                 Column(
                     modifier =
                         Modifier

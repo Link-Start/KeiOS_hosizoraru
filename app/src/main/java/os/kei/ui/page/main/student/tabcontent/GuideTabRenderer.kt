@@ -29,6 +29,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     voicePlayProgress: Float,
     selectedVoiceLanguage: String,
     bgmFavoriteAudioUrls: Set<String>,
+    isNpcSatelliteGuide: Boolean,
+    mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
@@ -39,7 +41,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
 ) {
     when (activeBottomTab) {
         GuideBottomTab.Archive -> renderGuideArchiveTabContent(
-            info = info
+            info = info,
+            isNpcSatelliteGuide = isNpcSatelliteGuide
         )
 
         GuideBottomTab.Skills -> renderGuideSkillsTabContent(
@@ -47,7 +50,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             info = info,
             error = error,
             backdrop = backdrop,
-            accent = accent
+            accent = accent,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
         )
 
         GuideBottomTab.Profile -> renderGuideProfileTabContent(
@@ -60,6 +64,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             sourceUrl = sourceUrl,
             galleryCacheRevision = galleryCacheRevision,
             bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+            isNpcSatelliteGuide = isNpcSatelliteGuide,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             onOpenExternal = onOpenExternal,
             onOpenGuide = onOpenGuide,
             onSaveMedia = onSaveMedia,
@@ -93,6 +99,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
             sourceUrl = sourceUrl,
             galleryCacheRevision = galleryCacheRevision,
             bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             onOpenExternal = onOpenExternal,
             onSaveMedia = onSaveMedia,
             onSaveMediaPack = onSaveMediaPack,

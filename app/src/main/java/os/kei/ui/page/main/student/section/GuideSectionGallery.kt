@@ -63,6 +63,7 @@ internal fun GuideGalleryCardItem(
     bgmFavoriteSourceUrl: String = "",
     bgmFavoriteAudioUrls: Set<String> = emptySet(),
     onToggleBgmFavorite: (suspend (GuideBgmFavoriteItem) -> Boolean)? = null,
+    mediaAdaptiveRotationEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -297,6 +298,7 @@ internal fun GuideGalleryCardItem(
         GuideImageFullscreenDialog(
             imageUrl = displayImageUrl,
             allowAutoRotate = !disableFullscreenAutoRotate,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             onDismiss = { gestureState.showImageFullscreen = false }
         )
     }

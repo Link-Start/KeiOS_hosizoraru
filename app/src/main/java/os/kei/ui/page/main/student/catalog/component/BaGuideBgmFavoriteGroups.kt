@@ -13,13 +13,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
-import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
-import os.kei.ui.page.main.student.buildProfileMetaItems
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
+import os.kei.ui.page.main.student.catalog.state.BaGuideBgmFavoriteMetadataIndex
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -96,7 +93,8 @@ internal fun groupBgmFavorites(
     favorites: List<GuideBgmFavoriteItem>,
     groupMode: BaGuideBgmFavoriteGroupMode,
     playbackSnapshot: GuideBgmFavoritePlaybackSnapshot,
-    labels: BaGuideBgmFavoriteGroupLabels
+    labels: BaGuideBgmFavoriteGroupLabels,
+    metadataIndex: BaGuideBgmFavoriteMetadataIndex,
 ): List<BaGuideBgmFavoriteGroup> {
     if (favorites.isEmpty()) return emptyList()
     return when (groupMode) {
@@ -108,7 +106,7 @@ internal fun groupBgmFavorites(
             )
         )
         BaGuideBgmFavoriteGroupMode.Academy -> favorites
-            .groupBy { favorite -> bgmFavoriteAcademy(favorite).ifBlank { labels.unknownAcademy } }
+            .groupBy { favorite -> metadataIndex.metadataFor(favorite).academy.ifBlank { labels.unknownAcademy } }
             .toSortedMap(compareBy<String> { it == labels.unknownAcademy }.thenBy { it })
             .map { (academy, items) ->
                 BaGuideBgmFavoriteGroup(
@@ -121,7 +119,7 @@ internal fun groupBgmFavorites(
             val orderedLabels = listOf(labels.student, labels.npcSatellite, labels.unknownType)
             favorites
                 .groupBy { favorite ->
-                    when (bgmFavoriteCatalogTab(favorite)) {
+                    when (metadataIndex.metadataFor(favorite).catalogTab) {
                         BaGuideCatalogTab.Student -> labels.student
                         BaGuideCatalogTab.NpcSatellite -> labels.npcSatellite
                         null -> labels.unknownType
@@ -152,24 +150,5 @@ internal fun groupBgmFavorites(
                     )
                 }
         }
-    }
-}
-
-internal fun bgmFavoriteAcademy(favorite: GuideBgmFavoriteItem): String {
-    val info = BaStudentGuideStore.loadInfo(favorite.sourceUrl) ?: return ""
-    return info.buildProfileMetaItems()
-        .firstOrNull { item -> item.title == "学院" }
-        ?.value
-        ?.trim()
-        ?.takeIf { it.isNotBlank() && it != "-" }
-        .orEmpty()
-}
-
-internal fun bgmFavoriteCatalogTab(favorite: GuideBgmFavoriteItem): BaGuideCatalogTab? {
-    val contentId = extractGuideContentIdFromUrl(favorite.sourceUrl) ?: return null
-    if (contentId <= 0L) return null
-    val bundle = BaGuideCatalogStore.loadBundle() ?: return null
-    return BaGuideCatalogTab.entries.firstOrNull { tab ->
-        bundle.entries(tab).any { entry -> entry.contentId == contentId }
     }
 }

@@ -56,6 +56,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun GuideWeaponCardItem(
     card: GuideWeaponCardModel,
     backdrop: Backdrop?,
+    mediaAdaptiveRotationEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val levelOptions = remember(card.statHeaders) { card.statHeaders.filter { it.isNotBlank() } }
@@ -233,6 +234,7 @@ fun GuideWeaponCardItem(
     if (showImageFullscreen && card.imageUrl.isNotBlank()) {
         GuideImageFullscreenDialog(
             imageUrl = card.imageUrl,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             onDismiss = { showImageFullscreen = false }
         )
     }

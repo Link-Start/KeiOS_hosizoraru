@@ -12,8 +12,13 @@ import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
+import os.kei.ui.page.main.student.isNpcSatelliteLikeGuide
 import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
 
 internal data class BaStudentGuideLoadResult(
@@ -21,11 +26,17 @@ internal data class BaStudentGuideLoadResult(
     val error: String?,
 )
 
+internal data class BaStudentGuideMediaSettings(
+    val mediaAdaptiveRotationEnabled: Boolean = false,
+)
+
 internal class BaStudentGuideRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
 ) {
+    private val npcSatelliteGuideFlagCache = ConcurrentHashMap<Long, Boolean>()
+
     fun loadCurrentUrl(): String = BaStudentGuideStore.loadCurrentUrl()
 
     fun saveCurrentUrl(sourceUrl: String) {
@@ -40,6 +51,23 @@ internal class BaStudentGuideRepository(
 
     suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
         bgmFavoriteRepository.toggleFavorite(item)
+
+    suspend fun loadMediaSettings(): BaStudentGuideMediaSettings =
+        withContext(ioDispatcher) {
+            BaStudentGuideMediaSettings(
+                mediaAdaptiveRotationEnabled = BASettingsStore.loadMediaAdaptiveRotationEnabled(),
+            )
+        }
+
+    suspend fun resolveNpcSatelliteGuide(
+        sourceUrl: String,
+        info: BaStudentGuideInfo?,
+    ): Boolean {
+        val catalogMatched = resolveNpcSatelliteGuideSource(sourceUrl)
+        return withContext(parseDispatcher) {
+            info?.isNpcSatelliteLikeGuide(catalogMatched) ?: catalogMatched
+        }
+    }
 
     suspend fun prefetchStaticImages(
         context: Context,
@@ -143,5 +171,21 @@ internal class BaStudentGuideRepository(
                 )
             },
         )
+    }
+
+    private suspend fun resolveNpcSatelliteGuideSource(sourceUrl: String): Boolean {
+        val contentId = extractGuideContentIdFromUrl(sourceUrl) ?: return false
+        if (contentId <= 0L) return false
+        npcSatelliteGuideFlagCache[contentId]?.let { return it }
+        val isNpcSatellite =
+            withContext(ioDispatcher) {
+                BaGuideCatalogStore
+                    .loadBundle()
+                    ?.entries(BaGuideCatalogTab.NpcSatellite)
+                    ?.any { entry -> entry.contentId == contentId }
+                    ?: false
+            }
+        npcSatelliteGuideFlagCache[contentId] = isNpcSatellite
+        return isNpcSatellite
     }
 }

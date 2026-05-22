@@ -108,6 +108,21 @@ internal class BaGuideCatalogViewModel(
     val favoriteBgmOfflineCacheState: StateFlow<BaGuideFavoriteBgmOfflineCacheUiState> =
         _favoriteBgmOfflineCacheState.asStateFlow()
 
+    val routeState: StateFlow<BaGuideCatalogRouteState> =
+        buildBaGuideCatalogRouteStateFlow(
+            scope = viewModelScope,
+            dataState = dataState,
+            catalogListDerivedStates = catalogListDerivedStates,
+            studentBgmListDerivedState = studentBgmListDerivedState,
+            favoriteBgmListDerivedState = favoriteBgmListDerivedState,
+            studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
+            catalogFavoriteEntries = catalogFavoriteEntries,
+            favoriteBgms = favoriteBgms,
+            bgmCacheSnapshot = bgmCacheSnapshot,
+            favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
+            nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+        )
+
     init {
         viewModelScope.launch {
             _catalogFavoriteEntries.value = repository.loadCatalogFavorites()

@@ -33,8 +33,6 @@ import com.github.panpf.zoomimage.rememberCoilZoomState
 import com.github.panpf.zoomimage.zoom.ContinuousTransformType
 import com.github.panpf.zoomimage.zoom.GestureType
 import os.kei.R
-import os.kei.ui.page.main.ba.support.BASettingsStore
-import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_GESTURE_COOLDOWN_MS
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_SCALE_EPSILON
@@ -53,10 +51,11 @@ import kotlin.math.abs
 internal fun GuideImageFullscreenDialog(
     imageUrl: String,
     allowAutoRotate: Boolean = true,
+    mediaAdaptiveRotationEnabled: Boolean,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val mediaAdaptiveRotationEnabled = remember { BASettingsStore.loadMediaAdaptiveRotationEnabled() }
+    val mediaRepository = remember { GuideFullscreenMediaRepository() }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val systemAutoRotateEnabled =
         rememberSystemAutoRotateEnabled(active = !mediaAdaptiveRotationEnabled)
@@ -89,7 +88,7 @@ internal fun GuideImageFullscreenDialog(
             return@produceState
         }
         val bitmap = runCatching {
-            GameKeeMediaImageLoader.loadGuideBitmap(
+            mediaRepository.loadSampledBitmap(
                 context = context,
                 source = normalizedImageUrl,
                 maxDecodeDimension = 2048

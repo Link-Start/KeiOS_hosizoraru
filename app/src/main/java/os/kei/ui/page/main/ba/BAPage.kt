@@ -97,6 +97,7 @@ fun BAPage(
 
     val defaultBaSnapshot = remember { BaPageSnapshot() }
     val officeSnapshotUiState by officeViewModel.snapshotUiState.collectAsStateWithLifecycle()
+    val officeChromeUiState by officeViewModel.chromeUiState.collectAsStateWithLifecycle()
     val initialSnapshot = officeSnapshotUiState.snapshot
     val office = officeViewModel.office
     val ui = rememberBaPageUiController(defaultBaSnapshot)
@@ -108,6 +109,7 @@ fun BAPage(
         ui.routeState(
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
+            chromeUiState = officeChromeUiState,
         )
     val baClockState = ui.clockState()
 
@@ -166,26 +168,31 @@ fun BAPage(
 
     fun openSettingsSheet() {
         ui.openSettingsSheet(office)
+        officeViewModel.showSettingsSheet()
     }
 
     fun closeSettingsSheet() {
         ui.closeSettingsSheet(office)
+        officeViewModel.hideSettingsSheet()
     }
 
     fun openNotificationSettingsSheet() {
         ui.openNotificationSettingsSheet(office)
+        officeViewModel.showNotificationSettingsSheet()
     }
 
     fun closeNotificationSettingsSheet() {
         ui.closeNotificationSettingsSheet()
+        officeViewModel.hideNotificationSettingsSheet()
     }
 
     fun openDebugSheet() {
         ui.openDebugSheet()
+        officeViewModel.showDebugSheet()
     }
 
     fun closeDebugSheet() {
-        ui.closeDebugSheet()
+        officeViewModel.hideDebugSheet()
     }
 
     fun refreshCalendar(force: Boolean = false) {
@@ -440,7 +447,7 @@ fun BAPage(
         }
 
         BaSettingsSheet(
-            show = ui.showSettingsSheet,
+            show = baRouteState.showSettingsSheet,
             backdrop = backdrops.sheet,
             state = settingsSheetState,
             onMediaAdaptiveRotationEnabledChange = { ui.sheetMediaAdaptiveRotationEnabled = it },
@@ -461,7 +468,7 @@ fun BAPage(
             onSaveRequest = ::saveSettings,
         )
         BaNotificationSettingsSheet(
-            show = ui.showNotificationSettingsSheet,
+            show = baRouteState.showNotificationSettingsSheet,
             backdrop = backdrops.sheet,
             state = notificationSettingsSheetState,
             apThresholdMax = (office.apLimit + 200).coerceIn(0, BA_AP_MAX),
@@ -495,7 +502,7 @@ fun BAPage(
             onSaveRequest = ::saveNotificationSettings,
         )
         BaDebugSheet(
-            show = ui.showDebugSheet,
+            show = baRouteState.showDebugSheet,
             backdrop = backdrops.sheet,
             onSendApTestNotification = {
                 office.sendApTestNotification(context = context, showToast = true)
@@ -527,7 +534,7 @@ fun BAPage(
                     resolveCalendarDebugEntries(
                         context = context,
                         entries = calendarUiState.entries,
-                        useRealData = ui.debugUseRealCalendarPoolData,
+                        useRealData = baRouteState.debugUseRealCalendarPoolData,
                         upcoming = true,
                         nowMs = nowMs,
                     ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
@@ -547,7 +554,7 @@ fun BAPage(
                     resolveCalendarDebugEntries(
                         context = context,
                         entries = calendarUiState.entries,
-                        useRealData = ui.debugUseRealCalendarPoolData,
+                        useRealData = baRouteState.debugUseRealCalendarPoolData,
                         upcoming = false,
                         nowMs = nowMs,
                     ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
@@ -567,7 +574,7 @@ fun BAPage(
                     resolvePoolDebugEntries(
                         context = context,
                         entries = poolUiState.entries,
-                        useRealData = ui.debugUseRealCalendarPoolData,
+                        useRealData = baRouteState.debugUseRealCalendarPoolData,
                         upcoming = true,
                         nowMs = nowMs,
                     ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
@@ -587,7 +594,7 @@ fun BAPage(
                     resolvePoolDebugEntries(
                         context = context,
                         entries = poolUiState.entries,
-                        useRealData = ui.debugUseRealCalendarPoolData,
+                        useRealData = baRouteState.debugUseRealCalendarPoolData,
                         upcoming = false,
                         nowMs = nowMs,
                     ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
@@ -603,7 +610,7 @@ fun BAPage(
             },
             onSendCalendarPoolChangeTestNotification = {
                 val detail =
-                    if (ui.debugUseRealCalendarPoolData) {
+                    if (baRouteState.debugUseRealCalendarPoolData) {
                         resolveRealChangeDebugDetail(
                             calendarEntries = calendarUiState.entries,
                             poolEntries = poolUiState.entries,
@@ -624,8 +631,8 @@ fun BAPage(
                         ),
                 )
             },
-            useRealCalendarPoolData = ui.debugUseRealCalendarPoolData,
-            onUseRealCalendarPoolDataChange = { ui.debugUseRealCalendarPoolData = it },
+            useRealCalendarPoolData = baRouteState.debugUseRealCalendarPoolData,
+            onUseRealCalendarPoolDataChange = officeViewModel::updateDebugUseRealCalendarPoolData,
             onTestCafePlus3Hours = {
                 runtimePersistenceCoordinator.submit(office.testCafePlus3Hours(context))
             },

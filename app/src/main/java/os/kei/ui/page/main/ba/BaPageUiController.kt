@@ -86,9 +86,6 @@ internal data class BaPageRouteState(
 internal class BaPageUiController(
     snapshot: BaPageSnapshot,
 ) {
-    var showSettingsSheet by mutableStateOf(false)
-    var showNotificationSettingsSheet by mutableStateOf(false)
-    var showDebugSheet by mutableStateOf(false)
     var showOverviewServerPopup by mutableStateOf(false)
     var showCafeLevelPopup by mutableStateOf(false)
     var overviewServerPopupAnchorBounds by mutableStateOf<IntRect?>(null)
@@ -130,7 +127,6 @@ internal class BaPageUiController(
     var sheetPoolEndingNotifyEnabled by mutableStateOf(snapshot.poolEndingNotifyEnabled)
     var sheetCalendarPoolChangeNotifyEnabled by mutableStateOf(snapshot.calendarPoolChangeNotifyEnabled)
     var sheetCalendarPoolNotifyLeadHours by mutableIntStateOf(snapshot.calendarPoolNotifyLeadHours)
-    var debugUseRealCalendarPoolData by mutableStateOf(true)
     var sheetApNotifyThresholdText by mutableStateOf(snapshot.apNotifyThreshold.toString())
     var sheetCafeApNotifyThresholdText by mutableStateOf(snapshot.cafeApNotifyThreshold.toString())
     var sheetMediaAdaptiveRotationEnabled by mutableStateOf(snapshot.mediaAdaptiveRotationEnabled)
@@ -211,11 +207,12 @@ internal class BaPageUiController(
     fun routeState(
         calendarUiState: BaCalendarUiState,
         poolUiState: BaPoolUiState,
+        chromeUiState: BaOfficeChromeUiState,
     ): BaPageRouteState =
         BaPageRouteState(
-            showSettingsSheet = showSettingsSheet,
-            showNotificationSettingsSheet = showNotificationSettingsSheet,
-            showDebugSheet = showDebugSheet,
+            showSettingsSheet = chromeUiState.showSettingsSheet,
+            showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
+            showDebugSheet = chromeUiState.showDebugSheet,
             popupState = popupState(),
             serverIndex = serverIndex,
             baCalendarReloadSignal = baCalendarReloadSignal,
@@ -234,7 +231,7 @@ internal class BaPageUiController(
             poolHydrationReady = poolHydrationReady,
             settingsDraftState = settingsDraftState(),
             notificationDraftState = notificationDraftState(),
-            debugUseRealCalendarPoolData = debugUseRealCalendarPoolData,
+            debugUseRealCalendarPoolData = chromeUiState.debugUseRealCalendarPoolData,
             consumedScrollToTopSignal = consumedScrollToTopSignal,
         )
 
@@ -307,11 +304,9 @@ internal class BaPageUiController(
         sheetShowEndedPools = showEndedPools
         sheetShowEndedActivities = showEndedActivities
         sheetShowCalendarPoolImages = showCalendarPoolImages
-        showSettingsSheet = true
     }
 
     fun closeSettingsSheet(office: BaOfficeController) {
-        showSettingsSheet = false
         showCafeLevelPopup = false
         sheetCafeLevel = office.cafeLevel
         sheetMediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled
@@ -327,22 +322,15 @@ internal class BaPageUiController(
         showOverviewServerPopup = false
         showCafeLevelPopup = false
         loadNotificationDraft(office)
-        showNotificationSettingsSheet = true
     }
 
     fun closeNotificationSettingsSheet() {
-        showNotificationSettingsSheet = false
         applyNotificationDraft(savedNotificationDraft)
     }
 
     fun openDebugSheet() {
         showOverviewServerPopup = false
         showCafeLevelPopup = false
-        showDebugSheet = true
-    }
-
-    fun closeDebugSheet() {
-        showDebugSheet = false
     }
 
     private fun loadNotificationDraft(office: BaOfficeController) {

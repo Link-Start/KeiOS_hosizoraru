@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
@@ -23,6 +24,13 @@ internal data class BaOfficeServerRestoreEvent(
 internal data class BaOfficeSnapshotUiState(
     val snapshot: BaPageSnapshot = BaPageSnapshot(),
     val loaded: Boolean = false,
+)
+
+internal data class BaOfficeChromeUiState(
+    val showSettingsSheet: Boolean = false,
+    val showNotificationSettingsSheet: Boolean = false,
+    val showDebugSheet: Boolean = false,
+    val debugUseRealCalendarPoolData: Boolean = true,
 )
 
 internal sealed interface BaOfficeEvent {
@@ -55,6 +63,8 @@ internal class BaOfficeViewModel(
     private val defaultSnapshot = BaPageSnapshot()
     private val _snapshotUiState = MutableStateFlow(BaOfficeSnapshotUiState(snapshot = defaultSnapshot))
     val snapshotUiState: StateFlow<BaOfficeSnapshotUiState> = _snapshotUiState.asStateFlow()
+    private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
+    val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
     private val _serverRestoreEvents = MutableSharedFlow<BaOfficeServerRestoreEvent>(replay = 0)
     val serverRestoreEvents: SharedFlow<BaOfficeServerRestoreEvent> = _serverRestoreEvents.asSharedFlow()
     private val _events = MutableSharedFlow<BaOfficeEvent>(replay = 0, extraBufferCapacity = 8)
@@ -78,6 +88,52 @@ internal class BaOfficeViewModel(
     fun clearListScrollState() {
         viewModelScope.launch {
             BaOfficeRepository.clearListScrollStateAsync()
+        }
+    }
+
+    fun showSettingsSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showSettingsSheet = true)
+        }
+    }
+
+    fun hideSettingsSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showSettingsSheet = false)
+        }
+    }
+
+    fun showNotificationSettingsSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showNotificationSettingsSheet = true)
+        }
+    }
+
+    fun hideNotificationSettingsSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showNotificationSettingsSheet = false)
+        }
+    }
+
+    fun showDebugSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showDebugSheet = true)
+        }
+    }
+
+    fun hideDebugSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showDebugSheet = false)
+        }
+    }
+
+    fun updateDebugUseRealCalendarPoolData(enabled: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.debugUseRealCalendarPoolData == enabled) {
+                state
+            } else {
+                state.copy(debugUseRealCalendarPoolData = enabled)
+            }
         }
     }
 

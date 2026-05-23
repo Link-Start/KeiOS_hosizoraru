@@ -37,6 +37,7 @@ internal data class MainPagerCoordinatorState(
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
+    val homeRuntimeNowMs: Long,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
     val pagerScrollEnabled: Boolean,
@@ -122,11 +123,6 @@ internal fun rememberMainPagerCoordinator(
                 pageKeys = pageKeys,
             )
         }
-    val homeOverviewState =
-        rememberMainPagerHomeOverviewState(
-            mcpServerManager = mcpServerManager,
-            settingsReturnToken = settingsReturnToken,
-        )
     val backdrop = rememberMainPagerBackdropLifecycle()
     val targetWarmDataActive = rememberPagerTargetWarmDataActive(pagerState).value
 
@@ -152,6 +148,18 @@ internal fun rememberMainPagerCoordinator(
                 targetWarmDataActive = targetWarmDataActive,
             )
         }
+    val homePageIndex = tabs.indexOf(BottomPage.Home).coerceAtLeast(0)
+    val homeRuntime =
+        pagerRuntime.pageRuntime(
+            pageIndex = homePageIndex,
+            bottomBarVisible = pagerRuntime.homePageBottomBarPinned,
+        )
+    val homeOverviewState =
+        rememberMainPagerHomeOverviewState(
+            mcpServerManager = mcpServerManager,
+            settingsReturnToken = settingsReturnToken,
+            homeRuntime = homeRuntime,
+        )
     BindMainPagerCoordinatorEffects(
         tabsSize = tabs.size,
         pagerState = pagerState,
@@ -217,6 +225,7 @@ internal fun rememberMainPagerCoordinator(
             homeMcpOverview = homeOverviewState.homeMcpOverview,
             homeGitHubOverview = homeOverviewState.homeGitHubOverview,
             homeBaOverview = homeOverviewState.homeBaOverview,
+            homeRuntimeNowMs = homeOverviewState.runtimeNowMs,
             visibleOverviewCards = homeOverviewState.visibleOverviewCards,
             showCacheFreshnessInCards = homeOverviewState.showCacheFreshnessInCards,
             pagerScrollEnabled = tabJumpController.pagerScrollEnabled,

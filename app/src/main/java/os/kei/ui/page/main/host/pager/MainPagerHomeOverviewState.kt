@@ -31,25 +31,34 @@ internal data class MainPagerHomeOverviewState(
     val homeBaOverview: HomeBaOverview,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
+    val runtimeNowMs: Long,
     val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
-    val onCacheFreshnessVisibilityChange: (Boolean) -> Unit
+    val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
 )
 
 internal class MainPagerHomeOverviewViewModel(
-    private val repository: HomeOverviewRepository
+    private val repository: HomeOverviewRepository,
 ) : ViewModel() {
-    val uiState: StateFlow<HomeOverviewSnapshot> = repository.observeOverview()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-            initialValue = HomeOverviewSnapshot()
-        )
+    private val runtimeTicker = MainPagerHomeRuntimeTicker(viewModelScope)
+
+    val uiState: StateFlow<HomeOverviewSnapshot> =
+        repository
+            .observeOverview()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = HomeOverviewSnapshot(),
+            )
+    val runtimeNowMs: StateFlow<Long> = runtimeTicker.nowMs
 
     fun refresh(reason: String) {
         repository.requestRefresh(reason)
     }
 
-    fun setOverviewCardVisible(card: HomeOverviewCard, visible: Boolean) {
+    fun setOverviewCardVisible(
+        card: HomeOverviewCard,
+        visible: Boolean,
+    ) {
         viewModelScope.launch {
             repository.setOverviewCardVisible(card, visible)
         }
@@ -61,20 +70,31 @@ internal class MainPagerHomeOverviewViewModel(
         }
     }
 
+    fun requestRuntimeTicker(
+        mcpOverview: HomeMcpOverview,
+        runtime: MainPageRuntime,
+    ) {
+        runtimeTicker.request(
+            mcpOverview = mcpOverview,
+            runtime = runtime,
+        )
+    }
+
     companion object {
         fun factory(
             context: Context,
-            mcpServerManager: McpServerManager
+            mcpServerManager: McpServerManager,
         ): ViewModelProvider.Factory {
             return object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     if (modelClass.isAssignableFrom(MainPagerHomeOverviewViewModel::class.java)) {
                         return MainPagerHomeOverviewViewModel(
-                            repository = HomeOverviewRepository(
-                                context = context.applicationContext,
-                                mcpUiState = mcpServerManager.uiState
-                            )
+                            repository =
+                                HomeOverviewRepository(
+                                    context = context.applicationContext,
+                                    mcpUiState = mcpServerManager.uiState,
+                                ),
                         ) as T
                     }
                     throw IllegalArgumentException("Unknown ViewModel class ${modelClass.name}")
@@ -87,42 +107,60 @@ internal class MainPagerHomeOverviewViewModel(
 @Composable
 internal fun rememberMainPagerHomeOverviewState(
     mcpServerManager: McpServerManager,
-    settingsReturnToken: Int
+    settingsReturnToken: Int,
+    homeRuntime: MainPageRuntime,
 ): MainPagerHomeOverviewState {
     val context = LocalContext.current
-    val homeOverviewViewModel: MainPagerHomeOverviewViewModel = viewModel(
-        key = "main_pager_home_overview",
-        factory = remember(context, mcpServerManager) {
-            MainPagerHomeOverviewViewModel.factory(
-                context = context,
-                mcpServerManager = mcpServerManager
-            )
-        }
-    )
+    val homeOverviewViewModel: MainPagerHomeOverviewViewModel =
+        viewModel(
+            key = "main_pager_home_overview",
+            factory =
+                remember(context, mcpServerManager) {
+                    MainPagerHomeOverviewViewModel.factory(
+                        context = context,
+                        mcpServerManager = mcpServerManager,
+                    )
+                },
+        )
     val uiState by homeOverviewViewModel.uiState.collectAsStateWithLifecycle()
+    val runtimeNowMs by homeOverviewViewModel.runtimeNowMs.collectAsStateWithLifecycle()
     LaunchedEffect(settingsReturnToken) {
         if (settingsReturnToken <= 0) return@LaunchedEffect
         homeOverviewViewModel.refresh("settings_return_$settingsReturnToken")
     }
-    val onOverviewCardVisibilityChange = remember(homeOverviewViewModel) {
-        { card: HomeOverviewCard, visible: Boolean ->
-            homeOverviewViewModel.setOverviewCardVisible(card, visible)
-        }
+    LaunchedEffect(uiState.mcpOverview, homeRuntime) {
+        homeOverviewViewModel.requestRuntimeTicker(
+            mcpOverview = uiState.mcpOverview,
+            runtime = homeRuntime,
+        )
     }
-    val onCacheFreshnessVisibilityChange = remember(homeOverviewViewModel) {
-        { visible: Boolean ->
-            homeOverviewViewModel.setCacheFreshnessVisibleInCards(visible)
+    val onOverviewCardVisibilityChange =
+        remember(homeOverviewViewModel) {
+            { card: HomeOverviewCard, visible: Boolean ->
+                homeOverviewViewModel.setOverviewCardVisible(card, visible)
+            }
         }
-    }
-    return remember(uiState, onOverviewCardVisibilityChange, onCacheFreshnessVisibilityChange) {
+    val onCacheFreshnessVisibilityChange =
+        remember(homeOverviewViewModel) {
+            { visible: Boolean ->
+                homeOverviewViewModel.setCacheFreshnessVisibleInCards(visible)
+            }
+        }
+    return remember(
+        uiState,
+        runtimeNowMs,
+        onOverviewCardVisibilityChange,
+        onCacheFreshnessVisibilityChange,
+    ) {
         MainPagerHomeOverviewState(
             homeMcpOverview = uiState.mcpOverview,
             homeGitHubOverview = uiState.githubOverview,
             homeBaOverview = uiState.baOverview,
             visibleOverviewCards = uiState.visibleOverviewCards,
             showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,
+            runtimeNowMs = runtimeNowMs,
             onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
-            onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange
+            onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
         )
     }
 }

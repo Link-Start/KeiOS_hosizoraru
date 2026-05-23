@@ -36,6 +36,7 @@ internal data class MainPagerHomePageState(
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
+    val homeRuntimeNowMs: Long,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
     val onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
@@ -97,14 +98,16 @@ internal fun MainPagerPageHost(
         ) {
             when (pageType) {
                 BottomPage.Home -> {
-                    val homeState = checkNotNull(homePageState) {
-                        "Home page state is required for the Home tab"
-                    }
+                    val homeState =
+                        checkNotNull(homePageState) {
+                            "Home page state is required for the Home tab"
+                        }
                     HomePage(
                         shizukuStatus = homeState.shizukuStatus,
                         mcpOverview = homeState.homeMcpOverview,
                         homeGitHubOverview = homeState.homeGitHubOverview,
                         homeBaOverview = homeState.homeBaOverview,
+                        runtimeNowMs = homeState.homeRuntimeNowMs,
                         homeIconHdrEnabled = homeState.homeIconHdrEnabled,
                         homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
                         runtime = runtime,
@@ -124,9 +127,10 @@ internal fun MainPagerPageHost(
                 }
 
                 BottomPage.Os -> {
-                    val osState = checkNotNull(osPageState) {
-                        "OS page state is required for the OS tab"
-                    }
+                    val osState =
+                        checkNotNull(osPageState) {
+                            "OS page state is required for the OS tab"
+                        }
                     OsPage(
                         runtime = runtime,
                         shizukuStatus = osState.shizukuStatus,
@@ -138,9 +142,10 @@ internal fun MainPagerPageHost(
                 }
 
                 BottomPage.Ba -> {
-                    val baState = checkNotNull(baPageState) {
-                        "BA page state is required for the BA tab"
-                    }
+                    val baState =
+                        checkNotNull(baPageState) {
+                            "BA page state is required for the BA tab"
+                        }
                     BAPage(
                         runtime = runtime,
                         preloadingEnabled = baState.preloadingEnabled,
@@ -153,9 +158,10 @@ internal fun MainPagerPageHost(
                 }
 
                 BottomPage.Mcp -> {
-                    val mcpState = checkNotNull(mcpPageState) {
-                        "MCP page state is required for the MCP tab"
-                    }
+                    val mcpState =
+                        checkNotNull(mcpPageState) {
+                            "MCP page state is required for the MCP tab"
+                        }
                     McpPage(
                         mcpServerManager = mcpState.mcpServerManager,
                         runtime = runtime,
@@ -167,9 +173,10 @@ internal fun MainPagerPageHost(
                 }
 
                 BottomPage.GitHub -> {
-                    val githubState = checkNotNull(githubPageState) {
-                        "GitHub page state is required for the GitHub tab"
-                    }
+                    val githubState =
+                        checkNotNull(githubPageState) {
+                            "GitHub page state is required for the GitHub tab"
+                        }
                     GitHubPage(
                         runtime = runtime,
                         externalRefreshTriggerToken = githubState.requestedGitHubRefreshToken,

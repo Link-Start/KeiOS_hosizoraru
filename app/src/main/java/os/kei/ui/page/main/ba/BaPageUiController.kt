@@ -91,7 +91,6 @@ internal class BaPageUiController(
     var overviewServerPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var cafeLevelPopupAnchorBounds by mutableStateOf<IntRect?>(null)
     var showCalendarIntervalPopup by mutableStateOf(false)
-    var serverIndex by mutableIntStateOf(snapshot.serverIndex)
     private val uiNowMsState = mutableLongStateOf(System.currentTimeMillis())
     private val uiMinuteMsState = mutableLongStateOf(System.currentTimeMillis())
     var uiNowMs: Long
@@ -136,8 +135,7 @@ internal class BaPageUiController(
     var consumedScrollToTopSignal by mutableIntStateOf(0)
 
     fun matchesSnapshot(snapshot: BaPageSnapshot): Boolean =
-        serverIndex == snapshot.serverIndex &&
-            showEndedPools == snapshot.showEndedPools &&
+        showEndedPools == snapshot.showEndedPools &&
             showEndedActivities == snapshot.showEndedActivities &&
             showCalendarPoolImages == snapshot.showCalendarPoolImages &&
             mediaAdaptiveRotationEnabled == snapshot.mediaAdaptiveRotationEnabled &&
@@ -168,7 +166,6 @@ internal class BaPageUiController(
             savedNotificationDraft == snapshot.toNotificationDraftState()
 
     fun applySnapshot(snapshot: BaPageSnapshot) {
-        serverIndex = snapshot.serverIndex
         showEndedPools = snapshot.showEndedPools
         showEndedActivities = snapshot.showEndedActivities
         showCalendarPoolImages = snapshot.showCalendarPoolImages
@@ -205,13 +202,14 @@ internal class BaPageUiController(
         poolUiState: BaPoolUiState,
         chromeUiState: BaOfficeChromeUiState,
         syncUiState: BaOfficeSyncUiState,
+        serverUiState: BaOfficeServerUiState,
     ): BaPageRouteState =
         BaPageRouteState(
             showSettingsSheet = chromeUiState.showSettingsSheet,
             showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
             showDebugSheet = chromeUiState.showDebugSheet,
             popupState = popupState(),
-            serverIndex = serverIndex,
+            serverIndex = serverUiState.serverIndex,
             baCalendarReloadSignal = syncUiState.calendarReloadSignal,
             baPoolReloadSignal = syncUiState.poolReloadSignal,
             calendarUiState = calendarUiState,

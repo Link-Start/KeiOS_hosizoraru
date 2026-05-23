@@ -17,13 +17,13 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
-internal data class BaOfficeServerRestoreEvent(
-    val serverIndex: Int,
-)
-
 internal data class BaOfficeSnapshotUiState(
     val snapshot: BaPageSnapshot = BaPageSnapshot(),
     val loaded: Boolean = false,
+)
+
+internal data class BaOfficeServerUiState(
+    val serverIndex: Int = BaPageSnapshot().serverIndex,
 )
 
 internal data class BaOfficeChromeUiState(
@@ -74,8 +74,8 @@ internal class BaOfficeViewModel(
     val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
     private val _syncUiState = MutableStateFlow(BaOfficeSyncUiState())
     val syncUiState: StateFlow<BaOfficeSyncUiState> = _syncUiState.asStateFlow()
-    private val _serverRestoreEvents = MutableSharedFlow<BaOfficeServerRestoreEvent>(replay = 0)
-    val serverRestoreEvents: SharedFlow<BaOfficeServerRestoreEvent> = _serverRestoreEvents.asSharedFlow()
+    private val _serverUiState = MutableStateFlow(BaOfficeServerUiState(defaultSnapshot.serverIndex))
+    val serverUiState: StateFlow<BaOfficeServerUiState> = _serverUiState.asStateFlow()
     private val _events = MutableSharedFlow<BaOfficeEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<BaOfficeEvent> = _events.asSharedFlow()
     val office: BaOfficeController = BaOfficeController(defaultSnapshot)
@@ -86,6 +86,7 @@ internal class BaOfficeViewModel(
             if (office.matchesSnapshot(defaultSnapshot)) {
                 office.applySnapshot(snapshot)
             }
+            _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
             _snapshotUiState.value =
                 BaOfficeSnapshotUiState(
                     snapshot = snapshot,
@@ -173,16 +174,40 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun restoreServerFromStore(currentServerIndex: Int) {
+    fun selectServer(index: Int) {
+        val selected = index.coerceIn(0, 2)
+        _serverUiState.update { state ->
+            if (state.serverIndex == selected) {
+                state
+            } else {
+                state.copy(serverIndex = selected)
+            }
+        }
+        refreshCalendar(force = true)
+        refreshPool(force = true)
+        viewModelScope.launch {
+            BaOfficeRepository.saveServerIndexAsync(selected)
+            if (office.idIndependentByServer) {
+                office.applyIdentity(BaOfficeRepository.loadIdentityForServer(selected))
+            }
+            resetCafeVisitBaselineIfNeeded(selected)
+            resetArenaRefreshBaselineIfNeeded(selected)
+            AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+        }
+    }
+
+    fun restoreServerFromStore() {
         viewModelScope.launch {
             val savedServerIndex = BaOfficeRepository.loadServerIndexAsync()
-            if (savedServerIndex == currentServerIndex) return@launch
+            if (savedServerIndex == _serverUiState.value.serverIndex) return@launch
             if (office.idIndependentByServer) {
                 office.applyIdentity(BaOfficeRepository.loadIdentityForServer(savedServerIndex))
             }
-            _serverRestoreEvents.emit(
-                BaOfficeServerRestoreEvent(serverIndex = savedServerIndex),
-            )
+            _serverUiState.update { state ->
+                state.copy(serverIndex = savedServerIndex)
+            }
+            refreshCalendar(force = true)
+            refreshPool(force = true)
         }
     }
 
@@ -335,6 +360,28 @@ internal class BaOfficeViewModel(
                 _events.emit(BaOfficeEvent.OperationFailed(error))
             }
         }
+    }
+
+    private suspend fun resetCafeVisitBaselineIfNeeded(serverIndex: Int) {
+        if (!office.cafeVisitNotifyEnabled) return
+        val baselineSlotMs =
+            currentCafeStudentRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = serverIndex,
+            )
+        office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
+        BaOfficeRepository.saveCafeVisitLastNotifiedSlotMsAsync(baselineSlotMs)
+    }
+
+    private suspend fun resetArenaRefreshBaselineIfNeeded(serverIndex: Int) {
+        if (!office.arenaRefreshNotifyEnabled) return
+        val baselineSlotMs =
+            currentArenaRefreshSlotMs(
+                nowMs = System.currentTimeMillis(),
+                serverIndex = serverIndex,
+            )
+        office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
+        BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMsAsync(baselineSlotMs)
     }
 }
 

@@ -6,14 +6,14 @@ import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
-import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
 internal class BaOfficeActionCoordinator(
     private val context: Context,
     private val office: BaOfficeController,
     private val ui: BaPageUiController,
     private val scope: CoroutineScope,
+    private val serverIndexProvider: () -> Int,
+    private val onServerSelected: (Int) -> Unit,
     private val onRefreshCalendar: () -> Unit,
     private val onRefreshPool: () -> Unit,
     private val onOpenCalendarLink: (String) -> Unit,
@@ -33,7 +33,7 @@ internal class BaOfficeActionCoordinator(
             onCafeLevelChange = ::selectCafeLevel,
             onServerSelected = ::selectServer,
             onClaimCafeStoredAp = ::claimCafeStoredAp,
-            onTouchHead = { persistCooldown(office.touchHead(ui.serverIndex)) },
+            onTouchHead = { persistCooldown(office.touchHead(serverIndexProvider())) },
             onForceResetHeadpatCooldown = { persistCooldown(office.forceResetHeadpatCooldown()) },
             onUseInviteTicket1 = { persistCooldown(office.useInviteTicket1()) },
             onForceResetInviteTicket1Cooldown = { persistCooldown(office.forceResetInviteTicket1Cooldown()) },
@@ -45,9 +45,9 @@ internal class BaOfficeActionCoordinator(
             onOpenPoolStudentGuide = onOpenPoolStudentGuide,
             onOpenGuideCatalog = onOpenGuideCatalog,
             onIdNicknameInputChange = { office.idNicknameInput = it },
-            onSaveIdNickname = { persistIdentity(office.saveIdNicknameFromInput(ui.serverIndex)) },
+            onSaveIdNickname = { persistIdentity(office.saveIdNicknameFromInput(serverIndexProvider())) },
             onIdFriendCodeInputChange = { office.idFriendCodeInput = it },
-            onSaveIdFriendCode = { persistIdentity(office.saveIdFriendCodeFromInput(context, ui.serverIndex)) },
+            onSaveIdFriendCode = { persistIdentity(office.saveIdFriendCodeFromInput(context, serverIndexProvider())) },
         )
 
     private fun saveApCurrentInput() {
@@ -86,18 +86,7 @@ internal class BaOfficeActionCoordinator(
     }
 
     private fun selectServer(selected: Int) {
-        ui.serverIndex = selected
-        scope.launch {
-            BaOfficeRepository.saveServerIndexAsync(selected)
-            if (office.idIndependentByServer) {
-                office.applyIdentity(BaOfficeRepository.loadIdentityForServer(selected))
-            }
-            AppBackgroundScheduler.scheduleBaApThreshold(context)
-        }
-        resetCafeVisitBaselineIfNeeded(selected)
-        resetArenaRefreshBaselineIfNeeded(selected)
-        onRefreshCalendar()
-        onRefreshPool()
+        onServerSelected(selected)
         ui.showOverviewServerPopup = false
     }
 
@@ -124,32 +113,6 @@ internal class BaOfficeActionCoordinator(
         if (update == null) return
         scope.launch {
             update.persistAsync()
-        }
-    }
-
-    private fun resetCafeVisitBaselineIfNeeded(serverIndex: Int) {
-        if (!office.cafeVisitNotifyEnabled) return
-        val baselineSlotMs =
-            currentCafeStudentRefreshSlotMs(
-                nowMs = System.currentTimeMillis(),
-                serverIndex = serverIndex,
-            )
-        office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
-        scope.launch {
-            BaOfficeRepository.saveCafeVisitLastNotifiedSlotMsAsync(baselineSlotMs)
-        }
-    }
-
-    private fun resetArenaRefreshBaselineIfNeeded(serverIndex: Int) {
-        if (!office.arenaRefreshNotifyEnabled) return
-        val baselineSlotMs =
-            currentArenaRefreshSlotMs(
-                nowMs = System.currentTimeMillis(),
-                serverIndex = serverIndex,
-            )
-        office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
-        scope.launch {
-            BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMsAsync(baselineSlotMs)
         }
     }
 }

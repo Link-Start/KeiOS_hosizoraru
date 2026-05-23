@@ -99,6 +99,7 @@ fun BAPage(
     val officeSnapshotUiState by officeViewModel.snapshotUiState.collectAsStateWithLifecycle()
     val officeChromeUiState by officeViewModel.chromeUiState.collectAsStateWithLifecycle()
     val officeSyncUiState by officeViewModel.syncUiState.collectAsStateWithLifecycle()
+    val officeServerUiState by officeViewModel.serverUiState.collectAsStateWithLifecycle()
     val initialSnapshot = officeSnapshotUiState.snapshot
     val office = officeViewModel.office
     val ui = rememberBaPageUiController(defaultBaSnapshot)
@@ -112,6 +113,7 @@ fun BAPage(
             poolUiState = poolUiState,
             chromeUiState = officeChromeUiState,
             syncUiState = officeSyncUiState,
+            serverUiState = officeServerUiState,
         )
     val baClockState = ui.clockState()
 
@@ -211,13 +213,6 @@ fun BAPage(
         refreshPool(force = true)
     }
 
-    LaunchedEffect(officeViewModel) {
-        officeViewModel.serverRestoreEvents.collect { event ->
-            ui.serverIndex = event.serverIndex
-            refreshCalendar(force = true)
-            refreshPool(force = true)
-        }
-    }
     LaunchedEffect(officeViewModel, context) {
         officeViewModel.events.collect { event ->
             when (event) {
@@ -266,7 +261,7 @@ fun BAPage(
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
-                    officeViewModel.restoreServerFromStore(ui.serverIndex)
+                    officeViewModel.restoreServerFromStore()
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -281,7 +276,7 @@ fun BAPage(
             sheetState = settingsSheetState,
             currentShowEndedActivities = ui.showEndedActivities,
             currentShowCalendarPoolImages = ui.showCalendarPoolImages,
-            serverIndex = ui.serverIndex,
+            serverIndex = baRouteState.serverIndex,
         )
     }
 
@@ -289,7 +284,7 @@ fun BAPage(
         runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         officeViewModel.saveNotificationSettings(
             sheetState = notificationSettingsSheetState,
-            serverIndex = ui.serverIndex,
+            serverIndex = baRouteState.serverIndex,
         )
     }
 
@@ -299,6 +294,8 @@ fun BAPage(
             office = office,
             ui = ui,
             scope = pageScope,
+            serverIndexProvider = { baRouteState.serverIndex },
+            onServerSelected = officeViewModel::selectServer,
             onRefreshCalendar = { refreshCalendar(force = true) },
             onRefreshPool = { refreshPool(force = true) },
             onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
@@ -318,7 +315,7 @@ fun BAPage(
         runtimePersistenceCoordinator = runtimePersistenceCoordinator,
         onUiNowMsChange = { ui.uiNowMs = it },
         onUiMinuteMsChange = { ui.uiMinuteMs = it },
-        serverIndex = ui.serverIndex,
+        serverIndex = baRouteState.serverIndex,
         onServerChanged = {
             officeViewModel.markCalendarPoolHydrationReady()
         },
@@ -327,14 +324,14 @@ fun BAPage(
 
     LaunchedEffect(
         syncPageActive,
-        ui.serverIndex,
+        baRouteState.serverIndex,
         baRouteState.baCalendarReloadSignal,
         ui.calendarRefreshIntervalHours,
         baRouteState.calendarHydrationReady,
     ) {
         calendarPoolViewModel.syncCalendar(
             isPageActive = syncPageActive,
-            serverIndex = ui.serverIndex,
+            serverIndex = baRouteState.serverIndex,
             reloadSignal = baRouteState.baCalendarReloadSignal,
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
             hydrationReady = baRouteState.calendarHydrationReady,
@@ -342,14 +339,14 @@ fun BAPage(
     }
     LaunchedEffect(
         syncPageActive,
-        ui.serverIndex,
+        baRouteState.serverIndex,
         baRouteState.baPoolReloadSignal,
         ui.calendarRefreshIntervalHours,
         baRouteState.poolHydrationReady,
     ) {
         calendarPoolViewModel.syncPool(
             isPageActive = syncPageActive,
-            serverIndex = ui.serverIndex,
+            serverIndex = baRouteState.serverIndex,
             reloadSignal = baRouteState.baPoolReloadSignal,
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
             hydrationReady = baRouteState.poolHydrationReady,
@@ -516,14 +513,14 @@ fun BAPage(
             onSendCafeVisitTestNotification = {
                 office.sendCafeVisitTestNotification(
                     context = context,
-                    serverIndex = ui.serverIndex,
+                    serverIndex = baRouteState.serverIndex,
                     showToast = true,
                 )
             },
             onSendArenaRefreshTestNotification = {
                 office.sendArenaRefreshTestNotification(
                     context = context,
-                    serverIndex = ui.serverIndex,
+                    serverIndex = baRouteState.serverIndex,
                     showToast = true,
                 )
             },
@@ -542,7 +539,7 @@ fun BAPage(
                     sent =
                         BaCalendarPoolNotificationDispatcher.sendCalendarUpcomingGroup(
                             context = context,
-                            serverIndex = ui.serverIndex,
+                            serverIndex = baRouteState.serverIndex,
                             entries = entries,
                         ),
                 )
@@ -562,7 +559,7 @@ fun BAPage(
                     sent =
                         BaCalendarPoolNotificationDispatcher.sendCalendarEndingGroup(
                             context = context,
-                            serverIndex = ui.serverIndex,
+                            serverIndex = baRouteState.serverIndex,
                             entries = entries,
                         ),
                 )
@@ -582,7 +579,7 @@ fun BAPage(
                     sent =
                         BaCalendarPoolNotificationDispatcher.sendPoolUpcomingGroup(
                             context = context,
-                            serverIndex = ui.serverIndex,
+                            serverIndex = baRouteState.serverIndex,
                             entries = entries,
                         ),
                 )
@@ -602,7 +599,7 @@ fun BAPage(
                     sent =
                         BaCalendarPoolNotificationDispatcher.sendPoolEndingGroup(
                             context = context,
-                            serverIndex = ui.serverIndex,
+                            serverIndex = baRouteState.serverIndex,
                             entries = entries,
                         ),
                 )

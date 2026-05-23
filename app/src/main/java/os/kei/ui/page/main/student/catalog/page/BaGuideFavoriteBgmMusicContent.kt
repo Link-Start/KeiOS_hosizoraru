@@ -43,12 +43,16 @@ internal fun BaGuideFavoriteBgmMusicContent(
     offlineCacheState: BaGuideFavoriteBgmOfflineCacheUiState,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     playbackState: BaGuideBgmPlaybackUiState,
+    volumeControlVisible: Boolean,
+    lastAudibleVolume: Float,
     accent: Color,
     bottomBarScrollConnection: NestedScrollConnection,
     topPadding: Dp,
     bottomPadding: Dp,
     isPageActive: Boolean,
     onSliderInteractionChanged: (Boolean) -> Unit,
+    onVolumeControlVisibleChange: (Boolean) -> Unit,
+    onLastAudibleVolumeChange: (Float) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onRemoveBgmFavorite: (String) -> Unit,
     onRequestOfflineCache: (List<GuideBgmFavoriteItem>, Boolean, Boolean) -> Unit,
@@ -163,6 +167,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
             isPlaying = playbackChromeState.isPlaying,
             repeatEnabled = playbackState.queueMode == BaGuideBgmQueueMode.SingleLoop,
             playbackVolume = playbackChromeState.volume,
+            volumeControlVisible = volumeControlVisible,
+            lastAudibleVolume = lastAudibleVolume,
             isTrackFavorite = { id -> favoritesByTrackId.containsKey(id) },
             onRepeatClick = { playbackCoordinator.toggleQueueMode() },
             onPlayPauseClick = {
@@ -187,6 +193,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
                     )
                 }
             },
+            onVolumeControlVisibleChange = onVolumeControlVisibleChange,
+            onLastAudibleVolumeChange = onLastAudibleVolumeChange,
             onSliderInteractionChanged = onSliderInteractionChanged,
             onTrackClick = { id ->
                 favoritesByTrackId[id]?.let { favorite ->

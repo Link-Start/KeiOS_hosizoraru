@@ -18,15 +18,6 @@ internal const val STUDENT_BGM_LOAD_MORE_THRESHOLD = 10
 internal class BaGuideStudentBgmTabStateHolder(
     private val visibleCountState: MutableIntState,
 ) {
-    var nowPlayingVisible by mutableStateOf(false)
-        private set
-    var nowPlayingExpanded by mutableStateOf(false)
-        private set
-    var sliderInteractionActive by mutableStateOf(false)
-        private set
-    var seekPreviewProgress by mutableStateOf<Float?>(null)
-        private set
-
     var visibleCount: Int
         get() = visibleCountState.intValue
         private set(value) {
@@ -45,23 +36,6 @@ internal class BaGuideStudentBgmTabStateHolder(
             max(STUDENT_BGM_BATCH_SIZE, viewportItems.coerceAtLeast(1) * 3)
                 .coerceAtMost(STUDENT_BGM_BATCH_SIZE * 3)
         visibleCount = minOf(visibleCount + appendBatch, totalCount.coerceAtLeast(0))
-    }
-
-    fun updateNowPlayingVisible(visible: Boolean) {
-        nowPlayingVisible = visible
-    }
-
-    fun updateNowPlayingExpanded(expanded: Boolean) {
-        nowPlayingExpanded = expanded
-    }
-
-    fun updateSliderInteractionActive(active: Boolean) {
-        sliderInteractionActive = active
-        if (!active) seekPreviewProgress = null
-    }
-
-    fun updateSeekPreviewProgress(progress: Float?) {
-        seekPreviewProgress = progress?.coerceIn(0f, 1f)
     }
 }
 

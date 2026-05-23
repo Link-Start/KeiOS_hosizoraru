@@ -248,6 +248,67 @@ internal class BaGuideCatalogViewModel(
         }
     }
 
+    fun updateCatalogBgmVolumeControlVisible(visible: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.bgmVolumeControlVisible == visible) {
+                state
+            } else {
+                state.copy(bgmVolumeControlVisible = visible)
+            }
+        }
+    }
+
+    fun updateCatalogBgmLastAudibleVolume(volume: Float) {
+        val normalized = volume.coerceIn(0.12f, 1f)
+        _pageChromeState.update { state ->
+            if (state.bgmLastAudibleVolume == normalized) {
+                state
+            } else {
+                state.copy(bgmLastAudibleVolume = normalized)
+            }
+        }
+    }
+
+    fun updateCatalogPlaybackSliderInteractionActive(active: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.sliderInteractionActive == active) {
+                state
+            } else {
+                state.copy(sliderInteractionActive = active)
+            }
+        }
+    }
+
+    fun updateCatalogStudentBgmNowPlayingVisible(visible: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.studentBgmNowPlayingVisible == visible) {
+                state
+            } else {
+                state.copy(studentBgmNowPlayingVisible = visible)
+            }
+        }
+    }
+
+    fun updateCatalogStudentBgmNowPlayingExpanded(expanded: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.studentBgmNowPlayingExpanded == expanded) {
+                state
+            } else {
+                state.copy(studentBgmNowPlayingExpanded = expanded)
+            }
+        }
+    }
+
+    fun updateCatalogStudentBgmSliderInteractionActive(active: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.studentBgmSliderInteractionActive == active) {
+                state
+            } else {
+                state.copy(studentBgmSliderInteractionActive = active)
+            }
+        }
+    }
+
     fun armPendingSafJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
         pendingSafJsonExportRequest = request
     }

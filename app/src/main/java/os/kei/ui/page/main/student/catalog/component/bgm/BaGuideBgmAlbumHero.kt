@@ -13,11 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -44,25 +40,22 @@ internal fun BaGuideBgmAlbumHero(
     repeatEnabled: Boolean,
     isPlaying: Boolean,
     playbackVolume: Float,
+    volumeControlVisible: Boolean,
+    lastAudibleVolume: Float,
     sectionTitle: String,
     sectionMeta: String,
     onRepeatClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
+    onVolumeControlVisibleChange: (Boolean) -> Unit,
+    onLastAudibleVolumeChange: (Float) -> Unit,
     onVolumeSliderInteractionChanged: (Boolean) -> Unit,
     contentBackdrop: Backdrop,
     artworkImageUrl: String = "",
     showAlbumTitle: Boolean = true,
     promoteSectionTitle: Boolean = false,
 ) {
-    var volumeControlVisible by rememberSaveable { mutableStateOf(true) }
-    var lastAudibleVolume by rememberSaveable { mutableStateOf(playbackVolume.takeIf { it > 0.01f } ?: 0.72f) }
-    LaunchedEffect(playbackVolume) {
-        if (playbackVolume > 0.01f) {
-            lastAudibleVolume = playbackVolume
-        }
-    }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val density = LocalDensity.current
     val volumeTransition =
@@ -179,7 +172,7 @@ internal fun BaGuideBgmAlbumHero(
                 muted = playbackVolume <= 0.001f,
                 onRepeatClick = onRepeatClick,
                 onPlayPauseClick = onPlayPauseClick,
-                onVolumeClick = { volumeControlVisible = !volumeControlVisible },
+                onVolumeClick = { onVolumeControlVisibleChange(!volumeControlVisible) },
             )
             Box(
                 modifier =
@@ -193,13 +186,13 @@ internal fun BaGuideBgmAlbumHero(
                     volume = playbackVolume,
                     onVolumeChange = onVolumeChange,
                     onVolumeChangeFinished = { volume ->
-                        if (volume > 0.01f) lastAudibleVolume = volume
+                        if (volume > 0.01f) onLastAudibleVolumeChange(volume)
                         onVolumeChangeFinished(volume)
                     },
                     onToggleMuted = {
                         val nextVolume =
                             if (playbackVolume > 0.001f) {
-                                lastAudibleVolume = playbackVolume
+                                onLastAudibleVolumeChange(playbackVolume)
                                 0f
                             } else {
                                 lastAudibleVolume.coerceIn(0.12f, 1f)

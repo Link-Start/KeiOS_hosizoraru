@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -25,11 +27,15 @@ internal fun BaGuideBgmAlbumContent(
     isPlaying: Boolean,
     repeatEnabled: Boolean,
     playbackVolume: Float,
+    volumeControlVisible: Boolean,
+    lastAudibleVolume: Float,
     isTrackFavorite: (String) -> Boolean,
     onRepeatClick: () -> Unit,
     onPlayPauseClick: () -> Unit,
     onVolumeChange: (Float) -> Unit,
     onVolumeChangeFinished: (Float) -> Unit,
+    onVolumeControlVisibleChange: (Boolean) -> Unit,
+    onLastAudibleVolumeChange: (Float) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
     onTrackClick: (String) -> Unit,
     onTrackFavoriteClick: (String) -> Unit,
@@ -51,39 +57,40 @@ internal fun BaGuideBgmAlbumContent(
     artworkImageUrl: String = "",
     showAlbumTitle: Boolean = true,
     promoteSectionTitle: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val sliderLockedScrollConnection = remember(userScrollEnabled, bottomBarScrollConnection) {
-        if (userScrollEnabled) {
-            bottomBarScrollConnection
-        } else {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    return available
-                }
+    val sliderLockedScrollConnection =
+        remember(userScrollEnabled, bottomBarScrollConnection) {
+            if (userScrollEnabled) {
+                bottomBarScrollConnection
+            } else {
+                object : NestedScrollConnection {
+                    override fun onPreScroll(
+                        available: Offset,
+                        source: NestedScrollSource,
+                    ): Offset = available
 
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource
-                ): Offset {
-                    return available
+                    override fun onPostScroll(
+                        consumed: Offset,
+                        available: Offset,
+                        source: NestedScrollSource,
+                    ): Offset = available
                 }
             }
         }
-    }
     LazyColumn(
         state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .nestedScroll(sliderLockedScrollConnection),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(sliderLockedScrollConnection),
         userScrollEnabled = userScrollEnabled,
         contentPadding = PaddingValues(start = 16.dp, top = topPadding, end = 16.dp, bottom = bottomPadding),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item(
             key = "ba-guide-bgm-album-hero",
-            contentType = "ba_guide_bgm_album_hero"
+            contentType = "ba_guide_bgm_album_hero",
         ) {
             BaGuideBgmAlbumHero(
                 accent = accent,
@@ -91,17 +98,21 @@ internal fun BaGuideBgmAlbumContent(
                 repeatEnabled = repeatEnabled,
                 isPlaying = isPlaying,
                 playbackVolume = playbackVolume,
+                volumeControlVisible = volumeControlVisible,
+                lastAudibleVolume = lastAudibleVolume,
                 sectionTitle = sectionTitle,
                 sectionMeta = sectionMeta,
                 onRepeatClick = onRepeatClick,
                 onPlayPauseClick = onPlayPauseClick,
                 onVolumeChange = onVolumeChange,
                 onVolumeChangeFinished = onVolumeChangeFinished,
+                onVolumeControlVisibleChange = onVolumeControlVisibleChange,
+                onLastAudibleVolumeChange = onLastAudibleVolumeChange,
                 onVolumeSliderInteractionChanged = onSliderInteractionChanged,
                 contentBackdrop = contentBackdrop,
                 artworkImageUrl = artworkImageUrl,
                 showAlbumTitle = showAlbumTitle,
-                promoteSectionTitle = promoteSectionTitle
+                promoteSectionTitle = promoteSectionTitle,
             )
         }
         renderBaGuideBgmTrackList(
@@ -115,17 +126,17 @@ internal fun BaGuideBgmAlbumContent(
             onTrackClick = onTrackClick,
             onTrackFavoriteClick = onTrackFavoriteClick,
             onTrackOfflineClick = onTrackOfflineClick,
-            onTrackShareClick = onTrackShareClick
+            onTrackShareClick = onTrackShareClick,
         )
         if (showFooter) {
             item(
                 key = "ba-guide-bgm-album-footer",
-                contentType = "ba_guide_bgm_album_footer"
+                contentType = "ba_guide_bgm_album_footer",
             ) {
                 BaGuideBgmAlbumFooter(
                     sectionTitle = sectionFooterTitle,
                     trackCount = tracks.size,
-                    offlineTrackCount = offlineTrackCount
+                    offlineTrackCount = offlineTrackCount,
                 )
             }
         }

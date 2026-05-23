@@ -17,6 +17,12 @@ internal data class BaGuideCatalogPageChromeState(
     val importPreviewState: BaGuideCatalogImportPreviewState? = null,
     val searchVisible: Boolean = false,
     val searchInputActive: Boolean = false,
+    val bgmVolumeControlVisible: Boolean = true,
+    val bgmLastAudibleVolume: Float = 0.72f,
+    val sliderInteractionActive: Boolean = false,
+    val studentBgmNowPlayingVisible: Boolean = false,
+    val studentBgmNowPlayingExpanded: Boolean = false,
+    val studentBgmSliderInteractionActive: Boolean = false,
 )
 
 @Stable
@@ -42,9 +48,28 @@ internal class BaGuideCatalogPageStateHolder(
     val searchInputActive: Boolean
         get() = chromeState().searchInputActive
 
+    val bgmVolumeControlVisible: Boolean
+        get() = chromeState().bgmVolumeControlVisible
+
+    val bgmLastAudibleVolume: Float
+        get() = chromeState().bgmLastAudibleVolume
+
+    val sliderInteractionActive: Boolean
+        get() = chromeState().sliderInteractionActive
+
+    val studentBgmNowPlayingVisible: Boolean
+        get() = chromeState().studentBgmNowPlayingVisible
+
+    val studentBgmNowPlayingExpanded: Boolean
+        get() = chromeState().studentBgmNowPlayingExpanded
+
+    val studentBgmSliderInteractionActive: Boolean
+        get() = chromeState().studentBgmSliderInteractionActive
+
     var playbackSliderPreview by mutableStateOf<Float?>(null)
         private set
-    var sliderInteractionActive by mutableStateOf(false)
+
+    var studentBgmSeekPreviewProgress by mutableStateOf<Float?>(null)
         private set
 
     val studentSearchQuery: String
@@ -90,13 +115,38 @@ internal class BaGuideCatalogPageStateHolder(
         actions().onSearchVisibilityChange(active || searchVisible, active)
     }
 
+    fun updateBgmVolumeControlVisible(visible: Boolean) {
+        actions().onBgmVolumeControlVisibleChange(visible)
+    }
+
+    fun updateBgmLastAudibleVolume(volume: Float) {
+        actions().onBgmLastAudibleVolumeChange(volume)
+    }
+
     fun updateSliderInteractionActive(active: Boolean) {
-        sliderInteractionActive = active
         if (!active) playbackSliderPreview = null
+        actions().onPlaybackSliderInteractionChange(active)
     }
 
     fun updatePlaybackSliderPreview(progress: Float?) {
-        playbackSliderPreview = progress
+        playbackSliderPreview = progress?.coerceIn(0f, 1f)
+    }
+
+    fun updateStudentBgmNowPlayingVisible(visible: Boolean) {
+        actions().onStudentBgmNowPlayingVisibleChange(visible)
+    }
+
+    fun updateStudentBgmNowPlayingExpanded(expanded: Boolean) {
+        actions().onStudentBgmNowPlayingExpandedChange(expanded)
+    }
+
+    fun updateStudentBgmSliderInteractionActive(active: Boolean) {
+        if (!active) studentBgmSeekPreviewProgress = null
+        actions().onStudentBgmSliderInteractionChange(active)
+    }
+
+    fun updateStudentBgmSeekPreviewProgress(progress: Float?) {
+        studentBgmSeekPreviewProgress = progress?.coerceIn(0f, 1f)
     }
 
     fun openTransferSheet() {
@@ -124,6 +174,12 @@ internal data class BaGuideCatalogPageChromeActions(
     val onShowTransferSheetChange: (Boolean) -> Unit,
     val onImportPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit,
     val onSearchVisibilityChange: (visible: Boolean, inputActive: Boolean) -> Unit,
+    val onBgmVolumeControlVisibleChange: (Boolean) -> Unit,
+    val onBgmLastAudibleVolumeChange: (Float) -> Unit,
+    val onPlaybackSliderInteractionChange: (Boolean) -> Unit,
+    val onStudentBgmNowPlayingVisibleChange: (Boolean) -> Unit,
+    val onStudentBgmNowPlayingExpandedChange: (Boolean) -> Unit,
+    val onStudentBgmSliderInteractionChange: (Boolean) -> Unit,
 )
 
 @Composable

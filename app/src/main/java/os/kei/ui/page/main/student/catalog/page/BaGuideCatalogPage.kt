@@ -96,6 +96,12 @@ fun BaGuideCatalogPage(
                     onShowTransferSheetChange = catalogViewModel::updateCatalogTransferSheetVisible,
                     onImportPreviewStateChange = catalogViewModel::updateCatalogImportPreviewState,
                     onSearchVisibilityChange = catalogViewModel::updateCatalogSearchVisibility,
+                    onBgmVolumeControlVisibleChange = catalogViewModel::updateCatalogBgmVolumeControlVisible,
+                    onBgmLastAudibleVolumeChange = catalogViewModel::updateCatalogBgmLastAudibleVolume,
+                    onPlaybackSliderInteractionChange = catalogViewModel::updateCatalogPlaybackSliderInteractionActive,
+                    onStudentBgmNowPlayingVisibleChange = catalogViewModel::updateCatalogStudentBgmNowPlayingVisible,
+                    onStudentBgmNowPlayingExpandedChange = catalogViewModel::updateCatalogStudentBgmNowPlayingExpanded,
+                    onStudentBgmSliderInteractionChange = catalogViewModel::updateCatalogStudentBgmSliderInteractionActive,
                 ),
         )
     val pageActions = rememberBaGuideCatalogPageActions(catalogViewModel)

@@ -1,8 +1,7 @@
 package os.kei.ui.page.main.about.page
 
-import androidx.compose.runtime.Composable
+import android.content.Context
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.about.model.AboutComponentEntry
 import os.kei.ui.page.main.about.model.AboutPermissionEntry
@@ -39,8 +38,15 @@ internal data class AboutSearchTarget(
     }
 }
 
-@Composable
-internal fun rememberAboutSearchTargets(
+@Immutable
+internal data class AboutSearchUiState(
+    val active: Boolean = false,
+    val matchingTargets: List<AboutSearchTarget> = emptyList(),
+    val matchingCards: Set<AboutSearchCard> = emptySet(),
+)
+
+internal fun buildAboutSearchTargets(
+    context: Context,
     appLabel: String,
     shizukuStatus: String,
     permissionEntries: List<AboutPermissionEntry>,
@@ -52,19 +58,19 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Overview,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_app_title),
-                    stringResource(R.string.about_card_app_subtitle),
+                    context.getString(R.string.about_card_app_title),
+                    context.getString(R.string.about_card_app_subtitle),
                     appLabel,
-                    stringResource(R.string.about_label_name),
-                    stringResource(R.string.about_label_package_name),
-                    stringResource(R.string.about_label_version),
-                    stringResource(R.string.about_label_build_type),
-                    stringResource(R.string.about_label_build_time),
-                    stringResource(R.string.about_label_last_update),
-                    stringResource(R.string.about_label_debug),
-                    stringResource(R.string.about_label_test_only),
-                    stringResource(R.string.about_label_api_level),
-                    stringResource(R.string.about_label_security_patch),
+                    context.getString(R.string.about_label_name),
+                    context.getString(R.string.about_label_package_name),
+                    context.getString(R.string.about_label_version),
+                    context.getString(R.string.about_label_build_type),
+                    context.getString(R.string.about_label_build_time),
+                    context.getString(R.string.about_label_last_update),
+                    context.getString(R.string.about_label_debug),
+                    context.getString(R.string.about_label_test_only),
+                    context.getString(R.string.about_label_api_level),
+                    context.getString(R.string.about_label_security_patch),
                 ),
         ),
         AboutSearchTarget(
@@ -72,24 +78,24 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Overview,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_release_title),
-                    stringResource(R.string.about_card_release_subtitle),
-                    stringResource(R.string.about_release_row_version),
-                    stringResource(R.string.about_release_row_focus),
-                    stringResource(R.string.about_release_row_github),
-                    stringResource(R.string.about_release_row_ba_guide),
-                    stringResource(R.string.about_release_row_navigation),
-                    stringResource(R.string.about_release_row_icon),
-                    stringResource(R.string.about_release_row_release_gate),
-                    stringResource(R.string.about_release_row_next),
-                    stringResource(R.string.about_release_value_version),
-                    stringResource(R.string.about_release_value_focus),
-                    stringResource(R.string.about_release_value_github),
-                    stringResource(R.string.about_release_value_ba_guide),
-                    stringResource(R.string.about_release_value_navigation),
-                    stringResource(R.string.about_release_value_icon),
-                    stringResource(R.string.about_release_value_release_gate),
-                    stringResource(R.string.about_release_value_next),
+                    context.getString(R.string.about_card_release_title),
+                    context.getString(R.string.about_card_release_subtitle),
+                    context.getString(R.string.about_release_row_version),
+                    context.getString(R.string.about_release_row_focus),
+                    context.getString(R.string.about_release_row_github),
+                    context.getString(R.string.about_release_row_ba_guide),
+                    context.getString(R.string.about_release_row_navigation),
+                    context.getString(R.string.about_release_row_icon),
+                    context.getString(R.string.about_release_row_release_gate),
+                    context.getString(R.string.about_release_row_next),
+                    context.getString(R.string.about_release_value_version),
+                    context.getString(R.string.about_release_value_focus),
+                    context.getString(R.string.about_release_value_github),
+                    context.getString(R.string.about_release_value_ba_guide),
+                    context.getString(R.string.about_release_value_navigation),
+                    context.getString(R.string.about_release_value_icon),
+                    context.getString(R.string.about_release_value_release_gate),
+                    context.getString(R.string.about_release_value_next),
                 ),
         ),
         AboutSearchTarget(
@@ -97,26 +103,26 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Overview,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_github_title),
-                    stringResource(R.string.about_card_github_subtitle),
-                    stringResource(R.string.about_label_project_url),
-                    stringResource(R.string.about_row_github_repo_id),
-                    stringResource(R.string.about_row_github_anchor),
-                    stringResource(R.string.about_row_github_build_version),
-                    stringResource(R.string.about_row_github_branch),
-                    stringResource(R.string.about_row_github_commit_count),
-                    stringResource(R.string.about_row_github_total_commit_count),
-                    stringResource(R.string.about_row_github_commit_hash),
-                    stringResource(R.string.about_row_github_worktree),
-                    stringResource(R.string.about_row_github_data_source),
-                    stringResource(R.string.about_row_github_version_source),
-                    stringResource(R.string.about_row_github_strategy),
-                    stringResource(R.string.about_row_github_tracking),
-                    stringResource(R.string.about_row_github_notify),
-                    stringResource(R.string.about_row_broadcast_handler),
-                    stringResource(R.string.about_row_foreground_info_handler),
-                    stringResource(R.string.about_row_background_jobs),
-                    stringResource(R.string.about_row_github_cache),
+                    context.getString(R.string.about_card_github_title),
+                    context.getString(R.string.about_card_github_subtitle),
+                    context.getString(R.string.about_label_project_url),
+                    context.getString(R.string.about_row_github_repo_id),
+                    context.getString(R.string.about_row_github_anchor),
+                    context.getString(R.string.about_row_github_build_version),
+                    context.getString(R.string.about_row_github_branch),
+                    context.getString(R.string.about_row_github_commit_count),
+                    context.getString(R.string.about_row_github_total_commit_count),
+                    context.getString(R.string.about_row_github_commit_hash),
+                    context.getString(R.string.about_row_github_worktree),
+                    context.getString(R.string.about_row_github_data_source),
+                    context.getString(R.string.about_row_github_version_source),
+                    context.getString(R.string.about_row_github_strategy),
+                    context.getString(R.string.about_row_github_tracking),
+                    context.getString(R.string.about_row_github_notify),
+                    context.getString(R.string.about_row_broadcast_handler),
+                    context.getString(R.string.about_row_foreground_info_handler),
+                    context.getString(R.string.about_row_background_jobs),
+                    context.getString(R.string.about_row_github_cache),
                 ),
         ),
         AboutSearchTarget(
@@ -124,14 +130,14 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.System,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_runtime_title),
-                    stringResource(R.string.about_card_runtime_subtitle),
+                    context.getString(R.string.about_card_runtime_title),
+                    context.getString(R.string.about_card_runtime_subtitle),
                     shizukuStatus,
-                    stringResource(R.string.about_runtime_label_notification_permission),
-                    stringResource(R.string.about_runtime_label_selinux),
-                    stringResource(R.string.about_runtime_label_uname),
-                    stringResource(R.string.about_runtime_label_permission_count),
-                    stringResource(R.string.about_runtime_label_component_count),
+                    context.getString(R.string.about_runtime_label_notification_permission),
+                    context.getString(R.string.about_runtime_label_selinux),
+                    context.getString(R.string.about_runtime_label_uname),
+                    context.getString(R.string.about_runtime_label_permission_count),
+                    context.getString(R.string.about_runtime_label_component_count),
                 ),
         ),
         AboutSearchTarget(
@@ -139,12 +145,12 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.System,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_network_title),
-                    stringResource(R.string.about_card_network_subtitle),
-                    stringResource(R.string.about_row_mcp_sdk),
-                    stringResource(R.string.about_row_ktor),
-                    stringResource(R.string.about_row_okhttp),
-                    stringResource(R.string.about_row_focus_api),
+                    context.getString(R.string.about_card_network_title),
+                    context.getString(R.string.about_card_network_subtitle),
+                    context.getString(R.string.about_row_mcp_sdk),
+                    context.getString(R.string.about_row_ktor),
+                    context.getString(R.string.about_row_okhttp),
+                    context.getString(R.string.about_row_focus_api),
                 ),
         ),
         AboutSearchTarget(
@@ -152,14 +158,14 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.System,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_media_title),
-                    stringResource(R.string.about_card_media_subtitle),
-                    stringResource(R.string.about_row_media3),
-                    stringResource(R.string.about_row_zoomimage),
-                    stringResource(R.string.about_row_coil3),
-                    stringResource(R.string.about_row_ucrop),
-                    stringResource(R.string.about_row_documentfile),
-                    stringResource(R.string.about_row_mmkv),
+                    context.getString(R.string.about_card_media_title),
+                    context.getString(R.string.about_card_media_subtitle),
+                    context.getString(R.string.about_row_media3),
+                    context.getString(R.string.about_row_zoomimage),
+                    context.getString(R.string.about_row_coil3),
+                    context.getString(R.string.about_row_ucrop),
+                    context.getString(R.string.about_row_documentfile),
+                    context.getString(R.string.about_row_mmkv),
                 ),
         ),
         AboutSearchTarget(
@@ -167,15 +173,15 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.System,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_permission_title),
-                    stringResource(R.string.about_card_permission_subtitle),
-                    stringResource(R.string.about_label_status),
-                    stringResource(R.string.about_permission_empty),
-                    stringResource(R.string.about_permission_label_permission),
-                    stringResource(R.string.about_permission_label_granted),
-                    stringResource(R.string.about_permission_label_system_name),
-                    stringResource(R.string.about_permission_label_purpose),
-                    stringResource(R.string.about_permission_label_used_in),
+                    context.getString(R.string.about_card_permission_title),
+                    context.getString(R.string.about_card_permission_subtitle),
+                    context.getString(R.string.about_label_status),
+                    context.getString(R.string.about_permission_empty),
+                    context.getString(R.string.about_permission_label_permission),
+                    context.getString(R.string.about_permission_label_granted),
+                    context.getString(R.string.about_permission_label_system_name),
+                    context.getString(R.string.about_permission_label_purpose),
+                    context.getString(R.string.about_permission_label_used_in),
                     *permissionEntries
                         .flatMap { entry ->
                             listOf(entry.title, entry.name, entry.purpose, entry.usedIn)
@@ -187,16 +193,16 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.System,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_component_title),
-                    stringResource(R.string.about_card_component_subtitle),
-                    stringResource(R.string.about_label_status),
-                    stringResource(R.string.about_component_empty),
-                    stringResource(R.string.about_component_label_export_state),
-                    stringResource(R.string.about_permission_label_purpose),
-                    stringResource(R.string.about_permission_label_used_in),
-                    stringResource(R.string.about_component_type_service),
-                    stringResource(R.string.about_component_type_receiver),
-                    stringResource(R.string.about_component_type_provider),
+                    context.getString(R.string.about_card_component_title),
+                    context.getString(R.string.about_card_component_subtitle),
+                    context.getString(R.string.about_label_status),
+                    context.getString(R.string.about_component_empty),
+                    context.getString(R.string.about_component_label_export_state),
+                    context.getString(R.string.about_permission_label_purpose),
+                    context.getString(R.string.about_permission_label_used_in),
+                    context.getString(R.string.about_component_type_service),
+                    context.getString(R.string.about_component_type_receiver),
+                    context.getString(R.string.about_component_type_provider),
                     *componentEntries
                         .flatMap { entry ->
                             buildList {
@@ -204,7 +210,7 @@ internal fun rememberAboutSearchTargets(
                                 add(entry.purpose)
                                 add(entry.usedIn)
                                 entry.extra.forEach { extra ->
-                                    add(stringResource(extra.labelRes))
+                                    add(context.getString(extra.labelRes))
                                     add(extra.value)
                                 }
                             }
@@ -216,18 +222,18 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Tech,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_build_title),
-                    stringResource(R.string.about_card_build_subtitle),
-                    stringResource(R.string.about_row_kotlin),
-                    stringResource(R.string.about_row_gradle),
-                    stringResource(R.string.about_row_java),
-                    stringResource(R.string.about_row_jvm_target),
-                    stringResource(R.string.about_row_compile_sdk),
-                    stringResource(R.string.about_row_min_sdk),
-                    stringResource(R.string.about_row_target_sdk),
-                    stringResource(R.string.about_row_runtime_api),
-                    stringResource(R.string.about_row_runtime_api_full),
-                    stringResource(R.string.about_row_advanced_protection),
+                    context.getString(R.string.about_card_build_title),
+                    context.getString(R.string.about_card_build_subtitle),
+                    context.getString(R.string.about_row_kotlin),
+                    context.getString(R.string.about_row_gradle),
+                    context.getString(R.string.about_row_java),
+                    context.getString(R.string.about_row_jvm_target),
+                    context.getString(R.string.about_row_compile_sdk),
+                    context.getString(R.string.about_row_min_sdk),
+                    context.getString(R.string.about_row_target_sdk),
+                    context.getString(R.string.about_row_runtime_api),
+                    context.getString(R.string.about_row_runtime_api_full),
+                    context.getString(R.string.about_row_advanced_protection),
                 ),
         ),
         AboutSearchTarget(
@@ -235,15 +241,15 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Tech,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_ui_title),
-                    stringResource(R.string.about_card_ui_subtitle),
-                    stringResource(R.string.about_row_ui_framework),
-                    stringResource(R.string.about_row_declarative_ui),
-                    stringResource(R.string.about_row_navigation),
-                    stringResource(R.string.about_row_ui_state_holder),
-                    stringResource(R.string.about_row_glass_material),
-                    stringResource(R.string.about_row_icon_set),
-                    stringResource(R.string.about_row_permission_bridge),
+                    context.getString(R.string.about_card_ui_title),
+                    context.getString(R.string.about_card_ui_subtitle),
+                    context.getString(R.string.about_row_ui_framework),
+                    context.getString(R.string.about_row_declarative_ui),
+                    context.getString(R.string.about_row_navigation),
+                    context.getString(R.string.about_row_ui_state_holder),
+                    context.getString(R.string.about_row_glass_material),
+                    context.getString(R.string.about_row_icon_set),
+                    context.getString(R.string.about_row_permission_bridge),
                 ),
         ),
         AboutSearchTarget(
@@ -251,13 +257,13 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Tech,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_project_license_title),
-                    stringResource(R.string.about_card_project_license_subtitle),
-                    stringResource(R.string.about_project_license_row_name),
-                    stringResource(R.string.about_project_license_row_spdx),
-                    stringResource(R.string.about_project_license_row_file),
-                    stringResource(R.string.about_project_license_row_copyright),
-                    stringResource(R.string.about_project_license_row_url),
+                    context.getString(R.string.about_card_project_license_title),
+                    context.getString(R.string.about_card_project_license_subtitle),
+                    context.getString(R.string.about_project_license_row_name),
+                    context.getString(R.string.about_project_license_row_spdx),
+                    context.getString(R.string.about_project_license_row_file),
+                    context.getString(R.string.about_project_license_row_copyright),
+                    context.getString(R.string.about_project_license_row_url),
                 ),
         ),
         AboutSearchTarget(
@@ -265,27 +271,27 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Tech,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_license_title),
-                    stringResource(R.string.about_card_license_subtitle),
-                    stringResource(R.string.about_license_row_scope),
-                    stringResource(R.string.about_license_row_mix),
-                    stringResource(R.string.about_license_row_compliance),
-                    stringResource(R.string.about_license_row_miuix),
-                    stringResource(R.string.about_license_row_androidx_runtime),
-                    stringResource(R.string.about_license_row_material_components),
-                    stringResource(R.string.about_license_row_androidx_stack),
-                    stringResource(R.string.about_license_row_lucide),
-                    stringResource(R.string.about_license_row_blue_archive_logos),
-                    stringResource(R.string.about_license_row_backdrop),
-                    stringResource(R.string.about_license_row_capsule),
-                    stringResource(R.string.about_license_row_shapes),
-                    stringResource(R.string.about_license_row_shizuku),
-                    stringResource(R.string.about_license_row_hiddenapi_bypass),
-                    stringResource(R.string.about_license_row_mmkv),
-                    stringResource(R.string.about_license_row_mcp),
-                    stringResource(R.string.about_license_row_network_stack),
-                    stringResource(R.string.about_license_row_media_stack),
-                    stringResource(R.string.about_license_row_package_installer),
+                    context.getString(R.string.about_card_license_title),
+                    context.getString(R.string.about_card_license_subtitle),
+                    context.getString(R.string.about_license_row_scope),
+                    context.getString(R.string.about_license_row_mix),
+                    context.getString(R.string.about_license_row_compliance),
+                    context.getString(R.string.about_license_row_miuix),
+                    context.getString(R.string.about_license_row_androidx_runtime),
+                    context.getString(R.string.about_license_row_material_components),
+                    context.getString(R.string.about_license_row_androidx_stack),
+                    context.getString(R.string.about_license_row_lucide),
+                    context.getString(R.string.about_license_row_blue_archive_logos),
+                    context.getString(R.string.about_license_row_backdrop),
+                    context.getString(R.string.about_license_row_capsule),
+                    context.getString(R.string.about_license_row_shapes),
+                    context.getString(R.string.about_license_row_shizuku),
+                    context.getString(R.string.about_license_row_hiddenapi_bypass),
+                    context.getString(R.string.about_license_row_mmkv),
+                    context.getString(R.string.about_license_row_mcp),
+                    context.getString(R.string.about_license_row_network_stack),
+                    context.getString(R.string.about_license_row_media_stack),
+                    context.getString(R.string.about_license_row_package_installer),
                 ),
         ),
         AboutSearchTarget(
@@ -293,15 +299,15 @@ internal fun rememberAboutSearchTargets(
             category = AboutCategory.Lab,
             tokens =
                 aboutTokens(
-                    stringResource(R.string.about_card_component_lab_title),
-                    stringResource(R.string.about_card_component_lab_subtitle),
-                    stringResource(R.string.about_component_lab_row_entry),
-                    stringResource(R.string.about_component_lab_row_scope),
-                    stringResource(R.string.about_component_lab_row_activity),
-                    stringResource(R.string.about_component_lab_row_components),
-                    stringResource(R.string.debug_component_lab_title),
-                    stringResource(R.string.debug_component_lab_liquid_catalog_title),
-                    stringResource(R.string.debug_component_lab_liquid_row_components_value),
+                    context.getString(R.string.about_card_component_lab_title),
+                    context.getString(R.string.about_card_component_lab_subtitle),
+                    context.getString(R.string.about_component_lab_row_entry),
+                    context.getString(R.string.about_component_lab_row_scope),
+                    context.getString(R.string.about_component_lab_row_activity),
+                    context.getString(R.string.about_component_lab_row_components),
+                    context.getString(R.string.debug_component_lab_title),
+                    context.getString(R.string.debug_component_lab_liquid_catalog_title),
+                    context.getString(R.string.debug_component_lab_liquid_row_components_value),
                 ),
         ),
     )

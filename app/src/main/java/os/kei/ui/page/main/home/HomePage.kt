@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.core.ui.effect.background.BgEffectBackground
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -58,6 +59,7 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBac
 @Composable
 fun HomePage(
     shizukuStatus: String,
+    homeAppOverview: HomeAppOverview = HomeAppOverview(),
     mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     homeGitHubOverview: HomeGitHubOverview = HomeGitHubOverview(),
     homeBaOverview: HomeBaOverview = HomeBaOverview(),
@@ -129,6 +131,7 @@ fun HomePage(
     val contentState =
         rememberHomePageContentState(
             shizukuStatus = shizukuStatus,
+            appOverview = homeAppOverview,
             mcpOverview = mcpOverview,
             githubOverview = homeGitHubOverview,
             baOverview = homeBaOverview,

@@ -127,9 +127,10 @@ fun SettingsPage(
     val disabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
     val scope = rememberCoroutineScope()
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
-    val diagnosticsUiState by settingsPageViewModel.diagnosticsUiState.collectAsStateWithLifecycle()
-    val supportUiState by settingsPageViewModel.supportUiState.collectAsStateWithLifecycle()
-    val chromeState by settingsPageViewModel.chromeState.collectAsStateWithLifecycle()
+    val pageSnapshotState by settingsPageViewModel.pageSnapshotState.collectAsStateWithLifecycle()
+    val diagnosticsUiState = pageSnapshotState.diagnosticsUiState
+    val supportUiState = pageSnapshotState.supportUiState
+    val chromeState = pageSnapshotState.chromeState
     val routeState =
         rememberSettingsPageRouteState(
             cacheState = diagnosticsUiState.cacheState,
@@ -316,14 +317,10 @@ fun SettingsPage(
     val searchTargets = rememberSettingsSearchTargets()
     val trimmedSearchQuery = searchQuery.trim()
     val searchActive = trimmedSearchQuery.isNotEmpty()
-    val matchingSearchTargets =
-        remember(searchTargets, trimmedSearchQuery) {
-            if (trimmedSearchQuery.isBlank()) {
-                emptyList()
-            } else {
-                searchTargets.filter { it.matches(trimmedSearchQuery) }
-            }
-        }
+    val matchingSearchTargets = pageSnapshotState.searchUiState.matchingTargets
+    LaunchedEffect(searchTargets, settingsPageViewModel) {
+        settingsPageViewModel.updateSearchTargets(searchTargets)
+    }
     val selectSettingsCategoryAction =
         remember(
             categories,

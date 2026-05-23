@@ -4,6 +4,7 @@ import kotlinx.coroutines.launch
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
+import os.kei.ui.page.main.github.page.GitHubActionsArtifactFilter
 
 internal class GitHubActionsActions(
     private val env: GitHubPageActionEnvironment,
@@ -129,6 +130,14 @@ internal class GitHubActionsActions(
     fun setRunsExpanded(value: Boolean) {
         state.actionsRunsExpanded = value
         GitHubActionsUiStateStore.setRunsExpanded(value)
+    }
+
+    fun setArtifactsExpanded(value: Boolean) {
+        state.actionsArtifactsExpanded = value
+    }
+
+    fun setArtifactFilter(value: GitHubActionsArtifactFilter) {
+        state.actionsArtifactFilter = value
     }
 
     fun selectActionsRun(runId: Long) {

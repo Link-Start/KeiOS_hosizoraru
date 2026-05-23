@@ -3,10 +3,16 @@ package os.kei.ui.page.main.about.page
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
@@ -31,9 +37,29 @@ internal class AboutPageViewModel : ViewModel() {
     val detailsState: StateFlow<AboutPageDetailsState> = _detailsState.asStateFlow()
     private val _chromeState = MutableStateFlow(AboutPageChromeState())
     val chromeState: StateFlow<AboutPageChromeState> = _chromeState.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchState: StateFlow<AboutSearchUiState> =
+        combine(
+            _detailsState,
+            _chromeState,
+        ) { details, chrome ->
+            details.searchTargets to chrome.searchQuery
+        }.distinctUntilChanged()
+            .mapLatest { (targets, query) ->
+                repository.deriveSearchState(
+                    targets = targets,
+                    query = query,
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = AboutSearchUiState(),
+            )
 
     fun refreshDetails(
         context: Context,
+        appLabel: String,
+        shizukuStatus: String,
         notificationPermissionGranted: Boolean,
         shizukuApiUtils: ShizukuApiUtils,
     ) {
@@ -44,6 +70,8 @@ internal class AboutPageViewModel : ViewModel() {
                 _detailsState.value =
                     repository.loadDetails(
                         context = appContext,
+                        appLabel = appLabel,
+                        shizukuStatus = shizukuStatus,
                         notificationPermissionGranted = notificationPermissionGranted,
                         shizukuApiUtils = shizukuApiUtils,
                     )
@@ -71,7 +99,8 @@ internal class AboutPageViewModel : ViewModel() {
     }
 
     fun updateSearchQuery(query: String) {
-        _chromeState.update { state -> state.copy(searchQuery = query.take(96)) }
+        val normalized = query.take(96)
+        _chromeState.update { state -> state.copy(searchQuery = normalized) }
     }
 
     fun updateSectionExpanded(
@@ -84,6 +113,7 @@ internal class AboutPageViewModel : ViewModel() {
             )
         }
     }
+
 }
 
 private fun AboutPageSectionExpansionState.withCardExpanded(

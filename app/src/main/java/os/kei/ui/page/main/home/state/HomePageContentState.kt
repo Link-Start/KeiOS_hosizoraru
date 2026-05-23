@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -85,6 +86,7 @@ internal data class HomePageContentColors(
 @Composable
 internal fun rememberHomePageContentState(
     shizukuStatus: String,
+    appOverview: HomeAppOverview,
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
     baOverview: HomeBaOverview,
@@ -98,9 +100,10 @@ internal fun rememberHomePageContentState(
             inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant,
             githubCacheColor = AppStatusColors.Cached,
         )
-    return remember(shizukuStatus, mcpOverview, githubOverview, baOverview, runtimeNowMs, text, colors) {
+    return remember(shizukuStatus, appOverview, mcpOverview, githubOverview, baOverview, runtimeNowMs, text, colors) {
         deriveHomePageContentState(
             shizukuStatus = shizukuStatus,
+            appOverview = appOverview,
             mcpOverview = mcpOverview,
             githubOverview = githubOverview,
             baOverview = baOverview,

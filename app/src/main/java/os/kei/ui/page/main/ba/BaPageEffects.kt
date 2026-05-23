@@ -161,3 +161,43 @@ internal fun BaPageCommonEffects(
             }
     }
 }
+
+@Composable
+internal fun BaCalendarPoolSyncEffects(
+    calendarPoolViewModel: BaCalendarPoolViewModel,
+    syncPageActive: Boolean,
+    routeState: BaPageRouteState,
+) {
+    LaunchedEffect(
+        calendarPoolViewModel,
+        syncPageActive,
+        routeState.serverIndex,
+        routeState.baCalendarReloadSignal,
+        routeState.calendarRefreshIntervalHours,
+        routeState.calendarHydrationReady,
+    ) {
+        calendarPoolViewModel.syncCalendar(
+            isPageActive = syncPageActive,
+            serverIndex = routeState.serverIndex,
+            reloadSignal = routeState.baCalendarReloadSignal,
+            calendarRefreshIntervalHours = routeState.calendarRefreshIntervalHours,
+            hydrationReady = routeState.calendarHydrationReady,
+        )
+    }
+    LaunchedEffect(
+        calendarPoolViewModel,
+        syncPageActive,
+        routeState.serverIndex,
+        routeState.baPoolReloadSignal,
+        routeState.calendarRefreshIntervalHours,
+        routeState.poolHydrationReady,
+    ) {
+        calendarPoolViewModel.syncPool(
+            isPageActive = syncPageActive,
+            serverIndex = routeState.serverIndex,
+            reloadSignal = routeState.baPoolReloadSignal,
+            calendarRefreshIntervalHours = routeState.calendarRefreshIntervalHours,
+            hydrationReady = routeState.poolHydrationReady,
+        )
+    }
+}

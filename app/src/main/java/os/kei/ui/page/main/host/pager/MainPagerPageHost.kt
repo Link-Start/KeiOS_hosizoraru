@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -33,6 +34,7 @@ internal data class MainPagerHomePageState(
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
     val visibleBottomPages: Set<BottomPage>,
+    val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
@@ -108,6 +110,7 @@ internal fun MainPagerPageHost(
                         }
                     HomePage(
                         shizukuStatus = homeState.shizukuStatus,
+                        homeAppOverview = homeState.homeAppOverview,
                         mcpOverview = homeState.homeMcpOverview,
                         homeGitHubOverview = homeState.homeGitHubOverview,
                         homeBaOverview = homeState.homeBaOverview,

@@ -8,9 +8,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
@@ -67,6 +70,15 @@ internal data class BaOfficeNotificationDraftUiState(
     val savedDraft: BaPageNotificationDraftState = BaPageSnapshot().toNotificationDraftState(),
 )
 
+internal data class BaOfficePageUiState(
+    val chromeUiState: BaOfficeChromeUiState = BaOfficeChromeUiState(),
+    val syncUiState: BaOfficeSyncUiState = BaOfficeSyncUiState(),
+    val serverUiState: BaOfficeServerUiState = BaOfficeServerUiState(),
+    val runtimeUiState: BaOfficeRuntimeUiState = BaOfficeRuntimeUiState(),
+    val settingsDraftUiState: BaOfficeSettingsDraftUiState = BaOfficeSettingsDraftUiState(),
+    val notificationDraftUiState: BaOfficeNotificationDraftUiState = BaOfficeNotificationDraftUiState(),
+)
+
 internal sealed interface BaOfficeEvent {
     data class SettingsSaved(
         val persisted: BaSettingsPersistenceResult,
@@ -113,6 +125,43 @@ internal class BaOfficeViewModel(
             ),
         )
     val notificationDraftUiState: StateFlow<BaOfficeNotificationDraftUiState> = _notificationDraftUiState.asStateFlow()
+    val pageUiState: StateFlow<BaOfficePageUiState> =
+        combine(
+            chromeUiState,
+            syncUiState,
+            serverUiState,
+            runtimeUiState,
+            settingsDraftUiState,
+            notificationDraftUiState,
+        ) { values ->
+            @Suppress("UNCHECKED_CAST")
+            val chrome = values[0] as BaOfficeChromeUiState
+            val sync = values[1] as BaOfficeSyncUiState
+            val server = values[2] as BaOfficeServerUiState
+            val runtime = values[3] as BaOfficeRuntimeUiState
+            val settingsDraft = values[4] as BaOfficeSettingsDraftUiState
+            val notificationDraft = values[5] as BaOfficeNotificationDraftUiState
+            BaOfficePageUiState(
+                chromeUiState = chrome,
+                syncUiState = sync,
+                serverUiState = server,
+                runtimeUiState = runtime,
+                settingsDraftUiState = settingsDraft,
+                notificationDraftUiState = notificationDraft,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue =
+                BaOfficePageUiState(
+                    chromeUiState = _chromeUiState.value,
+                    syncUiState = _syncUiState.value,
+                    serverUiState = _serverUiState.value,
+                    runtimeUiState = _runtimeUiState.value,
+                    settingsDraftUiState = _settingsDraftUiState.value,
+                    notificationDraftUiState = _notificationDraftUiState.value,
+                ),
+        )
     private val _events = MutableSharedFlow<BaOfficeEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<BaOfficeEvent> = _events.asSharedFlow()
     val office: BaOfficeController = BaOfficeController(defaultSnapshot)

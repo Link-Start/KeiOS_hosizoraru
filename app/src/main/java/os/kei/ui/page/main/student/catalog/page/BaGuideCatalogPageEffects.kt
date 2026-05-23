@@ -4,6 +4,8 @@ package os.kei.ui.page.main.student.catalog.page
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
@@ -96,5 +98,26 @@ internal fun BaGuideCatalogPageDerivedEffects(
                 sortMode = BaGuideBgmFavoriteSortMode.Recent,
             ),
         )
+    }
+}
+
+@Composable
+internal fun BaGuideCatalogBgmCacheEffects(
+    pageActions: BaGuideCatalogPageActions,
+    favoriteBgms: List<GuideBgmFavoriteItem>,
+    showTransferSheet: Boolean,
+) {
+    val latestFavoriteBgms = rememberUpdatedState(favoriteBgms)
+    val favoriteAudioUrls =
+        remember(favoriteBgms) {
+            favoriteBgms.map { item -> item.audioUrl }
+        }
+    LaunchedEffect(pageActions, favoriteAudioUrls) {
+        pageActions.onRequestBgmCacheSnapshot(latestFavoriteBgms.value, false)
+    }
+    LaunchedEffect(pageActions, showTransferSheet, favoriteAudioUrls) {
+        if (showTransferSheet) {
+            pageActions.onRequestBgmCacheSnapshot(latestFavoriteBgms.value, true)
+        }
     }
 }

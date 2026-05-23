@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.sheet
 
 import android.content.Context
@@ -29,7 +31,6 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.buildGitHubReleaseNotesDetailLines
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailRequest
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -41,7 +42,7 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.markdown.AppMarkdownContent
+import os.kei.ui.page.main.widget.markdown.AppMarkdownBlocksContent
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -62,6 +63,7 @@ internal fun GitHubDecisionAssistDetailSheet(
     releaseNotesTargets: List<GitHubReleaseNotesTarget> = emptyList(),
     selectedReleaseNotesTarget: GitHubReleaseNotesTarget? = null,
     releaseNotesApkVersion: GitHubRemoteApkVersionInfo? = null,
+    releaseNotesDetailState: GitHubReleaseNotesDetailUiState = GitHubReleaseNotesDetailUiState(),
     preciseApkVersionEnabled: Boolean = false,
     assetLoading: Boolean,
     assetError: String,
@@ -70,13 +72,14 @@ internal fun GitHubDecisionAssistDetailSheet(
     onRefreshHealth: (GitHubTrackedApp) -> Unit,
     onRefreshReleaseNotes: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onSelectReleaseNotesTarget: (GitHubTrackedApp, GitHubReleaseNotesTarget) -> Unit,
-    onOpenExternalUrl: (String) -> Unit
+    onOpenExternalUrl: (String) -> Unit,
 ) {
     val detail = request ?: return
-    val title = when (detail.type) {
-        GitHubDecisionAssistDetailType.RepositoryHealth -> R.string.github_health_detail_title
-        GitHubDecisionAssistDetailType.ReleaseNotes -> R.string.github_release_notes_detail_title
-    }
+    val title =
+        when (detail.type) {
+            GitHubDecisionAssistDetailType.RepositoryHealth -> R.string.github_health_detail_title
+            GitHubDecisionAssistDetailType.ReleaseNotes -> R.string.github_release_notes_detail_title
+        }
     SnapshotWindowBottomSheet(
         show = true,
         title = stringResource(title),
@@ -87,58 +90,68 @@ internal fun GitHubDecisionAssistDetailSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
         },
         endAction = {
-            val refreshing = when (detail.type) {
-                GitHubDecisionAssistDetailType.RepositoryHealth -> healthRefreshing
-                GitHubDecisionAssistDetailType.ReleaseNotes -> assetLoading
-            }
+            val refreshing =
+                when (detail.type) {
+                    GitHubDecisionAssistDetailType.RepositoryHealth -> healthRefreshing
+                    GitHubDecisionAssistDetailType.ReleaseNotes -> assetLoading
+                }
             AppLiquidIconButton(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideRefreshIcon(),
-                contentDescription = if (refreshing) {
-                    stringResource(R.string.common_loading)
-                } else {
-                    stringResource(R.string.common_refresh)
-                },
+                contentDescription =
+                    if (refreshing) {
+                        stringResource(R.string.common_loading)
+                    } else {
+                        stringResource(R.string.common_refresh)
+                    },
                 enabled = !refreshing,
                 onClick = {
                     when (detail.type) {
-                        GitHubDecisionAssistDetailType.RepositoryHealth -> onRefreshHealth(detail.item)
+                        GitHubDecisionAssistDetailType.RepositoryHealth -> {
+                            onRefreshHealth(detail.item)
+                        }
+
                         GitHubDecisionAssistDetailType.ReleaseNotes -> {
                             onRefreshReleaseNotes(detail.item, versionState)
                         }
                     }
-                }
+                },
             )
-        }
+        },
     ) {
         when (detail.type) {
-            GitHubDecisionAssistDetailType.RepositoryHealth -> GitHubHealthDetailContent(
-                item = detail.item,
-                state = versionState,
-                refreshing = healthRefreshing
-            )
+            GitHubDecisionAssistDetailType.RepositoryHealth -> {
+                GitHubHealthDetailContent(
+                    item = detail.item,
+                    state = versionState,
+                    refreshing = healthRefreshing,
+                )
+            }
 
-            GitHubDecisionAssistDetailType.ReleaseNotes -> GitHubReleaseNotesDetailContent(
-                backdrop = backdrop,
-                item = detail.item,
-                state = versionState,
-                assetBundle = assetBundle,
-                releaseNotesTargets = releaseNotesTargets,
-                selectedReleaseNotesTarget = selectedReleaseNotesTarget,
-                releaseNotesApkVersion = releaseNotesApkVersion,
-                preciseApkVersionEnabled = preciseApkVersionEnabled,
-                assetLoading = assetLoading,
-                assetError = assetError,
-                onSelectReleaseNotesTarget = { target ->
-                    onSelectReleaseNotesTarget(detail.item, target)
-                },
-                onOpenExternalUrl = onOpenExternalUrl
-            )
+            GitHubDecisionAssistDetailType.ReleaseNotes -> {
+                GitHubReleaseNotesDetailContent(
+                    backdrop = backdrop,
+                    item = detail.item,
+                    state = versionState,
+                    assetBundle = assetBundle,
+                    releaseNotesTargets = releaseNotesTargets,
+                    selectedReleaseNotesTarget = selectedReleaseNotesTarget,
+                    releaseNotesApkVersion = releaseNotesApkVersion,
+                    releaseNotesDetailState = releaseNotesDetailState,
+                    preciseApkVersionEnabled = preciseApkVersionEnabled,
+                    assetLoading = assetLoading,
+                    assetError = assetError,
+                    onSelectReleaseNotesTarget = { target ->
+                        onSelectReleaseNotesTarget(detail.item, target)
+                    },
+                    onOpenExternalUrl = onOpenExternalUrl,
+                )
+            }
         }
     }
 }
@@ -152,98 +165,108 @@ private fun GitHubReleaseNotesDetailContent(
     releaseNotesTargets: List<GitHubReleaseNotesTarget>,
     selectedReleaseNotesTarget: GitHubReleaseNotesTarget?,
     releaseNotesApkVersion: GitHubRemoteApkVersionInfo?,
+    releaseNotesDetailState: GitHubReleaseNotesDetailUiState,
     preciseApkVersionEnabled: Boolean,
     assetLoading: Boolean,
     assetError: String,
     onSelectReleaseNotesTarget: (GitHubReleaseNotesTarget) -> Unit,
-    onOpenExternalUrl: (String) -> Unit
+    onOpenExternalUrl: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val lines = buildGitHubReleaseNotesDetailLines(
-        item = item,
-        state = state,
-        assetBundle = assetBundle
-    )
-    val rawMarkdown = assetBundle?.releaseNotesBody.orEmpty()
-    val markdownSourceKey = releaseNotesMarkdownSourceKey(item, assetBundle, rawMarkdown)
+    val lines = releaseNotesDetailState.lines
+    val rawMarkdown = releaseNotesDetailState.rawMarkdown
     var releaseDropdownExpanded by remember { mutableStateOf(false) }
     var releaseDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    val selectedTarget = selectedReleaseNotesTarget
-        ?: releaseNotesTargets.firstOrNull()
-    val selectedApkVersionLabel = releaseNotesSelectedApkVersionLabel(
-        state = state,
-        assetBundle = assetBundle,
-        selectedTarget = selectedTarget,
-        releaseNotesApkVersion = releaseNotesApkVersion,
-        preciseApkVersionEnabled = preciseApkVersionEnabled
-    )
-    val selectedIndex = releaseNotesTargets.indexOfFirst { it.id == selectedTarget?.id }
-        .coerceAtLeast(0)
+    val selectedTarget =
+        selectedReleaseNotesTarget
+            ?: releaseNotesTargets.firstOrNull()
+    val selectedApkVersionLabel =
+        releaseNotesSelectedApkVersionLabel(
+            state = state,
+            assetBundle = assetBundle,
+            selectedTarget = selectedTarget,
+            releaseNotesApkVersion = releaseNotesApkVersion,
+            preciseApkVersionEnabled = preciseApkVersionEnabled,
+        )
+    val selectedIndex =
+        releaseNotesTargets
+            .indexOfFirst { it.id == selectedTarget?.id }
+            .coerceAtLeast(0)
     val stableMarker = stringResource(R.string.github_release_notes_marker_stable)
     val prereleaseMarker = stringResource(R.string.github_release_notes_marker_prerelease)
     val latestMarker = stringResource(R.string.github_release_notes_marker_latest)
-    val releaseOptions = releaseNotesTargets.map { target ->
-        releaseNotesTargetDropdownLabel(
-            target = target,
-            stableMarker = stableMarker,
-            prereleaseMarker = prereleaseMarker,
-            latestMarker = latestMarker
-        )
-    }
+    val releaseOptions =
+        releaseNotesTargets.map { target ->
+            releaseNotesTargetDropdownLabel(
+                target = target,
+                stableMarker = stableMarker,
+                prereleaseMarker = prereleaseMarker,
+                latestMarker = latestMarker,
+            )
+        }
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSummaryCard(
-            title = selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
-                ?: assetBundle?.releaseName?.takeIf { it.isNotBlank() }
-                ?: state.latestStableName.ifBlank { state.latestPreName.ifBlank { item.repo } },
-            badgeLabel = assetBundle?.tagName?.takeIf { it.isNotBlank() }
-                ?: selectedTarget?.tagName?.takeIf { it.isNotBlank() }
-                ?: state.latestStableRawTag.ifBlank { state.latestPreRawTag.ifBlank { null } },
+            title =
+                selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
+                    ?: assetBundle?.releaseName?.takeIf { it.isNotBlank() }
+                    ?: state.latestStableName.ifBlank { state.latestPreName.ifBlank { item.repo } },
+            badgeLabel =
+                assetBundle?.tagName?.takeIf { it.isNotBlank() }
+                    ?: selectedTarget?.tagName?.takeIf { it.isNotBlank() }
+                    ?: state.latestStableRawTag.ifBlank { state.latestPreRawTag.ifBlank { null } },
             badgeColor = GitHubStatusPalette.Active,
             titleMaxLines = 2,
             titleOverflow = TextOverflow.Clip,
             titleFontSize = AppTypographyTokens.Body.fontSize,
-            titleLineHeight = AppTypographyTokens.Body.lineHeight
+            titleLineHeight = AppTypographyTokens.Body.lineHeight,
         ) {
             DetailInfoRow(
                 label = stringResource(R.string.github_release_notes_detail_release),
-                value = selectedTarget?.let {
-                    releaseNotesTargetSheetLabel(
-                        target = it,
-                        stableMarker = stableMarker,
-                        prereleaseMarker = prereleaseMarker,
-                        latestMarker = latestMarker
-                    )
-                }
-                    ?: stringResource(R.string.github_release_notes_detail_target_latest),
-                valueMaxLines = Int.MAX_VALUE
+                value =
+                    selectedTarget?.let {
+                        releaseNotesTargetSheetLabel(
+                            target = it,
+                            stableMarker = stableMarker,
+                            prereleaseMarker = prereleaseMarker,
+                            latestMarker = latestMarker,
+                        )
+                    }
+                        ?: stringResource(R.string.github_release_notes_detail_target_latest),
+                valueMaxLines = Int.MAX_VALUE,
             )
             if (selectedApkVersionLabel.isNotBlank()) {
                 DetailInfoRow(
                     label = stringResource(R.string.github_apk_info_label_version),
                     value = selectedApkVersionLabel,
-                    valueMaxLines = Int.MAX_VALUE
+                    valueMaxLines = Int.MAX_VALUE,
                 )
             }
             DetailInfoRow(
                 label = stringResource(R.string.github_release_notes_detail_repo),
-                value = "${item.owner}/${item.repo}"
+                value = "${item.owner}/${item.repo}",
             )
             DetailInfoRow(
                 label = stringResource(R.string.github_release_notes_detail_source),
-                value = releaseNotesSourceLabel(assetBundle?.fetchSource.orEmpty())
+                value = releaseNotesSourceLabel(assetBundle?.fetchSource.orEmpty()),
             )
             when {
-                assetError.isNotBlank() -> GitHubDecisionDetailTextLine(assetError)
-                assetLoading -> GitHubDecisionDetailTextLine(
-                    stringResource(R.string.github_release_notes_detail_refreshing)
-                )
+                assetError.isNotBlank() -> {
+                    GitHubDecisionDetailTextLine(assetError)
+                }
+
+                assetLoading -> {
+                    GitHubDecisionDetailTextLine(
+                        stringResource(R.string.github_release_notes_detail_refreshing),
+                    )
+                }
             }
         }
         if (releaseNotesTargets.isNotEmpty()) {
             AppDropdownSelector(
-                selectedText = releaseOptions.getOrElse(selectedIndex) {
-                    stringResource(R.string.github_release_notes_detail_target_latest)
-                },
+                selectedText =
+                    releaseOptions.getOrElse(selectedIndex) {
+                        stringResource(R.string.github_release_notes_detail_target_latest)
+                    },
                 options = releaseOptions,
                 selectedIndex = selectedIndex,
                 expanded = releaseDropdownExpanded,
@@ -264,29 +287,32 @@ private fun GitHubReleaseNotesDetailContent(
                 dropdownItemTextMaxLines = 4,
                 popupMaxWidth = null,
                 popupMatchAnchorWidth = true,
-                alignment = PopupPositionProvider.Align.BottomStart
+                alignment = PopupPositionProvider.Align.BottomStart,
             )
         }
         val translateLabel = stringResource(R.string.github_release_notes_action_translate)
         val translateFailed = stringResource(R.string.github_release_notes_translate_failed)
         val copyLabel = stringResource(R.string.common_copy)
         val copiedToast = stringResource(R.string.github_release_notes_toast_copied)
-        val translatePayload = releaseNotesTranslationPayload(
-            title = selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
-                ?: assetBundle?.releaseName.orEmpty(),
-            tag = selectedTarget?.tagName?.takeIf { it.isNotBlank() }
-                ?: assetBundle?.tagName.orEmpty(),
-            rawMarkdown = rawMarkdown,
-            fallbackLines = lines
-        )
+        val translatePayload =
+            releaseNotesTranslationPayload(
+                title =
+                    selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
+                        ?: assetBundle?.releaseName.orEmpty(),
+                tag =
+                    selectedTarget?.tagName?.takeIf { it.isNotBlank() }
+                        ?: assetBundle?.tagName.orEmpty(),
+                rawMarkdown = rawMarkdown,
+                fallbackLines = lines,
+            )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             SheetSectionTitle(
                 text = stringResource(R.string.github_release_notes_detail_body_title),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             AppLiquidTextButton(
                 backdrop = backdrop,
@@ -303,10 +329,10 @@ private fun GitHubReleaseNotesDetailContent(
                     copyTextToClipboard(
                         context = context,
                         label = "github_release_notes_markdown",
-                        text = translatePayload
+                        text = translatePayload,
                     )
                     context.showToast(copiedToast)
-                }
+                },
             )
             AppLiquidTextButton(
                 backdrop = backdrop,
@@ -320,33 +346,32 @@ private fun GitHubReleaseNotesDetailContent(
                 textSize = AppTypographyTokens.Supporting.fontSize,
                 textLineHeight = AppTypographyTokens.Supporting.lineHeight,
                 onClick = {
-                    val launched = launchReleaseNotesTranslation(
-                        context = context,
-                        text = translatePayload,
-                        chooserTitle = translateLabel
-                    )
+                    val launched =
+                        launchReleaseNotesTranslation(
+                            context = context,
+                            text = translatePayload,
+                            chooserTitle = translateLabel,
+                        )
                     if (!launched) {
                         context.showToast(translateFailed)
                     }
-                }
+                },
             )
         }
         SheetSectionCard(
             containerColor = releaseNotesBodyContainerColor(),
             borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.18f),
-            verticalSpacing = 10.dp
+            verticalSpacing = 10.dp,
         ) {
             if (rawMarkdown.isNotBlank()) {
                 CompositionLocalProvider(LocalTextCopyExpandedOverride provides true) {
-                    AppMarkdownContent(
-                        markdown = rawMarkdown,
+                    AppMarkdownBlocksContent(
+                        blocks = releaseNotesDetailState.markdownBlocks,
                         titleColor = MiuixTheme.colorScheme.onBackground,
                         subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
                         accentColor = MiuixTheme.colorScheme.primary,
                         codeContainerColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.10f),
-                        preserveLineBreaks = true,
-                        sourceKey = markdownSourceKey,
-                        onOpenLink = onOpenExternalUrl
+                        onOpenLink = onOpenExternalUrl,
                     )
                 }
             } else if (lines.isEmpty()) {
@@ -357,7 +382,7 @@ private fun GitHubReleaseNotesDetailContent(
                         GitHubDecisionDetailTextLine(
                             text = if (index == 0) line else "• $line",
                             maxLines = Int.MAX_VALUE,
-                            accent = index == 0
+                            accent = index == 0,
                         )
                     }
                 }
@@ -371,33 +396,47 @@ private fun releaseNotesSelectedApkVersionLabel(
     assetBundle: GitHubReleaseAssetBundle?,
     selectedTarget: GitHubReleaseNotesTarget?,
     releaseNotesApkVersion: GitHubRemoteApkVersionInfo?,
-    preciseApkVersionEnabled: Boolean
+    preciseApkVersionEnabled: Boolean,
 ): String {
     if (!preciseApkVersionEnabled) return ""
     releaseNotesApkVersion?.versionLabel()?.takeIf { it.isNotBlank() }?.let { return it }
-    val selectedTag = selectedTarget?.tagName?.trim().orEmpty()
-        .ifBlank { assetBundle?.tagName?.trim().orEmpty() }
-    val selectedUrl = selectedTarget?.htmlUrl?.trim().orEmpty()
-        .ifBlank { assetBundle?.htmlUrl?.trim().orEmpty() }
-    val selectedIsPreRelease = selectedTarget?.prerelease
-        ?: selectedTag.equals(state.latestPreRawTag, ignoreCase = true)
-    val versionInfo = when {
-        selectedIsPreRelease && releaseNotesTargetMatches(
-            selectedTag = selectedTag,
-            selectedUrl = selectedUrl,
-            rawTag = state.latestPreRawTag,
-            releaseUrl = state.latestPreUrl
-        ) -> state.latestPreApkVersion
+    val selectedTag =
+        selectedTarget
+            ?.tagName
+            ?.trim()
+            .orEmpty()
+            .ifBlank { assetBundle?.tagName?.trim().orEmpty() }
+    val selectedUrl =
+        selectedTarget
+            ?.htmlUrl
+            ?.trim()
+            .orEmpty()
+            .ifBlank { assetBundle?.htmlUrl?.trim().orEmpty() }
+    val selectedIsPreRelease =
+        selectedTarget?.prerelease
+            ?: selectedTag.equals(state.latestPreRawTag, ignoreCase = true)
+    val versionInfo =
+        when {
+            selectedIsPreRelease &&
+                releaseNotesTargetMatches(
+                    selectedTag = selectedTag,
+                    selectedUrl = selectedUrl,
+                    rawTag = state.latestPreRawTag,
+                    releaseUrl = state.latestPreUrl,
+                )
+            -> state.latestPreApkVersion
 
-        !selectedIsPreRelease && releaseNotesTargetMatches(
-            selectedTag = selectedTag,
-            selectedUrl = selectedUrl,
-            rawTag = state.latestStableRawTag.ifBlank { state.latestTag },
-            releaseUrl = state.latestStableUrl
-        ) -> state.latestStableApkVersion
+            !selectedIsPreRelease &&
+                releaseNotesTargetMatches(
+                    selectedTag = selectedTag,
+                    selectedUrl = selectedUrl,
+                    rawTag = state.latestStableRawTag.ifBlank { state.latestTag },
+                    releaseUrl = state.latestStableUrl,
+                )
+            -> state.latestStableApkVersion
 
-        else -> null
-    }
+            else -> null
+        }
     return versionInfo?.versionLabel().orEmpty()
 }
 
@@ -405,16 +444,18 @@ private fun releaseNotesTranslationPayload(
     title: String,
     tag: String,
     rawMarkdown: String,
-    fallbackLines: List<String>
+    fallbackLines: List<String>,
 ): String {
-    val body = rawMarkdown.trim().ifBlank {
-        fallbackLines.joinToString("\n").trim()
-    }
+    val body =
+        rawMarkdown.trim().ifBlank {
+            fallbackLines.joinToString("\n").trim()
+        }
     if (body.isBlank()) return ""
-    val header = buildList {
-        title.trim().takeIf { it.isNotBlank() }?.let(::add)
-        tag.trim().takeIf { it.isNotBlank() && it != title.trim() }?.let(::add)
-    }.joinToString(" · ")
+    val header =
+        buildList {
+            title.trim().takeIf { it.isNotBlank() }?.let(::add)
+            tag.trim().takeIf { it.isNotBlank() && it != title.trim() }?.let(::add)
+        }.joinToString(" · ")
     return listOf(header, body)
         .filter { it.isNotBlank() }
         .joinToString("\n\n")
@@ -423,82 +464,90 @@ private fun releaseNotesTranslationPayload(
 private fun launchReleaseNotesTranslation(
     context: Context,
     text: String,
-    chooserTitle: String
+    chooserTitle: String,
 ): Boolean {
     val payload = text.trim()
     if (payload.isBlank()) return false
-    val translateIntent = Intent(Intent.ACTION_TRANSLATE).apply {
-        putExtra(Intent.EXTRA_TEXT, payload)
-    }
+    val translateIntent =
+        Intent(Intent.ACTION_TRANSLATE).apply {
+            putExtra(Intent.EXTRA_TEXT, payload)
+        }
     if (startActivitySafely(context, translateIntent)) return true
 
-    val processTextIntent = Intent(Intent.ACTION_PROCESS_TEXT).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_PROCESS_TEXT, payload)
-        putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
-    }
+    val processTextIntent =
+        Intent(Intent.ACTION_PROCESS_TEXT).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_PROCESS_TEXT, payload)
+            putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true)
+        }
     if (startActivitySafely(context, processTextIntent)) return true
 
-    val shareIntent = Intent.createChooser(
-        SafeExternalIntents.textShareIntent(
-            text = payload,
-            subject = chooserTitle
-        ),
-        chooserTitle
-    )
+    val shareIntent =
+        Intent.createChooser(
+            SafeExternalIntents.textShareIntent(
+                text = payload,
+                subject = chooserTitle,
+            ),
+            chooserTitle,
+        )
     return startActivitySafely(context, shareIntent)
 }
 
 private fun startActivitySafely(
     context: Context,
-    intent: Intent
-): Boolean {
-    return runCatching {
+    intent: Intent,
+): Boolean =
+    runCatching {
         context.startActivity(intent)
         true
     }.getOrDefault(false)
-}
 
 private fun releaseNotesTargetMatches(
     selectedTag: String,
     selectedUrl: String,
     rawTag: String,
-    releaseUrl: String
+    releaseUrl: String,
 ): Boolean {
     val tag = rawTag.trim()
     val url = releaseUrl.trim()
-    return (selectedTag.isNotBlank() && tag.isNotBlank() && selectedTag.equals(
-        tag,
-        ignoreCase = true
-    )) ||
-            (selectedUrl.isNotBlank() && url.isNotBlank() && selectedUrl.equals(
-                url,
-                ignoreCase = true
-            ))
+    return (
+        selectedTag.isNotBlank() && tag.isNotBlank() &&
+            selectedTag.equals(
+                tag,
+                ignoreCase = true,
+            )
+    ) ||
+        (
+            selectedUrl.isNotBlank() && url.isNotBlank() &&
+                selectedUrl.equals(
+                    url,
+                    ignoreCase = true,
+                )
+        )
 }
 
 @Composable
-private fun releaseNotesBodyContainerColor(): Color {
-    return MiuixTheme.colorScheme.surface.copy(alpha = 0.96f)
-}
+private fun releaseNotesBodyContainerColor(): Color = MiuixTheme.colorScheme.surface.copy(alpha = 0.96f)
 
 private fun releaseNotesTargetDropdownLabel(
     target: GitHubReleaseNotesTarget,
     stableMarker: String,
     prereleaseMarker: String,
-    latestMarker: String
+    latestMarker: String,
 ): String {
-    val markers = releaseNotesTargetMarkers(
-        target = target,
-        stableMarker = stableMarker,
-        prereleaseMarker = prereleaseMarker,
-        latestMarker = latestMarker
-    )
+    val markers =
+        releaseNotesTargetMarkers(
+            target = target,
+            stableMarker = stableMarker,
+            prereleaseMarker = prereleaseMarker,
+            latestMarker = latestMarker,
+        )
     val name = target.releaseName.ifBlank { target.tagName }
-    val tagLine = buildList {
-        target.tagName.takeIf { it.isNotBlank() && it != name }?.let(::add)
-        markers.takeIf { it.isNotBlank() }?.let(::add)
-    }.joinToString(" · ")
+    val tagLine =
+        buildList {
+            target.tagName.takeIf { it.isNotBlank() && it != name }?.let(::add)
+            markers.takeIf { it.isNotBlank() }?.let(::add)
+        }.joinToString(" · ")
     return if (tagLine.isBlank()) {
         name
     } else {
@@ -510,14 +559,15 @@ private fun releaseNotesTargetSheetLabel(
     target: GitHubReleaseNotesTarget,
     stableMarker: String,
     prereleaseMarker: String,
-    latestMarker: String
+    latestMarker: String,
 ): String {
-    val markers = releaseNotesTargetMarkers(
-        target = target,
-        stableMarker = stableMarker,
-        prereleaseMarker = prereleaseMarker,
-        latestMarker = latestMarker
-    )
+    val markers =
+        releaseNotesTargetMarkers(
+            target = target,
+            stableMarker = stableMarker,
+            prereleaseMarker = prereleaseMarker,
+            latestMarker = latestMarker,
+        )
     return buildList {
         add(target.tagName)
         markers.takeIf { it.isNotBlank() }?.let(::add)
@@ -528,32 +578,31 @@ private fun releaseNotesTargetMarkers(
     target: GitHubReleaseNotesTarget,
     stableMarker: String,
     prereleaseMarker: String,
-    latestMarker: String
-): String {
-    return buildList {
+    latestMarker: String,
+): String =
+    buildList {
         add(
             if (target.prerelease) {
                 prereleaseMarker
             } else {
                 stableMarker
-            }
+            },
         )
         if (target.latestInChannel) {
             add(latestMarker)
         }
     }.joinToString(" · ")
-}
 
 @Composable
 private fun DetailInfoRow(
     label: String,
     value: String,
-    valueMaxLines: Int = 2
+    valueMaxLines: Int = 2,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             text = label,
@@ -562,7 +611,7 @@ private fun DetailInfoRow(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = value,
@@ -571,27 +620,26 @@ private fun DetailInfoRow(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
             maxLines = valueMaxLines,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
 @Composable
-private fun releaseNotesSourceLabel(source: String): String {
-    return when (source) {
+private fun releaseNotesSourceLabel(source: String): String =
+    when (source) {
         "api" -> stringResource(R.string.github_release_notes_source_api)
         "html" -> stringResource(R.string.github_release_notes_source_atom)
         "subscription" -> stringResource(R.string.github_release_notes_source_subscription)
         else -> stringResource(R.string.common_unknown)
     }
-}
 
-private fun releaseNotesMarkdownSourceKey(
+internal fun releaseNotesMarkdownSourceKey(
     item: GitHubTrackedApp,
     bundle: GitHubReleaseAssetBundle?,
-    body: String
-): String {
-    return buildString {
+    body: String,
+): String =
+    buildString {
         append("github-release-notes|")
         append(item.id)
         append('|')
@@ -613,4 +661,3 @@ private fun releaseNotesMarkdownSourceKey(
         append(':')
         append(body.hashCode())
     }
-}

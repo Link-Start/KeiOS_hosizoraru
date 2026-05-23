@@ -20,13 +20,12 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
-import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
@@ -50,7 +49,12 @@ internal class OsPageViewModel : ViewModel() {
     private val activityShortcutRepository = OsPageActivityShortcutRepository()
     private val activityIconLoader = OsActivityShortcutIconLoader(viewModelScope)
     private val rowsStateLoader = OsPageRowsStateLoader(viewModelScope, repository)
-    private var activitySuggestionJob: Job? = null
+    private val activitySuggestionController =
+        OsActivitySuggestionController(
+            scope = viewModelScope,
+            repository = repository,
+        )
+    private val cardExpansionController = OsCardExpansionController()
 
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
@@ -74,24 +78,30 @@ internal class OsPageViewModel : ViewModel() {
     val runtimeState: StateFlow<OsPageRuntimeState> = _runtimeState.asStateFlow()
     val overlayRuntimeActions = OsPageOverlayRuntimeActions(_runtimeState)
 
-    private val _activitySuggestionState = MutableStateFlow(OsActivitySuggestionUiState())
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
-        _activitySuggestionState.asStateFlow()
+        activitySuggestionController.state
 
-    private val _activitySuggestionChromeState = MutableStateFlow(OsActivitySuggestionChromeState())
     val activitySuggestionChromeState: StateFlow<OsActivitySuggestionChromeState> =
-        _activitySuggestionChromeState.asStateFlow()
+        activitySuggestionController.chromeState
 
     val activityIconState: StateFlow<OsActivityShortcutIconUiState> =
         activityIconLoader.state
 
-    private val _cardExpansionState = MutableStateFlow(OsCardExpansionUiState())
-    val cardExpansionState: StateFlow<OsCardExpansionUiState> = _cardExpansionState.asStateFlow()
+    val cardExpansionState: StateFlow<OsCardExpansionUiState> = cardExpansionController.state
 
     private val _events = MutableSharedFlow<OsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<OsPageEvent> = _events.asSharedFlow()
 
     val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = rowsStateLoader.state
+    val cardListDerivedState: StateFlow<OsPageCardListDerivedState> =
+        persistentState
+            .map { persistent -> deriveOsPageCardListState(persistent) }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = OsPageCardListDerivedState.Empty,
+            )
     private var overlaySearchSuppressionJob: Job? = null
 
     private val queryState: StateFlow<OsPageQueryState> =
@@ -127,8 +137,20 @@ internal class OsPageViewModel : ViewModel() {
             initialValue = OsPageCoreUiState(),
         )
 
+    private val pageDerivedState: StateFlow<OsPageDerivedSnapshot> =
+        combine(rowsDerivedState, cardListDerivedState) { rows, cards ->
+            OsPageDerivedSnapshot(
+                rowsDerivedState = rows,
+                cardListDerivedState = cards,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = OsPageDerivedSnapshot(),
+        )
+
     val uiState: StateFlow<OsPageUiState> =
-        combine(coreUiState, rowsDerivedState, activitySuggestionChromeState) { core, rows, activitySuggestionChrome ->
+        combine(coreUiState, pageDerivedState, activitySuggestionChromeState) { core, derived, activitySuggestionChrome ->
             OsPageUiState(
                 persistentState = core.persistentState,
                 runtimeState = core.runtimeState,
@@ -137,7 +159,8 @@ internal class OsPageViewModel : ViewModel() {
                 chromeState = core.chromeState,
                 queryInput = core.queryState.input,
                 queryApplied = core.queryState.applied,
-                rowsDerivedState = rows,
+                rowsDerivedState = derived.rowsDerivedState,
+                cardListDerivedState = derived.cardListDerivedState,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -161,6 +184,18 @@ internal class OsPageViewModel : ViewModel() {
             cardRepository = cardRepository,
             visibilityRepository = visibilityRepository,
             shellCommandRepository = shellCommandRepository,
+            persistentState = persistentState,
+            runtimeState = runtimeState,
+            runtimeMutableState = _runtimeState,
+            events = _events,
+        )
+    private val sectionController =
+        OsPageSectionController(
+            scope = viewModelScope,
+            repository = repository,
+            visibilityRepository = visibilityRepository,
+            refreshRepository = refreshRepository,
+            sectionLoadRepository = sectionLoadRepository,
             persistentState = persistentState,
             runtimeState = runtimeState,
             runtimeMutableState = _runtimeState,
@@ -223,59 +258,23 @@ internal class OsPageViewModel : ViewModel() {
     }
 
     fun openActivitySuggestionSheet(target: ShortcutSuggestionField) {
-        _activitySuggestionChromeState.update { state ->
-            when (target) {
-                ShortcutSuggestionField.PackageName -> {
-                    state.copy(
-                        showSheet = true,
-                        target = target,
-                        packageQuery = "",
-                    )
-                }
-
-                ShortcutSuggestionField.ClassName -> {
-                    state.copy(
-                        showSheet = true,
-                        target = target,
-                        classQuery = "",
-                    )
-                }
-
-                else -> {
-                    state.copy(
-                        showSheet = true,
-                        target = target,
-                    )
-                }
-            }
-        }
+        activitySuggestionController.openSheet(target)
     }
 
     fun dismissActivitySuggestionSheet() {
-        _activitySuggestionChromeState.update { state ->
-            state.copy(showSheet = false)
-        }
+        activitySuggestionController.dismissSheet()
     }
 
     fun resetActivitySuggestionQueries() {
-        _activitySuggestionChromeState.update { state ->
-            state.copy(
-                packageQuery = "",
-                classQuery = "",
-            )
-        }
+        activitySuggestionController.resetQueries()
     }
 
     fun updateActivityPackageSuggestionQuery(query: String) {
-        _activitySuggestionChromeState.update { state ->
-            if (state.packageQuery == query) state else state.copy(packageQuery = query)
-        }
+        activitySuggestionController.updatePackageQuery(query)
     }
 
     fun updateActivityClassSuggestionQuery(query: String) {
-        _activitySuggestionChromeState.update { state ->
-            if (state.classQuery == query) state else state.copy(classQuery = query)
-        }
+        activitySuggestionController.updateClassQuery(query)
     }
 
     fun loadPersistentState(
@@ -363,77 +362,12 @@ internal class OsPageViewModel : ViewModel() {
         show: Boolean,
         target: ShortcutSuggestionField,
         packageName: String,
-    ) {
-        activitySuggestionJob?.cancel()
-        if (!show) {
-            _activitySuggestionState.update { state ->
-                state.copy(
-                    packageSuggestionsLoading = false,
-                    classSuggestionsLoading = false,
-                )
-            }
-            return
-        }
-        val appContext = context.applicationContext
-        activitySuggestionJob =
-            viewModelScope.launch {
-                when (target) {
-                    ShortcutSuggestionField.PackageName -> {
-                        _activitySuggestionState.update { state ->
-                            state.copy(packageSuggestionsLoading = true)
-                        }
-                        val suggestions =
-                            runCatching {
-                                repository.loadActivityShortcutPackageSuggestions(appContext)
-                            }.getOrDefault(emptyList())
-                        _activitySuggestionState.update { state ->
-                            state.copy(
-                                packageSuggestions = suggestions,
-                                packageSuggestionsLoading = false,
-                            )
-                        }
-                    }
-
-                    ShortcutSuggestionField.ClassName -> {
-                        val normalizedPackageName = packageName.trim()
-                        if (normalizedPackageName.isBlank()) {
-                            _activitySuggestionState.update { state ->
-                                state.copy(
-                                    classSuggestions = emptyList(),
-                                    classSuggestionsLoading = false,
-                                )
-                            }
-                            return@launch
-                        }
-                        _activitySuggestionState.update { state ->
-                            state.copy(classSuggestionsLoading = true)
-                        }
-                        val suggestions =
-                            runCatching {
-                                repository.loadActivityShortcutClassSuggestions(
-                                    context = appContext,
-                                    packageName = normalizedPackageName,
-                                )
-                            }.getOrDefault(emptyList())
-                        _activitySuggestionState.update { state ->
-                            state.copy(
-                                classSuggestions = suggestions,
-                                classSuggestionsLoading = false,
-                            )
-                        }
-                    }
-
-                    else -> {
-                        _activitySuggestionState.update { state ->
-                            state.copy(
-                                packageSuggestionsLoading = false,
-                                classSuggestionsLoading = false,
-                            )
-                        }
-                    }
-                }
-            }
-    }
+    ) = activitySuggestionController.request(
+        context = context,
+        show = show,
+        target = target,
+        packageName = packageName,
+    )
 
     fun requestRowsDerivedState(input: OsPageRowsDerivationInput) = rowsStateLoader.request(input)
 
@@ -456,88 +390,44 @@ internal class OsPageViewModel : ViewModel() {
     fun syncActivityCardExpansion(
         cards: List<OsActivityShortcutCard>,
         initialGoogleSystemServiceExpanded: Boolean,
-    ) {
-        val currentIds = cards.mapTo(mutableSetOf()) { it.id }
-        val next =
-            cards
-                .mapIndexed { index, card ->
-                    val usesStoredDefaultExpansion =
-                        index == 0 && (
-                            card.id == LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID ||
-                                card.id == BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
-                        )
-                    val expanded =
-                        if (usesStoredDefaultExpansion) {
-                            initialGoogleSystemServiceExpanded
-                        } else {
-                            _cardExpansionState.value.activityCards[card.id] ?: false
-                        }
-                    card.id to expanded
-                }.toMap()
-                .filterKeys(currentIds::contains)
-        _cardExpansionState.update { state ->
-            if (state.activityCards == next) state else state.copy(activityCards = next)
-        }
-    }
+    ) = cardExpansionController.syncActivityCards(
+        cards = cards,
+        initialGoogleSystemServiceExpanded = initialGoogleSystemServiceExpanded,
+    )
 
-    fun syncShellCommandCardExpansion(cards: List<OsShellCommandCard>) {
-        val currentIds = cards.mapTo(mutableSetOf()) { it.id }
-        val next =
-            cards
-                .associate { card ->
-                    card.id to (_cardExpansionState.value.shellCommandCards[card.id] ?: false)
-                }.filterKeys(currentIds::contains)
-        _cardExpansionState.update { state ->
-            if (state.shellCommandCards == next) state else state.copy(shellCommandCards = next)
-        }
-    }
+    fun syncShellCommandCardExpansion(cards: List<OsShellCommandCard>) =
+        cardExpansionController.syncShellCommandCards(cards)
 
     fun updateActivityCardExpanded(
         cardId: String,
         expanded: Boolean,
-    ) {
-        _cardExpansionState.update { state ->
-            val next = state.activityCards + (cardId to expanded)
-            if (state.activityCards == next) state else state.copy(activityCards = next)
-        }
-    }
+    ) = cardExpansionController.updateActivityCard(
+        cardId = cardId,
+        expanded = expanded,
+    )
 
     fun updateShellCommandCardExpanded(
         cardId: String,
         expanded: Boolean,
-    ) {
-        _cardExpansionState.update { state ->
-            val next = state.shellCommandCards + (cardId to expanded)
-            if (state.shellCommandCards == next) state else state.copy(shellCommandCards = next)
-        }
-    }
+    ) = cardExpansionController.updateShellCommandCard(
+        cardId = cardId,
+        expanded = expanded,
+    )
 
     fun removeActivityCardExpansion(cardId: String) {
-        _cardExpansionState.update { state ->
-            if (!state.activityCards.containsKey(cardId)) return@update state
-            state.copy(activityCards = state.activityCards - cardId)
-        }
+        cardExpansionController.removeActivityCard(cardId)
     }
 
     fun removeShellCommandCardExpansion(cardId: String) {
-        _cardExpansionState.update { state ->
-            if (!state.shellCommandCards.containsKey(cardId)) return@update state
-            state.copy(shellCommandCards = state.shellCommandCards - cardId)
-        }
+        cardExpansionController.removeShellCommandCard(cardId)
     }
 
     fun retainActivityCardExpansion(validIds: Set<String>) {
-        _cardExpansionState.update { state ->
-            val next = state.activityCards.filterKeys(validIds::contains)
-            if (state.activityCards == next) state else state.copy(activityCards = next)
-        }
+        cardExpansionController.retainActivityCards(validIds)
     }
 
     fun retainShellCommandCardExpansion(validIds: Set<String>) {
-        _cardExpansionState.update { state ->
-            val next = state.shellCommandCards.filterKeys(validIds::contains)
-            if (state.shellCommandCards == next) state else state.copy(shellCommandCards = next)
-        }
+        cardExpansionController.retainShellCommandCards(validIds)
     }
 
     fun updateVisibleCards(cards: Set<OsSectionCard>) {
@@ -551,79 +441,23 @@ internal class OsPageViewModel : ViewModel() {
     suspend fun hydrateInitialCache(
         isPageActive: Boolean,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    ) {
-        var ensuredVisibleCards = persistentState.value.uiSnapshot.visibleCards
-        if (!ensuredVisibleCards.contains(OsSectionCard.GOOGLE_SYSTEM_SERVICE)) {
-            ensuredVisibleCards = ensuredVisibleCards + OsSectionCard.GOOGLE_SYSTEM_SERVICE
-        }
-        if (!ensuredVisibleCards.contains(OsSectionCard.SHELL_RUNNER)) {
-            ensuredVisibleCards = ensuredVisibleCards + OsSectionCard.SHELL_RUNNER
-        }
-        if (ensuredVisibleCards != persistentState.value.uiSnapshot.visibleCards) {
-            repository.saveVisibleCards(ensuredVisibleCards)
-        }
-        val visibleSections = visibleSectionKinds(ensuredVisibleCards)
-        val snapshot = repository.readInfoCache(visibleSections)
-        _runtimeState.update { state ->
-            state.copy(
-                sectionStates =
-                    mapOf(
-                        SectionKind.SYSTEM to
-                            SectionState(
-                                rows = if (visibleSections.contains(SectionKind.SYSTEM)) snapshot.cached.system else emptyList(),
-                            ),
-                        SectionKind.SECURE to
-                            SectionState(
-                                rows = if (visibleSections.contains(SectionKind.SECURE)) snapshot.cached.secure else emptyList(),
-                            ),
-                        SectionKind.GLOBAL to
-                            SectionState(
-                                rows = if (visibleSections.contains(SectionKind.GLOBAL)) snapshot.cached.global else emptyList(),
-                            ),
-                        SectionKind.ANDROID to
-                            SectionState(
-                                rows = if (visibleSections.contains(SectionKind.ANDROID)) snapshot.cached.android else emptyList(),
-                            ),
-                        SectionKind.JAVA to
-                            SectionState(
-                                rows = if (visibleSections.contains(SectionKind.JAVA)) snapshot.cached.java else emptyList(),
-                            ),
-                        SectionKind.LINUX to
-                            SectionState(
-                                rows = if (visibleSections.contains(SectionKind.LINUX)) snapshot.cached.linux else emptyList(),
-                            ),
-                    ),
-                cachePersisted = snapshot.hasPersistedCache,
-                cacheLoaded = true,
-                uiStatePersistenceReady = true,
-            )
-        }
-        if (isPageActive) {
-            visibleSections.forEach { section ->
-                ensureLoad(section, false)
-            }
-        }
-    }
+    ) = sectionController.hydrateInitialCache(
+        isPageActive = isPageActive,
+        ensureLoad = ensureLoad,
+    )
 
     suspend fun saveExpandedStateSnapshot(snapshot: OsUiSnapshot) {
         repository.saveExpandedStateSnapshot(snapshot)
     }
 
     fun replaceSectionStates(sectionStates: Map<SectionKind, SectionState>) {
-        _runtimeState.update { state -> state.copy(sectionStates = sectionStates) }
+        sectionController.replaceSectionStates(sectionStates)
     }
 
     fun updateSection(
         section: SectionKind,
         transform: (SectionState) -> SectionState,
-    ) {
-        _runtimeState.update { state ->
-            val updated = state.sectionStates.toMutableMap()
-            val old = updated[section] ?: SectionState()
-            updated[section] = transform(old)
-            state.copy(sectionStates = updated)
-        }
-    }
+    ) = sectionController.updateSection(section, transform)
 
     suspend fun ensureSectionLoaded(
         section: SectionKind,
@@ -631,89 +465,27 @@ internal class OsPageViewModel : ViewModel() {
         context: Context,
         shizukuStatus: String,
         shizukuApiUtils: ShizukuApiUtils,
-    ) {
-        val currentState = runtimeState.value.sectionStates[section] ?: SectionState()
-        val visibleCards = persistentState.value.uiSnapshot.visibleCards
-        if (!sectionLoadRepository.shouldLoad(section, forceRefresh, visibleCards, currentState)) return
-        updateSection(section) { it.copy(loading = true, loadFailed = false) }
-        try {
-            when (
-                val result =
-                    sectionLoadRepository.loadSection(
-                        section = section,
-                        forceRefresh = forceRefresh,
-                        visibleCardsProvider = { persistentState.value.uiSnapshot.visibleCards },
-                        context = context.applicationContext,
-                        shizukuStatus = shizukuStatus,
-                        shizukuApiUtils = shizukuApiUtils,
-                    )
-            ) {
-                OsSectionLoadResult.Joined -> {
-                    Unit
-                }
-
-                is OsSectionLoadResult.Loaded -> {
-                    updateSection(section) {
-                        it.copy(
-                            rows = result.rows,
-                            loading = false,
-                            loadedFresh = true,
-                            loadFailed = false,
-                        )
-                    }
-                    _runtimeState.update { state -> state.copy(cachePersisted = result.cachePersisted) }
-                }
-            }
-        } catch (error: Throwable) {
-            error.rethrowIfCancellation()
-            updateSection(section) { it.copy(loading = false, loadFailed = true) }
-        }
-    }
+    ) = sectionController.ensureSectionLoaded(
+        section = section,
+        forceRefresh = forceRefresh,
+        context = context,
+        shizukuStatus = shizukuStatus,
+        shizukuApiUtils = shizukuApiUtils,
+    )
 
     fun invalidateShizukuSections() {
-        listOf(
-            SectionKind.SYSTEM,
-            SectionKind.SECURE,
-            SectionKind.GLOBAL,
-            SectionKind.LINUX,
-        ).forEach { section ->
-            updateSection(section) { it.copy(loadedFresh = false) }
-        }
+        sectionController.invalidateShizukuSections()
     }
 
     fun applySectionCardVisibility(
         card: OsSectionCard,
         visible: Boolean,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
-    ) {
-        val updatedVisibleCards =
-            visibilityRepository.updatedVisibleCards(
-                currentVisibleCards = persistentState.value.uiSnapshot.visibleCards,
-                card = card,
-                visible = visible,
-            )
-        repository.updateVisibleCards(updatedVisibleCards)
-        applyHiddenSectionUiState(card = card, visible = visible)
-        viewModelScope.launch {
-            try {
-                val cachePersisted =
-                    visibilityRepository.persistSectionCardVisibility(
-                        card = card,
-                        visible = visible,
-                        visibleCards = updatedVisibleCards,
-                    )
-                _runtimeState.update { state -> state.copy(cachePersisted = cachePersisted) }
-                if (visible) {
-                    sectionKindByCard(card)?.let { section ->
-                        ensureLoad(section, true)
-                    }
-                }
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            }
-        }
-    }
+    ) = sectionController.applySectionCardVisibility(
+        card = card,
+        visible = visible,
+        ensureLoad = ensureLoad,
+    )
 
     fun applyActivityCardVisibility(
         cardId: String,
@@ -744,34 +516,7 @@ internal class OsPageViewModel : ViewModel() {
     )
 
     fun refreshAllSections(ensureLoad: suspend (SectionKind, Boolean) -> Unit) {
-        if (runtimeState.value.refreshing) return
-        viewModelScope.launch {
-            _runtimeState.update { state ->
-                state.copy(
-                    refreshing = true,
-                    refreshProgress = 0f,
-                )
-            }
-            try {
-                val targets =
-                    refreshRepository.refreshableSections(
-                        persistentState.value.uiSnapshot.visibleCards,
-                    )
-                val sectionCount = targets.size.coerceAtLeast(1)
-                targets.forEachIndexed { index, section ->
-                    ensureLoad(section, true)
-                    _runtimeState.update { state ->
-                        state.copy(refreshProgress = (index + 1).toFloat() / sectionCount.toFloat())
-                    }
-                }
-                _events.emit(OsPageEvent.RefreshCompleted(refreshed = targets.isNotEmpty()))
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(OsPageEvent.OperationFailed(error))
-            } finally {
-                _runtimeState.update { state -> state.copy(refreshing = false) }
-            }
-        }
+        sectionController.refreshAllSections(ensureLoad)
     }
 
     fun prepareActivityCardsExport(defaults: OsGoogleSystemServiceConfig) = transferCoordinator.prepareActivityCardsExport(defaults)
@@ -896,58 +641,8 @@ internal class OsPageViewModel : ViewModel() {
         repository.updateLinuxEnvExpanded(value)
     }
 
-    private fun applyHiddenSectionUiState(
-        card: OsSectionCard,
-        visible: Boolean,
-    ) {
-        if (visible) return
-        when (card) {
-            OsSectionCard.TOP_INFO -> {
-                repository.updateTopInfoExpanded(false)
-            }
-
-            OsSectionCard.SHELL_RUNNER -> {
-                repository.updateShellRunnerExpanded(false)
-            }
-
-            OsSectionCard.GOOGLE_SYSTEM_SERVICE -> {
-                Unit
-            }
-
-            OsSectionCard.SYSTEM -> {
-                repository.updateSystemTableExpanded(false)
-                updateSection(SectionKind.SYSTEM) { SectionState() }
-            }
-
-            OsSectionCard.SECURE -> {
-                repository.updateSecureTableExpanded(false)
-                updateSection(SectionKind.SECURE) { SectionState() }
-            }
-
-            OsSectionCard.GLOBAL -> {
-                repository.updateGlobalTableExpanded(false)
-                updateSection(SectionKind.GLOBAL) { SectionState() }
-            }
-
-            OsSectionCard.ANDROID -> {
-                repository.updateAndroidPropsExpanded(false)
-                updateSection(SectionKind.ANDROID) { SectionState() }
-            }
-
-            OsSectionCard.JAVA -> {
-                repository.updateJavaPropsExpanded(false)
-                updateSection(SectionKind.JAVA) { SectionState() }
-            }
-
-            OsSectionCard.LINUX -> {
-                repository.updateLinuxEnvExpanded(false)
-                updateSection(SectionKind.LINUX) { SectionState() }
-            }
-        }
-    }
-
     override fun onCleared() {
-        activitySuggestionJob?.cancel()
+        activitySuggestionController.cancel()
         rowsStateLoader.cancel()
         activityIconLoader.clearLoadingState()
         super.onCleared()

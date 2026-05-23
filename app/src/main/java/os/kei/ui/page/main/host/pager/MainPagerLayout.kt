@@ -310,6 +310,7 @@ internal fun MainPagerLayout(
                                     homeIconHdrEnabled = homeHdrEffectActive,
                                     homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
                                     visibleBottomPages = coordinator.visibleTabsSnapshot,
+                                    homeAppOverview = coordinator.homeAppOverview,
                                     homeMcpOverview = coordinator.homeMcpOverview,
                                     homeGitHubOverview = coordinator.homeGitHubOverview,
                                     homeBaOverview = coordinator.homeBaOverview,

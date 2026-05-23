@@ -5,7 +5,7 @@ import os.kei.core.log.AppLogStore
 
 internal enum class FeedbackSubmitMode {
     Browser,
-    GitHubApi
+    GitHubApi,
 }
 
 @Immutable
@@ -19,7 +19,7 @@ internal data class FeedbackDeviceInfo(
     val manufacturer: String = "",
     val model: String = "",
     val abis: String = "",
-    val installSource: String = ""
+    val installSource: String = "",
 ) {
     val appVersionLine: String
         get() = "$appVersionName ($appVersionCode) · $packageName · $buildType"
@@ -47,11 +47,26 @@ internal data class FeedbackIssueUiState(
     val submittingIssue: Boolean = false,
     val lastExportedFileName: String = "",
     val statusMessage: String = "",
-    val errorMessage: String = ""
+    val errorMessage: String = "",
+)
+
+internal data class FeedbackIssueDraftSnapshot(
+    val deviceInfo: FeedbackDeviceInfo,
+    val logStats: AppLogStore.Stats,
+    val logPreview: String,
+    val logPreviewTruncated: Boolean,
+    val apiTokenAvailable: Boolean,
 )
 
 internal sealed interface FeedbackIssueSubmitResult {
-    data class Success(val issueUrl: String) : FeedbackIssueSubmitResult
+    data class Success(
+        val issueUrl: String,
+    ) : FeedbackIssueSubmitResult
+
     data object MissingToken : FeedbackIssueSubmitResult
-    data class Failure(val statusCode: Int?, val message: String) : FeedbackIssueSubmitResult
+
+    data class Failure(
+        val statusCode: Int?,
+        val message: String,
+    ) : FeedbackIssueSubmitResult
 }

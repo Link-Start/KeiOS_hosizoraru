@@ -7,10 +7,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -41,9 +37,11 @@ internal fun GitHubApkInfoSheet(
     installedInfo: GitHubInstalledPackageInfo?,
     loading: Boolean,
     error: String,
+    sheetState: GitHubApkInfoSheetUiState,
     backdrop: LayerBackdrop,
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,
+    onSearchQueryChange: (String) -> Unit,
     onRefresh: () -> Unit,
     onInstall: () -> Unit,
     onDownload: () -> Unit,
@@ -51,8 +49,6 @@ internal fun GitHubApkInfoSheet(
     onDismissRequest: () -> Unit,
 ) {
     asset ?: return
-    var query by remember(asset.name) { mutableStateOf("") }
-    val normalizedQuery = query.trim()
     SnapshotWindowBottomSheet(
         show = true,
         title = stringResource(R.string.github_apk_info_title),
@@ -115,33 +111,6 @@ internal fun GitHubApkInfoSheet(
                 }
             }
             if (info != null) {
-                val nativeAbiValues =
-                    remember(info.nativeAbis, normalizedQuery) {
-                        info.nativeAbis.filterStringsByQuery(normalizedQuery)
-                    }
-                val permissionValues =
-                    remember(info.permissions, normalizedQuery) {
-                        info.permissions.filterStringsByQuery(normalizedQuery)
-                    }
-                val permissionColors =
-                    remember(info.permissions) {
-                        info.permissions.associateWith { permission -> permissionRiskColor(permission) }
-                    }
-                val featureValues =
-                    remember(info.features, normalizedQuery) {
-                        info.features.filterStringsByQuery(normalizedQuery)
-                    }
-                val metadataValues =
-                    remember(info.metadata, normalizedQuery) {
-                        info.metadata
-                            .map { metadata ->
-                                if (metadata.value.isBlank()) metadata.name else "${metadata.name}: ${metadata.value}"
-                            }.filterStringsByQuery(normalizedQuery)
-                    }
-                val filteredManifestNodes =
-                    remember(info.manifestNodes, normalizedQuery) {
-                        info.manifestNodes.filterNodesByQuery(normalizedQuery)
-                    }
                 ApkInfoActionRow(
                     backdrop = backdrop,
                     loading = loading,
@@ -153,8 +122,8 @@ internal fun GitHubApkInfoSheet(
                     onShare = onShare,
                 )
                 AppLiquidSearchField(
-                    value = query,
-                    onValueChange = { query = it },
+                    value = sheetState.query,
+                    onValueChange = onSearchQueryChange,
                     label = stringResource(R.string.github_apk_info_search_label),
                     backdrop = backdrop,
                     modifier = Modifier.fillMaxWidth(),
@@ -176,29 +145,29 @@ internal fun GitHubApkInfoSheet(
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_abi),
                     empty = stringResource(R.string.github_apk_info_empty_abi),
-                    values = nativeAbiValues,
+                    values = sheetState.nativeAbiValues,
                 )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_permissions),
                     empty = stringResource(R.string.github_apk_info_empty_permissions),
-                    values = permissionValues,
-                    colors = permissionColors,
+                    values = sheetState.permissionValues,
+                    colors = sheetState.permissionColors,
                 )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_features),
                     empty = stringResource(R.string.github_apk_info_empty_features),
-                    values = featureValues,
+                    values = sheetState.featureValues,
                 )
                 InfoListSection(
                     title = stringResource(R.string.github_apk_info_section_metadata),
                     empty = stringResource(R.string.github_apk_info_empty_metadata),
-                    values = metadataValues,
+                    values = sheetState.metadataValues,
                 )
-                SignatureSection(info.signatureInfo, normalizedQuery)
+                SignatureSection(info.signatureInfo, sheetState.normalizedQuery)
                 ApkInfoMeaningSection()
                 ManifestTreeSection(
-                    nodes = filteredManifestNodes,
-                    query = normalizedQuery,
+                    nodeGroups = sheetState.manifestNodeGroups,
+                    query = sheetState.normalizedQuery,
                 )
             }
         }

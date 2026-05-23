@@ -23,6 +23,8 @@ import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
+import os.kei.ui.page.main.settings.page.SettingsSearchTarget
+import os.kei.ui.page.main.settings.page.deriveSettingsSearchTargets
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
@@ -52,6 +54,19 @@ internal data class SettingsDiagnosticsUiState(
 internal data class SettingsSupportUiState(
     val batteryOptimizationState: SettingsBatteryOptimizationSnapshot = SettingsBatteryOptimizationSnapshot(),
     val permissionKeepAliveState: SettingsPermissionKeepAliveSnapshot = SettingsPermissionKeepAliveSnapshot(),
+)
+
+@Immutable
+internal data class SettingsSearchUiState(
+    val matchingTargets: List<SettingsSearchTarget> = emptyList(),
+)
+
+@Immutable
+internal data class SettingsPageSnapshotState(
+    val diagnosticsUiState: SettingsDiagnosticsUiState = SettingsDiagnosticsUiState(),
+    val supportUiState: SettingsSupportUiState = SettingsSupportUiState(),
+    val chromeState: SettingsPageChromeState = SettingsPageChromeState(),
+    val searchUiState: SettingsSearchUiState = SettingsSearchUiState(),
 )
 
 @Immutable
@@ -103,6 +118,7 @@ internal class SettingsPageViewModel : ViewModel() {
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
     private val _chromeState = MutableStateFlow(SettingsPageChromeState())
     val chromeState: StateFlow<SettingsPageChromeState> = _chromeState.asStateFlow()
+    private val searchTargetsState = MutableStateFlow<List<SettingsSearchTarget>>(emptyList())
     private val _batteryOptimizationState = MutableStateFlow(SettingsBatteryOptimizationSnapshot())
     val batteryOptimizationState: StateFlow<SettingsBatteryOptimizationSnapshot> =
         _batteryOptimizationState.asStateFlow()
@@ -134,6 +150,40 @@ internal class SettingsPageViewModel : ViewModel() {
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = SettingsSupportUiState(),
+        )
+
+    val pageSnapshotState: StateFlow<SettingsPageSnapshotState> =
+        combine(diagnosticsUiState, supportUiState, chromeState, searchTargetsState) { diagnostics, support, chrome, targets ->
+            SettingsPageSnapshotState(
+                diagnosticsUiState = diagnostics,
+                supportUiState = support,
+                chromeState = chrome,
+                searchUiState =
+                    SettingsSearchUiState(
+                        matchingTargets =
+                            deriveSettingsSearchTargets(
+                                targets = targets,
+                                query = chrome.trimmedSearchQuery,
+                            ),
+                    ),
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue =
+                SettingsPageSnapshotState(
+                    diagnosticsUiState = diagnosticsUiState.value,
+                    supportUiState = supportUiState.value,
+                    chromeState = chromeState.value,
+                    searchUiState =
+                        SettingsSearchUiState(
+                            matchingTargets =
+                                deriveSettingsSearchTargets(
+                                    targets = searchTargetsState.value,
+                                    query = chromeState.value.trimmedSearchQuery,
+                                ),
+                        ),
+                ),
         )
 
     private val diagnosticsCoordinator =
@@ -170,6 +220,12 @@ internal class SettingsPageViewModel : ViewModel() {
 
     fun updateSearchQuery(query: String) {
         _chromeState.update { state -> state.copy(searchQuery = query.take(96)) }
+    }
+
+    fun updateSearchTargets(targets: List<SettingsSearchTarget>) {
+        searchTargetsState.update { current ->
+            if (current == targets) current else targets
+        }
     }
 
     fun updateBottomBarVisible(visible: Boolean) {

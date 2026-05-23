@@ -353,11 +353,11 @@ fun GitHubPage(
                 ),
             actions =
                 GitHubMainContentActions(
-                    onTrackedSearchChange = { state.trackedSearch = it },
+                    onTrackedSearchChange = actions::setTrackedSearch,
                     onSearchExpandedChange = { expanded ->
                         githubPageViewModel.updateSearchExpanded(enableSearchBar && expanded)
                     },
-                    onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
+                    onShowActionMenuPopupChange = actions::setShowActionMenuPopup,
                     onSortModeChange = actions::setSortMode,
                     onSortDirectionChange = actions::setSortDirection,
                     onTrackedFilterModeChange = actions::setTrackedFilterMode,
@@ -413,6 +413,11 @@ fun GitHubPage(
         )
     }
 
+    val apkInfoSheetState by githubPageViewModel.apkInfoSheetState.collectAsStateWithLifecycle()
+    val actionsSheetState by githubPageViewModel.actionsSheetState.collectAsStateWithLifecycle()
+    val releaseNotesDetailState by githubPageViewModel.releaseNotesDetailState.collectAsStateWithLifecycle()
+    val managedInstallConfirmSheetState by githubPageViewModel.managedInstallConfirmSheetState.collectAsStateWithLifecycle()
+
     CompositionLocalProvider(
         LocalGlassEffectRuntime provides githubGlassRuntime,
         LocalGitHubAppIconBitmaps provides appIconState.bitmaps,
@@ -427,12 +432,23 @@ fun GitHubPage(
             checkLogicDownloaderOptions = checkLogicDownloaderOptions,
             appPickerDerivedState = appPickerDerivedState,
             appPickerPreferences = pageUiState.appPickerPreferences,
+            apkInfoSheetState = apkInfoSheetState,
+            actionsSheetState = actionsSheetState,
+            releaseNotesDetailState = releaseNotesDetailState,
+            managedInstallConfirmSheetState = managedInstallConfirmSheetState,
             hasKeiOsSelfTrack = contentDerivedState.hasKeiOsSelfTrack,
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
             onRequestAppPickerState = githubPageViewModel::requestAppPickerState,
             onAppPickerPreferencesChange = githubPageViewModel::saveAppPickerPreferences,
+            onRequestApkInfoSheetState = githubPageViewModel::requestApkInfoSheetState,
+            onApkInfoSearchQueryChange = githubPageViewModel::updateApkInfoSheetQuery,
+            onClearApkInfoSheetState = githubPageViewModel::clearApkInfoSheetState,
+            onRequestReleaseNotesDetailState = githubPageViewModel::requestReleaseNotesDetailState,
+            onClearReleaseNotesDetailState = githubPageViewModel::clearReleaseNotesDetailState,
+            onRequestManagedInstallConfirmSheetState = githubPageViewModel::requestManagedInstallConfirmSheetState,
+            onClearManagedInstallConfirmSheetState = githubPageViewModel::clearManagedInstallConfirmSheetState,
             onConfirmTrackImport = transferCallbacks.onConfirmTrackImport,
         )
     }

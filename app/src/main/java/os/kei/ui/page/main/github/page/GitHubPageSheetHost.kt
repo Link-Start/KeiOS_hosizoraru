@@ -6,23 +6,21 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
-import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
-import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
-import os.kei.feature.github.model.GitHubTrackedSourceMode
-import os.kei.feature.github.model.forTrackedItem
-import os.kei.feature.github.model.supportsManagedApkInstall
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
+import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import os.kei.ui.page.main.github.sheet.GitHubActionsArtifactDetailSheet
-import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
-import os.kei.ui.page.main.github.sheet.GitHubDecisionAssistDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
-import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheet
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubOverviewEntrySheet
+import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailInput
+import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailUiState
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackImportDialog
@@ -39,12 +37,23 @@ internal fun GitHubPageSheetHost(
     checkLogicDownloaderOptions: List<DownloaderOption>,
     appPickerDerivedState: GitHubTrackAppPickerDerivedState,
     appPickerPreferences: GitHubAppPickerPreferences,
+    apkInfoSheetState: GitHubApkInfoSheetUiState,
+    actionsSheetState: GitHubActionsSheetUiState,
+    releaseNotesDetailState: GitHubReleaseNotesDetailUiState,
+    managedInstallConfirmSheetState: GitHubManagedInstallConfirmSheetUiState,
     hasKeiOsSelfTrack: Boolean,
     tracksExporting: Boolean,
     tracksImporting: Boolean,
     onEnsureKeiOsSelfTrack: () -> Unit,
     onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
     onAppPickerPreferencesChange: (GitHubAppPickerPreferences) -> Unit,
+    onRequestApkInfoSheetState: (GitHubApkInfoSheetInput) -> Unit,
+    onApkInfoSearchQueryChange: (String) -> Unit,
+    onClearApkInfoSheetState: () -> Unit,
+    onRequestReleaseNotesDetailState: (GitHubReleaseNotesDetailInput) -> Unit,
+    onClearReleaseNotesDetailState: () -> Unit,
+    onRequestManagedInstallConfirmSheetState: (GitHubManagedInstallConfirmSheetInput) -> Unit,
+    onClearManagedInstallConfirmSheetState: () -> Unit,
     onConfirmTrackImport: () -> Unit,
 ) {
     val trackedPackageNames =
@@ -79,17 +88,13 @@ internal fun GitHubPageSheetHost(
         recommendedTokenGuideExpanded = state.recommendedTokenGuideExpanded,
         onDismissRequest = actions::closeStrategySheet,
         onApply = actions::applyLookupConfig,
-        onSelectedStrategyChange = { state.selectedStrategyInput = it },
-        onSelectedActionsStrategyChange = { state.selectedActionsStrategyInput = it },
-        onTokenInputChange = {
-            state.githubApiTokenInput = it
-            state.credentialCheckError = null
-            state.credentialCheckStatus = null
-        },
-        onToggleTokenVisibility = { state.showApiTokenPlainText = !state.showApiTokenPlainText },
+        onSelectedStrategyChange = actions::setSelectedStrategyInput,
+        onSelectedActionsStrategyChange = actions::setSelectedActionsStrategyInput,
+        onTokenInputChange = actions::setApiTokenInput,
+        onToggleTokenVisibility = actions::toggleApiTokenVisibility,
         onRunCredentialCheck = actions::runCredentialCheck,
         onRunStrategyBenchmark = actions::runStrategyBenchmark,
-        onRecommendedTokenGuideExpandedChange = { state.recommendedTokenGuideExpanded = it },
+        onRecommendedTokenGuideExpandedChange = actions::setRecommendedTokenGuideExpanded,
         onOpenExternalUrl = { url, failureMessage ->
             actions.openExternalUrl(url = url, failureMessage = failureMessage)
         },
@@ -130,39 +135,32 @@ internal fun GitHubPageSheetHost(
         onApply = { actions.applyCheckLogicSheet(installedOnlineShareTargets) },
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
         onSendDebugActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
-        onCheckAllTrackedPreReleasesInputChange = { state.checkAllTrackedPreReleasesInput = it },
-        onCheckAllDirectApkPreReleasesInputChange = {
-            state.checkAllDirectApkPreReleasesInput = it
-        },
-        onAggressiveApkFilteringInputChange = { state.aggressiveApkFilteringInput = it },
-        onPreciseApkVersionEnabledInputChange = { state.preciseApkVersionEnabledInput = it },
-        onScanSystemAppsByDefaultInputChange = { state.scanSystemAppsByDefaultInput = it },
-        onProfileDepthInputChange = { state.profileDepthInput = it },
-        onShareImportFlowModeInputChange = { state.shareImportFlowModeInput = it },
-        onAppManagedShareInstallEnabledInputChange = {
-            state.appManagedShareInstallEnabledInput = it
-        },
-        onPreferredDownloaderPackageInputChange = { state.preferredDownloaderPackageInput = it },
-        onOnlineShareTargetPackageInputChange = { state.onlineShareTargetPackageInput = it },
-        onDecisionAssistEnabledInputChange = { state.decisionAssistEnabledInput = it },
-        onRepositoryHealthCardEnabledInputChange = { state.repositoryHealthCardEnabledInput = it },
-        onApkTrustCheckEnabledInputChange = { state.apkTrustCheckEnabledInput = it },
-        onShowDownloaderPopupChange = { state.showDownloaderPopup = it },
-        onShowOnlineShareTargetPopupChange = { state.showOnlineShareTargetPopup = it },
-        onShowShareImportFlowModePopupChange = { state.showShareImportFlowModePopup = it },
-        onDownloaderPopupAnchorBoundsChange = { state.downloaderPopupAnchorBounds = it },
-        onOnlineShareTargetPopupAnchorBoundsChange = {
-            state.onlineShareTargetPopupAnchorBounds = it
-        },
-        onShareImportFlowModePopupAnchorBoundsChange = {
-            state.shareImportFlowModePopupAnchorBounds = it
-        },
+        onCheckAllTrackedPreReleasesInputChange = actions::setCheckAllTrackedPreReleasesInput,
+        onCheckAllDirectApkPreReleasesInputChange = actions::setCheckAllDirectApkPreReleasesInput,
+        onAggressiveApkFilteringInputChange = actions::setAggressiveApkFilteringInput,
+        onPreciseApkVersionEnabledInputChange = actions::setPreciseApkVersionEnabledInput,
+        onScanSystemAppsByDefaultInputChange = actions::setScanSystemAppsByDefaultInput,
+        onProfileDepthInputChange = actions::setProfileDepthInput,
+        onShareImportFlowModeInputChange = actions::setShareImportFlowModeInput,
+        onAppManagedShareInstallEnabledInputChange = actions::setAppManagedShareInstallEnabledInput,
+        onPreferredDownloaderPackageInputChange = actions::setPreferredDownloaderPackageInput,
+        onOnlineShareTargetPackageInputChange = actions::setOnlineShareTargetPackageInput,
+        onDecisionAssistEnabledInputChange = actions::setDecisionAssistEnabledInput,
+        onRepositoryHealthCardEnabledInputChange = actions::setRepositoryHealthCardEnabledInput,
+        onApkTrustCheckEnabledInputChange = actions::setApkTrustCheckEnabledInput,
+        onShowDownloaderPopupChange = actions::setShowDownloaderPopup,
+        onShowOnlineShareTargetPopupChange = actions::setShowOnlineShareTargetPopup,
+        onShowShareImportFlowModePopupChange = actions::setShowShareImportFlowModePopup,
+        onDownloaderPopupAnchorBoundsChange = actions::setDownloaderPopupAnchorBounds,
+        onOnlineShareTargetPopupAnchorBoundsChange = actions::setOnlineShareTargetPopupAnchorBounds,
+        onShareImportFlowModePopupAnchorBoundsChange = actions::setShareImportFlowModePopupAnchorBounds,
     )
 
     GitHubActionsSheet(
         show = state.showActionsSheet,
         backdrop = backdrops.sheet,
         state = state,
+        derivedState = actionsSheetState,
         onDismissRequest = actions::closeActionsSheet,
         onRefresh = actions::refreshActionsSheet,
         onSelectWorkflow = actions::selectActionsWorkflow,
@@ -172,179 +170,48 @@ internal fun GitHubPageSheetHost(
         onBranchesExpandedChange = actions::setActionsBranchesExpanded,
         onWorkflowsExpandedChange = actions::setActionsWorkflowsExpanded,
         onRunsExpandedChange = actions::setActionsRunsExpanded,
-        onArtifactsExpandedChange = { state.actionsArtifactsExpanded = it },
+        onArtifactsExpandedChange = actions::setActionsArtifactsExpanded,
+        onArtifactFilterChange = actions::setActionsArtifactFilter,
         onRefreshRun = actions::refreshActionsRunStatus,
         onInstallArtifact = actions::installActionsArtifact,
         onDownloadArtifact = actions::downloadActionsArtifact,
         onShareArtifact = actions::shareActionsArtifact,
         onOpenRun = actions::openSelectedActionsRun,
-        onOpenArtifactDetail = { runMatch, artifactMatch, recommended ->
-            state.actionsArtifactDetailRequest =
-                GitHubActionsArtifactDetailRequest(
-                    runMatch = runMatch,
-                    artifactMatch = artifactMatch,
-                    recommended = recommended,
-                )
-        },
+        onOpenArtifactDetail = actions::openActionsArtifactDetail,
     )
 
-    GitHubDecisionAssistDetailSheet(
-        request = state.decisionAssistDetailRequest,
+    GitHubDecisionAssistSheetBinding(
+        state = state,
+        actions = actions,
         backdrop = backdrops.sheet,
-        versionState =
-            state.decisionAssistDetailRequest
-                ?.item
-                ?.id
-                ?.let { state.checkStates[it] }
-                ?: os.kei.ui.page.main.github
-                    .VersionCheckUi(),
-        assetBundle =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.id
-                ?.let { state.releaseNotesBundles[it] },
-        releaseNotesTargets =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.id
-                ?.let { state.releaseNotesTargets[it] }
-                .orEmpty(),
-        selectedReleaseNotesTarget =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.id
-                ?.let { state.releaseNotesSelectedTargets[it] },
-        releaseNotesApkVersion =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.let { item ->
-                    state.releaseNotesSelectedTargets[item.id]?.let { target ->
-                        state.releaseNotesApkVersions[releaseNotesApkVersionKey(item.id, target)]
-                    }
-                },
-        preciseApkVersionEnabled =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.let { state.lookupConfig.forTrackedItem(it).preciseApkVersionEnabled } == true,
-        assetLoading =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.id
-                ?.let { state.releaseNotesLoading[it] == true } == true,
-        assetError =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.ReleaseNotes }
-                ?.item
-                ?.id
-                ?.let { state.releaseNotesErrors[it] }
-                .orEmpty(),
-        healthRefreshing =
-            state.decisionAssistDetailRequest
-                ?.takeIf { it.type == GitHubDecisionAssistDetailType.RepositoryHealth }
-                ?.item
-                ?.id
-                ?.let { state.itemRefreshLoading[it] == true || state.checkStates[it]?.loading == true } == true,
-        onDismissRequest = { state.decisionAssistDetailRequest = null },
-        onRefreshHealth = { item ->
-            actions.refreshTrackedItem(
-                item = item,
-                showToastOnError = true,
-                profilePurposeOverride = GitHubRepositoryProfilePurpose.ManualDeepRefresh,
-                forceRefresh = true,
-            )
-        },
-        onRefreshReleaseNotes = { item, itemState ->
-            actions.loadReleaseNotes(
-                item = item,
-                itemState = itemState,
-                clearCache = true,
-            )
-        },
-        onSelectReleaseNotesTarget = { item, target ->
-            actions.selectReleaseNotesTarget(item, target)
-        },
-        onOpenExternalUrl = actions::openExternalUrl,
+        releaseNotesDetailState = releaseNotesDetailState,
+        onRequestReleaseNotesDetailState = onRequestReleaseNotesDetailState,
+        onClearReleaseNotesDetailState = onClearReleaseNotesDetailState,
     )
 
-    GitHubActionsArtifactDetailSheet(
-        request = state.actionsArtifactDetailRequest,
+    GitHubActionsArtifactDetailSheetBinding(
+        state = state,
+        actions = actions,
         backdrop = backdrops.sheet,
-        hasToken = state.lookupConfig.actionsArtifactDownloadsAvailable,
-        managedInstallEnabled =
-            state.actionsArtifactDetailRequest
-                ?.artifactMatch
-                ?.supportsManagedApkInstall(state.lookupConfig) == true,
-        downloading =
-            state.actionsArtifactDetailRequest
-                ?.artifactMatch
-                ?.artifact
-                ?.id
-                ?.let { state.actionsArtifactDownloadLoadingId == it } == true,
-        sharing =
-            state.actionsArtifactDetailRequest
-                ?.artifactMatch
-                ?.artifact
-                ?.id
-                ?.let { state.actionsArtifactShareLoadingId == it } == true,
-        onDismissRequest = { state.actionsArtifactDetailRequest = null },
-        onRefreshRun = actions::refreshActionsRunStatus,
-        onInstall = actions::installActionsArtifact,
-        onDownload = actions::downloadActionsArtifact,
-        onShare = actions::shareActionsArtifact,
     )
 
-    val apkInfoRequest = state.apkInfoDetailRequest
-    val apkInfoAsset = apkInfoRequest?.asset
-    val apkInfoKey = apkInfoAsset?.githubApkInfoKey().orEmpty()
-    val apkInfoManagedInstallRunning =
-        apkInfoRequest?.let { request ->
-            state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] == true
-        } == true
-    GitHubApkInfoSheet(
-        asset = apkInfoAsset,
-        info = state.apkInfoResults[apkInfoKey],
-        installedInfo = state.apkInfoInstalledResults[apkInfoKey],
-        loading = state.apkInfoLoading[apkInfoKey] == true,
-        error = state.apkInfoErrors[apkInfoKey].orEmpty(),
+    GitHubApkInfoSheetBinding(
+        state = state,
+        actions = actions,
         backdrop = backdrops.sheet,
-        managedInstallEnabled = state.lookupConfig.appManagedShareInstallEnabled,
-        managedInstallRunning = apkInfoManagedInstallRunning,
-        onRefresh = {
-            apkInfoRequest?.let { actions.refreshApkInfo(it.item, it.asset) }
-        },
-        onInstall = {
-            apkInfoRequest?.let { actions.installApkWithKeiOs(it.item, it.asset) }
-        },
-        onDownload = {
-            apkInfoRequest?.let { actions.openApkInDownloader(it.item, it.asset) }
-        },
-        onShare = { apkInfoAsset?.let(actions::shareApkLink) },
-        onDismissRequest = { state.apkInfoDetailRequest = null },
+        sheetState = apkInfoSheetState,
+        onRequestSheetState = onRequestApkInfoSheetState,
+        onSearchQueryChange = onApkInfoSearchQueryChange,
+        onClearSheetState = onClearApkInfoSheetState,
     )
 
-    val managedInstallConfirmRequest = state.managedInstallConfirmRequest
-    val managedInstallAsset = managedInstallConfirmRequest?.asset
-    val managedInstallInfoKey = managedInstallAsset?.githubApkInfoKey().orEmpty()
-    val managedInstallRunning =
-        managedInstallConfirmRequest?.let { request ->
-            state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] == true
-        } == true
-    GitHubManagedInstallConfirmSheet(
-        request = managedInstallConfirmRequest,
-        info = state.apkInfoResults[managedInstallInfoKey],
-        installedInfo = state.apkInfoInstalledResults[managedInstallInfoKey],
-        loading = state.apkInfoLoading[managedInstallInfoKey] == true,
-        error = state.apkInfoErrors[managedInstallInfoKey].orEmpty(),
-        running = managedInstallRunning,
+    GitHubManagedInstallConfirmSheetBinding(
+        state = state,
+        actions = actions,
         backdrop = backdrops.sheet,
-        onConfirm = actions::confirmManagedInstall,
-        onDismissRequest = actions::dismissManagedInstallConfirm,
+        sheetState = managedInstallConfirmSheetState,
+        onRequestSheetState = onRequestManagedInstallConfirmSheetState,
+        onClearSheetState = onClearManagedInstallConfirmSheetState,
     )
 
     GitHubTrackEditSheet(
@@ -386,34 +253,10 @@ internal fun GitHubPageSheetHost(
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
         onApply = actions::applyTrackSheet,
-        onRepoUrlInputChange = {
-            state.repoUrlInput = it
-            state.repoScanCandidates = emptyList()
-        },
-        onSourceModeInputChange = { mode ->
-            state.trackSourceModeInput = mode
-            state.repoScanCandidates = emptyList()
-            if (mode == GitHubTrackedSourceMode.DirectApk) {
-                state.alwaysShowLatestReleaseDownloadButtonInput = false
-                state.checkActionsUpdatesInput = false
-                state.actionsUpdateIntervalModeInput =
-                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
-            }
-        },
-        onAppSearchChange = { state.appSearch = it },
-        onPackageNameInputChange = { input ->
-            state.packageNameInput = input
-            state.repoScanCandidates = emptyList()
-            val selected = state.selectedApp
-            val normalizedInput = input.trim()
-            if (selected != null) {
-                if (normalizedInput.isBlank()) {
-                    state.selectedApp = null
-                } else if (!selected.packageName.equals(normalizedInput, ignoreCase = true)) {
-                    state.selectedApp = null
-                }
-            }
-        },
+        onRepoUrlInputChange = actions::setTrackRepoUrlInput,
+        onSourceModeInputChange = actions::setTrackSourceModeInput,
+        onAppSearchChange = actions::setTrackAppSearch,
+        onPackageNameInputChange = actions::setTrackPackageNameInput,
         onScanRepoUrl = actions::scanRepoUrlFromPackage,
         onScanPackageName = actions::scanPackageNameFromRepo,
         onRepoScanCandidateSelected = actions::selectRepoScanCandidate,
@@ -421,56 +264,30 @@ internal fun GitHubPageSheetHost(
         onRefreshAppList = actions::refreshTrackAppList,
         onRequestAppPickerState = onRequestAppPickerState,
         onAppPickerPreferencesChange = onAppPickerPreferencesChange,
-        onAddAppPickerScrollPositionChange = { index, offset ->
-            state.addTrackAppPickerFirstVisibleItemIndex = index
-            state.addTrackAppPickerFirstVisibleItemScrollOffset = offset
-        },
-        onSelectedAppChange = { app ->
-            state.selectedApp = app
-            state.repoScanCandidates = emptyList()
-            if (app != null) {
-                state.packageNameInput = app.packageName
-            }
-        },
-        onPreferPreReleaseInputChange = { state.preferPreReleaseInput = it },
-        onAlwaysShowLatestReleaseDownloadButtonInputChange = {
-            state.alwaysShowLatestReleaseDownloadButtonInput = it
-        },
-        onCheckActionsUpdatesInputChange = { enabled ->
-            state.checkActionsUpdatesInput = enabled
-            if (!enabled) {
-                state.actionsUpdateIntervalModeInput =
-                    GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
-            }
-        },
-        onUpdateIntervalModeInputChange = {
-            state.updateIntervalModeInput = it
-        },
-        onActionsUpdateIntervalModeInputChange = {
-            state.actionsUpdateIntervalModeInput = it
-        },
-        onPreciseApkVersionModeInputChange = {
-            state.preciseApkVersionModeInput = it
-        },
-        onSourceModeDropdownExpandedChange = { state.sourceModeDropdownExpanded = it },
-        onSourceModeDropdownAnchorBoundsChange = { state.sourceModeDropdownAnchorBounds = it },
-        onUpdateIntervalDropdownExpandedChange = { state.updateIntervalDropdownExpanded = it },
-        onUpdateIntervalDropdownAnchorBoundsChange = { state.updateIntervalDropdownAnchorBounds = it },
-        onActionsIntervalDropdownExpandedChange = { state.actionsIntervalDropdownExpanded = it },
-        onActionsIntervalDropdownAnchorBoundsChange = { state.actionsIntervalDropdownAnchorBounds = it },
-        onPreciseModeDropdownExpandedChange = { state.preciseModeDropdownExpanded = it },
-        onPreciseModeDropdownAnchorBoundsChange = { state.preciseModeDropdownAnchorBounds = it },
+        onAddAppPickerScrollPositionChange = actions::setTrackAppPickerScrollPosition,
+        onSelectedAppChange = actions::setTrackSelectedApp,
+        onPreferPreReleaseInputChange = actions::setTrackPreferPreReleaseInput,
+        onAlwaysShowLatestReleaseDownloadButtonInputChange =
+            actions::setTrackAlwaysShowLatestReleaseDownloadButtonInput,
+        onCheckActionsUpdatesInputChange = actions::setTrackCheckActionsUpdatesInput,
+        onUpdateIntervalModeInputChange = actions::setTrackUpdateIntervalModeInput,
+        onActionsUpdateIntervalModeInputChange = actions::setTrackActionsUpdateIntervalModeInput,
+        onPreciseApkVersionModeInputChange = actions::setTrackPreciseApkVersionModeInput,
+        onSourceModeDropdownExpandedChange = actions::setTrackSourceModeDropdownExpanded,
+        onSourceModeDropdownAnchorBoundsChange = actions::setTrackSourceModeDropdownAnchorBounds,
+        onUpdateIntervalDropdownExpandedChange = actions::setTrackUpdateIntervalDropdownExpanded,
+        onUpdateIntervalDropdownAnchorBoundsChange = actions::setTrackUpdateIntervalDropdownAnchorBounds,
+        onActionsIntervalDropdownExpandedChange = actions::setTrackActionsIntervalDropdownExpanded,
+        onActionsIntervalDropdownAnchorBoundsChange = actions::setTrackActionsIntervalDropdownAnchorBounds,
+        onPreciseModeDropdownExpandedChange = actions::setTrackPreciseModeDropdownExpanded,
+        onPreciseModeDropdownAnchorBoundsChange = actions::setTrackPreciseModeDropdownAnchorBounds,
     )
 
     GitHubDeleteTrackDialog(
         pendingDeleteItem = state.pendingDeleteItem,
         deleteInProgress = state.deleteInProgress,
-        onDismissRequest = { state.pendingDeleteItem = null },
-        onCancel = {
-            if (!state.deleteInProgress) {
-                state.pendingDeleteItem = null
-            }
-        },
+        onDismissRequest = actions::dismissPendingDeleteItem,
+        onCancel = actions::dismissPendingDeleteItem,
         onConfirmDelete = actions::confirmDeletePendingItem,
     )
 
@@ -479,23 +296,19 @@ internal fun GitHubPageSheetHost(
         importInProgress = tracksImporting,
         onDismissRequest = {
             if (!tracksImporting) {
-                state.dismissTrackImportPreview()
+                actions.dismissTrackImportPreview()
             }
         },
         onCancel = {
             if (!tracksImporting) {
-                state.dismissTrackImportPreview()
+                actions.dismissTrackImportPreview()
             }
         },
         onConfirmImport = {
-            val preview = state.pendingTrackImportPreview
-            if (preview == null) return@GitHubTrackImportDialog
-            if (!preview.canImport) {
-                state.dismissTrackImportPreview()
-                return@GitHubTrackImportDialog
-            }
-            if (tracksImporting) return@GitHubTrackImportDialog
-            onConfirmTrackImport()
+            actions.confirmTrackImportPreview(
+                importInProgress = tracksImporting,
+                onConfirmTrackImport = onConfirmTrackImport,
+            )
         },
     )
 }

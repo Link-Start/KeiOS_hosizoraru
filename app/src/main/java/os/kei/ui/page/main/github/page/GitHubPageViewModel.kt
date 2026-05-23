@@ -25,11 +25,18 @@ import os.kei.core.ui.snapshot.AppSnapshotFlowManager
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
+import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.section.GitHubTrackedItemsExpansionState
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
+import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailInput
+import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailUiState
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PENDING_SHARE_IMPORT_CARD_TICK_MS = 15_000L
@@ -108,6 +115,12 @@ internal class GitHubPageViewModel : ViewModel() {
     private var appPickerStateJob: Job? = null
     private var appPickerStateInput: GitHubTrackAppPickerInput? = null
     private val snapshotFlowManager = AppSnapshotFlowManager()
+    private val sheetDerivationController =
+        GitHubPageSheetDerivationController(
+            scope = viewModelScope,
+            repository = repository,
+            snapshotFlowManager = snapshotFlowManager,
+        )
     private val trackedExpansionController =
         GitHubTrackedExpansionStateController(
             scope = viewModelScope,
@@ -143,6 +156,18 @@ internal class GitHubPageViewModel : ViewModel() {
         MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
     val appPickerDerivedState: StateFlow<GitHubTrackAppPickerDerivedState> =
         _appPickerDerivedState.asStateFlow()
+
+    val apkInfoSheetState: StateFlow<GitHubApkInfoSheetUiState> =
+        sheetDerivationController.apkInfoSheetState
+
+    val releaseNotesDetailState: StateFlow<GitHubReleaseNotesDetailUiState> =
+        sheetDerivationController.releaseNotesDetailState
+
+    val managedInstallConfirmSheetState: StateFlow<GitHubManagedInstallConfirmSheetUiState> =
+        sheetDerivationController.managedInstallConfirmSheetState
+
+    val actionsSheetState: StateFlow<GitHubActionsSheetUiState> =
+        sheetDerivationController.actionsSheetState
 
     val appIconState: StateFlow<GitHubAppIconUiState> =
         appIconLoader.state
@@ -217,6 +242,7 @@ internal class GitHubPageViewModel : ViewModel() {
         ).also {
             pageState = it
             bindContentState(it)
+            sheetDerivationController.bindActionsSheetState(it)
             viewModelScope.launch {
                 val persistedState = repository.loadPersistedUiState()
                 if (pageState === it) {
@@ -342,6 +368,34 @@ internal class GitHubPageViewModel : ViewModel() {
                 if (appPickerStateInput != input) return@launch
                 _appPickerDerivedState.value = derivedState
             }
+    }
+
+    fun requestApkInfoSheetState(input: GitHubApkInfoSheetInput) {
+        sheetDerivationController.requestApkInfoSheetState(input)
+    }
+
+    fun updateApkInfoSheetQuery(query: String) {
+        sheetDerivationController.updateApkInfoSheetQuery(query)
+    }
+
+    fun clearApkInfoSheetState() {
+        sheetDerivationController.clearApkInfoSheetState()
+    }
+
+    fun requestReleaseNotesDetailState(input: GitHubReleaseNotesDetailInput) {
+        sheetDerivationController.requestReleaseNotesDetailState(input)
+    }
+
+    fun clearReleaseNotesDetailState() {
+        sheetDerivationController.clearReleaseNotesDetailState()
+    }
+
+    fun requestManagedInstallConfirmSheetState(input: GitHubManagedInstallConfirmSheetInput) {
+        sheetDerivationController.requestManagedInstallConfirmSheetState(input)
+    }
+
+    fun clearManagedInstallConfirmSheetState() {
+        sheetDerivationController.clearManagedInstallConfirmSheetState()
     }
 
     fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) {
@@ -504,6 +558,7 @@ internal class GitHubPageViewModel : ViewModel() {
         onlineShareTargetsJob?.cancel()
         downloaderOptionsJob?.cancel()
         appPickerStateJob?.cancel()
+        sheetDerivationController.cancel()
         appIconLoader.clearLoadingState()
         snapshotFlowManager.dispose()
         super.onCleared()

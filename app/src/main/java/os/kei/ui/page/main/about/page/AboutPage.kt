@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,20 +42,6 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.ui.page.main.about.section.AboutAppCardSection
-import os.kei.ui.page.main.about.section.AboutBuildSdkCardSection
-import os.kei.ui.page.main.about.section.AboutComponentCardSection
-import os.kei.ui.page.main.about.section.AboutComponentLabCardSection
-import os.kei.ui.page.main.about.section.AboutGitHubCardSection
-import os.kei.ui.page.main.about.section.AboutLicenseCardSection
-import os.kei.ui.page.main.about.section.AboutMediaStorageCardSection
-import os.kei.ui.page.main.about.section.AboutNetworkServiceCardSection
-import os.kei.ui.page.main.about.section.AboutPermissionCardSection
-import os.kei.ui.page.main.about.section.AboutProjectLicenseCardSection
-import os.kei.ui.page.main.about.section.AboutReleaseCardSection
-import os.kei.ui.page.main.about.section.AboutRuntimeStatusCardSection
-import os.kei.ui.page.main.about.section.AboutUiFrameworkCardSection
-import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
 import os.kei.ui.page.main.about.state.rememberAboutPageColorPalette
 import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
@@ -97,6 +82,7 @@ fun AboutPage(
     val viewModel: AboutPageViewModel = viewModel()
     val detailsState by viewModel.detailsState.collectAsStateWithLifecycle()
     val chromeState by viewModel.chromeState.collectAsStateWithLifecycle()
+    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
 
     val categories =
         remember {
@@ -154,9 +140,11 @@ fun AboutPage(
         }
     }
 
-    LaunchedEffect(context, notificationPermissionGranted, shizukuStatus, shizukuApiUtils) {
+    LaunchedEffect(context, appLabel, notificationPermissionGranted, shizukuStatus, shizukuApiUtils) {
         viewModel.refreshDetails(
             context = context,
+            appLabel = appLabel,
+            shizukuStatus = shizukuStatus,
             notificationPermissionGranted = notificationPermissionGranted,
             shizukuApiUtils = shizukuApiUtils,
         )
@@ -168,27 +156,9 @@ fun AboutPage(
     val openLinkFailed = stringResource(R.string.common_open_link_failed)
     val aboutSearchPlaceholder = stringResource(R.string.about_search_placeholder)
     val searchContentDescription = stringResource(R.string.about_search_placeholder)
-    val searchTargets =
-        rememberAboutSearchTargets(
-            appLabel = appLabel,
-            shizukuStatus = shizukuStatus,
-            permissionEntries = permissionEntries,
-            componentEntries = componentEntries,
-        )
-    val trimmedSearchQuery = searchQuery.trim()
-    val searchActive = trimmedSearchQuery.isNotEmpty()
-    val matchingSearchTargets =
-        remember(searchTargets, trimmedSearchQuery) {
-            if (trimmedSearchQuery.isBlank()) {
-                emptyList()
-            } else {
-                searchTargets.filter { it.matches(trimmedSearchQuery) }
-            }
-        }
-    val matchingSearchCards =
-        remember(matchingSearchTargets) {
-            matchingSearchTargets.map { it.card }.toSet()
-        }
+    val searchActive = searchQuery.trim().isNotEmpty()
+    val matchingSearchTargets = searchState.matchingTargets
+    val matchingSearchCards = searchState.matchingCards
     val activeCategoryIndex =
         if (pagerState.isScrollInProgress) {
             pagerState.targetPage
@@ -304,216 +274,37 @@ fun AboutPage(
         viewModel.updateSearchExpanded(false)
     }
 
-    LaunchedEffect(trimmedSearchQuery) {
-        if (trimmedSearchQuery.isNotEmpty()) {
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotBlank()) {
             searchListState.scrollToItem(0)
         }
     }
-
-    fun cardVisible(card: AboutSearchCard): Boolean = !searchActive || card in matchingSearchCards
-
-    fun LazyListScope.aboutCardItem(card: AboutSearchCard) {
-        item(
-            key = "about_card_${card.name}",
-            contentType = "about_card",
-        ) {
-            when (card) {
-                AboutSearchCard.App -> {
-                    AboutAppCardSection(
-                        appLabel = appLabel,
-                        packageInfo = packageInfo,
-                        cardColor = palette.infoCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.App),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.App, it) },
-                    )
-                }
-
-                AboutSearchCard.GitHub -> {
-                    AboutGitHubCardSection(
-                        cardColor = palette.githubCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.GitHub),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.GitHub, it) },
-                        onOpenProjectUrl = { url ->
-                            if (!openExternalUrl(context, url)) {
-                                context.showToast(openLinkFailed)
-                            }
-                        },
-                    )
-                }
-
-                AboutSearchCard.Release -> {
-                    AboutReleaseCardSection(
-                        cardColor = palette.releaseCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Release),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Release, it) },
-                    )
-                }
-
-                AboutSearchCard.Runtime -> {
-                    AboutRuntimeStatusCardSection(
-                        cardColor = palette.runtimeCardColor,
-                        accent = palette.accent,
-                        shizukuReady = shizukuReady,
-                        readyColor = palette.readyColor,
-                        notReadyColor = palette.notReadyColor,
-                        subtitleColor = palette.subtitleColor,
-                        notificationPermissionGranted = notificationPermissionGranted,
-                        shizukuDetailMap = shizukuDetailMap,
-                        permissionCount = permissionEntries.size,
-                        componentCount = componentEntries.size,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Runtime),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Runtime, it) },
-                        onCheckShizuku = onCheckShizuku,
-                    )
-                }
-
-                AboutSearchCard.Network -> {
-                    AboutNetworkServiceCardSection(
-                        cardColor = palette.networkServiceCardColor,
-                        titleColor = palette.readyColor,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Network),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Network, it) },
-                    )
-                }
-
-                AboutSearchCard.Media -> {
-                    AboutMediaStorageCardSection(
-                        cardColor = palette.mediaStorageCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Media),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Media, it) },
-                    )
-                }
-
-                AboutSearchCard.Permission -> {
-                    AboutPermissionCardSection(
-                        cardColor = palette.githubCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        readyColor = palette.readyColor,
-                        notReadyColor = palette.notReadyColor,
-                        entries = permissionEntries,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Permission),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Permission, it) },
-                    )
-                }
-
-                AboutSearchCard.Component -> {
-                    AboutComponentCardSection(
-                        cardColor = Color(0x2234D399),
-                        titleColor = palette.readyColor,
-                        subtitleColor = palette.subtitleColor,
-                        accent = palette.accent,
-                        entries = componentEntries,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Component),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Component, it) },
-                    )
-                }
-
-                AboutSearchCard.Build -> {
-                    AboutBuildSdkCardSection(
-                        cardColor = palette.buildCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Build),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Build, it) },
-                    )
-                }
-
-                AboutSearchCard.Ui -> {
-                    AboutUiFrameworkCardSection(
-                        cardColor = palette.uiFrameworkCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Ui),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Ui, it) },
-                    )
-                }
-
-                AboutSearchCard.ProjectLicense -> {
-                    AboutProjectLicenseCardSection(
-                        cardColor = palette.projectLicenseCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.ProjectLicense),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.ProjectLicense, it) },
-                        onOpenLicenseUrl = { url ->
-                            if (!openExternalUrl(context, url)) {
-                                context.showToast(openLinkFailed)
-                            }
-                        },
-                    )
-                }
-
-                AboutSearchCard.License -> {
-                    AboutLicenseCardSection(
-                        cardColor = palette.licenseCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.License),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.License, it) },
-                        onOpenSourceUrl = { url ->
-                            if (!openExternalUrl(context, url)) {
-                                context.showToast(openLinkFailed)
-                            }
-                        },
-                    )
-                }
-
-                AboutSearchCard.Lab -> {
-                    AboutComponentLabCardSection(
-                        cardColor = palette.componentLabCardColor,
-                        accent = palette.accent,
-                        subtitleColor = palette.subtitleColor,
-                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Lab),
-                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Lab, it) },
-                        onOpenComponentLab = { DebugComponentLabActivity.launch(context) },
-                    )
-                }
-            }
+    val cardRenderState =
+        AboutCardRenderState(
+            appLabel = appLabel,
+            packageInfo = packageInfo,
+            palette = palette,
+            searchActive = searchActive,
+            expansionState = expansionState,
+            shizukuReady = shizukuReady,
+            notificationPermissionGranted = notificationPermissionGranted,
+            shizukuDetailMap = shizukuDetailMap,
+            permissionEntries = permissionEntries,
+            componentEntries = componentEntries,
+        )
+    val cardActions =
+        remember(context, openLinkFailed, onCheckShizuku, viewModel) {
+            AboutCardActions(
+                onExpandedChange = viewModel::updateSectionExpanded,
+                onCheckShizuku = onCheckShizuku,
+                onOpenExternalUrl = { url ->
+                    if (!openExternalUrl(context, url)) {
+                        context.showToast(openLinkFailed)
+                    }
+                },
+                onOpenComponentLab = { DebugComponentLabActivity.launch(context) },
+            )
         }
-    }
-
-    fun LazyListScope.aboutCategoryCards(category: AboutCategory) {
-        val cards =
-            when (category) {
-                AboutCategory.Overview -> {
-                    listOf(AboutSearchCard.App, AboutSearchCard.Release, AboutSearchCard.GitHub)
-                }
-
-                AboutCategory.System -> {
-                    listOf(
-                        AboutSearchCard.Runtime,
-                        AboutSearchCard.Network,
-                        AboutSearchCard.Media,
-                        AboutSearchCard.Permission,
-                        AboutSearchCard.Component,
-                    )
-                }
-
-                AboutCategory.Tech -> {
-                    listOf(
-                        AboutSearchCard.Build,
-                        AboutSearchCard.Ui,
-                        AboutSearchCard.ProjectLicense,
-                        AboutSearchCard.License,
-                    )
-                }
-
-                AboutCategory.Lab -> {
-                    listOf(AboutSearchCard.Lab)
-                }
-            }
-        cards.filter(::cardVisible).forEach(::aboutCardItem)
-    }
 
     AppPageScaffold(
         title = stringResource(R.string.about_page_title),
@@ -600,7 +391,11 @@ fun AboutPage(
                     }
                 } else {
                     matchingSearchTargets.forEach { target ->
-                        aboutCardItem(target.card)
+                        aboutCardItem(
+                            card = target.card,
+                            state = cardRenderState,
+                            actions = cardActions,
+                        )
                     }
                 }
             }
@@ -634,34 +429,16 @@ fun AboutPage(
                         bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
                         sectionSpacing = 14.dp,
                     ) {
-                        aboutCategoryCards(category)
+                        aboutCategoryCards(
+                            category = category,
+                            matchingCards = matchingSearchCards,
+                            state = cardRenderState,
+                            actions = cardActions,
+                        )
                     }
                 }
             }
         }
-    }
-}
-
-private fun aboutCardExpanded(
-    searchActive: Boolean,
-    expansionState: AboutPageSectionExpansionState,
-    card: AboutSearchCard,
-): Boolean {
-    if (searchActive) return true
-    return when (card) {
-        AboutSearchCard.App -> expansionState.appExpanded
-        AboutSearchCard.Release -> expansionState.releaseExpanded
-        AboutSearchCard.GitHub -> expansionState.githubExpanded
-        AboutSearchCard.Runtime -> expansionState.runtimeExpanded
-        AboutSearchCard.Network -> expansionState.networkExpanded
-        AboutSearchCard.Media -> expansionState.mediaExpanded
-        AboutSearchCard.Permission -> expansionState.permissionExpanded
-        AboutSearchCard.Component -> expansionState.componentExpanded
-        AboutSearchCard.Build -> expansionState.buildExpanded
-        AboutSearchCard.Ui -> expansionState.uiFrameworkExpanded
-        AboutSearchCard.ProjectLicense -> expansionState.projectLicenseExpanded
-        AboutSearchCard.License -> expansionState.licenseExpanded
-        AboutSearchCard.Lab -> expansionState.componentLabExpanded
     }
 }
 

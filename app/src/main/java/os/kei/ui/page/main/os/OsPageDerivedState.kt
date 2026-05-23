@@ -30,8 +30,6 @@ internal data class OsPageDerivedState(
     val prunedLinuxRows: List<InfoRow>,
     val overviewUiState: OsOverviewUiState,
     val overviewMetricRows: List<OsOverviewMetricRow>,
-    val visibleActivityShortcutCards: List<OsActivityShortcutCard>,
-    val visibleShellCommandCards: List<OsShellCommandCard>
 )
 
 @Composable
@@ -56,105 +54,102 @@ internal fun rememberOsPageDerivedState(
 ): OsPageDerivedState {
     val rowsState = rowsDerivedState.rowsState
     val groupedTopInfoRows = rowsDerivedState.groupedTopInfoRows
-    val shellRunnerRows = remember(
-        shizukuStatus,
-        context,
-        shellSavedCountLabel,
-        shellCommandCards
-    ) {
-        listOf(
-            InfoRow(
-                key = context.getString(R.string.os_shell_card_status_label),
-                value = shizukuStatus
-            ),
-            InfoRow(
-                key = shellSavedCountLabel,
-                value = context.getString(R.string.common_item_count, shellCommandCards.size)
-            )
-        )
-    }
-    val overviewMetrics = remember(
-        context,
-        visibleCards,
-        rowsState.topInfoRows.size,
-        rowsState.visibleRowsCount,
-        activityShortcutCards,
-        shellCommandCards,
-    ) {
-        buildOsOverviewMetrics(
-            context = context,
-            topInfoCount = rowsState.topInfoRows.size,
-            visibleRowsCount = rowsState.visibleRowsCount,
-            visibleParameterCardCount =
-                visibleCards.count {
-                    it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
-                        it != OsSectionCard.SHELL_RUNNER
-                },
-            totalParameterCardCount =
-                OsSectionCard.entries.count {
-                    it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
-                        it != OsSectionCard.SHELL_RUNNER
-                },
-            activityStats = buildOsActivityOverviewStats(cards = activityShortcutCards),
-            shellStats =
-                OsShellOverviewStats(
-                    totalCount = shellCommandCards.size + 1,
-                    visibleCount =
-                        shellCommandCards.count { it.visible } +
-                            if (visibleCards.contains(OsSectionCard.SHELL_RUNNER)) 1 else 0,
+    val shellRunnerRows =
+        remember(
+            shizukuStatus,
+            context,
+            shellSavedCountLabel,
+            shellCommandCards,
+        ) {
+            listOf(
+                InfoRow(
+                    key = context.getString(R.string.os_shell_card_status_label),
+                    value = shizukuStatus,
                 ),
-        )
-    }
-    val overviewUiState = remember(
-        isDark,
-        inactiveColor,
-        cachedColor,
-        refreshingColor,
-        syncedColor,
-        refreshing,
-        refreshProgress,
-        cachePersisted,
-        visibleCards,
-        sectionStates,
-        rowsState.topInfoRows.size,
-        rowsState.visibleRowsCount,
-        overviewMetrics,
-        surfaceColor
-    ) {
-        buildOsOverviewUiState(
-            context = context,
-            isDark = isDark,
-            inactiveColor = inactiveColor,
-            cachedColor = cachedColor,
-            refreshingColor = refreshingColor,
-            syncedColor = syncedColor,
-            surfaceColor = surfaceColor,
-            refreshing = refreshing,
-            refreshProgress = refreshProgress,
-            cachePersisted = cachePersisted,
-            visibleCards = visibleCards,
-            sectionStates = sectionStates,
-            topInfoCount = rowsState.topInfoRows.size,
-            visibleRowsCount = rowsState.visibleRowsCount,
-            activityCards = activityShortcutCards,
-            shellCommandCards = shellCommandCards,
-            metrics = overviewMetrics,
-        )
-    }
-    val overviewMetricRows = remember(overviewUiState.metrics) {
-        overviewUiState.metrics.chunked(2).mapNotNull { pair ->
-            pair.firstOrNull()?.let { first ->
-                OsOverviewMetricRow(first = first, second = pair.getOrNull(1))
+                InfoRow(
+                    key = shellSavedCountLabel,
+                    value = context.getString(R.string.common_item_count, shellCommandCards.size),
+                ),
+            )
+        }
+    val overviewMetrics =
+        remember(
+            context,
+            visibleCards,
+            rowsState.topInfoRows.size,
+            rowsState.visibleRowsCount,
+            activityShortcutCards,
+            shellCommandCards,
+        ) {
+            buildOsOverviewMetrics(
+                context = context,
+                topInfoCount = rowsState.topInfoRows.size,
+                visibleRowsCount = rowsState.visibleRowsCount,
+                visibleParameterCardCount =
+                    visibleCards.count {
+                        it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                            it != OsSectionCard.SHELL_RUNNER
+                    },
+                totalParameterCardCount =
+                    OsSectionCard.entries.count {
+                        it != OsSectionCard.GOOGLE_SYSTEM_SERVICE &&
+                            it != OsSectionCard.SHELL_RUNNER
+                    },
+                activityStats = buildOsActivityOverviewStats(cards = activityShortcutCards),
+                shellStats =
+                    OsShellOverviewStats(
+                        totalCount = shellCommandCards.size + 1,
+                        visibleCount =
+                            shellCommandCards.count { it.visible } +
+                                if (visibleCards.contains(OsSectionCard.SHELL_RUNNER)) 1 else 0,
+                    ),
+            )
+        }
+    val overviewUiState =
+        remember(
+            isDark,
+            inactiveColor,
+            cachedColor,
+            refreshingColor,
+            syncedColor,
+            refreshing,
+            refreshProgress,
+            cachePersisted,
+            visibleCards,
+            sectionStates,
+            rowsState.topInfoRows.size,
+            rowsState.visibleRowsCount,
+            overviewMetrics,
+            surfaceColor,
+        ) {
+            buildOsOverviewUiState(
+                context = context,
+                isDark = isDark,
+                inactiveColor = inactiveColor,
+                cachedColor = cachedColor,
+                refreshingColor = refreshingColor,
+                syncedColor = syncedColor,
+                surfaceColor = surfaceColor,
+                refreshing = refreshing,
+                refreshProgress = refreshProgress,
+                cachePersisted = cachePersisted,
+                visibleCards = visibleCards,
+                sectionStates = sectionStates,
+                topInfoCount = rowsState.topInfoRows.size,
+                visibleRowsCount = rowsState.visibleRowsCount,
+                activityCards = activityShortcutCards,
+                shellCommandCards = shellCommandCards,
+                metrics = overviewMetrics,
+            )
+        }
+    val overviewMetricRows =
+        remember(overviewUiState.metrics) {
+            overviewUiState.metrics.chunked(2).mapNotNull { pair ->
+                pair.firstOrNull()?.let { first ->
+                    OsOverviewMetricRow(first = first, second = pair.getOrNull(1))
+                }
             }
         }
-    }
-    val visibleActivityShortcutCards = remember(activityShortcutCards) {
-        activityShortcutCards.filter { it.visible }
-    }
-    val visibleShellCommandCards = remember(shellCommandCards) {
-        shellCommandCards.filter { it.visible }
-    }
-
     return OsPageDerivedState(
         query = rowsState.query,
         displayedTopInfoRows = rowsState.displayedTopInfoRows,
@@ -174,7 +169,5 @@ internal fun rememberOsPageDerivedState(
         prunedLinuxRows = rowsState.prunedLinuxRows,
         overviewUiState = overviewUiState,
         overviewMetricRows = overviewMetricRows,
-        visibleActivityShortcutCards = visibleActivityShortcutCards,
-        visibleShellCommandCards = visibleShellCommandCards
     )
 }

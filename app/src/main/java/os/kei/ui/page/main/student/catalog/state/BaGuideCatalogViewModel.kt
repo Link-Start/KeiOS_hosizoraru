@@ -45,26 +45,22 @@ internal class BaGuideCatalogViewModel(
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = BaGuideCatalogRepository()
-    private val imageRepository = BaGuideCatalogImageRepository()
     private var binding: BaGuideCatalogBinding? = null
     private var loadJob: Job? = null
     private var hydrateJob: Job? = null
     private var hydratedSyncedAtMs: Long = -1L
-    private val listDerivationJobs = mutableMapOf<BaGuideCatalogTab, Job>()
-    private val listDerivationInputs = mutableMapOf<BaGuideCatalogTab, BaGuideCatalogListInput>()
-    private var studentBgmListDerivationJob: Job? = null
-    private var studentBgmListDerivationInput: BaGuideStudentBgmListInput? = null
-    private var favoriteBgmListDerivationJob: Job? = null
-    private var favoriteBgmListDerivationInput: BaGuideFavoriteBgmListInput? = null
-    private var studentBgmDisplayedDerivationJob: Job? = null
-    private var studentBgmDisplayedDerivationInput: BaGuideStudentBgmDisplayedInput? = null
-    private var bgmCacheSnapshotJob: Job? = null
-    private var bgmCacheSnapshotInput: List<GuideBgmFavoriteItem>? = null
-    private var favoriteBgmOfflineCacheJob: Job? = null
-    private var favoriteBgmOfflineCacheInput: List<GuideBgmFavoriteItem>? = null
+    private val listDerivationController =
+        BaGuideCatalogListDerivationController(
+            scope = viewModelScope,
+            repository = repository,
+        )
     private var pendingSafJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
     private var pendingFixedJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
-    private var imageLoadingUrls: Set<String> = emptySet()
+    private val imageController =
+        BaGuideCatalogImageController(
+            scope = viewModelScope,
+            appContext = appContext,
+        )
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
     val dataState: StateFlow<BaGuideCatalogDataUiState> = _dataState.asStateFlow()
@@ -96,37 +92,32 @@ internal class BaGuideCatalogViewModel(
     val filterSortState: StateFlow<BaGuideCatalogFilterSortSnapshot> =
         _filterSortState.asStateFlow()
 
-    private val _catalogListDerivedStates =
-        MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())
     val catalogListDerivedStates: StateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>> =
-        _catalogListDerivedStates.asStateFlow()
+        listDerivationController.catalogListDerivedStates
 
-    private val _studentBgmListDerivedState =
-        MutableStateFlow(BaGuideStudentBgmListDerivedState.Empty)
     val studentBgmListDerivedState: StateFlow<BaGuideStudentBgmListDerivedState> =
-        _studentBgmListDerivedState.asStateFlow()
+        listDerivationController.studentBgmListDerivedState
 
-    private val _favoriteBgmListDerivedState =
-        MutableStateFlow(BaGuideFavoriteBgmListDerivedState.Empty)
     val favoriteBgmListDerivedState: StateFlow<BaGuideFavoriteBgmListDerivedState> =
-        _favoriteBgmListDerivedState.asStateFlow()
+        listDerivationController.favoriteBgmListDerivedState
 
-    private val _studentBgmDisplayedDerivedState =
-        MutableStateFlow(BaGuideStudentBgmDisplayedDerivedState.Empty)
     val studentBgmDisplayedDerivedState: StateFlow<BaGuideStudentBgmDisplayedDerivedState> =
-        _studentBgmDisplayedDerivedState.asStateFlow()
+        listDerivationController.studentBgmDisplayedDerivedState
 
-    private val _bgmCacheSnapshot = MutableStateFlow(BaGuideFavoriteBgmCacheSnapshot())
+    private val bgmCacheController =
+        BaGuideCatalogBgmCacheController(
+            scope = viewModelScope,
+            appContext = appContext,
+            favoriteBgms = favoriteBgms,
+            events = _events,
+        )
     val bgmCacheSnapshot: StateFlow<BaGuideFavoriteBgmCacheSnapshot> =
-        _bgmCacheSnapshot.asStateFlow()
+        bgmCacheController.bgmCacheSnapshot
 
-    private val _favoriteBgmOfflineCacheState =
-        MutableStateFlow(BaGuideFavoriteBgmOfflineCacheUiState())
     val favoriteBgmOfflineCacheState: StateFlow<BaGuideFavoriteBgmOfflineCacheUiState> =
-        _favoriteBgmOfflineCacheState.asStateFlow()
-    private val _imageState = MutableStateFlow(BaGuideCatalogImageUiState())
+        bgmCacheController.favoriteBgmOfflineCacheState
     val imageState: StateFlow<BaGuideCatalogImageUiState> =
-        _imageState.asStateFlow()
+        imageController.state
 
     val routeState: StateFlow<BaGuideCatalogRouteState> =
         buildBaGuideCatalogRouteStateFlow(
@@ -346,58 +337,7 @@ internal class BaGuideCatalogViewModel(
     }
 
     fun requestCatalogImages(imageUrls: List<String>) {
-        val normalizedUrls =
-            imageUrls
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-                .distinct()
-        if (normalizedUrls.isEmpty()) return
-
-        val currentState = _imageState.value
-        val missingUrls =
-            normalizedUrls.filter { imageUrl ->
-                !currentState.bitmaps.containsKey(imageUrl) &&
-                    !currentState.missingUrls.contains(imageUrl) &&
-                    !imageLoadingUrls.contains(imageUrl) &&
-                    imageRepository.cachedBitmap(imageUrl) == null
-            }
-        val cachedBitmaps =
-            normalizedUrls
-                .filterNot { currentState.bitmaps.containsKey(it) }
-                .mapNotNull { imageUrl ->
-                    imageRepository.cachedBitmap(imageUrl)?.let { bitmap -> imageUrl to bitmap }
-                }.toMap()
-        if (cachedBitmaps.isNotEmpty()) {
-            _imageState.update { state ->
-                state.copy(bitmaps = state.bitmaps + cachedBitmaps)
-            }
-        }
-        if (missingUrls.isEmpty()) return
-
-        imageLoadingUrls += missingUrls
-        viewModelScope.launch {
-            try {
-                val result =
-                    imageRepository.loadImages(
-                        context = appContext,
-                        imageUrls = missingUrls,
-                    )
-                _imageState.update { state ->
-                    state.copy(
-                        bitmaps = state.bitmaps + result.bitmaps,
-                        missingUrls = state.missingUrls + result.missingUrls,
-                    )
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Throwable) {
-                _imageState.update { state ->
-                    state.copy(missingUrls = state.missingUrls + missingUrls)
-                }
-            } finally {
-                imageLoadingUrls -= missingUrls
-            }
-        }
+        imageController.requestImages(imageUrls)
     }
 
     fun ensureCatalogFavoritesLoaded() {
@@ -501,9 +441,9 @@ internal class BaGuideCatalogViewModel(
         if (normalizedAudioUrl.isBlank()) return
         viewModelScope.launch {
             repository.removeBgmFavorite(normalizedAudioUrl)
-            refreshBgmCacheStates(
+            bgmCacheController.refreshBgmCacheStates(
                 allFavorites = favoriteBgms.value,
-                displayedFavorites = favoriteBgmOfflineCacheInput,
+                displayedFavorites = null,
             )
             if (showToast) {
                 _events.emit(BaGuideCatalogEvent.BgmFavoriteRemoved)
@@ -551,205 +491,54 @@ internal class BaGuideCatalogViewModel(
     }
 
     fun requestCatalogListDerivedState(input: BaGuideCatalogListInput) {
-        val previousInput = listDerivationInputs[input.tab]
-        val hasDerivedState = _catalogListDerivedStates.value.containsKey(input.tab)
-        if (previousInput == input && hasDerivedState) return
-
-        listDerivationInputs[input.tab] = input
-        listDerivationJobs[input.tab]?.cancel()
-        _catalogListDerivedStates.update { states ->
-            val current = states[input.tab] ?: BaGuideCatalogListDerivedState.Empty
-            states + (input.tab to current.copy(deriving = true))
-        }
-        listDerivationJobs[input.tab] =
-            viewModelScope.launch {
-                val derivedState = repository.deriveCatalogListState(input)
-                if (listDerivationInputs[input.tab] != input) return@launch
-                _catalogListDerivedStates.update { states ->
-                    states + (input.tab to derivedState)
-                }
-            }
+        listDerivationController.requestCatalogListState(input)
     }
 
     fun requestStudentBgmListDerivedState(input: BaGuideStudentBgmListInput) {
-        val previousInput = studentBgmListDerivationInput
-        if (previousInput == input && _studentBgmListDerivedState.value !== BaGuideStudentBgmListDerivedState.Empty) return
-
-        studentBgmListDerivationInput = input
-        studentBgmListDerivationJob?.cancel()
-        _studentBgmListDerivedState.update { state ->
-            state.copy(deriving = true)
-        }
-        studentBgmListDerivationJob =
-            viewModelScope.launch {
-                val derivedState = repository.deriveStudentBgmListState(input)
-                if (studentBgmListDerivationInput != input) return@launch
-                _studentBgmListDerivedState.value = derivedState
-            }
+        listDerivationController.requestStudentBgmListState(input)
     }
 
     fun requestFavoriteBgmListDerivedState(input: BaGuideFavoriteBgmListInput) {
-        val previousInput = favoriteBgmListDerivationInput
-        if (previousInput == input && _favoriteBgmListDerivedState.value !== BaGuideFavoriteBgmListDerivedState.Empty) return
-
-        favoriteBgmListDerivationInput = input
-        favoriteBgmListDerivationJob?.cancel()
-        _favoriteBgmListDerivedState.update { state ->
-            state.copy(deriving = true)
-        }
-        favoriteBgmListDerivationJob =
-            viewModelScope.launch {
-                val derivedState = repository.deriveFavoriteBgmListState(input)
-                if (favoriteBgmListDerivationInput != input) return@launch
-                _favoriteBgmListDerivedState.value = derivedState
-            }
+        listDerivationController.requestFavoriteBgmListState(input)
     }
 
     fun requestStudentBgmDisplayedDerivedState(input: BaGuideStudentBgmDisplayedInput) {
-        val previousInput = studentBgmDisplayedDerivationInput
-        if (previousInput == input && _studentBgmDisplayedDerivedState.value.input == input) return
-
-        studentBgmDisplayedDerivationInput = input
-        studentBgmDisplayedDerivationJob?.cancel()
-        _studentBgmDisplayedDerivedState.update { state ->
-            state.copy(
-                input = input,
-                deriving = true,
-            )
-        }
-        studentBgmDisplayedDerivationJob =
-            viewModelScope.launch {
-                val derivedState = repository.deriveStudentBgmDisplayedState(input)
-                if (studentBgmDisplayedDerivationInput != input) return@launch
-                _studentBgmDisplayedDerivedState.value = derivedState
-            }
+        listDerivationController.requestStudentBgmDisplayedState(input)
     }
 
     fun requestBgmCacheSnapshot(
         favorites: List<GuideBgmFavoriteItem>,
         force: Boolean = false,
-    ) {
-        if (!force && bgmCacheSnapshotInput == favorites) return
-        bgmCacheSnapshotInput = favorites
-        bgmCacheSnapshotJob?.cancel()
-        bgmCacheSnapshotJob =
-            viewModelScope.launch {
-                _bgmCacheSnapshot.value =
-                    BaGuideFavoriteBgmCacheRepository.loadCacheSnapshot(
-                        context = appContext,
-                        favorites = favorites,
-                    )
-            }
-    }
+    ) = bgmCacheController.requestBgmCacheSnapshot(
+        favorites = favorites,
+        force = force,
+    )
 
     fun cacheMissingBgms(favorites: List<GuideBgmFavoriteItem>) {
-        viewModelScope.launch {
-            val targetCount =
-                BaGuideFavoriteBgmCacheRepository.cacheMissingFavorites(
-                    context = appContext,
-                    favorites = favorites,
-                )
-            refreshBgmCacheStates(
-                allFavorites = favoriteBgms.value,
-                displayedFavorites = favoriteBgmOfflineCacheInput,
-            )
-            _events.emit(BaGuideCatalogEvent.BgmCacheBatchDone(targetCount))
-        }
+        bgmCacheController.cacheMissingBgms(favorites)
     }
 
     fun cleanInvalidBgmCache(favorites: List<GuideBgmFavoriteItem>) {
-        viewModelScope.launch {
-            val cleaned =
-                BaGuideFavoriteBgmCacheRepository.cleanInvalidFavorites(
-                    context = appContext,
-                    favorites = favorites,
-                )
-            refreshBgmCacheStates(
-                allFavorites = favoriteBgms.value,
-                displayedFavorites = favoriteBgmOfflineCacheInput,
-            )
-            _events.emit(BaGuideCatalogEvent.BgmCacheCleaned(cleaned))
-        }
+        bgmCacheController.cleanInvalidBgmCache(favorites)
     }
 
     fun requestFavoriteBgmOfflineCache(
         favorites: List<GuideBgmFavoriteItem>,
         isPageActive: Boolean,
         force: Boolean = false,
-    ) {
-        if (!isPageActive) return
-        if (!force && favoriteBgmOfflineCacheInput == favorites) return
-        favoriteBgmOfflineCacheInput = favorites
-        favoriteBgmOfflineCacheJob?.cancel()
-        favoriteBgmOfflineCacheJob =
-            viewModelScope.launch {
-                val offlineAudioUrls =
-                    BaGuideFavoriteBgmCacheRepository.loadCachedAudioUrls(
-                        context = appContext,
-                        favorites = favorites,
-                    )
-                _favoriteBgmOfflineCacheState.update { state ->
-                    state.copy(offlineAudioUrls = offlineAudioUrls)
-                }
-            }
-    }
+    ) = bgmCacheController.requestFavoriteBgmOfflineCache(
+        favorites = favorites,
+        isPageActive = isPageActive,
+        force = force,
+    )
 
     fun toggleFavoriteBgmOfflineCache(
         favorite: GuideBgmFavoriteItem,
         displayedFavorites: List<GuideBgmFavoriteItem>,
-    ) {
-        val audioUrl = favorite.audioUrl
-        if (audioUrl.isBlank()) return
-        val current = _favoriteBgmOfflineCacheState.value
-        if (audioUrl in current.offlineAudioUrls) {
-            viewModelScope.launch {
-                BaGuideFavoriteBgmCacheRepository.clearFavorite(appContext, favorite)
-                _favoriteBgmOfflineCacheState.update { state ->
-                    state.copy(offlineAudioUrls = state.offlineAudioUrls - audioUrl)
-                }
-                refreshBgmCacheStates(
-                    allFavorites = favoriteBgms.value,
-                    displayedFavorites = displayedFavorites,
-                )
-                _events.emit(BaGuideCatalogEvent.FavoriteBgmCacheRemoved)
-            }
-            return
-        }
-        if (audioUrl in current.cachingAudioUrls) return
-        _favoriteBgmOfflineCacheState.update { state ->
-            state.copy(cachingAudioUrls = state.cachingAudioUrls + audioUrl)
-        }
-        viewModelScope.launch {
-            val success =
-                try {
-                    BaGuideFavoriteBgmCacheRepository.cacheFavorite(appContext, favorite)
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (_: Throwable) {
-                    false
-                } finally {
-                    _favoriteBgmOfflineCacheState.update { state ->
-                        state.copy(cachingAudioUrls = state.cachingAudioUrls - audioUrl)
-                    }
-                }
-            if (success) {
-                _favoriteBgmOfflineCacheState.update { state ->
-                    state.copy(offlineAudioUrls = state.offlineAudioUrls + audioUrl)
-                }
-            }
-            refreshBgmCacheStates(
-                allFavorites = favoriteBgms.value,
-                displayedFavorites = displayedFavorites,
-            )
-            _events.emit(
-                if (success) {
-                    BaGuideCatalogEvent.FavoriteBgmCacheSuccess
-                } else {
-                    BaGuideCatalogEvent.FavoriteBgmCacheFailed
-                },
-            )
-        }
-    }
+    ) = bgmCacheController.toggleFavoriteBgmOfflineCache(
+        favorite = favorite,
+        displayedFavorites = displayedFavorites,
+    )
 
     private fun loadCatalog(
         manualRefresh: Boolean,
@@ -810,36 +599,9 @@ internal class BaGuideCatalogViewModel(
     override fun onCleared() {
         loadJob?.cancel()
         hydrateJob?.cancel()
-        listDerivationJobs.values.forEach { job -> job.cancel() }
-        studentBgmListDerivationJob?.cancel()
-        favoriteBgmListDerivationJob?.cancel()
-        studentBgmDisplayedDerivationJob?.cancel()
-        bgmCacheSnapshotJob?.cancel()
-        favoriteBgmOfflineCacheJob?.cancel()
-        imageLoadingUrls = emptySet()
+        listDerivationController.cancel()
+        bgmCacheController.cancel()
+        imageController.clearLoadingState()
         super.onCleared()
-    }
-
-    private suspend fun refreshBgmCacheStates(
-        allFavorites: List<GuideBgmFavoriteItem>,
-        displayedFavorites: List<GuideBgmFavoriteItem>?,
-    ) {
-        bgmCacheSnapshotInput = allFavorites
-        _bgmCacheSnapshot.value =
-            BaGuideFavoriteBgmCacheRepository.loadCacheSnapshot(
-                context = appContext,
-                favorites = allFavorites,
-            )
-        displayedFavorites?.let { favorites ->
-            favoriteBgmOfflineCacheInput = favorites
-            val offlineAudioUrls =
-                BaGuideFavoriteBgmCacheRepository.loadCachedAudioUrls(
-                    context = appContext,
-                    favorites = favorites,
-                )
-            _favoriteBgmOfflineCacheState.update { state ->
-                state.copy(offlineAudioUrls = offlineAudioUrls)
-            }
-        }
     }
 }

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.home.state
 import androidx.compose.ui.graphics.Color
 import org.junit.Test
 import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -14,6 +15,12 @@ class HomePageContentDeriverTest {
         val state =
             deriveHomePageContentState(
                 shizukuStatus = "granted",
+                appOverview =
+                    HomeAppOverview(
+                        versionName = "1.8.0",
+                        versionCode = 80L,
+                        loaded = true,
+                    ),
                 mcpOverview =
                     HomeMcpOverview(
                         running = true,
@@ -59,6 +66,7 @@ class HomePageContentDeriverTest {
         assertEquals("120/240", state.baFocusLine)
         assertEquals("fresh", state.githubCacheFreshnessLine)
         assertEquals("stale", state.baCacheFreshnessLine)
+        assertEquals("v1.8.0 (80)", state.appVersionText)
     }
 
     private fun freshCacheSnapshot(): CacheFreshnessSnapshot =
@@ -112,7 +120,8 @@ class HomePageContentDeriverTest {
             cacheStateFresh = "fresh",
             cacheStateStale = "stale",
             cacheStateEmpty = "empty",
-            appVersionText = "v1",
+            appVersionUnknownFallback = "unknown version",
+            appVersionUnknown = "unknown",
             networkLanShort = "LAN",
             networkLocalOnlyShort = "local",
             mcpStatusRunning = "running",

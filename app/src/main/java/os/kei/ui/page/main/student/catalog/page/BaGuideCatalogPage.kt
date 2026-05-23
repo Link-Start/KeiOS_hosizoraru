@@ -180,14 +180,11 @@ fun BaGuideCatalogPage(
             onCacheAllBgm = { pageActions.onCacheMissingBgms(routeState.favoriteBgms) },
             onCleanInvalidBgmCache = { pageActions.onCleanInvalidBgmCache(routeState.favoriteBgms) },
         )
-    LaunchedEffect(routeState.favoriteBgms) {
-        pageActions.onRequestBgmCacheSnapshot(routeState.favoriteBgms, false)
-    }
-    LaunchedEffect(pageState.showTransferSheet) {
-        if (pageState.showTransferSheet) {
-            pageActions.onRequestBgmCacheSnapshot(routeState.favoriteBgms, true)
-        }
-    }
+    BaGuideCatalogBgmCacheEffects(
+        pageActions = pageActions,
+        favoriteBgms = routeState.favoriteBgms,
+        showTransferSheet = pageState.showTransferSheet,
+    )
     val transferExportAction =
         rememberBaGuideCatalogJsonExportAction(
             context = context,

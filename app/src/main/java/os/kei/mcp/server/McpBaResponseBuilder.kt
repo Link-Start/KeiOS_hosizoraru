@@ -17,8 +17,8 @@ import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
 import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.ba.support.fractionalApPart
 import os.kei.ui.page.main.ba.support.gameKeeServerId
+import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.BaStudentGuideStore
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.clearBaGuideCatalogCache
@@ -35,6 +35,7 @@ internal class McpBaResponseBuilder(
     private val environment: McpToolEnvironment
 ) {
     private val appContext get() = environment.appContext
+    private val bgmFavoriteRepository = BaGuideBgmFavoriteRepository()
     private fun resolveServerIndex(requestedServerIndex: Int?): Int {
         return requestedServerIndex?.coerceIn(0, 2) ?: BASettingsStore.loadSnapshot().serverIndex
     }
@@ -378,7 +379,7 @@ internal class McpBaResponseBuilder(
         }
     }
 
-    fun buildGuideBgmFavoritesText(
+    suspend fun buildGuideBgmFavoritesText(
         action: String,
         query: String,
         limit: Int,
@@ -386,14 +387,14 @@ internal class McpBaResponseBuilder(
         apply: Boolean
     ): String {
         return when (action.trim().lowercase(Locale.ROOT)) {
-            "export" -> GuideBgmFavoriteStore.buildFavoritesExportJson()
+            "export" -> bgmFavoriteRepository.buildExportJson()
             "import" -> buildGuideBgmFavoritesImportText(rawJson = rawJson, apply = apply)
             else -> buildGuideBgmFavoritesListText(query = query, limit = limit)
         }
     }
 
     private fun buildGuideBgmFavoritesListText(query: String, limit: Int): String {
-        val favorites = GuideBgmFavoriteStore.favoritesSnapshot()
+        val favorites = bgmFavoriteRepository.favoritesSnapshot()
         val key = query.trim().lowercase(Locale.ROOT)
         val filtered = if (key.isBlank()) {
             favorites
@@ -420,12 +421,12 @@ internal class McpBaResponseBuilder(
         }.trim()
     }
 
-    private fun buildGuideBgmFavoritesImportText(rawJson: String, apply: Boolean): String {
+    private suspend fun buildGuideBgmFavoritesImportText(rawJson: String, apply: Boolean): String {
         val importedUrls = parseBgmFavoriteAudioUrls(rawJson)
-        val existingUrls = GuideBgmFavoriteStore.favoritesSnapshot().map { it.audioUrl }.toSet()
+        val existingUrls = bgmFavoriteRepository.favoritesSnapshot().map { it.audioUrl }.toSet()
         val addedCount = importedUrls.count { it !in existingUrls }
         val updatedCount = importedUrls.count { it in existingUrls }
-        val result = if (apply) GuideBgmFavoriteStore.importFavoritesJsonMerged(rawJson) else null
+        val result = if (apply) bgmFavoriteRepository.importMerged(rawJson) else null
         return buildString {
             appendLine("apply=$apply")
             appendLine("importedCount=${result?.importedCount ?: importedUrls.size}")

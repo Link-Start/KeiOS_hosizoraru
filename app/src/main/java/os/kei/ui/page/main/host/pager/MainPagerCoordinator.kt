@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -34,6 +35,7 @@ internal data class MainPagerCoordinatorState(
     val pagerState: MainPagerStateContract,
     val pagerRuntime: MainPagerRuntimeSnapshot,
     val mainPagerBeyondViewportPageCount: Int,
+    val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
@@ -226,6 +228,7 @@ internal fun rememberMainPagerCoordinator(
             pagerState = pagerState,
             pagerRuntime = pagerRuntime,
             mainPagerBeyondViewportPageCount = preloadPolicy.mainPagerBeyondViewportPageCount,
+            homeAppOverview = homeOverviewState.homeAppOverview,
             homeMcpOverview = homeOverviewState.homeMcpOverview,
             homeGitHubOverview = homeOverviewState.homeGitHubOverview,
             homeBaOverview = homeOverviewState.homeBaOverview,

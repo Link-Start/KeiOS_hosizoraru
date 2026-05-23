@@ -39,7 +39,10 @@ import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
+import os.kei.ui.page.main.github.actions.GitHubActionsSheetInput
+import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
 import os.kei.ui.page.main.github.actions.GitHubActionsUiStateStore
+import os.kei.ui.page.main.github.actions.deriveGitHubActionsSheetState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.picker.filterAndSortGitHubTrackAppCandidates
@@ -54,6 +57,15 @@ import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.GitHubShareImportPreview
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
+import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
+import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
+import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailInput
+import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailUiState
+import os.kei.ui.page.main.github.sheet.deriveGitHubApkInfoSheetState
+import os.kei.ui.page.main.github.sheet.deriveGitHubManagedInstallConfirmSheetState
+import os.kei.ui.page.main.github.sheet.deriveGitHubReleaseNotesDetailState
 
 @Immutable
 internal data class GitHubTrackEditorDraft(
@@ -126,6 +138,28 @@ internal class GitHubPageRepository(
     private val assetBridge = GitHubPageAssetBridge(ioDispatcher)
 
     suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState = contentStateDeriver.build(input)
+
+    suspend fun buildApkInfoSheetState(input: GitHubApkInfoSheetInput): GitHubApkInfoSheetUiState =
+        withContext(defaultDispatcher) {
+            deriveGitHubApkInfoSheetState(input)
+        }
+
+    suspend fun buildReleaseNotesDetailState(input: GitHubReleaseNotesDetailInput): GitHubReleaseNotesDetailUiState =
+        withContext(defaultDispatcher) {
+            deriveGitHubReleaseNotesDetailState(input)
+        }
+
+    suspend fun buildActionsSheetState(input: GitHubActionsSheetInput): GitHubActionsSheetUiState =
+        withContext(defaultDispatcher) {
+            deriveGitHubActionsSheetState(input)
+        }
+
+    suspend fun buildManagedInstallConfirmSheetState(
+        input: GitHubManagedInstallConfirmSheetInput,
+    ): GitHubManagedInstallConfirmSheetUiState =
+        withContext(defaultDispatcher) {
+            deriveGitHubManagedInstallConfirmSheetState(input)
+        }
 
     suspend fun buildAppPickerState(input: GitHubTrackAppPickerInput): GitHubTrackAppPickerDerivedState =
         withContext(defaultDispatcher) {

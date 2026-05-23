@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.actions
 
 import androidx.compose.runtime.Composable
@@ -6,6 +8,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
+import os.kei.ui.page.main.github.page.GitHubActionsArtifactFilter
 import os.kei.ui.page.main.github.page.GitHubPageState
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -19,6 +22,7 @@ internal fun GitHubActionsSheet(
     show: Boolean,
     backdrop: LayerBackdrop,
     state: GitHubPageState,
+    derivedState: GitHubActionsSheetUiState,
     onDismissRequest: () -> Unit,
     onRefresh: () -> Unit,
     onSelectWorkflow: (Long) -> Unit,
@@ -29,15 +33,14 @@ internal fun GitHubActionsSheet(
     onWorkflowsExpandedChange: (Boolean) -> Unit,
     onRunsExpandedChange: (Boolean) -> Unit,
     onArtifactsExpandedChange: (Boolean) -> Unit,
+    onArtifactFilterChange: (GitHubActionsArtifactFilter) -> Unit,
     onRefreshRun: (Long) -> Unit,
     onInstallArtifact: (Long, Long) -> Unit,
     onDownloadArtifact: (Long, Long) -> Unit,
     onShareArtifact: (Long, Long) -> Unit,
     onOpenRun: () -> Unit,
-    onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit
+    onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit,
 ) {
-    val refreshing = state.actionsLoading || state.actionsRunsLoading ||
-        state.actionsStatusRefreshingRunIds.any { it.value }
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.github_actions_sheet_title),
@@ -49,7 +52,7 @@ internal fun GitHubActionsSheet(
                 variant = GlassVariant.Bar,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_close),
-                onClick = onDismissRequest
+                onClick = onDismissRequest,
             )
         },
         endAction = {
@@ -57,20 +60,22 @@ internal fun GitHubActionsSheet(
                 backdrop = backdrop,
                 variant = GlassVariant.Bar,
                 icon = appLucideRefreshIcon(),
-                contentDescription = stringResource(
-                    if (refreshing) {
-                        R.string.common_loading
-                    } else {
-                        R.string.github_actions_sheet_cd_refresh
-                    }
-                ),
-                enabled = !refreshing,
-                onClick = onRefresh
+                contentDescription =
+                    stringResource(
+                        if (derivedState.refreshing) {
+                            R.string.common_loading
+                        } else {
+                            R.string.github_actions_sheet_cd_refresh
+                        },
+                    ),
+                enabled = !derivedState.refreshing,
+                onClick = onRefresh,
             )
-        }
+        },
     ) {
         GitHubActionsSheetContent(
             state = state,
+            derivedState = derivedState,
             backdrop = backdrop,
             onSelectWorkflow = onSelectWorkflow,
             onSelectBranch = onSelectBranch,
@@ -80,12 +85,13 @@ internal fun GitHubActionsSheet(
             onWorkflowsExpandedChange = onWorkflowsExpandedChange,
             onRunsExpandedChange = onRunsExpandedChange,
             onArtifactsExpandedChange = onArtifactsExpandedChange,
+            onArtifactFilterChange = onArtifactFilterChange,
             onRefreshRun = onRefreshRun,
             onInstallArtifact = onInstallArtifact,
             onDownloadArtifact = onDownloadArtifact,
             onShareArtifact = onShareArtifact,
             onOpenRun = onOpenRun,
-            onOpenArtifactDetail = onOpenArtifactDetail
+            onOpenArtifactDetail = onOpenArtifactDetail,
         )
     }
 }

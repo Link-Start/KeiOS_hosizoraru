@@ -19,30 +19,29 @@ internal class FeedbackIssueViewModel : ViewModel() {
         viewModelScope.launch {
             val appContext = context.applicationContext
             _uiState.update { state -> state.copy(loading = true, errorMessage = "") }
-            val deviceInfo = repository.loadDeviceInfo(appContext)
-            val logStats = repository.loadLogStats(appContext)
-            val logPreview = repository.loadLogPreview(appContext)
-            val sanitizedLogPreview = FeedbackIssueMarkdown.redactSensitiveText(logPreview.text)
-            val title = _uiState.value.title.ifBlank {
-                FeedbackIssueMarkdown.defaultTitle(deviceInfo)
-            }
-            val body = _uiState.value.body.ifBlank {
-                FeedbackIssueMarkdown.buildBody(
-                    deviceInfo = deviceInfo,
-                    logPreview = sanitizedLogPreview,
-                    logPreviewTruncated = logPreview.truncated
-                )
-            }
+            val snapshot = repository.loadDraftSnapshot(appContext)
+            val title =
+                _uiState.value.title.ifBlank {
+                    FeedbackIssueMarkdown.defaultTitle(snapshot.deviceInfo)
+                }
+            val body =
+                _uiState.value.body.ifBlank {
+                    FeedbackIssueMarkdown.buildBody(
+                        deviceInfo = snapshot.deviceInfo,
+                        logPreview = snapshot.logPreview,
+                        logPreviewTruncated = snapshot.logPreviewTruncated,
+                    )
+                }
             _uiState.update { state ->
                 state.copy(
                     loading = false,
-                    deviceInfo = deviceInfo,
-                    logStats = logStats,
-                    logPreview = sanitizedLogPreview,
-                    logPreviewTruncated = logPreview.truncated,
-                    apiTokenAvailable = repository.hasGitHubApiToken(),
+                    deviceInfo = snapshot.deviceInfo,
+                    logStats = snapshot.logStats,
+                    logPreview = snapshot.logPreview,
+                    logPreviewTruncated = snapshot.logPreviewTruncated,
+                    apiTokenAvailable = snapshot.apiTokenAvailable,
                     title = title,
-                    body = body
+                    body = body,
                 )
             }
         }
@@ -61,7 +60,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
             state.copy(
                 pendingSubmitMode = mode,
                 errorMessage = "",
-                statusMessage = ""
+                statusMessage = "",
             )
         }
     }
@@ -75,13 +74,13 @@ internal class FeedbackIssueViewModel : ViewModel() {
         return FeedbackIssueMarkdown.buildBrowserIssueUrl(
             title = state.title,
             body = state.body,
-            deviceInfo = state.deviceInfo
+            deviceInfo = state.deviceInfo,
         )
     }
 
     fun submitViaApi(
         context: Context,
-        onSuccessOpenUrl: (String) -> Unit
+        onSuccessOpenUrl: (String) -> Unit,
     ) {
         val title = _uiState.value.title.trim()
         val body = _uiState.value.body.trim()
@@ -89,7 +88,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
             _uiState.update { state ->
                 state.copy(
                     pendingSubmitMode = null,
-                    errorMessage = context.getString(os.kei.R.string.feedback_issue_error_empty_draft)
+                    errorMessage = context.getString(os.kei.R.string.feedback_issue_error_empty_draft),
                 )
             }
             return
@@ -101,7 +100,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
                     pendingSubmitMode = null,
                     submittingIssue = true,
                     errorMessage = "",
-                    statusMessage = ""
+                    statusMessage = "",
                 )
             }
             when (val result = repository.submitIssueViaApi(title = title, body = body)) {
@@ -109,7 +108,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
                     _uiState.update { state ->
                         state.copy(
                             submittingIssue = false,
-                            statusMessage = context.getString(os.kei.R.string.feedback_issue_status_created)
+                            statusMessage = context.getString(os.kei.R.string.feedback_issue_status_created),
                         )
                     }
                     onSuccessOpenUrl(result.issueUrl)
@@ -120,7 +119,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
                         state.copy(
                             submittingIssue = false,
                             errorMessage = context.getString(os.kei.R.string.feedback_issue_error_missing_token),
-                            apiTokenAvailable = false
+                            apiTokenAvailable = false,
                         )
                     }
                 }
@@ -129,11 +128,12 @@ internal class FeedbackIssueViewModel : ViewModel() {
                     _uiState.update { state ->
                         state.copy(
                             submittingIssue = false,
-                            errorMessage = context.getString(
-                                os.kei.R.string.feedback_issue_error_api_failed,
-                                result.statusCode?.toString() ?: "-",
-                                result.message
-                            )
+                            errorMessage =
+                                context.getString(
+                                    os.kei.R.string.feedback_issue_error_api_failed,
+                                    result.statusCode?.toString() ?: "-",
+                                    result.message,
+                                ),
                         )
                     }
                 }
@@ -143,7 +143,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
 
     fun exportZip(
         context: Context,
-        uri: Uri
+        uri: Uri,
     ) {
         if (_uiState.value.exportingZip) return
         viewModelScope.launch {
@@ -157,16 +157,21 @@ internal class FeedbackIssueViewModel : ViewModel() {
                     state.copy(
                         exportingZip = false,
                         lastExportedFileName = fileName,
-                        statusMessage = context.getString(os.kei.R.string.feedback_issue_status_exported)
+                        statusMessage = context.getString(os.kei.R.string.feedback_issue_status_exported),
                     )
                 } else {
                     state.copy(
                         exportingZip = false,
-                        errorMessage = context.getString(
-                            os.kei.R.string.settings_log_toast_export_failed,
-                            result.exceptionOrNull()?.message
-                                ?: result.exceptionOrNull()?.javaClass?.simpleName.orEmpty()
-                        )
+                        errorMessage =
+                            context.getString(
+                                os.kei.R.string.settings_log_toast_export_failed,
+                                result.exceptionOrNull()?.message
+                                    ?: result
+                                        .exceptionOrNull()
+                                        ?.javaClass
+                                        ?.simpleName
+                                        .orEmpty(),
+                            ),
                     )
                 }
             }
@@ -185,16 +190,21 @@ internal class FeedbackIssueViewModel : ViewModel() {
                 if (result.isSuccess) {
                     state.copy(
                         clearingLogs = false,
-                        statusMessage = context.getString(os.kei.R.string.settings_log_toast_cleared)
+                        statusMessage = context.getString(os.kei.R.string.settings_log_toast_cleared),
                     )
                 } else {
                     state.copy(
                         clearingLogs = false,
-                        errorMessage = context.getString(
-                            os.kei.R.string.settings_log_toast_clear_failed,
-                            result.exceptionOrNull()?.message
-                                ?: result.exceptionOrNull()?.javaClass?.simpleName.orEmpty()
-                        )
+                        errorMessage =
+                            context.getString(
+                                os.kei.R.string.settings_log_toast_clear_failed,
+                                result.exceptionOrNull()?.message
+                                    ?: result
+                                        .exceptionOrNull()
+                                        ?.javaClass
+                                        ?.simpleName
+                                        .orEmpty(),
+                            ),
                     )
                 }
             }
@@ -202,9 +212,7 @@ internal class FeedbackIssueViewModel : ViewModel() {
         }
     }
 
-    fun suggestLogExportFileName(
-        onReady: (String) -> Unit
-    ) {
+    fun suggestLogExportFileName(onReady: (String) -> Unit) {
         viewModelScope.launch {
             onReady(repository.buildLogExportFileName())
         }

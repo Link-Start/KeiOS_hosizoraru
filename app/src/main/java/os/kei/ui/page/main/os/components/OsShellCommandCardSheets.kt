@@ -29,7 +29,6 @@ import os.kei.ui.page.main.os.osLucideRunIcon
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.ShellCommandInputField
 import os.kei.ui.page.main.os.shell.defaultOsShellCommandCardTitle
-import os.kei.ui.page.main.os.shell.isBuiltInShellCommandCard
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
@@ -175,19 +174,14 @@ internal fun OsShellCommandVisibilityManagerSheet(
             verticalSpacing = 10.dp,
         ) {
             val shellRunnerTitle = stringResource(R.string.os_shell_card_title)
-            val filteredCards =
-                remember(cards, query) {
-                    cards.filter { card ->
-                        card.matchesShellVisibilityQuery(query)
-                    }
+            val presentationState =
+                remember(cards, shellRunnerTitle, query) {
+                    deriveOsShellVisibilityPresentationState(
+                        cards = cards,
+                        shellRunnerTitle = shellRunnerTitle,
+                        query = query,
+                    )
                 }
-            val cardGroups =
-                remember(filteredCards) {
-                    filteredCards.splitByShellCommandCardType()
-                }
-            val showShellRunner =
-                shellRunnerTitle.contains(query.trim(), ignoreCase = true) ||
-                    query.isBlank()
             SheetSectionCard(verticalSpacing = 8.dp) {
                 AppLiquidSearchField(
                     value = query,
@@ -199,7 +193,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     textColor = MiuixTheme.colorScheme.primary,
                 )
             }
-            if (showShellRunner) {
+            if (presentationState.showShellRunner) {
                 SheetSectionTitle(
                     text =
                         visibilityGroupTitle(
@@ -215,16 +209,16 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     )
                 }
             }
-            if (cardGroups.builtIn.isNotEmpty()) {
+            if (presentationState.builtInCards.isNotEmpty()) {
                 SheetSectionTitle(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_built_in),
-                            count = cardGroups.builtIn.size,
+                            count = presentationState.builtInCards.size,
                         ),
                 )
                 SheetSectionCard(verticalSpacing = 10.dp) {
-                    cardGroups.builtIn.forEach { item ->
+                    presentationState.builtInCards.forEach { item ->
                         ShellCommandVisibilityRow(
                             card = item,
                             builtIn = true,
@@ -233,16 +227,16 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     }
                 }
             }
-            if (cardGroups.custom.isNotEmpty()) {
+            if (presentationState.customCards.isNotEmpty()) {
                 SheetSectionTitle(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_custom),
-                            count = cardGroups.custom.size,
+                            count = presentationState.customCards.size,
                         ),
                 )
                 SheetSectionCard(verticalSpacing = 10.dp) {
-                    cardGroups.custom.forEach { item ->
+                    presentationState.customCards.forEach { item ->
                         ShellCommandVisibilityRow(
                             card = item,
                             builtIn = false,
@@ -251,7 +245,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                     }
                 }
             }
-            if (!showShellRunner && filteredCards.isEmpty()) {
+            if (presentationState.emptySearchActive) {
                 SheetSectionCard(verticalSpacing = 10.dp) {
                     Text(
                         text = stringResource(R.string.common_no_matched_results),
@@ -297,27 +291,6 @@ internal fun OsShellCommandVisibilityManagerSheet(
         }
     }
 }
-
-private fun List<OsShellCommandCard>.splitByShellCommandCardType(): ShellCommandCardGroups {
-    val builtIn = ArrayList<OsShellCommandCard>()
-    val custom = ArrayList<OsShellCommandCard>()
-    forEach { card ->
-        if (isBuiltInShellCommandCard(card)) {
-            builtIn += card
-        } else {
-            custom += card
-        }
-    }
-    return ShellCommandCardGroups(
-        builtIn = builtIn,
-        custom = custom,
-    )
-}
-
-private data class ShellCommandCardGroups(
-    val builtIn: List<OsShellCommandCard>,
-    val custom: List<OsShellCommandCard>,
-)
 
 @Composable
 private fun ShellRunnerVisibilityRow(
@@ -391,14 +364,6 @@ private fun ShellCommandVisibilityRow(
             },
         )
     }
-}
-
-private fun OsShellCommandCard.matchesShellVisibilityQuery(query: String): Boolean {
-    val normalized = query.trim()
-    if (normalized.isBlank()) return true
-    return title.contains(normalized, ignoreCase = true) ||
-        subtitle.contains(normalized, ignoreCase = true) ||
-        command.contains(normalized, ignoreCase = true)
 }
 
 @Composable

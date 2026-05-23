@@ -1,23 +1,31 @@
 package os.kei.ui.page.main.github.page
 
 import android.content.Context
+import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.model.GitHubActionsArtifactMatch
+import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubActionsRunMatch
+import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
+import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubShareImportFlowMode
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
+import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.page.action.GitHubActionsActions
 import os.kei.ui.page.main.github.page.action.GitHubAssetActions
 import os.kei.ui.page.main.github.page.action.GitHubConfigActions
@@ -56,10 +64,7 @@ internal class GitHubPageActions(
     private val overviewActions = GitHubOverviewActionFacade(env)
     private val shareImportActions = GitHubShareImportActionFacade(env)
     private val packageChangedActions = GitHubPackageChangedActionFacade(env, refreshActions, assetActions)
-
-    private companion object {
-        const val RETRY_FAILED_TRACKED_PARALLELISM = 3
-    }
+    private val trackedRefreshActions = GitHubTrackedRefreshActionFacade(env, refreshActions, assetActions)
 
     fun openStrategySheet() = configActions.openStrategySheet()
 
@@ -69,9 +74,60 @@ internal class GitHubPageActions(
 
     fun closeStrategySheet() = configActions.closeStrategySheet()
 
+    fun setSelectedStrategyInput(value: GitHubLookupStrategyOption) = configActions.setSelectedStrategyInput(value)
+
+    fun setSelectedActionsStrategyInput(value: GitHubActionsLookupStrategyOption) =
+        configActions.setSelectedActionsStrategyInput(value)
+
+    fun setApiTokenInput(value: String) = configActions.setApiTokenInput(value)
+
+    fun toggleApiTokenVisibility() = configActions.toggleApiTokenVisibility()
+
+    fun setRecommendedTokenGuideExpanded(value: Boolean) = configActions.setRecommendedTokenGuideExpanded(value)
+
     fun openCheckLogicSheet() = configActions.openCheckLogicSheet()
 
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
+
+    fun setCheckAllTrackedPreReleasesInput(value: Boolean) = configActions.setCheckAllTrackedPreReleasesInput(value)
+
+    fun setCheckAllDirectApkPreReleasesInput(value: Boolean) =
+        configActions.setCheckAllDirectApkPreReleasesInput(value)
+
+    fun setAggressiveApkFilteringInput(value: Boolean) = configActions.setAggressiveApkFilteringInput(value)
+
+    fun setPreciseApkVersionEnabledInput(value: Boolean) = configActions.setPreciseApkVersionEnabledInput(value)
+
+    fun setScanSystemAppsByDefaultInput(value: Boolean) = configActions.setScanSystemAppsByDefaultInput(value)
+
+    fun setProfileDepthInput(value: GitHubProfileDepth) = configActions.setProfileDepthInput(value)
+
+    fun setShareImportFlowModeInput(value: GitHubShareImportFlowMode) = configActions.setShareImportFlowModeInput(value)
+
+    fun setAppManagedShareInstallEnabledInput(value: Boolean) = configActions.setAppManagedShareInstallEnabledInput(value)
+
+    fun setPreferredDownloaderPackageInput(value: String) = configActions.setPreferredDownloaderPackageInput(value)
+
+    fun setOnlineShareTargetPackageInput(value: String) = configActions.setOnlineShareTargetPackageInput(value)
+
+    fun setDecisionAssistEnabledInput(value: Boolean) = configActions.setDecisionAssistEnabledInput(value)
+
+    fun setRepositoryHealthCardEnabledInput(value: Boolean) = configActions.setRepositoryHealthCardEnabledInput(value)
+
+    fun setApkTrustCheckEnabledInput(value: Boolean) = configActions.setApkTrustCheckEnabledInput(value)
+
+    fun setShowDownloaderPopup(value: Boolean) = configActions.setShowDownloaderPopup(value)
+
+    fun setShowOnlineShareTargetPopup(value: Boolean) = configActions.setShowOnlineShareTargetPopup(value)
+
+    fun setShowShareImportFlowModePopup(value: Boolean) = configActions.setShowShareImportFlowModePopup(value)
+
+    fun setDownloaderPopupAnchorBounds(value: IntRect?) = configActions.setDownloaderPopupAnchorBounds(value)
+
+    fun setOnlineShareTargetPopupAnchorBounds(value: IntRect?) = configActions.setOnlineShareTargetPopupAnchorBounds(value)
+
+    fun setShareImportFlowModePopupAnchorBounds(value: IntRect?) =
+        configActions.setShareImportFlowModePopupAnchorBounds(value)
 
     fun sendDebugActionsUpdateNotification() = debugNotificationActions.sendActionsUpdateNotification()
 
@@ -94,6 +150,10 @@ internal class GitHubPageActions(
     fun setActionsWorkflowsExpanded(value: Boolean) = actionsActions.setWorkflowsExpanded(value)
 
     fun setActionsRunsExpanded(value: Boolean) = actionsActions.setRunsExpanded(value)
+
+    fun setActionsArtifactsExpanded(value: Boolean) = actionsActions.setArtifactsExpanded(value)
+
+    fun setActionsArtifactFilter(value: GitHubActionsArtifactFilter) = actionsActions.setArtifactFilter(value)
 
     fun setOverviewExpanded(value: Boolean) = overviewActions.setOverviewExpanded(value)
 
@@ -130,6 +190,14 @@ internal class GitHubPageActions(
     fun setTrackedFilterMode(value: GitHubTrackedFilterMode) {
         env.state.trackedFilterMode = value
         GitHubPageUiStateStore.setTrackedFilterMode(value)
+    }
+
+    fun setTrackedSearch(value: String) {
+        env.state.trackedSearch = value
+    }
+
+    fun setShowActionMenuPopup(value: Boolean) {
+        env.state.showActionMenuPopup = value
     }
 
     fun setFailedFilterEnabled(enabled: Boolean) {
@@ -172,6 +240,27 @@ internal class GitHubPageActions(
 
     fun openSelectedActionsRun() = actionsActions.openSelectedActionsRun()
 
+    fun openActionsArtifactDetail(
+        runMatch: GitHubActionsRunMatch,
+        artifactMatch: GitHubActionsArtifactMatch,
+        recommended: Boolean,
+    ) {
+        env.state.actionsArtifactDetailRequest =
+            GitHubActionsArtifactDetailRequest(
+                runMatch = runMatch,
+                artifactMatch = artifactMatch,
+                recommended = recommended,
+            )
+    }
+
+    fun dismissActionsArtifactDetail() {
+        env.state.actionsArtifactDetailRequest = null
+    }
+
+    fun dismissApkInfoDetail() {
+        env.state.apkInfoDetailRequest = null
+    }
+
     suspend fun reloadApps(forceRefresh: Boolean = false) = refreshActions.reloadApps(forceRefresh = forceRefresh)
 
     suspend fun initializeWarmSnapshot() = refreshActions.initializeWarmSnapshot()
@@ -201,43 +290,20 @@ internal class GitHubPageActions(
     fun refreshAllTracked(
         showToast: Boolean = true,
         forceRefresh: Boolean = true,
-    ) {
-        env.scope.launch {
-            refreshActions.reloadApps(forceRefresh = true)
-            refreshActions.refreshAllTracked(
-                showToast = showToast,
-                forceRefresh = forceRefresh,
-            ) {
-                reloadExpandedAssetPanelsAfterRefresh()
-            }
-        }
-    }
+    ) = trackedRefreshActions.refreshAllTracked(
+        showToast = showToast,
+        forceRefresh = forceRefresh,
+    )
 
     fun refreshVisibleTracked(
         items: List<GitHubTrackedApp>,
         showToast: Boolean = true,
         forceRefresh: Boolean = true,
-    ) {
-        if (items.isEmpty()) {
-            refreshActions.refreshTrackedBatch(
-                targets = emptyList(),
-                showToast = showToast,
-                forceRefresh = forceRefresh,
-            )
-            return
-        }
-        val targetIds = items.mapTo(LinkedHashSet()) { it.id }
-        env.scope.launch {
-            refreshActions.reloadApps(forceRefresh = true)
-            refreshActions.refreshTrackedBatch(
-                targets = items,
-                showToast = showToast,
-                forceRefresh = forceRefresh,
-            ) {
-                reloadExpandedAssetPanelsAfterRefresh(targetIds = targetIds)
-            }
-        }
-    }
+    ) = trackedRefreshActions.refreshVisibleTracked(
+        items = items,
+        showToast = showToast,
+        forceRefresh = forceRefresh,
+    )
 
     fun openDecisionAssistDetail(
         type: GitHubDecisionAssistDetailType,
@@ -264,6 +330,10 @@ internal class GitHubPageActions(
         }
     }
 
+    fun dismissDecisionAssistDetail() {
+        env.state.decisionAssistDetailRequest = null
+    }
+
     private fun refreshRepositoryHealthDetailIfNeeded(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,
@@ -279,7 +349,7 @@ internal class GitHubPageActions(
         ) {
             return
         }
-        refreshTrackedItem(
+        trackedRefreshActions.refreshTrackedItem(
             item = item,
             showToastOnError = false,
             profilePurposeOverride = GitHubRepositoryProfilePurpose.DetailFull,
@@ -287,128 +357,19 @@ internal class GitHubPageActions(
         )
     }
 
-    private fun reloadExpandedAssetPanelsAfterRefresh(targetIds: Set<String>? = null) {
-        val expandedItemIds =
-            env.state.apkAssetExpanded
-                .filterValues { it }
-                .keys
-                .filterTo(HashSet()) { targetIds == null || it in targetIds }
-        if (expandedItemIds.isEmpty()) return
-
-        env.state.trackedItems.forEach { item ->
-            if (item.id !in expandedItemIds) return@forEach
-            val itemState = env.state.checkStates[item.id] ?: return@forEach
-            val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
-            if (canLoadApkAssets(item, itemState, env.context)) {
-                assetActions.clearApkAssetCache(item, itemState)
-                assetActions.loadApkAssets(
-                    item = item,
-                    itemState = itemState,
-                    toggleOnlyWhenCached = false,
-                    includeAllAssets = includeAllAssets,
-                    allowLatestReleaseFallback = itemState.isLocalAppUninstalled(),
-                )
-            } else {
-                assetActions.clearApkAssetUiState(item.id)
-            }
-        }
-    }
-
     fun refreshTrackedItem(
         item: GitHubTrackedApp,
         showToastOnError: Boolean = true,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = true,
-    ) {
-        env.scope.launch {
-            refreshTrackedItemNow(
-                item = item,
-                showToastOnError = showToastOnError,
-                profilePurposeOverride = profilePurposeOverride,
-                forceRefresh = forceRefresh,
-                reloadAppsBeforeRefresh = true,
-            )
-        }
-    }
+    ) = trackedRefreshActions.refreshTrackedItem(
+        item = item,
+        showToastOnError = showToastOnError,
+        profilePurposeOverride = profilePurposeOverride,
+        forceRefresh = forceRefresh,
+    )
 
-    private suspend fun refreshTrackedItemNow(
-        item: GitHubTrackedApp,
-        showToastOnError: Boolean,
-        profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false,
-        reloadAppsBeforeRefresh: Boolean,
-    ) {
-        if (env.state.trackedItems.none { it.id == item.id }) return
-        if (env.state.itemRefreshLoading[item.id] == true) return
-        if (env.state.checkStates[item.id]?.loading == true) return
-        env.state.itemRefreshLoading[item.id] = true
-        try {
-            if (reloadAppsBeforeRefresh) {
-                refreshActions.reloadApps(forceRefresh = true)
-            }
-            val wasAssetExpanded = env.state.apkAssetExpanded[item.id] == true
-            val includeAllAssets = env.state.apkAssetIncludeAll[item.id] == true
-            val previousState = env.state.checkStates[item.id] ?: VersionCheckUi()
-            assetActions.clearApkAssetCache(item, previousState)
-            refreshActions.refreshItemNow(
-                item = item,
-                showToastOnError = showToastOnError,
-                keepCurrentVisualWhileRefreshing = true,
-                profilePurposeOverride = profilePurposeOverride,
-                forceRefresh = forceRefresh,
-            ) { updatedState ->
-                if (wasAssetExpanded && canLoadApkAssets(item, updatedState, env.context)) {
-                    assetActions.clearApkAssetCache(item, updatedState)
-                    assetActions.loadApkAssets(
-                        item = item,
-                        itemState = updatedState,
-                        toggleOnlyWhenCached = false,
-                        includeAllAssets = includeAllAssets,
-                        allowLatestReleaseFallback = updatedState.isLocalAppUninstalled(),
-                    )
-                } else if (wasAssetExpanded) {
-                    assetActions.clearApkAssetUiState(item.id)
-                } else {
-                    assetActions.clearApkAssetRuntimeState(item.id)
-                }
-                env.state.requestTrackCardFocus(item.id)
-            }
-        } finally {
-            env.state.itemRefreshLoading.remove(item.id)
-        }
-    }
-
-    fun refreshFailedTrackedItems(showToast: Boolean = true) {
-        val failedItems =
-            env.state.trackedItems.filter { item ->
-                env.state.checkStates[item.id]?.failed == true
-            }
-        if (failedItems.isEmpty()) {
-            if (showToast) {
-                env.toast(R.string.github_toast_no_checkable_item)
-            }
-            return
-        }
-        env.scope.launch {
-            refreshActions.reloadApps(forceRefresh = true)
-            coroutineScope {
-                failedItems.chunked(RETRY_FAILED_TRACKED_PARALLELISM).forEach { chunk ->
-                    chunk
-                        .map { item ->
-                            launch {
-                                if (env.state.trackedItems.any { it.id == item.id }) {
-                                    refreshTrackedItemNow(
-                                        item = item,
-                                        showToastOnError = showToast,
-                                        reloadAppsBeforeRefresh = false,
-                                    )
-                                }
-                            }
-                        }.joinAll()
-                }
-            }
-        }
-    }
+    fun refreshFailedTrackedItems(showToast: Boolean = true) = trackedRefreshActions.refreshFailedTrackedItems(showToast)
 
     fun runStrategyBenchmark() = configActions.runStrategyBenchmark()
 
@@ -548,9 +509,64 @@ internal class GitHubPageActions(
 
     fun setTrackAppPickerExpanded(value: Boolean) = trackActions.setTrackAppPickerExpanded(value)
 
+    fun setTrackRepoUrlInput(value: String) = trackActions.setRepoUrlInput(value)
+
+    fun setTrackSourceModeInput(value: GitHubTrackedSourceMode) = trackActions.setTrackSourceModeInput(value)
+
+    fun setTrackAppSearch(value: String) = trackActions.setAppSearch(value)
+
+    fun setTrackPackageNameInput(value: String) = trackActions.setPackageNameInput(value)
+
+    fun setTrackAppPickerScrollPosition(
+        index: Int,
+        offset: Int,
+    ) = trackActions.setAddAppPickerScrollPosition(index, offset)
+
+    fun setTrackSelectedApp(value: InstalledAppItem?) = trackActions.setSelectedApp(value)
+
+    fun setTrackPreferPreReleaseInput(value: Boolean) = trackActions.setPreferPreReleaseInput(value)
+
+    fun setTrackAlwaysShowLatestReleaseDownloadButtonInput(value: Boolean) =
+        trackActions.setAlwaysShowLatestReleaseDownloadButtonInput(value)
+
+    fun setTrackCheckActionsUpdatesInput(value: Boolean) = trackActions.setCheckActionsUpdatesInput(value)
+
+    fun setTrackUpdateIntervalModeInput(value: GitHubTrackedUpdateIntervalMode) =
+        trackActions.setUpdateIntervalModeInput(value)
+
+    fun setTrackActionsUpdateIntervalModeInput(value: GitHubTrackedActionsUpdateIntervalMode) =
+        trackActions.setActionsUpdateIntervalModeInput(value)
+
+    fun setTrackPreciseApkVersionModeInput(value: GitHubTrackedPreciseApkVersionMode) =
+        trackActions.setPreciseApkVersionModeInput(value)
+
+    fun setTrackSourceModeDropdownExpanded(value: Boolean) = trackActions.setSourceModeDropdownExpanded(value)
+
+    fun setTrackSourceModeDropdownAnchorBounds(value: IntRect?) = trackActions.setSourceModeDropdownAnchorBounds(value)
+
+    fun setTrackUpdateIntervalDropdownExpanded(value: Boolean) = trackActions.setUpdateIntervalDropdownExpanded(value)
+
+    fun setTrackUpdateIntervalDropdownAnchorBounds(value: IntRect?) =
+        trackActions.setUpdateIntervalDropdownAnchorBounds(value)
+
+    fun setTrackActionsIntervalDropdownExpanded(value: Boolean) = trackActions.setActionsIntervalDropdownExpanded(value)
+
+    fun setTrackActionsIntervalDropdownAnchorBounds(value: IntRect?) =
+        trackActions.setActionsIntervalDropdownAnchorBounds(value)
+
+    fun setTrackPreciseModeDropdownExpanded(value: Boolean) = trackActions.setPreciseModeDropdownExpanded(value)
+
+    fun setTrackPreciseModeDropdownAnchorBounds(value: IntRect?) = trackActions.setPreciseModeDropdownAnchorBounds(value)
+
     fun refreshTrackAppList() = trackActions.refreshAppListForTrackSheet()
 
     fun requestDeleteTrackedItem(item: GitHubTrackedApp) = trackActions.requestDeleteItem(item)
+
+    fun dismissPendingDeleteItem() {
+        if (!env.state.deleteInProgress) {
+            env.state.pendingDeleteItem = null
+        }
+    }
 
     fun scanPackageNameFromRepo() = trackActions.scanPackageNameFromRepo()
 
@@ -561,6 +577,23 @@ internal class GitHubPageActions(
     fun applyTrackSheet() = trackActions.applyTrackSheet()
 
     fun confirmDeletePendingItem() = trackActions.confirmDeletePendingItem()
+
+    fun dismissTrackImportPreview() {
+        env.state.dismissTrackImportPreview()
+    }
+
+    fun confirmTrackImportPreview(
+        importInProgress: Boolean,
+        onConfirmTrackImport: () -> Unit,
+    ) {
+        val preview = env.state.pendingTrackImportPreview ?: return
+        if (!preview.canImport) {
+            env.state.dismissTrackImportPreview()
+            return
+        }
+        if (importInProgress) return
+        onConfirmTrackImport()
+    }
 
     suspend fun handlePackageChangedEvent(event: AppPackageChangedEvent) = packageChangedActions.handle(event)
 }

@@ -2,8 +2,6 @@ package os.kei.ui.page.main.home.state
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import java.util.Locale
@@ -39,7 +37,6 @@ internal data class HomePageContentTextBundle(
     val cacheStateFresh: String,
     val cacheStateStale: String,
     val cacheStateEmpty: String,
-    val appVersionText: String,
     val networkLanShort: String,
     val networkLocalOnlyShort: String,
     val mcpStatusRunning: String,
@@ -66,6 +63,8 @@ internal data class HomePageContentTextBundle(
     val baServerCn: String,
     val baServerGlobal: String,
     val baServerJp: String,
+    val appVersionUnknownFallback: String,
+    val appVersionUnknown: String,
     private val uptimeDaysHoursPattern: String,
     private val uptimeDaysHoursMinutesPattern: String,
     private val uptimeHoursPattern: String,
@@ -122,18 +121,8 @@ internal data class HomePageContentTextBundle(
 }
 
 @Composable
-internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle {
-    val context = LocalContext.current
-    val appVersionUnknownFallback = stringResource(R.string.home_app_version_unknown_fallback)
-    val appVersionUnknown = stringResource(R.string.home_app_version_unknown)
-    val appVersionText =
-        remember(context, appVersionUnknownFallback, appVersionUnknown) {
-            runCatching {
-                val info = context.packageManager.getPackageInfo(context.packageName, 0)
-                "v${info.versionName ?: appVersionUnknownFallback} (${info.longVersionCode})"
-            }.getOrDefault(appVersionUnknown)
-        }
-    return HomePageContentTextBundle(
+internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle =
+    HomePageContentTextBundle(
         commonNa = stringResource(R.string.common_na),
         appName = stringResource(R.string.app_name),
         tagline = stringResource(R.string.home_header_tagline),
@@ -163,7 +152,8 @@ internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle {
         cacheStateFresh = stringResource(R.string.home_cache_state_fresh),
         cacheStateStale = stringResource(R.string.home_cache_state_stale),
         cacheStateEmpty = stringResource(R.string.home_cache_state_empty),
-        appVersionText = appVersionText,
+        appVersionUnknownFallback = stringResource(R.string.home_app_version_unknown_fallback),
+        appVersionUnknown = stringResource(R.string.home_app_version_unknown),
         networkLanShort = stringResource(R.string.mcp_network_mode_lan_short),
         networkLocalOnlyShort = stringResource(R.string.mcp_network_mode_local_only_short),
         mcpStatusRunning = stringResource(R.string.home_mcp_status_running),
@@ -204,6 +194,5 @@ internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle {
         cafeFractionPattern = stringResource(R.string.home_value_cafe_fraction),
         thresholdPlusPattern = stringResource(R.string.home_value_threshold_plus),
     )
-}
 
 private fun String.formatLocalized(vararg args: Any): String = String.format(Locale.getDefault(), this, *args)

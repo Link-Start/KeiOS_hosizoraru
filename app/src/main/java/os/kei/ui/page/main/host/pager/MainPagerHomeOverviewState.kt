@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.feature.home.data.HomeOverviewRepository
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -29,6 +30,7 @@ import os.kei.mcp.server.McpServerManager
 
 @Immutable
 internal data class MainPagerHomeOverviewState(
+    val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
@@ -218,6 +220,7 @@ internal fun rememberMainPagerHomeOverviewState(
     ) {
         MainPagerHomeOverviewState(
             homeMcpOverview = uiState.mcpOverview,
+            homeAppOverview = uiState.appOverview,
             homeGitHubOverview = uiState.githubOverview,
             homeBaOverview = uiState.baOverview,
             visibleOverviewCards = uiState.visibleOverviewCards,

@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.home.state
 
 import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
@@ -9,6 +10,7 @@ import os.kei.ui.page.main.widget.status.AppStatusColors
 
 internal fun deriveHomePageContentState(
     shizukuStatus: String,
+    appOverview: HomeAppOverview,
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
     baOverview: HomeBaOverview,
@@ -173,7 +175,7 @@ internal fun deriveHomePageContentState(
         stoppedColor = colors.stoppedColor,
         inactiveColor = colors.inactiveColor,
         cacheStateColor = cacheStateColor,
-        appVersionText = text.appVersionText,
+        appVersionText = homeAppVersionText(appOverview, text),
         shizukuStatusLine = if (shizukuGranted) text.valueAuthorized else text.valueUnauthorized,
         mcpFocusLine = mcpFocusLine,
         githubFocusLine = githubFocusLine,
@@ -230,3 +232,12 @@ private fun homeCacheFreshnessLine(
         freshness.stale -> text.cacheStateStale
         else -> text.cacheStateEmpty
     }
+
+private fun homeAppVersionText(
+    appOverview: HomeAppOverview,
+    text: HomePageContentTextBundle,
+): String {
+    if (!appOverview.loaded) return text.appVersionUnknown
+    val versionName = appOverview.versionName.ifBlank { text.appVersionUnknownFallback }
+    return "v$versionName (${appOverview.versionCode})"
+}

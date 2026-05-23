@@ -158,3 +158,13 @@ internal fun rememberSettingsSearchTargets(): List<SettingsSearchTarget> =
     )
 
 private fun settingsTokens(vararg values: String): List<String> = values.filter { it.isNotBlank() }
+
+internal fun deriveSettingsSearchTargets(
+    targets: List<SettingsSearchTarget>,
+    query: String,
+): List<SettingsSearchTarget> =
+    if (query.isBlank()) {
+        emptyList()
+    } else {
+        targets.filter { it.matches(query) }
+    }

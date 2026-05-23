@@ -320,29 +320,25 @@ internal fun SignatureSection(
 
 @Composable
 internal fun ManifestTreeSection(
-    nodes: List<GitHubApkManifestNode>,
+    nodeGroups: Map<Int, List<GitHubApkManifestNode>>,
     query: String,
 ) {
-    if (nodes.isEmpty()) {
+    if (nodeGroups.isEmpty()) {
         if (query.isBlank()) {
             SheetSectionTitle(stringResource(R.string.github_apk_info_section_manifest_tree))
             SheetSectionCard { SheetDescriptionText(stringResource(R.string.github_apk_info_manifest_tree_empty)) }
         }
         return
     }
-    val groups =
-        remember(nodes) {
-            nodes.groupBy { it.groupLabelRes() }
-        }
     val expanded =
-        remember(nodes) {
+        remember(nodeGroups.keys) {
             mutableStateMapOf<Int, Boolean>().apply {
-                groups.keys.forEach { key -> put(key, key == R.string.github_apk_info_group_exported) }
+                nodeGroups.keys.forEach { key -> put(key, key == R.string.github_apk_info_group_exported) }
             }
         }
     SheetSectionTitle(stringResource(R.string.github_apk_info_section_manifest_tree))
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        groups.forEach { (titleRes, groupNodes) ->
+        nodeGroups.forEach { (titleRes, groupNodes) ->
             ManifestNodeGroupCard(
                 title = stringResource(titleRes),
                 nodes = groupNodes,

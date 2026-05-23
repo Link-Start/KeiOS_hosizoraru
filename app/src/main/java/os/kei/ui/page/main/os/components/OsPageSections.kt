@@ -155,32 +155,13 @@ internal fun OsActivityVisibilityManagerSheet(
         SheetContentColumn(
             verticalSpacing = 10.dp,
         ) {
-            val activityVisibilityItems =
-                remember(cards, defaultCardTitle) {
-                    cards.map { card ->
-                        OsActivityVisibilityItem(
-                            id = card.id,
-                            title = card.config.title.ifBlank { defaultCardTitle },
-                            packageName = card.config.packageName,
-                            className = card.config.className,
-                            builtInSample = card.isBuiltInSample,
-                            visible = card.visible,
-                        )
-                    }
-                }
-            val filteredActivityVisibilityItems =
-                remember(activityVisibilityItems, query) {
-                    activityVisibilityItems.filter { item ->
-                        item.matchesActivityVisibilityQuery(query)
-                    }
-                }
-            val builtInItems =
-                remember(filteredActivityVisibilityItems) {
-                    filteredActivityVisibilityItems.filter { it.builtInSample }
-                }
-            val customItems =
-                remember(filteredActivityVisibilityItems) {
-                    filteredActivityVisibilityItems.filterNot { it.builtInSample }
+            val presentationState =
+                remember(cards, defaultCardTitle, query) {
+                    deriveOsActivityVisibilityPresentationState(
+                        cards = cards,
+                        defaultCardTitle = defaultCardTitle,
+                        query = query,
+                    )
                 }
             SheetSectionCard(verticalSpacing = 8.dp) {
                 AppLiquidSearchField(
@@ -195,16 +176,16 @@ internal fun OsActivityVisibilityManagerSheet(
             }
             ActivityVisibilityGroup(
                 title = stringResource(R.string.os_visibility_group_built_in),
-                items = builtInItems,
+                items = presentationState.builtInItems,
                 activityIconBitmaps = activityIconBitmaps,
                 packageIconBitmaps = packageIconBitmaps,
-                emptySearchActive = query.isNotBlank() && filteredActivityVisibilityItems.isEmpty(),
+                emptySearchActive = presentationState.emptySearchActive,
                 noMatchedResultsText = stringResource(R.string.common_no_matched_results),
                 onCardVisibilityChange = onCardVisibilityChange,
             )
             ActivityVisibilityGroup(
                 title = stringResource(R.string.os_visibility_group_custom),
-                items = customItems,
+                items = presentationState.customItems,
                 activityIconBitmaps = activityIconBitmaps,
                 packageIconBitmaps = packageIconBitmaps,
                 emptySearchActive = false,
@@ -348,14 +329,6 @@ private fun ActivityVisibilityRow(
             },
         )
     }
-}
-
-private fun OsActivityVisibilityItem.matchesActivityVisibilityQuery(query: String): Boolean {
-    val normalized = query.trim()
-    if (normalized.isBlank()) return true
-    return title.contains(normalized, ignoreCase = true) ||
-        packageName.contains(normalized, ignoreCase = true) ||
-        className.contains(normalized, ignoreCase = true)
 }
 
 @Composable

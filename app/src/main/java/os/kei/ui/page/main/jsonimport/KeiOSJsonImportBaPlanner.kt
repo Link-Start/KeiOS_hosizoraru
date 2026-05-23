@@ -6,14 +6,15 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.ui.page.main.student.GuideBgmFavoriteStore
+import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.page.parseCatalogFavoritesExport
 import os.kei.ui.page.main.student.catalog.page.previewCatalogFavoritesImport
 
 internal class KeiOSJsonImportBaPlanner(
     private val ioDispatcher: CoroutineDispatcher,
-    private val defaultDispatcher: CoroutineDispatcher
+    private val defaultDispatcher: CoroutineDispatcher,
+    private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
 ) {
     suspend fun buildCatalogPlan(
         context: Context,
@@ -65,10 +66,12 @@ internal class KeiOSJsonImportBaPlanner(
         file: KeiOSJsonImportFile,
         header: KeiOSJsonImportHeader
     ): KeiOSJsonImportPlan {
-        val (previewResult, samples) = withContext(defaultDispatcher) {
-            GuideBgmFavoriteStore.previewFavoritesJsonImport(file.raw) to
-                    buildJsonImportBgmSamples(file.raw)
-        }
+        val (previewResult, samples) =
+            coroutineScope {
+                val previewDeferred = async { bgmFavoriteRepository.previewImport(file.raw) }
+                val samplesDeferred = async(defaultDispatcher) { buildJsonImportBgmSamples(file.raw) }
+                previewDeferred.await() to samplesDeferred.await()
+            }
         val preview = buildJsonImportBaPreview(
             context = context,
             header = header,
@@ -79,14 +82,12 @@ internal class KeiOSJsonImportBaPlanner(
             samples = samples
         )
         return ImportableKeiOSJsonPlan(preview) {
-            withContext(ioDispatcher) {
-                val result = GuideBgmFavoriteStore.importFavoritesJsonMerged(file.raw)
-                KeiOSJsonImportApplyResult(
-                    addedCount = result.addedCount,
-                    updatedCount = result.updatedCount,
-                    unchangedCount = result.importedCount - result.addedCount - result.updatedCount
-                )
-            }
+            val result = bgmFavoriteRepository.importMerged(file.raw)
+            KeiOSJsonImportApplyResult(
+                addedCount = result.addedCount,
+                updatedCount = result.updatedCount,
+                unchangedCount = result.importedCount - result.addedCount - result.updatedCount
+            )
         }
     }
 
@@ -101,11 +102,11 @@ internal class KeiOSJsonImportBaPlanner(
                 val imported = parseCatalogFavoritesExport(file.raw)
                 imported to previewCatalogFavoritesImport(imported, currentCatalog)
             }
-            val bgmDeferred = async(defaultDispatcher) {
-                GuideBgmFavoriteStore.previewFavoritesJsonImport(file.raw) to
-                        buildJsonImportBgmSamples(file.raw)
+            val bgmPreviewDeferred = async { bgmFavoriteRepository.previewImport(file.raw) }
+            val bgmSamplesDeferred = async(defaultDispatcher) {
+                buildJsonImportBgmSamples(file.raw)
             }
-            catalogDeferred.await() to bgmDeferred.await()
+            catalogDeferred.await() to (bgmPreviewDeferred.await() to bgmSamplesDeferred.await())
         }
         val importedCatalog = catalogPreview.first
         val catalogResult = catalogPreview.second
@@ -145,9 +146,7 @@ internal class KeiOSJsonImportBaPlanner(
                     BaGuideCatalogStore.saveFavorites(currentFavorites + imported)
                 }
             }
-            val bgmResult = withContext(ioDispatcher) {
-                GuideBgmFavoriteStore.importFavoritesJsonMerged(file.raw)
-            }
+            val bgmResult = bgmFavoriteRepository.importMerged(file.raw)
             KeiOSJsonImportApplyResult(
                 addedCount = catalogApplyPreview.addedCount + bgmResult.addedCount,
                 updatedCount = catalogApplyPreview.updatedCount + bgmResult.updatedCount,

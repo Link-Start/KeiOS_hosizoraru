@@ -24,6 +24,12 @@ internal data class OsPageCoreUiState(
 )
 
 @Immutable
+internal data class OsPageDerivedSnapshot(
+    val rowsDerivedState: OsPageRowsUiDerivedState = OsPageRowsUiDerivedState.Empty,
+    val cardListDerivedState: OsPageCardListDerivedState = OsPageCardListDerivedState.Empty,
+)
+
+@Immutable
 internal data class OsPageUiState(
     val persistentState: OsPagePersistentState = OsPagePersistentState(),
     val runtimeState: OsPageRuntimeState = OsPageRuntimeState(),
@@ -33,4 +39,5 @@ internal data class OsPageUiState(
     val queryInput: String = "",
     val queryApplied: String = "",
     val rowsDerivedState: OsPageRowsUiDerivedState = OsPageRowsUiDerivedState.Empty,
+    val cardListDerivedState: OsPageCardListDerivedState = OsPageCardListDerivedState.Empty,
 )

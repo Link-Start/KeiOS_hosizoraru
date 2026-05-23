@@ -3,9 +3,7 @@ package os.kei.ui.page.main.os.shell
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,7 +17,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputSnapshot
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputState
 import os.kei.ui.page.main.os.shell.state.toOutputSnapshot
@@ -29,18 +26,20 @@ internal class OsShellRunnerViewModel : ViewModel() {
     private val repositoryPersistentState = repository.observePersistentState()
     private val repositoryChromePrefs = repository.observeChromePrefs()
     private var loadJob: Job? = null
-    private var commandJob: Job? = null
-    private var suppressStopOutputAppend = false
-    private val commandExecutionMutableState = MutableStateFlow(OsShellRunnerCommandExecutionState())
-    private val commandSaveMutableState = MutableStateFlow(OsShellRunnerCommandSaveState())
     private val pageChromeMutableState = MutableStateFlow(OsShellRunnerPageChromeState())
     private val eventMutableFlow = MutableSharedFlow<OsShellRunnerEvent>(extraBufferCapacity = 8)
+    private val commandController =
+        OsShellRunnerCommandController(
+            scope = viewModelScope,
+            repository = repository,
+            events = eventMutableFlow,
+        )
 
     val commandExecutionState: StateFlow<OsShellRunnerCommandExecutionState> =
-        commandExecutionMutableState.asStateFlow()
+        commandController.executionState
 
     val commandSaveState: StateFlow<OsShellRunnerCommandSaveState> =
-        commandSaveMutableState.asStateFlow()
+        commandController.saveState
 
     val pageChromeState: StateFlow<OsShellRunnerPageChromeState> =
         pageChromeMutableState.asStateFlow()
@@ -278,60 +277,20 @@ internal class OsShellRunnerViewModel : ViewModel() {
         outputTimeLabel: String,
         completionToast: Boolean,
         onRunShellCommand: suspend (String, Long) -> String?,
-    ) {
-        if (commandExecutionMutableState.value.runningCommand) return
-        commandJob =
-            viewModelScope.launch {
-                commandExecutionMutableState.update { it.copy(runningCommand = true) }
-                try {
-                    val output =
-                        runCatching { onRunShellCommand(command, timeoutMs) }
-                            .getOrElse { throwable ->
-                                if (throwable is CancellationException) throw throwable
-                                throwable.localizedMessage?.takeIf { it.isNotBlank() }
-                                    ?: throwable.javaClass.simpleName
-                            }?.takeIf { it.isNotBlank() }
-                            ?: noOutputText
-                    repository.appendOutput(
-                        command = command,
-                        result = output,
-                        commandStoppedText = commandStoppedText,
-                        outputResultLabel = outputResultLabel,
-                        outputTimeLabel = outputTimeLabel,
-                    )
-                    if (completionToast) {
-                        eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(commandCompletedText))
-                    }
-                } catch (_: CancellationException) {
-                    if (suppressStopOutputAppend) {
-                        suppressStopOutputAppend = false
-                    } else {
-                        withContext(NonCancellable) {
-                            repository.appendOutput(
-                                command = command,
-                                result = commandStoppedText,
-                                commandStoppedText = commandStoppedText,
-                                outputResultLabel = outputResultLabel,
-                                outputTimeLabel = outputTimeLabel,
-                            )
-                        }
-                        if (completionToast) {
-                            eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(commandStoppedText))
-                        }
-                    }
-                } finally {
-                    commandExecutionMutableState.update { it.copy(runningCommand = false) }
-                    commandJob = null
-                }
-            }
-    }
+    ) = commandController.runShellCommand(
+        command = command,
+        timeoutMs = timeoutMs,
+        commandStoppedText = commandStoppedText,
+        commandCompletedText = commandCompletedText,
+        noOutputText = noOutputText,
+        outputResultLabel = outputResultLabel,
+        outputTimeLabel = outputTimeLabel,
+        completionToast = completionToast,
+        onRunShellCommand = onRunShellCommand,
+    )
 
     fun stopShellCommand(showStoppedOutput: Boolean = true) {
-        val job = commandJob ?: return
-        if (!showStoppedOutput) {
-            suppressStopOutputAppend = true
-        }
-        job.cancel(CancellationException("user-stop"))
+        commandController.stopShellCommand(showStoppedOutput)
     }
 
     fun formatOutput(
@@ -453,17 +412,10 @@ internal class OsShellRunnerViewModel : ViewModel() {
     fun requestSaveCommandSheet(
         command: String,
         commandSaveEmptyToast: String,
-    ) {
-        viewModelScope.launch {
-            val normalizedCommand = command.trim()
-            if (normalizedCommand.isBlank()) {
-                eventMutableFlow.emit(OsShellRunnerEvent.Toast(commandSaveEmptyToast))
-                return@launch
-            }
-            val suggestedSubtitle = repository.latestShellCardSubtitle(normalizedCommand)
-            eventMutableFlow.emit(OsShellRunnerEvent.OpenSaveCommandSheet(suggestedSubtitle))
-        }
-    }
+    ) = commandController.requestSaveCommandSheet(
+        command = command,
+        commandSaveEmptyToast = commandSaveEmptyToast,
+    )
 
     fun saveShellCommandCard(
         command: String,
@@ -473,41 +425,24 @@ internal class OsShellRunnerViewModel : ViewModel() {
         commandSaveEmptyToast: String,
         saveSheetTitleRequiredToast: String,
         commandSavedToast: String,
-    ) {
-        if (commandSaveMutableState.value.savingCommandCard) return
-        viewModelScope.launch {
-            val normalizedCommand = command.trim()
-            if (normalizedCommand.isBlank()) {
-                eventMutableFlow.emit(OsShellRunnerEvent.Toast(commandSaveEmptyToast))
-                return@launch
-            }
-            val normalizedTitle = title.trim()
-            if (normalizedTitle.isBlank()) {
-                eventMutableFlow.emit(OsShellRunnerEvent.Toast(saveSheetTitleRequiredToast))
-                return@launch
-            }
-            commandSaveMutableState.update { it.copy(savingCommandCard = true) }
-            try {
-                val saved =
-                    repository.createShellCommandCard(
-                        command = normalizedCommand,
-                        title = normalizedTitle,
-                        subtitle = subtitle.trim(),
-                        runOutput = runOutput,
-                    )
-                if (saved) {
-                    eventMutableFlow.emit(OsShellRunnerEvent.CloseSaveCommandSheet)
-                    eventMutableFlow.emit(OsShellRunnerEvent.LiquidToast(commandSavedToast))
-                }
-            } finally {
-                commandSaveMutableState.update { it.copy(savingCommandCard = false) }
-            }
-        }
-    }
+    ) = commandController.saveShellCommandCard(
+        command = command,
+        title = title,
+        subtitle = subtitle,
+        runOutput = runOutput,
+        commandSaveEmptyToast = commandSaveEmptyToast,
+        saveSheetTitleRequiredToast = saveSheetTitleRequiredToast,
+        commandSavedToast = commandSavedToast,
+    )
 
     private fun launchRepositoryUpdate(update: suspend OsShellRunnerRepository.() -> Unit) {
         viewModelScope.launch {
             repository.update()
         }
+    }
+
+    override fun onCleared() {
+        commandController.cancel()
+        super.onCleared()
     }
 }

@@ -1,10 +1,14 @@
 package os.kei.ui.page.main.github.page.action
 
+import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubProfileDepth
+import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
@@ -48,6 +52,28 @@ internal class GitHubConfigActions(
         state.dismissStrategySheet()
     }
 
+    fun setSelectedStrategyInput(value: GitHubLookupStrategyOption) {
+        state.selectedStrategyInput = value
+    }
+
+    fun setSelectedActionsStrategyInput(value: GitHubActionsLookupStrategyOption) {
+        state.selectedActionsStrategyInput = value
+    }
+
+    fun setApiTokenInput(value: String) {
+        state.githubApiTokenInput = value
+        state.credentialCheckError = null
+        state.credentialCheckStatus = null
+    }
+
+    fun toggleApiTokenVisibility() {
+        state.showApiTokenPlainText = !state.showApiTokenPlainText
+    }
+
+    fun setRecommendedTokenGuideExpanded(value: Boolean) {
+        state.recommendedTokenGuideExpanded = value
+    }
+
     fun openCheckLogicSheet() {
         state.showDownloaderPopup = false
         state.showOnlineShareTargetPopup = false
@@ -74,6 +100,82 @@ internal class GitHubConfigActions(
 
     fun closeCheckLogicSheet() {
         state.dismissCheckLogicSheet()
+    }
+
+    fun setCheckAllTrackedPreReleasesInput(value: Boolean) {
+        state.checkAllTrackedPreReleasesInput = value
+    }
+
+    fun setCheckAllDirectApkPreReleasesInput(value: Boolean) {
+        state.checkAllDirectApkPreReleasesInput = value
+    }
+
+    fun setAggressiveApkFilteringInput(value: Boolean) {
+        state.aggressiveApkFilteringInput = value
+    }
+
+    fun setPreciseApkVersionEnabledInput(value: Boolean) {
+        state.preciseApkVersionEnabledInput = value
+    }
+
+    fun setScanSystemAppsByDefaultInput(value: Boolean) {
+        state.scanSystemAppsByDefaultInput = value
+    }
+
+    fun setProfileDepthInput(value: GitHubProfileDepth) {
+        state.profileDepthInput = value
+    }
+
+    fun setShareImportFlowModeInput(value: GitHubShareImportFlowMode) {
+        state.shareImportFlowModeInput = value
+    }
+
+    fun setAppManagedShareInstallEnabledInput(value: Boolean) {
+        state.appManagedShareInstallEnabledInput = value
+    }
+
+    fun setPreferredDownloaderPackageInput(value: String) {
+        state.preferredDownloaderPackageInput = value
+    }
+
+    fun setOnlineShareTargetPackageInput(value: String) {
+        state.onlineShareTargetPackageInput = value
+    }
+
+    fun setDecisionAssistEnabledInput(value: Boolean) {
+        state.decisionAssistEnabledInput = value
+    }
+
+    fun setRepositoryHealthCardEnabledInput(value: Boolean) {
+        state.repositoryHealthCardEnabledInput = value
+    }
+
+    fun setApkTrustCheckEnabledInput(value: Boolean) {
+        state.apkTrustCheckEnabledInput = value
+    }
+
+    fun setShowDownloaderPopup(value: Boolean) {
+        state.showDownloaderPopup = value
+    }
+
+    fun setShowOnlineShareTargetPopup(value: Boolean) {
+        state.showOnlineShareTargetPopup = value
+    }
+
+    fun setShowShareImportFlowModePopup(value: Boolean) {
+        state.showShareImportFlowModePopup = value
+    }
+
+    fun setDownloaderPopupAnchorBounds(value: IntRect?) {
+        state.downloaderPopupAnchorBounds = value
+    }
+
+    fun setOnlineShareTargetPopupAnchorBounds(value: IntRect?) {
+        state.onlineShareTargetPopupAnchorBounds = value
+    }
+
+    fun setShareImportFlowModePopupAnchorBounds(value: IntRect?) {
+        state.shareImportFlowModePopupAnchorBounds = value
     }
 
     fun selectRefreshIntervalHours(hours: Int) {

@@ -31,7 +31,7 @@ data class HomeGitHubOverview(
     val refreshIntervalHours: Int = 3,
     val cachedRefreshMs: Long = 0L,
     val cacheFreshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty,
-    val loaded: Boolean = false
+    val loaded: Boolean = false,
 )
 
 @Immutable
@@ -46,39 +46,48 @@ data class HomeBaOverview(
     val cafeStored: Int = 0,
     val cafeCap: Int = HOME_BA_CAFE_DAILY_AP_BY_LEVEL.last(),
     val cacheFreshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty,
-    val loaded: Boolean = false
+    val loaded: Boolean = false,
+)
+
+@Immutable
+data class HomeAppOverview(
+    val versionName: String = "",
+    val versionCode: Long = 0L,
+    val loaded: Boolean = false,
 )
 
 @Immutable
 enum class HomeOverviewCard {
     MCP,
     GITHUB,
-    BA
+    BA,
 }
 
 @Immutable
 data class HomeOverviewSnapshot(
+    val appOverview: HomeAppOverview = HomeAppOverview(),
     val mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     val githubOverview: HomeGitHubOverview = HomeGitHubOverview(),
     val baOverview: HomeBaOverview = HomeBaOverview(),
     val visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
-    val showCacheFreshnessInCards: Boolean = false
+    val showCacheFreshnessInCards: Boolean = false,
 )
 
 internal const val HOME_BA_AP_LIMIT_MAX = 240
 internal const val HOME_BA_AP_MAX = 999
 internal const val HOME_BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
-internal val HOME_BA_CAFE_DAILY_AP_BY_LEVEL = intArrayOf(
-    92,
-    152,
-    222,
-    302,
-    390,
-    460,
-    530,
-    600,
-    570,
-    740
-)
+internal val HOME_BA_CAFE_DAILY_AP_BY_LEVEL =
+    intArrayOf(
+        92,
+        152,
+        222,
+        302,
+        390,
+        460,
+        530,
+        600,
+        570,
+        740,
+    )
 
 fun defaultHomeOverviewCards(): Set<HomeOverviewCard> = HomeOverviewCard.entries.toSet()

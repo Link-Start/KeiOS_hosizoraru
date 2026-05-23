@@ -87,6 +87,7 @@ fun OsPage(
     val queryInput = pageUiState.queryInput
     val queryApplied = pageUiState.queryApplied
     val rowsDerivedState = pageUiState.rowsDerivedState
+    val cardListDerivedState = pageUiState.cardListDerivedState
     val uiSnapshot = persistentState.uiSnapshot
     val topInfoExpanded = uiSnapshot.topInfoExpanded
     val shellRunnerExpanded = uiSnapshot.shellRunnerExpanded
@@ -97,7 +98,7 @@ fun OsPage(
     val javaPropsExpanded = uiSnapshot.javaPropsExpanded
     val linuxEnvExpanded = uiSnapshot.linuxEnvExpanded
     val visibleCards = uiSnapshot.visibleCards
-    val activityShortcutCards = osActivityShortcutCardsForUi(persistentState)
+    val activityShortcutCards = cardListDerivedState.activityShortcutCards
     val overlayRuntimeActions = osPageViewModel.overlayRuntimeActions
     val overlayState =
         rememberOsPageOverlayState(
@@ -138,7 +139,7 @@ fun OsPage(
             onCardTransferInProgressChange = overlayRuntimeActions::updateCardTransferInProgress,
         )
     val scrollBehavior = MiuixScrollBehavior()
-    val shellCommandCards = persistentState.shellCommandCards
+    val shellCommandCards = cardListDerivedState.shellCommandCards
     val activityCardExpanded = cardExpansionState.activityCards
     val shellCommandCardExpanded = cardExpansionState.shellCommandCards
     val surfaceColor = uiContext.surfaceColor
@@ -523,13 +524,13 @@ fun OsPage(
                 shellRunnerExpanded = shellRunnerExpanded,
                 onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
                 onOpenShellRunner = mainListActions.onOpenShellRunner,
-                shellCommandCards = derivedState.visibleShellCommandCards,
+                shellCommandCards = cardListDerivedState.visibleShellCommandCards,
                 shellCommandCardExpanded = shellCommandCardExpanded,
                 runningShellCommandCardIds = routeState.runningShellCommandCardIds,
                 onShellCommandCardExpandedChange = mainListActions.onShellCommandCardExpandedChange,
                 onOpenShellCommandCardEditor = mainListActions.onOpenShellCommandCardEditor,
                 onRunShellCommandCard = mainListActions.onRunShellCommandCard,
-                activityShortcutCards = derivedState.visibleActivityShortcutCards,
+                activityShortcutCards = cardListDerivedState.visibleActivityShortcutCards,
                 activityIconBitmaps = activityIconState.bitmaps,
                 defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
                 activityCardExpanded = activityCardExpanded,

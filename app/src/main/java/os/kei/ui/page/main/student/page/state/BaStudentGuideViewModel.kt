@@ -85,7 +85,6 @@ internal class BaStudentGuideViewModel(
     private var currentUrlLoadJob: Job? = null
     private var currentUrlSaveJob: Job? = null
     private var npcSatelliteResolveJob: Job? = null
-    private var prefetchJob: Job? = null
     private var pendingCustomMediaSaveRequest: GuideMediaSaveRequest? = null
     private var pendingFixedMediaSaveRequest: GuideMediaSaveRequest? = null
     private var pendingCustomMediaPackSaveRequest: GuideMediaPackSaveRequest? = null
@@ -96,16 +95,20 @@ internal class BaStudentGuideViewModel(
             appContext = appContext,
             scope = viewModelScope,
         )
+    private val chromeController = BaStudentGuideChromeController()
+    private val prefetchController =
+        BaStudentGuidePrefetchController(
+            scope = viewModelScope,
+            appContext = appContext,
+            repository = repository,
+        )
 
     private val _dataState = MutableStateFlow(BaStudentGuideDataUiState())
     val dataState: StateFlow<BaStudentGuideDataUiState> = _dataState.asStateFlow()
 
-    private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
-    val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
-    private val _pageChromeState = MutableStateFlow(BaStudentGuidePageChromeState())
-    val pageChromeState: StateFlow<BaStudentGuidePageChromeState> = _pageChromeState.asStateFlow()
-    private val _voiceUiState = MutableStateFlow(BaStudentGuideVoiceUiState())
-    val voiceUiState: StateFlow<BaStudentGuideVoiceUiState> = _voiceUiState.asStateFlow()
+    val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = prefetchController.state
+    val pageChromeState: StateFlow<BaStudentGuidePageChromeState> = chromeController.pageChromeState
+    val voiceUiState: StateFlow<BaStudentGuideVoiceUiState> = chromeController.voiceUiState
     val mediaImageState = mediaImageLoader.state
     val profileLinkTitleState = profileLinkTitleLoader.state
     private val mutableEvents = MutableSharedFlow<BaStudentGuideEvent>(replay = 0, extraBufferCapacity = 8)
@@ -165,7 +168,7 @@ internal class BaStudentGuideViewModel(
             initialValue =
                 BaStudentGuideUiState(
                     dataState = _dataState.value,
-                    prefetchState = _prefetchState.value,
+                    prefetchState = prefetchState.value,
                     bgmFavoriteAudioUrls = bgmFavoriteAudioUrls.value,
                     isNpcSatelliteGuide = auxState.value.isNpcSatelliteGuide,
                     mediaSettings = auxState.value.mediaSettings,
@@ -245,63 +248,27 @@ internal class BaStudentGuideViewModel(
     }
 
     fun coerceSelectedBottomTab(bottomTabs: List<GuideBottomTab>) {
-        val selectedOrdinal = _pageChromeState.value.selectedBottomTabOrdinal
-        if (bottomTabs.any { it.ordinal == selectedOrdinal }) return
-        _pageChromeState.update { state ->
-            state.copy(
-                selectedBottomTabOrdinal =
-                    bottomTabs
-                        .firstOrNull()
-                        ?.ordinal
-                        ?: GuideBottomTab.Archive.ordinal,
-            )
-        }
+        chromeController.coerceSelectedBottomTab(bottomTabs)
     }
 
     fun updateSelectedBottomTab(tab: GuideBottomTab) {
-        _pageChromeState.update { state ->
-            if (state.selectedBottomTabOrdinal == tab.ordinal) {
-                state
-            } else {
-                state.copy(selectedBottomTabOrdinal = tab.ordinal)
-            }
-        }
+        chromeController.updateSelectedBottomTab(tab)
     }
 
     fun updateSelectedVoiceLanguage(language: String) {
-        _pageChromeState.update { state ->
-            if (state.selectedVoiceLanguage == language) {
-                state
-            } else {
-                state.copy(selectedVoiceLanguage = language)
-            }
-        }
+        chromeController.updateSelectedVoiceLanguage(language)
     }
 
     fun updatePlayingVoiceUrl(url: String) {
-        _voiceUiState.update { state ->
-            if (state.playingVoiceUrl == url) {
-                state
-            } else {
-                state.copy(playingVoiceUrl = url)
-            }
-        }
+        chromeController.updatePlayingVoiceUrl(url)
     }
 
     fun updateIsVoicePlaying(isPlaying: Boolean) {
-        _voiceUiState.update { state ->
-            if (state.isVoicePlaying == isPlaying) {
-                state
-            } else {
-                state.copy(isVoicePlaying = isPlaying)
-            }
-        }
+        chromeController.updateIsVoicePlaying(isPlaying)
     }
 
     fun updateVoicePlayProgress(progress: Float) {
-        _voiceUiState.update { state ->
-            state.withProgress(progress)
-        }
+        chromeController.updateVoicePlayProgress(progress)
     }
 
     private fun loadStoredCurrentGuide() {
@@ -461,38 +428,13 @@ internal class BaStudentGuideViewModel(
         prefetchBottomTab: GuideBottomTab,
         initialPrefetchCount: Int,
         galleryExtraPrefetchCount: Int,
-    ) {
-        val sourceUrl = _dataState.value.sourceUrl
-        val guideSyncToken = info?.syncedAtMs ?: -1L
-        val existing = _prefetchState.value
-        if (existing.sourceUrl != sourceUrl || existing.guideSyncToken != guideSyncToken) {
-            prefetchJob?.cancel()
-            _prefetchState.value =
-                BaStudentGuidePrefetchUiState(
-                    sourceUrl = sourceUrl,
-                    guideSyncToken = guideSyncToken,
-                )
-        }
-        if (prefetchBottomTab == GuideBottomTab.Gallery) {
-            _prefetchState.update { state ->
-                state.copy(galleryPrefetchRequested = true)
-            }
-        }
-        val targetStage = if (_prefetchState.value.galleryPrefetchRequested) 2 else 1
-        val currentStage = _prefetchState.value.staticImagePrefetchStage
-        if (info == null || sourceUrl.isBlank() || currentStage >= targetStage) return
-        prefetchJob?.cancel()
-        prefetchJob =
-            viewModelScope.launch {
-                runPrefetchStages(
-                    info = info,
-                    sourceUrl = sourceUrl,
-                    targetStage = targetStage,
-                    initialPrefetchCount = initialPrefetchCount,
-                    galleryExtraPrefetchCount = galleryExtraPrefetchCount,
-                )
-            }
-    }
+    ) = prefetchController.syncStaticImagePrefetch(
+        sourceUrl = _dataState.value.sourceUrl,
+        info = info,
+        prefetchBottomTab = prefetchBottomTab,
+        initialPrefetchCount = initialPrefetchCount,
+        galleryExtraPrefetchCount = galleryExtraPrefetchCount,
+    )
 
     private fun loadGuide(
         sourceUrl: String,
@@ -580,76 +522,11 @@ internal class BaStudentGuideViewModel(
     }
 
     private fun resetGuideRuntimeState() {
-        _pageChromeState.update { state -> state.resetForNewSource() }
-        _voiceUiState.update { state -> state.resetForNewSource() }
-    }
-
-    private suspend fun runPrefetchStages(
-        info: BaStudentGuideInfo,
-        sourceUrl: String,
-        targetStage: Int,
-        initialPrefetchCount: Int,
-        galleryExtraPrefetchCount: Int,
-    ) {
-        val guideSyncToken = info.syncedAtMs
-        val safeInitialPrefetchCount = initialPrefetchCount.coerceAtLeast(0)
-        val safeGalleryExtraPrefetchCount = galleryExtraPrefetchCount.coerceAtLeast(0)
-        val requestedPrefetchCount =
-            if (targetStage >= 2) {
-                safeInitialPrefetchCount + safeGalleryExtraPrefetchCount
-            } else {
-                safeInitialPrefetchCount
-            }
-        val allUrls =
-            repository.collectStaticImagePrefetchUrls(
-                info = info,
-                maxCount = requestedPrefetchCount,
-            )
-
-        fun updatePrefetchIfCurrent(transform: (BaStudentGuidePrefetchUiState) -> BaStudentGuidePrefetchUiState) {
-            _prefetchState.update { state ->
-                if (state.sourceUrl == sourceUrl && state.guideSyncToken == guideSyncToken) {
-                    transform(state)
-                } else {
-                    state
-                }
-            }
-        }
-        if (_prefetchState.value.staticImagePrefetchStage < 1 && targetStage >= 1) {
-            val urls = allUrls.take(safeInitialPrefetchCount)
-            if (urls.isNotEmpty()) {
-                repository.prefetchStaticImages(
-                    context = appContext,
-                    sourceUrl = sourceUrl,
-                    rawUrls = urls,
-                )
-                updatePrefetchIfCurrent { state ->
-                    state.copy(galleryCacheRevision = state.galleryCacheRevision + 1)
-                }
-            }
-            updatePrefetchIfCurrent { state ->
-                state.copy(staticImagePrefetchStage = 1)
-            }
-        }
-        if (_prefetchState.value.staticImagePrefetchStage < 2 && targetStage >= 2) {
-            val urls =
-                allUrls
-                    .drop(safeInitialPrefetchCount)
-                    .take(safeGalleryExtraPrefetchCount)
-            if (urls.isNotEmpty()) {
-                repository.prefetchStaticImages(
-                    context = appContext,
-                    sourceUrl = sourceUrl,
-                    rawUrls = urls,
-                )
-                updatePrefetchIfCurrent { state ->
-                    state.copy(galleryCacheRevision = state.galleryCacheRevision + 1)
-                }
-            }
-            updatePrefetchIfCurrent { state ->
-                state.copy(staticImagePrefetchStage = 2)
-            }
-        }
+        chromeController.resetForNewSource()
+        prefetchController.resetForSource(
+            sourceUrl = _dataState.value.sourceUrl,
+            guideSyncToken = _dataState.value.info?.syncedAtMs ?: -1L,
+        )
     }
 
     override fun onCleared() {
@@ -657,7 +534,7 @@ internal class BaStudentGuideViewModel(
         currentUrlLoadJob?.cancel()
         currentUrlSaveJob?.cancel()
         npcSatelliteResolveJob?.cancel()
-        prefetchJob?.cancel()
+        prefetchController.cancel()
         mediaImageLoader.clearLoadingState()
         profileLinkTitleLoader.clearLoadingState()
         super.onCleared()

@@ -128,6 +128,7 @@ fun SettingsPage(
     val scope = rememberCoroutineScope()
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
     val diagnosticsUiState by settingsPageViewModel.diagnosticsUiState.collectAsStateWithLifecycle()
+    val supportUiState by settingsPageViewModel.supportUiState.collectAsStateWithLifecycle()
     val chromeState by settingsPageViewModel.chromeState.collectAsStateWithLifecycle()
     val routeState =
         rememberSettingsPageRouteState(
@@ -176,6 +177,8 @@ fun SettingsPage(
         rememberSettingsPageSectionContracts(
             context = context,
             pageUiState = pageUiState,
+            permissionKeepAliveState = supportUiState.permissionKeepAliveState,
+            batteryOptimizationState = supportUiState.batteryOptimizationState,
             permissionKeepAliveController = permissionKeepAliveController,
             batteryOptimizationController = batteryOptimizationController,
             appLanguageController = appLanguageController,

@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -36,6 +37,14 @@ internal class GitHubTrackEditorPageStateHolder {
     var appList by mutableStateOf<List<InstalledAppItem>>(emptyList())
     var appListLoaded by mutableStateOf(false)
     var appListRefreshing by mutableStateOf(false)
+    var sourceModeDropdownExpanded by mutableStateOf(false)
+    var sourceModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var updateIntervalDropdownExpanded by mutableStateOf(false)
+    var updateIntervalDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var actionsIntervalDropdownExpanded by mutableStateOf(false)
+    var actionsIntervalDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var preciseModeDropdownExpanded by mutableStateOf(false)
+    var preciseModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
 
     fun reset() {
         repoUrlInput = ""
@@ -53,5 +62,17 @@ internal class GitHubTrackEditorPageStateHolder {
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
         repoUrlScanRunning = false
         packageNameScanRunning = false
+        resetDropdownState()
+    }
+
+    fun resetDropdownState() {
+        sourceModeDropdownExpanded = false
+        sourceModeDropdownAnchorBounds = null
+        updateIntervalDropdownExpanded = false
+        updateIntervalDropdownAnchorBounds = null
+        actionsIntervalDropdownExpanded = false
+        actionsIntervalDropdownAnchorBounds = null
+        preciseModeDropdownExpanded = false
+        preciseModeDropdownAnchorBounds = null
     }
 }

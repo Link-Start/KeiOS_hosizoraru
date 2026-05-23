@@ -8,10 +8,7 @@ import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -45,12 +42,15 @@ internal fun rememberBaGuideCatalogJsonExportAction(
     transferSettings: BaGuideCatalogTransferSettingsUiState,
     exportDoneText: String,
     exportFailedText: String,
+    onArmSafExportRequest: (BaGuideCatalogJsonExportRequest) -> Unit,
+    onConsumeSafExportRequest: () -> BaGuideCatalogJsonExportRequest?,
+    onArmFixedExportRequest: (BaGuideCatalogJsonExportRequest) -> Unit,
+    onConsumeFixedExportRequest: () -> BaGuideCatalogJsonExportRequest?,
+    onClearFixedExportRequest: () -> Unit,
     onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
     onMediaSaveFixedTreeUriSelected: (String) -> Unit,
     onMediaSaveFixedTreeUriCleared: () -> Unit,
 ): BaGuideCatalogJsonExportAction {
-    var pendingSafExportRequest by remember { mutableStateOf<BaGuideCatalogJsonExportRequest?>(null) }
-    var pendingFixedExportRequest by remember { mutableStateOf<BaGuideCatalogJsonExportRequest?>(null) }
     val mediaSaveCustomEnabled = transferSettings.mediaSaveCustomEnabled
     val mediaSaveFixedTreeUri = transferSettings.mediaSaveFixedTreeUri
 
@@ -58,8 +58,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("application/json"),
         ) { uri ->
-            val request = pendingSafExportRequest
-            pendingSafExportRequest = null
+            val request = onConsumeSafExportRequest()
             if (uri == null || request == null || request.payload.isBlank()) {
                 return@rememberLauncherForActivityResult
             }
@@ -79,14 +78,12 @@ internal fun rememberBaGuideCatalogJsonExportAction(
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            val request = pendingFixedExportRequest
-            if (result.resultCode != Activity.RESULT_OK || request == null) {
-                pendingFixedExportRequest = null
+            val request = onConsumeFixedExportRequest()
+            if (result.resultCode != Activity.RESULT_OK) {
                 return@rememberLauncherForActivityResult
             }
             val treeUri = result.data?.data
             if (treeUri == null) {
-                pendingFixedExportRequest = null
                 return@rememberLauncherForActivityResult
             }
             runCatching {
@@ -107,7 +104,9 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 }
             }
             onMediaSaveFixedTreeUriSelected(treeUri.toString())
-            pendingFixedExportRequest = null
+            if (request == null) {
+                return@rememberLauncherForActivityResult
+            }
             pageScope.launch {
                 val success =
                     writeBaGuideCatalogJsonExportToTreeAsync(
@@ -144,7 +143,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
     fun dispatchExportRequest(request: BaGuideCatalogJsonExportRequest) {
         if (request.payload.isBlank()) return
         if (!mediaSaveCustomEnabled) {
-            pendingSafExportRequest = request
+            onArmSafExportRequest(request)
             safExportLauncher.launch(request.fileName)
             return
         }
@@ -153,7 +152,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 .takeIf { it.isNotBlank() }
                 ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
         if (fixedTreeUri == null) {
-            pendingFixedExportRequest = request
+            onArmFixedExportRequest(request)
             launchFixedExportFolderPicker()
             return
         }
@@ -170,7 +169,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                 )
             } else {
                 onMediaSaveFixedTreeUriCleared()
-                pendingFixedExportRequest = request
+                onArmFixedExportRequest(request)
                 launchFixedExportFolderPicker()
             }
         }
@@ -190,6 +189,8 @@ internal fun rememberBaGuideCatalogJsonExportAction(
             fixedExportFolderLauncher,
             exportDoneText,
             exportFailedText,
+            onArmSafExportRequest,
+            onArmFixedExportRequest,
             onMediaSaveFixedTreeUriCleared,
         ) {
             export@{ payloadBuilder, fileName, successToast ->
@@ -234,7 +235,7 @@ internal fun rememberBaGuideCatalogJsonExportAction(
                     onMediaSaveCustomEnabledChange(enabled)
                 },
                 onPickMediaSaveLocation = {
-                    pendingFixedExportRequest = null
+                    onClearFixedExportRequest()
                     launchFixedExportFolderPicker()
                 },
             )

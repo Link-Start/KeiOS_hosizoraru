@@ -14,14 +14,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputSnapshot
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputState
+import os.kei.ui.page.main.os.shell.state.toOutputSnapshot
 
 internal class OsShellRunnerViewModel : ViewModel() {
     private val repository = OsShellRunnerRepository()
+    private val repositoryPersistentState = repository.observePersistentState()
+    private val repositoryChromePrefs = repository.observeChromePrefs()
     private var loadJob: Job? = null
     private var commandJob: Job? = null
     private var suppressStopOutputAppend = false
@@ -42,32 +48,55 @@ internal class OsShellRunnerViewModel : ViewModel() {
     val events: SharedFlow<OsShellRunnerEvent> = eventMutableFlow.asSharedFlow()
 
     val persistentState: StateFlow<OsShellRunnerPersistentState> =
-        repository
-            .observePersistentState()
+        repositoryPersistentState
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = repository.observePersistentState().value,
+                initialValue = repositoryPersistentState.value,
+            )
+
+    val persistentUiState: StateFlow<OsShellRunnerPersistentUiState> =
+        persistentState
+            .map { state ->
+                OsShellRunnerPersistentUiState(
+                    commandInput = state.commandInput,
+                    settings = state.settings,
+                    loaded = state.loaded,
+                )
+            }.distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = OsShellRunnerPersistentUiState(),
+            )
+
+    val outputState: StateFlow<OsShellRunnerOutputState> =
+        persistentState
+            .map { state -> state.outputState }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = persistentState.value.outputState,
             )
 
     val chromePrefs: StateFlow<OsShellRunnerChromePrefs> =
-        repository
-            .observeChromePrefs()
+        repositoryChromePrefs
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = repository.observeChromePrefs().value,
+                initialValue = repositoryChromePrefs.value,
             )
 
     val uiState: StateFlow<OsShellRunnerUiState> =
         combine(
-            persistentState,
+            persistentUiState,
             chromePrefs,
             commandExecutionState,
             pageChromeState,
-        ) { persistent, chrome, commandExecution, pageChrome ->
+        ) { persistentUi, chrome, commandExecution, pageChrome ->
             OsShellRunnerUiState(
-                persistentState = persistent,
+                persistentState = persistentUi,
                 chromePrefs = chrome,
                 commandExecutionState = commandExecution,
                 pageChromeState = pageChrome,
@@ -228,6 +257,8 @@ internal class OsShellRunnerViewModel : ViewModel() {
     fun updateOutputState(outputState: OsShellRunnerOutputState) {
         repository.updateOutputState(outputState)
     }
+
+    fun currentOutputSnapshot(): OsShellRunnerOutputSnapshot = outputState.value.toOutputSnapshot()
 
     fun replaceOutputMessage(message: String) {
         repository.replaceOutputMessage(message)

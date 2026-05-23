@@ -6,11 +6,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -34,28 +30,59 @@ internal fun BindSettingsPageEffects(
     logLevel: AppLogLevel,
     shizukuRefreshToken: Int,
 ) {
+    val latestContext = rememberUpdatedState(context)
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
     val latestShizukuStatus = rememberUpdatedState(shizukuStatus)
-    var pageActive by remember(lifecycleOwner) {
-        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
-    }
-    DisposableEffect(lifecycleOwner, batteryOptimizationController, permissionKeepAliveController) {
+    val latestCacheDiagnosticsEnabled = rememberUpdatedState(cacheDiagnosticsEnabled)
+    val latestLogLevel = rememberUpdatedState(logLevel)
+
+    DisposableEffect(
+        lifecycleOwner,
+        settingsPageViewModel,
+        batteryOptimizationController,
+        permissionKeepAliveController,
+    ) {
+        fun refreshSupportState() {
+            settingsPageViewModel.refreshBatteryOptimization(batteryOptimizationController)
+            settingsPageViewModel.refreshPermissionKeepAlive(
+                controller = permissionKeepAliveController,
+                notificationPermissionGranted = latestNotificationPermissionGranted.value,
+                shizukuStatus = latestShizukuStatus.value,
+            )
+        }
+
+        fun bindDiagnostics(active: Boolean) {
+            settingsPageViewModel.bindDiagnostics(
+                context = latestContext.value,
+                active = active,
+                cacheDiagnosticsEnabled = latestCacheDiagnosticsEnabled.value,
+                logLevel = latestLogLevel.value,
+            )
+        }
+
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            refreshSupportState()
+            bindDiagnostics(active = true)
+        }
         val observer =
             LifecycleEventObserver { _, event ->
-                pageActive =
-                    when (event) {
-                        Lifecycle.Event.ON_START,
-                        Lifecycle.Event.ON_RESUME,
-                        -> true
-
-                        Lifecycle.Event.ON_STOP,
-                        Lifecycle.Event.ON_DESTROY,
-                        -> false
-
-                        else -> pageActive
+                when (event) {
+                    Lifecycle.Event.ON_START,
+                    Lifecycle.Event.ON_RESUME,
+                    -> {
+                        refreshSupportState()
+                        bindDiagnostics(active = true)
                     }
-                if (event == Lifecycle.Event.ON_RESUME) {
-                    batteryOptimizationController.refresh()
+
+                    Lifecycle.Event.ON_STOP,
+                    Lifecycle.Event.ON_DESTROY,
+                    -> {
+                        bindDiagnostics(active = false)
+                    }
+
+                    else -> {
+                        Unit
+                    }
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -63,25 +90,32 @@ internal fun BindSettingsPageEffects(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    LaunchedEffect(pageActive, notificationPermissionGranted, shizukuStatus) {
-        if (!pageActive) return@LaunchedEffect
-        permissionKeepAliveController.refresh(
-            notificationPermissionGranted = notificationPermissionGranted,
-            shizukuStatus = shizukuStatus,
-        )
-    }
-    LaunchedEffect(context, pageActive, cacheDiagnosticsEnabled, logLevel) {
+    LaunchedEffect(context, cacheDiagnosticsEnabled, logLevel) {
+        if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            return@LaunchedEffect
+        }
         settingsPageViewModel.bindDiagnostics(
             context = context,
-            active = pageActive,
+            active = true,
             cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
             logLevel = logLevel,
+        )
+    }
+    LaunchedEffect(notificationPermissionGranted, shizukuStatus) {
+        if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            return@LaunchedEffect
+        }
+        settingsPageViewModel.refreshPermissionKeepAliveNow(
+            controller = permissionKeepAliveController,
+            notificationPermissionGranted = notificationPermissionGranted,
+            shizukuStatus = shizukuStatus,
         )
     }
     LaunchedEffect(shizukuRefreshToken) {
         if (shizukuRefreshToken <= 0) return@LaunchedEffect
         repeat(8) {
-            permissionKeepAliveController.refresh(
+            settingsPageViewModel.refreshPermissionKeepAliveNow(
+                controller = permissionKeepAliveController,
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
                 shizukuStatus = latestShizukuStatus.value,
             )

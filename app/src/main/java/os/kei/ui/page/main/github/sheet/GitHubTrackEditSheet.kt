@@ -14,10 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -85,6 +81,14 @@ internal fun GitHubTrackEditSheet(
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    sourceModeDropdownExpanded: Boolean,
+    sourceModeDropdownAnchorBounds: IntRect?,
+    updateIntervalDropdownExpanded: Boolean,
+    updateIntervalDropdownAnchorBounds: IntRect?,
+    actionsIntervalDropdownExpanded: Boolean,
+    actionsIntervalDropdownAnchorBounds: IntRect?,
+    preciseModeDropdownExpanded: Boolean,
+    preciseModeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onDismissRequest: () -> Unit,
@@ -108,6 +112,14 @@ internal fun GitHubTrackEditSheet(
     onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit,
+    onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
+    onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
+    onUpdateIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onActionsIntervalDropdownExpandedChange: (Boolean) -> Unit,
+    onActionsIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onPreciseModeDropdownExpandedChange: (Boolean) -> Unit,
+    onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val hasUnsavedChanges =
         hasGitHubTrackEditorUnsavedChanges(
@@ -225,6 +237,14 @@ internal fun GitHubTrackEditSheet(
                     updateIntervalModeInput = updateIntervalModeInput,
                     actionsUpdateIntervalModeInput = actionsUpdateIntervalModeInput,
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
+                    sourceModeDropdownExpanded = sourceModeDropdownExpanded,
+                    sourceModeDropdownAnchorBounds = sourceModeDropdownAnchorBounds,
+                    updateIntervalDropdownExpanded = updateIntervalDropdownExpanded,
+                    updateIntervalDropdownAnchorBounds = updateIntervalDropdownAnchorBounds,
+                    actionsIntervalDropdownExpanded = actionsIntervalDropdownExpanded,
+                    actionsIntervalDropdownAnchorBounds = actionsIntervalDropdownAnchorBounds,
+                    preciseModeDropdownExpanded = preciseModeDropdownExpanded,
+                    preciseModeDropdownAnchorBounds = preciseModeDropdownAnchorBounds,
                     globalRefreshIntervalHours = globalRefreshIntervalHours,
                     globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
@@ -242,6 +262,15 @@ internal fun GitHubTrackEditSheet(
                     onActionsUpdateIntervalModeInputChange =
                     onActionsUpdateIntervalModeInputChange,
                     onPreciseApkVersionModeInputChange = onPreciseApkVersionModeInputChange,
+                    onSourceModeDropdownExpandedChange = onSourceModeDropdownExpandedChange,
+                    onSourceModeDropdownAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
+                    onUpdateIntervalDropdownExpandedChange = onUpdateIntervalDropdownExpandedChange,
+                    onUpdateIntervalDropdownAnchorBoundsChange = onUpdateIntervalDropdownAnchorBoundsChange,
+                    onActionsIntervalDropdownExpandedChange = onActionsIntervalDropdownExpandedChange,
+                    onActionsIntervalDropdownAnchorBoundsChange =
+                    onActionsIntervalDropdownAnchorBoundsChange,
+                    onPreciseModeDropdownExpandedChange = onPreciseModeDropdownExpandedChange,
+                    onPreciseModeDropdownAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
                 )
             }
         }
@@ -269,6 +298,14 @@ private fun GitHubTrackEditFormContent(
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    sourceModeDropdownExpanded: Boolean,
+    sourceModeDropdownAnchorBounds: IntRect?,
+    updateIntervalDropdownExpanded: Boolean,
+    updateIntervalDropdownAnchorBounds: IntRect?,
+    actionsIntervalDropdownExpanded: Boolean,
+    actionsIntervalDropdownAnchorBounds: IntRect?,
+    preciseModeDropdownExpanded: Boolean,
+    preciseModeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
@@ -284,15 +321,15 @@ private fun GitHubTrackEditFormContent(
     onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit,
+    onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
+    onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
+    onUpdateIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onActionsIntervalDropdownExpandedChange: (Boolean) -> Unit,
+    onActionsIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onPreciseModeDropdownExpandedChange: (Boolean) -> Unit,
+    onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
-    var sourceModeExpanded by remember { mutableStateOf(false) }
-    var sourceModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    var updateIntervalExpanded by remember { mutableStateOf(false) }
-    var updateIntervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    var actionsIntervalExpanded by remember { mutableStateOf(false) }
-    var actionsIntervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    var preciseModeExpanded by remember { mutableStateOf(false) }
-    var preciseModeAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val sourceModes = GitHubTrackedSourceMode.entries
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
     val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
@@ -417,13 +454,13 @@ private fun GitHubTrackEditFormContent(
                     },
                 options = sourceModeOptions,
                 selectedIndex = sourceModeIndex,
-                expanded = sourceModeExpanded,
-                anchorBounds = sourceModeAnchorBounds,
-                onExpandedChange = { sourceModeExpanded = it },
+                expanded = sourceModeDropdownExpanded,
+                anchorBounds = sourceModeDropdownAnchorBounds,
+                onExpandedChange = onSourceModeDropdownExpandedChange,
                 onSelectedIndexChange = { index ->
                     sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
                 },
-                onAnchorBoundsChange = { sourceModeAnchorBounds = it },
+                onAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
                 backdrop = backdrop,
             )
         }
@@ -543,13 +580,13 @@ private fun GitHubTrackEditFormContent(
                         },
                     options = updateIntervalOptions,
                     selectedIndex = updateIntervalIndex,
-                    expanded = updateIntervalExpanded,
-                    anchorBounds = updateIntervalAnchorBounds,
-                    onExpandedChange = { updateIntervalExpanded = it },
+                    expanded = updateIntervalDropdownExpanded,
+                    anchorBounds = updateIntervalDropdownAnchorBounds,
+                    onExpandedChange = onUpdateIntervalDropdownExpandedChange,
                     onSelectedIndexChange = { index ->
                         updateIntervalModes.getOrNull(index)?.let(onUpdateIntervalModeInputChange)
                     },
-                    onAnchorBoundsChange = { updateIntervalAnchorBounds = it },
+                    onAnchorBoundsChange = onUpdateIntervalDropdownAnchorBoundsChange,
                     backdrop = backdrop,
                 )
             }
@@ -611,15 +648,15 @@ private fun GitHubTrackEditFormContent(
                                 },
                             options = actionsIntervalOptions,
                             selectedIndex = actionsIntervalIndex,
-                            expanded = actionsIntervalExpanded,
-                            anchorBounds = actionsIntervalAnchorBounds,
-                            onExpandedChange = { actionsIntervalExpanded = it },
+                            expanded = actionsIntervalDropdownExpanded,
+                            anchorBounds = actionsIntervalDropdownAnchorBounds,
+                            onExpandedChange = onActionsIntervalDropdownExpandedChange,
                             onSelectedIndexChange = { index ->
                                 actionsIntervalModes
                                     .getOrNull(index)
                                     ?.let(onActionsUpdateIntervalModeInputChange)
                             },
-                            onAnchorBoundsChange = { actionsIntervalAnchorBounds = it },
+                            onAnchorBoundsChange = onActionsIntervalDropdownAnchorBoundsChange,
                             backdrop = backdrop,
                         )
                     }
@@ -636,13 +673,13 @@ private fun GitHubTrackEditFormContent(
                             },
                         options = preciseModeOptions,
                         selectedIndex = preciseModeIndex,
-                        expanded = preciseModeExpanded,
-                        anchorBounds = preciseModeAnchorBounds,
-                        onExpandedChange = { preciseModeExpanded = it },
+                        expanded = preciseModeDropdownExpanded,
+                        anchorBounds = preciseModeDropdownAnchorBounds,
+                        onExpandedChange = onPreciseModeDropdownExpandedChange,
                         onSelectedIndexChange = { index ->
                             preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
                         },
-                        onAnchorBoundsChange = { preciseModeAnchorBounds = it },
+                        onAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
                         backdrop = backdrop,
                     )
                 }

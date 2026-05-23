@@ -1,12 +1,14 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.shell.component
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.ScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -17,8 +19,8 @@ import os.kei.ui.page.main.os.osLucideRunIcon
 import os.kei.ui.page.main.os.osLucideSaveIcon
 import os.kei.ui.page.main.os.osLucideStopIcon
 import os.kei.ui.page.main.os.shell.ShellCommandInputField
-import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
 import os.kei.ui.page.main.os.shell.ShellOutputLiquidPanel
+import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputSnapshot
 import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
@@ -40,11 +42,11 @@ internal fun OsShellRunnerInputCard(
     onRunCommand: () -> Unit,
     onStopCommand: () -> Unit,
     onOpenSaveCommandSheet: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
     AppSurfaceCard(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         AppCardHeader(
             title = inputTitle,
@@ -56,9 +58,10 @@ internal fun OsShellRunnerInputCard(
                         size = 14.dp,
                         strokeWidth = 2.dp,
                         activeColor = MiuixTheme.colorScheme.primary,
-                        inactiveColor = MiuixTheme.colorScheme.primary.copy(
-                            alpha = if (isDark) 0.28f else 0.22f
-                        )
+                        inactiveColor =
+                            MiuixTheme.colorScheme.primary.copy(
+                                alpha = if (isDark) 0.28f else 0.22f,
+                            ),
                     )
                 }
             },
@@ -67,38 +70,41 @@ internal fun OsShellRunnerInputCard(
                     icon = osLucideRunIcon(),
                     contentDescription = runActionDescription,
                     onClick = onRunCommand,
-                    iconTint = if (runningCommand) {
-                        MiuixTheme.colorScheme.onBackgroundVariant
-                    } else {
-                        MiuixTheme.colorScheme.primary
-                    },
-                    variant = GlassVariant.Bar
+                    iconTint =
+                        if (runningCommand) {
+                            MiuixTheme.colorScheme.onBackgroundVariant
+                        } else {
+                            MiuixTheme.colorScheme.primary
+                        },
+                    variant = GlassVariant.Bar,
                 )
                 AppStandaloneLiquidIconButton(
                     icon = osLucideStopIcon(),
                     contentDescription = stopActionDescription,
                     onClick = onStopCommand,
-                    iconTint = if (runningCommand) {
-                        MiuixTheme.colorScheme.primary
-                    } else {
-                        MiuixTheme.colorScheme.onBackgroundVariant
-                    },
-                    variant = GlassVariant.Bar
+                    iconTint =
+                        if (runningCommand) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onBackgroundVariant
+                        },
+                    variant = GlassVariant.Bar,
                 )
                 AppStandaloneLiquidIconButton(
                     icon = osLucideSaveIcon(),
                     contentDescription = saveCommandActionDescription,
                     onClick = onOpenSaveCommandSheet,
                     iconTint = MiuixTheme.colorScheme.primary,
-                    variant = GlassVariant.Bar
+                    variant = GlassVariant.Bar,
                 )
-            }
+            },
         )
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 14.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp)
+                    .padding(bottom = 14.dp),
         ) {
             ShellCommandInputField(
                 value = commandInput,
@@ -106,7 +112,7 @@ internal fun OsShellRunnerInputCard(
                 label = inputHint,
                 minHeight = 136.dp,
                 focusRequestToken = focusRequestToken,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -116,8 +122,7 @@ internal fun OsShellRunnerInputCard(
 internal fun OsShellRunnerOutputCard(
     outputTitle: String,
     outputHint: String,
-    outputText: String,
-    outputEntries: List<ShellOutputDisplayEntry>,
+    outputSnapshot: OsShellRunnerOutputSnapshot,
     outputScrollState: ScrollState,
     formatOutputActionDescription: String,
     copyOutputActionDescription: String,
@@ -125,10 +130,10 @@ internal fun OsShellRunnerOutputCard(
     onFormatOutput: () -> Unit,
     onCopyOutput: () -> Unit,
     onClearOutput: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AppSurfaceCard(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         AppCardHeader(
             title = outputTitle,
@@ -139,35 +144,36 @@ internal fun OsShellRunnerOutputCard(
                     contentDescription = formatOutputActionDescription,
                     onClick = onFormatOutput,
                     iconTint = MiuixTheme.colorScheme.primary,
-                    variant = GlassVariant.Bar
+                    variant = GlassVariant.Bar,
                 )
                 AppStandaloneLiquidIconButton(
                     icon = osLucideCopyIcon(),
                     contentDescription = copyOutputActionDescription,
                     onClick = onCopyOutput,
                     iconTint = MiuixTheme.colorScheme.primary,
-                    variant = GlassVariant.Bar
+                    variant = GlassVariant.Bar,
                 )
                 AppStandaloneLiquidIconButton(
                     icon = osLucideClearIcon(),
                     contentDescription = clearOutputActionDescription,
                     onClick = onClearOutput,
                     iconTint = MiuixTheme.colorScheme.onBackgroundVariant,
-                    variant = GlassVariant.Bar
+                    variant = GlassVariant.Bar,
                 )
-            }
+            },
         )
         ShellOutputLiquidPanel(
-            text = outputText,
+            text = outputSnapshot.text,
             hint = outputHint,
-            entries = outputEntries,
+            entries = outputSnapshot.entries,
             scrollState = outputScrollState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .animateContentSize()
-                .heightIn(min = 160.dp, max = 320.dp)
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 14.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .animateContentSize()
+                    .heightIn(min = 160.dp, max = 320.dp)
+                    .padding(horizontal = 14.dp)
+                    .padding(bottom = 14.dp),
         )
     }
 }

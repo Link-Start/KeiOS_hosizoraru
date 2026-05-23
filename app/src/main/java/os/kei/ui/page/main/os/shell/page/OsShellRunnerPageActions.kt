@@ -12,10 +12,10 @@ import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutionState
 import os.kei.ui.page.main.os.shell.OsShellRunnerExitCleanupMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerOutputSaveMode
-import os.kei.ui.page.main.os.shell.OsShellRunnerPersistentState
+import os.kei.ui.page.main.os.shell.OsShellRunnerPersistentUiState
 import os.kei.ui.page.main.os.shell.OsShellRunnerStartupBehavior
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
-import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
+import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputSnapshot
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
 
 @Stable
@@ -54,9 +54,9 @@ internal fun rememberOsShellRunnerPageActions(
     context: Context,
     shellRunnerViewModel: OsShellRunnerViewModel,
     pageState: OsShellRunnerPageStateHolder,
-    persistentState: OsShellRunnerPersistentState,
+    persistentState: OsShellRunnerPersistentUiState,
     commandExecutionState: OsShellRunnerCommandExecutionState,
-    latestOutputEntry: ShellOutputDisplayEntry?,
+    currentOutputSnapshot: () -> OsShellRunnerOutputSnapshot,
     textBundle: OsShellRunnerTextBundle,
     canRunShellCommand: Boolean,
     onRequestShizukuPermission: () -> Unit,
@@ -69,7 +69,7 @@ internal fun rememberOsShellRunnerPageActions(
         pageState = pageState,
         latestPersistentState = rememberUpdatedState(persistentState),
         latestCommandExecutionState = rememberUpdatedState(commandExecutionState),
-        latestOutputEntry = rememberUpdatedState(latestOutputEntry),
+        latestOutputSnapshotProvider = rememberUpdatedState(currentOutputSnapshot),
         textBundle = textBundle,
         latestCanRunShellCommand = rememberUpdatedState(canRunShellCommand),
         onRequestShizukuPermission = onRequestShizukuPermission,
@@ -82,9 +82,9 @@ private fun rememberOsShellRunnerPageActionsInternal(
     context: Context,
     shellRunnerViewModel: OsShellRunnerViewModel,
     pageState: OsShellRunnerPageStateHolder,
-    latestPersistentState: androidx.compose.runtime.State<OsShellRunnerPersistentState>,
+    latestPersistentState: androidx.compose.runtime.State<OsShellRunnerPersistentUiState>,
     latestCommandExecutionState: androidx.compose.runtime.State<OsShellRunnerCommandExecutionState>,
-    latestOutputEntry: androidx.compose.runtime.State<ShellOutputDisplayEntry?>,
+    latestOutputSnapshotProvider: androidx.compose.runtime.State<() -> OsShellRunnerOutputSnapshot>,
     textBundle: OsShellRunnerTextBundle,
     latestCanRunShellCommand: androidx.compose.runtime.State<Boolean>,
     onRequestShizukuPermission: () -> Unit,
@@ -97,7 +97,7 @@ private fun rememberOsShellRunnerPageActionsInternal(
         pageState,
         latestPersistentState,
         latestCommandExecutionState,
-        latestOutputEntry,
+        latestOutputSnapshotProvider,
         textBundle,
         latestCanRunShellCommand,
         onRequestShizukuPermission,
@@ -173,11 +173,12 @@ private fun rememberOsShellRunnerPageActionsInternal(
                 },
                 saveCommandToCard = {
                     val state = latestPersistentState.value
+                    val outputSnapshot = latestOutputSnapshotProvider.value()
                     shellRunnerViewModel.saveShellCommandCard(
                         command = state.commandInput,
                         title = pageState.saveTitleInput,
                         subtitle = pageState.saveSubtitleInput,
-                        runOutput = state.outputState.latestRunResultOutput,
+                        runOutput = outputSnapshot.latestRunResultOutput,
                         commandSaveEmptyToast = textBundle.commandSaveEmptyToast,
                         saveSheetTitleRequiredToast = textBundle.saveSheetTitleRequiredToast,
                         commandSavedToast = textBundle.commandSavedToast,
@@ -185,12 +186,13 @@ private fun rememberOsShellRunnerPageActionsInternal(
                 },
                 copyOutput = {
                     val state = latestPersistentState.value
+                    val outputSnapshot = latestOutputSnapshotProvider.value()
                     val output =
                         resolveShellOutputCopyText(
                             settings = state.settings,
-                            latestOutputEntry = latestOutputEntry.value,
-                            latestRunResultOutput = state.outputState.latestRunResultOutput,
-                            outputText = state.outputState.outputText,
+                            latestOutputEntry = outputSnapshot.latestEntry,
+                            latestRunResultOutput = outputSnapshot.latestRunResultOutput,
+                            outputText = outputSnapshot.text,
                         )
                     if (output.isBlank()) {
                         context.showToast(textBundle.outputCopyEmptyToast)
@@ -203,7 +205,7 @@ private fun rememberOsShellRunnerPageActionsInternal(
                     }
                 },
                 formatOutput = {
-                    val outputText = latestPersistentState.value.outputState.outputText
+                    val outputText = latestOutputSnapshotProvider.value().text
                     val output = outputText.trim()
                     if (output.isBlank()) {
                         context.showToast(textBundle.outputFormatEmptyToast)

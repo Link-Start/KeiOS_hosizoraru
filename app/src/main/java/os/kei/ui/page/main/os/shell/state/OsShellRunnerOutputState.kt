@@ -12,14 +12,30 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-internal const val shellOutputDefaultMaxChars = 120_000
+internal const val SHELL_OUTPUT_DEFAULT_MAX_CHARS = 120_000
 
 @Immutable
 internal data class OsShellRunnerOutputState(
     val outputText: String,
     val outputEntries: List<ShellOutputDisplayEntry>,
-    val latestRunResultOutput: String
+    val latestRunResultOutput: String,
 )
+
+@Immutable
+internal data class OsShellRunnerOutputSnapshot(
+    val text: String = "",
+    val entries: List<ShellOutputDisplayEntry> = emptyList(),
+    val latestEntry: ShellOutputDisplayEntry? = null,
+    val latestRunResultOutput: String = "",
+)
+
+internal fun OsShellRunnerOutputState.toOutputSnapshot(): OsShellRunnerOutputSnapshot =
+    OsShellRunnerOutputSnapshot(
+        text = outputText,
+        entries = outputEntries,
+        latestEntry = outputEntries.lastOrNull(),
+        latestRunResultOutput = latestRunResultOutput,
+    )
 
 internal fun appendShellRunnerOutput(
     currentOutputText: String,
@@ -28,49 +44,56 @@ internal fun appendShellRunnerOutput(
     result: String,
     commandStoppedText: String,
     outputSaveMode: OsShellRunnerOutputSaveMode,
-    maxChars: Int
+    maxChars: Int,
 ): OsShellRunnerOutputState {
     val normalizedResult = result.trimEnd()
     val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
     val timeLabel = "[$timestamp]"
-    val previousOutput = if (outputSaveMode == OsShellRunnerOutputSaveMode.LatestOnly) {
-        ""
-    } else {
-        currentOutputText.trimEnd()
-    }
-    val previousEntries = if (outputSaveMode == OsShellRunnerOutputSaveMode.LatestOnly) {
-        emptyList()
-    } else {
-        currentOutputEntries
-    }
-    val outputText = trimShellOutputHistory(
-        raw = buildString {
-            if (previousOutput.isNotBlank()) {
-                append(previousOutput)
-                appendLine()
-                appendLine()
-            }
-            appendLine("$ $command")
-            appendLine()
-            appendLine(normalizedResult)
-            appendLine()
-            append(timeLabel)
-        },
-        maxChars = maxChars
-    )
-    val outputEntries = trimShellOutputEntries(
-        entries = previousEntries + ShellOutputDisplayEntry(
-            command = command.trim(),
-            result = normalizedResult,
-            isStopped = normalizedResult.trim() == commandStoppedText.trim(),
-            timeLabel = timeLabel
-        ),
-        maxChars = maxChars
-    )
+    val previousOutput =
+        if (outputSaveMode == OsShellRunnerOutputSaveMode.LatestOnly) {
+            ""
+        } else {
+            currentOutputText.trimEnd()
+        }
+    val previousEntries =
+        if (outputSaveMode == OsShellRunnerOutputSaveMode.LatestOnly) {
+            emptyList()
+        } else {
+            currentOutputEntries
+        }
+    val outputText =
+        trimShellOutputHistory(
+            raw =
+                buildString {
+                    if (previousOutput.isNotBlank()) {
+                        append(previousOutput)
+                        appendLine()
+                        appendLine()
+                    }
+                    appendLine("$ $command")
+                    appendLine()
+                    appendLine(normalizedResult)
+                    appendLine()
+                    append(timeLabel)
+                },
+            maxChars = maxChars,
+        )
+    val outputEntries =
+        trimShellOutputEntries(
+            entries =
+                previousEntries +
+                    ShellOutputDisplayEntry(
+                        command = command.trim(),
+                        result = normalizedResult,
+                        isStopped = normalizedResult.trim() == commandStoppedText.trim(),
+                        timeLabel = timeLabel,
+                    ),
+            maxChars = maxChars,
+        )
     return OsShellRunnerOutputState(
         outputText = outputText,
         outputEntries = outputEntries,
-        latestRunResultOutput = normalizedResult
+        latestRunResultOutput = normalizedResult,
     )
 }
 
@@ -80,70 +103,88 @@ internal fun formatShellRunnerOutput(
     commandStoppedText: String,
     outputResultLabel: String,
     outputTimeLabel: String,
-    maxChars: Int
+    maxChars: Int,
 ): OsShellRunnerOutputState {
-    val parsedEntries = if (outputEntries.isNotEmpty()) {
-        outputEntries
-    } else {
-        parseShellOutputDisplayEntries(
-            raw = outputText,
-            stoppedOutputText = commandStoppedText,
-            outputResultLabel = outputResultLabel,
-            outputTimeLabel = outputTimeLabel
-        )
-    }
+    val parsedEntries =
+        if (outputEntries.isNotEmpty()) {
+            outputEntries
+        } else {
+            parseShellOutputDisplayEntries(
+                raw = outputText,
+                stoppedOutputText = commandStoppedText,
+                outputResultLabel = outputResultLabel,
+                outputTimeLabel = outputTimeLabel,
+            )
+        }
 
     if (parsedEntries.isNotEmpty()) {
-        val formattedEntries = parsedEntries.map { entry ->
-            if (entry.isStopped) {
-                entry
-            } else {
-                entry.copy(result = formatShellResultForReadability(entry.result))
+        val formattedEntries =
+            parsedEntries.map { entry ->
+                if (entry.isStopped) {
+                    entry
+                } else {
+                    entry.copy(result = formatShellResultForReadability(entry.result))
+                }
             }
-        }
-        val trimmedEntries = trimShellOutputEntries(
-            entries = formattedEntries,
-            maxChars = maxChars
-        )
+        val trimmedEntries =
+            trimShellOutputEntries(
+                entries = formattedEntries,
+                maxChars = maxChars,
+            )
         return OsShellRunnerOutputState(
-            outputText = buildShellOutputHistoryText(
-                entries = trimmedEntries,
-                maxChars = maxChars
-            ),
+            outputText =
+                buildShellOutputHistoryText(
+                    entries = trimmedEntries,
+                    maxChars = maxChars,
+                ),
             outputEntries = trimmedEntries,
-            latestRunResultOutput = trimmedEntries.lastOrNull()?.result.orEmpty().trim()
+            latestRunResultOutput =
+                trimmedEntries
+                    .lastOrNull()
+                    ?.result
+                    .orEmpty()
+                    .trim(),
         )
     }
 
     val formattedText = formatShellResultForReadability(outputText)
-    val reparsedEntries = parseShellOutputDisplayEntries(
-        raw = formattedText,
-        stoppedOutputText = commandStoppedText,
-        outputResultLabel = outputResultLabel,
-        outputTimeLabel = outputTimeLabel
-    )
-    if (reparsedEntries.isNotEmpty()) {
-        val trimmedEntries = trimShellOutputEntries(
-            entries = reparsedEntries,
-            maxChars = maxChars
+    val reparsedEntries =
+        parseShellOutputDisplayEntries(
+            raw = formattedText,
+            stoppedOutputText = commandStoppedText,
+            outputResultLabel = outputResultLabel,
+            outputTimeLabel = outputTimeLabel,
         )
+    if (reparsedEntries.isNotEmpty()) {
+        val trimmedEntries =
+            trimShellOutputEntries(
+                entries = reparsedEntries,
+                maxChars = maxChars,
+            )
         return OsShellRunnerOutputState(
-            outputText = buildShellOutputHistoryText(
-                entries = trimmedEntries,
-                maxChars = maxChars
-            ),
+            outputText =
+                buildShellOutputHistoryText(
+                    entries = trimmedEntries,
+                    maxChars = maxChars,
+                ),
             outputEntries = trimmedEntries,
-            latestRunResultOutput = trimmedEntries.lastOrNull()?.result.orEmpty().trim()
+            latestRunResultOutput =
+                trimmedEntries
+                    .lastOrNull()
+                    ?.result
+                    .orEmpty()
+                    .trim(),
         )
     }
-    val trimmedText = trimShellOutputHistory(
-        raw = formattedText,
-        maxChars = maxChars
-    )
+    val trimmedText =
+        trimShellOutputHistory(
+            raw = formattedText,
+            maxChars = maxChars,
+        )
     return OsShellRunnerOutputState(
         outputText = trimmedText,
         outputEntries = emptyList(),
-        latestRunResultOutput = trimmedText.trim()
+        latestRunResultOutput = trimmedText.trim(),
     )
 }
 
@@ -154,51 +195,60 @@ internal fun normalizeShellRunnerOutputState(
     outputResultLabel: String,
     outputTimeLabel: String,
     outputSaveMode: OsShellRunnerOutputSaveMode,
-    maxChars: Int
+    maxChars: Int,
 ): OsShellRunnerOutputState {
-    val candidateEntries = if (outputEntries.isNotEmpty()) {
-        outputEntries
-    } else {
-        parseShellOutputDisplayEntries(
-            raw = outputText,
-            stoppedOutputText = commandStoppedText,
-            outputResultLabel = outputResultLabel,
-            outputTimeLabel = outputTimeLabel
-        )
-    }
-    if (candidateEntries.isNotEmpty()) {
-        val modeEntries = when (outputSaveMode) {
-            OsShellRunnerOutputSaveMode.FullHistory -> candidateEntries
-            OsShellRunnerOutputSaveMode.LatestOnly -> candidateEntries.takeLast(1)
+    val candidateEntries =
+        if (outputEntries.isNotEmpty()) {
+            outputEntries
+        } else {
+            parseShellOutputDisplayEntries(
+                raw = outputText,
+                stoppedOutputText = commandStoppedText,
+                outputResultLabel = outputResultLabel,
+                outputTimeLabel = outputTimeLabel,
+            )
         }
-        val trimmedEntries = trimShellOutputEntries(
-            entries = modeEntries,
-            maxChars = maxChars
-        )
+    if (candidateEntries.isNotEmpty()) {
+        val modeEntries =
+            when (outputSaveMode) {
+                OsShellRunnerOutputSaveMode.FullHistory -> candidateEntries
+                OsShellRunnerOutputSaveMode.LatestOnly -> candidateEntries.takeLast(1)
+            }
+        val trimmedEntries =
+            trimShellOutputEntries(
+                entries = modeEntries,
+                maxChars = maxChars,
+            )
         return OsShellRunnerOutputState(
-            outputText = buildShellOutputHistoryText(
-                entries = trimmedEntries,
-                maxChars = maxChars
-            ),
+            outputText =
+                buildShellOutputHistoryText(
+                    entries = trimmedEntries,
+                    maxChars = maxChars,
+                ),
             outputEntries = trimmedEntries,
-            latestRunResultOutput = trimmedEntries.lastOrNull()?.result.orEmpty().trim()
+            latestRunResultOutput =
+                trimmedEntries
+                    .lastOrNull()
+                    ?.result
+                    .orEmpty()
+                    .trim(),
         )
     }
-    val trimmedText = trimShellOutputHistory(
-        raw = outputText,
-        maxChars = maxChars
-    )
+    val trimmedText =
+        trimShellOutputHistory(
+            raw = outputText,
+            maxChars = maxChars,
+        )
     return OsShellRunnerOutputState(
         outputText = trimmedText,
         outputEntries = emptyList(),
-        latestRunResultOutput = trimmedText.trim()
+        latestRunResultOutput = trimmedText.trim(),
     )
 }
 
-internal fun emptyShellRunnerOutputState(): OsShellRunnerOutputState {
-    return OsShellRunnerOutputState(
+internal fun emptyShellRunnerOutputState(): OsShellRunnerOutputState =
+    OsShellRunnerOutputState(
         outputText = "",
         outputEntries = emptyList(),
-        latestRunResultOutput = ""
+        latestRunResultOutput = "",
     )
-}

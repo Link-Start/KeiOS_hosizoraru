@@ -1,32 +1,29 @@
 package os.kei.ui.page.main.settings.support
 
-import android.app.AppOpsManager
 import android.annotation.SuppressLint
+import android.app.AppOpsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.system.findPropString
 import os.kei.feature.github.data.remote.GitHubVersionUtils
-import os.kei.core.concurrency.AppDispatchers
 
 internal enum class SettingsAppListAccessMode {
     Direct,
     Shizuku,
-    Restricted
+    Restricted,
 }
 
 internal enum class SettingsOemAutoStartState {
@@ -34,65 +31,58 @@ internal enum class SettingsOemAutoStartState {
     Restricted,
     Unknown,
     Fallback,
-    Unsupported
+    Unsupported,
 }
+
+@Immutable
+internal data class SettingsPermissionKeepAliveSnapshot(
+    val notificationsEnabled: Boolean = false,
+    val notificationSettingsActionAvailable: Boolean = false,
+    val shizukuGranted: Boolean = false,
+    val shizukuStatusText: String = "",
+    val appListAccessMode: SettingsAppListAccessMode = SettingsAppListAccessMode.Restricted,
+    val appListDetectedCount: Int = 0,
+    val appListSettingsActionAvailable: Boolean = false,
+    val oemAutoStartState: SettingsOemAutoStartState = SettingsOemAutoStartState.Unsupported,
+    val oemAutoStartVendorLabel: String = "",
+    val oemAutoStartActionAvailable: Boolean = false,
+)
 
 @Stable
 internal class SettingsPermissionKeepAliveController(
     private val appContext: Context,
-    private val shizukuApiUtils: ShizukuApiUtils
+    private val shizukuApiUtils: ShizukuApiUtils,
 ) {
-    var notificationsEnabled by mutableStateOf(false)
-        private set
-
-    var notificationSettingsActionAvailable by mutableStateOf(false)
-        private set
-
-    var shizukuGranted by mutableStateOf(false)
-        private set
-
-    var shizukuStatusText by mutableStateOf("")
-        private set
-
-    var appListAccessMode by mutableStateOf(SettingsAppListAccessMode.Restricted)
-        private set
-
-    var appListDetectedCount by mutableIntStateOf(0)
-        private set
-
-    var appListSettingsActionAvailable by mutableStateOf(false)
-        private set
-
-    var oemAutoStartState by mutableStateOf(SettingsOemAutoStartState.Unsupported)
-        private set
-
-    var oemAutoStartVendorLabel by mutableStateOf("")
-        private set
-
-    var oemAutoStartActionAvailable by mutableStateOf(false)
-        private set
-
-    suspend fun refresh(
+    suspend fun loadSnapshot(
         notificationPermissionGranted: Boolean,
-        shizukuStatus: String
-    ) {
-        notificationsEnabled = notificationPermissionGranted &&
-            NotificationManagerCompat.from(appContext).areNotificationsEnabled()
-        notificationSettingsActionAvailable = buildNotificationSettingsIntent(appContext) != null
+        shizukuStatus: String,
+    ): SettingsPermissionKeepAliveSnapshot {
+        val notificationsEnabled =
+            notificationPermissionGranted &&
+                NotificationManagerCompat.from(appContext).areNotificationsEnabled()
+        val notificationSettingsActionAvailable = buildNotificationSettingsIntent(appContext) != null
 
-        shizukuGranted = shizukuApiUtils.canUseCommand()
-        shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
+        val shizukuGranted = shizukuApiUtils.canUseCommand()
+        val shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
         val oemAutoStartSnapshot = resolveOemAutoStartSnapshot(appContext)
-        oemAutoStartState = oemAutoStartSnapshot.state
-        oemAutoStartVendorLabel = oemAutoStartSnapshot.vendorLabel
-        oemAutoStartActionAvailable = oemAutoStartSnapshot.settingsActionAvailable
+        val appListSettingsActionAvailable = GitHubVersionUtils.buildAppListPermissionIntent(appContext) != null
 
-        appListSettingsActionAvailable = GitHubVersionUtils.buildAppListPermissionIntent(appContext) != null
-        val appListState = withContext(AppDispatchers.fileIo) {
-            resolveAppListAccessState(appContext, shizukuApiUtils)
-        }
-        appListAccessMode = appListState.mode
-        appListDetectedCount = appListState.detectedCount
+        val appListState =
+            withContext(AppDispatchers.fileIo) {
+                resolveAppListAccessState(appContext, shizukuApiUtils)
+            }
+        return SettingsPermissionKeepAliveSnapshot(
+            notificationsEnabled = notificationsEnabled,
+            notificationSettingsActionAvailable = notificationSettingsActionAvailable,
+            shizukuGranted = shizukuGranted,
+            shizukuStatusText = shizukuStatusText,
+            appListAccessMode = appListState.mode,
+            appListDetectedCount = appListState.detectedCount,
+            appListSettingsActionAvailable = appListSettingsActionAvailable,
+            oemAutoStartState = oemAutoStartSnapshot.state,
+            oemAutoStartVendorLabel = oemAutoStartSnapshot.vendorLabel,
+            oemAutoStartActionAvailable = oemAutoStartSnapshot.settingsActionAvailable,
+        )
     }
 
     fun openNotificationSettings(): Boolean {
@@ -117,70 +107,72 @@ internal class SettingsPermissionKeepAliveController(
 @Composable
 internal fun rememberSettingsPermissionKeepAliveController(
     context: Context,
-    shizukuApiUtils: ShizukuApiUtils
+    shizukuApiUtils: ShizukuApiUtils,
 ): SettingsPermissionKeepAliveController {
     val appContext = context.applicationContext
     return remember(appContext, shizukuApiUtils) {
         SettingsPermissionKeepAliveController(
             appContext = appContext,
-            shizukuApiUtils = shizukuApiUtils
+            shizukuApiUtils = shizukuApiUtils,
         )
     }
 }
 
 private data class SettingsAppListAccessState(
     val mode: SettingsAppListAccessMode,
-    val detectedCount: Int
+    val detectedCount: Int,
 )
 
 private data class SettingsOemAutoStartSnapshot(
     val state: SettingsOemAutoStartState,
     val vendorLabel: String,
-    val settingsActionAvailable: Boolean
+    val settingsActionAvailable: Boolean,
 )
 
 private data class SettingsOemAutoStartLaunchPlan(
     val intents: List<Intent>,
     val vendorLabel: String,
     val directRouteAvailable: Boolean,
-    val supportsStateDetection: Boolean
+    val supportsStateDetection: Boolean,
 )
 
 private suspend fun resolveAppListAccessState(
     context: Context,
-    shizukuApiUtils: ShizukuApiUtils
+    shizukuApiUtils: ShizukuApiUtils,
 ): SettingsAppListAccessState {
     val shizukuPackageCount = queryShizukuPackageCount(shizukuApiUtils)
     if (shizukuPackageCount > 0) {
         return SettingsAppListAccessState(
             mode = SettingsAppListAccessMode.Shizuku,
-            detectedCount = shizukuPackageCount
+            detectedCount = shizukuPackageCount,
         )
     }
 
-    val directApps = runCatching {
-        GitHubVersionUtils.queryInstalledLaunchableApps(
-            context = context,
-            forceRefresh = true,
-            ttlMs = 0L
-        )
-    }.getOrDefault(emptyList())
+    val directApps =
+        runCatching {
+            GitHubVersionUtils.queryInstalledLaunchableApps(
+                context = context,
+                forceRefresh = true,
+                ttlMs = 0L,
+            )
+        }.getOrDefault(emptyList())
     if (directApps.isNotEmpty()) {
         return SettingsAppListAccessState(
             mode = SettingsAppListAccessMode.Direct,
-            detectedCount = directApps.size
+            detectedCount = directApps.size,
         )
     }
 
     return SettingsAppListAccessState(
         mode = SettingsAppListAccessMode.Restricted,
-        detectedCount = 0
+        detectedCount = 0,
     )
 }
 
 private suspend fun queryShizukuPackageCount(shizukuApiUtils: ShizukuApiUtils): Int {
     val output = shizukuApiUtils.execCommandCancellable("pm list packages", timeoutMs = 2500L).orEmpty()
-    return output.lineSequence()
+    return output
+        .lineSequence()
         .count { line -> line.startsWith("package:") }
         .coerceAtLeast(0)
 }
@@ -191,33 +183,34 @@ private fun resolveOemAutoStartSnapshot(context: Context): SettingsOemAutoStartS
         return SettingsOemAutoStartSnapshot(
             state = SettingsOemAutoStartState.Unsupported,
             vendorLabel = launchPlan.vendorLabel,
-            settingsActionAvailable = false
+            settingsActionAvailable = false,
         )
     }
     if (!launchPlan.directRouteAvailable) {
         return SettingsOemAutoStartSnapshot(
             state = SettingsOemAutoStartState.Fallback,
             vendorLabel = launchPlan.vendorLabel,
-            settingsActionAvailable = true
+            settingsActionAvailable = true,
         )
     }
     if (!launchPlan.supportsStateDetection) {
         return SettingsOemAutoStartSnapshot(
             state = SettingsOemAutoStartState.Unknown,
             vendorLabel = launchPlan.vendorLabel,
-            settingsActionAvailable = true
+            settingsActionAvailable = true,
         )
     }
     val restricted = queryOemAutoStartRestriction(context)
-    val state = when (restricted) {
-        true -> SettingsOemAutoStartState.Restricted
-        false -> SettingsOemAutoStartState.Allowed
-        null -> SettingsOemAutoStartState.Unknown
-    }
+    val state =
+        when (restricted) {
+            true -> SettingsOemAutoStartState.Restricted
+            false -> SettingsOemAutoStartState.Allowed
+            null -> SettingsOemAutoStartState.Unknown
+        }
     return SettingsOemAutoStartSnapshot(
         state = state,
         vendorLabel = launchPlan.vendorLabel,
-        settingsActionAvailable = true
+        settingsActionAvailable = true,
     )
 }
 
@@ -226,218 +219,234 @@ private fun buildOemAutoStartLaunchPlan(context: Context): SettingsOemAutoStartL
     val packageName = context.packageName
     val packageUri = "package:$packageName".toUri()
     val vendor = resolveOemAutoStartVendor()
-    val detailIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    val directCandidates = buildList {
-        when (vendor) {
-            OemAutoStartVendor.HyperOs -> {
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            OEM_SECURITY_CENTER_PACKAGE,
-                            OEM_APPLICATION_DETAILS_ACTIVITY
-                        )
-                    ).apply {
-                        putMiuiAppManagerExtras(context)
-                    }
-                )
-                add(
-                    Intent("miui.intent.action.APP_PERM_EDITOR_PRIVATE").apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            OEM_SECURITY_CENTER_PACKAGE,
-                            OEM_PERMISSIONS_EDITOR_ACTIVITY
-                        )
-                    ).apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            OEM_SECURITY_CENTER_PACKAGE,
-                            OEM_AUTO_START_ACTIVITY
-                        )
-                    ).apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-            }
-
-            OemAutoStartVendor.Miui,
-            OemAutoStartVendor.Xiaomi -> {
-                add(
-                    Intent("miui.intent.action.APP_PERM_EDITOR_PRIVATE").apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            OEM_SECURITY_CENTER_PACKAGE,
-                            OEM_PERMISSIONS_EDITOR_ACTIVITY
-                        )
-                    ).apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-                add(
-                    Intent("miui.intent.action.APP_PERM_EDITOR").apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-                add(
-                    Intent("miui.intent.action.OP_AUTO_START").apply {
-                        setPackage(OEM_SECURITY_CENTER_PACKAGE)
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            OEM_SECURITY_CENTER_PACKAGE,
-                            OEM_AUTO_START_ACTIVITY
-                        )
-                    ).apply {
-                        putMiuiPermissionExtras(context)
-                    }
-                )
-            }
-
-            OemAutoStartVendor.Vivo -> {
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.vivo.permissionmanager",
-                            "com.vivo.permissionmanager.activity.SoftPermissionDetailActivity"
-                        )
-                    ).apply {
-                        putExtra("packagename", packageName)
-                        putExtra("package_name", packageName)
-                        putExtra("pkg", packageName)
-                    }
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.vivo.permissionmanager",
-                            "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
-                        )
-                    )
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.iqoo.secure",
-                            "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"
-                        )
-                    )
-                )
-            }
-
-            OemAutoStartVendor.Oppo,
-            OemAutoStartVendor.Realme,
-            OemAutoStartVendor.OnePlus -> {
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.coloros.safecenter",
-                            "com.coloros.safecenter.permission.startup.StartupAppListActivity"
-                        )
-                    )
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.coloros.safecenter",
-                            "com.coloros.safecenter.startupapp.StartupAppListActivity"
-                        )
-                    )
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.oppo.safe",
-                            "com.oppo.safe.permission.startup.StartupAppListActivity"
-                        )
-                    )
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.oplus.battery",
-                            "com.oplus.startupapp.view.StartupAppListActivity"
-                        )
-                    )
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.oplus.safecenter",
-                            "com.oplus.safecenter.startupapp.StartupAppListActivity"
-                        )
-                    )
-                )
-            }
-
-            OemAutoStartVendor.Huawei,
-            OemAutoStartVendor.Honor -> {
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.huawei.systemmanager",
-                            "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
-                        )
-                    )
-                )
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.huawei.systemmanager",
-                            "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity"
-                        )
-                    )
-                )
-            }
-
-            OemAutoStartVendor.Asus -> {
-                add(
-                    Intent().setComponent(
-                        ComponentName(
-                            "com.asus.mobilemanager",
-                            "com.asus.mobilemanager.autostart.AutoStartActivity"
-                        )
-                    )
-                )
-            }
-
-            OemAutoStartVendor.Unknown -> Unit
+    val detailIntent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-    }
-    val resolvedDirectIntents = directCandidates.filter { intent ->
-        intent.resolveActivity(packageManager) != null
-    }
-        .map { it.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) } }
-    val resolvedIntents = buildList {
-        addAll(resolvedDirectIntents)
-        if (detailIntent.resolveActivity(packageManager) != null) {
-            add(detailIntent)
+    val directCandidates =
+        buildList {
+            when (vendor) {
+                OemAutoStartVendor.HyperOs -> {
+                    add(
+                        Intent()
+                            .setComponent(
+                                ComponentName(
+                                    OEM_SECURITY_CENTER_PACKAGE,
+                                    OEM_APPLICATION_DETAILS_ACTIVITY,
+                                ),
+                            ).apply {
+                                putMiuiAppManagerExtras(context)
+                            },
+                    )
+                    add(
+                        Intent("miui.intent.action.APP_PERM_EDITOR_PRIVATE").apply {
+                            putMiuiPermissionExtras(context)
+                        },
+                    )
+                    add(
+                        Intent()
+                            .setComponent(
+                                ComponentName(
+                                    OEM_SECURITY_CENTER_PACKAGE,
+                                    OEM_PERMISSIONS_EDITOR_ACTIVITY,
+                                ),
+                            ).apply {
+                                putMiuiPermissionExtras(context)
+                            },
+                    )
+                    add(
+                        Intent()
+                            .setComponent(
+                                ComponentName(
+                                    OEM_SECURITY_CENTER_PACKAGE,
+                                    OEM_AUTO_START_ACTIVITY,
+                                ),
+                            ).apply {
+                                putMiuiPermissionExtras(context)
+                            },
+                    )
+                }
+
+                OemAutoStartVendor.Miui,
+                OemAutoStartVendor.Xiaomi,
+                -> {
+                    add(
+                        Intent("miui.intent.action.APP_PERM_EDITOR_PRIVATE").apply {
+                            putMiuiPermissionExtras(context)
+                        },
+                    )
+                    add(
+                        Intent()
+                            .setComponent(
+                                ComponentName(
+                                    OEM_SECURITY_CENTER_PACKAGE,
+                                    OEM_PERMISSIONS_EDITOR_ACTIVITY,
+                                ),
+                            ).apply {
+                                putMiuiPermissionExtras(context)
+                            },
+                    )
+                    add(
+                        Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                            putMiuiPermissionExtras(context)
+                        },
+                    )
+                    add(
+                        Intent("miui.intent.action.OP_AUTO_START").apply {
+                            setPackage(OEM_SECURITY_CENTER_PACKAGE)
+                            putMiuiPermissionExtras(context)
+                        },
+                    )
+                    add(
+                        Intent()
+                            .setComponent(
+                                ComponentName(
+                                    OEM_SECURITY_CENTER_PACKAGE,
+                                    OEM_AUTO_START_ACTIVITY,
+                                ),
+                            ).apply {
+                                putMiuiPermissionExtras(context)
+                            },
+                    )
+                }
+
+                OemAutoStartVendor.Vivo -> {
+                    add(
+                        Intent()
+                            .setComponent(
+                                ComponentName(
+                                    "com.vivo.permissionmanager",
+                                    "com.vivo.permissionmanager.activity.SoftPermissionDetailActivity",
+                                ),
+                            ).apply {
+                                putExtra("packagename", packageName)
+                                putExtra("package_name", packageName)
+                                putExtra("pkg", packageName)
+                            },
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.vivo.permissionmanager",
+                                "com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+                            ),
+                        ),
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.iqoo.secure",
+                                "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager",
+                            ),
+                        ),
+                    )
+                }
+
+                OemAutoStartVendor.Oppo,
+                OemAutoStartVendor.Realme,
+                OemAutoStartVendor.OnePlus,
+                -> {
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.coloros.safecenter",
+                                "com.coloros.safecenter.permission.startup.StartupAppListActivity",
+                            ),
+                        ),
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.coloros.safecenter",
+                                "com.coloros.safecenter.startupapp.StartupAppListActivity",
+                            ),
+                        ),
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.oppo.safe",
+                                "com.oppo.safe.permission.startup.StartupAppListActivity",
+                            ),
+                        ),
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.oplus.battery",
+                                "com.oplus.startupapp.view.StartupAppListActivity",
+                            ),
+                        ),
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.oplus.safecenter",
+                                "com.oplus.safecenter.startupapp.StartupAppListActivity",
+                            ),
+                        ),
+                    )
+                }
+
+                OemAutoStartVendor.Huawei,
+                OemAutoStartVendor.Honor,
+                -> {
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.huawei.systemmanager",
+                                "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+                            ),
+                        ),
+                    )
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.huawei.systemmanager",
+                                "com.huawei.systemmanager.appcontrol.activity.StartupAppControlActivity",
+                            ),
+                        ),
+                    )
+                }
+
+                OemAutoStartVendor.Asus -> {
+                    add(
+                        Intent().setComponent(
+                            ComponentName(
+                                "com.asus.mobilemanager",
+                                "com.asus.mobilemanager.autostart.AutoStartActivity",
+                            ),
+                        ),
+                    )
+                }
+
+                OemAutoStartVendor.Unknown -> {
+                    Unit
+                }
+            }
         }
-    }
+    val resolvedDirectIntents =
+        directCandidates
+            .filter { intent ->
+                intent.resolveActivity(packageManager) != null
+            }.map { it.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) } }
+    val resolvedIntents =
+        buildList {
+            addAll(resolvedDirectIntents)
+            if (detailIntent.resolveActivity(packageManager) != null) {
+                add(detailIntent)
+            }
+        }
     return SettingsOemAutoStartLaunchPlan(
         intents = resolvedIntents,
-        vendorLabel = if (vendor == OemAutoStartVendor.Unknown) {
-            context.getString(R.string.settings_oem_autostart_vendor_system_app_info)
-        } else {
-            vendor.label
-        },
+        vendorLabel =
+            if (vendor == OemAutoStartVendor.Unknown) {
+                context.getString(R.string.settings_oem_autostart_vendor_system_app_info)
+            } else {
+                vendor.label
+            },
         directRouteAvailable = resolvedDirectIntents.isNotEmpty(),
-        supportsStateDetection = vendor.supportsStateDetection
+        supportsStateDetection = vendor.supportsStateDetection,
     )
 }
 
@@ -447,26 +456,29 @@ private fun queryOemAutoStartRestriction(context: Context): Boolean? {
 }
 
 @SuppressLint("PrivateApi")
-private fun queryAutoStartRestrictionViaInjector(packageName: String): Boolean? {
-    return runCatching {
-        val method = Class.forName("android.app.AppOpsManagerInjector")
-            .getMethod("isAutoStartRestriction", String::class.java)
+private fun queryAutoStartRestrictionViaInjector(packageName: String): Boolean? =
+    runCatching {
+        val method =
+            Class
+                .forName("android.app.AppOpsManagerInjector")
+                .getMethod("isAutoStartRestriction", String::class.java)
         method.invoke(null, packageName) as? Boolean
     }.getOrNull()
-}
 
 private fun queryAutoStartRestrictionViaAppOps(context: Context): Boolean? {
     val appOpsManager = context.getSystemService(AppOpsManager::class.java) ?: return null
     val uid = context.applicationInfo.uid
-    val mode = runCatching {
-        val method = AppOpsManager::class.java.getMethod(
-            "checkOpNoThrow",
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            String::class.java
-        )
-        method.invoke(appOpsManager, OEM_OP_AUTO_START, uid, context.packageName) as? Int
-    }.getOrNull() ?: return null
+    val mode =
+        runCatching {
+            val method =
+                AppOpsManager::class.java.getMethod(
+                    "checkOpNoThrow",
+                    Int::class.javaPrimitiveType,
+                    Int::class.javaPrimitiveType,
+                    String::class.java,
+                )
+            method.invoke(appOpsManager, OEM_OP_AUTO_START, uid, context.packageName) as? Int
+        }.getOrNull() ?: return null
     return when (mode) {
         OEM_APP_OPS_MODE_ALLOWED -> false
         OEM_APP_OPS_MODE_IGNORED -> true
@@ -474,26 +486,26 @@ private fun queryAutoStartRestrictionViaAppOps(context: Context): Boolean? {
     }
 }
 
-private fun readSystemProperty(key: String): String? {
-    return findPropString(key).trim().takeIf { it.isNotBlank() }
-}
+private fun readSystemProperty(key: String): String? = findPropString(key).trim().takeIf { it.isNotBlank() }
 
 private fun buildNotificationSettingsIntent(context: Context): Intent? {
     val packageManager = context.packageManager
     val packageUri = "package:${context.packageName}".toUri()
-    val candidateIntents = buildList {
-        add(
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-            }
-        )
-        add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri))
-    }
-    return candidateIntents.firstOrNull { intent ->
-        intent.resolveActivity(packageManager) != null
-    }?.apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
+    val candidateIntents =
+        buildList {
+            add(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                },
+            )
+            add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri))
+        }
+    return candidateIntents
+        .firstOrNull { intent ->
+            intent.resolveActivity(packageManager) != null
+        }?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 }
 
 private fun Intent.putMiuiPermissionExtras(context: Context): Intent {
@@ -531,21 +543,29 @@ private fun resolveOemAutoStartVendor(): OemAutoStartVendor {
         brand.contains("xiaomi") || manufacturer.contains("xiaomi") ||
             brand.contains("redmi") || manufacturer.contains("redmi") ||
             brand.contains("poco") || manufacturer.contains("poco") -> OemAutoStartVendor.Xiaomi
+
         brand.contains("vivo") || manufacturer.contains("vivo") ||
             brand.contains("iqoo") || manufacturer.contains("iqoo") -> OemAutoStartVendor.Vivo
+
         brand.contains("oppo") || manufacturer.contains("oppo") -> OemAutoStartVendor.Oppo
+
         brand.contains("realme") || manufacturer.contains("realme") -> OemAutoStartVendor.Realme
+
         brand.contains("oneplus") || manufacturer.contains("oneplus") -> OemAutoStartVendor.OnePlus
+
         brand.contains("huawei") || manufacturer.contains("huawei") -> OemAutoStartVendor.Huawei
+
         brand.contains("honor") || manufacturer.contains("honor") -> OemAutoStartVendor.Honor
+
         brand.contains("asus") || manufacturer.contains("asus") -> OemAutoStartVendor.Asus
+
         else -> OemAutoStartVendor.Unknown
     }
 }
 
 private enum class OemAutoStartVendor(
     val label: String,
-    val supportsStateDetection: Boolean = false
+    val supportsStateDetection: Boolean = false,
 ) {
     HyperOs(label = "HyperOS", supportsStateDetection = true),
     Miui(label = "MIUI", supportsStateDetection = true),
@@ -557,7 +577,7 @@ private enum class OemAutoStartVendor(
     Huawei(label = "HUAWEI"),
     Honor(label = "HONOR"),
     Asus(label = "ASUS"),
-    Unknown(label = "")
+    Unknown(label = ""),
 }
 
 private const val OEM_SECURITY_CENTER_PACKAGE = "com.miui.securitycenter"

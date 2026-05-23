@@ -12,7 +12,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.shell.OsShellRunnerEvent
-import os.kei.ui.page.main.os.shell.OsShellRunnerPersistentState
+import os.kei.ui.page.main.os.shell.OsShellRunnerPersistentUiState
 import os.kei.ui.page.main.os.shell.OsShellRunnerStartupBehavior
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
@@ -22,7 +22,7 @@ internal fun OsShellRunnerRouteEffects(
     context: Context,
     shellRunnerViewModel: OsShellRunnerViewModel,
     pageState: OsShellRunnerPageStateHolder,
-    persistentState: OsShellRunnerPersistentState,
+    persistentState: OsShellRunnerPersistentUiState,
     textBundle: OsShellRunnerTextBundle,
 ) {
     LaunchedEffect(

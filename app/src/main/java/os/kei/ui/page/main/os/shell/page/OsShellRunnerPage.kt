@@ -24,8 +24,7 @@ import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.osLucideClearAllIcon
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
-import os.kei.ui.page.main.os.shell.state.BindOsShellRunnerAutoScrollEffect
-import os.kei.ui.page.main.os.shell.state.BindOsShellRunnerPersistEffects
+import os.kei.ui.page.main.os.shell.state.BindOsShellRunnerInputPersistEffect
 import os.kei.ui.page.main.os.shell.state.rememberOsShellRunnerTextBundle
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -93,9 +92,10 @@ fun OsShellRunnerPage(
 
     val commandInput = persistentState.commandInput
     val settings = persistentState.settings
-    val outputText = persistentState.outputState.outputText
-    val outputEntries = persistentState.outputState.outputEntries
-    val latestOutputEntry = remember(outputEntries) { outputEntries.lastOrNull() }
+    val currentOutputSnapshot =
+        remember(shellRunnerViewModel) {
+            shellRunnerViewModel::currentOutputSnapshot
+        }
     val actions =
         rememberOsShellRunnerPageActions(
             context = context,
@@ -103,7 +103,7 @@ fun OsShellRunnerPage(
             pageState = pageState,
             persistentState = persistentState,
             commandExecutionState = commandExecutionState,
-            latestOutputEntry = latestOutputEntry,
+            currentOutputSnapshot = currentOutputSnapshot,
             textBundle = textBundle,
             canRunShellCommand = canRunShellCommand,
             onRequestShizukuPermission = onRequestShizukuPermission,
@@ -175,18 +175,10 @@ fun OsShellRunnerPage(
             )
         }
 
-    BindOsShellRunnerPersistEffects(
+    BindOsShellRunnerInputPersistEffect(
         persistInputEnabled = settings.persistInput,
-        persistOutputEnabled = settings.persistOutput,
         commandInput = commandInput,
-        outputText = outputText,
         onPersistInput = actions.persistInput,
-        onPersistOutput = actions.persistOutput,
-    )
-    BindOsShellRunnerAutoScrollEffect(
-        outputText = outputText,
-        outputScrollState = outputScrollState,
-        enabled = settings.autoScrollOutput,
     )
 
     OsShellRunnerContent(
@@ -199,17 +191,24 @@ fun OsShellRunnerPage(
         commandInput = commandInput,
         runningCommand = commandExecutionState.runningCommand,
         startupFocusRequestToken = pageState.startupFocusRequestToken,
-        outputText = outputText,
-        outputEntries = outputEntries,
-        outputScrollState = outputScrollState,
+        outputContent = {
+            OsShellRunnerOutputCardHost(
+                shellRunnerViewModel = shellRunnerViewModel,
+                textBundle = textBundle,
+                outputScrollState = outputScrollState,
+                persistOutputEnabled = settings.persistOutput,
+                autoScrollOutputEnabled = settings.autoScrollOutput,
+                onPersistOutput = actions.persistOutput,
+                onFormatOutput = actions.formatOutput,
+                onCopyOutput = actions.copyOutput,
+                onClearOutput = { actions.clearOutput(true) },
+            )
+        },
         onRequestClose = actions.requestClose,
         onCommandInputChange = actions.updateCommandInput,
         onRunCommand = actions.runCommand,
         onStopCommand = { actions.stopCommand(true) },
         onOpenSaveCommandSheet = actions.openSaveCommandSheet,
-        onFormatOutput = actions.formatOutput,
-        onCopyOutput = actions.copyOutput,
-        onClearOutput = { actions.clearOutput(true) },
     )
 
     val dangerousCommandPreview =
@@ -260,7 +259,7 @@ fun OsShellRunnerPage(
         showOutputSettingsSheet = pageState.showOutputSettingsSheet,
         showDangerousCommandConfirm = pageState.showDangerousCommandConfirm,
         commandInput = commandInput,
-        latestOutputEntry = latestOutputEntry,
+        shellRunnerViewModel = shellRunnerViewModel,
         saveTitleInput = pageState.saveTitleInput,
         onSaveTitleInputChange = { pageState.saveTitleInput = it },
         saveSubtitleInput = pageState.saveSubtitleInput,

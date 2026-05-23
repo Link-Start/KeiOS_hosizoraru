@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
@@ -56,81 +55,112 @@ internal data class OsPageOverlayState(
 )
 
 @Composable
-internal fun rememberOsPageOverlayState(googleSystemServiceDefaults: OsGoogleSystemServiceConfig): OsPageOverlayState {
+internal fun rememberOsPageOverlayState(
+    googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
+    showCardManager: Boolean,
+    onShowCardManagerChange: (Boolean) -> Unit,
+    showActivityVisibilityManager: Boolean,
+    onShowActivityVisibilityManagerChange: (Boolean) -> Unit,
+    showShellCardVisibilityManager: Boolean,
+    onShowShellCardVisibilityManagerChange: (Boolean) -> Unit,
+    showActivityShortcutEditor: Boolean,
+    onShowActivityShortcutEditorChange: (Boolean) -> Unit,
+    activityCardEditMode: OsActivityCardEditMode,
+    onActivityCardEditModeChange: (OsActivityCardEditMode) -> Unit,
+    editingActivityShortcutCardId: String?,
+    onEditingActivityShortcutCardIdChange: (String?) -> Unit,
+    editingActivityShortcutBuiltIn: Boolean,
+    onEditingActivityShortcutBuiltInChange: (Boolean) -> Unit,
+    showShellCommandCardEditor: Boolean,
+    onShowShellCommandCardEditorChange: (Boolean) -> Unit,
+    editingShellCommandCardId: String?,
+    onEditingShellCommandCardIdChange: (String?) -> Unit,
+    showShellCardDeleteConfirm: Boolean,
+    onShowShellCardDeleteConfirmChange: (Boolean) -> Unit,
+    showActivityCardDeleteConfirm: Boolean,
+    onShowActivityCardDeleteConfirmChange: (Boolean) -> Unit,
+    pendingExportContent: String?,
+    onPendingExportContentChange: (String?) -> Unit,
+    pendingImportTarget: OsCardImportTarget?,
+    onPendingImportTargetChange: (OsCardImportTarget?) -> Unit,
+    pendingCardImportPreview: OsCardImportPreview?,
+    onPendingCardImportPreviewChange: (OsCardImportPreview?) -> Unit,
+    cardTransferInProgress: Boolean,
+    onCardTransferInProgressChange: (Boolean) -> Unit,
+): OsPageOverlayState {
     var activityShortcutDraft by remember {
         mutableStateOf(createDefaultActivityShortcutDraft(googleSystemServiceDefaults))
     }
-    var showActivityShortcutEditor by rememberSaveable { mutableStateOf(false) }
-    var activityCardEditMode by rememberSaveable { mutableStateOf(OsActivityCardEditMode.Edit) }
-    var editingActivityShortcutCardId by rememberSaveable { mutableStateOf<String?>(null) }
-    var editingActivityShortcutBuiltIn by rememberSaveable { mutableStateOf(false) }
-    var showCardManager by rememberSaveable { mutableStateOf(false) }
-    var showActivityVisibilityManager by rememberSaveable { mutableStateOf(false) }
-    var showShellCardVisibilityManager by rememberSaveable { mutableStateOf(false) }
-    var showShellCommandCardEditor by rememberSaveable { mutableStateOf(false) }
-    var editingShellCommandCardId by rememberSaveable { mutableStateOf<String?>(null) }
     var shellCommandCardDraft by remember { mutableStateOf(createDefaultShellCommandCardDraft()) }
-    var showShellCardDeleteConfirm by rememberSaveable { mutableStateOf(false) }
-    var showActivityCardDeleteConfirm by rememberSaveable { mutableStateOf(false) }
-    var pendingExportContent by remember { mutableStateOf<String?>(null) }
-    var pendingImportTarget by remember { mutableStateOf<OsCardImportTarget?>(null) }
-    var pendingCardImportPreview by remember { mutableStateOf<OsCardImportPreview?>(null) }
-    var cardTransferInProgress by remember { mutableStateOf(false) }
-
     return remember(
         activityShortcutDraft,
         showActivityShortcutEditor,
+        onShowActivityShortcutEditorChange,
         activityCardEditMode,
+        onActivityCardEditModeChange,
         editingActivityShortcutCardId,
+        onEditingActivityShortcutCardIdChange,
         editingActivityShortcutBuiltIn,
+        onEditingActivityShortcutBuiltInChange,
         showCardManager,
+        onShowCardManagerChange,
         showActivityVisibilityManager,
+        onShowActivityVisibilityManagerChange,
         showShellCardVisibilityManager,
+        onShowShellCardVisibilityManagerChange,
         showShellCommandCardEditor,
+        onShowShellCommandCardEditorChange,
         editingShellCommandCardId,
+        onEditingShellCommandCardIdChange,
         shellCommandCardDraft,
         showShellCardDeleteConfirm,
+        onShowShellCardDeleteConfirmChange,
         showActivityCardDeleteConfirm,
+        onShowActivityCardDeleteConfirmChange,
         pendingExportContent,
+        onPendingExportContentChange,
         pendingImportTarget,
+        onPendingImportTargetChange,
         pendingCardImportPreview,
+        onPendingCardImportPreviewChange,
         cardTransferInProgress,
+        onCardTransferInProgressChange,
     ) {
         OsPageOverlayState(
             activityShortcutDraft = activityShortcutDraft,
             onActivityShortcutDraftChange = { activityShortcutDraft = it },
             showActivityShortcutEditor = showActivityShortcutEditor,
-            onShowActivityShortcutEditorChange = { showActivityShortcutEditor = it },
+            onShowActivityShortcutEditorChange = onShowActivityShortcutEditorChange,
             activityCardEditMode = activityCardEditMode,
-            onActivityCardEditModeChange = { activityCardEditMode = it },
+            onActivityCardEditModeChange = onActivityCardEditModeChange,
             editingActivityShortcutCardId = editingActivityShortcutCardId,
-            onEditingActivityShortcutCardIdChange = { editingActivityShortcutCardId = it },
+            onEditingActivityShortcutCardIdChange = onEditingActivityShortcutCardIdChange,
             editingActivityShortcutBuiltIn = editingActivityShortcutBuiltIn,
-            onEditingActivityShortcutBuiltInChange = { editingActivityShortcutBuiltIn = it },
+            onEditingActivityShortcutBuiltInChange = onEditingActivityShortcutBuiltInChange,
             showCardManager = showCardManager,
-            onShowCardManagerChange = { showCardManager = it },
+            onShowCardManagerChange = onShowCardManagerChange,
             showActivityVisibilityManager = showActivityVisibilityManager,
-            onShowActivityVisibilityManagerChange = { showActivityVisibilityManager = it },
+            onShowActivityVisibilityManagerChange = onShowActivityVisibilityManagerChange,
             showShellCardVisibilityManager = showShellCardVisibilityManager,
-            onShowShellCardVisibilityManagerChange = { showShellCardVisibilityManager = it },
+            onShowShellCardVisibilityManagerChange = onShowShellCardVisibilityManagerChange,
             showShellCommandCardEditor = showShellCommandCardEditor,
-            onShowShellCommandCardEditorChange = { showShellCommandCardEditor = it },
+            onShowShellCommandCardEditorChange = onShowShellCommandCardEditorChange,
             editingShellCommandCardId = editingShellCommandCardId,
-            onEditingShellCommandCardIdChange = { editingShellCommandCardId = it },
+            onEditingShellCommandCardIdChange = onEditingShellCommandCardIdChange,
             shellCommandCardDraft = shellCommandCardDraft,
             onShellCommandCardDraftChange = { shellCommandCardDraft = it },
             showShellCardDeleteConfirm = showShellCardDeleteConfirm,
-            onShowShellCardDeleteConfirmChange = { showShellCardDeleteConfirm = it },
+            onShowShellCardDeleteConfirmChange = onShowShellCardDeleteConfirmChange,
             showActivityCardDeleteConfirm = showActivityCardDeleteConfirm,
-            onShowActivityCardDeleteConfirmChange = { showActivityCardDeleteConfirm = it },
+            onShowActivityCardDeleteConfirmChange = onShowActivityCardDeleteConfirmChange,
             pendingExportContent = pendingExportContent,
-            onPendingExportContentChange = { pendingExportContent = it },
+            onPendingExportContentChange = onPendingExportContentChange,
             pendingImportTarget = pendingImportTarget,
-            onPendingImportTargetChange = { pendingImportTarget = it },
+            onPendingImportTargetChange = onPendingImportTargetChange,
             pendingCardImportPreview = pendingCardImportPreview,
-            onPendingCardImportPreviewChange = { pendingCardImportPreview = it },
+            onPendingCardImportPreviewChange = onPendingCardImportPreviewChange,
             cardTransferInProgress = cardTransferInProgress,
-            onCardTransferInProgressChange = { cardTransferInProgress = it },
+            onCardTransferInProgressChange = onCardTransferInProgressChange,
         )
     }
 }

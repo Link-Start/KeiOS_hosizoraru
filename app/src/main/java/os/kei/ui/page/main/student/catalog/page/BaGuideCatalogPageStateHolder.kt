@@ -13,13 +13,16 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 internal data class BaGuideCatalogPageChromeState(
     val selectedTabIndex: Int = 0,
     val searchQueries: Map<String, String> = emptyMap(),
+    val showTransferSheet: Boolean = false,
+    val importPreviewState: BaGuideCatalogImportPreviewState? = null,
+    val searchVisible: Boolean = false,
+    val searchInputActive: Boolean = false,
 )
 
 @Stable
 internal class BaGuideCatalogPageStateHolder(
     private val chromeState: () -> BaGuideCatalogPageChromeState,
-    private val onSelectedTabIndexChange: (Int) -> Unit,
-    private val onSearchQueriesChange: (Map<String, String>) -> Unit,
+    private val actions: () -> BaGuideCatalogPageChromeActions,
 ) {
     val selectedTabIndex: Int
         get() = chromeState().selectedTabIndex
@@ -27,15 +30,19 @@ internal class BaGuideCatalogPageStateHolder(
     val searchQueries: Map<String, String>
         get() = chromeState().searchQueries
 
-    var showTransferSheet by mutableStateOf(false)
-        private set
-    var importPreviewState by mutableStateOf<BaGuideCatalogImportPreviewState?>(null)
-        private set
+    val showTransferSheet: Boolean
+        get() = chromeState().showTransferSheet
+
+    val importPreviewState: BaGuideCatalogImportPreviewState?
+        get() = chromeState().importPreviewState
+
+    val searchVisible: Boolean
+        get() = chromeState().searchVisible
+
+    val searchInputActive: Boolean
+        get() = chromeState().searchInputActive
+
     var playbackSliderPreview by mutableStateOf<Float?>(null)
-        private set
-    var searchVisible by mutableStateOf(false)
-        private set
-    var searchInputActive by mutableStateOf(false)
         private set
     var sliderInteractionActive by mutableStateOf(false)
         private set
@@ -56,34 +63,31 @@ internal class BaGuideCatalogPageStateHolder(
 
     fun updateSettledPage(pageIndex: Int) {
         if (selectedTabIndex != pageIndex) {
-            onSelectedTabIndexChange(pageIndex)
+            actions().onSelectedTabIndexChange(pageIndex)
         }
     }
 
     fun updateSelectedTabIndex(index: Int) {
-        onSelectedTabIndexChange(index)
+        actions().onSelectedTabIndexChange(index)
     }
 
     fun updateSearchQuery(
         tab: BaGuideCatalogPageTab,
         query: String,
     ) {
-        onSearchQueriesChange(searchQueries + (tab.name to query))
+        actions().onSearchQueriesChange(searchQueries + (tab.name to query))
     }
 
     fun openSearch(autoFocus: Boolean) {
-        searchVisible = true
-        searchInputActive = autoFocus
+        actions().onSearchVisibilityChange(true, autoFocus)
     }
 
     fun closeSearch() {
-        searchInputActive = false
-        searchVisible = false
+        actions().onSearchVisibilityChange(false, false)
     }
 
     fun updateSearchInputActive(active: Boolean) {
-        searchInputActive = active
-        if (active) searchVisible = true
+        actions().onSearchVisibilityChange(active || searchVisible, active)
     }
 
     fun updateSliderInteractionActive(active: Boolean) {
@@ -96,37 +100,43 @@ internal class BaGuideCatalogPageStateHolder(
     }
 
     fun openTransferSheet() {
-        showTransferSheet = true
+        actions().onShowTransferSheetChange(true)
     }
 
     fun closeTransferSheet() {
-        showTransferSheet = false
+        actions().onShowTransferSheetChange(false)
     }
 
     fun updateImportPreviewState(state: BaGuideCatalogImportPreviewState?) {
-        importPreviewState = state
+        actions().onImportPreviewStateChange(state)
     }
 
     fun activatePlaybackTab(playbackTabIndex: Int) {
-        onSelectedTabIndexChange(playbackTabIndex)
+        actions().onSelectedTabIndexChange(playbackTabIndex)
         closeSearch()
     }
 }
 
+@Stable
+internal data class BaGuideCatalogPageChromeActions(
+    val onSelectedTabIndexChange: (Int) -> Unit,
+    val onSearchQueriesChange: (Map<String, String>) -> Unit,
+    val onShowTransferSheetChange: (Boolean) -> Unit,
+    val onImportPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit,
+    val onSearchVisibilityChange: (visible: Boolean, inputActive: Boolean) -> Unit,
+)
+
 @Composable
 internal fun rememberBaGuideCatalogPageStateHolder(
     chromeState: BaGuideCatalogPageChromeState,
-    onSelectedTabIndexChange: (Int) -> Unit,
-    onSearchQueriesChange: (Map<String, String>) -> Unit,
+    chromeActions: BaGuideCatalogPageChromeActions,
 ): BaGuideCatalogPageStateHolder {
     val currentChromeState = rememberUpdatedState(chromeState)
-    val currentOnSelectedTabIndexChange = rememberUpdatedState(onSelectedTabIndexChange)
-    val currentOnSearchQueriesChange = rememberUpdatedState(onSearchQueriesChange)
+    val currentChromeActions = rememberUpdatedState(chromeActions)
     return remember {
         BaGuideCatalogPageStateHolder(
             chromeState = { currentChromeState.value },
-            onSelectedTabIndexChange = { currentOnSelectedTabIndexChange.value(it) },
-            onSearchQueriesChange = { currentOnSearchQueriesChange.value(it) },
+            actions = { currentChromeActions.value },
         )
     }
 }

@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
+import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
 
 internal fun buildBaSettingsSheetState(
@@ -74,11 +75,14 @@ internal fun buildBaPageContentState(
 internal fun buildBaPageContentActions(
     context: Context,
     office: BaOfficeController,
-    ui: BaPageUiController,
     scope: CoroutineScope,
     serverIndexProvider: () -> Int,
     onServerSelected: (Int) -> Unit,
     onSettingsCafeLevelChange: (Int) -> Unit,
+    onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onOverviewServerPopupChange: (Boolean) -> Unit,
+    onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    onCafeLevelPopupChange: (Boolean) -> Unit,
     onRefreshCalendar: () -> Unit,
     onRefreshPool: () -> Unit,
     onOpenCalendarLink: (String) -> Unit,
@@ -88,11 +92,14 @@ internal fun buildBaPageContentActions(
     BaOfficeActionCoordinator(
         context = context,
         office = office,
-        ui = ui,
         scope = scope,
         serverIndexProvider = serverIndexProvider,
         onServerSelected = onServerSelected,
         onSettingsCafeLevelChange = onSettingsCafeLevelChange,
+        onOverviewServerPopupAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
+        onOverviewServerPopupChange = onOverviewServerPopupChange,
+        onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
+        onCafeLevelPopupChange = onCafeLevelPopupChange,
         onRefreshCalendar = onRefreshCalendar,
         onRefreshPool = onRefreshPool,
         onOpenCalendarLink = onOpenCalendarLink,

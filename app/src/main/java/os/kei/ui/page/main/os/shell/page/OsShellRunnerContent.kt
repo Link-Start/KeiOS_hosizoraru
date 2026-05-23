@@ -2,9 +2,9 @@
 
 package os.kei.ui.page.main.os.shell.page
 
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -12,9 +12,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBackIcon
-import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerInputCard
-import os.kei.ui.page.main.os.shell.component.OsShellRunnerOutputCard
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -24,7 +22,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
-@androidx.compose.runtime.Composable
+@Composable
 internal fun OsShellRunnerContent(
     textBundle: OsShellRunnerTextBundle,
     scrollBehavior: ScrollBehavior,
@@ -35,17 +33,12 @@ internal fun OsShellRunnerContent(
     commandInput: String,
     runningCommand: Boolean,
     startupFocusRequestToken: Int,
-    outputText: String,
-    outputEntries: List<ShellOutputDisplayEntry>,
-    outputScrollState: ScrollState,
+    outputContent: @Composable () -> Unit,
     onRequestClose: () -> Unit,
     onCommandInputChange: (String) -> Unit,
     onRunCommand: () -> Unit,
     onStopCommand: () -> Unit,
     onOpenSaveCommandSheet: () -> Unit,
-    onFormatOutput: () -> Unit,
-    onCopyOutput: () -> Unit,
-    onClearOutput: () -> Unit,
 ) {
     AppPageScaffold(
         title = textBundle.shellPageTitle,
@@ -97,19 +90,7 @@ internal fun OsShellRunnerContent(
                 )
             }
             item(key = "shell_output_card", contentType = "shell_output_card") {
-                OsShellRunnerOutputCard(
-                    outputTitle = textBundle.outputTitle,
-                    outputHint = textBundle.outputHint,
-                    outputText = outputText,
-                    outputEntries = outputEntries,
-                    outputScrollState = outputScrollState,
-                    formatOutputActionDescription = textBundle.formatOutputActionDescription,
-                    copyOutputActionDescription = textBundle.copyOutputActionDescription,
-                    clearOutputActionDescription = textBundle.clearOutputActionDescription,
-                    onFormatOutput = onFormatOutput,
-                    onCopyOutput = onCopyOutput,
-                    onClearOutput = onClearOutput,
-                )
+                outputContent()
             }
         }
     }

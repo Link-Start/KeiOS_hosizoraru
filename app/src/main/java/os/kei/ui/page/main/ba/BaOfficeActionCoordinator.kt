@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
+import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
@@ -10,11 +11,14 @@ import os.kei.ui.page.main.ba.support.BA_AP_MAX
 internal class BaOfficeActionCoordinator(
     private val context: Context,
     private val office: BaOfficeController,
-    private val ui: BaPageUiController,
     private val scope: CoroutineScope,
     private val serverIndexProvider: () -> Int,
     private val onServerSelected: (Int) -> Unit,
     private val onSettingsCafeLevelChange: (Int) -> Unit,
+    private val onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    private val onOverviewServerPopupChange: (Boolean) -> Unit,
+    private val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
+    private val onCafeLevelPopupChange: (Boolean) -> Unit,
     private val onRefreshCalendar: () -> Unit,
     private val onRefreshPool: () -> Unit,
     private val onOpenCalendarLink: (String) -> Unit,
@@ -27,10 +31,10 @@ internal class BaOfficeActionCoordinator(
             onApCurrentDone = ::saveApCurrentInput,
             onApLimitInputChange = { office.apLimitInput = it },
             onApLimitDone = ::saveApLimitInput,
-            onOverviewServerPopupAnchorBoundsChange = { ui.overviewServerPopupAnchorBounds = it },
-            onOverviewServerPopupChange = { ui.showOverviewServerPopup = it },
-            onCafeLevelPopupAnchorBoundsChange = { ui.cafeLevelPopupAnchorBounds = it },
-            onCafeLevelPopupChange = { ui.showCafeLevelPopup = it },
+            onOverviewServerPopupAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
+            onOverviewServerPopupChange = onOverviewServerPopupChange,
+            onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
+            onCafeLevelPopupChange = onCafeLevelPopupChange,
             onCafeLevelChange = ::selectCafeLevel,
             onServerSelected = ::selectServer,
             onClaimCafeStoredAp = ::claimCafeStoredAp,
@@ -83,12 +87,12 @@ internal class BaOfficeActionCoordinator(
             clampUpdate?.persistAsync()
         }
         onSettingsCafeLevelChange(normalized)
-        ui.showCafeLevelPopup = false
+        onCafeLevelPopupChange(false)
     }
 
     private fun selectServer(selected: Int) {
         onServerSelected(selected)
-        ui.showOverviewServerPopup = false
+        onOverviewServerPopupChange(false)
     }
 
     private fun claimCafeStoredAp() {

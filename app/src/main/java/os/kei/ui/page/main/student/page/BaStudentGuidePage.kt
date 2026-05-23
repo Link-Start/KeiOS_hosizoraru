@@ -17,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,6 +55,7 @@ import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePlayerLifecycleE
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePrefetchEffects
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideVoiceListenerEffect
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideVoiceProgressEffect
+import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideBottomBarChromeState
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideMediaPackSaveAction
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideMediaSaveAction
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuidePageActions
@@ -189,9 +189,7 @@ fun BaStudentGuidePage(
             animationsEnabled = transitionAnimationsEnabled,
         )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    var showBottomBar by remember { mutableStateOf(true) }
-    var activePageCanScrollBackward by remember { mutableStateOf(false) }
-    var activePageCanScrollForward by remember { mutableStateOf(false) }
+    val bottomBarChromeState = rememberBaStudentGuideBottomBarChromeState()
     val farJumpAlpha = remember { Animatable(1f) }
     val selectBottomTabAction =
         rememberBaStudentGuideTabSelectCoordinator(
@@ -199,7 +197,7 @@ fun BaStudentGuidePage(
             pagerState = pagerState,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             farJumpAlpha = farJumpAlpha,
-            onShowBottomBarChange = { showBottomBar = it },
+            onShowBottomBarChange = bottomBarChromeState::updateVisible,
             onSelectedBottomTabIndexChange = { selectedIndex ->
                 val selectedTab =
                     bottomTabsList
@@ -222,9 +220,7 @@ fun BaStudentGuidePage(
         remember(bottomBarVisibilityThresholdPx) {
             ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
         }
-    val currentShowBottomBar by rememberUpdatedState(showBottomBar)
-    val currentActivePageCanScrollBackward by rememberUpdatedState(activePageCanScrollBackward)
-    val currentActivePageCanScrollForward by rememberUpdatedState(activePageCanScrollForward)
+    val currentBottomBarChromeState by rememberUpdatedState(bottomBarChromeState)
     val bottomBarNestedScrollConnection =
         remember(bottomBarVisibilityController) {
             object : NestedScrollConnection {
@@ -233,25 +229,27 @@ fun BaStudentGuidePage(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
+                    val chromeState = currentBottomBarChromeState
                     bottomBarVisibilityController.updateWithinScrollBounds(
                         deltaY = consumed.y,
-                        visible = currentShowBottomBar,
-                        canScrollBackward = currentActivePageCanScrollBackward,
-                        canScrollForward = currentActivePageCanScrollForward,
-                    ) { showBottomBar = it }
+                        visible = chromeState.visible,
+                        canScrollBackward = chromeState.activePageCanScrollBackward,
+                        canScrollForward = chromeState.activePageCanScrollForward,
+                        onVisibleChange = chromeState::updateVisible,
+                    )
                     return Offset.Zero
                 }
             }
         }
     LaunchedEffect(sourceUrl, activeBottomTab) {
-        bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
+        bottomBarChromeState.showNow(bottomBarVisibilityController)
     }
-    LaunchedEffect(activePageCanScrollBackward, activePageCanScrollForward, bottomBarVisibilityController) {
-        bottomBarVisibilityController.showForStaticContent(
-            visible = showBottomBar,
-            canScrollBackward = activePageCanScrollBackward,
-            canScrollForward = activePageCanScrollForward,
-        ) { showBottomBar = it }
+    LaunchedEffect(
+        bottomBarChromeState.activePageCanScrollBackward,
+        bottomBarChromeState.activePageCanScrollForward,
+        bottomBarVisibilityController,
+    ) {
+        bottomBarChromeState.showForStaticContent(bottomBarVisibilityController)
     }
     val pageTitle = info?.title?.ifBlank { defaultPageTitle } ?: defaultPageTitle
     val voicePlayerController = rememberBaStudentGuideVoicePlayerController(sourceUrl)
@@ -367,7 +365,7 @@ fun BaStudentGuidePage(
                         titleBackdrop = topBarBackdrop,
                         titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
                         onTitleClick = {
-                            bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
+                            bottomBarChromeState.showNow(bottomBarVisibilityController)
                         },
                         navigationIcon = {
                             AppLiquidNavigationButton(
@@ -381,7 +379,7 @@ fun BaStudentGuidePage(
                 },
                 bottomBar = {
                     BaStudentGuideBottomBar(
-                        visible = showBottomBar,
+                        visible = bottomBarChromeState.visible,
                         navigationBarBottom = navigationBarBottom,
                         bottomTabs = bottomTabsList,
                         selectedPage = pagerState.targetPage,
@@ -433,8 +431,7 @@ fun BaStudentGuidePage(
                     onRequestProfileLinkTitles = guideViewModel::requestProfileLinkTitles,
                     onToggleVoicePlayback = pageActions.toggleVoicePlayback,
                     onScrollBoundsChange = { canScrollBackward, canScrollForward ->
-                        activePageCanScrollBackward = canScrollBackward
-                        activePageCanScrollForward = canScrollForward
+                        bottomBarChromeState.updateScrollBounds(canScrollBackward, canScrollForward)
                     },
                     onListScrollInProgressChange = {},
                     onSelectedVoiceLanguageChange = guideViewModel::updateSelectedVoiceLanguage,

@@ -1,9 +1,12 @@
 package os.kei.ui.page.main.os
 
 import android.graphics.Bitmap
+import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
+import os.kei.ui.page.main.os.state.OsCardImportTarget
+import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 
 internal data class OsPageRuntimeState(
     val sectionStates: Map<SectionKind, SectionState> = defaultOsSectionStates(),
@@ -14,6 +17,21 @@ internal data class OsPageRuntimeState(
     val refreshProgress: Float = 0f,
     val runningShellCommandCardIds: Set<String> = emptySet(),
     val exportingCard: OsSectionCard? = null,
+    val showCardManager: Boolean = false,
+    val showActivityVisibilityManager: Boolean = false,
+    val showShellCardVisibilityManager: Boolean = false,
+    val showActivityShortcutEditor: Boolean = false,
+    val activityCardEditMode: OsActivityCardEditMode = OsActivityCardEditMode.Edit,
+    val editingActivityShortcutCardId: String? = null,
+    val editingActivityShortcutBuiltIn: Boolean = false,
+    val showShellCommandCardEditor: Boolean = false,
+    val editingShellCommandCardId: String? = null,
+    val showShellCardDeleteConfirm: Boolean = false,
+    val showActivityCardDeleteConfirm: Boolean = false,
+    val pendingExportContent: String? = null,
+    val pendingImportTarget: OsCardImportTarget? = null,
+    val pendingCardImportPreview: OsCardImportPreview? = null,
+    val cardTransferInProgress: Boolean = false,
 )
 
 internal data class OsActivitySuggestionUiState(

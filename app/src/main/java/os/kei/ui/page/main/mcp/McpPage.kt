@@ -12,10 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -103,16 +101,15 @@ fun McpPage(
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val mcpGlassRuntime = LocalGlassEffectRuntime.current
-    var localNetworkPermissionGranted by remember {
-        mutableStateOf(hasMcpLocalNetworkPermission(context))
+    LaunchedEffect(context, mcpPageViewModel) {
+        mcpPageViewModel.updateLocalNetworkPermissionGranted(hasMcpLocalNetworkPermission(context))
     }
-    var startAfterLocalNetworkPermission by remember { mutableStateOf(false) }
 
     val localNetworkPermissionLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.RequestPermission(),
         ) { granted ->
-            localNetworkPermissionGranted = granted || hasMcpLocalNetworkPermission(context)
+            val localNetworkPermissionGranted = granted || hasMcpLocalNetworkPermission(context)
             context.showToast(
                 context.resolveString(
                     if (localNetworkPermissionGranted) {
@@ -122,25 +119,26 @@ fun McpPage(
                     },
                 ),
             )
-            val shouldStartServer = startAfterLocalNetworkPermission && localNetworkPermissionGranted
-            startAfterLocalNetworkPermission = false
+            val shouldStartServer =
+                mcpPageViewModel.consumeLocalNetworkPermissionResult(localNetworkPermissionGranted)
             if (shouldStartServer && !mcpServerManager.uiState.value.running) {
                 mcpPageViewModel.requestToggleServer(mcpServerManager)
             }
         }
     val toggleServer: () -> Unit = toggleServer@{
-        localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
+        val localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
+        mcpPageViewModel.updateLocalNetworkPermissionGranted(localNetworkPermissionGranted)
         if (!uiState.running && pageUiState.allowExternal && !localNetworkPermissionGranted) {
             LocalNetworkPermissionCompat
                 .requiredPermissionOrNull()
                 ?.let { permission ->
-                    startAfterLocalNetworkPermission = true
+                    mcpPageViewModel.armStartAfterLocalNetworkPermission(true)
                     runCatching { localNetworkPermissionLauncher.launch(permission) }
                 }
             context.showToast(R.string.mcp_toast_local_network_permission_requested)
             return@toggleServer
         }
-        startAfterLocalNetworkPermission = false
+        mcpPageViewModel.armStartAfterLocalNetworkPermission(false)
         mcpPageViewModel.requestToggleServer(mcpServerManager)
     }
     val logsExportLauncher =

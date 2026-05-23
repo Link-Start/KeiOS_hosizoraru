@@ -11,33 +11,24 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
-import os.kei.ui.page.main.student.page.support.GuideMediaPackSaveRequest
 import os.kei.ui.page.main.student.page.support.GuideMediaSaveRequest
 
 @Composable
 internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideViewModel) {
     val context = LocalContext.current
-    var pendingCustomSaveRequest by remember { mutableStateOf<GuideMediaSaveRequest?>(null) }
-    var pendingFixedSaveRequest by remember { mutableStateOf<GuideMediaSaveRequest?>(null) }
-    var pendingCustomPackSaveRequest by remember { mutableStateOf<GuideMediaPackSaveRequest?>(null) }
-    var pendingFixedPackSaveRequest by remember { mutableStateOf<GuideMediaPackSaveRequest?>(null) }
 
     val customSaveLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            val request = pendingCustomSaveRequest
-            pendingCustomSaveRequest = null
+            val request = guideViewModel.consumePendingCustomMediaSaveRequest()
             val targetUri = result.data?.data
             if (result.resultCode == Activity.RESULT_OK && request != null && targetUri != null) {
                 guideViewModel.completeCustomMediaSave(request, targetUri)
@@ -47,8 +38,7 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            val request = pendingFixedSaveRequest
-            pendingFixedSaveRequest = null
+            val request = guideViewModel.consumePendingFixedMediaSaveRequest()
             val treeUri = result.data?.data
             if (result.resultCode == Activity.RESULT_OK && request != null && treeUri != null) {
                 persistGuideMediaTreePermission(result.data, treeUri, context.contentResolver)
@@ -59,8 +49,7 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("application/zip"),
         ) { targetUri ->
-            val request = pendingCustomPackSaveRequest
-            pendingCustomPackSaveRequest = null
+            val request = guideViewModel.consumePendingCustomMediaPackSaveRequest()
             if (request != null && targetUri != null) {
                 guideViewModel.completeCustomMediaPackSave(request, targetUri)
             }
@@ -69,8 +58,7 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            val request = pendingFixedPackSaveRequest
-            pendingFixedPackSaveRequest = null
+            val request = guideViewModel.consumePendingFixedMediaPackSaveRequest()
             val treeUri = result.data?.data
             if (result.resultCode == Activity.RESULT_OK && request != null && treeUri != null) {
                 persistGuideMediaTreePermission(result.data, treeUri, context.contentResolver)
@@ -82,12 +70,12 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
         guideViewModel.events.collect { event ->
             when (event) {
                 is BaStudentGuideEvent.LaunchCustomMediaSave -> {
-                    pendingCustomSaveRequest = event.request
+                    guideViewModel.armPendingCustomMediaSaveRequest(event.request)
                     customSaveLauncher.launch(createGuideMediaDocumentIntent(event.request))
                 }
 
                 is BaStudentGuideEvent.RequestFixedMediaFolder -> {
-                    pendingFixedSaveRequest = event.request
+                    guideViewModel.armPendingFixedMediaSaveRequest(event.request)
                     fixedFolderLauncher.launch(guideMediaFolderPickerIntent(event.withInitialDownload))
                 }
 
@@ -105,12 +93,12 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
                 }
 
                 is BaStudentGuideEvent.LaunchCustomMediaPackSave -> {
-                    pendingCustomPackSaveRequest = event.request
+                    guideViewModel.armPendingCustomMediaPackSaveRequest(event.request)
                     customPackSaveLauncher.launch(event.request.fileName)
                 }
 
                 is BaStudentGuideEvent.RequestFixedMediaPackFolder -> {
-                    pendingFixedPackSaveRequest = event.request
+                    guideViewModel.armPendingFixedMediaPackSaveRequest(event.request)
                     fixedFolderPackSaveLauncher.launch(guideMediaFolderPickerIntent(event.withInitialDownload))
                 }
 

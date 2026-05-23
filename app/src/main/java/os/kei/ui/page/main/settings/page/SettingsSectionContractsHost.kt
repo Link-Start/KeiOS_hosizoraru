@@ -4,19 +4,23 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import os.kei.R
-import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.ui.page.main.settings.state.SettingsPageUiState
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
 import os.kei.ui.page.main.settings.state.rememberSettingsSectionContractBundle
 import os.kei.ui.page.main.settings.support.SettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
+import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
+import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveSnapshot
 
 @Composable
 internal fun rememberSettingsPageSectionContracts(
     context: Context,
     pageUiState: SettingsPageUiState,
+    permissionKeepAliveState: SettingsPermissionKeepAliveSnapshot,
+    batteryOptimizationState: SettingsBatteryOptimizationSnapshot,
     permissionKeepAliveController: SettingsPermissionKeepAliveController,
     batteryOptimizationController: SettingsBatteryOptimizationController,
     appLanguageController: SettingsAppLanguageController,
@@ -68,8 +72,8 @@ internal fun rememberSettingsPageSectionContracts(
 ): SettingsSectionContractBundle =
     rememberSettingsSectionContractBundle(
         notificationPermissionGranted = notificationPermissionGranted,
-        notificationsEnabled = permissionKeepAliveController.notificationsEnabled,
-        notificationSettingsActionAvailable = permissionKeepAliveController.notificationSettingsActionAvailable,
+        notificationsEnabled = permissionKeepAliveState.notificationsEnabled,
+        notificationSettingsActionAvailable = permissionKeepAliveState.notificationSettingsActionAvailable,
         preloadingEnabled = preloadingEnabled,
         launcherIconDesign = launcherIconDesign,
         homeIconHdrEnabled = homeIconHdrEnabled,
@@ -91,16 +95,16 @@ internal fun rememberSettingsPageSectionContracts(
         superIslandNotificationEnabled = superIslandNotificationEnabled,
         superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
         superIslandRestoreDelayMs = superIslandRestoreDelayMs,
-        ignoringBatteryOptimizations = batteryOptimizationController.ignoringBatteryOptimizations,
-        batteryOptimizationActionAvailable = batteryOptimizationController.requestActionAvailable,
-        oemAutoStartState = permissionKeepAliveController.oemAutoStartState,
-        oemAutoStartVendorLabel = permissionKeepAliveController.oemAutoStartVendorLabel,
-        oemAutoStartActionAvailable = permissionKeepAliveController.oemAutoStartActionAvailable,
-        appListAccessMode = permissionKeepAliveController.appListAccessMode,
-        appListDetectedCount = permissionKeepAliveController.appListDetectedCount,
-        appListSettingsActionAvailable = permissionKeepAliveController.appListSettingsActionAvailable,
-        shizukuGranted = permissionKeepAliveController.shizukuGranted,
-        shizukuStatusText = permissionKeepAliveController.shizukuStatusText,
+        ignoringBatteryOptimizations = batteryOptimizationState.ignoringBatteryOptimizations,
+        batteryOptimizationActionAvailable = batteryOptimizationState.requestActionAvailable,
+        oemAutoStartState = permissionKeepAliveState.oemAutoStartState,
+        oemAutoStartVendorLabel = permissionKeepAliveState.oemAutoStartVendorLabel,
+        oemAutoStartActionAvailable = permissionKeepAliveState.oemAutoStartActionAvailable,
+        appListAccessMode = permissionKeepAliveState.appListAccessMode,
+        appListDetectedCount = permissionKeepAliveState.appListDetectedCount,
+        appListSettingsActionAvailable = permissionKeepAliveState.appListSettingsActionAvailable,
+        shizukuGranted = permissionKeepAliveState.shizukuGranted,
+        shizukuStatusText = permissionKeepAliveState.shizukuStatusText,
         textCopyCapabilityExpanded = textCopyCapabilityExpanded,
         pageUiState = pageUiState,
         onRequestNotificationPermission = onRequestNotificationPermission,
@@ -141,7 +145,7 @@ internal fun rememberSettingsPageSectionContracts(
         onOpenBatteryOptimizationSettings = {
             showSettingsToastIfClosed(
                 context = context,
-                opened = batteryOptimizationController.openBatteryOptimizationSettings(),
+                opened = batteryOptimizationController.openBatteryOptimizationSettings(batteryOptimizationState),
                 messageRes = R.string.settings_battery_optimization_toast_open_failed,
             )
         },

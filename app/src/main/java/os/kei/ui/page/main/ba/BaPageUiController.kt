@@ -6,7 +6,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
@@ -55,11 +54,6 @@ internal data class BaPageRouteState(
 ) : PageRouteState
 
 internal class BaPageUiController {
-    var showOverviewServerPopup by mutableStateOf(false)
-    var showCafeLevelPopup by mutableStateOf(false)
-    var overviewServerPopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var cafeLevelPopupAnchorBounds by mutableStateOf<IntRect?>(null)
-    var showCalendarIntervalPopup by mutableStateOf(false)
     private val uiNowMsState = mutableLongStateOf(System.currentTimeMillis())
     private val uiMinuteMsState = mutableLongStateOf(System.currentTimeMillis())
     var uiNowMs: Long
@@ -88,7 +82,14 @@ internal class BaPageUiController {
             showSettingsSheet = chromeUiState.showSettingsSheet,
             showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
             showDebugSheet = chromeUiState.showDebugSheet,
-            popupState = popupState(),
+            popupState =
+                BaPagePopupState(
+                    showOverviewServerPopup = chromeUiState.showOverviewServerPopup,
+                    showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
+                    overviewServerPopupAnchorBounds = chromeUiState.overviewServerPopupAnchorBounds,
+                    cafeLevelPopupAnchorBounds = chromeUiState.cafeLevelPopupAnchorBounds,
+                    showCalendarIntervalPopup = chromeUiState.showCalendarIntervalPopup,
+                ),
             serverIndex = serverUiState.serverIndex,
             baCalendarReloadSignal = syncUiState.calendarReloadSignal,
             baPoolReloadSignal = syncUiState.poolReloadSignal,
@@ -115,36 +116,6 @@ internal class BaPageUiController {
             uiNowMs = uiNowMsState,
             uiMinuteMs = uiMinuteMsState,
         )
-
-    private fun popupState(): BaPagePopupState =
-        BaPagePopupState(
-            showOverviewServerPopup = showOverviewServerPopup,
-            showCafeLevelPopup = showCafeLevelPopup,
-            overviewServerPopupAnchorBounds = overviewServerPopupAnchorBounds,
-            cafeLevelPopupAnchorBounds = cafeLevelPopupAnchorBounds,
-            showCalendarIntervalPopup = showCalendarIntervalPopup,
-        )
-
-    fun openSettingsSheet() {
-        showOverviewServerPopup = false
-        showCafeLevelPopup = false
-    }
-
-    fun closeSettingsSheet() {
-        showCafeLevelPopup = false
-    }
-
-    fun openNotificationSettingsSheet() {
-        showOverviewServerPopup = false
-        showCafeLevelPopup = false
-    }
-
-    fun closeNotificationSettingsSheet() = Unit
-
-    fun openDebugSheet() {
-        showOverviewServerPopup = false
-        showCafeLevelPopup = false
-    }
 }
 
 @Composable

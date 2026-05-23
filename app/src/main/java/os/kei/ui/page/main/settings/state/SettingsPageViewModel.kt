@@ -7,6 +7,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,6 +23,10 @@ import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
+import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
+import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
+import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
+import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveSnapshot
 
 @Immutable
 internal data class SettingsCacheUiState(
@@ -41,6 +46,12 @@ internal data class SettingsLogUiState(
 internal data class SettingsDiagnosticsUiState(
     val cacheState: SettingsCacheUiState = SettingsCacheUiState(),
     val logState: SettingsLogUiState = SettingsLogUiState(),
+)
+
+@Immutable
+internal data class SettingsSupportUiState(
+    val batteryOptimizationState: SettingsBatteryOptimizationSnapshot = SettingsBatteryOptimizationSnapshot(),
+    val permissionKeepAliveState: SettingsPermissionKeepAliveSnapshot = SettingsPermissionKeepAliveSnapshot(),
 )
 
 @Immutable
@@ -83,6 +94,7 @@ internal sealed interface SettingsPageEvent {
 
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
+    private var permissionKeepAliveRefreshJob: Job? = null
 
     private val _cacheState = MutableStateFlow(SettingsCacheUiState())
     val cacheState: StateFlow<SettingsCacheUiState> = _cacheState.asStateFlow()
@@ -91,6 +103,12 @@ internal class SettingsPageViewModel : ViewModel() {
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
     private val _chromeState = MutableStateFlow(SettingsPageChromeState())
     val chromeState: StateFlow<SettingsPageChromeState> = _chromeState.asStateFlow()
+    private val _batteryOptimizationState = MutableStateFlow(SettingsBatteryOptimizationSnapshot())
+    val batteryOptimizationState: StateFlow<SettingsBatteryOptimizationSnapshot> =
+        _batteryOptimizationState.asStateFlow()
+    private val _permissionKeepAliveState = MutableStateFlow(SettingsPermissionKeepAliveSnapshot())
+    val permissionKeepAliveState: StateFlow<SettingsPermissionKeepAliveSnapshot> =
+        _permissionKeepAliveState.asStateFlow()
     private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<SettingsPageEvent> = _events.asSharedFlow()
 
@@ -104,6 +122,18 @@ internal class SettingsPageViewModel : ViewModel() {
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = SettingsDiagnosticsUiState(),
+        )
+
+    val supportUiState: StateFlow<SettingsSupportUiState> =
+        combine(batteryOptimizationState, permissionKeepAliveState) { battery, permission ->
+            SettingsSupportUiState(
+                batteryOptimizationState = battery,
+                permissionKeepAliveState = permission,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = SettingsSupportUiState(),
         )
 
     private val diagnosticsCoordinator =
@@ -198,6 +228,39 @@ internal class SettingsPageViewModel : ViewModel() {
         _chromeState.update { state ->
             state.copy(shizukuRefreshToken = state.shizukuRefreshToken + 1)
         }
+    }
+
+    fun refreshBatteryOptimization(controller: SettingsBatteryOptimizationController) {
+        _batteryOptimizationState.update { controller.loadSnapshot() }
+    }
+
+    fun refreshPermissionKeepAlive(
+        controller: SettingsPermissionKeepAliveController,
+        notificationPermissionGranted: Boolean,
+        shizukuStatus: String,
+    ) {
+        permissionKeepAliveRefreshJob?.cancel()
+        permissionKeepAliveRefreshJob =
+            viewModelScope.launch {
+                refreshPermissionKeepAliveNow(
+                    controller = controller,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                    shizukuStatus = shizukuStatus,
+                )
+            }
+    }
+
+    suspend fun refreshPermissionKeepAliveNow(
+        controller: SettingsPermissionKeepAliveController,
+        notificationPermissionGranted: Boolean,
+        shizukuStatus: String,
+    ) {
+        val snapshot =
+            controller.loadSnapshot(
+                notificationPermissionGranted = notificationPermissionGranted,
+                shizukuStatus = shizukuStatus,
+            )
+        _permissionKeepAliveState.update { snapshot }
     }
 
     fun reloadCacheEntries(context: Context) {

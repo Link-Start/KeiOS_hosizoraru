@@ -171,27 +171,22 @@ fun BAPage(
     val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
 
     fun openSettingsSheet() {
-        ui.openSettingsSheet()
         officeViewModel.showSettingsSheet(savedSettingsDraftState)
     }
 
     fun closeSettingsSheet() {
-        ui.closeSettingsSheet()
         officeViewModel.hideSettingsSheet(savedSettingsDraftState)
     }
 
     fun openNotificationSettingsSheet() {
-        ui.openNotificationSettingsSheet()
         officeViewModel.showNotificationSettingsSheet()
     }
 
     fun closeNotificationSettingsSheet() {
-        ui.closeNotificationSettingsSheet()
         officeViewModel.hideNotificationSettingsSheet()
     }
 
     fun openDebugSheet() {
-        ui.openDebugSheet()
         officeViewModel.showDebugSheet()
     }
 
@@ -221,7 +216,6 @@ fun BAPage(
                     if (event.refreshCalendar) refreshCalendar(force = true)
                     if (event.refreshPool) refreshPool(force = true)
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
-                    ui.closeSettingsSheet()
                     officeViewModel.hideSettingsSheet(
                         BaPageSettingsDraftState(
                             cafeLevel = event.persisted.savedCafeLevel,
@@ -238,7 +232,6 @@ fun BAPage(
 
                 is BaOfficeEvent.NotificationSettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
-                    ui.closeNotificationSettingsSheet()
                     officeViewModel.hideNotificationSettingsSheet()
                 }
 
@@ -296,13 +289,16 @@ fun BAPage(
         buildBaPageContentActions(
             context = context,
             office = office,
-            ui = ui,
             scope = pageScope,
             serverIndexProvider = { baRouteState.serverIndex },
             onServerSelected = officeViewModel::selectServer,
             onSettingsCafeLevelChange = { level ->
                 officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
             },
+            onOverviewServerPopupAnchorBoundsChange = officeViewModel::updateOverviewServerPopupAnchorBounds,
+            onOverviewServerPopupChange = officeViewModel::updateOverviewServerPopupExpanded,
+            onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
+            onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
             onRefreshCalendar = { refreshCalendar(force = true) },
             onRefreshPool = { refreshPool(force = true) },
             onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },

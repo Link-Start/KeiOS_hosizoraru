@@ -95,6 +95,14 @@ internal class GitHubPageState(
     var actionsUpdateIntervalModeInput by trackEditorState::actionsUpdateIntervalModeInput
     var preciseApkVersionModeInput by trackEditorState::preciseApkVersionModeInput
     var trackSourceModeInput by trackEditorState::trackSourceModeInput
+    var sourceModeDropdownExpanded by trackEditorState::sourceModeDropdownExpanded
+    var sourceModeDropdownAnchorBounds by trackEditorState::sourceModeDropdownAnchorBounds
+    var updateIntervalDropdownExpanded by trackEditorState::updateIntervalDropdownExpanded
+    var updateIntervalDropdownAnchorBounds by trackEditorState::updateIntervalDropdownAnchorBounds
+    var actionsIntervalDropdownExpanded by trackEditorState::actionsIntervalDropdownExpanded
+    var actionsIntervalDropdownAnchorBounds by trackEditorState::actionsIntervalDropdownAnchorBounds
+    var preciseModeDropdownExpanded by trackEditorState::preciseModeDropdownExpanded
+    var preciseModeDropdownAnchorBounds by trackEditorState::preciseModeDropdownAnchorBounds
     var repoUrlScanRunning by trackEditorState::repoUrlScanRunning
     var packageNameScanRunning by trackEditorState::packageNameScanRunning
     var selectedApp by trackEditorState::selectedApp

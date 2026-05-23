@@ -86,6 +86,10 @@ internal class BaStudentGuideViewModel(
     private var currentUrlSaveJob: Job? = null
     private var npcSatelliteResolveJob: Job? = null
     private var prefetchJob: Job? = null
+    private var pendingCustomMediaSaveRequest: GuideMediaSaveRequest? = null
+    private var pendingFixedMediaSaveRequest: GuideMediaSaveRequest? = null
+    private var pendingCustomMediaPackSaveRequest: GuideMediaPackSaveRequest? = null
+    private var pendingFixedMediaPackSaveRequest: GuideMediaPackSaveRequest? = null
     private var lastLoadedSourceUrl: String = ""
     private val mediaSaveCoordinator =
         BaStudentGuideMediaSaveCoordinator(
@@ -377,6 +381,42 @@ internal class BaStudentGuideViewModel(
         rawPackTitle = rawPackTitle,
         studentNamePrefix = studentNamePrefix,
     )
+
+    fun armPendingCustomMediaSaveRequest(request: GuideMediaSaveRequest) {
+        pendingCustomMediaSaveRequest = request
+    }
+
+    fun consumePendingCustomMediaSaveRequest(): GuideMediaSaveRequest? =
+        pendingCustomMediaSaveRequest.also {
+            pendingCustomMediaSaveRequest = null
+        }
+
+    fun armPendingFixedMediaSaveRequest(request: GuideMediaSaveRequest) {
+        pendingFixedMediaSaveRequest = request
+    }
+
+    fun consumePendingFixedMediaSaveRequest(): GuideMediaSaveRequest? =
+        pendingFixedMediaSaveRequest.also {
+            pendingFixedMediaSaveRequest = null
+        }
+
+    fun armPendingCustomMediaPackSaveRequest(request: GuideMediaPackSaveRequest) {
+        pendingCustomMediaPackSaveRequest = request
+    }
+
+    fun consumePendingCustomMediaPackSaveRequest(): GuideMediaPackSaveRequest? =
+        pendingCustomMediaPackSaveRequest.also {
+            pendingCustomMediaPackSaveRequest = null
+        }
+
+    fun armPendingFixedMediaPackSaveRequest(request: GuideMediaPackSaveRequest) {
+        pendingFixedMediaPackSaveRequest = request
+    }
+
+    fun consumePendingFixedMediaPackSaveRequest(): GuideMediaPackSaveRequest? =
+        pendingFixedMediaPackSaveRequest.also {
+            pendingFixedMediaPackSaveRequest = null
+        }
 
     fun requestGuideMediaImages(requests: List<GuideMediaImageRequest>) = mediaImageLoader.requestImages(requests)
 

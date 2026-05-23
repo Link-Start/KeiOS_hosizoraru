@@ -5,10 +5,17 @@ import androidx.compose.ui.unit.IntRect
 
 @Immutable
 internal data class OsShellRunnerUiState(
-    val persistentState: OsShellRunnerPersistentState = OsShellRunnerPersistentState(),
+    val persistentState: OsShellRunnerPersistentUiState = OsShellRunnerPersistentUiState(),
     val chromePrefs: OsShellRunnerChromePrefs = OsShellRunnerChromePrefs(),
     val commandExecutionState: OsShellRunnerCommandExecutionState = OsShellRunnerCommandExecutionState(),
     val pageChromeState: OsShellRunnerPageChromeState = OsShellRunnerPageChromeState(),
+)
+
+@Immutable
+internal data class OsShellRunnerPersistentUiState(
+    val commandInput: String = "",
+    val settings: OsShellRunnerSettings = OsShellRunnerSettings(),
+    val loaded: Boolean = false,
 )
 
 @Immutable

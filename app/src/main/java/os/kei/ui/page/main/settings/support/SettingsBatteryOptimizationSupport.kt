@@ -4,40 +4,40 @@ import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import os.kei.core.system.HyperOsSettingsIntents
+
+@Immutable
+internal data class SettingsBatteryOptimizationSnapshot(
+    val ignoringBatteryOptimizations: Boolean = false,
+    val requestActionAvailable: Boolean = false,
+)
 
 @Stable
 internal class SettingsBatteryOptimizationController(
-    private val appContext: Context
+    private val appContext: Context,
 ) {
-    var ignoringBatteryOptimizations by mutableStateOf(false)
-        private set
-
-    var requestActionAvailable by mutableStateOf(false)
-        private set
-
-    init {
-        refresh()
+    fun loadSnapshot(): SettingsBatteryOptimizationSnapshot {
+        val ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(appContext)
+        val requestActionAvailable =
+            buildBatteryOptimizationIntent(
+                context = appContext,
+                alreadyIgnored = ignoringBatteryOptimizations,
+            ) != null
+        return SettingsBatteryOptimizationSnapshot(
+            ignoringBatteryOptimizations = ignoringBatteryOptimizations,
+            requestActionAvailable = requestActionAvailable,
+        )
     }
 
-    fun refresh() {
-        ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(appContext)
-        requestActionAvailable = buildBatteryOptimizationIntent(
-            context = appContext,
-            alreadyIgnored = ignoringBatteryOptimizations
-        ) != null
-    }
-
-    fun openBatteryOptimizationSettings(): Boolean {
-        val intent = buildBatteryOptimizationIntent(
-            context = appContext,
-            alreadyIgnored = ignoringBatteryOptimizations
-        ) ?: return false
+    fun openBatteryOptimizationSettings(snapshot: SettingsBatteryOptimizationSnapshot): Boolean {
+        val intent =
+            buildBatteryOptimizationIntent(
+                context = appContext,
+                alreadyIgnored = snapshot.ignoringBatteryOptimizations,
+            ) ?: return false
         return runCatching {
             appContext.startActivity(intent)
         }.isSuccess
@@ -45,9 +45,7 @@ internal class SettingsBatteryOptimizationController(
 }
 
 @Composable
-internal fun rememberSettingsBatteryOptimizationController(
-    context: Context
-): SettingsBatteryOptimizationController {
+internal fun rememberSettingsBatteryOptimizationController(context: Context): SettingsBatteryOptimizationController {
     val appContext = context.applicationContext
     return remember(appContext) {
         SettingsBatteryOptimizationController(appContext)
@@ -63,10 +61,9 @@ private fun isIgnoringBatteryOptimizations(context: Context): Boolean {
 
 private fun buildBatteryOptimizationIntent(
     context: Context,
-    alreadyIgnored: Boolean
-): Intent? {
-    return HyperOsSettingsIntents.buildBatteryOptimizationIntent(
+    alreadyIgnored: Boolean,
+): Intent? =
+    HyperOsSettingsIntents.buildBatteryOptimizationIntent(
         context = context,
-        alreadyIgnored = alreadyIgnored
+        alreadyIgnored = alreadyIgnored,
     )
-}

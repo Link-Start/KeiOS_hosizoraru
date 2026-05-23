@@ -72,6 +72,7 @@ internal class OsPageViewModel : ViewModel() {
 
     private val _runtimeState = MutableStateFlow(OsPageRuntimeState())
     val runtimeState: StateFlow<OsPageRuntimeState> = _runtimeState.asStateFlow()
+    val overlayRuntimeActions = OsPageOverlayRuntimeActions(_runtimeState)
 
     private val _activitySuggestionState = MutableStateFlow(OsActivitySuggestionUiState())
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =

@@ -9,19 +9,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import os.kei.R
 import os.kei.ui.page.main.os.shell.OsShellBehaviorSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellOutputSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellRunnerChromePrefs
 import os.kei.ui.page.main.os.shell.OsShellRunnerSettings
-import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
+import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerSaveSheet
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
+import os.kei.ui.page.main.os.shell.state.toOutputSnapshot
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
@@ -36,7 +40,7 @@ internal fun OsShellRunnerSheets(
     showOutputSettingsSheet: Boolean,
     showDangerousCommandConfirm: Boolean,
     commandInput: String,
-    latestOutputEntry: ShellOutputDisplayEntry?,
+    shellRunnerViewModel: OsShellRunnerViewModel,
     saveTitleInput: String,
     onSaveTitleInputChange: (String) -> Unit,
     saveSubtitleInput: String,
@@ -54,11 +58,14 @@ internal fun OsShellRunnerSheets(
     dangerousCommandPreview: String,
     actions: OsShellRunnerSheetActions,
 ) {
+    val rawOutputState by shellRunnerViewModel.outputState.collectAsStateWithLifecycle()
+    val outputSnapshot = remember(rawOutputState) { rawOutputState.toOutputSnapshot() }
+
     OsShellRunnerSaveSheet(
         show = showSaveSheet,
         title = textBundle.saveSheetTitle,
         commandInput = commandInput,
-        latestOutputEntry = latestOutputEntry,
+        latestOutputEntry = outputSnapshot.latestEntry,
         saveSheetCommandLabel = textBundle.saveSheetCommandLabel,
         saveSheetFieldTitle = textBundle.saveSheetFieldTitle,
         saveSheetFieldSubtitle = textBundle.saveSheetFieldSubtitle,

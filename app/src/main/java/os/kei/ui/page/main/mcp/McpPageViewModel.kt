@@ -50,6 +50,8 @@ internal data class McpPageUiState(
     val logsExporting: Boolean = false,
     val refreshRunning: Boolean = false,
     val pendingLogsExport: McpLogsExportRequest? = null,
+    val localNetworkPermissionGranted: Boolean = false,
+    val startAfterLocalNetworkPermission: Boolean = false,
     val showResetTokenConfirm: Boolean = false,
     val showResetConfigConfirm: Boolean = false,
 ) {
@@ -215,6 +217,38 @@ internal class McpPageViewModel : ViewModel() {
 
     fun updateLogsExpanded(value: Boolean) {
         _uiState.update { state -> state.copy(logsExpanded = value) }
+    }
+
+    fun updateLocalNetworkPermissionGranted(granted: Boolean) {
+        _uiState.update { state ->
+            if (state.localNetworkPermissionGranted == granted) {
+                state
+            } else {
+                state.copy(localNetworkPermissionGranted = granted)
+            }
+        }
+    }
+
+    fun armStartAfterLocalNetworkPermission(armed: Boolean) {
+        _uiState.update { state ->
+            if (state.startAfterLocalNetworkPermission == armed) {
+                state
+            } else {
+                state.copy(startAfterLocalNetworkPermission = armed)
+            }
+        }
+    }
+
+    fun consumeLocalNetworkPermissionResult(granted: Boolean): Boolean {
+        var shouldStart = false
+        _uiState.update { state ->
+            shouldStart = state.startAfterLocalNetworkPermission && granted
+            state.copy(
+                localNetworkPermissionGranted = granted,
+                startAfterLocalNetworkPermission = false,
+            )
+        }
+        return shouldStart
     }
 
     fun updateResetTokenConfirmVisible(value: Boolean) {

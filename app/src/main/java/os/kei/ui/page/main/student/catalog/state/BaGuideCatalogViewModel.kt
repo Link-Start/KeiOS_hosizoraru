@@ -23,6 +23,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
+import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogJsonExportRequest
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPageChromeState
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -61,6 +62,8 @@ internal class BaGuideCatalogViewModel(
     private var bgmCacheSnapshotInput: List<GuideBgmFavoriteItem>? = null
     private var favoriteBgmOfflineCacheJob: Job? = null
     private var favoriteBgmOfflineCacheInput: List<GuideBgmFavoriteItem>? = null
+    private var pendingSafJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
+    private var pendingFixedJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
     private var imageLoadingUrls: Set<String> = emptySet()
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
@@ -185,7 +188,12 @@ internal class BaGuideCatalogViewModel(
 
     fun updateCatalogSelectedTabIndex(index: Int) {
         _pageChromeState.update { state ->
-            state.copy(selectedTabIndex = index.coerceAtLeast(0))
+            val normalized = index.coerceAtLeast(0)
+            if (state.selectedTabIndex == normalized) {
+                state
+            } else {
+                state.copy(selectedTabIndex = normalized)
+            }
         }
     }
 
@@ -201,6 +209,65 @@ internal class BaGuideCatalogViewModel(
                 state.copy(searchQueries = normalized)
             }
         }
+    }
+
+    fun updateCatalogTransferSheetVisible(visible: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.showTransferSheet == visible) {
+                state
+            } else {
+                state.copy(showTransferSheet = visible)
+            }
+        }
+    }
+
+    fun updateCatalogImportPreviewState(previewState: BaGuideCatalogImportPreviewState?) {
+        _pageChromeState.update { state ->
+            if (state.importPreviewState == previewState) {
+                state
+            } else {
+                state.copy(importPreviewState = previewState)
+            }
+        }
+    }
+
+    fun updateCatalogSearchVisibility(
+        visible: Boolean,
+        inputActive: Boolean,
+    ) {
+        val normalizedInputActive = inputActive && visible
+        _pageChromeState.update { state ->
+            if (state.searchVisible == visible && state.searchInputActive == normalizedInputActive) {
+                state
+            } else {
+                state.copy(
+                    searchVisible = visible,
+                    searchInputActive = normalizedInputActive,
+                )
+            }
+        }
+    }
+
+    fun armPendingSafJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
+        pendingSafJsonExportRequest = request
+    }
+
+    fun consumePendingSafJsonExportRequest(): BaGuideCatalogJsonExportRequest? =
+        pendingSafJsonExportRequest.also {
+            pendingSafJsonExportRequest = null
+        }
+
+    fun armPendingFixedJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
+        pendingFixedJsonExportRequest = request
+    }
+
+    fun consumePendingFixedJsonExportRequest(): BaGuideCatalogJsonExportRequest? =
+        pendingFixedJsonExportRequest.also {
+            pendingFixedJsonExportRequest = null
+        }
+
+    fun clearPendingFixedJsonExportRequest() {
+        pendingFixedJsonExportRequest = null
     }
 
     fun updateCatalogFilterSortState(snapshot: BaGuideCatalogFilterSortSnapshot) {

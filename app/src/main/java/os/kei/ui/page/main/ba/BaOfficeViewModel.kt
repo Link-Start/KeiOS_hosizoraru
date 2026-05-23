@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.app.Application
+import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -26,6 +27,11 @@ internal data class BaOfficeChromeUiState(
     val showSettingsSheet: Boolean = false,
     val showNotificationSettingsSheet: Boolean = false,
     val showDebugSheet: Boolean = false,
+    val showOverviewServerPopup: Boolean = false,
+    val showCafeLevelPopup: Boolean = false,
+    val overviewServerPopupAnchorBounds: IntRect? = null,
+    val cafeLevelPopupAnchorBounds: IntRect? = null,
+    val showCalendarIntervalPopup: Boolean = false,
     val debugUseRealCalendarPoolData: Boolean = true,
 )
 
@@ -132,7 +138,9 @@ internal class BaOfficeViewModel(
     fun showSettingsSheet(currentDraft: BaPageSettingsDraftState) {
         _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(currentDraft)
         _chromeUiState.update { state ->
-            state.copy(showSettingsSheet = true)
+            state
+                .withoutFloatingPopups()
+                .copy(showSettingsSheet = true)
         }
     }
 
@@ -151,7 +159,9 @@ internal class BaOfficeViewModel(
                 savedDraft = savedDraft,
             )
         _chromeUiState.update { state ->
-            state.copy(showNotificationSettingsSheet = true)
+            state
+                .withoutFloatingPopups()
+                .copy(showNotificationSettingsSheet = true)
         }
     }
 
@@ -166,7 +176,9 @@ internal class BaOfficeViewModel(
 
     fun showDebugSheet() {
         _chromeUiState.update { state ->
-            state.copy(showDebugSheet = true)
+            state
+                .withoutFloatingPopups()
+                .copy(showDebugSheet = true)
         }
     }
 
@@ -182,6 +194,46 @@ internal class BaOfficeViewModel(
                 state
             } else {
                 state.copy(debugUseRealCalendarPoolData = enabled)
+            }
+        }
+    }
+
+    fun updateOverviewServerPopupExpanded(expanded: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.showOverviewServerPopup == expanded) {
+                state
+            } else {
+                state.copy(showOverviewServerPopup = expanded)
+            }
+        }
+    }
+
+    fun updateOverviewServerPopupAnchorBounds(bounds: IntRect?) {
+        _chromeUiState.update { state ->
+            if (state.overviewServerPopupAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(overviewServerPopupAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun updateCafeLevelPopupExpanded(expanded: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.showCafeLevelPopup == expanded) {
+                state
+            } else {
+                state.copy(showCafeLevelPopup = expanded)
+            }
+        }
+    }
+
+    fun updateCafeLevelPopupAnchorBounds(bounds: IntRect?) {
+        _chromeUiState.update { state ->
+            if (state.cafeLevelPopupAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(cafeLevelPopupAnchorBounds = bounds)
             }
         }
     }
@@ -504,6 +556,13 @@ private fun BaPageSnapshot.toRuntimeUiState(): BaOfficeRuntimeUiState =
         mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
         idIndependentByServer = idIndependentByServer,
         calendarRefreshIntervalHours = calendarRefreshIntervalHours,
+    )
+
+private fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiState =
+    copy(
+        showOverviewServerPopup = false,
+        showCafeLevelPopup = false,
+        showCalendarIntervalPopup = false,
     )
 
 private fun Throwable.rethrowIfCancellation() {

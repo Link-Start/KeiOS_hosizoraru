@@ -89,8 +89,14 @@ fun BaGuideCatalogPage(
     val pageState =
         rememberBaGuideCatalogPageStateHolder(
             chromeState = pageChromeState,
-            onSelectedTabIndexChange = catalogViewModel::updateCatalogSelectedTabIndex,
-            onSearchQueriesChange = catalogViewModel::updateCatalogSearchQueries,
+            chromeActions =
+                BaGuideCatalogPageChromeActions(
+                    onSelectedTabIndexChange = catalogViewModel::updateCatalogSelectedTabIndex,
+                    onSearchQueriesChange = catalogViewModel::updateCatalogSearchQueries,
+                    onShowTransferSheetChange = catalogViewModel::updateCatalogTransferSheetVisible,
+                    onImportPreviewStateChange = catalogViewModel::updateCatalogImportPreviewState,
+                    onSearchVisibilityChange = catalogViewModel::updateCatalogSearchVisibility,
+                ),
         )
     val pageActions = rememberBaGuideCatalogPageActions(catalogViewModel)
     BaGuideCatalogPageEventEffects(
@@ -183,6 +189,11 @@ fun BaGuideCatalogPage(
             transferSettings = routeState.transferSettings,
             exportDoneText = exportDoneText,
             exportFailedText = exportFailedText,
+            onArmSafExportRequest = catalogViewModel::armPendingSafJsonExportRequest,
+            onConsumeSafExportRequest = catalogViewModel::consumePendingSafJsonExportRequest,
+            onArmFixedExportRequest = catalogViewModel::armPendingFixedJsonExportRequest,
+            onConsumeFixedExportRequest = catalogViewModel::consumePendingFixedJsonExportRequest,
+            onClearFixedExportRequest = catalogViewModel::clearPendingFixedJsonExportRequest,
             onMediaSaveCustomEnabledChange = pageActions.onSetTransferMediaSaveCustomEnabled,
             onMediaSaveFixedTreeUriSelected = pageActions.onSetTransferMediaSaveFixedTreeUri,
             onMediaSaveFixedTreeUriCleared = pageActions.onClearTransferMediaSaveFixedTreeUri,

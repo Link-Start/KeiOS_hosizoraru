@@ -4,19 +4,23 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.BuildConfig
@@ -168,15 +172,28 @@ fun AboutAppCardSection(
 @Composable
 private fun AboutAppIcon(
     contentDescription: String,
-    size: androidx.compose.ui.unit.Dp,
+    size: Dp,
 ) {
-    Image(
-        painter = painterResource(R.mipmap.ic_launcher),
-        contentDescription = contentDescription,
+    Box(
         modifier =
             Modifier
-                .width(size)
-                .height(size)
-                .clip(ContinuousCapsule),
-    )
+                .size(size)
+                .clip(ContinuousCapsule)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFFF0F5),
+                            Color(0xFFFFD3E0),
+                            Color(0xFFFF9FBE),
+                        )
+                    )
+                ),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_launcher_foreground),
+            contentDescription = contentDescription,
+            modifier = Modifier.size(size),
+        )
+    }
 }

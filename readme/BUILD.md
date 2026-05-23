@@ -61,7 +61,7 @@ Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-on
 org.gradle.java.home=/path/to/your/jdk
 
 # Optional: pin another Miuix version locally
-miuix.version=0.9.1
+miuix.version=0.9.1-eca8ed2f-SNAPSHOT
 ```
 
 JDK fallback examples:

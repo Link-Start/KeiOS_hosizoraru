@@ -5,26 +5,32 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
+
+@Stable
+internal data class BaGuideCatalogFilterSortSnapshot(
+    val searchQuery: String = "",
+    val sortMode: BaGuideCatalogSortMode = BaGuideCatalogSortMode.Default,
+    val selectedFiltersRaw: String = "",
+)
 
 @Stable
 internal class BaGuideCatalogFilterSortState(
-    private val searchQueryState: MutableState<String>,
-    private val sortModeState: MutableState<BaGuideCatalogSortMode>,
+    private val snapshot: () -> BaGuideCatalogFilterSortSnapshot,
+    private val onSnapshotChange: (BaGuideCatalogFilterSortSnapshot) -> Unit,
     private val showSortPopupState: MutableState<Boolean>,
     private val showFilterPopupState: MutableState<Boolean>,
-    private val selectedFiltersRawState: MutableState<String>,
 ) {
     var searchQuery: String
-        get() = searchQueryState.value
+        get() = snapshot().searchQuery
         set(value) {
-            searchQueryState.value = value
+            onSnapshotChange(snapshot().copy(searchQuery = value))
         }
 
     var sortMode: BaGuideCatalogSortMode
-        get() = sortModeState.value
+        get() = snapshot().sortMode
         set(value) {
-            sortModeState.value = value
+            onSnapshotChange(snapshot().copy(sortMode = value))
         }
 
     var showSortPopup: Boolean
@@ -40,7 +46,7 @@ internal class BaGuideCatalogFilterSortState(
         }
 
     val selectedFilterOptions: Map<Int, Set<Int>>
-        get() = decodeSelectedFilters(selectedFiltersRawState.value)
+        get() = decodeSelectedFilters(snapshot().selectedFiltersRaw)
 
     val activeFilterCount: Int
         get() = selectedFilterOptions.values.count { it.isNotEmpty() }
@@ -77,35 +83,33 @@ internal class BaGuideCatalogFilterSortState(
         } else {
             next[filterId] = options.toSet()
         }
-        selectedFiltersRawState.value = encodeSelectedFilters(next)
+        onSnapshotChange(snapshot().copy(selectedFiltersRaw = encodeSelectedFilters(next)))
     }
 
     fun clearFilters() {
-        selectedFiltersRawState.value = ""
+        onSnapshotChange(snapshot().copy(selectedFiltersRaw = ""))
         showFilterPopup = false
     }
 }
 
 @Composable
-internal fun rememberBaGuideCatalogFilterSortState(): BaGuideCatalogFilterSortState {
-    val searchQueryState = rememberSaveable { mutableStateOf("") }
-    val sortModeState = rememberSaveable { mutableStateOf(BaGuideCatalogSortMode.Default) }
+internal fun rememberBaGuideCatalogFilterSortState(
+    snapshot: BaGuideCatalogFilterSortSnapshot,
+    onSnapshotChange: (BaGuideCatalogFilterSortSnapshot) -> Unit,
+): BaGuideCatalogFilterSortState {
+    val currentSnapshot = rememberUpdatedState(snapshot)
+    val currentOnSnapshotChange = rememberUpdatedState(onSnapshotChange)
     val showSortPopupState = remember { mutableStateOf(false) }
     val showFilterPopupState = remember { mutableStateOf(false) }
-    val selectedFiltersRawState = rememberSaveable { mutableStateOf("") }
     return remember(
-        searchQueryState,
-        sortModeState,
         showSortPopupState,
         showFilterPopupState,
-        selectedFiltersRawState,
     ) {
         BaGuideCatalogFilterSortState(
-            searchQueryState = searchQueryState,
-            sortModeState = sortModeState,
+            snapshot = { currentSnapshot.value },
+            onSnapshotChange = { currentOnSnapshotChange.value(it) },
             showSortPopupState = showSortPopupState,
             showFilterPopupState = showFilterPopupState,
-            selectedFiltersRawState = selectedFiltersRawState,
         )
     }
 }

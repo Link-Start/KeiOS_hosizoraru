@@ -23,6 +23,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
+import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPageChromeState
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaGuideCatalogDataUiState(
@@ -85,6 +86,12 @@ internal class BaGuideCatalogViewModel(
         MutableStateFlow(BaGuideCatalogTransferSettingsUiState())
     val transferSettings: StateFlow<BaGuideCatalogTransferSettingsUiState> =
         _transferSettings.asStateFlow()
+    private val _pageChromeState = MutableStateFlow(BaGuideCatalogPageChromeState())
+    val pageChromeState: StateFlow<BaGuideCatalogPageChromeState> =
+        _pageChromeState.asStateFlow()
+    private val _filterSortState = MutableStateFlow(BaGuideCatalogFilterSortSnapshot())
+    val filterSortState: StateFlow<BaGuideCatalogFilterSortSnapshot> =
+        _filterSortState.asStateFlow()
 
     private val _catalogListDerivedStates =
         MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())
@@ -174,6 +181,40 @@ internal class BaGuideCatalogViewModel(
 
     fun requestRefresh() {
         loadCatalog(manualRefresh = true, allowInitialDelay = false)
+    }
+
+    fun updateCatalogSelectedTabIndex(index: Int) {
+        _pageChromeState.update { state ->
+            state.copy(selectedTabIndex = index.coerceAtLeast(0))
+        }
+    }
+
+    fun updateCatalogSearchQueries(searchQueries: Map<String, String>) {
+        val normalized =
+            searchQueries
+                .mapValues { (_, value) -> value.trim() }
+                .filterValues { it.isNotBlank() }
+        _pageChromeState.update { state ->
+            if (state.searchQueries == normalized) {
+                state
+            } else {
+                state.copy(searchQueries = normalized)
+            }
+        }
+    }
+
+    fun updateCatalogFilterSortState(snapshot: BaGuideCatalogFilterSortSnapshot) {
+        val normalized =
+            snapshot.copy(
+                searchQuery = snapshot.searchQuery.trim(),
+            )
+        _filterSortState.update { state ->
+            if (state == normalized) {
+                state
+            } else {
+                normalized
+            }
+        }
     }
 
     fun requestCatalogImages(imageUrls: List<String>) {

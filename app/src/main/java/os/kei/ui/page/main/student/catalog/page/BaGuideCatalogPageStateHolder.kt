@@ -1,33 +1,31 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 
 @Stable
-internal class BaGuideCatalogPageStateHolder(
-    private val selectedTabIndexState: MutableIntState,
-    private val searchQueriesState: MutableState<Map<String, String>>,
-) {
-    var selectedTabIndex: Int
-        get() = selectedTabIndexState.intValue
-        private set(value) {
-            selectedTabIndexState.intValue = value
-        }
+internal data class BaGuideCatalogPageChromeState(
+    val selectedTabIndex: Int = 0,
+    val searchQueries: Map<String, String> = emptyMap(),
+)
 
-    var searchQueries: Map<String, String>
-        get() = searchQueriesState.value
-        private set(value) {
-            searchQueriesState.value = value
-        }
+@Stable
+internal class BaGuideCatalogPageStateHolder(
+    private val chromeState: () -> BaGuideCatalogPageChromeState,
+    private val onSelectedTabIndexChange: (Int) -> Unit,
+    private val onSearchQueriesChange: (Map<String, String>) -> Unit,
+) {
+    val selectedTabIndex: Int
+        get() = chromeState().selectedTabIndex
+
+    val searchQueries: Map<String, String>
+        get() = chromeState().searchQueries
 
     var showTransferSheet by mutableStateOf(false)
         private set
@@ -58,19 +56,19 @@ internal class BaGuideCatalogPageStateHolder(
 
     fun updateSettledPage(pageIndex: Int) {
         if (selectedTabIndex != pageIndex) {
-            selectedTabIndex = pageIndex
+            onSelectedTabIndexChange(pageIndex)
         }
     }
 
     fun updateSelectedTabIndex(index: Int) {
-        selectedTabIndex = index
+        onSelectedTabIndexChange(index)
     }
 
     fun updateSearchQuery(
         tab: BaGuideCatalogPageTab,
         query: String,
     ) {
-        searchQueries = searchQueries + (tab.name to query)
+        onSearchQueriesChange(searchQueries + (tab.name to query))
     }
 
     fun openSearch(autoFocus: Boolean) {
@@ -110,19 +108,25 @@ internal class BaGuideCatalogPageStateHolder(
     }
 
     fun activatePlaybackTab(playbackTabIndex: Int) {
-        selectedTabIndex = playbackTabIndex
+        onSelectedTabIndexChange(playbackTabIndex)
         closeSearch()
     }
 }
 
 @Composable
-internal fun rememberBaGuideCatalogPageStateHolder(): BaGuideCatalogPageStateHolder {
-    val selectedTabIndexState = rememberSaveable { mutableIntStateOf(0) }
-    val searchQueriesState = rememberSaveable { mutableStateOf<Map<String, String>>(emptyMap()) }
-    return remember(selectedTabIndexState, searchQueriesState) {
+internal fun rememberBaGuideCatalogPageStateHolder(
+    chromeState: BaGuideCatalogPageChromeState,
+    onSelectedTabIndexChange: (Int) -> Unit,
+    onSearchQueriesChange: (Map<String, String>) -> Unit,
+): BaGuideCatalogPageStateHolder {
+    val currentChromeState = rememberUpdatedState(chromeState)
+    val currentOnSelectedTabIndexChange = rememberUpdatedState(onSelectedTabIndexChange)
+    val currentOnSearchQueriesChange = rememberUpdatedState(onSearchQueriesChange)
+    return remember {
         BaGuideCatalogPageStateHolder(
-            selectedTabIndexState = selectedTabIndexState,
-            searchQueriesState = searchQueriesState,
+            chromeState = { currentChromeState.value },
+            onSelectedTabIndexChange = { currentOnSelectedTabIndexChange.value(it) },
+            onSearchQueriesChange = { currentOnSearchQueriesChange.value(it) },
         )
     }
 }

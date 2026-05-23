@@ -83,8 +83,15 @@ fun BaGuideCatalogPage(
     val catalogViewModel: BaGuideCatalogViewModel = viewModel()
     val routeState = collectBaGuideCatalogRouteState(catalogViewModel)
     val imageState by catalogViewModel.imageState.collectAsStateWithLifecycle()
+    val pageChromeState by catalogViewModel.pageChromeState.collectAsStateWithLifecycle()
+    val filterSortSnapshot by catalogViewModel.filterSortState.collectAsStateWithLifecycle()
     val tabs = BaGuideCatalogPageTab.entries
-    val pageState = rememberBaGuideCatalogPageStateHolder()
+    val pageState =
+        rememberBaGuideCatalogPageStateHolder(
+            chromeState = pageChromeState,
+            onSelectedTabIndexChange = catalogViewModel::updateCatalogSelectedTabIndex,
+            onSearchQueriesChange = catalogViewModel::updateCatalogSearchQueries,
+        )
     val pageActions = rememberBaGuideCatalogPageActions(catalogViewModel)
     BaGuideCatalogPageEventEffects(
         context = context,
@@ -104,7 +111,11 @@ fun BaGuideCatalogPage(
             initialPage = pageState.selectedTabIndex.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)),
             pageCount = tabs.size,
         )
-    val filterSortState = rememberBaGuideCatalogFilterSortState()
+    val filterSortState =
+        rememberBaGuideCatalogFilterSortState(
+            snapshot = filterSortSnapshot,
+            onSnapshotChange = catalogViewModel::updateCatalogFilterSortState,
+        )
     BaGuideCatalogPageDerivedEffects(
         pageActions = pageActions,
         catalogDataState = routeState.catalogDataState,

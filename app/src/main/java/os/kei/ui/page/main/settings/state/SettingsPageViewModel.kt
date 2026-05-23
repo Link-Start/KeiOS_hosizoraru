@@ -42,6 +42,17 @@ internal data class SettingsDiagnosticsUiState(
     val logState: SettingsLogUiState = SettingsLogUiState(),
 )
 
+@Immutable
+internal data class SettingsPageChromeState(
+    val selectedCategoryIndex: Int = 0,
+    val searchExpanded: Boolean = false,
+    val searchQuery: String = "",
+    val shizukuRefreshToken: Int = 0,
+) {
+    val trimmedSearchQuery: String
+        get() = searchQuery.trim()
+}
+
 internal sealed interface SettingsPageEvent {
     data class Toast(
         @param:StringRes val messageRes: Int,
@@ -69,6 +80,8 @@ internal class SettingsPageViewModel : ViewModel() {
 
     private val _logState = MutableStateFlow(SettingsLogUiState())
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
+    private val _chromeState = MutableStateFlow(SettingsPageChromeState())
+    val chromeState: StateFlow<SettingsPageChromeState> = _chromeState.asStateFlow()
     private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<SettingsPageEvent> = _events.asSharedFlow()
 
@@ -104,6 +117,26 @@ internal class SettingsPageViewModel : ViewModel() {
             cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
             logLevel = logLevel,
         )
+    }
+
+    fun updateSelectedCategoryIndex(index: Int) {
+        _chromeState.update { state ->
+            state.copy(selectedCategoryIndex = index.coerceAtLeast(0))
+        }
+    }
+
+    fun updateSearchExpanded(expanded: Boolean) {
+        _chromeState.update { state -> state.copy(searchExpanded = expanded) }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _chromeState.update { state -> state.copy(searchQuery = query.take(96)) }
+    }
+
+    fun requestShizukuRefresh() {
+        _chromeState.update { state ->
+            state.copy(shizukuRefreshToken = state.shizukuRefreshToken + 1)
+        }
     }
 
     fun reloadCacheEntries(context: Context) {

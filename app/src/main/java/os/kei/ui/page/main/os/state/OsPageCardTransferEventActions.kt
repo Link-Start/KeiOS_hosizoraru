@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
@@ -27,15 +26,15 @@ internal data class OsPageCardTransferEventActions(
 internal fun rememberOsPageCardTransferEventActions(
     context: Context,
     overlayState: OsPageOverlayState,
-    activityCardExpanded: SnapshotStateMap<String, Boolean>,
-    shellCommandCardExpanded: SnapshotStateMap<String, Boolean>,
+    retainActivityCardExpansion: (Set<String>) -> Unit,
+    retainShellCommandCardExpansion: (Set<String>) -> Unit,
     textBundle: OsPageTextBundle,
 ): OsPageCardTransferEventActions =
     remember(
         context,
         overlayState,
-        activityCardExpanded,
-        shellCommandCardExpanded,
+        retainActivityCardExpansion,
+        retainShellCommandCardExpansion,
         textBundle,
     ) {
         OsPageCardTransferEventActions(
@@ -66,7 +65,7 @@ internal fun rememberOsPageCardTransferEventActions(
             },
             onActivityCardsImported = { result ->
                 val validIds = result.cards.mapTo(mutableSetOf()) { it.id }
-                activityCardExpanded.keys.retainAll(validIds)
+                retainActivityCardExpansion(validIds)
                 if (!validIds.contains(overlayState.editingActivityShortcutCardId.orEmpty())) {
                     overlayState.onShowActivityShortcutEditorChange(false)
                     overlayState.onShowActivityCardDeleteConfirmChange(false)
@@ -84,7 +83,7 @@ internal fun rememberOsPageCardTransferEventActions(
             },
             onShellCardsImported = { result ->
                 val validIds = result.cards.mapTo(mutableSetOf()) { it.id }
-                shellCommandCardExpanded.keys.retainAll(validIds)
+                retainShellCommandCardExpansion(validIds)
                 if (!validIds.contains(overlayState.editingShellCommandCardId.orEmpty())) {
                     overlayState.onShowShellCommandCardEditorChange(false)
                     overlayState.onShowShellCardDeleteConfirmChange(false)

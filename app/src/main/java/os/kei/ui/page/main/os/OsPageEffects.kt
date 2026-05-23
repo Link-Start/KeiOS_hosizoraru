@@ -19,12 +19,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
+import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 
@@ -431,43 +431,16 @@ internal fun BindOsActivityShortcutIconPreloadEffect(
 @Composable
 internal fun BindOsCardExpandedStateMaps(
     activityShortcutCards: List<OsActivityShortcutCard>,
-    activityCardExpanded: MutableMap<String, Boolean>,
     initialGoogleSystemServiceExpanded: Boolean,
     shellCommandCards: List<OsShellCommandCard>,
-    shellCommandCardExpanded: MutableMap<String, Boolean>,
+    syncActivityCardExpansion: (List<OsActivityShortcutCard>, Boolean) -> Unit,
+    syncShellCommandCardExpansion: (List<OsShellCommandCard>) -> Unit,
 ) {
     LaunchedEffect(activityShortcutCards, initialGoogleSystemServiceExpanded) {
-        val currentIds = activityShortcutCards.map { it.id }.toSet()
-        activityCardExpanded.keys.toList().forEach { id ->
-            if (!currentIds.contains(id)) {
-                activityCardExpanded.remove(id)
-            }
-        }
-        activityShortcutCards.forEachIndexed { index, card ->
-            val usesStoredDefaultExpansion =
-                index == 0 && (
-                    card.id == LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID ||
-                        card.id == BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
-                )
-            if (usesStoredDefaultExpansion) {
-                activityCardExpanded[card.id] = initialGoogleSystemServiceExpanded
-            } else if (!activityCardExpanded.containsKey(card.id)) {
-                activityCardExpanded[card.id] = false
-            }
-        }
+        syncActivityCardExpansion(activityShortcutCards, initialGoogleSystemServiceExpanded)
     }
 
     LaunchedEffect(shellCommandCards) {
-        val currentIds = shellCommandCards.map { it.id }.toSet()
-        shellCommandCardExpanded.keys.toList().forEach { id ->
-            if (!currentIds.contains(id)) {
-                shellCommandCardExpanded.remove(id)
-            }
-        }
-        shellCommandCards.forEach { card ->
-            if (!shellCommandCardExpanded.containsKey(card.id)) {
-                shellCommandCardExpanded[card.id] = false
-            }
-        }
+        syncShellCommandCardExpansion(shellCommandCards)
     }
 }

@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package os.kei.ui.page.main.os
 
 import android.content.Context
@@ -21,7 +23,7 @@ internal data class OsPageMainListActions(
     val sectionSubtitle: (SectionKind, Int) -> String,
     val onExportCard: (OsSectionCard) -> Unit,
     val onRefreshAll: () -> Unit,
-    val onOpenAddActivityShortcutCard: () -> Unit
+    val onOpenAddActivityShortcutCard: () -> Unit,
 )
 
 internal fun createOsPageMainListActions(
@@ -30,22 +32,16 @@ internal fun createOsPageMainListActions(
     actionState: OsPageActionState,
     routeState: OsPageRouteState,
     shizukuStatus: String,
-    activityCardExpanded: MutableMap<String, Boolean>,
-    shellCommandCardExpanded: MutableMap<String, Boolean>,
-    osPageViewModel: OsPageViewModel
-): OsPageMainListActions {
-    return OsPageMainListActions(
+    osPageViewModel: OsPageViewModel,
+): OsPageMainListActions =
+    OsPageMainListActions(
         onOpenShellRunner = { OsShellRunnerActivity.launch(context) },
-        onShellCommandCardExpandedChange = { cardId, expanded ->
-            shellCommandCardExpanded[cardId] = expanded
-        },
+        onShellCommandCardExpandedChange = osPageViewModel::updateShellCommandCardExpanded,
         onOpenShellCommandCardEditor = osPageViewModel::openShellCommandCardEditor,
         onRunShellCommandCard = { card ->
             actionState.runShellCommandCard(card)
         },
-        onActivityCardExpandedChange = { cardId, expanded ->
-            activityCardExpanded[cardId] = expanded
-        },
+        onActivityCardExpandedChange = osPageViewModel::updateActivityCardExpanded,
         onOpenActivityShortcutCard = { card ->
             osPageViewModel.openActivityShortcutCard(
                 card = card,
@@ -64,7 +60,7 @@ internal fun createOsPageMainListActions(
                 sectionStates = routeState.sectionStates,
                 context = context,
                 section = section,
-                size = size
+                size = size,
             )
         },
         onExportCard = { card ->
@@ -79,6 +75,5 @@ internal fun createOsPageMainListActions(
         onRefreshAll = actionState.refreshAllSections,
         onOpenAddActivityShortcutCard = {
             osPageViewModel.openAddActivityShortcutCardEditor(textBundle.googleSystemServiceDefaults)
-        }
+        },
     )
-}

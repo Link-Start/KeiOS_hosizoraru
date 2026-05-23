@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
+import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
@@ -73,6 +75,9 @@ internal class OsPageViewModel : ViewModel() {
 
     val activityIconState: StateFlow<OsActivityShortcutIconUiState> =
         activityIconLoader.state
+
+    private val _cardExpansionState = MutableStateFlow(OsCardExpansionUiState())
+    val cardExpansionState: StateFlow<OsCardExpansionUiState> = _cardExpansionState.asStateFlow()
 
     private val _events = MutableSharedFlow<OsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<OsPageEvent> = _events.asSharedFlow()
@@ -355,6 +360,93 @@ internal class OsPageViewModel : ViewModel() {
         context = context,
         packageNames = packageNames,
     )
+
+    fun syncActivityCardExpansion(
+        cards: List<OsActivityShortcutCard>,
+        initialGoogleSystemServiceExpanded: Boolean,
+    ) {
+        val currentIds = cards.mapTo(mutableSetOf()) { it.id }
+        val next =
+            cards
+                .mapIndexed { index, card ->
+                    val usesStoredDefaultExpansion =
+                        index == 0 && (
+                            card.id == LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID ||
+                                card.id == BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
+                        )
+                    val expanded =
+                        if (usesStoredDefaultExpansion) {
+                            initialGoogleSystemServiceExpanded
+                        } else {
+                            _cardExpansionState.value.activityCards[card.id] ?: false
+                        }
+                    card.id to expanded
+                }.toMap()
+                .filterKeys(currentIds::contains)
+        _cardExpansionState.update { state ->
+            if (state.activityCards == next) state else state.copy(activityCards = next)
+        }
+    }
+
+    fun syncShellCommandCardExpansion(cards: List<OsShellCommandCard>) {
+        val currentIds = cards.mapTo(mutableSetOf()) { it.id }
+        val next =
+            cards
+                .associate { card ->
+                    card.id to (_cardExpansionState.value.shellCommandCards[card.id] ?: false)
+                }.filterKeys(currentIds::contains)
+        _cardExpansionState.update { state ->
+            if (state.shellCommandCards == next) state else state.copy(shellCommandCards = next)
+        }
+    }
+
+    fun updateActivityCardExpanded(
+        cardId: String,
+        expanded: Boolean,
+    ) {
+        _cardExpansionState.update { state ->
+            val next = state.activityCards + (cardId to expanded)
+            if (state.activityCards == next) state else state.copy(activityCards = next)
+        }
+    }
+
+    fun updateShellCommandCardExpanded(
+        cardId: String,
+        expanded: Boolean,
+    ) {
+        _cardExpansionState.update { state ->
+            val next = state.shellCommandCards + (cardId to expanded)
+            if (state.shellCommandCards == next) state else state.copy(shellCommandCards = next)
+        }
+    }
+
+    fun removeActivityCardExpansion(cardId: String) {
+        _cardExpansionState.update { state ->
+            if (!state.activityCards.containsKey(cardId)) return@update state
+            state.copy(activityCards = state.activityCards - cardId)
+        }
+    }
+
+    fun removeShellCommandCardExpansion(cardId: String) {
+        _cardExpansionState.update { state ->
+            if (!state.shellCommandCards.containsKey(cardId)) return@update state
+            state.copy(shellCommandCards = state.shellCommandCards - cardId)
+        }
+    }
+
+    fun retainActivityCardExpansion(validIds: Set<String>) {
+        _cardExpansionState.update { state ->
+            val next = state.activityCards.filterKeys(validIds::contains)
+            if (state.activityCards == next) state else state.copy(activityCards = next)
+        }
+    }
+
+    fun retainShellCommandCardExpansion(validIds: Set<String>) {
+        _cardExpansionState.update { state ->
+            val next = state.shellCommandCards.filterKeys(validIds::contains)
+            if (state.shellCommandCards == next) state else state.copy(shellCommandCards = next)
+        }
+    }
 
     fun updateVisibleCards(cards: Set<OsSectionCard>) {
         repository.updateVisibleCards(cards)

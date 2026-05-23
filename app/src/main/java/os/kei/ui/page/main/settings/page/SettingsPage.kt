@@ -13,12 +13,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -130,9 +128,9 @@ fun SettingsPage(
     val enabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
     val disabledCardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.50f)
     val scope = rememberCoroutineScope()
-    var shizukuRefreshToken by remember { mutableIntStateOf(0) }
     val settingsPageViewModel: SettingsPageViewModel = viewModel()
     val diagnosticsUiState by settingsPageViewModel.diagnosticsUiState.collectAsStateWithLifecycle()
+    val chromeState by settingsPageViewModel.chromeState.collectAsStateWithLifecycle()
     val routeState =
         rememberSettingsPageRouteState(
             cacheState = diagnosticsUiState.cacheState,
@@ -163,7 +161,7 @@ fun SettingsPage(
         shizukuStatus = shizukuStatus,
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
         logLevel = logLevel,
-        shizukuRefreshToken = shizukuRefreshToken,
+        shizukuRefreshToken = chromeState.shizukuRefreshToken,
     )
     val sectionContracts =
         rememberSettingsPageSectionContracts(
@@ -217,7 +215,7 @@ fun SettingsPage(
             onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged,
             onRequestNotificationPermission = onRequestNotificationPermission,
             onCheckOrRequestShizuku = {
-                shizukuRefreshToken += 1
+                settingsPageViewModel.requestShizukuRefresh()
                 onCheckOrRequestShizuku()
             },
         )
@@ -229,12 +227,11 @@ fun SettingsPage(
 
     val scrollBehavior = MiuixScrollBehavior()
     val categories = remember { SettingsCategory.entries.toList() }
-    var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
-    var searchExpanded by rememberSaveable { mutableStateOf(false) }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val searchExpanded = chromeState.searchExpanded
+    val searchQuery = chromeState.searchQuery
     val pagerState =
         rememberMainLoadedPagerState(
-            initialPage = selectedCategoryIndex.coerceIn(0, categories.lastIndex),
+            initialPage = chromeState.selectedCategoryIndex.coerceIn(0, categories.lastIndex),
             pageCount = categories.size,
         )
     val accessListState = rememberLazyListState()
@@ -328,7 +325,7 @@ fun SettingsPage(
                         pagerState.settledPage
                     }
                 if (safeIndex != stablePageIndex) {
-                    selectedCategoryIndex = safeIndex
+                    settingsPageViewModel.updateSelectedCategoryIndex(safeIndex)
                     tabJumpJob?.cancel()
                     tabJumpJob =
                         scope.launch {
@@ -373,8 +370,8 @@ fun SettingsPage(
     LaunchedEffect(pagerState.settledPage) {
         sliderInteractionActive = false
         bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
-        if (selectedCategoryIndex != pagerState.settledPage) {
-            selectedCategoryIndex = pagerState.settledPage
+        if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
+            settingsPageViewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
     }
     LaunchedEffect(activeCategory, activePageListState, bottomBarVisibilityController) {
@@ -395,7 +392,7 @@ fun SettingsPage(
     }
 
     BackHandler(enabled = searchExpanded) {
-        searchExpanded = false
+        settingsPageViewModel.updateSearchExpanded(false)
     }
 
     LaunchedEffect(trimmedSearchQuery) {
@@ -465,8 +462,8 @@ fun SettingsPage(
                 selectedPageProvider = { pagerState.targetPage },
                 searchExpanded = searchExpanded,
                 searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                onSearchExpandedChange = { searchExpanded = it },
+                onSearchQueryChange = settingsPageViewModel::updateSearchQuery,
+                onSearchExpandedChange = settingsPageViewModel::updateSearchExpanded,
                 searchIcon = appLucideSearchIcon(),
                 searchContentDescription = searchContentDescription,
                 searchPlaceholder = settingsSearchPlaceholder,

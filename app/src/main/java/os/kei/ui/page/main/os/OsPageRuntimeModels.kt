@@ -29,6 +29,11 @@ internal data class OsActivityShortcutIconUiState(
     val missingPackages: Set<String> = emptySet(),
 )
 
+internal data class OsCardExpansionUiState(
+    val activityCards: Map<String, Boolean> = emptyMap(),
+    val shellCommandCards: Map<String, Boolean> = emptyMap(),
+)
+
 internal fun defaultOsSectionStates(): Map<SectionKind, SectionState> =
     mapOf(
         SectionKind.SYSTEM to SectionState(),

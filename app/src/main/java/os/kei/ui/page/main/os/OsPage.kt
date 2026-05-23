@@ -6,7 +6,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -83,6 +82,7 @@ fun OsPage(
     }
     val pageUiState by osPageViewModel.uiState.collectAsStateWithLifecycle()
     val activityIconState by osPageViewModel.activityIconState.collectAsStateWithLifecycle()
+    val cardExpansionState by osPageViewModel.cardExpansionState.collectAsStateWithLifecycle()
     val persistentState = pageUiState.persistentState
     val runtimeState = pageUiState.runtimeState
     val activitySuggestionState = pageUiState.activitySuggestionState
@@ -100,11 +100,11 @@ fun OsPage(
     val linuxEnvExpanded = uiSnapshot.linuxEnvExpanded
     val visibleCards = uiSnapshot.visibleCards
     val activityShortcutCards = osActivityShortcutCardsForUi(persistentState)
-    val activityCardExpanded = remember { mutableStateMapOf<String, Boolean>() }
     val overlayState = rememberOsPageOverlayState(textBundle.googleSystemServiceDefaults)
     val scrollBehavior = MiuixScrollBehavior()
     val shellCommandCards = persistentState.shellCommandCards
-    val shellCommandCardExpanded = remember { mutableStateMapOf<String, Boolean>() }
+    val activityCardExpanded = cardExpansionState.activityCards
+    val shellCommandCardExpanded = cardExpansionState.shellCommandCards
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var overlaySearchSuppressed by remember { mutableStateOf(false) }
     val surfaceColor = uiContext.surfaceColor
@@ -168,8 +168,8 @@ fun OsPage(
         rememberOsPageCardTransferEventActions(
             context = context,
             overlayState = overlayState,
-            activityCardExpanded = activityCardExpanded,
-            shellCommandCardExpanded = shellCommandCardExpanded,
+            retainActivityCardExpansion = osPageViewModel::retainActivityCardExpansion,
+            retainShellCommandCardExpansion = osPageViewModel::retainShellCommandCardExpansion,
             textBundle = textBundle,
         )
     BindOsPageEvents(
@@ -213,7 +213,7 @@ fun OsPage(
             context.showToast(textBundle.shellCardCommandRequiredToast)
         },
         onShellCommandCardDeleted = { cardId ->
-            shellCommandCardExpanded.remove(cardId)
+            osPageViewModel.removeShellCommandCardExpansion(cardId)
             overlayState.onEditingShellCommandCardIdChange(null)
             overlayState.onShowShellCommandCardEditorChange(false)
             context.showToast(textBundle.shellCardDeletedToast)
@@ -226,7 +226,7 @@ fun OsPage(
             overlayState.onEditingActivityShortcutBuiltInChange(false)
         },
         onActivityShortcutCardDeleted = { cardId ->
-            activityCardExpanded.remove(cardId)
+            osPageViewModel.removeActivityCardExpansion(cardId)
             overlayState.onEditingActivityShortcutCardIdChange(null)
             overlayState.onShowActivityShortcutEditorChange(false)
             overlayState.onShowActivitySuggestionSheetChange(false)
@@ -304,10 +304,10 @@ fun OsPage(
 
     BindOsCardExpandedStateMaps(
         activityShortcutCards = activityShortcutCards,
-        activityCardExpanded = activityCardExpanded,
         initialGoogleSystemServiceExpanded = uiSnapshot.googleSystemServiceExpanded,
         shellCommandCards = shellCommandCards,
-        shellCommandCardExpanded = shellCommandCardExpanded,
+        syncActivityCardExpansion = osPageViewModel::syncActivityCardExpansion,
+        syncShellCommandCardExpansion = osPageViewModel::syncShellCommandCardExpansion,
     )
 
     BindOsScrollToTopEffect(
@@ -421,8 +421,6 @@ fun OsPage(
             actionState,
             routeState,
             shizukuStatus,
-            activityCardExpanded,
-            shellCommandCardExpanded,
             osPageViewModel,
         ) {
             createOsPageMainListActions(
@@ -431,8 +429,6 @@ fun OsPage(
                 actionState = actionState,
                 routeState = routeState,
                 shizukuStatus = shizukuStatus,
-                activityCardExpanded = activityCardExpanded,
-                shellCommandCardExpanded = shellCommandCardExpanded,
                 osPageViewModel = osPageViewModel,
             )
         }

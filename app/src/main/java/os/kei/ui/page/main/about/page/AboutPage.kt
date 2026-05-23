@@ -17,12 +17,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -60,8 +58,8 @@ import os.kei.ui.page.main.about.section.AboutProjectLicenseCardSection
 import os.kei.ui.page.main.about.section.AboutReleaseCardSection
 import os.kei.ui.page.main.about.section.AboutRuntimeStatusCardSection
 import os.kei.ui.page.main.about.section.AboutUiFrameworkCardSection
+import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
 import os.kei.ui.page.main.about.state.rememberAboutPageColorPalette
-import os.kei.ui.page.main.about.state.rememberAboutPageSectionExpansionState
 import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
 import os.kei.ui.page.main.host.pager.MainLoadedPager
@@ -100,6 +98,7 @@ fun AboutPage(
     val palette = rememberAboutPageColorPalette(shizukuStatus = shizukuStatus)
     val viewModel: AboutPageViewModel = viewModel()
     val detailsState by viewModel.detailsState.collectAsStateWithLifecycle()
+    val chromeState by viewModel.chromeState.collectAsStateWithLifecycle()
 
     val categories =
         remember {
@@ -110,12 +109,9 @@ fun AboutPage(
                 AboutCategory.Lab,
             )
         }
-    var selectedCategoryIndex by rememberSaveable { mutableIntStateOf(0) }
-    var searchExpanded by rememberSaveable { mutableStateOf(false) }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
     val pagerState =
         rememberMainLoadedPagerState(
-            initialPage = selectedCategoryIndex,
+            initialPage = chromeState.selectedCategoryIndex.coerceIn(0, categories.lastIndex),
             pageCount = categories.size,
         )
     val overviewListState = rememberLazyListState()
@@ -125,7 +121,9 @@ fun AboutPage(
     val searchListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
-    val expansionState = rememberAboutPageSectionExpansionState()
+    val expansionState = chromeState.expansionState
+    val searchExpanded = chromeState.searchExpanded
+    val searchQuery = chromeState.searchQuery
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -153,8 +151,8 @@ fun AboutPage(
 
     LaunchedEffect(pagerState.settledPage) {
         bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
-        if (selectedCategoryIndex != pagerState.settledPage) {
-            selectedCategoryIndex = pagerState.settledPage
+        if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
+            viewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
     }
 
@@ -259,7 +257,7 @@ fun AboutPage(
                         pagerState.settledPage
                     }
                 if (target != stablePageIndex) {
-                    selectedCategoryIndex = target
+                    viewModel.updateSelectedCategoryIndex(target)
                     tabJumpJob?.cancel()
                     tabJumpJob =
                         scope.launch {
@@ -302,7 +300,7 @@ fun AboutPage(
         }
 
     BackHandler(enabled = searchExpanded) {
-        searchExpanded = false
+        viewModel.updateSearchExpanded(false)
     }
 
     LaunchedEffect(trimmedSearchQuery) {
@@ -326,8 +324,8 @@ fun AboutPage(
                         cardColor = palette.infoCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.appExpanded,
-                        onExpandedChange = { expansionState.appExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.App),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.App, it) },
                     )
                 }
 
@@ -336,8 +334,8 @@ fun AboutPage(
                         cardColor = palette.githubCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.githubExpanded,
-                        onExpandedChange = { expansionState.githubExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.GitHub),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.GitHub, it) },
                         onOpenProjectUrl = { url ->
                             if (!openExternalUrl(context, url)) {
                                 context.showToast(openLinkFailed)
@@ -351,8 +349,8 @@ fun AboutPage(
                         cardColor = palette.releaseCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.releaseExpanded,
-                        onExpandedChange = { expansionState.releaseExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Release),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Release, it) },
                     )
                 }
 
@@ -368,8 +366,8 @@ fun AboutPage(
                         shizukuDetailMap = shizukuDetailMap,
                         permissionCount = permissionEntries.size,
                         componentCount = componentEntries.size,
-                        expanded = if (searchActive) true else expansionState.runtimeExpanded,
-                        onExpandedChange = { expansionState.runtimeExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Runtime),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Runtime, it) },
                         onCheckShizuku = onCheckShizuku,
                     )
                 }
@@ -379,8 +377,8 @@ fun AboutPage(
                         cardColor = palette.networkServiceCardColor,
                         titleColor = palette.readyColor,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.networkExpanded,
-                        onExpandedChange = { expansionState.networkExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Network),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Network, it) },
                     )
                 }
 
@@ -389,8 +387,8 @@ fun AboutPage(
                         cardColor = palette.mediaStorageCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.mediaExpanded,
-                        onExpandedChange = { expansionState.mediaExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Media),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Media, it) },
                     )
                 }
 
@@ -402,8 +400,8 @@ fun AboutPage(
                         readyColor = palette.readyColor,
                         notReadyColor = palette.notReadyColor,
                         entries = permissionEntries,
-                        expanded = if (searchActive) true else expansionState.permissionExpanded,
-                        onExpandedChange = { expansionState.permissionExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Permission),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Permission, it) },
                     )
                 }
 
@@ -414,8 +412,8 @@ fun AboutPage(
                         subtitleColor = palette.subtitleColor,
                         accent = palette.accent,
                         entries = componentEntries,
-                        expanded = if (searchActive) true else expansionState.componentExpanded,
-                        onExpandedChange = { expansionState.componentExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Component),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Component, it) },
                     )
                 }
 
@@ -424,8 +422,8 @@ fun AboutPage(
                         cardColor = palette.buildCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.buildExpanded,
-                        onExpandedChange = { expansionState.buildExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Build),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Build, it) },
                     )
                 }
 
@@ -434,8 +432,8 @@ fun AboutPage(
                         cardColor = palette.uiFrameworkCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.uiFrameworkExpanded,
-                        onExpandedChange = { expansionState.uiFrameworkExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Ui),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Ui, it) },
                     )
                 }
 
@@ -444,8 +442,8 @@ fun AboutPage(
                         cardColor = palette.projectLicenseCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.projectLicenseExpanded,
-                        onExpandedChange = { expansionState.projectLicenseExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.ProjectLicense),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.ProjectLicense, it) },
                         onOpenLicenseUrl = { url ->
                             if (!openExternalUrl(context, url)) {
                                 context.showToast(openLinkFailed)
@@ -459,8 +457,8 @@ fun AboutPage(
                         cardColor = palette.licenseCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.licenseExpanded,
-                        onExpandedChange = { expansionState.licenseExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.License),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.License, it) },
                         onOpenSourceUrl = { url ->
                             if (!openExternalUrl(context, url)) {
                                 context.showToast(openLinkFailed)
@@ -474,8 +472,8 @@ fun AboutPage(
                         cardColor = palette.componentLabCardColor,
                         accent = palette.accent,
                         subtitleColor = palette.subtitleColor,
-                        expanded = if (searchActive) true else expansionState.componentLabExpanded,
-                        onExpandedChange = { expansionState.componentLabExpanded = it },
+                        expanded = aboutCardExpanded(searchActive, expansionState, AboutSearchCard.Lab),
+                        onExpandedChange = { viewModel.updateSectionExpanded(AboutSearchCard.Lab, it) },
                         onOpenComponentLab = { DebugComponentLabActivity.launch(context) },
                     )
                 }
@@ -558,8 +556,8 @@ fun AboutPage(
                 selectedPageProvider = { pagerState.targetPage },
                 searchExpanded = searchExpanded,
                 searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                onSearchExpandedChange = { searchExpanded = it },
+                onSearchQueryChange = viewModel::updateSearchQuery,
+                onSearchExpandedChange = viewModel::updateSearchExpanded,
                 searchIcon = appLucideSearchIcon(),
                 searchContentDescription = searchContentDescription,
                 searchPlaceholder = aboutSearchPlaceholder,
@@ -637,6 +635,29 @@ fun AboutPage(
                 }
             }
         }
+    }
+}
+
+private fun aboutCardExpanded(
+    searchActive: Boolean,
+    expansionState: AboutPageSectionExpansionState,
+    card: AboutSearchCard,
+): Boolean {
+    if (searchActive) return true
+    return when (card) {
+        AboutSearchCard.App -> expansionState.appExpanded
+        AboutSearchCard.Release -> expansionState.releaseExpanded
+        AboutSearchCard.GitHub -> expansionState.githubExpanded
+        AboutSearchCard.Runtime -> expansionState.runtimeExpanded
+        AboutSearchCard.Network -> expansionState.networkExpanded
+        AboutSearchCard.Media -> expansionState.mediaExpanded
+        AboutSearchCard.Permission -> expansionState.permissionExpanded
+        AboutSearchCard.Component -> expansionState.componentExpanded
+        AboutSearchCard.Build -> expansionState.buildExpanded
+        AboutSearchCard.Ui -> expansionState.uiFrameworkExpanded
+        AboutSearchCard.ProjectLicense -> expansionState.projectLicenseExpanded
+        AboutSearchCard.License -> expansionState.licenseExpanded
+        AboutSearchCard.Lab -> expansionState.componentLabExpanded
     }
 }
 

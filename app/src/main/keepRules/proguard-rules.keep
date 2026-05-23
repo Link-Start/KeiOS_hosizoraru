@@ -32,32 +32,6 @@
     private static *** newProcess(java.lang.String[],java.lang.String[],java.lang.String);
 }
 
-# GitHub Shizuku install mirrors the vvb2060/InstallerX binder route:
-# system service binder -> ShizukuBinderWrapper -> hidden PackageInstaller interfaces.
-# Keep the tiny hidden-api and Shizuku bridge surfaces stable across benchmark/release R8.
--keep public interface ** extends android.os.IInterface { *; }
--dontwarn dalvik.system.VMRuntime
--dontwarn android.app.ContextImpl
--dontwarn android.app.LoadedApk
--keep class org.lsposed.hiddenapibypass.LSPass { *; }
--keep class org.lsposed.hiddenapibypass.Helper { *; }
--keepclassmembers class org.lsposed.hiddenapibypass.Helper$* { *; }
--keepnames class org.lsposed.hiddenapibypass.CoreOjClassLoader
--keepnames class moe.shizuku.api.BinderContainer
--keepclassmembers class moe.shizuku.api.BinderContainer {
-    public static final android.os.Parcelable$Creator CREATOR;
-}
--keep class rikka.shizuku.ShizukuBinderWrapper {
-    public <init>(android.os.IBinder);
-    public android.os.IInterface queryLocalInterface(java.lang.String);
-}
--keepnames class rikka.shizuku.ShizukuProvider
-
-# Keep the managed install backend readable in release-only device traces while R8 can still
-# optimize call bodies. The receiver is a manifest component and the registry builds package-
-# scoped PendingIntents at runtime.
--keepnames class os.kei.feature.github.install.**
-
 # Keep annotation/signature metadata used by Kotlin + library runtime features.
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
 
@@ -106,8 +80,6 @@
 # consumes the serialized focus-api payload, not these facade classes directly.
 -keepnames class os.kei.core.notification.focus.**
 -keepnames class os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder
--keepnames class os.kei.feature.github.notification.GitHubRefreshNotificationHelper
--keepnames class os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 
 # Drop direct release Log calls to reduce overhead and method count.
 # AppLogger warning/error paths are kept visible for benchmark/release install diagnostics.

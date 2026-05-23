@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.ui.page.main.github.AppIcon
+import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.osActivityShortcutIconKey
@@ -43,6 +43,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
     onPackageSuggestionQueryChange: (String) -> Unit,
     classSuggestions: List<ShortcutActivityClassOption>,
     activityIconBitmaps: Map<String, Bitmap>,
+    packageIconBitmaps: Map<String, Bitmap>,
     classSuggestionsLoading: Boolean,
     classSuggestionQuery: String,
     onClassSuggestionQueryChange: (String) -> Unit,
@@ -176,9 +177,12 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                 val leading =
                     when (target) {
                         ShortcutSuggestionField.PackageName -> {
+                            val packageName = suggestion.value.trim()
+                            val packageBitmap = packageIconBitmaps[packageName]
                             @Composable {
-                                AppIcon(
-                                    packageName = suggestion.value.trim(),
+                                AppIconImage(
+                                    packageName = packageName,
+                                    bitmap = packageBitmap,
                                     size = 24.dp,
                                 )
                             }
@@ -197,6 +201,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                                         className = suggestion.value,
                                         size = 24.dp,
                                         bitmap = iconBitmap,
+                                        packageBitmap = packageIconBitmaps[draft.packageName.trim()],
                                         fallbackToPackageIcon = true,
                                     )
                                 }

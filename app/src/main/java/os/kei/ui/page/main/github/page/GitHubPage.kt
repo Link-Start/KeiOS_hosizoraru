@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.page
 
 import android.content.Intent
@@ -29,6 +31,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
+import os.kei.ui.page.main.github.LocalGitHubAppIconBitmaps
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.github.section.GitHubMainContentActions
@@ -87,6 +90,7 @@ fun GitHubPage(
     var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var consumedExternalActionsSheetToken by rememberSaveable { mutableIntStateOf(0) }
     val pageUiState by githubPageViewModel.uiState.collectAsStateWithLifecycle()
+    val appIconState by githubPageViewModel.appIconState.collectAsStateWithLifecycle()
     val transferState = pageUiState.transferState
     val installedOnlineShareTargets = pageUiState.installedOnlineShareTargets
     val checkLogicDownloaderOptions = pageUiState.checkLogicDownloaderOptions
@@ -226,6 +230,17 @@ fun GitHubPage(
         if (!runtime.contentReady) return@LaunchedEffect
         actions.syncActiveShareImportFlowFromStore()
     }
+    BindGitHubAppIconPreloadEffect(
+        active = runtime.hasActivated,
+        trackedPackages = contentDerivedState.trackedUi.sortedTracked.map { it.packageName },
+        appList = state.appList,
+        selectedPackageName = state.selectedApp?.packageName.orEmpty(),
+        pickerExpanded = state.pickerExpanded,
+        appPickerFilteredPackages = appPickerDerivedState.filteredApps.map { it.packageName },
+        requestAppIcons = { packageNames ->
+            githubPageViewModel.requestAppIcons(context, packageNames)
+        },
+    )
 
     BindGitHubPageLifecycleCoordinator(
         context = context,
@@ -261,7 +276,10 @@ fun GitHubPage(
     )
 
     val githubGlassRuntime = LocalGlassEffectRuntime.current
-    CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
+    CompositionLocalProvider(
+        LocalGlassEffectRuntime provides githubGlassRuntime,
+        LocalGitHubAppIconBitmaps provides appIconState.bitmaps,
+    ) {
         GitHubMainContent(
             layout =
                 GitHubMainContentLayout(
@@ -395,7 +413,10 @@ fun GitHubPage(
         )
     }
 
-    CompositionLocalProvider(LocalGlassEffectRuntime provides githubGlassRuntime) {
+    CompositionLocalProvider(
+        LocalGlassEffectRuntime provides githubGlassRuntime,
+        LocalGitHubAppIconBitmaps provides appIconState.bitmaps,
+    ) {
         GitHubPageSheetHost(
             context = context,
             backdrops = backdrops,

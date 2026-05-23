@@ -11,8 +11,9 @@ import os.kei.BuildConfig
 import os.kei.R
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isKeiOsSelfTrack
-import os.kei.ui.page.main.github.AppIcon
+import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.github.LocalGitHubAppIconBitmaps
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
 import os.kei.ui.page.main.github.githubReleaseHintMessage
@@ -82,9 +83,11 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                     }
                 },
                 headerStartAction = {
-                    AppIcon(
-                        packageName = item.packageName,
-                        localRefreshKey = state.localVersionCode to state.localVersion,
+                    val appIconBitmaps = LocalGitHubAppIconBitmaps.current
+                    val packageName = item.packageName.trim()
+                    AppIconImage(
+                        packageName = packageName,
+                        bitmap = appIconBitmaps[packageName],
                         size = 24.dp,
                     )
                 },

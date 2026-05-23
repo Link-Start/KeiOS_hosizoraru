@@ -4,6 +4,7 @@ package os.kei.ui.page.main.student.catalog.page
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,6 +24,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
+import os.kei.ui.page.main.student.catalog.component.LocalBaGuideCatalogImageBitmaps
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
@@ -80,6 +82,7 @@ fun BaGuideCatalogPage(
     val bgmExportSuccessText = stringResource(R.string.ba_catalog_bgm_export_success)
     val catalogViewModel: BaGuideCatalogViewModel = viewModel()
     val routeState = collectBaGuideCatalogRouteState(catalogViewModel)
+    val imageState by catalogViewModel.imageState.collectAsStateWithLifecycle()
     val tabs = BaGuideCatalogPageTab.entries
     val pageState = rememberBaGuideCatalogPageStateHolder()
     val pageActions = rememberBaGuideCatalogPageActions(catalogViewModel)
@@ -136,6 +139,11 @@ fun BaGuideCatalogPage(
             catalogDataState = routeState.catalogDataState,
             playbackUiState = playbackSessionState,
         )
+    BindBaGuideCatalogImagePreloadEffect(
+        routeState = routeState,
+        chromePresentation = chromePresentation,
+        requestCatalogImages = catalogViewModel::requestCatalogImages,
+    )
     LaunchedEffect(chromePresentation.activeTab) {
         chromeScrollState.expand()
         if (chromePresentation.activeTab.catalogTab == null) {
@@ -186,45 +194,47 @@ fun BaGuideCatalogPage(
 
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
 
-    BaGuideCatalogPageContent(
-        pageTitle = pageTitle,
-        accent = accent,
-        isDark = isDark,
-        panelBackground = panelBackground,
-        pageChromeBackdrop = pageChromeBackdrop,
-        bottomChromeBackdrop = bottomChromeBackdrop,
-        pagerState = pagerState,
-        tabs = tabs,
-        pageState = pageState,
-        filterSortState = filterSortState,
-        catalogFavoriteEntries = routeState.catalogFavoriteEntries,
-        catalogDataState = routeState.catalogDataState,
-        catalogListDerivedStates = routeState.catalogListDerivedStates,
-        studentBgmListDerivedState = routeState.studentBgmListDerivedState,
-        studentBgmDisplayedDerivedState = routeState.studentBgmDisplayedDerivedState,
-        favoriteBgmListDerivedState = routeState.favoriteBgmListDerivedState,
-        favoriteBgms = routeState.favoriteBgms,
-        favoriteBgmOfflineCacheState = routeState.favoriteBgmOfflineCacheState,
-        playbackCoordinator = playbackCoordinator,
-        playbackUiState = playbackSessionState,
-        chromeScrollState = chromeScrollState,
-        chromeTabs = chromeTabs,
-        chromePresentation = chromePresentation,
-        transferExportAction = transferExportAction,
-        importActions = importActions,
-        bgmCacheState = bgmCacheState,
-        nativeBgmMediaNotificationEnabled = routeState.nativeBgmMediaNotificationEnabled,
-        notificationPermissionGranted = notificationPermissionGranted,
-        allExportSuccessText = allExportSuccessText,
-        studentExportSuccessText = studentExportSuccessText,
-        bgmExportSuccessText = bgmExportSuccessText,
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
-        searchAutoFocusEnabled = searchAutoFocusEnabled,
-        enableSearchBar = enableSearchBar,
-        onBack = onBack,
-        onOpenGuide = onOpenGuide,
-        pageActions = pageActions,
-        onRequestNotificationPermission = onRequestNotificationPermission,
-    )
+    CompositionLocalProvider(LocalBaGuideCatalogImageBitmaps provides imageState.bitmaps) {
+        BaGuideCatalogPageContent(
+            pageTitle = pageTitle,
+            accent = accent,
+            isDark = isDark,
+            panelBackground = panelBackground,
+            pageChromeBackdrop = pageChromeBackdrop,
+            bottomChromeBackdrop = bottomChromeBackdrop,
+            pagerState = pagerState,
+            tabs = tabs,
+            pageState = pageState,
+            filterSortState = filterSortState,
+            catalogFavoriteEntries = routeState.catalogFavoriteEntries,
+            catalogDataState = routeState.catalogDataState,
+            catalogListDerivedStates = routeState.catalogListDerivedStates,
+            studentBgmListDerivedState = routeState.studentBgmListDerivedState,
+            studentBgmDisplayedDerivedState = routeState.studentBgmDisplayedDerivedState,
+            favoriteBgmListDerivedState = routeState.favoriteBgmListDerivedState,
+            favoriteBgms = routeState.favoriteBgms,
+            favoriteBgmOfflineCacheState = routeState.favoriteBgmOfflineCacheState,
+            playbackCoordinator = playbackCoordinator,
+            playbackUiState = playbackSessionState,
+            chromeScrollState = chromeScrollState,
+            chromeTabs = chromeTabs,
+            chromePresentation = chromePresentation,
+            transferExportAction = transferExportAction,
+            importActions = importActions,
+            bgmCacheState = bgmCacheState,
+            nativeBgmMediaNotificationEnabled = routeState.nativeBgmMediaNotificationEnabled,
+            notificationPermissionGranted = notificationPermissionGranted,
+            allExportSuccessText = allExportSuccessText,
+            studentExportSuccessText = studentExportSuccessText,
+            bgmExportSuccessText = bgmExportSuccessText,
+            transitionAnimationsEnabled = transitionAnimationsEnabled,
+            includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
+            searchAutoFocusEnabled = searchAutoFocusEnabled,
+            enableSearchBar = enableSearchBar,
+            onBack = onBack,
+            onOpenGuide = onOpenGuide,
+            pageActions = pageActions,
+            onRequestNotificationPermission = onRequestNotificationPermission,
+        )
+    }
 }

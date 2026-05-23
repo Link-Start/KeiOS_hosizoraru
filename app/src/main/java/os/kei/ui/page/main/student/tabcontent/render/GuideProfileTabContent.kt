@@ -4,8 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,9 +23,7 @@ import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileSectionHeader
 import os.kei.ui.page.main.student.tabcontent.profile.extractProfileExternalLink
 import os.kei.ui.page.main.student.tabcontent.profile.fallbackProfileLinkTitle
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
-import os.kei.ui.page.main.student.tabcontent.profile.profileLinkTitleCache
 import os.kei.ui.page.main.student.tabcontent.profile.profileRoleReferenceFieldKey
-import os.kei.ui.page.main.student.tabcontent.profile.resolveProfileLinkTitleAsync
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -41,12 +38,15 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     sourceUrl: String,
     galleryCacheRevision: Int,
     bgmFavoriteAudioUrls: Set<String>,
+    profileLinkTitles: Map<String, String>,
+    profileLinkMissingLinks: Set<String>,
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
+    onRequestProfileLinkTitles: (List<String>) -> Unit,
 ) {
     val guide = info
     if (guide == null) {
@@ -119,22 +119,21 @@ internal fun LazyListScope.renderGuideProfileTabContent(
                         remember(row.value) {
                             extractProfileExternalLink(row.value)
                         }
-                    val resolvedTitle by produceState(
-                        initialValue =
-                            if (externalLink.isNotBlank()) {
-                                profileLinkTitleCache[externalLink].orEmpty()
-                            } else {
-                                ""
-                            },
-                        key1 = externalLink,
+                    LaunchedEffect(
+                        externalLink,
+                        profileLinkTitles[externalLink],
+                        profileLinkMissingLinks.contains(externalLink),
+                        onRequestProfileLinkTitles,
                     ) {
-                        value =
-                            if (externalLink.isBlank()) {
-                                ""
-                            } else {
-                                resolveProfileLinkTitleAsync(externalLink)
-                            }
+                        if (
+                            externalLink.isNotBlank() &&
+                            !profileLinkTitles.containsKey(externalLink) &&
+                            !profileLinkMissingLinks.contains(externalLink)
+                        ) {
+                            onRequestProfileLinkTitles(listOf(externalLink))
+                        }
                     }
+                    val resolvedTitle = profileLinkTitles[externalLink].orEmpty()
                     val displayValue =
                         when {
                             externalLink.isBlank() -> row.value.ifBlank { "-" }

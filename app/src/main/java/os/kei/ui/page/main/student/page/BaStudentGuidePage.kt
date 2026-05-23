@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +42,11 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.LocalGuideMediaGifTargetRequester
+import os.kei.ui.page.main.student.LocalGuideMediaGifTargets
+import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
+import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
+import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
@@ -125,6 +131,8 @@ fun BaStudentGuidePage(
 
     val guideViewModel: BaStudentGuideViewModel = viewModel()
     val guideUiState by guideViewModel.uiState.collectAsStateWithLifecycle()
+    val guideMediaImageState by guideViewModel.mediaImageState.collectAsStateWithLifecycle()
+    val profileLinkTitleState by guideViewModel.profileLinkTitleState.collectAsStateWithLifecycle()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -337,7 +345,14 @@ fun BaStudentGuidePage(
             onShareSource = pageActions.shareSource,
             onRefresh = pageActions.requestRefresh,
         )
-    Box(modifier = Modifier.fillMaxSize()) {
+    CompositionLocalProvider(
+        LocalGuideMediaImageBitmaps provides guideMediaImageState.bitmaps,
+        LocalGuideMediaImageMissingKeys provides guideMediaImageState.missingKeys,
+        LocalGuideMediaGifTargets provides guideMediaImageState.resolvedGifTargets,
+        LocalGuideMediaImageRequester provides guideViewModel::requestGuideMediaImages,
+        LocalGuideMediaGifTargetRequester provides guideViewModel::requestGuideMediaGifTargets,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         AppScaffold(
             modifier =
                 Modifier
@@ -404,6 +419,8 @@ fun BaStudentGuidePage(
                 isVoicePlaying = isVoicePlaying,
                 voicePlayProgress = voicePlayProgress,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                profileLinkTitles = profileLinkTitleState.titles,
+                profileLinkMissingLinks = profileLinkTitleState.missingLinks,
                 isNpcSatelliteGuide = guideUiState.isNpcSatelliteGuide,
                 mediaAdaptiveRotationEnabled = guideUiState.mediaSettings.mediaAdaptiveRotationEnabled,
                 includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
@@ -414,6 +431,7 @@ fun BaStudentGuidePage(
                 onSaveMedia = pageActions.saveGuideMedia,
                 onSaveMediaPack = pageActions.saveGuideMediaPack,
                 onToggleBgmFavorite = guideViewModel::requestToggleBgmFavorite,
+                onRequestProfileLinkTitles = guideViewModel::requestProfileLinkTitles,
                 onToggleVoicePlayback = pageActions.toggleVoicePlayback,
                 onScrollBoundsChange = { canScrollBackward, canScrollForward ->
                     activePageCanScrollBackward = canScrollBackward
@@ -430,5 +448,6 @@ fun BaStudentGuidePage(
                 items = actionItems,
             )
         }
+    }
     }
 }

@@ -43,6 +43,7 @@ internal class BaGuideCatalogViewModel(
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = BaGuideCatalogRepository()
+    private val imageRepository = BaGuideCatalogImageRepository()
     private var binding: BaGuideCatalogBinding? = null
     private var loadJob: Job? = null
     private var hydrateJob: Job? = null
@@ -59,6 +60,7 @@ internal class BaGuideCatalogViewModel(
     private var bgmCacheSnapshotInput: List<GuideBgmFavoriteItem>? = null
     private var favoriteBgmOfflineCacheJob: Job? = null
     private var favoriteBgmOfflineCacheInput: List<GuideBgmFavoriteItem>? = null
+    private var imageLoadingUrls: Set<String> = emptySet()
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
     val dataState: StateFlow<BaGuideCatalogDataUiState> = _dataState.asStateFlow()
@@ -112,6 +114,9 @@ internal class BaGuideCatalogViewModel(
         MutableStateFlow(BaGuideFavoriteBgmOfflineCacheUiState())
     val favoriteBgmOfflineCacheState: StateFlow<BaGuideFavoriteBgmOfflineCacheUiState> =
         _favoriteBgmOfflineCacheState.asStateFlow()
+    private val _imageState = MutableStateFlow(BaGuideCatalogImageUiState())
+    val imageState: StateFlow<BaGuideCatalogImageUiState> =
+        _imageState.asStateFlow()
 
     val routeState: StateFlow<BaGuideCatalogRouteState> =
         buildBaGuideCatalogRouteStateFlow(
@@ -169,6 +174,61 @@ internal class BaGuideCatalogViewModel(
 
     fun requestRefresh() {
         loadCatalog(manualRefresh = true, allowInitialDelay = false)
+    }
+
+    fun requestCatalogImages(imageUrls: List<String>) {
+        val normalizedUrls =
+            imageUrls
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+        if (normalizedUrls.isEmpty()) return
+
+        val currentState = _imageState.value
+        val missingUrls =
+            normalizedUrls.filter { imageUrl ->
+                !currentState.bitmaps.containsKey(imageUrl) &&
+                    !currentState.missingUrls.contains(imageUrl) &&
+                    !imageLoadingUrls.contains(imageUrl) &&
+                    imageRepository.cachedBitmap(imageUrl) == null
+            }
+        val cachedBitmaps =
+            normalizedUrls
+                .filterNot { currentState.bitmaps.containsKey(it) }
+                .mapNotNull { imageUrl ->
+                    imageRepository.cachedBitmap(imageUrl)?.let { bitmap -> imageUrl to bitmap }
+                }.toMap()
+        if (cachedBitmaps.isNotEmpty()) {
+            _imageState.update { state ->
+                state.copy(bitmaps = state.bitmaps + cachedBitmaps)
+            }
+        }
+        if (missingUrls.isEmpty()) return
+
+        imageLoadingUrls += missingUrls
+        viewModelScope.launch {
+            try {
+                val result =
+                    imageRepository.loadImages(
+                        context = appContext,
+                        imageUrls = missingUrls,
+                    )
+                _imageState.update { state ->
+                    state.copy(
+                        bitmaps = state.bitmaps + result.bitmaps,
+                        missingUrls = state.missingUrls + result.missingUrls,
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Throwable) {
+                _imageState.update { state ->
+                    state.copy(missingUrls = state.missingUrls + missingUrls)
+                }
+            } finally {
+                imageLoadingUrls -= missingUrls
+            }
+        }
     }
 
     fun ensureCatalogFavoritesLoaded() {
@@ -587,6 +647,7 @@ internal class BaGuideCatalogViewModel(
         studentBgmDisplayedDerivationJob?.cancel()
         bgmCacheSnapshotJob?.cancel()
         favoriteBgmOfflineCacheJob?.cancel()
+        imageLoadingUrls = emptySet()
         super.onCleared()
     }
 

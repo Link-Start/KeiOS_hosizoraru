@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
+import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.BUILTIN_GOOGLE_SETTINGS_SAMPLE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.LEGACY_GOOGLE_SYSTEM_SERVICE_CARD_ID
 import os.kei.ui.page.main.os.shortcut.OsActivityCardImportMergeResult
@@ -375,16 +376,21 @@ internal fun BindOsActivityShortcutIconPreloadEffect(
     active: Boolean,
     activityShortcutCards: List<OsActivityShortcutCard>,
     showActivitySuggestionSheet: Boolean,
+    googleSystemServiceSuggestionTarget: ShortcutSuggestionField,
     activityShortcutDraftPackageName: String,
+    packageSuggestions: List<ShortcutInstalledAppOption>,
     classSuggestions: List<ShortcutActivityClassOption>,
     context: Context,
     requestActivityShortcutIcons: (Context, List<OsActivityShortcutIconRequest>) -> Unit,
+    requestPackageIcons: (Context, List<String>) -> Unit,
 ) {
     LaunchedEffect(
         active,
         activityShortcutCards,
         showActivitySuggestionSheet,
+        googleSystemServiceSuggestionTarget,
         activityShortcutDraftPackageName,
+        packageSuggestions,
         classSuggestions,
     ) {
         if (!active) return@LaunchedEffect
@@ -399,6 +405,26 @@ internal fun BindOsActivityShortcutIconPreloadEffect(
                     emptyList()
                 }
         requestActivityShortcutIcons(context, requests)
+        val packageIconPackages =
+            buildList {
+                activityShortcutCards
+                    .map { card -> card.config.packageName }
+                    .forEach(::add)
+                if (
+                    showActivitySuggestionSheet &&
+                    googleSystemServiceSuggestionTarget == ShortcutSuggestionField.PackageName
+                ) {
+                    addAll(activityPackageSuggestionIconPackages(packageSuggestions))
+                }
+            }
+        if (
+            packageIconPackages.isNotEmpty()
+        ) {
+            requestPackageIcons(
+                context,
+                packageIconPackages,
+            )
+        }
     }
 }
 

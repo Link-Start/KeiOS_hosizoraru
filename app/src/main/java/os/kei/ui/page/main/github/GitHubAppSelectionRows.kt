@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github
 
 import android.graphics.Bitmap
@@ -43,26 +45,33 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun GitHubSelectedAppCard(
     selectedApp: InstalledAppItem,
-    showInstallSource: Boolean = false
+    showInstallSource: Boolean = false,
 ) {
+    val appIconBitmaps = LocalGitHubAppIconBitmaps.current
     SheetSurfaceCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = GitHubStatusPalette.tonedSurface(
-            GitHubStatusPalette.Update,
-            isDark = isSystemInDarkTheme()
-        ),
+        containerColor =
+            GitHubStatusPalette.tonedSurface(
+                GitHubStatusPalette.Update,
+                isDark = isSystemInDarkTheme(),
+            ),
         borderColor = GitHubStatusPalette.Update.copy(alpha = 0.28f),
-        verticalSpacing = 0.dp
+        verticalSpacing = 0.dp,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            AppIcon(packageName = selectedApp.packageName, size = 38.dp)
+            val packageName = selectedApp.packageName.trim()
+            AppIconImage(
+                packageName = packageName,
+                bitmap = appIconBitmaps[packageName],
+                size = 38.dp,
+            )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
                     text = selectedApp.label,
@@ -71,7 +80,7 @@ internal fun GitHubSelectedAppCard(
                     fontSize = AppTypographyTokens.Body.fontSize,
                     lineHeight = AppTypographyTokens.Body.lineHeight,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = selectedApp.packageName,
@@ -79,7 +88,7 @@ internal fun GitHubSelectedAppCard(
                     fontSize = AppTypographyTokens.Supporting.fontSize,
                     lineHeight = AppTypographyTokens.Supporting.lineHeight,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             if (showInstallSource) {
@@ -94,34 +103,42 @@ internal fun GitHubAppCandidateRow(
     app: InstalledAppItem,
     selected: Boolean,
     showInstallSource: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
+    val appIconBitmaps = LocalGitHubAppIconBitmaps.current
     val isDark = isSystemInDarkTheme()
     val accent = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
     SheetSurfaceCard(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = if (selected) {
-            GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark)
-        } else {
-            null
-        },
-        borderColor = if (selected) {
-            GitHubStatusPalette.Update.copy(alpha = 0.3f)
-        } else {
-            MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.12f)
-        },
+        containerColor =
+            if (selected) {
+                GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark)
+            } else {
+                null
+            },
+        borderColor =
+            if (selected) {
+                GitHubStatusPalette.Update.copy(alpha = 0.3f)
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.12f)
+            },
         verticalSpacing = 0.dp,
-        onClick = onClick
+        onClick = onClick,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            AppIcon(packageName = app.packageName, size = 32.dp)
+            val packageName = app.packageName.trim()
+            AppIconImage(
+                packageName = packageName,
+                bitmap = appIconBitmaps[packageName],
+                size = 32.dp,
+            )
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
                     text = app.label,
@@ -130,7 +147,7 @@ internal fun GitHubAppCandidateRow(
                     fontSize = AppTypographyTokens.Body.fontSize,
                     lineHeight = AppTypographyTokens.Body.lineHeight,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = app.packageName,
@@ -138,13 +155,13 @@ internal fun GitHubAppCandidateRow(
                     fontSize = AppTypographyTokens.Supporting.fontSize,
                     lineHeight = AppTypographyTokens.Supporting.lineHeight,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             if (showInstallSource) {
                 InstallSourcePill(
                     label = app.installSourceDisplayLabel(),
-                    selected = selected
+                    selected = selected,
                 )
             }
         }
@@ -152,32 +169,31 @@ internal fun GitHubAppCandidateRow(
 }
 
 @Composable
-private fun InstalledAppItem.installSourceDisplayLabel(): String {
-    return installSourceLabel
+private fun InstalledAppItem.installSourceDisplayLabel(): String =
+    installSourceLabel
         .ifBlank { installSourcePackageName }
         .ifBlank { stringResource(R.string.github_track_sheet_app_install_source_unknown) }
-}
 
 @Composable
 private fun InstallSourcePill(
     label: String,
-    selected: Boolean = false
+    selected: Boolean = false,
 ) {
     val color = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
     val isDark = isSystemInDarkTheme()
     val metrics = rememberAppStatusPillMetrics(AppStatusPillSize.Compact)
     Box(
-        modifier = Modifier
-            .widthIn(max = 156.dp)
-            .clip(ContinuousCapsule)
-            .background(color.copy(alpha = if (isDark) 0.16f else 0.2f))
-            .border(
-                width = 0.8.dp,
-                color = color.copy(alpha = if (isDark) 0.32f else 0.4f),
-                shape = ContinuousCapsule
-            )
-            .padding(metrics.contentPadding),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .widthIn(max = 156.dp)
+                .clip(ContinuousCapsule)
+                .background(color.copy(alpha = if (isDark) 0.16f else 0.2f))
+                .border(
+                    width = 0.8.dp,
+                    color = color.copy(alpha = if (isDark) 0.32f else 0.4f),
+                    shape = ContinuousCapsule,
+                ).padding(metrics.contentPadding),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
@@ -186,7 +202,7 @@ private fun InstallSourcePill(
             lineHeight = metrics.typography.lineHeight,
             fontWeight = metrics.typography.fontWeight,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -195,22 +211,24 @@ private fun InstallSourcePill(
 internal fun AppIcon(
     packageName: String,
     size: Dp,
-    localRefreshKey: Any? = Unit
+    localRefreshKey: Any? = Unit,
 ) {
     val normalizedPackageName = packageName.trim()
     val context = LocalContext.current
-    val bitmapState = produceState<Bitmap?>(
-        initialValue = AppIconCache.get(normalizedPackageName),
-        normalizedPackageName,
-        localRefreshKey
-    ) {
-        if (normalizedPackageName.isBlank()) return@produceState
-        if (value == null) {
-            value = withContext(AppDispatchers.githubNetwork) {
-                AppIconCache.getOrLoad(context, normalizedPackageName)
+    val bitmapState =
+        produceState<Bitmap?>(
+            initialValue = AppIconCache.get(normalizedPackageName),
+            normalizedPackageName,
+            localRefreshKey,
+        ) {
+            if (normalizedPackageName.isBlank()) return@produceState
+            if (value == null) {
+                value =
+                    withContext(AppDispatchers.githubNetwork) {
+                        AppIconCache.getOrLoad(context, normalizedPackageName)
+                    }
             }
         }
-    }
     val bitmap = bitmapState.value
     when {
         bitmap != null -> {
@@ -218,31 +236,58 @@ internal fun AppIcon(
             Image(
                 bitmap = imageBitmap,
                 contentDescription = normalizedPackageName,
-                modifier = Modifier
-                    .width(size)
-                    .height(size)
-                    .clip(ContinuousCapsule)
+                modifier =
+                    Modifier
+                        .width(size)
+                        .height(size)
+                        .clip(ContinuousCapsule),
             )
         }
 
-        else -> AppIconFallback(size = size)
+        else -> {
+            AppIconFallback(size = size)
+        }
+    }
+}
+
+@Composable
+internal fun AppIconImage(
+    packageName: String,
+    bitmap: Bitmap?,
+    size: Dp,
+) {
+    val normalizedPackageName = packageName.trim()
+    if (bitmap != null) {
+        val imageBitmap = remember(bitmap) { bitmap.asImageBitmap() }
+        Image(
+            bitmap = imageBitmap,
+            contentDescription = normalizedPackageName,
+            modifier =
+                Modifier
+                    .width(size)
+                    .height(size)
+                    .clip(ContinuousCapsule),
+        )
+    } else {
+        AppIconFallback(size = size)
     }
 }
 
 @Composable
 private fun AppIconFallback(size: Dp) {
     Box(
-        modifier = Modifier
-            .width(size)
-            .height(size)
-            .clip(ContinuousCapsule),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .width(size)
+                .height(size)
+                .clip(ContinuousCapsule),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = stringResource(R.string.github_strategy_app_fallback),
             color = MiuixTheme.colorScheme.primary,
             fontSize = AppTypographyTokens.Caption.fontSize,
-            lineHeight = AppTypographyTokens.Caption.lineHeight
+            lineHeight = AppTypographyTokens.Caption.lineHeight,
         )
     }
 }

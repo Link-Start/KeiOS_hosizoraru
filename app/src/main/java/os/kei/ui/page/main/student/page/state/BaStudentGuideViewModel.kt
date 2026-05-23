@@ -6,7 +6,6 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,9 +24,12 @@ import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.GuideMediaImageLoader
+import os.kei.ui.page.main.student.GuideMediaImageRequest
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.support.GuideMediaPackSaveRequest
 import os.kei.ui.page.main.student.page.support.GuideMediaSaveRequest
+import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileLinkTitleLoader
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaStudentGuideDataUiState(
@@ -72,6 +74,12 @@ internal class BaStudentGuideViewModel(
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = BaStudentGuideRepository()
+    private val mediaImageLoader =
+        GuideMediaImageLoader(
+            appContext = appContext,
+            scope = viewModelScope,
+        )
+    private val profileLinkTitleLoader = GuideProfileLinkTitleLoader(viewModelScope)
     private var binding: BaStudentGuideBinding? = null
     private var loadJob: Job? = null
     private var currentUrlLoadJob: Job? = null
@@ -90,6 +98,8 @@ internal class BaStudentGuideViewModel(
 
     private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
     val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
+    val mediaImageState = mediaImageLoader.state
+    val profileLinkTitleState = profileLinkTitleLoader.state
     private val mutableEvents = MutableSharedFlow<BaStudentGuideEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<BaStudentGuideEvent> = mutableEvents.asSharedFlow()
     val bgmFavoriteAudioUrls: StateFlow<Set<String>> =
@@ -301,6 +311,15 @@ internal class BaStudentGuideViewModel(
         rawPackTitle = rawPackTitle,
         studentNamePrefix = studentNamePrefix,
     )
+
+    fun requestGuideMediaImages(requests: List<GuideMediaImageRequest>) =
+        mediaImageLoader.requestImages(requests)
+
+    fun requestGuideMediaGifTargets(rawTargets: List<String>) =
+        mediaImageLoader.requestGifTargets(rawTargets)
+
+    fun requestProfileLinkTitles(rawLinks: List<String>) =
+        profileLinkTitleLoader.requestTitles(rawLinks)
 
     fun completeCustomMediaSave(
         request: GuideMediaSaveRequest,
@@ -524,10 +543,17 @@ internal class BaStudentGuideViewModel(
             }
         }
     }
-}
 
-private fun Throwable.rethrowIfCancellation() {
-    if (this is CancellationException) throw this
+    override fun onCleared() {
+        loadJob?.cancel()
+        currentUrlLoadJob?.cancel()
+        currentUrlSaveJob?.cancel()
+        npcSatelliteResolveJob?.cancel()
+        prefetchJob?.cancel()
+        mediaImageLoader.clearLoadingState()
+        profileLinkTitleLoader.clearLoadingState()
+        super.onCleared()
+    }
 }
 
 private fun List<GuideBgmFavoriteItem>.toAudioUrlSet(): Set<String> = mapTo(hashSetOf()) { it.audioUrl }

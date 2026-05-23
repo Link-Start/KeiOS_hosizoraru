@@ -25,6 +25,8 @@ internal data class OsActivitySuggestionUiState(
 internal data class OsActivityShortcutIconUiState(
     val bitmaps: Map<String, Bitmap> = emptyMap(),
     val missingKeys: Set<String> = emptySet(),
+    val packageBitmaps: Map<String, Bitmap> = emptyMap(),
+    val missingPackages: Set<String> = emptySet(),
 )
 
 internal fun defaultOsSectionStates(): Map<SectionKind, SectionState> =

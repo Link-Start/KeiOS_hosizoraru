@@ -25,24 +25,24 @@ import os.kei.core.ui.snapshot.AppSnapshotFlowManager
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
-import os.kei.ui.page.main.github.query.DownloaderOption
-import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
+import os.kei.ui.page.main.github.query.DownloaderOption
+import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val pendingShareImportCardTickMs = 15_000L
+private const val PENDING_SHARE_IMPORT_CARD_TICK_MS = 15_000L
 private const val CONTENT_DERIVATION_DEBOUNCE_MS = 48L
 
 internal data class GitHubTrackedExportRequest(
     val content: String,
-    val fileName: String
+    val fileName: String,
 )
 
 internal data class GitHubTrackTransferUiState(
     val tracksExporting: Boolean = false,
     val tracksImporting: Boolean = false,
-    val pendingExport: GitHubTrackedExportRequest? = null
+    val pendingExport: GitHubTrackedExportRequest? = null,
 )
 
 @Immutable
@@ -66,18 +66,25 @@ internal data class GitHubPageUiSnapshot(
 
 internal sealed interface GitHubTrackedExportStartResult {
     data object Ready : GitHubTrackedExportStartResult
+
     data object Busy : GitHubTrackedExportStartResult
+
     data object Empty : GitHubTrackedExportStartResult
-    data class Failed(val reason: String?) : GitHubTrackedExportStartResult
+
+    data class Failed(
+        val reason: String?,
+    ) : GitHubTrackedExportStartResult
 }
 
 internal sealed interface GitHubTrackedImportStartResult {
     data object Ready : GitHubTrackedImportStartResult
+
     data object Busy : GitHubTrackedImportStartResult
 }
 
 internal class GitHubPageViewModel : ViewModel() {
     val repository = GitHubPageRepository()
+    private val appIconRepository = GitHubAppIconRepository()
     private var pageState: GitHubPageState? = null
     private var contentStateJob: Job? = null
     private var pendingShareImportClockJob: Job? = null
@@ -85,6 +92,7 @@ internal class GitHubPageViewModel : ViewModel() {
     private var downloaderOptionsJob: Job? = null
     private var appPickerStateJob: Job? = null
     private var appPickerStateInput: GitHubTrackAppPickerInput? = null
+    private var appIconLoadingPackages: Set<String> = emptySet()
     private val snapshotFlowManager = AppSnapshotFlowManager()
     private val pendingShareImportPageActive = MutableStateFlow(false)
     private val pendingShareImportNowMillis = MutableStateFlow(System.currentTimeMillis())
@@ -111,6 +119,10 @@ internal class GitHubPageViewModel : ViewModel() {
         MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
     val appPickerDerivedState: StateFlow<GitHubTrackAppPickerDerivedState> =
         _appPickerDerivedState.asStateFlow()
+
+    private val _appIconState = MutableStateFlow(GitHubAppIconUiState())
+    val appIconState: StateFlow<GitHubAppIconUiState> =
+        _appIconState.asStateFlow()
 
     private val coreUiState: StateFlow<GitHubPageUiCoreSnapshot> =
         combine(
@@ -174,44 +186,106 @@ internal class GitHubPageViewModel : ViewModel() {
 
     fun bindContextObservers(
         context: Context,
-        state: GitHubPageState
+        state: GitHubPageState,
     ) {
         val appContext = context.applicationContext
         if (onlineShareTargetsJob?.isActive != true) {
-            onlineShareTargetsJob = viewModelScope.launch {
-                snapshotFlowManager.snapshotFlow {
-                    GitHubOnlineShareTargetInput(
-                        shouldResolve = state.showCheckLogicSheet ||
-                            state.lookupConfig.onlineShareTargetPackage.isNotBlank() ||
-                            state.onlineShareTargetPackageInput.isNotBlank(),
-                        appList = state.appList.toList()
-                    )
-                }.distinctUntilChanged().collectLatest { input ->
-                    _installedOnlineShareTargets.value = repository.queryOnlineShareTargets(
-                        context = appContext,
-                        input = input
-                    )
+            onlineShareTargetsJob =
+                viewModelScope.launch {
+                    snapshotFlowManager
+                        .snapshotFlow {
+                            GitHubOnlineShareTargetInput(
+                                shouldResolve =
+                                    state.showCheckLogicSheet ||
+                                        state.lookupConfig.onlineShareTargetPackage.isNotBlank() ||
+                                        state.onlineShareTargetPackageInput.isNotBlank(),
+                                appList = state.appList.toList(),
+                            )
+                        }.distinctUntilChanged()
+                        .collectLatest { input ->
+                            _installedOnlineShareTargets.value =
+                                repository.queryOnlineShareTargets(
+                                    context = appContext,
+                                    input = input,
+                                )
+                        }
                 }
-            }
         }
         if (downloaderOptionsJob?.isActive != true) {
-            downloaderOptionsJob = viewModelScope.launch {
-                snapshotFlowManager.snapshotFlow { state.showCheckLogicSheet }
-                    .distinctUntilChanged()
-                    .collectLatest { showCheckLogicSheet ->
-                        _checkLogicDownloaderOptions.value = if (showCheckLogicSheet) {
-                            repository.queryDownloaders(appContext)
-                        } else {
-                            emptyList()
+            downloaderOptionsJob =
+                viewModelScope.launch {
+                    snapshotFlowManager
+                        .snapshotFlow { state.showCheckLogicSheet }
+                        .distinctUntilChanged()
+                        .collectLatest { showCheckLogicSheet ->
+                            _checkLogicDownloaderOptions.value =
+                                if (showCheckLogicSheet) {
+                                    repository.queryDownloaders(appContext)
+                                } else {
+                                    emptyList()
+                                }
                         }
-                    }
-            }
+                }
         }
     }
 
     fun setPageDataActive(active: Boolean) {
         if (pendingShareImportPageActive.value == active) return
         pendingShareImportPageActive.value = active
+    }
+
+    fun requestAppIcons(
+        context: Context,
+        packageNames: List<String>,
+    ) {
+        val normalizedPackages =
+            packageNames
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+        if (normalizedPackages.isEmpty()) return
+
+        val currentState = _appIconState.value
+        val cachedBitmaps =
+            normalizedPackages
+                .filterNot { currentState.bitmaps.containsKey(it) }
+                .mapNotNull { packageName ->
+                    appIconRepository.cachedBitmap(packageName)?.let { bitmap -> packageName to bitmap }
+                }.toMap()
+        if (cachedBitmaps.isNotEmpty()) {
+            _appIconState.update { state ->
+                state.copy(bitmaps = state.bitmaps + cachedBitmaps)
+            }
+        }
+
+        val missingPackages =
+            normalizedPackages.filter { packageName ->
+                !currentState.bitmaps.containsKey(packageName) &&
+                    !currentState.missingPackages.contains(packageName) &&
+                    !appIconLoadingPackages.contains(packageName) &&
+                    !cachedBitmaps.containsKey(packageName)
+            }
+        if (missingPackages.isEmpty()) return
+
+        appIconLoadingPackages += missingPackages
+        val appContext = context.applicationContext
+        viewModelScope.launch {
+            try {
+                val result =
+                    appIconRepository.loadIcons(
+                        context = appContext,
+                        packageNames = missingPackages,
+                    )
+                _appIconState.update { state ->
+                    state.copy(
+                        bitmaps = state.bitmaps + result.bitmaps,
+                        missingPackages = state.missingPackages + result.missingPackages,
+                    )
+                }
+            } finally {
+                appIconLoadingPackages -= missingPackages
+            }
+        }
     }
 
     fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
@@ -246,29 +320,31 @@ internal class GitHubPageViewModel : ViewModel() {
     suspend fun beginTrackedExport(
         items: List<GitHubTrackedApp>,
         exportedAtMillis: Long,
-        fileName: String
+        fileName: String,
     ): GitHubTrackedExportStartResult {
         if (_transferState.value.tracksExporting || _transferState.value.tracksImporting) {
             return GitHubTrackedExportStartResult.Busy
         }
         if (items.isEmpty()) return GitHubTrackedExportStartResult.Empty
         _transferState.update { state -> state.copy(tracksExporting = true) }
-        val content = runCatching {
-            repository.buildTrackedItemsExportJson(
-                items = items,
-                exportedAtMillis = exportedAtMillis
-            )
-        }.getOrElse { error ->
-            finishTrackedExport()
-            return GitHubTrackedExportStartResult.Failed(error.message ?: error.javaClass.simpleName)
-        }
+        val content =
+            runCatching {
+                repository.buildTrackedItemsExportJson(
+                    items = items,
+                    exportedAtMillis = exportedAtMillis,
+                )
+            }.getOrElse { error ->
+                finishTrackedExport()
+                return GitHubTrackedExportStartResult.Failed(error.message ?: error.javaClass.simpleName)
+            }
         _transferState.update { state ->
             state.copy(
                 tracksExporting = true,
-                pendingExport = GitHubTrackedExportRequest(
-                    content = content,
-                    fileName = fileName
-                )
+                pendingExport =
+                    GitHubTrackedExportRequest(
+                        content = content,
+                        fileName = fileName,
+                    ),
             )
         }
         return GitHubTrackedExportStartResult.Ready
@@ -292,7 +368,7 @@ internal class GitHubPageViewModel : ViewModel() {
         _transferState.update { state ->
             state.copy(
                 tracksExporting = false,
-                pendingExport = null
+                pendingExport = null,
             )
         }
     }
@@ -304,85 +380,87 @@ internal class GitHubPageViewModel : ViewModel() {
     suspend fun writeExport(
         contentResolver: ContentResolver,
         uri: Uri,
-        request: GitHubTrackedExportRequest
+        request: GitHubTrackedExportRequest,
     ) {
         repository.writeText(
             contentResolver = contentResolver,
             uri = uri,
-            content = request.content
+            content = request.content,
         )
     }
 
     suspend fun readImport(
         contentResolver: ContentResolver,
-        uri: Uri
-    ): String {
-        return repository.readText(
+        uri: Uri,
+    ): String =
+        repository.readText(
             contentResolver = contentResolver,
-            uri = uri
+            uri = uri,
         )
-    }
 
     @OptIn(FlowPreview::class)
     private fun bindContentState(state: GitHubPageState) {
         contentStateJob?.cancel()
         pendingShareImportClockJob?.cancel()
-        pendingShareImportClockJob = viewModelScope.launch {
-            combine(
-                snapshotFlowManager.snapshotFlow { state.pendingShareImportTrack?.armedAtMillis }
-                    .distinctUntilChanged(),
-                pendingShareImportPageActive
-            ) { armedAtMillis, pageActive ->
-                armedAtMillis.takeIf { pageActive }
-            }
-                .distinctUntilChanged()
-                .collectLatest { armedAtMillis ->
-                    pendingShareImportNowMillis.value = System.currentTimeMillis()
-                    if (armedAtMillis == null) return@collectLatest
-                    while (true) {
-                        kotlinx.coroutines.delay(pendingShareImportCardTickMs.milliseconds)
+        pendingShareImportClockJob =
+            viewModelScope.launch {
+                combine(
+                    snapshotFlowManager
+                        .snapshotFlow { state.pendingShareImportTrack?.armedAtMillis }
+                        .distinctUntilChanged(),
+                    pendingShareImportPageActive,
+                ) { armedAtMillis, pageActive ->
+                    armedAtMillis.takeIf { pageActive }
+                }.distinctUntilChanged()
+                    .collectLatest { armedAtMillis ->
                         pendingShareImportNowMillis.value = System.currentTimeMillis()
+                        if (armedAtMillis == null) return@collectLatest
+                        while (true) {
+                            kotlinx.coroutines.delay(PENDING_SHARE_IMPORT_CARD_TICK_MS.milliseconds)
+                            pendingShareImportNowMillis.value = System.currentTimeMillis()
+                        }
+                    }
+            }
+        contentStateJob =
+            viewModelScope.launch {
+                combine(
+                    snapshotFlowManager
+                        .snapshotFlow {
+                            GitHubPageContentInput(
+                                trackedItems = state.trackedItems.toList(),
+                                trackedSearch = state.trackedSearch,
+                                trackedFilterMode = state.trackedFilterMode,
+                                sortMode = state.sortMode,
+                                sortDirection = state.sortDirection,
+                                checkStates = state.checkStates.toMap(),
+                                appList = state.appList.toList(),
+                                trackedFirstInstallAtByPackage = state.trackedFirstInstallAtByPackage.toMap(),
+                                trackedAddedAtById = state.trackedAddedAtById.toMap(),
+                                trackedModifiedAtById = state.trackedModifiedAtById.toMap(),
+                                pendingShareImportTrack = state.pendingShareImportTrack,
+                                selfPackageName = BuildConfig.APPLICATION_ID,
+                                nowMillis = 0L,
+                            )
+                        }.conflate()
+                        .debounce(CONTENT_DERIVATION_DEBOUNCE_MS.milliseconds)
+                        .distinctUntilChanged(),
+                    pendingShareImportNowMillis,
+                ) { input, nowMillis ->
+                    input.copy(nowMillis = nowMillis)
+                }.collectLatest { input ->
+                    val derived = repository.buildContentState(input)
+                    if (shouldResetFailedTrackedFilter(input, derived)) {
+                        state.trackedFilterMode = GitHubTrackedFilterMode.All
+                        repository.saveTrackedFilterMode(GitHubTrackedFilterMode.All)
+                        _contentDerivedState.value =
+                            repository.buildContentState(
+                                input.copy(trackedFilterMode = GitHubTrackedFilterMode.All),
+                            )
+                    } else {
+                        _contentDerivedState.value = derived
                     }
                 }
-        }
-        contentStateJob = viewModelScope.launch {
-            combine(
-                snapshotFlowManager.snapshotFlow {
-                    GitHubPageContentInput(
-                        trackedItems = state.trackedItems.toList(),
-                        trackedSearch = state.trackedSearch,
-                        trackedFilterMode = state.trackedFilterMode,
-                        sortMode = state.sortMode,
-                        sortDirection = state.sortDirection,
-                        checkStates = state.checkStates.toMap(),
-                        appList = state.appList.toList(),
-                        trackedFirstInstallAtByPackage = state.trackedFirstInstallAtByPackage.toMap(),
-                        trackedAddedAtById = state.trackedAddedAtById.toMap(),
-                        trackedModifiedAtById = state.trackedModifiedAtById.toMap(),
-                        pendingShareImportTrack = state.pendingShareImportTrack,
-                        selfPackageName = BuildConfig.APPLICATION_ID,
-                        nowMillis = 0L
-                    )
-                }
-                    .conflate()
-                    .debounce(CONTENT_DERIVATION_DEBOUNCE_MS.milliseconds)
-                    .distinctUntilChanged(),
-                pendingShareImportNowMillis
-            ) { input, nowMillis ->
-                input.copy(nowMillis = nowMillis)
-            }.collectLatest { input ->
-                val derived = repository.buildContentState(input)
-                if (shouldResetFailedTrackedFilter(input, derived)) {
-                    state.trackedFilterMode = GitHubTrackedFilterMode.All
-                    repository.saveTrackedFilterMode(GitHubTrackedFilterMode.All)
-                    _contentDerivedState.value = repository.buildContentState(
-                        input.copy(trackedFilterMode = GitHubTrackedFilterMode.All)
-                    )
-                } else {
-                    _contentDerivedState.value = derived
-                }
             }
-        }
     }
 
     override fun onCleared() {
@@ -391,6 +469,7 @@ internal class GitHubPageViewModel : ViewModel() {
         onlineShareTargetsJob?.cancel()
         downloaderOptionsJob?.cancel()
         appPickerStateJob?.cancel()
+        appIconLoadingPackages = emptySet()
         snapshotFlowManager.dispose()
         super.onCleared()
     }
@@ -398,9 +477,8 @@ internal class GitHubPageViewModel : ViewModel() {
 
 internal fun shouldResetFailedTrackedFilter(
     input: GitHubPageContentInput,
-    derived: GitHubPageContentDerivedState
-): Boolean {
-    return input.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks &&
+    derived: GitHubPageContentDerivedState,
+): Boolean =
+    input.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks &&
         input.trackedItems.isNotEmpty() &&
         derived.trackedUi.overviewMetrics.failedCount == 0
-}

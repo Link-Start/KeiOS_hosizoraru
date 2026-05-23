@@ -29,6 +29,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     voicePlayProgress: Float,
     selectedVoiceLanguage: String,
     bgmFavoriteAudioUrls: Set<String>,
+    profileLinkTitles: Map<String, String>,
+    profileLinkMissingLinks: Set<String>,
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
     onOpenExternal: (String) -> Unit,
@@ -36,6 +38,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
     onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
+    onRequestProfileLinkTitles: (List<String>) -> Unit,
     onToggleVoicePlayback: (String) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit,
 ) {
@@ -69,12 +72,15 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
                 sourceUrl = sourceUrl,
                 galleryCacheRevision = galleryCacheRevision,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                profileLinkTitles = profileLinkTitles,
+                profileLinkMissingLinks = profileLinkMissingLinks,
                 isNpcSatelliteGuide = isNpcSatelliteGuide,
                 mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 onOpenExternal = onOpenExternal,
                 onOpenGuide = onOpenGuide,
                 onSaveMedia = onSaveMedia,
                 onToggleBgmFavorite = onToggleBgmFavorite,
+                onRequestProfileLinkTitles = onRequestProfileLinkTitles,
             )
         }
 

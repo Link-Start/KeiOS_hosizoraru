@@ -9,8 +9,10 @@ import android.graphics.drawable.Drawable
 import android.util.LruCache
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.data.local.AppIconCache
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
+import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import kotlin.math.max
 
 internal data class OsActivityShortcutIconRequest(
@@ -21,6 +23,11 @@ internal data class OsActivityShortcutIconRequest(
 internal data class OsActivityShortcutIconLoadResult(
     val bitmaps: Map<String, Bitmap>,
     val missingKeys: Set<String>,
+)
+
+internal data class OsPackageIconLoadResult(
+    val bitmaps: Map<String, Bitmap>,
+    val missingPackages: Set<String>,
 )
 
 internal fun osActivityShortcutIconKey(
@@ -55,12 +62,19 @@ internal fun activitySuggestionIconRequests(
         )
     }
 
+internal fun activityPackageSuggestionIconPackages(
+    packageSuggestions: List<ShortcutInstalledAppOption>,
+): List<String> =
+    packageSuggestions.map { option -> option.packageName }
+
 internal class OsActivityShortcutIconRepository {
     private val cache = ActivityIconBitmapCache()
 
     fun cachedBitmap(key: String): Bitmap? = cache.get(key)
 
     fun isMissing(key: String): Boolean = cache.isMissing(key)
+
+    fun cachedPackageBitmap(packageName: String): Bitmap? = AppIconCache.get(packageName.trim())
 
     suspend fun loadActivityIcons(
         context: Context,
@@ -107,6 +121,36 @@ internal class OsActivityShortcutIconRepository {
             OsActivityShortcutIconLoadResult(
                 bitmaps = bitmaps,
                 missingKeys = missingKeys,
+            )
+        }
+
+    suspend fun loadPackageIcons(
+        context: Context,
+        packageNames: List<String>,
+    ): OsPackageIconLoadResult =
+        withContext(AppDispatchers.fileIo) {
+            val appContext = context.applicationContext
+            val bitmaps = linkedMapOf<String, Bitmap>()
+            val missingPackages = linkedSetOf<String>()
+            packageNames
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .forEach { packageName ->
+                    AppIconCache.get(packageName)?.let { bitmap ->
+                        bitmaps[packageName] = bitmap
+                        return@forEach
+                    }
+                    val bitmap = AppIconCache.getOrLoad(appContext, packageName)
+                    if (bitmap == null) {
+                        missingPackages.add(packageName)
+                    } else {
+                        bitmaps[packageName] = bitmap
+                    }
+                }
+            OsPackageIconLoadResult(
+                bitmaps = bitmaps,
+                missingPackages = missingPackages,
             )
         }
 }

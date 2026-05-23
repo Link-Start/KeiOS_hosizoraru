@@ -362,10 +362,13 @@ fun OsPage(
         active = runtime.hasActivated,
         activityShortcutCards = activityShortcutCards,
         showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
+        googleSystemServiceSuggestionTarget = overlayState.googleSystemServiceSuggestionTarget,
         activityShortcutDraftPackageName = overlayState.activityShortcutDraft.packageName,
+        packageSuggestions = activitySuggestionState.packageSuggestions,
         classSuggestions = activitySuggestionState.classSuggestions,
         context = context,
         requestActivityShortcutIcons = osPageViewModel::requestActivityShortcutIcons,
+        requestPackageIcons = osPageViewModel::requestPackageIcons,
     )
 
     val routeState =
@@ -459,6 +462,7 @@ fun OsPage(
                 visibleCards = visibleCards,
                 activityShortcutCards = activityShortcutCards,
                 activityIconBitmaps = activityIconState.bitmaps,
+                packageIconBitmaps = activityIconState.packageBitmaps,
                 shellCommandCards = shellCommandCards,
                 activitySuggestionState = activitySuggestionState,
                 actionState = actionState,

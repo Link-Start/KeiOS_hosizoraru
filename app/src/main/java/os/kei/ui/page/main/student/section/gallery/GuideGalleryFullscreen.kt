@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.section.gallery
 
-import android.graphics.Bitmap
 import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -15,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -36,7 +34,12 @@ import os.kei.R
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_GESTURE_COOLDOWN_MS
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_SCALE_EPSILON
+import os.kei.ui.page.main.student.GuideMediaImageRequest
+import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
+import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
+import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
 import os.kei.ui.page.main.student.detectMediaRatioFromUrl
+import os.kei.ui.page.main.student.guideMediaImageKey
 import os.kei.ui.page.main.student.isGifMediaSource
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.rememberDeviceRotationDegrees
@@ -54,8 +57,6 @@ internal fun GuideImageFullscreenDialog(
     mediaAdaptiveRotationEnabled: Boolean,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-    val mediaRepository = remember { GuideFullscreenMediaRepository() }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val systemAutoRotateEnabled =
         rememberSystemAutoRotateEnabled(active = !mediaAdaptiveRotationEnabled)
@@ -73,34 +74,38 @@ internal fun GuideImageFullscreenDialog(
     }
     var retryToken by rememberSaveable(normalizedImageUrl) { mutableStateOf(0) }
     var lastTransformActiveAtMs by rememberSaveable(normalizedImageUrl) { mutableStateOf(0L) }
-    val sampledState by produceState(
-        initialValue = GuideFullscreenImageState(loading = !isGifSource),
+    val fullscreenDecodeDimension = 2048
+    val mediaBitmaps = LocalGuideMediaImageBitmaps.current
+    val missingKeys = LocalGuideMediaImageMissingKeys.current
+    val requestImages = LocalGuideMediaImageRequester.current
+    val fullscreenImageKey =
+        remember(normalizedImageUrl, fullscreenDecodeDimension) {
+            guideMediaImageKey(normalizedImageUrl, fullscreenDecodeDimension)
+        }
+    val sampledBitmap = mediaBitmaps[fullscreenImageKey]
+    val helperLoadFailed = !isGifSource && missingKeys.contains(fullscreenImageKey)
+    LaunchedEffect(
         normalizedImageUrl,
         isGifSource,
-        retryToken
+        retryToken,
+        fullscreenImageKey,
+        sampledBitmap,
+        helperLoadFailed,
+        requestImages,
     ) {
-        if (isGifSource) {
-            value = GuideFullscreenImageState(
-                sampledBitmap = null,
-                loading = false,
-                helperLoadFailed = false
+        if (!isGifSource && (sampledBitmap == null || retryToken > 0) && !helperLoadFailed) {
+            requestImages(
+                listOf(
+                    GuideMediaImageRequest(
+                        source = normalizedImageUrl,
+                        maxDecodeDimension = fullscreenDecodeDimension,
+                        forceReload = retryToken > 0,
+                    ),
+                ),
             )
-            return@produceState
         }
-        val bitmap = runCatching {
-            mediaRepository.loadSampledBitmap(
-                context = context,
-                source = normalizedImageUrl,
-                maxDecodeDimension = 2048
-            )
-        }.getOrNull()
-        value = GuideFullscreenImageState(
-            sampledBitmap = bitmap,
-            loading = false,
-            helperLoadFailed = bitmap == null
-        )
     }
-    val sampledBitmap = sampledState.sampledBitmap
+    val sampledLoading = !isGifSource && sampledBitmap == null && !helperLoadFailed
     val ratioFromUrl = remember(normalizedImageUrl) {
         detectMediaRatioFromUrl(normalizedImageUrl)
     }
@@ -231,13 +236,13 @@ internal fun GuideImageFullscreenDialog(
                     }
                 )
 
-                if (sampledState.loading) {
+                if (sampledLoading) {
                     GuideFullscreenImageLoadingIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
-            if (!sampledState.loading && sampledState.helperLoadFailed && sampledBitmap == null) {
+            if (!sampledLoading && helperLoadFailed && sampledBitmap == null) {
                 GuideFullscreenImageRetryHint(
                     onRetry = { retryToken += 1 },
                     modifier = Modifier
@@ -248,12 +253,6 @@ internal fun GuideImageFullscreenDialog(
         }
     }
 }
-
-internal data class GuideFullscreenImageState(
-    val sampledBitmap: Bitmap? = null,
-    val loading: Boolean = false,
-    val helperLoadFailed: Boolean = false
-)
 
 @Composable
 internal fun GuideVideoFullscreenDialog(

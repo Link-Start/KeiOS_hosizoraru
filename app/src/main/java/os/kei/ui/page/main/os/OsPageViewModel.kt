@@ -45,10 +45,9 @@ internal class OsPageViewModel : ViewModel() {
     private val refreshRepository = OsPageRefreshRepository()
     private val sectionLoadRepository = OsPageSectionLoadRepository()
     private val activityShortcutRepository = OsPageActivityShortcutRepository()
-    private val activityIconRepository = OsActivityShortcutIconRepository()
+    private val activityIconLoader = OsActivityShortcutIconLoader(viewModelScope)
+    private val rowsStateLoader = OsPageRowsStateLoader(viewModelScope, repository)
     private var activitySuggestionJob: Job? = null
-    private var rowsDerivationJob: Job? = null
-    private var activityIconLoadingKeys: Set<String> = emptySet()
 
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
@@ -72,15 +71,13 @@ internal class OsPageViewModel : ViewModel() {
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
         _activitySuggestionState.asStateFlow()
 
-    private val _activityIconState = MutableStateFlow(OsActivityShortcutIconUiState())
     val activityIconState: StateFlow<OsActivityShortcutIconUiState> =
-        _activityIconState.asStateFlow()
+        activityIconLoader.state
 
     private val _events = MutableSharedFlow<OsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<OsPageEvent> = _events.asSharedFlow()
 
-    private val _rowsDerivedState = MutableStateFlow(OsPageRowsUiDerivedState.Empty)
-    val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = _rowsDerivedState.asStateFlow()
+    val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = rowsStateLoader.state
 
     private val queryState: StateFlow<OsPageQueryState> =
         combine(queryInput, queryApplied) { input, applied ->
@@ -175,7 +172,7 @@ internal class OsPageViewModel : ViewModel() {
                 )
             }.distinctUntilChanged()
                 .collectLatest { input ->
-                    applyRowsDerivedState(input)
+                    rowsStateLoader.request(input)
                 }
         }
     }
@@ -341,90 +338,23 @@ internal class OsPageViewModel : ViewModel() {
             }
     }
 
-    fun requestRowsDerivedState(input: OsPageRowsDerivationInput) {
-        rowsDerivationJob?.cancel()
-        rowsDerivationJob =
-            viewModelScope.launch {
-                applyRowsDerivedState(input)
-            }
-    }
+    fun requestRowsDerivedState(input: OsPageRowsDerivationInput) = rowsStateLoader.request(input)
 
     fun requestActivityShortcutIcons(
         context: Context,
         requests: List<OsActivityShortcutIconRequest>,
-    ) {
-        val normalizedRequests =
-            requests
-                .filter { request ->
-                    request.packageName.isNotBlank() && request.className.isNotBlank()
-                }.distinctBy { request ->
-                    osActivityShortcutIconKey(
-                        packageName = request.packageName,
-                        className = request.className,
-                    )
-                }
-        if (normalizedRequests.isEmpty()) return
+    ) = activityIconLoader.requestActivityShortcutIcons(
+        context = context,
+        requests = requests,
+    )
 
-        val currentState = _activityIconState.value
-        val missingRequests =
-            normalizedRequests.filter { request ->
-                val key =
-                    osActivityShortcutIconKey(
-                        packageName = request.packageName,
-                        className = request.className,
-                    )
-                !currentState.bitmaps.containsKey(key) &&
-                    !currentState.missingKeys.contains(key) &&
-                    !activityIconLoadingKeys.contains(key) &&
-                    !activityIconRepository.isMissing(key)
-            }
-        if (missingRequests.isEmpty()) return
-
-        val requestedKeys =
-            missingRequests
-                .map { request ->
-                    osActivityShortcutIconKey(
-                        packageName = request.packageName,
-                        className = request.className,
-                    )
-                }.toSet()
-        activityIconLoadingKeys += requestedKeys
-        val appContext = context.applicationContext
-        viewModelScope.launch {
-            try {
-                val result =
-                    activityIconRepository.loadActivityIcons(
-                        context = appContext,
-                        requests = missingRequests,
-                    )
-                _activityIconState.update { state ->
-                    state.copy(
-                        bitmaps = state.bitmaps + result.bitmaps,
-                        missingKeys = state.missingKeys + result.missingKeys,
-                    )
-                }
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _activityIconState.update { state ->
-                    state.copy(missingKeys = state.missingKeys + requestedKeys)
-                }
-            } finally {
-                activityIconLoadingKeys -= requestedKeys
-            }
-        }
-    }
-
-    private suspend fun applyRowsDerivedState(input: OsPageRowsDerivationInput) {
-        val current = _rowsDerivedState.value
-        if (current.input == input && !current.deriving) return
-        _rowsDerivedState.update { state ->
-            state.copy(
-                input = input,
-                deriving = true,
-            )
-        }
-        _rowsDerivedState.value = repository.buildRowsDerivedState(input)
-    }
+    fun requestPackageIcons(
+        context: Context,
+        packageNames: List<String>,
+    ) = activityIconLoader.requestPackageIcons(
+        context = context,
+        packageNames = packageNames,
+    )
 
     fun updateVisibleCards(cards: Set<OsSectionCard>) {
         repository.updateVisibleCards(cards)
@@ -834,8 +764,8 @@ internal class OsPageViewModel : ViewModel() {
 
     override fun onCleared() {
         activitySuggestionJob?.cancel()
-        rowsDerivationJob?.cancel()
-        activityIconLoadingKeys = emptySet()
+        rowsStateLoader.cancel()
+        activityIconLoader.clearLoadingState()
         super.onCleared()
     }
 }

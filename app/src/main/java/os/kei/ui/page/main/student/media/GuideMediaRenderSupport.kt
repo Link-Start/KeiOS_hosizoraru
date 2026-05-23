@@ -3,7 +3,6 @@ package os.kei.ui.page.main.student
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.os.SystemClock
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -24,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -70,40 +67,6 @@ internal fun loadGuideBitmapSource(
     )
 }
 
-private class GuideMediaProgressThrottler(
-    private val minIntervalMs: Long = 80L,
-    private val minDelta: Float = 0.015f
-) {
-    private var lastEmitAtMs: Long = 0L
-    private var lastProgress: Float = -1f
-
-    fun update(
-        progressState: GuideMediaProgressState?,
-        downloadedBytes: Long,
-        totalBytes: Long
-    ) {
-        progressState ?: return
-        if (totalBytes <= 0L) return
-        val progress = (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f)
-        val now = SystemClock.elapsedRealtime()
-        val shouldEmit = progress >= 0.999f ||
-            lastProgress < 0f ||
-            progress - lastProgress >= minDelta ||
-            now - lastEmitAtMs >= minIntervalMs
-        if (!shouldEmit) return
-        lastProgress = progress
-        lastEmitAtMs = now
-        progressState.set(progress)
-    }
-
-    fun finish(progressState: GuideMediaProgressState?) {
-        progressState ?: return
-        lastProgress = 1f
-        lastEmitAtMs = SystemClock.elapsedRealtime()
-        progressState.set(1f)
-    }
-}
-
 internal fun normalizeGalleryDisplayTitle(
     title: String,
     mediaType: String,
@@ -127,26 +90,26 @@ fun GuideRemoteImage(
     maxDecodeDimension: Int = 1920,
     cropAlignment: Alignment = Alignment.Center
 ) {
-    val context = LocalContext.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) return
-    val bitmap by produceState<Bitmap?>(
-        initialValue = BaGuideImageCache.peekBitmap(
-            source = target,
-            maxDecodeDimension = maxDecodeDimension
-        ),
-        target,
-        maxDecodeDimension
-    ) {
-        if (value != null) return@produceState
-        value = runCatching {
-            GameKeeMediaImageLoader.loadGuideBitmap(
-                context = context,
-                source = target,
-                maxDecodeDimension = maxDecodeDimension
-            )
-        }.getOrNull()
+    val mediaBitmaps = LocalGuideMediaImageBitmaps.current
+    val missingKeys = LocalGuideMediaImageMissingKeys.current
+    val requestImages = LocalGuideMediaImageRequester.current
+    val key = remember(target, maxDecodeDimension) {
+        guideMediaImageKey(target, maxDecodeDimension)
     }
+    LaunchedEffect(key, target, maxDecodeDimension, requestImages) {
+        requestImages(
+            listOf(
+                GuideMediaImageRequest(
+                    source = target,
+                    maxDecodeDimension = maxDecodeDimension,
+                ),
+            ),
+        )
+    }
+    val bitmap = mediaBitmaps[key]
+    if (missingKeys.contains(key)) return
     val rendered = bitmap ?: return
     val imageBitmap = remember(rendered) { rendered.asImageBitmap() }
     Image(
@@ -169,7 +132,6 @@ internal fun GuideRemoteImageAdaptive(
     progressState: GuideMediaProgressState? = null,
     onLoadingChanged: ((Boolean) -> Unit)? = null
 ) {
-    val context = LocalContext.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) {
         LaunchedEffect(progressState, onLoadingChanged) {
@@ -181,20 +143,20 @@ internal fun GuideRemoteImageAdaptive(
     val fallbackRatio = remember(target) { detectMediaRatioFromUrl(target) ?: (16f / 9f) }
     var stableRatio by remember(target) { mutableStateOf(fallbackRatio.coerceIn(0.4f, 4f)) }
     val isGifSource = remember(target) { isGifMediaSource(target) }
+    val mediaBitmaps = LocalGuideMediaImageBitmaps.current
+    val missingKeys = LocalGuideMediaImageMissingKeys.current
+    val requestImages = LocalGuideMediaImageRequester.current
+    val gifTargets = LocalGuideMediaGifTargets.current
+    val requestGifTargets = LocalGuideMediaGifTargetRequester.current
     if (isGifSource) {
-        val resolvedGifTarget by produceState(
-            initialValue = target,
-            target
-        ) {
-            if (!isHttpMediaSource(target)) {
-                value = target
-                return@produceState
+        LaunchedEffect(target, requestGifTargets) {
+            if (isHttpMediaSource(target)) {
+                requestGifTargets(listOf(target))
             }
             progressState?.set(0f)
             onLoadingChanged?.invoke(true)
-            val warmed = GameKeeMediaImageLoader.resolveInlineGifTarget(context, target)
-            value = warmed.ifBlank { target }
         }
+        val resolvedGifTarget = gifTargets[target] ?: target
         val ratio = remember(resolvedGifTarget, target) {
             detectMediaRatioFromUrl(resolvedGifTarget.ifBlank { target }) ?: (16f / 9f)
         }
@@ -221,29 +183,27 @@ internal fun GuideRemoteImageAdaptive(
         )
         return
     }
-    var retainedBitmap by remember(target) { mutableStateOf<Bitmap?>(null) }
-    val progressThrottler = remember(target, progressState) { GuideMediaProgressThrottler() }
-    val bitmap by produceState<Bitmap?>(initialValue = retainedBitmap, target) {
-        progressState?.set(0f)
-        onLoadingChanged?.invoke(true)
-        val loadedBitmap = runCatching {
-            GameKeeMediaImageLoader.loadGuideBitmap(
-                context = context,
-                source = target,
-                maxDecodeDimension = maxDecodeDimension
-            ) { downloadedBytes, totalBytes ->
-                progressThrottler.update(progressState, downloadedBytes, totalBytes)
-            }
-        }.getOrNull()
-        if (loadedBitmap != null) {
-            retainedBitmap = loadedBitmap
-            value = loadedBitmap
-            progressThrottler.finish(progressState)
-        } else {
-            value = retainedBitmap
-            progressThrottler.finish(progressState)
+    val imageKey = remember(target, maxDecodeDimension) {
+        guideMediaImageKey(target, maxDecodeDimension)
+    }
+    val bitmap = mediaBitmaps[imageKey]
+    val imageMissing = missingKeys.contains(imageKey)
+    LaunchedEffect(imageKey, target, maxDecodeDimension, bitmap, imageMissing, requestImages) {
+        if (bitmap == null && !imageMissing) {
+            progressState?.set(0f)
+            onLoadingChanged?.invoke(true)
+            requestImages(
+                listOf(
+                    GuideMediaImageRequest(
+                        source = target,
+                        maxDecodeDimension = maxDecodeDimension,
+                    ),
+                ),
+            )
+        } else if (bitmap != null || imageMissing) {
+            progressState?.set(1f)
+            onLoadingChanged?.invoke(false)
         }
-        onLoadingChanged?.invoke(false)
     }
     val rendered = bitmap
     if (rendered == null) {
@@ -328,23 +288,22 @@ fun GuideRemoteIcon(
     iconWidth: androidx.compose.ui.unit.Dp = 20.dp,
     iconHeight: androidx.compose.ui.unit.Dp = iconWidth
 ) {
-    val context = LocalContext.current
     val density = LocalDensity.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) return
+    val mediaBitmaps = LocalGuideMediaImageBitmaps.current
+    val missingKeys = LocalGuideMediaImageMissingKeys.current
+    val requestImages = LocalGuideMediaImageRequester.current
+    val gifTargets = LocalGuideMediaGifTargets.current
+    val requestGifTargets = LocalGuideMediaGifTargetRequester.current
     val isGifSource = remember(target) { isGifMediaSource(target) }
     if (isGifSource) {
-        val resolvedGifTarget by produceState(
-            initialValue = target,
-            target
-        ) {
-            value = if (isHttpMediaSource(target)) {
-                GameKeeMediaImageLoader.resolveInlineGifTarget(context, target)
-                    .ifBlank { target }
-            } else {
-                target
+        LaunchedEffect(target, requestGifTargets) {
+            if (isHttpMediaSource(target)) {
+                requestGifTargets(listOf(target))
             }
         }
+        val resolvedGifTarget = gifTargets[target] ?: target
         AsyncImage(
             model = resolvedGifTarget,
             contentDescription = null,
@@ -360,24 +319,21 @@ fun GuideRemoteIcon(
         val heightPx = with(density) { iconHeight.roundToPx() }
         (maxOf(widthPx, heightPx) * 2).coerceIn(96, 768)
     }
-    val bitmap by produceState<Bitmap?>(
-        initialValue = BaGuideImageCache.peekBitmap(
-            source = target,
-            maxDecodeDimension = iconDecodeDimension
-        ),
-        target,
-        iconDecodeDimension
-    ) {
-        if (value == null) {
-            value = runCatching {
-                GameKeeMediaImageLoader.loadGuideBitmap(
-                    context = context,
-                    source = target,
-                    maxDecodeDimension = iconDecodeDimension
-                )
-            }.getOrNull()
-        }
+    val imageKey = remember(target, iconDecodeDimension) {
+        guideMediaImageKey(target, iconDecodeDimension)
     }
+    LaunchedEffect(imageKey, target, iconDecodeDimension, requestImages) {
+        requestImages(
+            listOf(
+                GuideMediaImageRequest(
+                    source = target,
+                    maxDecodeDimension = iconDecodeDimension,
+                ),
+            ),
+        )
+    }
+    val bitmap = mediaBitmaps[imageKey]
+    if (missingKeys.contains(imageKey)) return
     val rendered = bitmap ?: return
     val imageBitmap = remember(rendered) { rendered.asImageBitmap() }
     Image(

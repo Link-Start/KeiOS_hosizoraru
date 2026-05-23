@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
-import os.kei.ui.page.main.github.AppIcon
+import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.os.osActivityShortcutIconKey
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Text
@@ -28,6 +28,7 @@ internal fun ShortcutActivityIcon(
     className: String,
     size: Dp,
     bitmap: Bitmap?,
+    packageBitmap: Bitmap? = null,
     fallbackToPackageIcon: Boolean = true,
 ) {
     val normalizedPackageName = packageName.trim()
@@ -45,7 +46,11 @@ internal fun ShortcutActivityIcon(
                     .clip(ContinuousCapsule),
         )
     } else if (fallbackToPackageIcon && normalizedPackageName.isNotBlank()) {
-        AppIcon(packageName = normalizedPackageName, size = size)
+        AppIconImage(
+            packageName = normalizedPackageName,
+            bitmap = packageBitmap,
+            size = size,
+        )
     } else {
         Box(
             modifier =

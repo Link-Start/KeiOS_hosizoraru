@@ -131,6 +131,7 @@ internal fun OsActivityVisibilityManagerSheet(
     activityHintText: String,
     cards: List<OsActivityShortcutCard>,
     activityIconBitmaps: Map<String, Bitmap>,
+    packageIconBitmaps: Map<String, Bitmap>,
     defaultCardTitle: String,
     transferInProgress: Boolean,
     onExportAllCards: () -> Unit,
@@ -198,6 +199,7 @@ internal fun OsActivityVisibilityManagerSheet(
                 title = stringResource(R.string.os_visibility_group_built_in),
                 items = builtInItems,
                 activityIconBitmaps = activityIconBitmaps,
+                packageIconBitmaps = packageIconBitmaps,
                 emptySearchActive = query.isNotBlank() && filteredActivityVisibilityItems.isEmpty(),
                 noMatchedResultsText = stringResource(R.string.common_no_matched_results),
                 onCardVisibilityChange = onCardVisibilityChange,
@@ -206,6 +208,7 @@ internal fun OsActivityVisibilityManagerSheet(
                 title = stringResource(R.string.os_visibility_group_custom),
                 items = customItems,
                 activityIconBitmaps = activityIconBitmaps,
+                packageIconBitmaps = packageIconBitmaps,
                 emptySearchActive = false,
                 noMatchedResultsText = stringResource(R.string.common_no_matched_results),
                 onCardVisibilityChange = onCardVisibilityChange,
@@ -254,6 +257,7 @@ private fun ActivityVisibilityGroup(
     title: String,
     items: List<OsActivityVisibilityItem>,
     activityIconBitmaps: Map<String, Bitmap>,
+    packageIconBitmaps: Map<String, Bitmap>,
     emptySearchActive: Boolean,
     noMatchedResultsText: String,
     onCardVisibilityChange: (String, Boolean) -> Unit,
@@ -274,6 +278,7 @@ private fun ActivityVisibilityGroup(
             ActivityVisibilityRow(
                 item = item,
                 activityIconBitmaps = activityIconBitmaps,
+                packageIconBitmaps = packageIconBitmaps,
                 onCardVisibilityChange = onCardVisibilityChange,
             )
         }
@@ -284,6 +289,7 @@ private fun ActivityVisibilityGroup(
 private fun ActivityVisibilityRow(
     item: OsActivityVisibilityItem,
     activityIconBitmaps: Map<String, Bitmap>,
+    packageIconBitmaps: Map<String, Bitmap>,
     onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SheetControlRow(
@@ -307,6 +313,7 @@ private fun ActivityVisibilityRow(
                         className = item.className,
                         size = 18.dp,
                         bitmap = activityIconBitmaps[iconKey],
+                        packageBitmap = packageIconBitmaps[item.packageName.trim()],
                     )
                 } else {
                     Icon(

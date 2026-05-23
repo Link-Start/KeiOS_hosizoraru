@@ -224,9 +224,8 @@ private fun rememberOsShellRunnerPageActionsInternal(
                     context.showLiquidToastOnly(textBundle.clearAllToast)
                 },
                 applyCloseCleanup = {
-                    if (!pageState.closeCleanupApplied) {
+                    if (pageState.consumeCloseCleanupRequest()) {
                         val settings = latestPersistentState.value.settings
-                        pageState.closeCleanupApplied = true
                         stopCommand(false)
                         when (settings.exitCleanupMode) {
                             OsShellRunnerExitCleanupMode.KeepAll -> {

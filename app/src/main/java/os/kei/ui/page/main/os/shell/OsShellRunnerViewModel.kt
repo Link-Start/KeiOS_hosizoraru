@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.os.shell
 
+import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -129,6 +130,59 @@ internal class OsShellRunnerViewModel : ViewModel() {
 
     fun updateShowOutputSettingsSheet(show: Boolean) {
         pageChromeMutableState.update { state -> state.copy(showOutputSettingsSheet = show) }
+    }
+
+    fun updateTimeoutDropdownExpanded(expanded: Boolean) {
+        pageChromeMutableState.update { state ->
+            if (state.timeoutDropdownExpanded == expanded) {
+                state
+            } else {
+                state.copy(timeoutDropdownExpanded = expanded)
+            }
+        }
+    }
+
+    fun updateTimeoutDropdownAnchorBounds(bounds: IntRect?) {
+        pageChromeMutableState.update { state ->
+            if (state.timeoutDropdownAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(timeoutDropdownAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun updateOutputLimitDropdownExpanded(expanded: Boolean) {
+        pageChromeMutableState.update { state ->
+            if (state.outputLimitDropdownExpanded == expanded) {
+                state
+            } else {
+                state.copy(outputLimitDropdownExpanded = expanded)
+            }
+        }
+    }
+
+    fun updateOutputLimitDropdownAnchorBounds(bounds: IntRect?) {
+        pageChromeMutableState.update { state ->
+            if (state.outputLimitDropdownAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(outputLimitDropdownAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun consumeCloseCleanupRequest(): Boolean {
+        var shouldApply = false
+        pageChromeMutableState.update { state ->
+            if (state.closeCleanupApplied) {
+                state
+            } else {
+                shouldApply = true
+                state.copy(closeCleanupApplied = true)
+            }
+        }
+        return shouldApply
     }
 
     fun updateSaveTitleInput(value: String) {
@@ -276,6 +330,7 @@ internal class OsShellRunnerViewModel : ViewModel() {
     }
 
     fun updateTimeoutSeconds(seconds: Int) {
+        updateTimeoutDropdownExpanded(false)
         launchRepositoryUpdate { setTimeoutSeconds(seconds) }
     }
 
@@ -293,6 +348,7 @@ internal class OsShellRunnerViewModel : ViewModel() {
         outputResultLabel: String,
         outputTimeLabel: String,
     ) {
+        updateOutputLimitDropdownExpanded(false)
         launchRepositoryUpdate {
             setOutputLimitChars(
                 limit = limit,

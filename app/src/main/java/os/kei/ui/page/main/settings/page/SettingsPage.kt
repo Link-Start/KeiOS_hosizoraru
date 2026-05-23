@@ -41,6 +41,7 @@ import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
+import os.kei.ui.page.main.settings.state.SettingsPageUiActions
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.rememberSettingsBackgroundController
 import os.kei.ui.page.main.settings.state.rememberSettingsPageRouteState
@@ -133,7 +134,18 @@ fun SettingsPage(
             cacheState = diagnosticsUiState.cacheState,
             logState = diagnosticsUiState.logState,
         )
-    val pageUiState = rememberSettingsPageUiState()
+    val pageUiState =
+        rememberSettingsPageUiState(
+            chromeState = chromeState,
+            actions =
+                SettingsPageUiActions(
+                    onShowThemeModePopupChange = settingsPageViewModel::updateShowThemeModePopup,
+                    onThemePopupAnchorBoundsChange = settingsPageViewModel::updateThemePopupAnchorBounds,
+                    onShowLauncherIconDesignPopupChange = settingsPageViewModel::updateShowLauncherIconDesignPopup,
+                    onLauncherIconDesignPopupAnchorBoundsChange =
+                        settingsPageViewModel::updateLauncherIconDesignPopupAnchorBounds,
+                ),
+        )
     val backgroundController =
         rememberSettingsBackgroundController(
             nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
@@ -414,6 +426,7 @@ fun SettingsPage(
         SettingsSearchCardRenderInput(
             context = context,
             settingsPageViewModel = settingsPageViewModel,
+            chromeState = chromeState,
             sectionContracts = sectionContracts,
             backgroundController = backgroundController,
             cacheState = routeState.cacheState,

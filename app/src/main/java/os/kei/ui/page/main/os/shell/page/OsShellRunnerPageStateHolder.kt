@@ -3,10 +3,9 @@ package os.kei.ui.page.main.os.shell.page
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.os.shell.OsShellRunnerPageChromeState
 
 @Stable
@@ -59,7 +58,17 @@ internal class OsShellRunnerPageStateHolder(
     val saveInitialSubtitleInput: String
         get() = chromeState().saveInitialSubtitleInput
 
-    var closeCleanupApplied by mutableStateOf(false)
+    val timeoutDropdownExpanded: Boolean
+        get() = chromeState().timeoutDropdownExpanded
+
+    val timeoutDropdownAnchorBounds: IntRect?
+        get() = chromeState().timeoutDropdownAnchorBounds
+
+    val outputLimitDropdownExpanded: Boolean
+        get() = chromeState().outputLimitDropdownExpanded
+
+    val outputLimitDropdownAnchorBounds: IntRect?
+        get() = chromeState().outputLimitDropdownAnchorBounds
 
     fun requestStartupFocus() {
         actions().onRequestStartupFocus()
@@ -80,6 +89,24 @@ internal class OsShellRunnerPageStateHolder(
     fun dismissDangerousCommandConfirm() {
         actions().onDismissDangerousCommandConfirm()
     }
+
+    fun updateTimeoutDropdownExpanded(expanded: Boolean) {
+        actions().onTimeoutDropdownExpandedChange(expanded)
+    }
+
+    fun updateTimeoutDropdownAnchorBounds(bounds: IntRect?) {
+        actions().onTimeoutDropdownAnchorBoundsChange(bounds)
+    }
+
+    fun updateOutputLimitDropdownExpanded(expanded: Boolean) {
+        actions().onOutputLimitDropdownExpandedChange(expanded)
+    }
+
+    fun updateOutputLimitDropdownAnchorBounds(bounds: IntRect?) {
+        actions().onOutputLimitDropdownAnchorBoundsChange(bounds)
+    }
+
+    fun consumeCloseCleanupRequest(): Boolean = actions().onConsumeCloseCleanupRequest()
 }
 
 @Stable
@@ -94,6 +121,11 @@ internal data class OsShellRunnerPageChromeActions(
     val onResetSaveSheetInputs: () -> Unit,
     val onOpenDangerousCommandConfirm: (String) -> Unit,
     val onDismissDangerousCommandConfirm: () -> Unit,
+    val onTimeoutDropdownExpandedChange: (Boolean) -> Unit,
+    val onTimeoutDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    val onOutputLimitDropdownExpandedChange: (Boolean) -> Unit,
+    val onOutputLimitDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    val onConsumeCloseCleanupRequest: () -> Boolean,
 )
 
 @Composable

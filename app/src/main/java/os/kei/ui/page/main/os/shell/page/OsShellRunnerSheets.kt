@@ -12,6 +12,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.shell.OsShellBehaviorSettingsSheet
@@ -46,6 +47,10 @@ internal fun OsShellRunnerSheets(
     shellStoppedAccentColor: Color,
     settings: OsShellRunnerSettings,
     chromePrefs: OsShellRunnerChromePrefs,
+    timeoutDropdownExpanded: Boolean,
+    timeoutDropdownAnchorBounds: IntRect?,
+    outputLimitDropdownExpanded: Boolean,
+    outputLimitDropdownAnchorBounds: IntRect?,
     dangerousCommandPreview: String,
     actions: OsShellRunnerSheetActions,
 ) {
@@ -82,6 +87,10 @@ internal fun OsShellRunnerSheets(
             settings = settings,
             onPersistInputEnabledChange = actions.onPersistInputEnabledChange,
             onTimeoutSecondsChange = actions.onTimeoutSecondsChange,
+            timeoutDropdownExpanded = timeoutDropdownExpanded,
+            timeoutDropdownAnchorBounds = timeoutDropdownAnchorBounds,
+            onTimeoutDropdownExpandedChange = actions.onTimeoutDropdownExpandedChange,
+            onTimeoutDropdownAnchorBoundsChange = actions.onTimeoutDropdownAnchorBoundsChange,
             onDangerousCommandConfirmChange = actions.onDangerousCommandConfirmChange,
             onCompletionToastChange = actions.onCompletionToastChange,
             onStartupBehaviorChange = actions.onStartupBehaviorChange,
@@ -95,6 +104,10 @@ internal fun OsShellRunnerSheets(
             onAutoFormatOutputChange = actions.onAutoFormatOutputChange,
             onAutoScrollOutputChange = actions.onAutoScrollOutputChange,
             onOutputLimitCharsChange = actions.onOutputLimitCharsChange,
+            outputLimitDropdownExpanded = outputLimitDropdownExpanded,
+            outputLimitDropdownAnchorBounds = outputLimitDropdownAnchorBounds,
+            onOutputLimitDropdownExpandedChange = actions.onOutputLimitDropdownExpandedChange,
+            onOutputLimitDropdownAnchorBoundsChange = actions.onOutputLimitDropdownAnchorBoundsChange,
             onOutputSaveModeChange = actions.onOutputSaveModeChange,
             onCopyModeChange = actions.onCopyModeChange,
         )

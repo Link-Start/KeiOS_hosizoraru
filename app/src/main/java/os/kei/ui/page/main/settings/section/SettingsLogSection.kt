@@ -4,10 +4,6 @@ package os.kei.ui.page.main.settings.section
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -35,6 +31,10 @@ internal fun SettingsLogSection(
     logStats: AppLogStore.Stats,
     exportingLogZip: Boolean,
     clearingLogs: Boolean,
+    levelExpanded: Boolean,
+    levelAnchorBounds: IntRect?,
+    onLevelExpandedChange: (Boolean) -> Unit,
+    onLevelAnchorBoundsChange: (IntRect?) -> Unit,
     onExportZipClick: () -> Unit,
     onClearLogsClick: () -> Unit,
     onFeedbackClick: () -> Unit,
@@ -45,8 +45,6 @@ internal fun SettingsLogSection(
     val logLevels = AppLogLevel.entries
     val selectedLevelIndex = logLevels.indexOf(logLevel).coerceAtLeast(0)
     val levelLabels = appLogLevelLabels()
-    var levelExpanded by remember { mutableStateOf(false) }
-    var levelAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val logLatestText =
         if (logStats.latestModifiedAtMs <= 0L) {
             stringResource(R.string.settings_log_stat_latest_empty)
@@ -64,7 +62,7 @@ internal fun SettingsLogSection(
             summary = stringResource(R.string.settings_log_level_summary),
             infoKey = stringResource(R.string.common_scope),
             infoValue = stringResource(R.string.settings_log_scope),
-            onClick = { levelExpanded = true },
+            onClick = { onLevelExpandedChange(true) },
             trailing = {
                 AppDropdownSelector(
                     selectedText = levelLabels.getOrElse(selectedLevelIndex) { logLevel.storageId },
@@ -72,11 +70,12 @@ internal fun SettingsLogSection(
                     selectedIndex = selectedLevelIndex,
                     expanded = levelExpanded,
                     anchorBounds = levelAnchorBounds,
-                    onExpandedChange = { expanded -> levelExpanded = expanded },
+                    onExpandedChange = onLevelExpandedChange,
                     onSelectedIndexChange = { index ->
                         logLevels.getOrNull(index)?.let(onLogLevelChanged)
+                        onLevelExpandedChange(false)
                     },
-                    onAnchorBoundsChange = { bounds -> levelAnchorBounds = bounds },
+                    onAnchorBoundsChange = onLevelAnchorBoundsChange,
                     popupMaxWidth = 220.dp,
                     popupMatchAnchorWidth = true,
                 )

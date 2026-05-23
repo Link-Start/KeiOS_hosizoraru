@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,6 +50,12 @@ internal data class SettingsPageChromeState(
     val searchQuery: String = "",
     val bottomBarVisible: Boolean = true,
     val sliderInteractionActive: Boolean = false,
+    val showThemeModePopup: Boolean = false,
+    val themePopupAnchorBounds: IntRect? = null,
+    val showLauncherIconDesignPopup: Boolean = false,
+    val launcherIconDesignPopupAnchorBounds: IntRect? = null,
+    val showLogLevelPopup: Boolean = false,
+    val logLevelPopupAnchorBounds: IntRect? = null,
     val shizukuRefreshToken: Int = 0,
 ) {
     val trimmedSearchQuery: String
@@ -144,6 +151,46 @@ internal class SettingsPageViewModel : ViewModel() {
     fun updateSliderInteractionActive(active: Boolean) {
         _chromeState.update { state ->
             if (state.sliderInteractionActive == active) state else state.copy(sliderInteractionActive = active)
+        }
+    }
+
+    fun updateShowThemeModePopup(show: Boolean) {
+        _chromeState.update { state ->
+            if (state.showThemeModePopup == show) state else state.copy(showThemeModePopup = show)
+        }
+    }
+
+    fun updateThemePopupAnchorBounds(bounds: IntRect?) {
+        _chromeState.update { state ->
+            if (state.themePopupAnchorBounds == bounds) state else state.copy(themePopupAnchorBounds = bounds)
+        }
+    }
+
+    fun updateShowLauncherIconDesignPopup(show: Boolean) {
+        _chromeState.update { state ->
+            if (state.showLauncherIconDesignPopup == show) state else state.copy(showLauncherIconDesignPopup = show)
+        }
+    }
+
+    fun updateLauncherIconDesignPopupAnchorBounds(bounds: IntRect?) {
+        _chromeState.update { state ->
+            if (state.launcherIconDesignPopupAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(launcherIconDesignPopupAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun updateShowLogLevelPopup(show: Boolean) {
+        _chromeState.update { state ->
+            if (state.showLogLevelPopup == show) state else state.copy(showLogLevelPopup = show)
+        }
+    }
+
+    fun updateLogLevelPopupAnchorBounds(bounds: IntRect?) {
+        _chromeState.update { state ->
+            if (state.logLevelPopupAnchorBounds == bounds) state else state.copy(logLevelPopupAnchorBounds = bounds)
         }
     }
 

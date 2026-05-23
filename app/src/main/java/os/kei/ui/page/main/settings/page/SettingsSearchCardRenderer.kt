@@ -17,6 +17,7 @@ import os.kei.ui.page.main.settings.section.SettingsVisualSection
 import os.kei.ui.page.main.settings.state.SettingsBackgroundController
 import os.kei.ui.page.main.settings.state.SettingsCacheUiState
 import os.kei.ui.page.main.settings.state.SettingsLogUiState
+import os.kei.ui.page.main.settings.state.SettingsPageChromeState
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
 
@@ -121,6 +122,10 @@ internal fun LazyListScope.settingsCardItem(
                     logStats = input.logState.logStats,
                     exportingLogZip = input.logState.exportingLogZip,
                     clearingLogs = input.logState.clearingLogs,
+                    levelExpanded = input.chromeState.showLogLevelPopup,
+                    levelAnchorBounds = input.chromeState.logLevelPopupAnchorBounds,
+                    onLevelExpandedChange = input.settingsPageViewModel::updateShowLogLevelPopup,
+                    onLevelAnchorBoundsChange = input.settingsPageViewModel::updateLogLevelPopupAnchorBounds,
                     onExportZipClick = input.settingsPageViewModel::beginLogExport,
                     onClearLogsClick = input::clearLogs,
                     onFeedbackClick = input::openFeedbackIssue,
@@ -176,6 +181,7 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
 internal data class SettingsSearchCardRenderInput(
     val context: Context,
     val settingsPageViewModel: SettingsPageViewModel,
+    val chromeState: SettingsPageChromeState,
     val sectionContracts: SettingsSectionContractBundle,
     val backgroundController: SettingsBackgroundController,
     val cacheState: SettingsCacheUiState,

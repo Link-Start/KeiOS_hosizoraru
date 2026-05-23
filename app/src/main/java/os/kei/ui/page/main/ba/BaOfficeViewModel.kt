@@ -13,14 +13,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
-
-internal data class BaOfficeSnapshotUiState(
-    val snapshot: BaPageSnapshot = BaPageSnapshot(),
-    val loaded: Boolean = false,
-)
 
 internal data class BaOfficeServerUiState(
     val serverIndex: Int = BaPageSnapshot().serverIndex,
@@ -38,6 +34,26 @@ internal data class BaOfficeSyncUiState(
     val poolReloadSignal: Int = 0,
     val calendarHydrationReady: Boolean = false,
     val poolHydrationReady: Boolean = false,
+)
+
+internal data class BaOfficeRuntimeUiState(
+    val showEndedPools: Boolean = BaPageSnapshot().showEndedPools,
+    val showEndedActivities: Boolean = BaPageSnapshot().showEndedActivities,
+    val showCalendarPoolImages: Boolean = BaPageSnapshot().showCalendarPoolImages,
+    val mediaAdaptiveRotationEnabled: Boolean = BaPageSnapshot().mediaAdaptiveRotationEnabled,
+    val mediaSaveCustomEnabled: Boolean = BaPageSnapshot().mediaSaveCustomEnabled,
+    val mediaSaveFixedTreeUri: String = BaPageSnapshot().mediaSaveFixedTreeUri,
+    val idIndependentByServer: Boolean = BaPageSnapshot().idIndependentByServer,
+    val calendarRefreshIntervalHours: Int = BaPageSnapshot().calendarRefreshIntervalHours,
+)
+
+internal data class BaOfficeSettingsDraftUiState(
+    val draft: BaPageSettingsDraftState = BaPageSnapshot().toSettingsDraftState(),
+)
+
+internal data class BaOfficeNotificationDraftUiState(
+    val draft: BaPageNotificationDraftState = BaPageSnapshot().toNotificationDraftState(),
+    val savedDraft: BaPageNotificationDraftState = BaPageSnapshot().toNotificationDraftState(),
 )
 
 internal sealed interface BaOfficeEvent {
@@ -68,14 +84,24 @@ internal class BaOfficeViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
     private val defaultSnapshot = BaPageSnapshot()
-    private val _snapshotUiState = MutableStateFlow(BaOfficeSnapshotUiState(snapshot = defaultSnapshot))
-    val snapshotUiState: StateFlow<BaOfficeSnapshotUiState> = _snapshotUiState.asStateFlow()
     private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
     val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
     private val _syncUiState = MutableStateFlow(BaOfficeSyncUiState())
     val syncUiState: StateFlow<BaOfficeSyncUiState> = _syncUiState.asStateFlow()
     private val _serverUiState = MutableStateFlow(BaOfficeServerUiState(defaultSnapshot.serverIndex))
     val serverUiState: StateFlow<BaOfficeServerUiState> = _serverUiState.asStateFlow()
+    private val _runtimeUiState = MutableStateFlow(defaultSnapshot.toRuntimeUiState())
+    val runtimeUiState: StateFlow<BaOfficeRuntimeUiState> = _runtimeUiState.asStateFlow()
+    private val _settingsDraftUiState = MutableStateFlow(BaOfficeSettingsDraftUiState(defaultSnapshot.toSettingsDraftState()))
+    val settingsDraftUiState: StateFlow<BaOfficeSettingsDraftUiState> = _settingsDraftUiState.asStateFlow()
+    private val _notificationDraftUiState =
+        MutableStateFlow(
+            BaOfficeNotificationDraftUiState(
+                draft = defaultSnapshot.toNotificationDraftState(),
+                savedDraft = defaultSnapshot.toNotificationDraftState(),
+            ),
+        )
+    val notificationDraftUiState: StateFlow<BaOfficeNotificationDraftUiState> = _notificationDraftUiState.asStateFlow()
     private val _events = MutableSharedFlow<BaOfficeEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<BaOfficeEvent> = _events.asSharedFlow()
     val office: BaOfficeController = BaOfficeController(defaultSnapshot)
@@ -87,10 +113,12 @@ internal class BaOfficeViewModel(
                 office.applySnapshot(snapshot)
             }
             _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
-            _snapshotUiState.value =
-                BaOfficeSnapshotUiState(
-                    snapshot = snapshot,
-                    loaded = true,
+            _runtimeUiState.value = snapshot.toRuntimeUiState()
+            _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
+            _notificationDraftUiState.value =
+                BaOfficeNotificationDraftUiState(
+                    draft = snapshot.toNotificationDraftState(),
+                    savedDraft = snapshot.toNotificationDraftState(),
                 )
         }
     }
@@ -101,25 +129,36 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun showSettingsSheet() {
+    fun showSettingsSheet(currentDraft: BaPageSettingsDraftState) {
+        _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(currentDraft)
         _chromeUiState.update { state ->
             state.copy(showSettingsSheet = true)
         }
     }
 
-    fun hideSettingsSheet() {
+    fun hideSettingsSheet(currentDraft: BaPageSettingsDraftState) {
+        _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(currentDraft)
         _chromeUiState.update { state ->
             state.copy(showSettingsSheet = false)
         }
     }
 
     fun showNotificationSettingsSheet() {
+        val savedDraft = notificationRuntimeDraft(_notificationDraftUiState.value.savedDraft)
+        _notificationDraftUiState.value =
+            BaOfficeNotificationDraftUiState(
+                draft = savedDraft,
+                savedDraft = savedDraft,
+            )
         _chromeUiState.update { state ->
             state.copy(showNotificationSettingsSheet = true)
         }
     }
 
     fun hideNotificationSettingsSheet() {
+        _notificationDraftUiState.update { state ->
+            state.copy(draft = state.savedDraft)
+        }
         _chromeUiState.update { state ->
             state.copy(showNotificationSettingsSheet = false)
         }
@@ -144,6 +183,34 @@ internal class BaOfficeViewModel(
             } else {
                 state.copy(debugUseRealCalendarPoolData = enabled)
             }
+        }
+    }
+
+    fun updateSettingsDraft(transform: (BaPageSettingsDraftState) -> BaPageSettingsDraftState) {
+        _settingsDraftUiState.update { state ->
+            val nextDraft = transform(state.draft)
+            if (nextDraft == state.draft) state else state.copy(draft = nextDraft)
+        }
+    }
+
+    fun updateNotificationDraft(transform: (BaPageNotificationDraftState) -> BaPageNotificationDraftState) {
+        _notificationDraftUiState.update { state ->
+            val nextDraft = transform(state.draft)
+            if (nextDraft == state.draft) state else state.copy(draft = nextDraft)
+        }
+    }
+
+    fun normalizeApNotifyThresholdText() {
+        updateNotificationDraft { draft ->
+            val normalized = draft.apNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
+            draft.copy(apNotifyThresholdText = normalized.toString())
+        }
+    }
+
+    fun normalizeCafeApNotifyThresholdText() {
+        updateNotificationDraft { draft ->
+            val normalized = draft.cafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
+            draft.copy(cafeApNotifyThresholdText = normalized.toString())
         }
     }
 
@@ -232,6 +299,30 @@ internal class BaOfficeViewModel(
                         serverIndex = serverIndex,
                         enabled = persisted.idIndependentByServer,
                     ).persistAsync()
+                _runtimeUiState.update { state ->
+                    state.copy(
+                        showEndedPools = persisted.showEndedPools,
+                        showEndedActivities = persisted.showEndedActivities,
+                        showCalendarPoolImages = persisted.showCalendarPoolImages,
+                        mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled,
+                        mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled,
+                        mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri,
+                        idIndependentByServer = persisted.idIndependentByServer,
+                    )
+                }
+                _settingsDraftUiState.value =
+                    BaOfficeSettingsDraftUiState(
+                        BaPageSettingsDraftState(
+                            cafeLevel = persisted.savedCafeLevel,
+                            mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled,
+                            mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled,
+                            mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri,
+                            idIndependentByServer = persisted.idIndependentByServer,
+                            showEndedPools = persisted.showEndedPools,
+                            showEndedActivities = persisted.showEndedActivities,
+                            showCalendarPoolImages = persisted.showCalendarPoolImages,
+                        ),
+                    )
 
                 val refreshCalendarForEnded =
                     persisted.turningEndedActivitiesOn &&
@@ -325,6 +416,11 @@ internal class BaOfficeViewModel(
                 }
 
                 AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+                _notificationDraftUiState.value =
+                    BaOfficeNotificationDraftUiState(
+                        draft = savedDraft,
+                        savedDraft = savedDraft,
+                    )
                 _events.emit(
                     BaOfficeEvent.NotificationSettingsSaved(
                         savedDraft = savedDraft,
@@ -349,6 +445,9 @@ internal class BaOfficeViewModel(
                         hours = hours,
                         calendarLastSyncMs = calendarLastSyncMs,
                     )
+                _runtimeUiState.update { state ->
+                    state.copy(calendarRefreshIntervalHours = persisted.hours)
+                }
                 _events.emit(
                     BaOfficeEvent.RefreshIntervalSaved(
                         hours = persisted.hours,
@@ -383,7 +482,29 @@ internal class BaOfficeViewModel(
         office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
         BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMsAsync(baselineSlotMs)
     }
+
+    private fun notificationRuntimeDraft(base: BaPageNotificationDraftState): BaPageNotificationDraftState =
+        base.copy(
+            apNotifyEnabled = office.apNotifyEnabled,
+            cafeApNotifyEnabled = office.cafeApNotifyEnabled,
+            arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+            cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+            apNotifyThresholdText = office.apNotifyThreshold.toString(),
+            cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
+        )
 }
+
+private fun BaPageSnapshot.toRuntimeUiState(): BaOfficeRuntimeUiState =
+    BaOfficeRuntimeUiState(
+        showEndedPools = showEndedPools,
+        showEndedActivities = showEndedActivities,
+        showCalendarPoolImages = showCalendarPoolImages,
+        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+        mediaSaveCustomEnabled = mediaSaveCustomEnabled,
+        mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
+        idIndependentByServer = idIndependentByServer,
+        calendarRefreshIntervalHours = calendarRefreshIntervalHours,
+    )
 
 private fun Throwable.rethrowIfCancellation() {
     if (this is CancellationException) throw this

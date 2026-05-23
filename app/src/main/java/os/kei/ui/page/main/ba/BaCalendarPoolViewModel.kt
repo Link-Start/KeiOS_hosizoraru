@@ -45,6 +45,14 @@ internal data class BaCalendarPoolSettingsUiState(
     val loaded: Boolean = false,
 )
 
+@Immutable
+internal data class BaCalendarPoolChromeUiState(
+    val serverIndex: Int = BaPageSnapshot().serverIndex,
+    val serverIndexTouched: Boolean = false,
+    val calendarReloadSignal: Int = 0,
+    val poolReloadSignal: Int = 0,
+)
+
 private data class BaCalendarRequestKey(
     val isPageActive: Boolean,
     val serverIndex: Int,
@@ -75,6 +83,9 @@ internal class BaCalendarPoolViewModel(
     private val _settingsUiState = MutableStateFlow(BaCalendarPoolSettingsUiState())
     val settingsUiState: StateFlow<BaCalendarPoolSettingsUiState> = _settingsUiState.asStateFlow()
 
+    private val _chromeUiState = MutableStateFlow(BaCalendarPoolChromeUiState())
+    val chromeUiState: StateFlow<BaCalendarPoolChromeUiState> = _chromeUiState.asStateFlow()
+
     val routeState: StateFlow<BaCalendarPoolRouteState> =
         combine(calendarUiState, poolUiState) { calendar, pool ->
             BaCalendarPoolRouteState(
@@ -99,9 +110,17 @@ internal class BaCalendarPoolViewModel(
 
     init {
         viewModelScope.launch {
+            val snapshot = BaCalendarPoolRepository.loadSettingsSnapshotAsync()
+            _chromeUiState.update { state ->
+                if (state.serverIndexTouched) {
+                    state
+                } else {
+                    state.copy(serverIndex = snapshot.serverIndex)
+                }
+            }
             _settingsUiState.value =
                 BaCalendarPoolSettingsUiState(
-                    snapshot = BaCalendarPoolRepository.loadSettingsSnapshotAsync(),
+                    snapshot = snapshot,
                     loaded = true,
                 )
         }
@@ -211,8 +230,14 @@ internal class BaCalendarPoolViewModel(
             }
     }
 
-    fun saveServerIndex(index: Int) {
+    fun selectServer(index: Int) {
         val normalizedIndex = index.coerceIn(0, 2)
+        _chromeUiState.update { state ->
+            state.copy(
+                serverIndex = normalizedIndex,
+                serverIndexTouched = true,
+            )
+        }
         _settingsUiState.update { state ->
             state.copy(
                 snapshot = state.snapshot.copy(serverIndex = normalizedIndex),
@@ -220,6 +245,18 @@ internal class BaCalendarPoolViewModel(
         }
         viewModelScope.launch {
             BaCalendarPoolRepository.saveServerIndexAsync(normalizedIndex)
+        }
+    }
+
+    fun requestCalendarReload() {
+        _chromeUiState.update { state ->
+            state.copy(calendarReloadSignal = state.calendarReloadSignal + 1)
+        }
+    }
+
+    fun requestPoolReload() {
+        _chromeUiState.update { state ->
+            state.copy(poolReloadSignal = state.poolReloadSignal + 1)
         }
     }
 }

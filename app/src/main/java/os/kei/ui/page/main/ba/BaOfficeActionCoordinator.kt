@@ -14,6 +14,7 @@ internal class BaOfficeActionCoordinator(
     private val scope: CoroutineScope,
     private val serverIndexProvider: () -> Int,
     private val onServerSelected: (Int) -> Unit,
+    private val onSettingsCafeLevelChange: (Int) -> Unit,
     private val onRefreshCalendar: () -> Unit,
     private val onRefreshPool: () -> Unit,
     private val onOpenCalendarLink: (String) -> Unit,
@@ -81,7 +82,7 @@ internal class BaOfficeActionCoordinator(
             BaOfficeRepository.saveCafeLevelAsync(normalized)
             clampUpdate?.persistAsync()
         }
-        ui.sheetCafeLevel = normalized
+        onSettingsCafeLevelChange(normalized)
         ui.showCafeLevelPopup = false
     }
 

@@ -34,7 +34,6 @@ import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
-import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
@@ -95,14 +94,14 @@ fun BAPage(
         }
     }
 
-    val defaultBaSnapshot = remember { BaPageSnapshot() }
-    val officeSnapshotUiState by officeViewModel.snapshotUiState.collectAsStateWithLifecycle()
     val officeChromeUiState by officeViewModel.chromeUiState.collectAsStateWithLifecycle()
     val officeSyncUiState by officeViewModel.syncUiState.collectAsStateWithLifecycle()
     val officeServerUiState by officeViewModel.serverUiState.collectAsStateWithLifecycle()
-    val initialSnapshot = officeSnapshotUiState.snapshot
+    val officeRuntimeUiState by officeViewModel.runtimeUiState.collectAsStateWithLifecycle()
+    val officeSettingsDraftUiState by officeViewModel.settingsDraftUiState.collectAsStateWithLifecycle()
+    val officeNotificationDraftUiState by officeViewModel.notificationDraftUiState.collectAsStateWithLifecycle()
     val office = officeViewModel.office
-    val ui = rememberBaPageUiController(defaultBaSnapshot)
+    val ui = rememberBaPageUiController()
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val calendarPoolRouteState by calendarPoolViewModel.routeState.collectAsStateWithLifecycle()
     val calendarUiState = calendarPoolRouteState.calendarUiState
@@ -114,14 +113,11 @@ fun BAPage(
             chromeUiState = officeChromeUiState,
             syncUiState = officeSyncUiState,
             serverUiState = officeServerUiState,
+            runtimeUiState = officeRuntimeUiState,
+            settingsDraftUiState = officeSettingsDraftUiState,
+            notificationDraftUiState = officeNotificationDraftUiState,
         )
     val baClockState = ui.clockState()
-
-    LaunchedEffect(officeSnapshotUiState.loaded, initialSnapshot) {
-        if (officeSnapshotUiState.loaded && ui.matchesSnapshot(defaultBaSnapshot)) {
-            ui.applySnapshot(initialSnapshot)
-        }
-    }
 
     val officeName =
         when (baRouteState.serverIndex) {
@@ -140,8 +136,8 @@ fun BAPage(
         buildBaNotificationSettingsSheetState(
             draft = baRouteState.notificationDraftState,
         )
-    val savedSettingsSheetState =
-        BaSettingsSheetState(
+    val savedSettingsDraftState =
+        BaPageSettingsDraftState(
             cafeLevel = office.cafeLevel,
             mediaAdaptiveRotationEnabled = baRouteState.mediaAdaptiveRotationEnabled,
             mediaSaveCustomEnabled = baRouteState.mediaSaveCustomEnabled,
@@ -150,10 +146,14 @@ fun BAPage(
             showEndedActivities = baRouteState.showEndedActivities,
             showEndedPools = baRouteState.showEndedPools,
             showCalendarPoolImages = baRouteState.showCalendarPoolImages,
+        )
+    val savedSettingsSheetState =
+        buildBaSettingsSheetState(
+            draft = savedSettingsDraftState,
             calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
         )
     val savedNotificationSettingsSheetState =
-        buildBaNotificationSettingsSheetState(ui.savedNotificationDraftState())
+        buildBaNotificationSettingsSheetState(officeNotificationDraftUiState.savedDraft)
     val pageContentState =
         buildBaPageContentState(
             isPageActive = runtime.isPageActive,
@@ -171,17 +171,17 @@ fun BAPage(
     val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
 
     fun openSettingsSheet() {
-        ui.openSettingsSheet(office)
-        officeViewModel.showSettingsSheet()
+        ui.openSettingsSheet()
+        officeViewModel.showSettingsSheet(savedSettingsDraftState)
     }
 
     fun closeSettingsSheet() {
-        ui.closeSettingsSheet(office)
-        officeViewModel.hideSettingsSheet()
+        ui.closeSettingsSheet()
+        officeViewModel.hideSettingsSheet(savedSettingsDraftState)
     }
 
     fun openNotificationSettingsSheet() {
-        ui.openNotificationSettingsSheet(office)
+        ui.openNotificationSettingsSheet()
         officeViewModel.showNotificationSettingsSheet()
     }
 
@@ -218,27 +218,31 @@ fun BAPage(
             when (event) {
                 is BaOfficeEvent.SettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.clampUpdate)
-                    ui.showEndedPools = event.persisted.showEndedPools
-                    ui.showEndedActivities = event.persisted.showEndedActivities
-                    ui.showCalendarPoolImages = event.persisted.showCalendarPoolImages
-                    ui.mediaAdaptiveRotationEnabled = event.persisted.mediaAdaptiveRotationEnabled
-                    ui.mediaSaveCustomEnabled = event.persisted.mediaSaveCustomEnabled
-                    ui.mediaSaveFixedTreeUri = event.persisted.mediaSaveFixedTreeUri
-                    ui.idIndependentByServer = event.persisted.idIndependentByServer
                     if (event.refreshCalendar) refreshCalendar(force = true)
                     if (event.refreshPool) refreshPool(force = true)
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
-                    ui.closeSettingsSheet(office)
+                    ui.closeSettingsSheet()
+                    officeViewModel.hideSettingsSheet(
+                        BaPageSettingsDraftState(
+                            cafeLevel = event.persisted.savedCafeLevel,
+                            mediaAdaptiveRotationEnabled = event.persisted.mediaAdaptiveRotationEnabled,
+                            mediaSaveCustomEnabled = event.persisted.mediaSaveCustomEnabled,
+                            mediaSaveFixedTreeUri = event.persisted.mediaSaveFixedTreeUri,
+                            idIndependentByServer = event.persisted.idIndependentByServer,
+                            showEndedPools = event.persisted.showEndedPools,
+                            showEndedActivities = event.persisted.showEndedActivities,
+                            showCalendarPoolImages = event.persisted.showCalendarPoolImages,
+                        ),
+                    )
                 }
 
                 is BaOfficeEvent.NotificationSettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
-                    ui.applySavedNotificationDraft(event.savedDraft)
                     ui.closeNotificationSettingsSheet()
+                    officeViewModel.hideNotificationSettingsSheet()
                 }
 
                 is BaOfficeEvent.RefreshIntervalSaved -> {
-                    ui.calendarRefreshIntervalHours = event.hours
                     if (event.shouldRefresh) {
                         refreshCalendar(force = true)
                         refreshPool(force = true)
@@ -274,8 +278,8 @@ fun BAPage(
         runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         officeViewModel.saveSettings(
             sheetState = settingsSheetState,
-            currentShowEndedActivities = ui.showEndedActivities,
-            currentShowCalendarPoolImages = ui.showCalendarPoolImages,
+            currentShowEndedActivities = baRouteState.showEndedActivities,
+            currentShowCalendarPoolImages = baRouteState.showCalendarPoolImages,
             serverIndex = baRouteState.serverIndex,
         )
     }
@@ -296,6 +300,9 @@ fun BAPage(
             scope = pageScope,
             serverIndexProvider = { baRouteState.serverIndex },
             onServerSelected = officeViewModel::selectServer,
+            onSettingsCafeLevelChange = { level ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
+            },
             onRefreshCalendar = { refreshCalendar(force = true) },
             onRefreshPool = { refreshPool(force = true) },
             onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
@@ -326,14 +333,14 @@ fun BAPage(
         syncPageActive,
         baRouteState.serverIndex,
         baRouteState.baCalendarReloadSignal,
-        ui.calendarRefreshIntervalHours,
+        baRouteState.calendarRefreshIntervalHours,
         baRouteState.calendarHydrationReady,
     ) {
         calendarPoolViewModel.syncCalendar(
             isPageActive = syncPageActive,
             serverIndex = baRouteState.serverIndex,
             reloadSignal = baRouteState.baCalendarReloadSignal,
-            calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
+            calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
             hydrationReady = baRouteState.calendarHydrationReady,
         )
     }
@@ -341,14 +348,14 @@ fun BAPage(
         syncPageActive,
         baRouteState.serverIndex,
         baRouteState.baPoolReloadSignal,
-        ui.calendarRefreshIntervalHours,
+        baRouteState.calendarRefreshIntervalHours,
         baRouteState.poolHydrationReady,
     ) {
         calendarPoolViewModel.syncPool(
             isPageActive = syncPageActive,
             serverIndex = baRouteState.serverIndex,
             reloadSignal = baRouteState.baPoolReloadSignal,
-            calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
+            calendarRefreshIntervalHours = baRouteState.calendarRefreshIntervalHours,
             hydrationReady = baRouteState.poolHydrationReady,
         )
     }
@@ -446,13 +453,27 @@ fun BAPage(
             show = baRouteState.showSettingsSheet,
             backdrop = backdrops.sheet,
             state = settingsSheetState,
-            onMediaAdaptiveRotationEnabledChange = { ui.sheetMediaAdaptiveRotationEnabled = it },
-            onMediaSaveCustomEnabledChange = { ui.sheetMediaSaveCustomEnabled = it },
-            onMediaSaveFixedTreeUriChange = { ui.sheetMediaSaveFixedTreeUri = it },
-            onIdIndependentByServerChange = { ui.sheetIdIndependentByServer = it },
-            onShowEndedActivitiesChange = { ui.sheetShowEndedActivities = it },
-            onShowEndedPoolsChange = { ui.sheetShowEndedPools = it },
-            onShowCalendarPoolImagesChange = { ui.sheetShowCalendarPoolImages = it },
+            onMediaAdaptiveRotationEnabledChange = { enabled ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(mediaAdaptiveRotationEnabled = enabled) }
+            },
+            onMediaSaveCustomEnabledChange = { enabled ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(mediaSaveCustomEnabled = enabled) }
+            },
+            onMediaSaveFixedTreeUriChange = { uri ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(mediaSaveFixedTreeUri = uri) }
+            },
+            onIdIndependentByServerChange = { enabled ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(idIndependentByServer = enabled) }
+            },
+            onShowEndedActivitiesChange = { show ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(showEndedActivities = show) }
+            },
+            onShowEndedPoolsChange = { show ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(showEndedPools = show) }
+            },
+            onShowCalendarPoolImagesChange = { show ->
+                officeViewModel.updateSettingsDraft { draft -> draft.copy(showCalendarPoolImages = show) }
+            },
             onCalendarRefreshIntervalSelected = { hours ->
                 officeViewModel.saveRefreshInterval(
                     hours = hours,
@@ -469,30 +490,44 @@ fun BAPage(
             state = notificationSettingsSheetState,
             apThresholdMax = (office.apLimit + 200).coerceIn(0, BA_AP_MAX),
             cafeApThresholdMax = cafeDailyCapacity(office.cafeLevel),
-            onApNotifyEnabledChange = { ui.sheetApNotifyEnabled = it },
-            onCafeApNotifyEnabledChange = { ui.sheetCafeApNotifyEnabled = it },
-            onArenaRefreshNotifyEnabledChange = { ui.sheetArenaRefreshNotifyEnabled = it },
-            onCafeVisitNotifyEnabledChange = { ui.sheetCafeVisitNotifyEnabled = it },
-            onCalendarUpcomingNotifyEnabledChange = { ui.sheetCalendarUpcomingNotifyEnabled = it },
-            onCalendarEndingNotifyEnabledChange = { ui.sheetCalendarEndingNotifyEnabled = it },
-            onPoolUpcomingNotifyEnabledChange = { ui.sheetPoolUpcomingNotifyEnabled = it },
-            onPoolEndingNotifyEnabledChange = { ui.sheetPoolEndingNotifyEnabled = it },
-            onCalendarPoolChangeNotifyEnabledChange = {
-                ui.sheetCalendarPoolChangeNotifyEnabled = it
+            onApNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(apNotifyEnabled = enabled) }
             },
-            onCalendarPoolNotifyLeadHoursSelected = { ui.sheetCalendarPoolNotifyLeadHours = it },
-            onApNotifyThresholdTextChange = { ui.sheetApNotifyThresholdText = it },
-            onApNotifyThresholdDone = {
-                val normalized =
-                    ui.sheetApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
-                ui.sheetApNotifyThresholdText = normalized.toString()
+            onCafeApNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(cafeApNotifyEnabled = enabled) }
             },
-            onCafeApNotifyThresholdTextChange = { ui.sheetCafeApNotifyThresholdText = it },
-            onCafeApNotifyThresholdDone = {
-                val normalized =
-                    ui.sheetCafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
-                ui.sheetCafeApNotifyThresholdText = normalized.toString()
+            onArenaRefreshNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(arenaRefreshNotifyEnabled = enabled) }
             },
+            onCafeVisitNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(cafeVisitNotifyEnabled = enabled) }
+            },
+            onCalendarUpcomingNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(calendarUpcomingNotifyEnabled = enabled) }
+            },
+            onCalendarEndingNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(calendarEndingNotifyEnabled = enabled) }
+            },
+            onPoolUpcomingNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(poolUpcomingNotifyEnabled = enabled) }
+            },
+            onPoolEndingNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(poolEndingNotifyEnabled = enabled) }
+            },
+            onCalendarPoolChangeNotifyEnabledChange = { enabled ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(calendarPoolChangeNotifyEnabled = enabled) }
+            },
+            onCalendarPoolNotifyLeadHoursSelected = { hours ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(calendarPoolNotifyLeadHours = hours) }
+            },
+            onApNotifyThresholdTextChange = { text ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(apNotifyThresholdText = text) }
+            },
+            onApNotifyThresholdDone = officeViewModel::normalizeApNotifyThresholdText,
+            onCafeApNotifyThresholdTextChange = { text ->
+                officeViewModel.updateNotificationDraft { draft -> draft.copy(cafeApNotifyThresholdText = text) }
+            },
+            onCafeApNotifyThresholdDone = officeViewModel::normalizeCafeApNotifyThresholdText,
             hasUnsavedChanges = notificationSettingsSheetState != savedNotificationSettingsSheetState,
             onDismissRequest = ::closeNotificationSettingsSheet,
             onSaveRequest = ::saveNotificationSettings,

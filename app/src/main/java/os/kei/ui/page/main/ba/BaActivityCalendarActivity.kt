@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,6 +99,7 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val settingsUiState by calendarPoolViewModel.settingsUiState.collectAsStateWithLifecycle()
     val snapshot = settingsUiState.snapshot
+    val chromeUiState by calendarPoolViewModel.chromeUiState.collectAsStateWithLifecycle()
     val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
     val serverOptions =
         listOf(
@@ -107,11 +107,10 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
             stringResource(R.string.ba_server_global),
             stringResource(R.string.ba_server_jp),
         )
-    var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
-    var serverIndexTouched by remember { mutableStateOf(false) }
     var showServerPopup by remember { mutableStateOf(false) }
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    var reloadSignal by remember { mutableIntStateOf(0) }
+    val serverIndex = chromeUiState.serverIndex
+    val reloadSignal = chromeUiState.calendarReloadSignal
     val hydrationReady = settingsUiState.loaded
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -137,12 +136,6 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
             }
         }
     val countdownBlue = AppStatusColors.Refreshing
-
-    LaunchedEffect(settingsUiState.loaded, snapshot.serverIndex, serverIndexTouched) {
-        if (settingsUiState.loaded && !serverIndexTouched) {
-            serverIndex = snapshot.serverIndex
-        }
-    }
 
     LaunchedEffect(serverIndex, reloadSignal, snapshot.calendarRefreshIntervalHours, hydrationReady) {
         calendarPoolViewModel.syncCalendar(
@@ -198,7 +191,7 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
                 backdrop = pageBackdrop,
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.ba_calendar_cd_refresh),
-                onClick = { reloadSignal += 1 },
+                onClick = calendarPoolViewModel::requestCalendarReload,
                 iconModifier =
                     Modifier.graphicsLayer {
                         rotationZ = refreshIconRotation
@@ -251,9 +244,7 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
                 onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
-                    serverIndexTouched = true
-                    serverIndex = normalized
-                    calendarPoolViewModel.saveServerIndex(normalized)
+                    calendarPoolViewModel.selectServer(normalized)
                     showServerPopup = false
                 },
                 onOpenCalendarLink = { url ->

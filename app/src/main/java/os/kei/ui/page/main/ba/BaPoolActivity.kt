@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -147,6 +146,7 @@ private fun BaPoolPage(
     val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
     val settingsUiState by calendarPoolViewModel.settingsUiState.collectAsStateWithLifecycle()
     val snapshot = settingsUiState.snapshot
+    val chromeUiState by calendarPoolViewModel.chromeUiState.collectAsStateWithLifecycle()
     val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
     val serverOptions =
         listOf(
@@ -154,11 +154,10 @@ private fun BaPoolPage(
             stringResource(R.string.ba_server_global),
             stringResource(R.string.ba_server_jp),
         )
-    var serverIndex by remember { mutableIntStateOf(snapshot.serverIndex) }
-    var serverIndexTouched by remember { mutableStateOf(false) }
     var showServerPopup by remember { mutableStateOf(false) }
     var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    var reloadSignal by remember { mutableIntStateOf(0) }
+    val serverIndex = chromeUiState.serverIndex
+    val reloadSignal = chromeUiState.poolReloadSignal
     val hydrationReady = settingsUiState.loaded
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -184,12 +183,6 @@ private fun BaPoolPage(
             }
         }
     val countdownBlue = AppStatusColors.Refreshing
-
-    LaunchedEffect(settingsUiState.loaded, snapshot.serverIndex, serverIndexTouched) {
-        if (settingsUiState.loaded && !serverIndexTouched) {
-            serverIndex = snapshot.serverIndex
-        }
-    }
 
     LaunchedEffect(
         serverIndex,
@@ -250,7 +243,7 @@ private fun BaPoolPage(
                 backdrop = pageBackdrop,
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.ba_pool_cd_refresh),
-                onClick = { reloadSignal += 1 },
+                onClick = calendarPoolViewModel::requestPoolReload,
                 iconModifier =
                     Modifier.graphicsLayer {
                         rotationZ = refreshIconRotation
@@ -303,9 +296,7 @@ private fun BaPoolPage(
                 onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
-                    serverIndexTouched = true
-                    serverIndex = normalized
-                    calendarPoolViewModel.saveServerIndex(normalized)
+                    calendarPoolViewModel.selectServer(normalized)
                     showServerPopup = false
                 },
                 onOpenPoolStudentGuide = { url ->

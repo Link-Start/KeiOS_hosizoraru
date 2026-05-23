@@ -32,6 +32,7 @@ internal class GitHubPageActions(
     context: Context,
     scope: CoroutineScope,
     state: GitHubPageState,
+    viewModel: GitHubPageViewModel,
     repository: GitHubPageRepository,
     systemDmOption: DownloaderOption,
     openLinkFailureMessage: String,
@@ -41,6 +42,7 @@ internal class GitHubPageActions(
             context = context,
             scope = scope,
             state = state,
+            viewModel = viewModel,
             repository = repository,
             systemDmOption = systemDmOption,
             openLinkFailureMessage = openLinkFailureMessage,
@@ -98,32 +100,22 @@ internal class GitHubPageActions(
     fun setTrackedStableVersionExpanded(
         itemId: String,
         value: Boolean,
-    ) {
-        env.state.trackedStableVersionExpanded[itemId] = value
-        env.scope.launch {
-            env.repository.saveTrackedStableVersionExpanded(itemId, value)
-        }
-    }
+    ) = env.viewModel.setTrackedStableVersionExpanded(itemId, value)
 
     fun setTrackedLocalVersionExpanded(
         itemId: String,
         value: Boolean,
-    ) {
-        env.state.trackedLocalVersionExpanded[itemId] = value
-        env.scope.launch {
-            env.repository.saveTrackedLocalVersionExpanded(itemId, value)
-        }
-    }
+    ) = env.viewModel.setTrackedLocalVersionExpanded(itemId, value)
 
     fun setTrackedPreReleaseVersionExpanded(
         itemId: String,
         value: Boolean,
-    ) {
-        env.state.trackedPreReleaseVersionExpanded[itemId] = value
-        env.scope.launch {
-            env.repository.saveTrackedPreReleaseVersionExpanded(itemId, value)
-        }
-    }
+    ) = env.viewModel.setTrackedPreReleaseVersionExpanded(itemId, value)
+
+    fun setTrackedCardExpanded(
+        itemId: String,
+        value: Boolean,
+    ) = env.viewModel.setTrackedCardExpanded(itemId, value)
 
     fun setSortMode(value: GitHubSortMode) {
         env.state.sortMode = value

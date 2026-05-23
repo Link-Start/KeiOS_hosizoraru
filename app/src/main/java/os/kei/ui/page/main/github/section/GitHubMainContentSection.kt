@@ -228,12 +228,7 @@ internal fun GitHubMainContent(
                                 managedInstallLoading = tracked.managedInstallLoading,
                             ),
                         expansionState =
-                            GitHubTrackedItemsExpansionState(
-                                trackedCardExpanded = tracked.trackedCardExpanded,
-                                trackedLocalVersionExpanded = tracked.trackedLocalVersionExpanded,
-                                trackedStableVersionExpanded = tracked.trackedStableVersionExpanded,
-                                trackedPreReleaseVersionExpanded = tracked.trackedPreReleaseVersionExpanded,
-                            ),
+                            tracked.expansionState,
                         runtime =
                             GitHubTrackedItemsRuntime(
                                 context = context,
@@ -245,6 +240,7 @@ internal fun GitHubMainContent(
                                 onOpenActionsSheet = actions.onOpenActionsSheet,
                                 onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
                                 onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
+                                onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
                                 onCollapseTrackedCard = actions.onCollapseTrackedCard,
                                 onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
                                 onStableVersionExpandedChange = actions.onStableVersionExpandedChange,

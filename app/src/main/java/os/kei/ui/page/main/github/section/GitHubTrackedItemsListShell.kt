@@ -76,7 +76,7 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                 subtitle = displaySubtitle,
                 expanded = expanded,
                 onExpandedChange = {
-                    expansionState.trackedCardExpanded[item.id] = it
+                    actions.onTrackedCardExpandedChange(item.id, it)
                     if (!it) {
                         val collapseState = checkState.checkStates[item.id] ?: VersionCheckUi()
                         actions.onCollapseTrackedCard(item, collapseState)

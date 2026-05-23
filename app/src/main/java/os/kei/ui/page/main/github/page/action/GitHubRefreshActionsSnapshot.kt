@@ -145,6 +145,7 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
     state.trackedItems.addAll(trackSnapshot.items)
     val validItemIds = trackSnapshot.items.map { it.id }.toSet()
     state.retainTrackedUiState(validItemIds)
+    env.viewModel.retainTrackedExpansion(validItemIds)
     repository.retainTrackedReleaseExpansion(validItemIds)
     state.trackedFirstInstallAtByPackage.clear()
     state.trackedFirstInstallAtByPackage.putAll(trackSnapshot.trackedFirstInstallAtByPackage)

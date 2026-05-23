@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.section
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -39,11 +40,12 @@ internal data class GitHubTrackedItemsAssetState(
     val managedInstallLoading: SnapshotStateMap<String, Boolean>,
 )
 
+@Immutable
 internal data class GitHubTrackedItemsExpansionState(
-    val trackedCardExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>,
+    val trackedCardExpanded: Map<String, Boolean> = emptyMap(),
+    val trackedLocalVersionExpanded: Map<String, Boolean> = emptyMap(),
+    val trackedStableVersionExpanded: Map<String, Boolean> = emptyMap(),
+    val trackedPreReleaseVersionExpanded: Map<String, Boolean> = emptyMap(),
 )
 
 internal data class GitHubTrackedItemsRuntime(
@@ -56,6 +58,7 @@ internal data class GitHubTrackedItemsActions(
     val onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
     val onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
     val onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
+    val onTrackedCardExpandedChange: (String, Boolean) -> Unit,
     val onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     val onStableVersionExpandedChange: (String, Boolean) -> Unit,

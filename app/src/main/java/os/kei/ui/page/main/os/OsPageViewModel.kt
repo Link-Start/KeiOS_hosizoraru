@@ -66,6 +66,9 @@ internal class OsPageViewModel : ViewModel() {
     private val _queryApplied = MutableStateFlow("")
     val queryApplied: StateFlow<String> = _queryApplied.asStateFlow()
 
+    private val _chromeState = MutableStateFlow(OsPageChromeState())
+    val chromeState: StateFlow<OsPageChromeState> = _chromeState.asStateFlow()
+
     private val _runtimeState = MutableStateFlow(OsPageRuntimeState())
     val runtimeState: StateFlow<OsPageRuntimeState> = _runtimeState.asStateFlow()
 
@@ -102,12 +105,14 @@ internal class OsPageViewModel : ViewModel() {
             runtimeState,
             activitySuggestionState,
             queryState,
-        ) { persistent, runtime, activitySuggestion, query ->
+            chromeState,
+        ) { persistent, runtime, activitySuggestion, query, chrome ->
             OsPageCoreUiState(
                 persistentState = persistent,
                 runtimeState = runtime,
                 activitySuggestionState = activitySuggestion,
                 queryState = query,
+                chromeState = chrome,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -121,6 +126,7 @@ internal class OsPageViewModel : ViewModel() {
                 persistentState = core.persistentState,
                 runtimeState = core.runtimeState,
                 activitySuggestionState = core.activitySuggestionState,
+                chromeState = core.chromeState,
                 queryInput = core.queryState.input,
                 queryApplied = core.queryState.applied,
                 rowsDerivedState = rows,
@@ -184,6 +190,10 @@ internal class OsPageViewModel : ViewModel() {
 
     fun updateQueryInput(value: String) {
         _queryInput.value = value
+    }
+
+    fun updateSearchExpanded(expanded: Boolean) {
+        _chromeState.update { state -> state.copy(searchExpanded = expanded) }
     }
 
     fun loadPersistentState(

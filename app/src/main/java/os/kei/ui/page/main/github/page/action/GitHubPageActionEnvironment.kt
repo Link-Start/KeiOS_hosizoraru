@@ -1,30 +1,36 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Context
-import os.kei.core.ext.showToast
 import androidx.annotation.StringRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import os.kei.core.ext.showToast
 import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
 import os.kei.ui.page.main.github.page.GitHubPageRepository
 import os.kei.ui.page.main.github.page.GitHubPageState
+import os.kei.ui.page.main.github.page.GitHubPageViewModel
 import os.kei.ui.page.main.github.query.DownloaderOption
 
 internal class GitHubPageActionEnvironment(
     val context: Context,
     val scope: CoroutineScope,
     val state: GitHubPageState,
+    val viewModel: GitHubPageViewModel,
     val repository: GitHubPageRepository,
     val actionsRepository: GitHubActionsPageRepository = GitHubActionsPageRepository(),
     val systemDmOption: DownloaderOption,
     val openLinkFailureMessage: String,
-    val clock: GitHubActionClock = GitHubSystemActionClock
+    val clock: GitHubActionClock = GitHubSystemActionClock,
 ) {
-    fun string(@StringRes resId: Int, vararg args: Any): String {
-        return context.getString(resId, *args)
-    }
+    fun string(
+        @StringRes resId: Int,
+        vararg args: Any,
+    ): String = context.getString(resId, *args)
 
-    fun toast(@StringRes resId: Int, vararg args: Any) {
+    fun toast(
+        @StringRes resId: Int,
+        vararg args: Any,
+    ) {
         context.showToast(string(resId, *args))
     }
 
@@ -35,7 +41,7 @@ internal class GitHubPageActionEnvironment(
 
     fun saveTrackedItems(
         refreshTrackIds: Set<String> = emptySet(),
-        emitStoreSignal: Boolean = true
+        emitStoreSignal: Boolean = true,
     ) {
         state.retainTrackedFirstInstallAtByTrackedItems()
         state.retainTrackedAddedAtByTrackedItems()
@@ -52,7 +58,7 @@ internal class GitHubPageActionEnvironment(
                 trackedAddedAtById = trackedAddedAtById,
                 trackedModifiedAtById = trackedModifiedAtById,
                 refreshTrackIds = refreshTrackIds,
-                emitStoreSignal = emitStoreSignal
+                emitStoreSignal = emitStoreSignal,
             )
         }
     }

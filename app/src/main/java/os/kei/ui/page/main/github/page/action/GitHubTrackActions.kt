@@ -335,13 +335,10 @@ internal class GitHubTrackActions(
                 }
                 if (editing.id != newItem.id) {
                     state.checkStates.remove(editing.id)
-                    state.trackedCardExpanded.remove(editing.id)
-                    state.trackedLocalVersionExpanded.remove(editing.id)
-                    state.trackedStableVersionExpanded.remove(editing.id)
-                    state.trackedPreReleaseVersionExpanded.remove(editing.id)
-                    scope.launch {
-                        repository.removeTrackedReleaseExpansion(editing.id)
-                    }
+                    env.viewModel.removeTrackedExpansion(
+                        itemId = editing.id,
+                        removePersistedReleaseExpansion = true,
+                    )
                     state.trackedAddedAtById.remove(editing.id)
                     state.trackedModifiedAtById.remove(editing.id)
                     GitHubActionsRecommendedRunStore.remove(editing.id)
@@ -383,13 +380,10 @@ internal class GitHubTrackActions(
                 )
                 state.trackedItems.remove(deleting)
                 state.checkStates.remove(deleting.id)
-                state.trackedCardExpanded.remove(deleting.id)
-                state.trackedLocalVersionExpanded.remove(deleting.id)
-                state.trackedStableVersionExpanded.remove(deleting.id)
-                state.trackedPreReleaseVersionExpanded.remove(deleting.id)
-                scope.launch {
-                    repository.removeTrackedReleaseExpansion(deleting.id)
-                }
+                env.viewModel.removeTrackedExpansion(
+                    itemId = deleting.id,
+                    removePersistedReleaseExpansion = true,
+                )
                 state.trackedAddedAtById.remove(deleting.id)
                 state.trackedModifiedAtById.remove(deleting.id)
                 GitHubActionsRecommendedRunStore.remove(deleting.id)

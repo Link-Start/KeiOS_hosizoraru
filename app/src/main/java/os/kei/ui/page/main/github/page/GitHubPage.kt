@@ -17,7 +17,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -87,11 +86,12 @@ fun GitHubPage(
         )
 
     val state = rememberGitHubPageState(githubPageViewModel)
-    var searchExpanded by rememberSaveable { mutableStateOf(false) }
     var consumedExternalActionsSheetToken by rememberSaveable { mutableIntStateOf(0) }
     val pageUiState by githubPageViewModel.uiState.collectAsStateWithLifecycle()
     val appIconState by githubPageViewModel.appIconState.collectAsStateWithLifecycle()
     val transferState = pageUiState.transferState
+    val chromeState = pageUiState.chromeState
+    val trackedItemsExpansionState = pageUiState.trackedItemsExpansionState
     val installedOnlineShareTargets = pageUiState.installedOnlineShareTargets
     val checkLogicDownloaderOptions = pageUiState.checkLogicDownloaderOptions
     val contentDerivedState = pageUiState.contentDerivedState
@@ -126,6 +126,7 @@ fun GitHubPage(
             context,
             scope,
             state,
+            githubPageViewModel,
             githubPageViewModel.repository,
             systemDmOption,
             openLinkFailureMessage,
@@ -134,6 +135,7 @@ fun GitHubPage(
                 context = context,
                 scope = scope,
                 state = state,
+                viewModel = githubPageViewModel,
                 repository = githubPageViewModel.repository,
                 systemDmOption = systemDmOption,
                 openLinkFailureMessage = openLinkFailureMessage,
@@ -301,7 +303,7 @@ fun GitHubPage(
                 ),
             controls =
                 GitHubMainContentControls(
-                    searchExpanded = enableSearchBar && searchExpanded,
+                    searchExpanded = enableSearchBar && chromeState.searchExpanded,
                     trackedSearch = state.trackedSearch,
                     sortMode = state.sortMode,
                     sortDirection = state.sortDirection,
@@ -337,10 +339,7 @@ fun GitHubPage(
                     apkAssetExpanded = state.apkAssetExpanded,
                     managedInstallLoading = state.managedInstallLoading,
                     actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
-                    trackedCardExpanded = state.trackedCardExpanded,
-                    trackedLocalVersionExpanded = state.trackedLocalVersionExpanded,
-                    trackedStableVersionExpanded = state.trackedStableVersionExpanded,
-                    trackedPreReleaseVersionExpanded = state.trackedPreReleaseVersionExpanded,
+                    expansionState = trackedItemsExpansionState,
                 ),
             shareImport =
                 GitHubMainContentShareImport(
@@ -356,7 +355,7 @@ fun GitHubPage(
                 GitHubMainContentActions(
                     onTrackedSearchChange = { state.trackedSearch = it },
                     onSearchExpandedChange = { expanded ->
-                        searchExpanded = enableSearchBar && expanded
+                        githubPageViewModel.updateSearchExpanded(enableSearchBar && expanded)
                     },
                     onShowActionMenuPopupChange = { state.showActionMenuPopup = it },
                     onSortModeChange = actions::setSortMode,
@@ -386,6 +385,7 @@ fun GitHubPage(
                     onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
                     onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
                     onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
+                    onTrackedCardExpandedChange = actions::setTrackedCardExpanded,
                     onCollapseTrackedCard = actions::collapseTrackedCard,
                     onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
                     onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->

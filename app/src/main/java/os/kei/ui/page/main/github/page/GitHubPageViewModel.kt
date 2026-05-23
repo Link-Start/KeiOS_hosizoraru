@@ -29,6 +29,7 @@ import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.github.section.GitHubTrackedItemsExpansionState
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PENDING_SHARE_IMPORT_CARD_TICK_MS = 15_000L
@@ -46,8 +47,13 @@ internal data class GitHubTrackTransferUiState(
 )
 
 @Immutable
+internal data class GitHubPageChromeState(
+    val searchExpanded: Boolean = false,
+)
+
+@Immutable
 private data class GitHubPageUiCoreSnapshot(
-    val transferState: GitHubTrackTransferUiState = GitHubTrackTransferUiState(),
+    val runtimeState: GitHubPageUiRuntimeSnapshot = GitHubPageUiRuntimeSnapshot(),
     val installedOnlineShareTargets: List<OnlineShareTargetOption> = emptyList(),
     val checkLogicDownloaderOptions: List<DownloaderOption> = emptyList(),
     val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
@@ -55,8 +61,17 @@ private data class GitHubPageUiCoreSnapshot(
 )
 
 @Immutable
+private data class GitHubPageUiRuntimeSnapshot(
+    val transferState: GitHubTrackTransferUiState = GitHubTrackTransferUiState(),
+    val chromeState: GitHubPageChromeState = GitHubPageChromeState(),
+    val trackedItemsExpansionState: GitHubTrackedItemsExpansionState = GitHubTrackedItemsExpansionState(),
+)
+
+@Immutable
 internal data class GitHubPageUiSnapshot(
     val transferState: GitHubTrackTransferUiState = GitHubTrackTransferUiState(),
+    val chromeState: GitHubPageChromeState = GitHubPageChromeState(),
+    val trackedItemsExpansionState: GitHubTrackedItemsExpansionState = GitHubTrackedItemsExpansionState(),
     val installedOnlineShareTargets: List<OnlineShareTargetOption> = emptyList(),
     val checkLogicDownloaderOptions: List<DownloaderOption> = emptyList(),
     val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
@@ -93,6 +108,11 @@ internal class GitHubPageViewModel : ViewModel() {
     private var appPickerStateJob: Job? = null
     private var appPickerStateInput: GitHubTrackAppPickerInput? = null
     private val snapshotFlowManager = AppSnapshotFlowManager()
+    private val trackedExpansionController =
+        GitHubTrackedExpansionStateController(
+            scope = viewModelScope,
+            repository = repository,
+        )
     private val pendingShareImportPageActive = MutableStateFlow(false)
     private val pendingShareImportNowMillis = MutableStateFlow(System.currentTimeMillis())
 
@@ -101,6 +121,11 @@ internal class GitHubPageViewModel : ViewModel() {
 
     private val _transferState = MutableStateFlow(GitHubTrackTransferUiState())
     val transferState: StateFlow<GitHubTrackTransferUiState> = _transferState.asStateFlow()
+
+    private val _chromeState = MutableStateFlow(GitHubPageChromeState())
+    val chromeState: StateFlow<GitHubPageChromeState> = _chromeState.asStateFlow()
+
+    val trackedItemsExpansionState = trackedExpansionController.state
 
     private val _installedOnlineShareTargets = MutableStateFlow<List<OnlineShareTargetOption>>(emptyList())
     val installedOnlineShareTargets: StateFlow<List<OnlineShareTargetOption>> =
@@ -122,16 +147,33 @@ internal class GitHubPageViewModel : ViewModel() {
     val appIconState: StateFlow<GitHubAppIconUiState> =
         appIconLoader.state
 
-    private val coreUiState: StateFlow<GitHubPageUiCoreSnapshot> =
+    private val runtimeUiState: StateFlow<GitHubPageUiRuntimeSnapshot> =
         combine(
             transferState,
+            chromeState,
+            trackedItemsExpansionState,
+        ) { transfer, chrome, expansion ->
+            GitHubPageUiRuntimeSnapshot(
+                transferState = transfer,
+                chromeState = chrome,
+                trackedItemsExpansionState = expansion,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            initialValue = GitHubPageUiRuntimeSnapshot(),
+        )
+
+    private val coreUiState: StateFlow<GitHubPageUiCoreSnapshot> =
+        combine(
+            runtimeUiState,
             installedOnlineShareTargets,
             checkLogicDownloaderOptions,
             contentDerivedState,
             appPickerPreferences,
-        ) { transfer, shareTargets, downloaderOptions, content, appPickerPreferences ->
+        ) { runtime, shareTargets, downloaderOptions, content, appPickerPreferences ->
             GitHubPageUiCoreSnapshot(
-                transferState = transfer,
+                runtimeState = runtime,
                 installedOnlineShareTargets = shareTargets,
                 checkLogicDownloaderOptions = downloaderOptions,
                 contentDerivedState = content,
@@ -146,7 +188,9 @@ internal class GitHubPageViewModel : ViewModel() {
     val uiState: StateFlow<GitHubPageUiSnapshot> =
         combine(coreUiState, appPickerDerivedState) { core, appPicker ->
             GitHubPageUiSnapshot(
-                transferState = core.transferState,
+                transferState = core.runtimeState.transferState,
+                chromeState = core.runtimeState.chromeState,
+                trackedItemsExpansionState = core.runtimeState.trackedItemsExpansionState,
                 installedOnlineShareTargets = core.installedOnlineShareTargets,
                 checkLogicDownloaderOptions = core.checkLogicDownloaderOptions,
                 contentDerivedState = core.contentDerivedState,
@@ -177,10 +221,49 @@ internal class GitHubPageViewModel : ViewModel() {
                 val persistedState = repository.loadPersistedUiState()
                 if (pageState === it) {
                     it.applyPersistedUiState(persistedState)
+                    trackedExpansionController.applyPersistedTrackedReleaseExpansionState(
+                        persistedState.trackedReleaseExpansionState,
+                    )
                 }
             }
         }
     }
+
+    fun updateSearchExpanded(expanded: Boolean) {
+        _chromeState.update { state ->
+            val target = state.copy(searchExpanded = expanded)
+            if (target == state) state else target
+        }
+    }
+
+    fun setTrackedCardExpanded(
+        itemId: String,
+        expanded: Boolean,
+    ) = trackedExpansionController.setTrackedCardExpanded(itemId, expanded)
+
+    fun removeTrackedCardExpansion(itemId: String) = trackedExpansionController.removeTrackedCardExpansion(itemId)
+
+    fun setTrackedStableVersionExpanded(
+        itemId: String,
+        expanded: Boolean,
+    ) = trackedExpansionController.setTrackedStableVersionExpanded(itemId, expanded)
+
+    fun setTrackedLocalVersionExpanded(
+        itemId: String,
+        expanded: Boolean,
+    ) = trackedExpansionController.setTrackedLocalVersionExpanded(itemId, expanded)
+
+    fun setTrackedPreReleaseVersionExpanded(
+        itemId: String,
+        expanded: Boolean,
+    ) = trackedExpansionController.setTrackedPreReleaseVersionExpanded(itemId, expanded)
+
+    fun removeTrackedExpansion(
+        itemId: String,
+        removePersistedReleaseExpansion: Boolean,
+    ) = trackedExpansionController.removeTrackedExpansion(itemId, removePersistedReleaseExpansion)
+
+    fun retainTrackedExpansion(validItemIds: Set<String>) = trackedExpansionController.retainTrackedExpansion(validItemIds)
 
     fun bindContextObservers(
         context: Context,

@@ -252,7 +252,7 @@ internal class GitHubRefreshActions(
         )
         removedTrackIds.forEach { trackId ->
             state.checkStates.remove(trackId)
-            state.trackedCardExpanded.remove(trackId)
+            env.viewModel.removeTrackedCardExpansion(trackId)
             state.trackedAddedAtById.remove(trackId)
             state.trackedModifiedAtById.remove(trackId)
         }

@@ -80,10 +80,7 @@ internal data class GitHubMainContentTracked(
     val apkAssetExpanded: SnapshotStateMap<String, Boolean>,
     val managedInstallLoading: SnapshotStateMap<String, Boolean>,
     val actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
-    val trackedCardExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedLocalVersionExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedStableVersionExpanded: SnapshotStateMap<String, Boolean>,
-    val trackedPreReleaseVersionExpanded: SnapshotStateMap<String, Boolean>,
+    val expansionState: GitHubTrackedItemsExpansionState,
 )
 
 internal data class GitHubMainContentShareImport(
@@ -122,6 +119,7 @@ internal data class GitHubMainContentActions(
     val onOpenTrackSheetForAdd: () -> Unit,
     val onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
     val onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
+    val onTrackedCardExpandedChange: (String, Boolean) -> Unit,
     val onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,

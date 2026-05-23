@@ -35,7 +35,6 @@ internal class GitHubPageState(
     pageUiState: GitHubPageUiState = GitHubPageUiState(),
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
     overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
-    trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState(),
 ) {
     private val sheetState = GitHubPageSheetStateHolder()
     private val actionsState = GitHubActionsPageStateHolder(actionsSectionExpansionState)
@@ -194,19 +193,6 @@ internal class GitHubPageState(
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds get() = actionsState.actionsStatusRefreshingRunIds
     val actionsRecommendedRunSnapshots get() = actionsState.actionsRecommendedRunSnapshots
-    val trackedCardExpanded = mutableStateMapOf<String, Boolean>()
-    val trackedLocalVersionExpanded =
-        mutableStateMapOf<String, Boolean>().apply {
-            putAll(trackedReleaseExpansionState.localVersionExpanded)
-        }
-    val trackedStableVersionExpanded =
-        mutableStateMapOf<String, Boolean>().apply {
-            putAll(trackedReleaseExpansionState.stableVersionExpanded)
-        }
-    val trackedPreReleaseVersionExpanded =
-        mutableStateMapOf<String, Boolean>().apply {
-            putAll(trackedReleaseExpansionState.preReleaseVersionExpanded)
-        }
     val trackedFirstInstallAtByPackage = mutableStateMapOf<String, Long>()
     val trackedAddedAtById = mutableStateMapOf<String, Long>()
     val trackedModifiedAtById = mutableStateMapOf<String, Long>()
@@ -256,15 +242,6 @@ internal class GitHubPageState(
         }
         if (overviewVisibleEntries == defaultOverviewState.visibleEntries) {
             overviewVisibleEntries = snapshot.overviewUiState.visibleEntries
-        }
-        if (trackedLocalVersionExpanded.isEmpty()) {
-            trackedLocalVersionExpanded.putAll(snapshot.trackedReleaseExpansionState.localVersionExpanded)
-        }
-        if (trackedStableVersionExpanded.isEmpty()) {
-            trackedStableVersionExpanded.putAll(snapshot.trackedReleaseExpansionState.stableVersionExpanded)
-        }
-        if (trackedPreReleaseVersionExpanded.isEmpty()) {
-            trackedPreReleaseVersionExpanded.putAll(snapshot.trackedReleaseExpansionState.preReleaseVersionExpanded)
         }
     }
 
@@ -365,10 +342,6 @@ internal class GitHubPageState(
     }
 
     fun retainTrackedUiState(validItemIds: Set<String>) {
-        trackedCardExpanded.keys.retainAll(validItemIds)
-        trackedLocalVersionExpanded.keys.retainAll(validItemIds)
-        trackedStableVersionExpanded.keys.retainAll(validItemIds)
-        trackedPreReleaseVersionExpanded.keys.retainAll(validItemIds)
         apkAssetExpanded.keys.retainAll(validItemIds)
         apkAssetIncludeAll.keys.retainAll(validItemIds)
         itemRefreshLoading.keys.retainAll(validItemIds)

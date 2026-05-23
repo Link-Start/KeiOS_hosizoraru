@@ -12,10 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -156,6 +153,8 @@ internal fun OsShellCommandVisibilityManagerSheet(
     onExportAllCards: () -> Unit,
     onImportAllCards: () -> Unit,
     onDismissRequest: () -> Unit,
+    query: String,
+    onQueryChange: (String) -> Unit,
     onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SnapshotWindowBottomSheet(
@@ -175,7 +174,6 @@ internal fun OsShellCommandVisibilityManagerSheet(
         SheetContentColumn(
             verticalSpacing = 10.dp,
         ) {
-            var query by remember(show) { mutableStateOf("") }
             val shellRunnerTitle = stringResource(R.string.os_shell_card_title)
             val filteredCards =
                 remember(cards, query) {
@@ -193,7 +191,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
             SheetSectionCard(verticalSpacing = 8.dp) {
                 AppLiquidSearchField(
                     value = query,
-                    onValueChange = { query = it },
+                    onValueChange = onQueryChange,
                     label = stringResource(R.string.os_visibility_search_shell_label),
                     backdrop = sheetBackdrop,
                     modifier = Modifier.fillMaxWidth(),

@@ -26,7 +26,20 @@ internal class OsPageOverlayRuntimeActions(
             if (state.showActivityVisibilityManager == show) {
                 state
             } else {
-                state.copy(showActivityVisibilityManager = show)
+                state.copy(
+                    showActivityVisibilityManager = show,
+                    activityVisibilityQuery = if (show) state.activityVisibilityQuery else "",
+                )
+            }
+        }
+    }
+
+    fun updateActivityVisibilityQuery(query: String) {
+        runtimeMutableState.update { state ->
+            if (state.activityVisibilityQuery == query) {
+                state
+            } else {
+                state.copy(activityVisibilityQuery = query)
             }
         }
     }
@@ -36,7 +49,20 @@ internal class OsPageOverlayRuntimeActions(
             if (state.showShellCardVisibilityManager == show) {
                 state
             } else {
-                state.copy(showShellCardVisibilityManager = show)
+                state.copy(
+                    showShellCardVisibilityManager = show,
+                    shellCardVisibilityQuery = if (show) state.shellCardVisibilityQuery else "",
+                )
+            }
+        }
+    }
+
+    fun updateShellCardVisibilityQuery(query: String) {
+        runtimeMutableState.update { state ->
+            if (state.shellCardVisibilityQuery == query) {
+                state
+            } else {
+                state.copy(shellCardVisibilityQuery = query)
             }
         }
     }

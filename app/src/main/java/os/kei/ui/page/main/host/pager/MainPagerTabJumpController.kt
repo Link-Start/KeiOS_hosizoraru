@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package os.kei.ui.page.main.host.pager
 
 import androidx.compose.runtime.Composable
@@ -45,7 +47,7 @@ internal fun rememberMainPagerTabJumpController(
     onRequestedBottomPageConsumed: () -> Unit,
 ): MainPagerTabJumpControllerState {
     val coroutineScope = rememberCoroutineScope()
-    var tabJumpJob by remember { mutableStateOf<Job?>(null) }
+    val tabJumpJobHolder = remember { MainPagerTabJumpJobHolder() }
     var pagerScrollEnabled by remember { mutableStateOf(true) }
     var showBottomBar by remember { mutableStateOf(true) }
     var navigationActive by remember { mutableStateOf(false) }
@@ -99,7 +101,7 @@ internal fun rememberMainPagerTabJumpController(
 
         selectedPageIndex = targetPageIndex
         navigationActive = true
-        tabJumpJob?.cancel()
+        tabJumpJobHolder.job?.cancel()
         val nextJob =
             coroutineScope.launch(start = CoroutineStart.LAZY) {
                 val runningJob = coroutineContext.job
@@ -111,18 +113,18 @@ internal fun rememberMainPagerTabJumpController(
                         durationMillis = 100 * distance + 100,
                     )
                 } finally {
-                    if (tabJumpJob == runningJob) {
+                    if (tabJumpJobHolder.job == runningJob) {
                         navigationActive = false
                         selectedPageIndex =
                             pagerState.selectedPage.coerceIn(
                                 0,
                                 tabs.lastIndex.coerceAtLeast(0),
                             )
-                        tabJumpJob = null
+                        tabJumpJobHolder.job = null
                     }
                 }
             }
-        tabJumpJob = nextJob
+        tabJumpJobHolder.job = nextJob
         nextJob.start()
     }
 
@@ -175,4 +177,8 @@ internal fun rememberMainPagerTabJumpController(
             onShowBottomBar = onShowBottomBar,
         )
     }
+}
+
+private class MainPagerTabJumpJobHolder {
+    var job: Job? = null
 }

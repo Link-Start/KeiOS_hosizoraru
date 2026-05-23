@@ -14,6 +14,7 @@ import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
 
 internal data class AboutPageChromeState(
     val selectedCategoryIndex: Int = 0,
+    val bottomBarVisible: Boolean = true,
     val searchExpanded: Boolean = false,
     val searchQuery: String = "",
     val expansionState: AboutPageSectionExpansionState = AboutPageSectionExpansionState(),
@@ -52,6 +53,16 @@ internal class AboutPageViewModel : ViewModel() {
     fun updateSelectedCategoryIndex(index: Int) {
         _chromeState.update { state ->
             state.copy(selectedCategoryIndex = index.coerceAtLeast(0))
+        }
+    }
+
+    fun updateBottomBarVisible(visible: Boolean) {
+        _chromeState.update { state ->
+            if (state.bottomBarVisible == visible) {
+                state
+            } else {
+                state.copy(bottomBarVisible = visible)
+            }
         }
     }
 

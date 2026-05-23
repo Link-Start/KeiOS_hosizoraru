@@ -154,8 +154,6 @@ private fun BaPoolPage(
             stringResource(R.string.ba_server_global),
             stringResource(R.string.ba_server_jp),
         )
-    var showServerPopup by remember { mutableStateOf(false) }
-    var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val serverIndex = chromeUiState.serverIndex
     val reloadSignal = chromeUiState.poolReloadSignal
     val hydrationReady = settingsUiState.loaded
@@ -283,8 +281,8 @@ private fun BaPoolPage(
                 backdrop = pageBackdrop,
                 serverOptions = serverOptions,
                 serverIndex = serverIndex,
-                showServerPopup = showServerPopup,
-                serverPopupAnchorBounds = serverPopupAnchorBounds,
+                showServerPopup = chromeUiState.showServerPopup,
+                serverPopupAnchorBounds = chromeUiState.serverPopupAnchorBounds,
                 showEndedPools = snapshot.showEndedPools,
                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
                 entries = poolUiState.entries,
@@ -292,12 +290,11 @@ private fun BaPoolPage(
                 error = poolUiState.error,
                 syncText = syncText,
                 syncTextColor = countdownBlue,
-                onServerPopupChange = { showServerPopup = it },
-                onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
+                onServerPopupChange = calendarPoolViewModel::updateServerPopupExpanded,
+                onServerPopupAnchorBoundsChange = calendarPoolViewModel::updateServerPopupAnchorBounds,
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
                     calendarPoolViewModel.selectServer(normalized)
-                    showServerPopup = false
                 },
                 onOpenPoolStudentGuide = { url ->
                     openBaPoolGuideLink(

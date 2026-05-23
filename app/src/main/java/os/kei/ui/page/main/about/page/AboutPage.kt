@@ -17,11 +17,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -127,9 +125,9 @@ fun AboutPage(
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    var showBottomBar by remember { mutableStateOf(true) }
+    val showBottomBar = chromeState.bottomBarVisible
     val farJumpAlpha = remember { Animatable(1f) }
-    var tabJumpJob by remember { mutableStateOf<Job?>(null) }
+    val tabJumpJobHolder = remember { AboutTabJumpJobHolder() }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val density = LocalDensity.current
     val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
@@ -150,7 +148,7 @@ fun AboutPage(
     }
 
     LaunchedEffect(pagerState.settledPage) {
-        bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
+        bottomBarVisibilityController.showNow(showBottomBar, viewModel::updateBottomBarVisible)
         if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
             viewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
@@ -222,7 +220,8 @@ fun AboutPage(
                         visible = currentShowBottomBar.value,
                         canScrollBackward = currentListState.canScrollBackward,
                         canScrollForward = currentListState.canScrollForward,
-                    ) { showBottomBar = it }
+                        onVisibleChange = viewModel::updateBottomBarVisible,
+                    )
                     return Offset.Zero
                 }
             }
@@ -237,7 +236,8 @@ fun AboutPage(
                     visible = currentShowBottomBar.value,
                     canScrollBackward = canScrollBackward,
                     canScrollForward = canScrollForward,
-                ) { showBottomBar = it }
+                    onVisibleChange = viewModel::updateBottomBarVisible,
+                )
             }
     }
     val selectAboutCategory =
@@ -247,6 +247,7 @@ fun AboutPage(
             transitionAnimationsEnabled,
             farJumpAlpha,
             scope,
+            viewModel,
         ) {
             { index: Int ->
                 val target = index.coerceIn(0, categories.lastIndex)
@@ -258,8 +259,8 @@ fun AboutPage(
                     }
                 if (target != stablePageIndex) {
                     viewModel.updateSelectedCategoryIndex(target)
-                    tabJumpJob?.cancel()
-                    tabJumpJob =
+                    tabJumpJobHolder.job?.cancel()
+                    tabJumpJobHolder.job =
                         scope.launch {
                             val distance = abs(target - stablePageIndex)
                             if (distance > 1) {
@@ -524,7 +525,10 @@ fun AboutPage(
         topBarColor = Color.Transparent,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
-            bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+            bottomBarVisibilityController.showNow(
+                visible = currentShowBottomBar.value,
+                onVisibleChange = viewModel::updateBottomBarVisible,
+            )
         },
         navigationIcon = {
             if (onBack != null) {
@@ -662,3 +666,7 @@ private fun aboutCardExpanded(
 }
 
 private fun aboutPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
+
+private class AboutTabJumpJobHolder {
+    var job: Job? = null
+}

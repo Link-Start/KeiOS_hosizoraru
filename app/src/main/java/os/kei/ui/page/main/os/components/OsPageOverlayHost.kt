@@ -121,6 +121,8 @@ internal fun OsPageOverlayHost(
         onExportAllActivityCards = onExportAllActivityCards,
         onImportAllActivityCards = onImportAllActivityCards,
         onDismissActivityVisibilityManager = { overlayState.onShowActivityVisibilityManagerChange(false) },
+        activityVisibilityQuery = overlayState.activityVisibilityQuery,
+        onActivityVisibilityQueryChange = overlayState.onActivityVisibilityQueryChange,
         onActivityCardVisibilityChange = { cardId, checked ->
             applyActivityCardVisibility(cardId, checked)
         },
@@ -135,6 +137,8 @@ internal fun OsPageOverlayHost(
         onExportAllShellCards = onExportAllShellCards,
         onImportAllShellCards = onImportAllShellCards,
         onDismissShellVisibilityManager = { overlayState.onShowShellCardVisibilityManagerChange(false) },
+        shellCardVisibilityQuery = overlayState.shellCardVisibilityQuery,
+        onShellCardVisibilityQueryChange = overlayState.onShellCardVisibilityQueryChange,
         onShellCommandCardVisibilityChange = { cardId, checked ->
             applyShellCommandCardVisibility(cardId, checked)
         },

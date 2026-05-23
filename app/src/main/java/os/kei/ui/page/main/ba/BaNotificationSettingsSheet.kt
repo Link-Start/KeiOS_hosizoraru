@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import androidx.compose.foundation.layout.Box
@@ -6,10 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -81,6 +80,10 @@ internal fun BaNotificationSettingsSheet(
     onPoolEndingNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarPoolChangeNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarPoolNotifyLeadHoursSelected: (Int) -> Unit,
+    leadDropdownExpanded: Boolean,
+    leadDropdownAnchorBounds: IntRect?,
+    onLeadDropdownExpandedChange: (Boolean) -> Unit,
+    onLeadDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onApNotifyThresholdTextChange: (String) -> Unit,
     onApNotifyThresholdDone: () -> Unit,
     onCafeApNotifyThresholdTextChange: (String) -> Unit,
@@ -90,12 +93,11 @@ internal fun BaNotificationSettingsSheet(
     onSaveRequest: () -> Unit,
 ) {
     val settingsAccent = Color(0xFF3B82F6)
-    var leadDropdownExpanded by remember { mutableStateOf(false) }
-    var leadDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    val dismissHandler = rememberUnsavedSheetDismissHandler(
-        hasUnsavedChanges = hasUnsavedChanges,
-        onDismissRequest = onDismissRequest
-    )
+    val dismissHandler =
+        rememberUnsavedSheetDismissHandler(
+            hasUnsavedChanges = hasUnsavedChanges,
+            onDismissRequest = onDismissRequest,
+        )
     SnapshotWindowBottomSheet(
         show = show,
         title = stringResource(R.string.ba_notification_settings_title),
@@ -137,10 +139,11 @@ internal fun BaNotificationSettingsSheet(
                 if (state.apNotifyEnabled) {
                     SheetControlRow(
                         label = stringResource(R.string.ba_settings_label_ap_threshold),
-                        summary = stringResource(
-                            R.string.ba_settings_summary_ap_threshold,
-                            BA_AP_MAX
-                        ),
+                        summary =
+                            stringResource(
+                                R.string.ba_settings_summary_ap_threshold,
+                                BA_AP_MAX,
+                            ),
                     ) {
                         AppLiquidSearchField(
                             modifier = Modifier.width(70.dp),
@@ -161,11 +164,12 @@ internal fun BaNotificationSettingsSheet(
                     BaApThresholdQuickSlider(
                         thresholdText = state.apNotifyThresholdText,
                         thresholdMax = apThresholdMax,
-                        contentDescription = stringResource(
-                            R.string.ba_settings_cd_ap_threshold_slider
-                        ),
+                        contentDescription =
+                            stringResource(
+                                R.string.ba_settings_cd_ap_threshold_slider,
+                            ),
                         activeColor = settingsAccent,
-                        onThresholdChange = onApNotifyThresholdTextChange
+                        onThresholdChange = onApNotifyThresholdTextChange,
                     )
                 }
                 SheetControlRow(
@@ -201,11 +205,12 @@ internal fun BaNotificationSettingsSheet(
                     BaApThresholdQuickSlider(
                         thresholdText = state.cafeApNotifyThresholdText,
                         thresholdMax = cafeApThresholdMax,
-                        contentDescription = stringResource(
-                            R.string.ba_settings_cd_cafe_ap_threshold_slider
-                        ),
+                        contentDescription =
+                            stringResource(
+                                R.string.ba_settings_cd_cafe_ap_threshold_slider,
+                            ),
                         activeColor = settingsAccent,
-                        onThresholdChange = onCafeApNotifyThresholdTextChange
+                        onThresholdChange = onCafeApNotifyThresholdTextChange,
                     )
                 }
             }
@@ -247,8 +252,8 @@ internal fun BaNotificationSettingsSheet(
                         selectedHours = state.calendarPoolNotifyLeadHours,
                         expanded = leadDropdownExpanded,
                         anchorBounds = leadDropdownAnchorBounds,
-                        onExpandedChange = { leadDropdownExpanded = it },
-                        onAnchorBoundsChange = { leadDropdownAnchorBounds = it },
+                        onExpandedChange = onLeadDropdownExpandedChange,
+                        onAnchorBoundsChange = onLeadDropdownAnchorBoundsChange,
                         onSelected = onCalendarPoolNotifyLeadHoursSelected,
                     )
                 }
@@ -311,14 +316,18 @@ internal fun BaNotificationSettingsSheet(
     UnsavedSheetDismissConfirmDialog(
         show = dismissHandler.showConfirmDialog,
         onKeepEditing = dismissHandler.keepEditing,
-        onDiscardChanges = dismissHandler.discardChanges
+        onDiscardChanges = dismissHandler.discardChanges,
     )
 }
 
 private fun normalizeBaApThresholdInput(input: String): String {
     val digits = input.filter { it.isDigit() }.take(3)
     if (digits.isBlank()) return ""
-    return digits.toIntOrNull()?.coerceIn(0, BA_AP_MAX)?.toString().orEmpty()
+    return digits
+        .toIntOrNull()
+        ?.coerceIn(0, BA_AP_MAX)
+        ?.toString()
+        .orEmpty()
 }
 
 @Composable
@@ -331,32 +340,36 @@ private fun BaApThresholdQuickSlider(
 ) {
     val maxValue = thresholdMax.coerceIn(0, BA_AP_MAX)
     val currentThreshold = thresholdText.toIntOrNull()?.coerceIn(0, maxValue) ?: 0
-    val sliderValue = if (maxValue > 0) {
-        currentThreshold.toFloat() / maxValue.toFloat()
-    } else {
-        0f
-    }
+    val sliderValue =
+        if (maxValue > 0) {
+            currentThreshold.toFloat() / maxValue.toFloat()
+        } else {
+            0f
+        }
     val keyPointValues = remember { listOf(0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f) }
     val sliderBackdrop = rememberLayerBackdrop()
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(46.dp)
-            .semantics { this.contentDescription = contentDescription }
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(46.dp)
+                .semantics { this.contentDescription = contentDescription },
     ) {
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(sliderBackdrop)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(sliderBackdrop),
         )
         LiquidKeyPointSlider(
             value = { sliderValue.coerceIn(0f, 1f) },
             onValueChange = { value ->
-                val nextThreshold = thresholdFromPercentPoint(
-                    value = value,
-                    maxValue = maxValue,
-                    points = keyPointValues
-                )
+                val nextThreshold =
+                    thresholdFromPercentPoint(
+                        value = value,
+                        maxValue = maxValue,
+                        points = keyPointValues,
+                    )
                 onThresholdChange(nextThreshold.toString())
             },
             valueRange = 0f..1f,
@@ -368,9 +381,10 @@ private fun BaApThresholdQuickSlider(
             snapThreshold = 0.12f,
             activeColor = activeColor,
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.34f),
-            modifier = Modifier
-                .matchParentSize()
-                .padding(horizontal = 4.dp, vertical = 7.dp)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .padding(horizontal = 4.dp, vertical = 7.dp),
         )
     }
 }
@@ -381,9 +395,10 @@ private fun thresholdFromPercentPoint(
     points: List<Float>,
 ): Int {
     if (maxValue <= 0) return 0
-    val point = points.minByOrNull { point ->
-        kotlin.math.abs(point - value.coerceIn(0f, 1f))
-    } ?: 0f
+    val point =
+        points.minByOrNull { point ->
+            kotlin.math.abs(point - value.coerceIn(0f, 1f))
+        } ?: 0f
     return (maxValue * point).roundToInt().coerceIn(0, maxValue)
 }
 

@@ -6,18 +6,15 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import os.kei.ui.page.main.host.pager.animateTabSwitch
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun rememberBaStudentGuideTopBarActionItems(
@@ -26,30 +23,29 @@ internal fun rememberBaStudentGuideTopBarActionItems(
     shareSourceContentDescription: String,
     refreshContentDescription: String,
     onShareSource: () -> Unit,
-    onRefresh: () -> Unit
-): List<LiquidActionItem> {
-    return remember(
+    onRefresh: () -> Unit,
+): List<LiquidActionItem> =
+    remember(
         shareIcon,
         refreshIcon,
         shareSourceContentDescription,
         refreshContentDescription,
         onShareSource,
-        onRefresh
+        onRefresh,
     ) {
         listOf(
             LiquidActionItem(
                 icon = shareIcon,
                 contentDescription = shareSourceContentDescription,
-                onClick = onShareSource
+                onClick = onShareSource,
             ),
             LiquidActionItem(
                 icon = refreshIcon,
                 contentDescription = refreshContentDescription,
-                onClick = onRefresh
-            )
+                onClick = onRefresh,
+            ),
         )
     }
-}
 
 @Composable
 internal fun rememberBaStudentGuideTabSelectCoordinator(
@@ -58,10 +54,10 @@ internal fun rememberBaStudentGuideTabSelectCoordinator(
     transitionAnimationsEnabled: Boolean,
     farJumpAlpha: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
     onShowBottomBarChange: (Boolean) -> Unit,
-    onSelectedBottomTabIndexChange: (Int) -> Unit
+    onSelectedBottomTabIndexChange: (Int) -> Unit,
 ): (Int) -> Unit {
     val pageScope = rememberCoroutineScope()
-    var tabJumpJob by remember { mutableStateOf<Job?>(null) }
+    val tabJumpJobHolder = remember { BaStudentGuideTabJumpJobHolder() }
 
     return remember(
         bottomTabs,
@@ -70,46 +66,55 @@ internal fun rememberBaStudentGuideTabSelectCoordinator(
         farJumpAlpha,
         onShowBottomBarChange,
         onSelectedBottomTabIndexChange,
-        pageScope
+        pageScope,
     ) {
         { index: Int ->
             if (bottomTabs.isEmpty()) return@remember
             val safeIndex = index.coerceIn(0, bottomTabs.lastIndex)
-            val fromIndex = if (pagerState.isScrollInProgress) {
-                pagerState.targetPage
-            } else {
-                pagerState.settledPage
-            }
+            val fromIndex =
+                if (pagerState.isScrollInProgress) {
+                    pagerState.targetPage
+                } else {
+                    pagerState.settledPage
+                }
             if (safeIndex == fromIndex && !pagerState.isScrollInProgress) return@remember
             onShowBottomBarChange(true)
             onSelectedBottomTabIndexChange(safeIndex)
-            tabJumpJob?.cancel()
-            tabJumpJob = pageScope.launch {
-                pagerState.animateTabSwitch(
-                    fromIndex = fromIndex,
-                    targetIndex = safeIndex,
-                    animationsEnabled = transitionAnimationsEnabled,
-                    onFarJumpBefore = {
-                        farJumpAlpha.snapTo(0.94f)
-                    },
-                    onFarJumpAfter = {
-                        farJumpAlpha.animateTo(
-                            targetValue = 1f,
-                            animationSpec = tween(
-                                durationMillis = resolvedMotionDuration(
-                                    AppMotionTokens.farJumpRestoreEmphasisMs,
-                                    transitionAnimationsEnabled
-                                ),
-                                easing = if (transitionAnimationsEnabled) {
-                                    FastOutSlowInEasing
-                                } else {
-                                    LinearEasing
-                                }
+            tabJumpJobHolder.job?.cancel()
+            tabJumpJobHolder.job =
+                pageScope.launch {
+                    pagerState.animateTabSwitch(
+                        fromIndex = fromIndex,
+                        targetIndex = safeIndex,
+                        animationsEnabled = transitionAnimationsEnabled,
+                        onFarJumpBefore = {
+                            farJumpAlpha.snapTo(0.94f)
+                        },
+                        onFarJumpAfter = {
+                            farJumpAlpha.animateTo(
+                                targetValue = 1f,
+                                animationSpec =
+                                    tween(
+                                        durationMillis =
+                                            resolvedMotionDuration(
+                                                AppMotionTokens.farJumpRestoreEmphasisMs,
+                                                transitionAnimationsEnabled,
+                                            ),
+                                        easing =
+                                            if (transitionAnimationsEnabled) {
+                                                FastOutSlowInEasing
+                                            } else {
+                                                LinearEasing
+                                            },
+                                    ),
                             )
-                        )
-                    }
-                )
-            }
+                        },
+                    )
+                }
         }
     }
+}
+
+private class BaStudentGuideTabJumpJobHolder {
+    var job: Job? = null
 }

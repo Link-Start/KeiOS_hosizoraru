@@ -3,11 +3,8 @@ package os.kei.ui.page.main.ba
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LongState
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
 import os.kei.ui.page.main.state.PageRouteState
 
@@ -53,6 +50,49 @@ internal data class BaPageRouteState(
     val consumedScrollToTopSignal: Int,
 ) : PageRouteState
 
+internal fun buildBaPageRouteState(
+    calendarUiState: BaCalendarUiState,
+    poolUiState: BaPoolUiState,
+    chromeUiState: BaOfficeChromeUiState,
+    syncUiState: BaOfficeSyncUiState,
+    serverUiState: BaOfficeServerUiState,
+    runtimeUiState: BaOfficeRuntimeUiState,
+    settingsDraftUiState: BaOfficeSettingsDraftUiState,
+    notificationDraftUiState: BaOfficeNotificationDraftUiState,
+): BaPageRouteState =
+    BaPageRouteState(
+        showSettingsSheet = chromeUiState.showSettingsSheet,
+        showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
+        showDebugSheet = chromeUiState.showDebugSheet,
+        popupState =
+            BaPagePopupState(
+                showOverviewServerPopup = chromeUiState.showOverviewServerPopup,
+                showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
+                overviewServerPopupAnchorBounds = chromeUiState.overviewServerPopupAnchorBounds,
+                cafeLevelPopupAnchorBounds = chromeUiState.cafeLevelPopupAnchorBounds,
+                showCalendarIntervalPopup = chromeUiState.showCalendarIntervalPopup,
+            ),
+        serverIndex = serverUiState.serverIndex,
+        baCalendarReloadSignal = syncUiState.calendarReloadSignal,
+        baPoolReloadSignal = syncUiState.poolReloadSignal,
+        calendarUiState = calendarUiState,
+        poolUiState = poolUiState,
+        showEndedPools = runtimeUiState.showEndedPools,
+        showEndedActivities = runtimeUiState.showEndedActivities,
+        showCalendarPoolImages = runtimeUiState.showCalendarPoolImages,
+        mediaAdaptiveRotationEnabled = runtimeUiState.mediaAdaptiveRotationEnabled,
+        mediaSaveCustomEnabled = runtimeUiState.mediaSaveCustomEnabled,
+        mediaSaveFixedTreeUri = runtimeUiState.mediaSaveFixedTreeUri,
+        idIndependentByServer = runtimeUiState.idIndependentByServer,
+        calendarRefreshIntervalHours = runtimeUiState.calendarRefreshIntervalHours,
+        calendarHydrationReady = syncUiState.calendarHydrationReady,
+        poolHydrationReady = syncUiState.poolHydrationReady,
+        settingsDraftState = settingsDraftUiState.draft,
+        notificationDraftState = notificationDraftUiState.draft,
+        debugUseRealCalendarPoolData = chromeUiState.debugUseRealCalendarPoolData,
+        consumedScrollToTopSignal = chromeUiState.consumedScrollToTopSignal,
+    )
+
 internal class BaPageUiController {
     private val uiNowMsState = mutableLongStateOf(System.currentTimeMillis())
     private val uiMinuteMsState = mutableLongStateOf(System.currentTimeMillis())
@@ -66,50 +106,6 @@ internal class BaPageUiController {
         set(value) {
             uiMinuteMsState.longValue = value
         }
-    var consumedScrollToTopSignal by mutableIntStateOf(0)
-
-    fun routeState(
-        calendarUiState: BaCalendarUiState,
-        poolUiState: BaPoolUiState,
-        chromeUiState: BaOfficeChromeUiState,
-        syncUiState: BaOfficeSyncUiState,
-        serverUiState: BaOfficeServerUiState,
-        runtimeUiState: BaOfficeRuntimeUiState,
-        settingsDraftUiState: BaOfficeSettingsDraftUiState,
-        notificationDraftUiState: BaOfficeNotificationDraftUiState,
-    ): BaPageRouteState =
-        BaPageRouteState(
-            showSettingsSheet = chromeUiState.showSettingsSheet,
-            showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
-            showDebugSheet = chromeUiState.showDebugSheet,
-            popupState =
-                BaPagePopupState(
-                    showOverviewServerPopup = chromeUiState.showOverviewServerPopup,
-                    showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
-                    overviewServerPopupAnchorBounds = chromeUiState.overviewServerPopupAnchorBounds,
-                    cafeLevelPopupAnchorBounds = chromeUiState.cafeLevelPopupAnchorBounds,
-                    showCalendarIntervalPopup = chromeUiState.showCalendarIntervalPopup,
-                ),
-            serverIndex = serverUiState.serverIndex,
-            baCalendarReloadSignal = syncUiState.calendarReloadSignal,
-            baPoolReloadSignal = syncUiState.poolReloadSignal,
-            calendarUiState = calendarUiState,
-            poolUiState = poolUiState,
-            showEndedPools = runtimeUiState.showEndedPools,
-            showEndedActivities = runtimeUiState.showEndedActivities,
-            showCalendarPoolImages = runtimeUiState.showCalendarPoolImages,
-            mediaAdaptiveRotationEnabled = runtimeUiState.mediaAdaptiveRotationEnabled,
-            mediaSaveCustomEnabled = runtimeUiState.mediaSaveCustomEnabled,
-            mediaSaveFixedTreeUri = runtimeUiState.mediaSaveFixedTreeUri,
-            idIndependentByServer = runtimeUiState.idIndependentByServer,
-            calendarRefreshIntervalHours = runtimeUiState.calendarRefreshIntervalHours,
-            calendarHydrationReady = syncUiState.calendarHydrationReady,
-            poolHydrationReady = syncUiState.poolHydrationReady,
-            settingsDraftState = settingsDraftUiState.draft,
-            notificationDraftState = notificationDraftUiState.draft,
-            debugUseRealCalendarPoolData = chromeUiState.debugUseRealCalendarPoolData,
-            consumedScrollToTopSignal = consumedScrollToTopSignal,
-        )
 
     fun clockState(): BaPageClockState =
         BaPageClockState(

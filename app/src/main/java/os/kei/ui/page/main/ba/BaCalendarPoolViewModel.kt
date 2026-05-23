@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba
 
 import android.app.Application
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -51,6 +52,8 @@ internal data class BaCalendarPoolChromeUiState(
     val serverIndexTouched: Boolean = false,
     val calendarReloadSignal: Int = 0,
     val poolReloadSignal: Int = 0,
+    val showServerPopup: Boolean = false,
+    val serverPopupAnchorBounds: IntRect? = null,
 )
 
 private data class BaCalendarRequestKey(
@@ -236,6 +239,7 @@ internal class BaCalendarPoolViewModel(
             state.copy(
                 serverIndex = normalizedIndex,
                 serverIndexTouched = true,
+                showServerPopup = false,
             )
         }
         _settingsUiState.update { state ->
@@ -257,6 +261,26 @@ internal class BaCalendarPoolViewModel(
     fun requestPoolReload() {
         _chromeUiState.update { state ->
             state.copy(poolReloadSignal = state.poolReloadSignal + 1)
+        }
+    }
+
+    fun updateServerPopupExpanded(expanded: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.showServerPopup == expanded) {
+                state
+            } else {
+                state.copy(showServerPopup = expanded)
+            }
+        }
+    }
+
+    fun updateServerPopupAnchorBounds(bounds: IntRect?) {
+        _chromeUiState.update { state ->
+            if (state.serverPopupAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(serverPopupAnchorBounds = bounds)
+            }
         }
     }
 }

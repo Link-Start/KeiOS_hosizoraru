@@ -23,9 +23,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -107,8 +105,6 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
             stringResource(R.string.ba_server_global),
             stringResource(R.string.ba_server_jp),
         )
-    var showServerPopup by remember { mutableStateOf(false) }
-    var serverPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val serverIndex = chromeUiState.serverIndex
     val reloadSignal = chromeUiState.calendarReloadSignal
     val hydrationReady = settingsUiState.loaded
@@ -231,8 +227,8 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
                 backdrop = pageBackdrop,
                 serverOptions = serverOptions,
                 serverIndex = serverIndex,
-                showServerPopup = showServerPopup,
-                serverPopupAnchorBounds = serverPopupAnchorBounds,
+                showServerPopup = chromeUiState.showServerPopup,
+                serverPopupAnchorBounds = chromeUiState.serverPopupAnchorBounds,
                 showEndedActivities = snapshot.showEndedActivities,
                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
                 entries = calendarUiState.entries,
@@ -240,12 +236,11 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
                 error = calendarUiState.error,
                 syncText = syncText,
                 syncTextColor = countdownBlue,
-                onServerPopupChange = { showServerPopup = it },
-                onServerPopupAnchorBoundsChange = { serverPopupAnchorBounds = it },
+                onServerPopupChange = calendarPoolViewModel::updateServerPopupExpanded,
+                onServerPopupAnchorBoundsChange = calendarPoolViewModel::updateServerPopupAnchorBounds,
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
                     calendarPoolViewModel.selectServer(normalized)
-                    showServerPopup = false
                 },
                 onOpenCalendarLink = { url ->
                     openBaExternalLink(context = context, url = url)

@@ -32,6 +32,11 @@ internal data class BaOfficeChromeUiState(
     val overviewServerPopupAnchorBounds: IntRect? = null,
     val cafeLevelPopupAnchorBounds: IntRect? = null,
     val showCalendarIntervalPopup: Boolean = false,
+    val settingsRefreshIntervalDropdownExpanded: Boolean = false,
+    val settingsRefreshIntervalDropdownAnchorBounds: IntRect? = null,
+    val notificationLeadDropdownExpanded: Boolean = false,
+    val notificationLeadDropdownAnchorBounds: IntRect? = null,
+    val consumedScrollToTopSignal: Int = 0,
     val debugUseRealCalendarPoolData: Boolean = true,
 )
 
@@ -147,7 +152,11 @@ internal class BaOfficeViewModel(
     fun hideSettingsSheet(currentDraft: BaPageSettingsDraftState) {
         _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(currentDraft)
         _chromeUiState.update { state ->
-            state.copy(showSettingsSheet = false)
+            state.copy(
+                showSettingsSheet = false,
+                settingsRefreshIntervalDropdownExpanded = false,
+                settingsRefreshIntervalDropdownAnchorBounds = null,
+            )
         }
     }
 
@@ -170,7 +179,11 @@ internal class BaOfficeViewModel(
             state.copy(draft = state.savedDraft)
         }
         _chromeUiState.update { state ->
-            state.copy(showNotificationSettingsSheet = false)
+            state.copy(
+                showNotificationSettingsSheet = false,
+                notificationLeadDropdownExpanded = false,
+                notificationLeadDropdownAnchorBounds = null,
+            )
         }
     }
 
@@ -234,6 +247,56 @@ internal class BaOfficeViewModel(
                 state
             } else {
                 state.copy(cafeLevelPopupAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun updateConsumedScrollToTopSignal(signal: Int) {
+        _chromeUiState.update { state ->
+            if (state.consumedScrollToTopSignal == signal) {
+                state
+            } else {
+                state.copy(consumedScrollToTopSignal = signal)
+            }
+        }
+    }
+
+    fun updateSettingsRefreshIntervalDropdownExpanded(expanded: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.settingsRefreshIntervalDropdownExpanded == expanded) {
+                state
+            } else {
+                state.copy(settingsRefreshIntervalDropdownExpanded = expanded)
+            }
+        }
+    }
+
+    fun updateSettingsRefreshIntervalDropdownAnchorBounds(bounds: IntRect?) {
+        _chromeUiState.update { state ->
+            if (state.settingsRefreshIntervalDropdownAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(settingsRefreshIntervalDropdownAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun updateNotificationLeadDropdownExpanded(expanded: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.notificationLeadDropdownExpanded == expanded) {
+                state
+            } else {
+                state.copy(notificationLeadDropdownExpanded = expanded)
+            }
+        }
+    }
+
+    fun updateNotificationLeadDropdownAnchorBounds(bounds: IntRect?) {
+        _chromeUiState.update { state ->
+            if (state.notificationLeadDropdownAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(notificationLeadDropdownAnchorBounds = bounds)
             }
         }
     }
@@ -563,6 +626,10 @@ private fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiState
         showOverviewServerPopup = false,
         showCafeLevelPopup = false,
         showCalendarIntervalPopup = false,
+        settingsRefreshIntervalDropdownExpanded = false,
+        settingsRefreshIntervalDropdownAnchorBounds = null,
+        notificationLeadDropdownExpanded = false,
+        notificationLeadDropdownAnchorBounds = null,
     )
 
 private fun Throwable.rethrowIfCancellation() {

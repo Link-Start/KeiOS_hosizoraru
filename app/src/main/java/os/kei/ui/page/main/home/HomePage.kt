@@ -20,11 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -73,9 +69,13 @@ fun HomePage(
     visibleBottomPages: Set<BottomPage>,
     visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
     showCacheFreshnessInCards: Boolean = false,
+    actionBarSelectedIndex: Int = 1,
+    showBottomPageEditor: Boolean = false,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
     onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
+    onActionBarSelectedIndexChange: (Int) -> Unit = {},
+    onBottomPageEditorVisibleChange: (Boolean) -> Unit = {},
     onShowBottomBar: () -> Unit = {},
     onOpenGitHubPage: () -> Unit = {},
     onOpenSettings: () -> Unit,
@@ -135,9 +135,6 @@ fun HomePage(
             runtimeNowMs = runtimeNowMs,
         )
 
-    var actionBarSelectedIndex by rememberSaveable { mutableIntStateOf(1) }
-    var showBottomPageEditor by rememberSaveable { mutableStateOf(false) }
-
     DisposableEffect(Unit) {
         onDispose { onActionBarInteractingChanged(false) }
     }
@@ -152,6 +149,8 @@ fun HomePage(
             editBottomPagesContentDescription,
             aboutContentDescription,
             settingsContentDescription,
+            onActionBarSelectedIndexChange,
+            onBottomPageEditorVisibleChange,
             onOpenAbout,
             onOpenSettings,
         ) {
@@ -160,15 +159,14 @@ fun HomePage(
                     icon = layersIcon,
                     contentDescription = editBottomPagesContentDescription,
                     onClick = {
-                        actionBarSelectedIndex = 0
-                        showBottomPageEditor = true
+                        onBottomPageEditorVisibleChange(true)
                     },
                 ),
                 LiquidActionItem(
                     icon = aboutIcon,
                     contentDescription = aboutContentDescription,
                     onClick = {
-                        actionBarSelectedIndex = 1
+                        onActionBarSelectedIndexChange(1)
                         onOpenAbout()
                     },
                 ),
@@ -176,7 +174,7 @@ fun HomePage(
                     icon = settingsIcon,
                     contentDescription = settingsContentDescription,
                     onClick = {
-                        actionBarSelectedIndex = 2
+                        onActionBarSelectedIndexChange(2)
                         onOpenSettings()
                     },
                 ),
@@ -279,7 +277,7 @@ fun HomePage(
                 cacheFreshnessToggleLabel = stringResource(R.string.home_sheet_show_cache_freshness),
                 cacheFreshnessToggleDesc = stringResource(R.string.home_sheet_show_cache_freshness_desc),
                 debugSectionTitle = stringResource(R.string.home_sheet_debug_title),
-                onDismissRequest = { showBottomPageEditor = false },
+                onDismissRequest = { onBottomPageEditorVisibleChange(false) },
                 onBottomPageVisibilityChange = onBottomPageVisibilityChange,
                 onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
                 onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,

@@ -36,6 +36,8 @@ internal fun OsPageOverlaySheets(
     onExportAllActivityCards: () -> Unit,
     onImportAllActivityCards: () -> Unit,
     onDismissActivityVisibilityManager: () -> Unit,
+    activityVisibilityQuery: String,
+    onActivityVisibilityQueryChange: (String) -> Unit,
     onActivityCardVisibilityChange: (String, Boolean) -> Unit,
     showShellCardVisibilityManager: Boolean,
     visibleShellCardsTitle: String,
@@ -46,6 +48,8 @@ internal fun OsPageOverlaySheets(
     onExportAllShellCards: () -> Unit,
     onImportAllShellCards: () -> Unit,
     onDismissShellVisibilityManager: () -> Unit,
+    shellCardVisibilityQuery: String,
+    onShellCardVisibilityQueryChange: (String) -> Unit,
     onShellCommandCardVisibilityChange: (String, Boolean) -> Unit,
     showShellCommandCardEditor: Boolean,
     editShellCommandCardTitle: String,
@@ -123,6 +127,8 @@ internal fun OsPageOverlaySheets(
         onExportAllCards = onExportAllActivityCards,
         onImportAllCards = onImportAllActivityCards,
         onDismissRequest = onDismissActivityVisibilityManager,
+        query = activityVisibilityQuery,
+        onQueryChange = onActivityVisibilityQueryChange,
         onCardVisibilityChange = onActivityCardVisibilityChange,
     )
     OsShellCommandVisibilityManagerSheet(
@@ -137,6 +143,8 @@ internal fun OsPageOverlaySheets(
         onExportAllCards = onExportAllShellCards,
         onImportAllCards = onImportAllShellCards,
         onDismissRequest = onDismissShellVisibilityManager,
+        query = shellCardVisibilityQuery,
+        onQueryChange = onShellCardVisibilityQueryChange,
         onCardVisibilityChange = onShellCommandCardVisibilityChange,
     )
     OsShellCommandCardEditorSheet(

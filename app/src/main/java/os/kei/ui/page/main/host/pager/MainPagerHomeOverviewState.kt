@@ -12,9 +12,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.feature.home.data.HomeOverviewRepository
 import os.kei.feature.home.model.HomeBaOverview
@@ -31,15 +34,27 @@ internal data class MainPagerHomeOverviewState(
     val homeBaOverview: HomeBaOverview,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
+    val actionBarSelectedIndex: Int,
+    val showBottomPageEditor: Boolean,
     val runtimeNowMs: Long,
     val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
     val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
+    val onActionBarSelectedIndexChange: (Int) -> Unit,
+    val onBottomPageEditorVisibleChange: (Boolean) -> Unit,
+)
+
+@Immutable
+internal data class MainPagerHomeChromeUiState(
+    val actionBarSelectedIndex: Int = 1,
+    val showBottomPageEditor: Boolean = false,
 )
 
 internal class MainPagerHomeOverviewViewModel(
     private val repository: HomeOverviewRepository,
 ) : ViewModel() {
     private val runtimeTicker = MainPagerHomeRuntimeTicker(viewModelScope)
+    private val _chromeUiState = MutableStateFlow(MainPagerHomeChromeUiState())
+    val chromeUiState: StateFlow<MainPagerHomeChromeUiState> = _chromeUiState.asStateFlow()
 
     val uiState: StateFlow<HomeOverviewSnapshot> =
         repository
@@ -67,6 +82,35 @@ internal class MainPagerHomeOverviewViewModel(
     fun setCacheFreshnessVisibleInCards(visible: Boolean) {
         viewModelScope.launch {
             repository.setCacheFreshnessVisibleInCards(visible)
+        }
+    }
+
+    fun setActionBarSelectedIndex(index: Int) {
+        _chromeUiState.update { state ->
+            if (state.actionBarSelectedIndex == index) {
+                state
+            } else {
+                state.copy(actionBarSelectedIndex = index)
+            }
+        }
+    }
+
+    fun setBottomPageEditorVisible(visible: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.showBottomPageEditor == visible) {
+                state
+            } else {
+                state.copy(showBottomPageEditor = visible)
+            }
+        }
+    }
+
+    fun openBottomPageEditor() {
+        _chromeUiState.update { state ->
+            state.copy(
+                actionBarSelectedIndex = 0,
+                showBottomPageEditor = true,
+            )
         }
     }
 
@@ -123,6 +167,7 @@ internal fun rememberMainPagerHomeOverviewState(
                 },
         )
     val uiState by homeOverviewViewModel.uiState.collectAsStateWithLifecycle()
+    val chromeUiState by homeOverviewViewModel.chromeUiState.collectAsStateWithLifecycle()
     val runtimeNowMs by homeOverviewViewModel.runtimeNowMs.collectAsStateWithLifecycle()
     LaunchedEffect(settingsReturnToken) {
         if (settingsReturnToken <= 0) return@LaunchedEffect
@@ -146,11 +191,30 @@ internal fun rememberMainPagerHomeOverviewState(
                 homeOverviewViewModel.setCacheFreshnessVisibleInCards(visible)
             }
         }
+    val onActionBarSelectedIndexChange =
+        remember(homeOverviewViewModel) {
+            { index: Int ->
+                homeOverviewViewModel.setActionBarSelectedIndex(index)
+            }
+        }
+    val onBottomPageEditorVisibleChange =
+        remember(homeOverviewViewModel) {
+            { visible: Boolean ->
+                if (visible) {
+                    homeOverviewViewModel.openBottomPageEditor()
+                } else {
+                    homeOverviewViewModel.setBottomPageEditorVisible(false)
+                }
+            }
+        }
     return remember(
         uiState,
+        chromeUiState,
         runtimeNowMs,
         onOverviewCardVisibilityChange,
         onCacheFreshnessVisibilityChange,
+        onActionBarSelectedIndexChange,
+        onBottomPageEditorVisibleChange,
     ) {
         MainPagerHomeOverviewState(
             homeMcpOverview = uiState.mcpOverview,
@@ -158,9 +222,13 @@ internal fun rememberMainPagerHomeOverviewState(
             homeBaOverview = uiState.baOverview,
             visibleOverviewCards = uiState.visibleOverviewCards,
             showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,
+            actionBarSelectedIndex = chromeUiState.actionBarSelectedIndex,
+            showBottomPageEditor = chromeUiState.showBottomPageEditor,
             runtimeNowMs = runtimeNowMs,
             onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
             onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
+            onActionBarSelectedIndexChange = onActionBarSelectedIndexChange,
+            onBottomPageEditorVisibleChange = onBottomPageEditorVisibleChange,
         )
     }
 }

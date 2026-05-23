@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import android.app.Activity
@@ -8,10 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -70,41 +68,46 @@ internal fun BaSettingsSheet(
     onShowEndedPoolsChange: (Boolean) -> Unit,
     onShowCalendarPoolImagesChange: (Boolean) -> Unit,
     onCalendarRefreshIntervalSelected: (Int) -> Unit,
+    refreshIntervalDropdownExpanded: Boolean,
+    refreshIntervalDropdownAnchorBounds: IntRect?,
+    onRefreshIntervalDropdownExpandedChange: (Boolean) -> Unit,
+    onRefreshIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     hasUnsavedChanges: Boolean,
     onDismissRequest: () -> Unit,
     onSaveRequest: () -> Unit,
 ) {
     val context = LocalContext.current
     val settingsAccent = Color(0xFF3B82F6)
-    var refreshIntervalDropdownExpanded by remember { mutableStateOf(false) }
-    var refreshIntervalDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    val pickMediaSaveFolderLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
-        val treeUri = result.data?.data ?: return@rememberLauncherForActivityResult
-        runCatching {
-            val persistableFlags = (result.data?.flags ?: 0) and
-                    (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            if (persistableFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0) {
-                context.contentResolver.takePersistableUriPermission(
-                    treeUri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+    val pickMediaSaveFolderLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+            val treeUri = result.data?.data ?: return@rememberLauncherForActivityResult
+            runCatching {
+                val persistableFlags =
+                    (result.data?.flags ?: 0) and
+                        (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                if (persistableFlags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0) {
+                    context.contentResolver.takePersistableUriPermission(
+                        treeUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                }
+                if (persistableFlags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION != 0) {
+                    context.contentResolver.takePersistableUriPermission(
+                        treeUri,
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                    )
+                }
             }
-            if (persistableFlags and Intent.FLAG_GRANT_WRITE_URI_PERMISSION != 0) {
-                context.contentResolver.takePersistableUriPermission(
-                    treeUri,
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
-            }
+            onMediaSaveFixedTreeUriChange(treeUri.toString())
         }
-        onMediaSaveFixedTreeUriChange(treeUri.toString())
-    }
-    val dismissHandler = rememberUnsavedSheetDismissHandler(
-        hasUnsavedChanges = hasUnsavedChanges,
-        onDismissRequest = onDismissRequest
-    )
+    val dismissHandler =
+        rememberUnsavedSheetDismissHandler(
+            hasUnsavedChanges = hasUnsavedChanges,
+            onDismissRequest = onDismissRequest,
+        )
 
     SnapshotWindowBottomSheet(
         show = show,
@@ -147,8 +150,8 @@ internal fun BaSettingsSheet(
                         selectedHours = state.calendarRefreshIntervalHours,
                         expanded = refreshIntervalDropdownExpanded,
                         anchorBounds = refreshIntervalDropdownAnchorBounds,
-                        onExpandedChange = { refreshIntervalDropdownExpanded = it },
-                        onAnchorBoundsChange = { refreshIntervalDropdownAnchorBounds = it },
+                        onExpandedChange = onRefreshIntervalDropdownExpandedChange,
+                        onAnchorBoundsChange = onRefreshIntervalDropdownAnchorBoundsChange,
                         onSelected = onCalendarRefreshIntervalSelected,
                     )
                 }
@@ -181,11 +184,12 @@ internal fun BaSettingsSheet(
                 if (state.mediaSaveCustomEnabled) {
                     SheetFieldBlock(
                         title = stringResource(R.string.ba_settings_label_media_save_fixed_uri),
-                        summary = if (state.mediaSaveFixedTreeUri.isBlank()) {
-                            stringResource(R.string.ba_settings_summary_media_save_fixed_uri_empty)
-                        } else {
-                            stringResource(R.string.ba_settings_summary_media_save_fixed_uri_ready)
-                        },
+                        summary =
+                            if (state.mediaSaveFixedTreeUri.isBlank()) {
+                                stringResource(R.string.ba_settings_summary_media_save_fixed_uri_empty)
+                            } else {
+                                stringResource(R.string.ba_settings_summary_media_save_fixed_uri_ready)
+                            },
                         trailing = {
                             AppLiquidTextButton(
                                 backdrop = backdrop,
@@ -193,25 +197,27 @@ internal fun BaSettingsSheet(
                                 textColor = Color(0xFF3B82F6),
                                 text = stringResource(R.string.ba_settings_action_pick_media_save_location),
                                 onClick = {
-                                    val currentTreeUri = state.mediaSaveFixedTreeUri
-                                        .takeIf { it.isNotBlank() }
-                                        ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
-                                    val pickerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-                                        addFlags(
-                                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                                                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-                                        )
-                                        putExtra(
-                                            DocumentsContract.EXTRA_INITIAL_URI,
-                                            currentTreeUri
-                                                ?: "content://com.android.externalstorage.documents/tree/primary%3ADownload".toUri()
-                                        )
-                                    }
+                                    val currentTreeUri =
+                                        state.mediaSaveFixedTreeUri
+                                            .takeIf { it.isNotBlank() }
+                                            ?.let { raw -> runCatching { raw.toUri() }.getOrNull() }
+                                    val pickerIntent =
+                                        Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                                            addFlags(
+                                                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                                                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
+                                            )
+                                            putExtra(
+                                                DocumentsContract.EXTRA_INITIAL_URI,
+                                                currentTreeUri
+                                                    ?: "content://com.android.externalstorage.documents/tree/primary%3ADownload".toUri(),
+                                            )
+                                        }
                                     pickMediaSaveFolderLauncher.launch(pickerIntent)
-                                }
+                                },
                             )
-                        }
+                        },
                     ) {
                         AppLiquidSearchField(
                             modifier = Modifier.fillMaxWidth(),
@@ -265,7 +271,7 @@ internal fun BaSettingsSheet(
     UnsavedSheetDismissConfirmDialog(
         show = dismissHandler.showConfirmDialog,
         onKeepEditing = dismissHandler.keepEditing,
-        onDiscardChanges = dismissHandler.discardChanges
+        onDiscardChanges = dismissHandler.discardChanges,
     )
 }
 

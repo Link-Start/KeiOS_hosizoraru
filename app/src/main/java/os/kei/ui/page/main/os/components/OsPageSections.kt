@@ -10,10 +10,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -137,6 +134,8 @@ internal fun OsActivityVisibilityManagerSheet(
     onExportAllCards: () -> Unit,
     onImportAllCards: () -> Unit,
     onDismissRequest: () -> Unit,
+    query: String,
+    onQueryChange: (String) -> Unit,
     onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     SnapshotWindowBottomSheet(
@@ -156,7 +155,6 @@ internal fun OsActivityVisibilityManagerSheet(
         SheetContentColumn(
             verticalSpacing = 10.dp,
         ) {
-            var query by remember(show) { mutableStateOf("") }
             val activityVisibilityItems =
                 remember(cards, defaultCardTitle) {
                     cards.map { card ->
@@ -187,7 +185,7 @@ internal fun OsActivityVisibilityManagerSheet(
             SheetSectionCard(verticalSpacing = 8.dp) {
                 AppLiquidSearchField(
                     value = query,
-                    onValueChange = { query = it },
+                    onValueChange = onQueryChange,
                     label = stringResource(R.string.os_visibility_search_activity_label),
                     backdrop = sheetBackdrop,
                     modifier = Modifier.fillMaxWidth(),

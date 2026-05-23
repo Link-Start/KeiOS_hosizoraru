@@ -107,7 +107,7 @@ fun BAPage(
     val calendarUiState = calendarPoolRouteState.calendarUiState
     val poolUiState = calendarPoolRouteState.poolUiState
     val baRouteState =
-        ui.routeState(
+        buildBaPageRouteState(
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
             chromeUiState = officeChromeUiState,
@@ -311,8 +311,8 @@ fun BAPage(
         scrollBehavior = scrollBehavior,
         scrollToTopSignal = runtime.scrollToTopSignal,
         isPageActive = runtime.contentReady && runtime.isDataActive,
-        consumedScrollToTopSignal = ui.consumedScrollToTopSignal,
-        onConsumedScrollToTopSignalChange = { ui.consumedScrollToTopSignal = it },
+        consumedScrollToTopSignal = baRouteState.consumedScrollToTopSignal,
+        onConsumedScrollToTopSignalChange = officeViewModel::updateConsumedScrollToTopSignal,
         onDisposeActionBarInteraction = { onActionBarInteractingChanged(false) },
         office = office,
         runtimePersistenceCoordinator = runtimePersistenceCoordinator,
@@ -476,6 +476,12 @@ fun BAPage(
                     calendarLastSyncMs = baRouteState.calendarUiState.lastSyncMs,
                 )
             },
+            refreshIntervalDropdownExpanded = officeChromeUiState.settingsRefreshIntervalDropdownExpanded,
+            refreshIntervalDropdownAnchorBounds = officeChromeUiState.settingsRefreshIntervalDropdownAnchorBounds,
+            onRefreshIntervalDropdownExpandedChange =
+                officeViewModel::updateSettingsRefreshIntervalDropdownExpanded,
+            onRefreshIntervalDropdownAnchorBoundsChange =
+                officeViewModel::updateSettingsRefreshIntervalDropdownAnchorBounds,
             hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,
             onDismissRequest = ::closeSettingsSheet,
             onSaveRequest = ::saveSettings,
@@ -516,6 +522,10 @@ fun BAPage(
             onCalendarPoolNotifyLeadHoursSelected = { hours ->
                 officeViewModel.updateNotificationDraft { draft -> draft.copy(calendarPoolNotifyLeadHours = hours) }
             },
+            leadDropdownExpanded = officeChromeUiState.notificationLeadDropdownExpanded,
+            leadDropdownAnchorBounds = officeChromeUiState.notificationLeadDropdownAnchorBounds,
+            onLeadDropdownExpandedChange = officeViewModel::updateNotificationLeadDropdownExpanded,
+            onLeadDropdownAnchorBoundsChange = officeViewModel::updateNotificationLeadDropdownAnchorBounds,
             onApNotifyThresholdTextChange = { text ->
                 officeViewModel.updateNotificationDraft { draft -> draft.copy(apNotifyThresholdText = text) }
             },

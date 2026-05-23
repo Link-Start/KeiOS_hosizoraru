@@ -6,13 +6,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
@@ -85,6 +82,7 @@ fun OsPage(
     val persistentState = pageUiState.persistentState
     val runtimeState = pageUiState.runtimeState
     val activitySuggestionState = pageUiState.activitySuggestionState
+    val activitySuggestionChromeState = pageUiState.activitySuggestionChromeState
     val chromeState = pageUiState.chromeState
     val queryInput = pageUiState.queryInput
     val queryApplied = pageUiState.queryApplied
@@ -105,7 +103,6 @@ fun OsPage(
     val shellCommandCards = persistentState.shellCommandCards
     val activityCardExpanded = cardExpansionState.activityCards
     val shellCommandCardExpanded = cardExpansionState.shellCommandCards
-    var overlaySearchSuppressed by remember { mutableStateOf(false) }
     val surfaceColor = uiContext.surfaceColor
     val backdrops = uiContext.backdrops
     val topBarMaterialBackdrop = uiContext.topBarMaterialBackdrop
@@ -115,16 +112,10 @@ fun OsPage(
             overlayState.showShellCardVisibilityManager ||
             overlayState.showShellCommandCardEditor ||
             overlayState.showActivityShortcutEditor ||
-            overlayState.showActivitySuggestionSheet ||
+            activitySuggestionChromeState.showSheet ||
             overlayState.pendingCardImportPreview != null
     LaunchedEffect(overlaySheetVisible) {
-        if (overlaySheetVisible) {
-            overlaySearchSuppressed = true
-            osPageViewModel.updateSearchExpanded(false)
-        } else {
-            delay(360)
-            overlaySearchSuppressed = false
-        }
+        osPageViewModel.updateOverlaySheetVisible(overlaySheetVisible)
     }
     DisposableEffect(Unit) {
         onDispose {
@@ -220,7 +211,7 @@ fun OsPage(
         onActivityShortcutCardSaved = {
             context.showToast(R.string.os_google_system_service_toast_saved)
             overlayState.onShowActivityShortcutEditorChange(false)
-            overlayState.onShowActivitySuggestionSheetChange(false)
+            osPageViewModel.dismissActivitySuggestionSheet()
             overlayState.onShowActivityCardDeleteConfirmChange(false)
             overlayState.onEditingActivityShortcutBuiltInChange(false)
         },
@@ -228,7 +219,7 @@ fun OsPage(
             osPageViewModel.removeActivityCardExpansion(cardId)
             overlayState.onEditingActivityShortcutCardIdChange(null)
             overlayState.onShowActivityShortcutEditorChange(false)
-            overlayState.onShowActivitySuggestionSheetChange(false)
+            osPageViewModel.dismissActivitySuggestionSheet()
             overlayState.onEditingActivityShortcutBuiltInChange(false)
             context.showToast(textBundle.activityCardDeletedToast)
         },
@@ -351,8 +342,8 @@ fun OsPage(
         ensureLoad = { section -> actionState.ensureLoad(section, false) },
     )
     BindOsActivitySuggestionLoadEffect(
-        showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
-        googleSystemServiceSuggestionTarget = overlayState.googleSystemServiceSuggestionTarget,
+        showActivitySuggestionSheet = activitySuggestionChromeState.showSheet,
+        googleSystemServiceSuggestionTarget = activitySuggestionChromeState.target,
         activityShortcutDraftPackageName = overlayState.activityShortcutDraft.packageName,
         context = context,
         requestActivitySuggestions = osPageViewModel::requestActivitySuggestions,
@@ -360,8 +351,8 @@ fun OsPage(
     BindOsActivityShortcutIconPreloadEffect(
         active = runtime.hasActivated,
         activityShortcutCards = activityShortcutCards,
-        showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
-        googleSystemServiceSuggestionTarget = overlayState.googleSystemServiceSuggestionTarget,
+        showActivitySuggestionSheet = activitySuggestionChromeState.showSheet,
+        googleSystemServiceSuggestionTarget = activitySuggestionChromeState.target,
         activityShortcutDraftPackageName = overlayState.activityShortcutDraft.packageName,
         packageSuggestions = activitySuggestionState.packageSuggestions,
         classSuggestions = activitySuggestionState.classSuggestions,
@@ -460,6 +451,7 @@ fun OsPage(
                 packageIconBitmaps = activityIconState.packageBitmaps,
                 shellCommandCards = shellCommandCards,
                 activitySuggestionState = activitySuggestionState,
+                activitySuggestionChromeState = activitySuggestionChromeState,
                 actionState = actionState,
                 overlayTransferActions = overlayTransferActions,
                 cardTransferState = cardTransferState,
@@ -537,19 +529,19 @@ fun OsPage(
                 onRefreshAll = mainListActions.onRefreshAll,
                 contentBottomPadding = runtime.contentBottomPadding,
                 showFloatingAddButton =
-                    !overlayState.showActivitySuggestionSheet &&
+                    !activitySuggestionChromeState.showSheet &&
                         !overlayState.showShellCardVisibilityManager,
                 onOpenAddActivityShortcutCard = mainListActions.onOpenAddActivityShortcutCard,
                 bottomBarVisible = runtime.bottomBarVisible,
-                searchExpanded = enableSearchBar && chromeState.searchExpanded && !overlaySearchSuppressed,
+                searchExpanded = enableSearchBar && chromeState.searchExpanded && !chromeState.overlaySearchSuppressed,
                 queryInput = queryInput,
                 onQueryInputChange = { value ->
-                    if (!overlaySearchSuppressed) {
+                    if (!chromeState.overlaySearchSuppressed) {
                         osPageViewModel.updateQueryInput(value)
                     }
                 },
                 onSearchExpandedChange = { expanded ->
-                    osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !overlaySearchSuppressed)
+                    osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !chromeState.overlaySearchSuppressed)
                 },
                 searchLabel = textBundle.searchLabel,
                 floatingDockSide = runtime.floatingDockSide,

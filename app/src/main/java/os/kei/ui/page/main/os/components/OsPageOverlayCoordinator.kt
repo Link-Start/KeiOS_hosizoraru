@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.os.OsActivitySuggestionChromeState
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.OsSectionCard
@@ -31,6 +32,7 @@ internal fun OsPageOverlayCoordinator(
     packageIconBitmaps: Map<String, Bitmap>,
     shellCommandCards: List<OsShellCommandCard>,
     activitySuggestionState: OsActivitySuggestionUiState,
+    activitySuggestionChromeState: OsActivitySuggestionChromeState,
     actionState: OsPageActionState,
     overlayTransferActions: OsPageOverlayTransferActions,
     cardTransferState: OsPageCardTransferState,
@@ -69,6 +71,7 @@ internal fun OsPageOverlayCoordinator(
         editActivityCardTitle = textBundle.editActivityCardTitle,
         noMatchedResultsText = textBundle.noMatchedResultsText,
         activitySuggestionState = activitySuggestionState,
+        activitySuggestionChromeState = activitySuggestionChromeState,
         googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
         googleSystemServiceDefaultTitle = textBundle.googleSystemServiceDefaultTitle,
         googleSystemServiceDefaultIntentFlags = textBundle.googleSystemServiceDefaultIntentFlags,

@@ -11,6 +11,7 @@ internal data class OsPageQueryState(
 @Immutable
 internal data class OsPageChromeState(
     val searchExpanded: Boolean = false,
+    val overlaySearchSuppressed: Boolean = false,
 )
 
 @Immutable
@@ -27,6 +28,7 @@ internal data class OsPageUiState(
     val persistentState: OsPagePersistentState = OsPagePersistentState(),
     val runtimeState: OsPageRuntimeState = OsPageRuntimeState(),
     val activitySuggestionState: OsActivitySuggestionUiState = OsActivitySuggestionUiState(),
+    val activitySuggestionChromeState: OsActivitySuggestionChromeState = OsActivitySuggestionChromeState(),
     val chromeState: OsPageChromeState = OsPageChromeState(),
     val queryInput: String = "",
     val queryApplied: String = "",

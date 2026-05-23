@@ -3,6 +3,7 @@ package os.kei.ui.page.main.os
 import android.graphics.Bitmap
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
+import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 
 internal data class OsPageRuntimeState(
     val sectionStates: Map<SectionKind, SectionState> = defaultOsSectionStates(),
@@ -20,6 +21,13 @@ internal data class OsActivitySuggestionUiState(
     val packageSuggestionsLoading: Boolean = false,
     val classSuggestions: List<ShortcutActivityClassOption> = emptyList(),
     val classSuggestionsLoading: Boolean = false,
+)
+
+internal data class OsActivitySuggestionChromeState(
+    val showSheet: Boolean = false,
+    val target: ShortcutSuggestionField = ShortcutSuggestionField.IntentAction,
+    val packageQuery: String = "",
+    val classQuery: String = "",
 )
 
 internal data class OsActivityShortcutIconUiState(

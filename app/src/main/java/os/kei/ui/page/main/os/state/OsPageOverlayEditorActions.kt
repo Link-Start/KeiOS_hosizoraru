@@ -41,6 +41,7 @@ internal fun rememberOsPageOverlayEditorActions(
     context: Context,
     osPageViewModel: OsPageViewModel,
     overlayState: OsPageOverlayState,
+    activitySuggestionTarget: ShortcutSuggestionField,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     googleSystemServiceDefaultIntentFlags: String,
     shellCardCommandRequiredToast: String,
@@ -49,6 +50,7 @@ internal fun rememberOsPageOverlayEditorActions(
         context,
         osPageViewModel,
         overlayState,
+        activitySuggestionTarget,
         googleSystemServiceDefaults,
         googleSystemServiceDefaultIntentFlags,
         shellCardCommandRequiredToast,
@@ -90,21 +92,7 @@ internal fun rememberOsPageOverlayEditorActions(
                 )
             },
             onOpenActivitySuggestionSheet = { target ->
-                overlayState.onGoogleSystemServiceSuggestionTargetChange(target)
-                when (target) {
-                    ShortcutSuggestionField.PackageName -> {
-                        overlayState.onGoogleSystemServicePackageSuggestionQueryChange("")
-                    }
-
-                    ShortcutSuggestionField.ClassName -> {
-                        overlayState.onGoogleSystemServiceClassSuggestionQueryChange("")
-                    }
-
-                    else -> {
-                        Unit
-                    }
-                }
-                overlayState.onShowActivitySuggestionSheetChange(true)
+                osPageViewModel.openActivitySuggestionSheet(target)
             },
             onDeleteActivityCard = {
                 val targetId = overlayState.editingActivityShortcutCardId.orEmpty().trim()
@@ -117,7 +105,7 @@ internal fun rememberOsPageOverlayEditorActions(
             },
             onDismissActivityEditor = {
                 overlayState.onShowActivityShortcutEditorChange(false)
-                overlayState.onShowActivitySuggestionSheetChange(false)
+                osPageViewModel.dismissActivitySuggestionSheet()
                 overlayState.onShowActivityCardDeleteConfirmChange(false)
                 overlayState.onEditingActivityShortcutBuiltInChange(false)
             },
@@ -131,9 +119,8 @@ internal fun rememberOsPageOverlayEditorActions(
                 overlayState.onActivityShortcutDraftChange(
                     createDefaultActivityShortcutDraft(googleSystemServiceDefaults),
                 )
-                overlayState.onGoogleSystemServicePackageSuggestionQueryChange("")
-                overlayState.onGoogleSystemServiceClassSuggestionQueryChange("")
-                overlayState.onShowActivitySuggestionSheetChange(false)
+                osPageViewModel.resetActivitySuggestionQueries()
+                osPageViewModel.dismissActivitySuggestionSheet()
                 overlayState.onShowActivityCardDeleteConfirmChange(false)
             },
             onSaveActivityEditor = {
@@ -148,12 +135,12 @@ internal fun rememberOsPageOverlayEditorActions(
                 overlayState.onActivityShortcutDraftChange(
                     applyGoogleSystemServiceSuggestion(
                         draft = overlayState.activityShortcutDraft,
-                        target = overlayState.googleSystemServiceSuggestionTarget,
+                        target = activitySuggestionTarget,
                         item = suggestion,
                         defaultIntentFlags = googleSystemServiceDefaultIntentFlags,
                     ),
                 )
-                overlayState.onShowActivitySuggestionSheetChange(false)
+                osPageViewModel.dismissActivitySuggestionSheet()
             },
             onApplyExplicitActionRecommendation = {
                 overlayState.onActivityShortcutDraftChange(

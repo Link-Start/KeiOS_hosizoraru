@@ -10,15 +10,12 @@ import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.createDefaultShellCommandCardDraft
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
-import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
-import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
-import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.shortcut.createDefaultActivityShortcutDraft
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 
 internal enum class OsCardImportTarget {
     Activity,
-    Shell
+    Shell,
 }
 
 internal data class OsPageOverlayState(
@@ -26,28 +23,12 @@ internal data class OsPageOverlayState(
     val onActivityShortcutDraftChange: (OsGoogleSystemServiceConfig) -> Unit,
     val showActivityShortcutEditor: Boolean,
     val onShowActivityShortcutEditorChange: (Boolean) -> Unit,
-    val showActivitySuggestionSheet: Boolean,
-    val onShowActivitySuggestionSheetChange: (Boolean) -> Unit,
     val activityCardEditMode: OsActivityCardEditMode,
     val onActivityCardEditModeChange: (OsActivityCardEditMode) -> Unit,
     val editingActivityShortcutCardId: String?,
     val onEditingActivityShortcutCardIdChange: (String?) -> Unit,
     val editingActivityShortcutBuiltIn: Boolean,
     val onEditingActivityShortcutBuiltInChange: (Boolean) -> Unit,
-    val googleSystemServiceSuggestionTarget: ShortcutSuggestionField,
-    val onGoogleSystemServiceSuggestionTargetChange: (ShortcutSuggestionField) -> Unit,
-    val googleSystemServicePackageSuggestions: List<ShortcutInstalledAppOption>,
-    val onGoogleSystemServicePackageSuggestionsChange: (List<ShortcutInstalledAppOption>) -> Unit,
-    val googleSystemServicePackageSuggestionsLoading: Boolean,
-    val onGoogleSystemServicePackageSuggestionsLoadingChange: (Boolean) -> Unit,
-    val googleSystemServicePackageSuggestionQuery: String,
-    val onGoogleSystemServicePackageSuggestionQueryChange: (String) -> Unit,
-    val googleSystemServiceClassSuggestions: List<ShortcutActivityClassOption>,
-    val onGoogleSystemServiceClassSuggestionsChange: (List<ShortcutActivityClassOption>) -> Unit,
-    val googleSystemServiceClassSuggestionsLoading: Boolean,
-    val onGoogleSystemServiceClassSuggestionsLoadingChange: (Boolean) -> Unit,
-    val googleSystemServiceClassSuggestionQuery: String,
-    val onGoogleSystemServiceClassSuggestionQueryChange: (String) -> Unit,
     val showCardManager: Boolean,
     val onShowCardManagerChange: (Boolean) -> Unit,
     val showActivityVisibilityManager: Boolean,
@@ -75,30 +56,14 @@ internal data class OsPageOverlayState(
 )
 
 @Composable
-internal fun rememberOsPageOverlayState(
-    googleSystemServiceDefaults: OsGoogleSystemServiceConfig
-): OsPageOverlayState {
+internal fun rememberOsPageOverlayState(googleSystemServiceDefaults: OsGoogleSystemServiceConfig): OsPageOverlayState {
     var activityShortcutDraft by remember {
         mutableStateOf(createDefaultActivityShortcutDraft(googleSystemServiceDefaults))
     }
     var showActivityShortcutEditor by rememberSaveable { mutableStateOf(false) }
-    var showActivitySuggestionSheet by rememberSaveable { mutableStateOf(false) }
     var activityCardEditMode by rememberSaveable { mutableStateOf(OsActivityCardEditMode.Edit) }
     var editingActivityShortcutCardId by rememberSaveable { mutableStateOf<String?>(null) }
     var editingActivityShortcutBuiltIn by rememberSaveable { mutableStateOf(false) }
-    var googleSystemServiceSuggestionTarget by remember {
-        mutableStateOf(ShortcutSuggestionField.IntentAction)
-    }
-    var googleSystemServicePackageSuggestions by remember {
-        mutableStateOf<List<ShortcutInstalledAppOption>>(emptyList())
-    }
-    var googleSystemServicePackageSuggestionsLoading by remember { mutableStateOf(false) }
-    var googleSystemServicePackageSuggestionQuery by rememberSaveable { mutableStateOf("") }
-    var googleSystemServiceClassSuggestions by remember {
-        mutableStateOf<List<ShortcutActivityClassOption>>(emptyList())
-    }
-    var googleSystemServiceClassSuggestionsLoading by remember { mutableStateOf(false) }
-    var googleSystemServiceClassSuggestionQuery by rememberSaveable { mutableStateOf("") }
     var showCardManager by rememberSaveable { mutableStateOf(false) }
     var showActivityVisibilityManager by rememberSaveable { mutableStateOf(false) }
     var showShellCardVisibilityManager by rememberSaveable { mutableStateOf(false) }
@@ -115,17 +80,9 @@ internal fun rememberOsPageOverlayState(
     return remember(
         activityShortcutDraft,
         showActivityShortcutEditor,
-        showActivitySuggestionSheet,
         activityCardEditMode,
         editingActivityShortcutCardId,
         editingActivityShortcutBuiltIn,
-        googleSystemServiceSuggestionTarget,
-        googleSystemServicePackageSuggestions,
-        googleSystemServicePackageSuggestionsLoading,
-        googleSystemServicePackageSuggestionQuery,
-        googleSystemServiceClassSuggestions,
-        googleSystemServiceClassSuggestionsLoading,
-        googleSystemServiceClassSuggestionQuery,
         showCardManager,
         showActivityVisibilityManager,
         showShellCardVisibilityManager,
@@ -144,36 +101,12 @@ internal fun rememberOsPageOverlayState(
             onActivityShortcutDraftChange = { activityShortcutDraft = it },
             showActivityShortcutEditor = showActivityShortcutEditor,
             onShowActivityShortcutEditorChange = { showActivityShortcutEditor = it },
-            showActivitySuggestionSheet = showActivitySuggestionSheet,
-            onShowActivitySuggestionSheetChange = { showActivitySuggestionSheet = it },
             activityCardEditMode = activityCardEditMode,
             onActivityCardEditModeChange = { activityCardEditMode = it },
             editingActivityShortcutCardId = editingActivityShortcutCardId,
             onEditingActivityShortcutCardIdChange = { editingActivityShortcutCardId = it },
             editingActivityShortcutBuiltIn = editingActivityShortcutBuiltIn,
             onEditingActivityShortcutBuiltInChange = { editingActivityShortcutBuiltIn = it },
-            googleSystemServiceSuggestionTarget = googleSystemServiceSuggestionTarget,
-            onGoogleSystemServiceSuggestionTargetChange = { googleSystemServiceSuggestionTarget = it },
-            googleSystemServicePackageSuggestions = googleSystemServicePackageSuggestions,
-            onGoogleSystemServicePackageSuggestionsChange = { googleSystemServicePackageSuggestions = it },
-            googleSystemServicePackageSuggestionsLoading = googleSystemServicePackageSuggestionsLoading,
-            onGoogleSystemServicePackageSuggestionsLoadingChange = {
-                googleSystemServicePackageSuggestionsLoading = it
-            },
-            googleSystemServicePackageSuggestionQuery = googleSystemServicePackageSuggestionQuery,
-            onGoogleSystemServicePackageSuggestionQueryChange = {
-                googleSystemServicePackageSuggestionQuery = it
-            },
-            googleSystemServiceClassSuggestions = googleSystemServiceClassSuggestions,
-            onGoogleSystemServiceClassSuggestionsChange = { googleSystemServiceClassSuggestions = it },
-            googleSystemServiceClassSuggestionsLoading = googleSystemServiceClassSuggestionsLoading,
-            onGoogleSystemServiceClassSuggestionsLoadingChange = {
-                googleSystemServiceClassSuggestionsLoading = it
-            },
-            googleSystemServiceClassSuggestionQuery = googleSystemServiceClassSuggestionQuery,
-            onGoogleSystemServiceClassSuggestionQueryChange = {
-                googleSystemServiceClassSuggestionQuery = it
-            },
             showCardManager = showCardManager,
             onShowCardManagerChange = { showCardManager = it },
             showActivityVisibilityManager = showActivityVisibilityManager,

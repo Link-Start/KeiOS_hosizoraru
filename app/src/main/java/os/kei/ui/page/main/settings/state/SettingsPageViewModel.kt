@@ -47,6 +47,8 @@ internal data class SettingsPageChromeState(
     val selectedCategoryIndex: Int = 0,
     val searchExpanded: Boolean = false,
     val searchQuery: String = "",
+    val bottomBarVisible: Boolean = true,
+    val sliderInteractionActive: Boolean = false,
     val shizukuRefreshToken: Int = 0,
 ) {
     val trimmedSearchQuery: String
@@ -131,6 +133,18 @@ internal class SettingsPageViewModel : ViewModel() {
 
     fun updateSearchQuery(query: String) {
         _chromeState.update { state -> state.copy(searchQuery = query.take(96)) }
+    }
+
+    fun updateBottomBarVisible(visible: Boolean) {
+        _chromeState.update { state ->
+            if (state.bottomBarVisible == visible) state else state.copy(bottomBarVisible = visible)
+        }
+    }
+
+    fun updateSliderInteractionActive(active: Boolean) {
+        _chromeState.update { state ->
+            if (state.sliderInteractionActive == active) state else state.copy(sliderInteractionActive = active)
+        }
     }
 
     fun requestShizukuRefresh() {

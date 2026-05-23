@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.os.OsActivitySuggestionChromeState
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
@@ -56,6 +57,7 @@ internal fun OsPageOverlayHost(
     editActivityCardTitle: String,
     noMatchedResultsText: String,
     activitySuggestionState: OsActivitySuggestionUiState,
+    activitySuggestionChromeState: OsActivitySuggestionChromeState,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     googleSystemServiceDefaultTitle: String,
     googleSystemServiceDefaultIntentFlags: String,
@@ -67,6 +69,7 @@ internal fun OsPageOverlayHost(
             context = context,
             osPageViewModel = osPageViewModel,
             overlayState = overlayState,
+            activitySuggestionTarget = activitySuggestionChromeState.target,
             googleSystemServiceDefaults = googleSystemServiceDefaults,
             googleSystemServiceDefaultIntentFlags = googleSystemServiceDefaultIntentFlags,
             shellCardCommandRequiredToast = shellCardCommandRequiredToast,
@@ -164,18 +167,18 @@ internal fun OsPageOverlayHost(
         onDismissActivityEditor = editorActions.onDismissActivityEditor,
         onDismissActivityEditorFinished = editorActions.onDismissActivityEditorFinished,
         onSaveActivityEditor = editorActions.onSaveActivityEditor,
-        showActivitySuggestionSheet = overlayState.showActivitySuggestionSheet,
-        suggestionTarget = overlayState.googleSystemServiceSuggestionTarget,
+        showActivitySuggestionSheet = activitySuggestionChromeState.showSheet,
+        suggestionTarget = activitySuggestionChromeState.target,
         packageSuggestions = activitySuggestionState.packageSuggestions,
         packageSuggestionsLoading = activitySuggestionState.packageSuggestionsLoading,
-        packageSuggestionQuery = overlayState.googleSystemServicePackageSuggestionQuery,
-        onPackageSuggestionQueryChange = overlayState.onGoogleSystemServicePackageSuggestionQueryChange,
+        packageSuggestionQuery = activitySuggestionChromeState.packageQuery,
+        onPackageSuggestionQueryChange = osPageViewModel::updateActivityPackageSuggestionQuery,
         classSuggestions = activitySuggestionState.classSuggestions,
         classSuggestionsLoading = activitySuggestionState.classSuggestionsLoading,
-        classSuggestionQuery = overlayState.googleSystemServiceClassSuggestionQuery,
-        onClassSuggestionQueryChange = overlayState.onGoogleSystemServiceClassSuggestionQueryChange,
+        classSuggestionQuery = activitySuggestionChromeState.classQuery,
+        onClassSuggestionQueryChange = osPageViewModel::updateActivityClassSuggestionQuery,
         noMatchedResultsText = noMatchedResultsText,
-        onDismissSuggestionSheet = { overlayState.onShowActivitySuggestionSheetChange(false) },
+        onDismissSuggestionSheet = osPageViewModel::dismissActivitySuggestionSheet,
         onApplySuggestion = editorActions.onApplySuggestion,
         onApplyExplicitActionRecommendation = editorActions.onApplyExplicitActionRecommendation,
         onApplyImplicitActionRecommendation = editorActions.onApplyImplicitActionRecommendation,

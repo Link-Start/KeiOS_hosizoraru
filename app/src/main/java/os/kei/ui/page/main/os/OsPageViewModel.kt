@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -76,6 +77,10 @@ internal class OsPageViewModel : ViewModel() {
     val activitySuggestionState: StateFlow<OsActivitySuggestionUiState> =
         _activitySuggestionState.asStateFlow()
 
+    private val _activitySuggestionChromeState = MutableStateFlow(OsActivitySuggestionChromeState())
+    val activitySuggestionChromeState: StateFlow<OsActivitySuggestionChromeState> =
+        _activitySuggestionChromeState.asStateFlow()
+
     val activityIconState: StateFlow<OsActivityShortcutIconUiState> =
         activityIconLoader.state
 
@@ -86,6 +91,7 @@ internal class OsPageViewModel : ViewModel() {
     val events: SharedFlow<OsPageEvent> = _events.asSharedFlow()
 
     val rowsDerivedState: StateFlow<OsPageRowsUiDerivedState> = rowsStateLoader.state
+    private var overlaySearchSuppressionJob: Job? = null
 
     private val queryState: StateFlow<OsPageQueryState> =
         combine(queryInput, queryApplied) { input, applied ->
@@ -121,11 +127,12 @@ internal class OsPageViewModel : ViewModel() {
         )
 
     val uiState: StateFlow<OsPageUiState> =
-        combine(coreUiState, rowsDerivedState) { core, rows ->
+        combine(coreUiState, rowsDerivedState, activitySuggestionChromeState) { core, rows, activitySuggestionChrome ->
             OsPageUiState(
                 persistentState = core.persistentState,
                 runtimeState = core.runtimeState,
                 activitySuggestionState = core.activitySuggestionState,
+                activitySuggestionChromeState = activitySuggestionChrome,
                 chromeState = core.chromeState,
                 queryInput = core.queryState.input,
                 queryApplied = core.queryState.applied,
@@ -194,6 +201,80 @@ internal class OsPageViewModel : ViewModel() {
 
     fun updateSearchExpanded(expanded: Boolean) {
         _chromeState.update { state -> state.copy(searchExpanded = expanded) }
+    }
+
+    fun updateOverlaySheetVisible(visible: Boolean) {
+        overlaySearchSuppressionJob?.cancel()
+        if (visible) {
+            _chromeState.update { state ->
+                state.copy(
+                    searchExpanded = false,
+                    overlaySearchSuppressed = true,
+                )
+            }
+            return
+        }
+        overlaySearchSuppressionJob =
+            viewModelScope.launch {
+                delay(360)
+                _chromeState.update { state -> state.copy(overlaySearchSuppressed = false) }
+            }
+    }
+
+    fun openActivitySuggestionSheet(target: ShortcutSuggestionField) {
+        _activitySuggestionChromeState.update { state ->
+            when (target) {
+                ShortcutSuggestionField.PackageName -> {
+                    state.copy(
+                        showSheet = true,
+                        target = target,
+                        packageQuery = "",
+                    )
+                }
+
+                ShortcutSuggestionField.ClassName -> {
+                    state.copy(
+                        showSheet = true,
+                        target = target,
+                        classQuery = "",
+                    )
+                }
+
+                else -> {
+                    state.copy(
+                        showSheet = true,
+                        target = target,
+                    )
+                }
+            }
+        }
+    }
+
+    fun dismissActivitySuggestionSheet() {
+        _activitySuggestionChromeState.update { state ->
+            state.copy(showSheet = false)
+        }
+    }
+
+    fun resetActivitySuggestionQueries() {
+        _activitySuggestionChromeState.update { state ->
+            state.copy(
+                packageQuery = "",
+                classQuery = "",
+            )
+        }
+    }
+
+    fun updateActivityPackageSuggestionQuery(query: String) {
+        _activitySuggestionChromeState.update { state ->
+            if (state.packageQuery == query) state else state.copy(packageQuery = query)
+        }
+    }
+
+    fun updateActivityClassSuggestionQuery(query: String) {
+        _activitySuggestionChromeState.update { state ->
+            if (state.classQuery == query) state else state.copy(classQuery = query)
+        }
     }
 
     fun loadPersistentState(

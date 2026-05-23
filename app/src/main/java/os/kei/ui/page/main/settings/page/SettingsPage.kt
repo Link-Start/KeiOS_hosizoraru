@@ -13,11 +13,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -33,7 +31,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -229,6 +226,8 @@ fun SettingsPage(
     val categories = remember { SettingsCategory.entries.toList() }
     val searchExpanded = chromeState.searchExpanded
     val searchQuery = chromeState.searchQuery
+    val bottomBarVisible = chromeState.bottomBarVisible
+    val sliderInteractionActive = chromeState.sliderInteractionActive
     val pagerState =
         rememberMainLoadedPagerState(
             initialPage = chromeState.selectedCategoryIndex.coerceIn(0, categories.lastIndex),
@@ -248,13 +247,11 @@ fun SettingsPage(
             )
         }
     val searchListState = rememberLazyListState()
-    var sliderInteractionActive by remember { mutableStateOf(false) }
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    var showBottomBar by remember { mutableStateOf(true) }
     val farJumpAlpha = remember { Animatable(1f) }
-    var tabJumpJob by remember { mutableStateOf<Job?>(null) }
+    val tabJumpCoordinator = remember { SettingsTabJumpCoordinator() }
     val density = LocalDensity.current
     val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
     val bottomBarVisibilityController =
@@ -271,7 +268,7 @@ fun SettingsPage(
     val activePageListState = categoryListStates.forCategory(activeCategory)
     val currentActivePageListState = rememberUpdatedState(activePageListState)
     val currentActiveCategory = rememberUpdatedState(activeCategory)
-    val currentShowBottomBar = rememberUpdatedState(showBottomBar)
+    val currentBottomBarVisible = rememberUpdatedState(bottomBarVisible)
     val bottomBarNestedScrollConnection =
         remember(bottomBarVisibilityController) {
             object : NestedScrollConnection {
@@ -281,16 +278,20 @@ fun SettingsPage(
                     source: NestedScrollSource,
                 ): Offset {
                     if (currentActiveCategory.value.keepsChromeVisibleOnBounds()) {
-                        bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+                        bottomBarVisibilityController.showNow(
+                            visible = currentBottomBarVisible.value,
+                            onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+                        )
                         return Offset.Zero
                     }
                     val currentListState = currentActivePageListState.value
                     bottomBarVisibilityController.updateWithinScrollBounds(
                         deltaY = consumed.y,
-                        visible = currentShowBottomBar.value,
+                        visible = currentBottomBarVisible.value,
                         canScrollBackward = currentListState.canScrollBackward,
                         canScrollForward = currentListState.canScrollForward,
-                    ) { showBottomBar = it }
+                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+                    )
                     return Offset.Zero
                 }
             }
@@ -315,6 +316,8 @@ fun SettingsPage(
             transitionAnimationsEnabled,
             farJumpAlpha,
             scope,
+            settingsPageViewModel,
+            tabJumpCoordinator,
         ) {
             { index: Int ->
                 val safeIndex = index.coerceIn(0, categories.lastIndex)
@@ -326,8 +329,7 @@ fun SettingsPage(
                     }
                 if (safeIndex != stablePageIndex) {
                     settingsPageViewModel.updateSelectedCategoryIndex(safeIndex)
-                    tabJumpJob?.cancel()
-                    tabJumpJob =
+                    tabJumpCoordinator.launch {
                         scope.launch {
                             val distance = abs(safeIndex - stablePageIndex)
                             if (distance > 1) {
@@ -363,13 +365,17 @@ fun SettingsPage(
                                 )
                             }
                         }
+                    }
                 }
             }
         }
 
     LaunchedEffect(pagerState.settledPage) {
-        sliderInteractionActive = false
-        bottomBarVisibilityController.showNow(showBottomBar) { showBottomBar = it }
+        settingsPageViewModel.updateSliderInteractionActive(false)
+        bottomBarVisibilityController.showNow(
+            visible = bottomBarVisible,
+            onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+        )
         if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
             settingsPageViewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
@@ -380,13 +386,17 @@ fun SettingsPage(
         }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 if (activeCategory.keepsChromeVisibleOnBounds()) {
-                    bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+                    bottomBarVisibilityController.showNow(
+                        visible = currentBottomBarVisible.value,
+                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+                    )
                 } else {
                     bottomBarVisibilityController.showForStaticContent(
-                        visible = currentShowBottomBar.value,
+                        visible = currentBottomBarVisible.value,
                         canScrollBackward = canScrollBackward,
                         canScrollForward = canScrollForward,
-                    ) { showBottomBar = it }
+                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+                    )
                 }
             }
     }
@@ -419,7 +429,7 @@ fun SettingsPage(
             onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
             enabledCardColor = enabledCardColor,
             disabledCardColor = disabledCardColor,
-            onSliderInteractionChanged = { active -> sliderInteractionActive = active },
+            onSliderInteractionChanged = settingsPageViewModel::updateSliderInteractionActive,
         )
 
     AppPageScaffold(
@@ -432,7 +442,10 @@ fun SettingsPage(
         topBarColor = androidx.compose.ui.graphics.Color.Transparent,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
-            bottomBarVisibilityController.showNow(currentShowBottomBar.value) { showBottomBar = it }
+            bottomBarVisibilityController.showNow(
+                visible = currentBottomBarVisible.value,
+                onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+            )
         },
         navigationIcon = {
             AppLiquidNavigationButton(
@@ -444,7 +457,7 @@ fun SettingsPage(
         },
         bottomBar = {
             SettingsBottomChrome(
-                visible = showBottomBar,
+                visible = bottomBarVisible,
                 navigationBarBottom = navigationBarBottom,
                 categories = categories,
                 selectedPage = pagerState.targetPage.coerceIn(0, categories.lastIndex),

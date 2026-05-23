@@ -3,21 +3,26 @@ package os.kei.ui.page.main.about.section
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kyant.capsule.ContinuousCapsule
 import os.kei.BuildConfig
 import os.kei.R
 import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
 import os.kei.ui.page.main.about.util.formatTime
-import os.kei.ui.page.main.github.AppIcon
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
@@ -81,8 +86,8 @@ fun AboutAppCardSection(
                 titleColor = accent,
                 subtitleColor = subtitleColor,
                 startAction = {
-                    AppIcon(
-                        packageName = packageInfo?.packageName ?: context.packageName,
+                    AboutAppIcon(
+                        contentDescription = packageInfo?.packageName ?: context.packageName,
                         size = AppInteractiveTokens.cardHeaderLeadingSlotSize
                     )
                 },
@@ -158,4 +163,20 @@ fun AboutAppCardSection(
             }
         }
     }
+}
+
+@Composable
+private fun AboutAppIcon(
+    contentDescription: String,
+    size: androidx.compose.ui.unit.Dp,
+) {
+    Image(
+        painter = painterResource(R.mipmap.ic_launcher),
+        contentDescription = contentDescription,
+        modifier =
+            Modifier
+                .width(size)
+                .height(size)
+                .clip(ContinuousCapsule),
+    )
 }

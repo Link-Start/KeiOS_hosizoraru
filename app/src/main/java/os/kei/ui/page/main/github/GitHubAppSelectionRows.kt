@@ -17,23 +17,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.capsule.ContinuousCapsule
-import kotlinx.coroutines.withContext
 import os.kei.R
-import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -204,49 +199,6 @@ private fun InstallSourcePill(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-internal fun AppIcon(
-    packageName: String,
-    size: Dp,
-    localRefreshKey: Any? = Unit,
-) {
-    val normalizedPackageName = packageName.trim()
-    val context = LocalContext.current
-    val bitmapState =
-        produceState<Bitmap?>(
-            initialValue = AppIconCache.get(normalizedPackageName),
-            normalizedPackageName,
-            localRefreshKey,
-        ) {
-            if (normalizedPackageName.isBlank()) return@produceState
-            if (value == null) {
-                value =
-                    withContext(AppDispatchers.githubNetwork) {
-                        AppIconCache.getOrLoad(context, normalizedPackageName)
-                    }
-            }
-        }
-    val bitmap = bitmapState.value
-    when {
-        bitmap != null -> {
-            val imageBitmap = remember(bitmap) { bitmap.asImageBitmap() }
-            Image(
-                bitmap = imageBitmap,
-                contentDescription = normalizedPackageName,
-                modifier =
-                    Modifier
-                        .width(size)
-                        .height(size)
-                        .clip(ContinuousCapsule),
-            )
-        }
-
-        else -> {
-            AppIconFallback(size = size)
-        }
     }
 }
 

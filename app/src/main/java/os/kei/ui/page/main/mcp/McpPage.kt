@@ -56,6 +56,7 @@ fun McpPage(
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
+    val runtimeNowMs by mcpPageViewModel.runtimeNowMs.collectAsStateWithLifecycle()
     val pageUiState = routeState.pageUiState
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
@@ -66,11 +67,23 @@ fun McpPage(
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
     val runningColor = Color(0xFF2E7D32)
     val stoppedColor = Color(0xFFC62828)
+    LaunchedEffect(
+        mcpPageViewModel,
+        uiState.running,
+        uiState.runningSinceEpochMs,
+        runtime.isDataActive,
+    ) {
+        mcpPageViewModel.requestRuntimeTicker(
+            running = uiState.running,
+            runningSinceEpochMs = uiState.runningSinceEpochMs,
+            dataActive = runtime.isDataActive,
+        )
+    }
     val overviewState =
         rememberMcpPageOverviewState(
             context = context,
             uiState = uiState,
-            runtime = runtime,
+            runtimeNowMs = runtimeNowMs,
             isDark = isDark,
             titleColor = titleColor,
             subtitleColor = subtitleColor,

@@ -3,18 +3,13 @@ package os.kei.ui.page.main.mcp.state
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.mcp.server.McpServerUiState
-import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.mcp.model.McpOverviewMetric
 import os.kei.ui.page.main.mcp.model.toMcpTokenPreview
 import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
-import kotlin.time.Duration.Companion.milliseconds
 
 @Immutable
 internal data class McpPageOverviewState(
@@ -29,7 +24,7 @@ internal data class McpPageOverviewState(
 internal fun rememberMcpPageOverviewState(
     context: Context,
     uiState: McpServerUiState,
-    runtime: MainPageRuntime,
+    runtimeNowMs: Long,
     isDark: Boolean,
     titleColor: Color,
     subtitleColor: Color,
@@ -47,18 +42,6 @@ internal fun rememberMcpPageOverviewState(
         overviewAccentColor.copy(alpha = 0.32f)
     } else {
         overviewAccentColor.copy(alpha = 0.26f)
-    }
-    val runtimeNowMs by produceState(
-        initialValue = System.currentTimeMillis(),
-        key1 = uiState.running,
-        key2 = uiState.runningSinceEpochMs,
-        key3 = runtime.isDataActive
-    ) {
-        value = System.currentTimeMillis()
-        while (uiState.running && uiState.runningSinceEpochMs > 0L) {
-            delay((if (runtime.isDataActive) 1_000L else 3_000L).milliseconds)
-            value = System.currentTimeMillis()
-        }
     }
     val runtimeText = if (!uiState.running || uiState.runningSinceEpochMs <= 0L) {
         runtimePendingText

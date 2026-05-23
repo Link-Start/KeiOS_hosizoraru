@@ -7,6 +7,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -25,6 +26,7 @@ import os.kei.mcp.server.SKILL_RESOURCE_URI
 import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
+import kotlin.time.Duration.Companion.milliseconds
 
 internal data class McpLogsExportRequest(
     val generatedAt: String,
@@ -69,6 +71,12 @@ internal data class McpPageRouteState(
     val toolBuckets: McpToolBuckets = McpToolBuckets.Empty,
 )
 
+private data class McpRuntimeTickerInput(
+    val running: Boolean,
+    val runningSinceEpochMs: Long,
+    val dataActive: Boolean,
+)
+
 internal sealed interface McpPageEvent {
     data class Toast(
         @param:StringRes val messageRes: Int,
@@ -111,10 +119,14 @@ internal class McpPageViewModel : ViewModel() {
     val uiState: StateFlow<McpPageUiState> = _uiState.asStateFlow()
     private val _toolBuckets = MutableStateFlow(McpToolBuckets.Empty)
     val toolBuckets: StateFlow<McpToolBuckets> = _toolBuckets.asStateFlow()
+    private val _runtimeNowMs = MutableStateFlow(System.currentTimeMillis())
+    val runtimeNowMs: StateFlow<Long> = _runtimeNowMs.asStateFlow()
     private val _events = MutableSharedFlow<McpPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<McpPageEvent> = _events.asSharedFlow()
     private var toolBucketsInput: McpToolBucketInput? = null
     private var toolBucketsJob: Job? = null
+    private var runtimeTickerInput: McpRuntimeTickerInput? = null
+    private var runtimeTickerJob: Job? = null
 
     val routeState: StateFlow<McpPageRouteState> =
         combine(uiState, toolBuckets) { pageState, buckets ->
@@ -207,6 +219,31 @@ internal class McpPageViewModel : ViewModel() {
                 val derived = repository.deriveToolBuckets(input)
                 if (toolBucketsInput == input) {
                     _toolBuckets.value = derived
+                }
+            }
+    }
+
+    fun requestRuntimeTicker(
+        running: Boolean,
+        runningSinceEpochMs: Long,
+        dataActive: Boolean,
+    ) {
+        val input =
+            McpRuntimeTickerInput(
+                running = running,
+                runningSinceEpochMs = runningSinceEpochMs,
+                dataActive = dataActive,
+            )
+        if (runtimeTickerInput == input) return
+        runtimeTickerInput = input
+        runtimeTickerJob?.cancel()
+        _runtimeNowMs.value = System.currentTimeMillis()
+        if (!running || runningSinceEpochMs <= 0L) return
+        runtimeTickerJob =
+            viewModelScope.launch {
+                while (runtimeTickerInput == input) {
+                    delay((if (dataActive) 1_000L else 3_000L).milliseconds)
+                    _runtimeNowMs.value = System.currentTimeMillis()
                 }
             }
     }

@@ -84,7 +84,7 @@ internal sealed interface GitHubTrackedImportStartResult {
 
 internal class GitHubPageViewModel : ViewModel() {
     val repository = GitHubPageRepository()
-    private val appIconRepository = GitHubAppIconRepository()
+    private val appIconLoader = GitHubAppIconLoader(viewModelScope)
     private var pageState: GitHubPageState? = null
     private var contentStateJob: Job? = null
     private var pendingShareImportClockJob: Job? = null
@@ -92,7 +92,6 @@ internal class GitHubPageViewModel : ViewModel() {
     private var downloaderOptionsJob: Job? = null
     private var appPickerStateJob: Job? = null
     private var appPickerStateInput: GitHubTrackAppPickerInput? = null
-    private var appIconLoadingPackages: Set<String> = emptySet()
     private val snapshotFlowManager = AppSnapshotFlowManager()
     private val pendingShareImportPageActive = MutableStateFlow(false)
     private val pendingShareImportNowMillis = MutableStateFlow(System.currentTimeMillis())
@@ -120,9 +119,8 @@ internal class GitHubPageViewModel : ViewModel() {
     val appPickerDerivedState: StateFlow<GitHubTrackAppPickerDerivedState> =
         _appPickerDerivedState.asStateFlow()
 
-    private val _appIconState = MutableStateFlow(GitHubAppIconUiState())
     val appIconState: StateFlow<GitHubAppIconUiState> =
-        _appIconState.asStateFlow()
+        appIconLoader.state
 
     private val coreUiState: StateFlow<GitHubPageUiCoreSnapshot> =
         combine(
@@ -237,56 +235,10 @@ internal class GitHubPageViewModel : ViewModel() {
     fun requestAppIcons(
         context: Context,
         packageNames: List<String>,
-    ) {
-        val normalizedPackages =
-            packageNames
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
-                .distinct()
-        if (normalizedPackages.isEmpty()) return
-
-        val currentState = _appIconState.value
-        val cachedBitmaps =
-            normalizedPackages
-                .filterNot { currentState.bitmaps.containsKey(it) }
-                .mapNotNull { packageName ->
-                    appIconRepository.cachedBitmap(packageName)?.let { bitmap -> packageName to bitmap }
-                }.toMap()
-        if (cachedBitmaps.isNotEmpty()) {
-            _appIconState.update { state ->
-                state.copy(bitmaps = state.bitmaps + cachedBitmaps)
-            }
-        }
-
-        val missingPackages =
-            normalizedPackages.filter { packageName ->
-                !currentState.bitmaps.containsKey(packageName) &&
-                    !currentState.missingPackages.contains(packageName) &&
-                    !appIconLoadingPackages.contains(packageName) &&
-                    !cachedBitmaps.containsKey(packageName)
-            }
-        if (missingPackages.isEmpty()) return
-
-        appIconLoadingPackages += missingPackages
-        val appContext = context.applicationContext
-        viewModelScope.launch {
-            try {
-                val result =
-                    appIconRepository.loadIcons(
-                        context = appContext,
-                        packageNames = missingPackages,
-                    )
-                _appIconState.update { state ->
-                    state.copy(
-                        bitmaps = state.bitmaps + result.bitmaps,
-                        missingPackages = state.missingPackages + result.missingPackages,
-                    )
-                }
-            } finally {
-                appIconLoadingPackages -= missingPackages
-            }
-        }
-    }
+    ) = appIconLoader.requestIcons(
+        context = context,
+        packageNames = packageNames,
+    )
 
     fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
         val previousInput = appPickerStateInput
@@ -469,7 +421,7 @@ internal class GitHubPageViewModel : ViewModel() {
         onlineShareTargetsJob?.cancel()
         downloaderOptionsJob?.cancel()
         appPickerStateJob?.cancel()
-        appIconLoadingPackages = emptySet()
+        appIconLoader.clearLoadingState()
         snapshotFlowManager.dispose()
         super.onCleared()
     }

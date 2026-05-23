@@ -104,8 +104,6 @@ internal class BaPageUiController(
         set(value) {
             uiMinuteMsState.longValue = value
         }
-    var baCalendarReloadSignal by mutableIntStateOf(0)
-    var baPoolReloadSignal by mutableIntStateOf(0)
     var showEndedPools by mutableStateOf(snapshot.showEndedPools)
     var showEndedActivities by mutableStateOf(snapshot.showEndedActivities)
     var showCalendarPoolImages by mutableStateOf(snapshot.showCalendarPoolImages)
@@ -114,8 +112,6 @@ internal class BaPageUiController(
     var mediaSaveFixedTreeUri by mutableStateOf(snapshot.mediaSaveFixedTreeUri)
     var idIndependentByServer by mutableStateOf(snapshot.idIndependentByServer)
     var calendarRefreshIntervalHours by mutableIntStateOf(snapshot.calendarRefreshIntervalHours)
-    var calendarHydrationReady by mutableStateOf(false)
-    var poolHydrationReady by mutableStateOf(false)
     var sheetCafeLevel by mutableIntStateOf(snapshot.cafeLevel)
     var sheetApNotifyEnabled by mutableStateOf(snapshot.apNotifyEnabled)
     var sheetCafeApNotifyEnabled by mutableStateOf(snapshot.cafeApNotifyEnabled)
@@ -208,6 +204,7 @@ internal class BaPageUiController(
         calendarUiState: BaCalendarUiState,
         poolUiState: BaPoolUiState,
         chromeUiState: BaOfficeChromeUiState,
+        syncUiState: BaOfficeSyncUiState,
     ): BaPageRouteState =
         BaPageRouteState(
             showSettingsSheet = chromeUiState.showSettingsSheet,
@@ -215,8 +212,8 @@ internal class BaPageUiController(
             showDebugSheet = chromeUiState.showDebugSheet,
             popupState = popupState(),
             serverIndex = serverIndex,
-            baCalendarReloadSignal = baCalendarReloadSignal,
-            baPoolReloadSignal = baPoolReloadSignal,
+            baCalendarReloadSignal = syncUiState.calendarReloadSignal,
+            baPoolReloadSignal = syncUiState.poolReloadSignal,
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
             showEndedPools = showEndedPools,
@@ -227,8 +224,8 @@ internal class BaPageUiController(
             mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
             idIndependentByServer = idIndependentByServer,
             calendarRefreshIntervalHours = calendarRefreshIntervalHours,
-            calendarHydrationReady = calendarHydrationReady,
-            poolHydrationReady = poolHydrationReady,
+            calendarHydrationReady = syncUiState.calendarHydrationReady,
+            poolHydrationReady = syncUiState.poolHydrationReady,
             settingsDraftState = settingsDraftState(),
             notificationDraftState = notificationDraftState(),
             debugUseRealCalendarPoolData = chromeUiState.debugUseRealCalendarPoolData,
@@ -283,14 +280,6 @@ internal class BaPageUiController(
     fun applySavedNotificationDraft(draft: BaPageNotificationDraftState) {
         savedNotificationDraft = draft
         applyNotificationDraft(draft)
-    }
-
-    fun refreshCalendar(force: Boolean = false) {
-        if (force) baCalendarReloadSignal += 1
-    }
-
-    fun refreshPool(force: Boolean = false) {
-        if (force) baPoolReloadSignal += 1
     }
 
     fun openSettingsSheet(office: BaOfficeController) {

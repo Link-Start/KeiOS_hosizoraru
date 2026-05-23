@@ -33,6 +33,13 @@ internal data class BaOfficeChromeUiState(
     val debugUseRealCalendarPoolData: Boolean = true,
 )
 
+internal data class BaOfficeSyncUiState(
+    val calendarReloadSignal: Int = 0,
+    val poolReloadSignal: Int = 0,
+    val calendarHydrationReady: Boolean = false,
+    val poolHydrationReady: Boolean = false,
+)
+
 internal sealed interface BaOfficeEvent {
     data class SettingsSaved(
         val persisted: BaSettingsPersistenceResult,
@@ -65,6 +72,8 @@ internal class BaOfficeViewModel(
     val snapshotUiState: StateFlow<BaOfficeSnapshotUiState> = _snapshotUiState.asStateFlow()
     private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
     val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
+    private val _syncUiState = MutableStateFlow(BaOfficeSyncUiState())
+    val syncUiState: StateFlow<BaOfficeSyncUiState> = _syncUiState.asStateFlow()
     private val _serverRestoreEvents = MutableSharedFlow<BaOfficeServerRestoreEvent>(replay = 0)
     val serverRestoreEvents: SharedFlow<BaOfficeServerRestoreEvent> = _serverRestoreEvents.asSharedFlow()
     private val _events = MutableSharedFlow<BaOfficeEvent>(replay = 0, extraBufferCapacity = 8)
@@ -133,6 +142,33 @@ internal class BaOfficeViewModel(
                 state
             } else {
                 state.copy(debugUseRealCalendarPoolData = enabled)
+            }
+        }
+    }
+
+    fun refreshCalendar(force: Boolean = false) {
+        if (!force) return
+        _syncUiState.update { state ->
+            state.copy(calendarReloadSignal = state.calendarReloadSignal + 1)
+        }
+    }
+
+    fun refreshPool(force: Boolean = false) {
+        if (!force) return
+        _syncUiState.update { state ->
+            state.copy(poolReloadSignal = state.poolReloadSignal + 1)
+        }
+    }
+
+    fun markCalendarPoolHydrationReady() {
+        _syncUiState.update { state ->
+            if (state.calendarHydrationReady && state.poolHydrationReady) {
+                state
+            } else {
+                state.copy(
+                    calendarHydrationReady = true,
+                    poolHydrationReady = true,
+                )
             }
         }
     }

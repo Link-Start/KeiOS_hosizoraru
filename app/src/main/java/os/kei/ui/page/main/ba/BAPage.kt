@@ -98,6 +98,7 @@ fun BAPage(
     val defaultBaSnapshot = remember { BaPageSnapshot() }
     val officeSnapshotUiState by officeViewModel.snapshotUiState.collectAsStateWithLifecycle()
     val officeChromeUiState by officeViewModel.chromeUiState.collectAsStateWithLifecycle()
+    val officeSyncUiState by officeViewModel.syncUiState.collectAsStateWithLifecycle()
     val initialSnapshot = officeSnapshotUiState.snapshot
     val office = officeViewModel.office
     val ui = rememberBaPageUiController(defaultBaSnapshot)
@@ -110,6 +111,7 @@ fun BAPage(
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
             chromeUiState = officeChromeUiState,
+            syncUiState = officeSyncUiState,
         )
     val baClockState = ui.clockState()
 
@@ -196,11 +198,11 @@ fun BAPage(
     }
 
     fun refreshCalendar(force: Boolean = false) {
-        ui.refreshCalendar(force)
+        officeViewModel.refreshCalendar(force)
     }
 
     fun refreshPool(force: Boolean = false) {
-        ui.refreshPool(force)
+        officeViewModel.refreshPool(force)
     }
 
     fun refreshAllBaData() {
@@ -318,10 +320,7 @@ fun BAPage(
         onUiMinuteMsChange = { ui.uiMinuteMs = it },
         serverIndex = ui.serverIndex,
         onServerChanged = {
-            ui.calendarHydrationReady = false
-            ui.poolHydrationReady = false
-            ui.calendarHydrationReady = true
-            ui.poolHydrationReady = true
+            officeViewModel.markCalendarPoolHydrationReady()
         },
         context = context,
     )
@@ -329,31 +328,31 @@ fun BAPage(
     LaunchedEffect(
         syncPageActive,
         ui.serverIndex,
-        ui.baCalendarReloadSignal,
+        baRouteState.baCalendarReloadSignal,
         ui.calendarRefreshIntervalHours,
-        ui.calendarHydrationReady,
+        baRouteState.calendarHydrationReady,
     ) {
         calendarPoolViewModel.syncCalendar(
             isPageActive = syncPageActive,
             serverIndex = ui.serverIndex,
-            reloadSignal = ui.baCalendarReloadSignal,
+            reloadSignal = baRouteState.baCalendarReloadSignal,
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
-            hydrationReady = ui.calendarHydrationReady,
+            hydrationReady = baRouteState.calendarHydrationReady,
         )
     }
     LaunchedEffect(
         syncPageActive,
         ui.serverIndex,
-        ui.baPoolReloadSignal,
+        baRouteState.baPoolReloadSignal,
         ui.calendarRefreshIntervalHours,
-        ui.poolHydrationReady,
+        baRouteState.poolHydrationReady,
     ) {
         calendarPoolViewModel.syncPool(
             isPageActive = syncPageActive,
             serverIndex = ui.serverIndex,
-            reloadSignal = ui.baPoolReloadSignal,
+            reloadSignal = baRouteState.baPoolReloadSignal,
             calendarRefreshIntervalHours = ui.calendarRefreshIntervalHours,
-            hydrationReady = ui.poolHydrationReady,
+            hydrationReady = baRouteState.poolHydrationReady,
         )
     }
     val dockAlignment =

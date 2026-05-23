@@ -26,6 +26,7 @@ internal class OsShellRunnerViewModel : ViewModel() {
     private var suppressStopOutputAppend = false
     private val commandExecutionMutableState = MutableStateFlow(OsShellRunnerCommandExecutionState())
     private val commandSaveMutableState = MutableStateFlow(OsShellRunnerCommandSaveState())
+    private val pageChromeMutableState = MutableStateFlow(OsShellRunnerPageChromeState())
     private val eventMutableFlow = MutableSharedFlow<OsShellRunnerEvent>(extraBufferCapacity = 8)
 
     val commandExecutionState: StateFlow<OsShellRunnerCommandExecutionState> =
@@ -33,6 +34,9 @@ internal class OsShellRunnerViewModel : ViewModel() {
 
     val commandSaveState: StateFlow<OsShellRunnerCommandSaveState> =
         commandSaveMutableState.asStateFlow()
+
+    val pageChromeState: StateFlow<OsShellRunnerPageChromeState> =
+        pageChromeMutableState.asStateFlow()
 
     val events: SharedFlow<OsShellRunnerEvent> = eventMutableFlow.asSharedFlow()
 
@@ -59,11 +63,13 @@ internal class OsShellRunnerViewModel : ViewModel() {
             persistentState,
             chromePrefs,
             commandExecutionState,
-        ) { persistent, chrome, commandExecution ->
+            pageChromeState,
+        ) { persistent, chrome, commandExecution, pageChrome ->
             OsShellRunnerUiState(
                 persistentState = persistent,
                 chromePrefs = chrome,
                 commandExecutionState = commandExecution,
+                pageChromeState = pageChrome,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -90,6 +96,74 @@ internal class OsShellRunnerViewModel : ViewModel() {
     fun refreshChromePrefs() {
         viewModelScope.launch {
             repository.refreshChromePrefs()
+        }
+    }
+
+    fun requestStartupFocus() {
+        pageChromeMutableState.update { state ->
+            state.copy(
+                startupFocusRequestToken = state.startupFocusRequestToken + 1,
+                startupFocusApplied = true,
+            )
+        }
+    }
+
+    fun openSaveSheet(suggestedSubtitle: String) {
+        pageChromeMutableState.update { state ->
+            state.copy(
+                saveTitleInput = "",
+                saveSubtitleInput = suggestedSubtitle,
+                saveInitialSubtitleInput = suggestedSubtitle,
+                showSaveSheet = true,
+            )
+        }
+    }
+
+    fun updateShowSaveSheet(show: Boolean) {
+        pageChromeMutableState.update { state -> state.copy(showSaveSheet = show) }
+    }
+
+    fun updateShowBehaviorSettingsSheet(show: Boolean) {
+        pageChromeMutableState.update { state -> state.copy(showBehaviorSettingsSheet = show) }
+    }
+
+    fun updateShowOutputSettingsSheet(show: Boolean) {
+        pageChromeMutableState.update { state -> state.copy(showOutputSettingsSheet = show) }
+    }
+
+    fun updateSaveTitleInput(value: String) {
+        pageChromeMutableState.update { state -> state.copy(saveTitleInput = value) }
+    }
+
+    fun updateSaveSubtitleInput(value: String) {
+        pageChromeMutableState.update { state -> state.copy(saveSubtitleInput = value) }
+    }
+
+    fun resetSaveSheetInputs() {
+        pageChromeMutableState.update { state ->
+            state.copy(
+                saveTitleInput = "",
+                saveSubtitleInput = "",
+                saveInitialSubtitleInput = "",
+            )
+        }
+    }
+
+    fun openDangerousCommandConfirm(command: String) {
+        pageChromeMutableState.update { state ->
+            state.copy(
+                pendingDangerousCommand = command,
+                showDangerousCommandConfirm = true,
+            )
+        }
+    }
+
+    fun dismissDangerousCommandConfirm() {
+        pageChromeMutableState.update { state ->
+            state.copy(
+                showDangerousCommandConfirm = false,
+                pendingDangerousCommand = "",
+            )
         }
     }
 

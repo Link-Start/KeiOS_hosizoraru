@@ -42,12 +42,29 @@ fun OsShellRunnerPage(
     val pageListState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val textBundle = rememberOsShellRunnerTextBundle()
-    val pageState = rememberOsShellRunnerPageStateHolder()
     val shellRunnerViewModel: OsShellRunnerViewModel = viewModel()
     val uiState by shellRunnerViewModel.uiState.collectAsStateWithLifecycle()
     val persistentState = uiState.persistentState
     val chromePrefs = uiState.chromePrefs
+    val pageChromeState = uiState.pageChromeState
     val commandExecutionState = uiState.commandExecutionState
+    val pageState =
+        rememberOsShellRunnerPageStateHolder(
+            chromeState = pageChromeState,
+            chromeActions =
+                OsShellRunnerPageChromeActions(
+                    onRequestStartupFocus = shellRunnerViewModel::requestStartupFocus,
+                    onOpenSaveSheet = shellRunnerViewModel::openSaveSheet,
+                    onShowSaveSheetChange = shellRunnerViewModel::updateShowSaveSheet,
+                    onShowBehaviorSettingsSheetChange = shellRunnerViewModel::updateShowBehaviorSettingsSheet,
+                    onShowOutputSettingsSheetChange = shellRunnerViewModel::updateShowOutputSettingsSheet,
+                    onSaveTitleInputChange = shellRunnerViewModel::updateSaveTitleInput,
+                    onSaveSubtitleInputChange = shellRunnerViewModel::updateSaveSubtitleInput,
+                    onResetSaveSheetInputs = shellRunnerViewModel::resetSaveSheetInputs,
+                    onOpenDangerousCommandConfirm = shellRunnerViewModel::openDangerousCommandConfirm,
+                    onDismissDangerousCommandConfirm = shellRunnerViewModel::dismissDangerousCommandConfirm,
+                ),
+        )
     OsShellRunnerRouteEffects(
         context = context,
         shellRunnerViewModel = shellRunnerViewModel,

@@ -16,7 +16,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -133,6 +132,8 @@ fun BaStudentGuidePage(
     val guideUiState by guideViewModel.uiState.collectAsStateWithLifecycle()
     val guideMediaImageState by guideViewModel.mediaImageState.collectAsStateWithLifecycle()
     val profileLinkTitleState by guideViewModel.profileLinkTitleState.collectAsStateWithLifecycle()
+    val pageChromeState by guideViewModel.pageChromeState.collectAsStateWithLifecycle()
+    val voiceUiState by guideViewModel.voiceUiState.collectAsStateWithLifecycle()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -154,18 +155,14 @@ fun BaStudentGuidePage(
     val info = guideDataState.info
     val loading = guideDataState.loading
     val error = guideDataState.error
-    var selectedBottomTabOrdinal by rememberSaveable(sourceUrl) {
-        mutableIntStateOf(GuideBottomTab.Archive.ordinal)
-    }
-    var selectedVoiceLanguage by rememberSaveable(sourceUrl) { mutableStateOf("") }
-    var playingVoiceUrl by rememberSaveable(sourceUrl) { mutableStateOf("") }
-    var isVoicePlaying by remember(sourceUrl) { mutableStateOf(false) }
-    var voicePlayProgress by remember(sourceUrl) { mutableFloatStateOf(0f) }
+    val selectedBottomTabOrdinal = pageChromeState.selectedBottomTabOrdinal
+    val selectedVoiceLanguage = pageChromeState.selectedVoiceLanguage
+    val playingVoiceUrl = voiceUiState.playingVoiceUrl
+    val isVoicePlaying = voiceUiState.isVoicePlaying
+    val voicePlayProgress = voiceUiState.voicePlayProgress
     val bottomTabsList = remember(info) { resolveGuideBottomTabs(info) }
     LaunchedEffect(bottomTabsList, selectedBottomTabOrdinal) {
-        if (bottomTabsList.none { it.ordinal == selectedBottomTabOrdinal }) {
-            selectedBottomTabOrdinal = bottomTabsList.firstOrNull()?.ordinal ?: GuideBottomTab.Archive.ordinal
-        }
+        guideViewModel.coerceSelectedBottomTab(bottomTabsList)
     }
     val selectedBottomTabIndex =
         bottomTabsList
@@ -204,10 +201,11 @@ fun BaStudentGuidePage(
             farJumpAlpha = farJumpAlpha,
             onShowBottomBarChange = { showBottomBar = it },
             onSelectedBottomTabIndexChange = { selectedIndex ->
-                selectedBottomTabOrdinal = bottomTabsList
-                    .getOrNull(selectedIndex)
-                    ?.ordinal
-                    ?: GuideBottomTab.Archive.ordinal
+                val selectedTab =
+                    bottomTabsList
+                        .getOrNull(selectedIndex)
+                        ?: GuideBottomTab.Archive
+                guideViewModel.updateSelectedBottomTab(selectedTab)
             },
         )
     LaunchedEffect(guideUiState.requestedInitialBottomTab, bottomTabsList, selectBottomTabAction) {
@@ -276,17 +274,17 @@ fun BaStudentGuidePage(
     BindBaStudentGuideForegroundAudioGuard(
         sourceUrl = sourceUrl,
         voicePlayerController = voicePlayerController,
-        onPlayingVoiceUrlChange = { playingVoiceUrl = it },
-        onIsVoicePlayingChange = { isVoicePlaying = it },
-        onVoicePlayProgressChange = { voicePlayProgress = it },
+        onPlayingVoiceUrlChange = guideViewModel::updatePlayingVoiceUrl,
+        onIsVoicePlayingChange = guideViewModel::updateIsVoicePlaying,
+        onVoicePlayProgressChange = guideViewModel::updateVoicePlayProgress,
     )
     BindBaStudentGuideVoiceListenerEffect(
         context = context,
         voicePlayer = voicePlayerController.player,
         playingVoiceUrl = playingVoiceUrl,
-        onPlayingVoiceUrlChange = { playingVoiceUrl = it },
-        onIsVoicePlayingChange = { isVoicePlaying = it },
-        onVoicePlayProgressChange = { voicePlayProgress = it },
+        onPlayingVoiceUrlChange = guideViewModel::updatePlayingVoiceUrl,
+        onIsVoicePlayingChange = guideViewModel::updateIsVoicePlaying,
+        onVoicePlayProgressChange = guideViewModel::updateVoicePlayProgress,
     )
     val pageActions =
         rememberBaStudentGuidePageActions(
@@ -298,9 +296,9 @@ fun BaStudentGuidePage(
             openLinkFailedText = openLinkFailedText,
             voicePlayerController = voicePlayerController,
             playingVoiceUrl = playingVoiceUrl,
-            onPlayingVoiceUrlChange = { playingVoiceUrl = it },
-            onIsVoicePlayingChange = { isVoicePlaying = it },
-            onVoicePlayProgressChange = { voicePlayProgress = it },
+            onPlayingVoiceUrlChange = guideViewModel::updatePlayingVoiceUrl,
+            onIsVoicePlayingChange = guideViewModel::updateIsVoicePlaying,
+            onVoicePlayProgressChange = guideViewModel::updateVoicePlayProgress,
             onOpenGuideInPage = guideViewModel::openGuide,
             onRefresh = guideViewModel::requestRefresh,
             saveGuideMedia = saveGuideMediaAction,
@@ -313,10 +311,11 @@ fun BaStudentGuidePage(
         selectedBottomTabIndex = selectedBottomTabIndex,
         pagerState = pagerState,
         onSelectedBottomTabIndexChange = { selectedIndex ->
-            selectedBottomTabOrdinal = bottomTabsList
-                .getOrNull(selectedIndex)
-                ?.ordinal
-                ?: GuideBottomTab.Archive.ordinal
+            val selectedTab =
+                bottomTabsList
+                    .getOrNull(selectedIndex)
+                    ?: GuideBottomTab.Archive
+            guideViewModel.updateSelectedBottomTab(selectedTab)
         },
     )
     BindBaStudentGuideVoiceProgressEffect(
@@ -324,7 +323,7 @@ fun BaStudentGuidePage(
         isVoicePlaying = isVoicePlaying,
         playingVoiceUrl = playingVoiceUrl,
         voicePlayer = voicePlayerController.player,
-        onVoicePlayProgressChange = { voicePlayProgress = it },
+        onVoicePlayProgressChange = guideViewModel::updateVoicePlayProgress,
     )
     BindBaStudentGuidePrefetchEffects(
         info = info,
@@ -353,101 +352,101 @@ fun BaStudentGuidePage(
         LocalGuideMediaGifTargetRequester provides guideViewModel::requestGuideMediaGifTargets,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-        AppScaffold(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MiuixTheme.colorScheme.background)
-                    .nestedScroll(bottomBarNestedScrollConnection),
-            topBar = {
-                AppTopBarSection(
-                    title = pageTitle,
-                    largeTitle = pageTitle,
-                    scrollBehavior = scrollBehavior,
-                    color = topBarMaterialBackdrop,
-                    titleBackdrop = topBarBackdrop,
-                    titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
-                    onTitleClick = {
-                        bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
-                    },
-                    navigationIcon = {
-                        AppLiquidNavigationButton(
-                            icon = appLucideBackIcon(),
-                            contentDescription = pageTitle,
-                            onClick = onBack,
-                            backdrop = topBarBackdrop,
-                        )
-                    },
-                )
-            },
-            bottomBar = {
-                BaStudentGuideBottomBar(
-                    visible = showBottomBar,
-                    navigationBarBottom = navigationBarBottom,
-                    bottomTabs = bottomTabsList,
-                    selectedPage = pagerState.targetPage,
-                    selectedPagePosition = pagerState.targetPage.toFloat(),
-                    selectedPagePositionProvider = {
-                        (pagerState.currentPage + pagerState.currentPageOffsetFraction)
-                            .coerceIn(0f, bottomTabsList.lastIndex.coerceAtLeast(0).toFloat())
-                    },
-                    selectedPageProvider = { pagerState.targetPage },
-                    backdrop = navBackdrop,
-                    isLiquidEffectEnabled = liquidBottomBarEnabled,
-                    miuixMainNavigationEnabled = miuixMainNavigationEnabled,
-                    onSelectTab = selectBottomTabAction,
-                )
-            },
-        ) { innerPadding ->
-            BaStudentGuidePagerContent(
-                sourceUrl = sourceUrl,
-                info = info,
-                error = error,
-                pagerState = pagerState,
-                bottomTabs = bottomTabsList,
-                syncProgress = syncProgress,
-                activationCount = activationCount,
-                surfaceColor = surfaceColor,
-                accent = accent,
-                innerPadding = innerPadding,
-                farJumpAlpha = farJumpAlpha.value,
-                navBackdrop = navBackdrop,
-                topBarBackdrop = topBarBackdrop,
-                galleryCacheRevision = guidePrefetchState.galleryCacheRevision,
-                selectedVoiceLanguage = selectedVoiceLanguage,
-                playingVoiceUrl = playingVoiceUrl,
-                isVoicePlaying = isVoicePlaying,
-                voicePlayProgress = voicePlayProgress,
-                bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
-                profileLinkTitles = profileLinkTitleState.titles,
-                profileLinkMissingLinks = profileLinkTitleState.missingLinks,
-                isNpcSatelliteGuide = guideUiState.isNpcSatelliteGuide,
-                mediaAdaptiveRotationEnabled = guideUiState.mediaSettings.mediaAdaptiveRotationEnabled,
-                includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
-                guidePagerBeyondViewportPageCount = preloadPolicy.guidePagerBeyondViewportPageCount,
-                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
-                onOpenExternal = pageActions.openExternal,
-                onOpenGuide = pageActions.openGuideInPage,
-                onSaveMedia = pageActions.saveGuideMedia,
-                onSaveMediaPack = pageActions.saveGuideMediaPack,
-                onToggleBgmFavorite = guideViewModel::requestToggleBgmFavorite,
-                onRequestProfileLinkTitles = guideViewModel::requestProfileLinkTitles,
-                onToggleVoicePlayback = pageActions.toggleVoicePlayback,
-                onScrollBoundsChange = { canScrollBackward, canScrollForward ->
-                    activePageCanScrollBackward = canScrollBackward
-                    activePageCanScrollForward = canScrollForward
+            AppScaffold(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.background)
+                        .nestedScroll(bottomBarNestedScrollConnection),
+                topBar = {
+                    AppTopBarSection(
+                        title = pageTitle,
+                        largeTitle = pageTitle,
+                        scrollBehavior = scrollBehavior,
+                        color = topBarMaterialBackdrop,
+                        titleBackdrop = topBarBackdrop,
+                        titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
+                        onTitleClick = {
+                            bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
+                        },
+                        navigationIcon = {
+                            AppLiquidNavigationButton(
+                                icon = appLucideBackIcon(),
+                                contentDescription = pageTitle,
+                                onClick = onBack,
+                                backdrop = topBarBackdrop,
+                            )
+                        },
+                    )
                 },
-                onListScrollInProgressChange = {},
-                onSelectedVoiceLanguageChange = { selectedVoiceLanguage = it },
-            )
+                bottomBar = {
+                    BaStudentGuideBottomBar(
+                        visible = showBottomBar,
+                        navigationBarBottom = navigationBarBottom,
+                        bottomTabs = bottomTabsList,
+                        selectedPage = pagerState.targetPage,
+                        selectedPagePosition = pagerState.targetPage.toFloat(),
+                        selectedPagePositionProvider = {
+                            (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                                .coerceIn(0f, bottomTabsList.lastIndex.coerceAtLeast(0).toFloat())
+                        },
+                        selectedPageProvider = { pagerState.targetPage },
+                        backdrop = navBackdrop,
+                        isLiquidEffectEnabled = liquidBottomBarEnabled,
+                        miuixMainNavigationEnabled = miuixMainNavigationEnabled,
+                        onSelectTab = selectBottomTabAction,
+                    )
+                },
+            ) { innerPadding ->
+                BaStudentGuidePagerContent(
+                    sourceUrl = sourceUrl,
+                    info = info,
+                    error = error,
+                    pagerState = pagerState,
+                    bottomTabs = bottomTabsList,
+                    syncProgress = syncProgress,
+                    activationCount = activationCount,
+                    surfaceColor = surfaceColor,
+                    accent = accent,
+                    innerPadding = innerPadding,
+                    farJumpAlpha = farJumpAlpha.value,
+                    navBackdrop = navBackdrop,
+                    topBarBackdrop = topBarBackdrop,
+                    galleryCacheRevision = guidePrefetchState.galleryCacheRevision,
+                    selectedVoiceLanguage = selectedVoiceLanguage,
+                    playingVoiceUrl = playingVoiceUrl,
+                    isVoicePlaying = isVoicePlaying,
+                    voicePlayProgress = voicePlayProgress,
+                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                    profileLinkTitles = profileLinkTitleState.titles,
+                    profileLinkMissingLinks = profileLinkTitleState.missingLinks,
+                    isNpcSatelliteGuide = guideUiState.isNpcSatelliteGuide,
+                    mediaAdaptiveRotationEnabled = guideUiState.mediaSettings.mediaAdaptiveRotationEnabled,
+                    includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
+                    guidePagerBeyondViewportPageCount = preloadPolicy.guidePagerBeyondViewportPageCount,
+                    nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                    onOpenExternal = pageActions.openExternal,
+                    onOpenGuide = pageActions.openGuideInPage,
+                    onSaveMedia = pageActions.saveGuideMedia,
+                    onSaveMediaPack = pageActions.saveGuideMediaPack,
+                    onToggleBgmFavorite = guideViewModel::requestToggleBgmFavorite,
+                    onRequestProfileLinkTitles = guideViewModel::requestProfileLinkTitles,
+                    onToggleVoicePlayback = pageActions.toggleVoicePlayback,
+                    onScrollBoundsChange = { canScrollBackward, canScrollForward ->
+                        activePageCanScrollBackward = canScrollBackward
+                        activePageCanScrollForward = canScrollForward
+                    },
+                    onListScrollInProgressChange = {},
+                    onSelectedVoiceLanguageChange = guideViewModel::updateSelectedVoiceLanguage,
+                )
+            }
+            AppTopEndActionBarOverlay {
+                LiquidActionBar(
+                    backdrop = topBarBackdrop,
+                    layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                    items = actionItems,
+                )
+            }
         }
-        AppTopEndActionBarOverlay {
-            LiquidActionBar(
-                backdrop = topBarBackdrop,
-                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                items = actionItems,
-            )
-        }
-    }
     }
 }

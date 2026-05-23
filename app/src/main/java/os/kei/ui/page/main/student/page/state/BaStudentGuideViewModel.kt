@@ -98,6 +98,10 @@ internal class BaStudentGuideViewModel(
 
     private val _prefetchState = MutableStateFlow(BaStudentGuidePrefetchUiState())
     val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = _prefetchState.asStateFlow()
+    private val _pageChromeState = MutableStateFlow(BaStudentGuidePageChromeState())
+    val pageChromeState: StateFlow<BaStudentGuidePageChromeState> = _pageChromeState.asStateFlow()
+    private val _voiceUiState = MutableStateFlow(BaStudentGuideVoiceUiState())
+    val voiceUiState: StateFlow<BaStudentGuideVoiceUiState> = _voiceUiState.asStateFlow()
     val mediaImageState = mediaImageLoader.state
     val profileLinkTitleState = profileLinkTitleLoader.state
     private val mutableEvents = MutableSharedFlow<BaStudentGuideEvent>(replay = 0, extraBufferCapacity = 8)
@@ -217,6 +221,7 @@ internal class BaStudentGuideViewModel(
                 repository.saveCurrentUrlAsync(target)
             }
         lastLoadedSourceUrl = ""
+        resetGuideRuntimeState()
         _isNpcSatelliteGuide.value = false
         _requestedInitialBottomTab.value = repository.consumeInitialBottomTab(target)
         _dataState.value =
@@ -235,6 +240,66 @@ internal class BaStudentGuideViewModel(
         _requestedInitialBottomTab.value = null
     }
 
+    fun coerceSelectedBottomTab(bottomTabs: List<GuideBottomTab>) {
+        val selectedOrdinal = _pageChromeState.value.selectedBottomTabOrdinal
+        if (bottomTabs.any { it.ordinal == selectedOrdinal }) return
+        _pageChromeState.update { state ->
+            state.copy(
+                selectedBottomTabOrdinal =
+                    bottomTabs
+                        .firstOrNull()
+                        ?.ordinal
+                        ?: GuideBottomTab.Archive.ordinal,
+            )
+        }
+    }
+
+    fun updateSelectedBottomTab(tab: GuideBottomTab) {
+        _pageChromeState.update { state ->
+            if (state.selectedBottomTabOrdinal == tab.ordinal) {
+                state
+            } else {
+                state.copy(selectedBottomTabOrdinal = tab.ordinal)
+            }
+        }
+    }
+
+    fun updateSelectedVoiceLanguage(language: String) {
+        _pageChromeState.update { state ->
+            if (state.selectedVoiceLanguage == language) {
+                state
+            } else {
+                state.copy(selectedVoiceLanguage = language)
+            }
+        }
+    }
+
+    fun updatePlayingVoiceUrl(url: String) {
+        _voiceUiState.update { state ->
+            if (state.playingVoiceUrl == url) {
+                state
+            } else {
+                state.copy(playingVoiceUrl = url)
+            }
+        }
+    }
+
+    fun updateIsVoicePlaying(isPlaying: Boolean) {
+        _voiceUiState.update { state ->
+            if (state.isVoicePlaying == isPlaying) {
+                state
+            } else {
+                state.copy(isVoicePlaying = isPlaying)
+            }
+        }
+    }
+
+    fun updateVoicePlayProgress(progress: Float) {
+        _voiceUiState.update { state ->
+            state.withProgress(progress)
+        }
+    }
+
     private fun loadStoredCurrentGuide() {
         currentUrlLoadJob?.cancel()
         currentUrlLoadJob =
@@ -248,6 +313,7 @@ internal class BaStudentGuideViewModel(
                 }
                 if (_dataState.value.sourceUrl.isNotBlank()) return@launch
                 _requestedInitialBottomTab.value = repository.consumeInitialBottomTab(storedSourceUrl)
+                resetGuideRuntimeState()
                 _dataState.value =
                     BaStudentGuideDataUiState(
                         sourceUrl = storedSourceUrl,
@@ -312,14 +378,11 @@ internal class BaStudentGuideViewModel(
         studentNamePrefix = studentNamePrefix,
     )
 
-    fun requestGuideMediaImages(requests: List<GuideMediaImageRequest>) =
-        mediaImageLoader.requestImages(requests)
+    fun requestGuideMediaImages(requests: List<GuideMediaImageRequest>) = mediaImageLoader.requestImages(requests)
 
-    fun requestGuideMediaGifTargets(rawTargets: List<String>) =
-        mediaImageLoader.requestGifTargets(rawTargets)
+    fun requestGuideMediaGifTargets(rawTargets: List<String>) = mediaImageLoader.requestGifTargets(rawTargets)
 
-    fun requestProfileLinkTitles(rawLinks: List<String>) =
-        profileLinkTitleLoader.requestTitles(rawLinks)
+    fun requestProfileLinkTitles(rawLinks: List<String>) = profileLinkTitleLoader.requestTitles(rawLinks)
 
     fun completeCustomMediaSave(
         request: GuideMediaSaveRequest,
@@ -474,6 +537,11 @@ internal class BaStudentGuideViewModel(
                     }
                 }
             }
+    }
+
+    private fun resetGuideRuntimeState() {
+        _pageChromeState.update { state -> state.resetForNewSource() }
+        _voiceUiState.update { state -> state.resetForNewSource() }
     }
 
     private suspend fun runPrefetchStages(

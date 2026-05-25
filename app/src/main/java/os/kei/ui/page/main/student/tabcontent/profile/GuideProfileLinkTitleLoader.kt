@@ -15,6 +15,7 @@ internal data class GuideProfileLinkTitleUiState(
 
 internal class GuideProfileLinkTitleLoader(
     private val scope: CoroutineScope,
+    private val repository: GuideProfileLinkTitleRepository = GuideProfileLinkTitleRepository(),
 ) {
     private companion object {
         const val TITLE_STATE_LIMIT = 96
@@ -38,9 +39,7 @@ internal class GuideProfileLinkTitleLoader(
             links
                 .filterNot { link -> current.titles.containsKey(link) }
                 .mapNotNull { link ->
-                    profileLinkTitleCache[link]
-                        ?.takeIf { it.isNotBlank() }
-                        ?.let { title -> link to title }
+                    repository.cachedTitle(link)?.let { title -> link to title }
                 }.toMap()
         if (cachedTitles.isNotEmpty()) {
             mutableState.update { state ->
@@ -70,7 +69,8 @@ internal class GuideProfileLinkTitleLoader(
                 val resolved =
                     missingLinks
                         .mapNotNull { link ->
-                            resolveProfileLinkTitleAsync(link)
+                            repository
+                                .resolveTitle(link)
                                 .takeIf { it.isNotBlank() }
                                 ?.let { title -> link to title }
                         }.toMap()

@@ -12,9 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
@@ -53,32 +51,27 @@ class FeedbackIssueActivity : ComponentActivity() {
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
                     ) {
-                        val context = LocalContext.current
                         val viewModel: FeedbackIssueViewModel = viewModel()
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                         val exportLauncher = rememberLauncherForActivityResult(
                             contract = ActivityResultContracts.CreateDocument("application/zip")
                         ) { uri ->
                             if (uri != null) {
-                                viewModel.exportZip(context, uri)
+                                viewModel.exportZip(uri)
                             }
-                        }
-
-                        LaunchedEffect(viewModel, context) {
-                            viewModel.refresh(context)
                         }
 
                         FeedbackIssuePage(
                             state = uiState,
                             onTitleChange = viewModel::updateTitle,
                             onBodyChange = viewModel::updateBody,
-                            onRefresh = { viewModel.refresh(context) },
+                            onRefresh = viewModel::refresh,
                             onExportZip = {
                                 viewModel.suggestLogExportFileName { fileName ->
                                     exportLauncher.launch(fileName)
                                 }
                             },
-                            onClearLogs = { viewModel.clearLogs(context) },
+                            onClearLogs = viewModel::clearLogs,
                             onRequestSubmit = viewModel::requestSubmit,
                             onDismissSubmit = viewModel::dismissSubmitConfirmation,
                             onConfirmBrowserSubmit = {
@@ -92,7 +85,7 @@ class FeedbackIssueActivity : ComponentActivity() {
                                 }
                             },
                             onConfirmApiSubmit = {
-                                viewModel.submitViaApi(this@FeedbackIssueActivity) { issueUrl ->
+                                viewModel.submitViaApi { issueUrl ->
                                     SafeExternalIntents.startBrowsableUrl(
                                         context = this@FeedbackIssueActivity,
                                         url = issueUrl

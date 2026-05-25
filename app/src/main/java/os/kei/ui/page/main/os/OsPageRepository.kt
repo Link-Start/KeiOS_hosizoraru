@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
 import os.kei.core.io.readTextFromUriLimited
+import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -47,6 +48,7 @@ internal class OsPageRepository(
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
         builtInShellCommandCards: List<OsShellCommandCard>,
     ) {
+        if (persistentState.value.loaded) return
         val loaded =
             withContext(ioDispatcher) {
                 OsPagePersistentState(
@@ -66,7 +68,13 @@ internal class OsPageRepository(
                     loaded = true,
                 )
             }
-        persistentState.value = loaded
+        persistentState.update { current ->
+            if (current.loaded) current else loaded
+        }
+    }
+
+    fun closePersistentShell() {
+        RuntimeCommandExecutor.closePersistentShell()
     }
 
     suspend fun reloadShellCommandCards(builtInShellCommandCards: List<OsShellCommandCard> = emptyList()) {

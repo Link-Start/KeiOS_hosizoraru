@@ -10,12 +10,10 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.core.system.RuntimeCommandExecutor
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
@@ -63,12 +61,7 @@ fun OsPage(
     val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
     val lifecycleOwner = LocalLifecycleOwner.current
     val osPageViewModel: OsPageViewModel = viewModel()
-    LaunchedEffect(
-        runtime.hasActivated,
-        textBundle.googleSystemServiceDefaults,
-        textBundle.builtInActivityShortcutCards,
-        textBundle.builtInShellCommandCards,
-    ) {
+    LaunchedEffect(runtime.hasActivated) {
         if (!runtime.hasActivated) return@LaunchedEffect
         osPageViewModel.loadPersistentState(
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
@@ -159,14 +152,12 @@ fun OsPage(
     DisposableEffect(Unit) {
         onDispose {
             onActionBarInteractingChanged(false)
-            RuntimeCommandExecutor.closePersistentShell()
+            osPageViewModel.handlePageActiveChanged(false)
         }
     }
     LaunchedEffect(runtime.contentReady, runtime.isDataActive) {
         val active = runtime.contentReady && runtime.isDataActive
-        if (!active) {
-            RuntimeCommandExecutor.closePersistentShell()
-        }
+        osPageViewModel.handlePageActiveChanged(active)
     }
     BindOsShellCardReloadOnResume(
         lifecycleOwner = lifecycleOwner,

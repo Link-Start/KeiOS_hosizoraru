@@ -316,6 +316,19 @@ internal class OsPageViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Releases the persistent shell when the page goes inactive (page hidden / pager swiped away).
+     * Called from the page lifecycle, never from a composition keyed effect, so the shell only
+     * closes on real activation transitions instead of every textBundle/locale recomposition.
+     */
+    fun handlePageActiveChanged(active: Boolean) {
+        if (!active) {
+            viewModelScope.launch {
+                repository.closePersistentShell()
+            }
+        }
+    }
+
     fun openActivityShortcutCard(
         card: OsActivityShortcutCard,
         defaults: OsGoogleSystemServiceConfig,
@@ -662,6 +675,7 @@ internal class OsPageViewModel : ViewModel() {
         activitySuggestionController.cancel()
         rowsStateLoader.cancel()
         activityIconLoader.clearLoadingState()
+        repository.closePersistentShell()
         super.onCleared()
     }
 }

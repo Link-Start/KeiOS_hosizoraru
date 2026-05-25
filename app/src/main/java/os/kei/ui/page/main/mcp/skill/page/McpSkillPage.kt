@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,13 +47,21 @@ fun McpSkillPage(
     val topBarBackdrop = rememberLayerBackdrop()
     val viewModel: McpSkillPageViewModel = viewModel()
     val contentRequest =
-        McpSkillPageContentRequest(
-            emptyMarkdown = textBundle.emptyMarkdown,
-            defaultRootTitle = textBundle.defaultRootTitle,
-            defaultOverviewTitle = textBundle.defaultOverviewTitle,
-            defaultContentTitle = textBundle.defaultContentTitle,
-            emptyContentText = textBundle.emptyContentText,
-        )
+        remember(
+            textBundle.emptyMarkdown,
+            textBundle.defaultRootTitle,
+            textBundle.defaultOverviewTitle,
+            textBundle.defaultContentTitle,
+            textBundle.emptyContentText,
+        ) {
+            McpSkillPageContentRequest(
+                emptyMarkdown = textBundle.emptyMarkdown,
+                defaultRootTitle = textBundle.defaultRootTitle,
+                defaultOverviewTitle = textBundle.defaultOverviewTitle,
+                defaultContentTitle = textBundle.defaultContentTitle,
+                emptyContentText = textBundle.emptyContentText,
+            )
+        }
     LaunchedEffect(mcpServerManager, contentRequest) {
         viewModel.loadContent(
             manager = mcpServerManager,

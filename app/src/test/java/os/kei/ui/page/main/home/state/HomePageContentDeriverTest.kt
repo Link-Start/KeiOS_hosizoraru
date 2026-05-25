@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 
 class HomePageContentDeriverTest {
     @Test
-    fun mcpRuntimeUsesProvidedRuntimeClock() {
+    fun derivedContentSurfacesFocusAndCacheFields() {
         val state =
             deriveHomePageContentState(
                 shizukuStatus = "granted",
@@ -49,7 +49,6 @@ class HomePageContentDeriverTest {
                         apLimit = 240,
                         cacheFreshness = staleCacheSnapshot(),
                     ),
-                runtimeNowMs = 3_660_000L,
                 text = testTextBundle(),
                 colors =
                     HomePageContentColors(
@@ -60,7 +59,6 @@ class HomePageContentDeriverTest {
                     ),
             )
 
-        assertEquals("1h", state.mcpRuntimeText)
         assertEquals("2 devices", state.mcpFocusLine)
         assertEquals("failed 1", state.githubFocusLine)
         assertEquals("120/240", state.baFocusLine)

@@ -245,7 +245,6 @@ internal fun rememberHomePageOverviewCardState(
     homeStatStatus: String,
     mcpStatusText: String,
     homeStatRuntime: String,
-    mcpRuntimeText: String,
     homeStatClients: String,
     mcpConnectedClients: Int,
     homeStatNetwork: String,
@@ -334,7 +333,6 @@ internal fun rememberHomePageOverviewCardState(
         homeStatStatus,
         mcpStatusText,
         homeStatRuntime,
-        mcpRuntimeText,
         homeStatClients,
         mcpConnectedClients,
         homeStatNetwork,
@@ -346,7 +344,12 @@ internal fun rememberHomePageOverviewCardState(
     ) {
         listOf(
             HomeCardStatItem(label = homeStatStatus, value = mcpStatusText, emphasize = true),
-            HomeCardStatItem(label = homeStatRuntime, value = mcpRuntimeText, emphasize = true),
+            HomeCardStatItem(
+                label = homeStatRuntime,
+                value = "",
+                emphasize = true,
+                runtimeMode = true,
+            ),
             HomeCardStatItem(label = homeStatClients, value = mcpConnectedClients.toString()),
             HomeCardStatItem(label = homeStatNetwork, value = networkModeText),
             HomeCardStatItem(label = homeStatPort, value = mcpPort.toString()),

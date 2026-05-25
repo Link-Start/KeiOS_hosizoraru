@@ -14,7 +14,6 @@ internal fun deriveHomePageContentState(
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
     baOverview: HomeBaOverview,
-    runtimeNowMs: Long,
     text: HomePageContentTextBundle,
     colors: HomePageContentColors,
 ): HomePageContentState {
@@ -36,12 +35,6 @@ internal fun deriveHomePageContentState(
             text.networkLanShort
         } else {
             text.networkLocalOnlyShort
-        }
-    val mcpRuntimeText =
-        if (!mcpOverview.running || mcpOverview.runningSinceEpochMs <= 0L) {
-            text.mcpRuntimePending
-        } else {
-            text.uptime(runtimeNowMs - mcpOverview.runningSinceEpochMs)
         }
     val mcpStatusText =
         if (mcpOverview.running) {
@@ -183,7 +176,6 @@ internal fun deriveHomePageContentState(
         homeStatStatus = text.statStatus,
         mcpStatusText = mcpStatusText,
         homeStatRuntime = text.statRuntime,
-        mcpRuntimeText = mcpRuntimeText,
         homeStatClients = text.statClients,
         mcpConnectedClients = mcpOverview.connectedClients,
         homeStatNetwork = text.statNetwork,

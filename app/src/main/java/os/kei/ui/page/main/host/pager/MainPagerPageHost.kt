@@ -11,6 +11,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.flow.StateFlow
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
@@ -38,7 +39,7 @@ internal data class MainPagerHomePageState(
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
-    val homeRuntimeNowMs: Long,
+    val homeRuntimeNowMsFlow: StateFlow<Long>,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
     val homeActionBarSelectedIndex: Int,
@@ -114,7 +115,7 @@ internal fun MainPagerPageHost(
                         mcpOverview = homeState.homeMcpOverview,
                         homeGitHubOverview = homeState.homeGitHubOverview,
                         homeBaOverview = homeState.homeBaOverview,
-                        runtimeNowMs = homeState.homeRuntimeNowMs,
+                        runtimeNowMsFlow = homeState.homeRuntimeNowMsFlow,
                         homeIconHdrEnabled = homeState.homeIconHdrEnabled,
                         homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
                         runtime = runtime,

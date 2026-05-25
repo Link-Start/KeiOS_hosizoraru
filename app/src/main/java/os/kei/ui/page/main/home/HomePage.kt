@@ -27,6 +27,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.StateFlow
 import os.kei.R
 import os.kei.core.ui.effect.background.BgEffectBackground
 import os.kei.feature.home.model.HomeAppOverview
@@ -63,7 +64,7 @@ fun HomePage(
     mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     homeGitHubOverview: HomeGitHubOverview = HomeGitHubOverview(),
     homeBaOverview: HomeBaOverview = HomeBaOverview(),
-    runtimeNowMs: Long,
+    runtimeNowMsFlow: StateFlow<Long>,
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean = false,
     runtime: MainPageRuntime = MainPageRuntime(),
@@ -135,7 +136,6 @@ fun HomePage(
             mcpOverview = mcpOverview,
             githubOverview = homeGitHubOverview,
             baOverview = homeBaOverview,
-            runtimeNowMs = runtimeNowMs,
         )
 
     DisposableEffect(Unit) {
@@ -212,7 +212,6 @@ fun HomePage(
             homeStatStatus = contentState.homeStatStatus,
             mcpStatusText = contentState.mcpStatusText,
             homeStatRuntime = contentState.homeStatRuntime,
-            mcpRuntimeText = contentState.mcpRuntimeText,
             homeStatClients = contentState.homeStatClients,
             mcpConnectedClients = contentState.mcpConnectedClients,
             homeStatNetwork = contentState.homeStatNetwork,
@@ -365,6 +364,9 @@ fun HomePage(
                                 homeNa = contentState.homeNa,
                                 homeCardMcp = contentState.homeCardMcp,
                                 mcpStats = overviewCardState.mcpOverviewStats,
+                                mcpRuntimeNowMsFlow = runtimeNowMsFlow,
+                                mcpRunning = mcpOverview.running,
+                                mcpRunningSinceEpochMs = mcpOverview.runningSinceEpochMs,
                                 homeCardGitHub = contentState.homeCardGitHub,
                                 githubStats = overviewCardState.githubOverviewStats,
                                 onOpenGitHubPage = onOpenGitHubPage,

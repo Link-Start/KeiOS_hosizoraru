@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,9 +37,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.flow.StateFlow
 import os.kei.R
 import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.ui.page.main.home.state.rememberHomePageContentTextBundle
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.model.toHomeOverviewCardOrNull
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -561,6 +565,9 @@ internal fun HomePageOverviewCards(
     homeNa: String,
     homeCardMcp: String,
     mcpStats: List<HomeCardStatItem>,
+    mcpRuntimeNowMsFlow: StateFlow<Long>,
+    mcpRunning: Boolean,
+    mcpRunningSinceEpochMs: Long,
     homeCardGitHub: String,
     githubStats: List<HomeCardStatItem>,
     onOpenGitHubPage: () -> Unit,
@@ -580,7 +587,14 @@ internal fun HomePageOverviewCards(
                     title = homeCardMcp,
                     naText = homeNa,
                     columns = 3,
-                    stats = mcpStats
+                    stats = mcpStats,
+                    runtimeValueProvider = {
+                        homeMcpRuntimeText(
+                            runtimeNowMsFlow = mcpRuntimeNowMsFlow,
+                            running = mcpRunning,
+                            runningSinceEpochMs = mcpRunningSinceEpochMs,
+                        )
+                    },
                 )
             }
         }
@@ -614,5 +628,26 @@ internal fun HomePageOverviewCards(
             }
         }
         Spacer(modifier = Modifier.height(2.dp))
+    }
+}
+
+/**
+ * Reads the runtime ticker StateFlow inline so only the single uptime cell rebuilds when
+ * the ticker emits, rather than the entire MCP overview card.
+ */
+@Composable
+private fun homeMcpRuntimeText(
+    runtimeNowMsFlow: StateFlow<Long>,
+    running: Boolean,
+    runningSinceEpochMs: Long,
+): String {
+    val text = rememberHomePageContentTextBundle()
+    // Always subscribe; collection lifecycle is owned by this leaf and is independent of
+    // whether the server is currently running, which avoids re-subscribing on toggle.
+    val nowMs by runtimeNowMsFlow.collectAsStateWithLifecycle()
+    return if (!running || runningSinceEpochMs <= 0L) {
+        text.mcpRuntimePending
+    } else {
+        text.uptime(nowMs - runningSinceEpochMs)
     }
 }

@@ -36,6 +36,10 @@ internal fun BindSettingsPageEffects(
     val latestCacheDiagnosticsEnabled = rememberUpdatedState(cacheDiagnosticsEnabled)
     val latestLogLevel = rememberUpdatedState(logLevel)
 
+    LaunchedEffect(context, settingsPageViewModel) {
+        settingsPageViewModel.bindSearchTargets(context)
+    }
+
     DisposableEffect(
         lifecycleOwner,
         settingsPageViewModel,

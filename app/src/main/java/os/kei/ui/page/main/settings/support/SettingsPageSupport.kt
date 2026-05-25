@@ -2,8 +2,6 @@
 
 package os.kei.ui.page.main.settings.support
 
-import android.content.Context
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,8 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import os.kei.R
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.widget.core.AppControlRow
@@ -40,11 +36,9 @@ import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 @Composable
@@ -269,11 +263,6 @@ internal fun formatOpacityPercent(alpha: Float): Int = (alpha.coerceIn(0f, 1f) *
 
 internal fun formatMilliseconds(value: Int): Int = value.coerceAtLeast(0)
 
-private const val NON_HOME_BACKGROUND_CROP_DIR = "non_home_background"
-private const val NON_HOME_BACKGROUND_CROP_FILE_PREFIX = "cropped_non_home_"
-private const val NON_HOME_BACKGROUND_CROP_TARGET_SHORT_EDGE = 1440
-private const val NON_HOME_BACKGROUND_CROP_MAX_WIDTH = 2560
-private const val NON_HOME_BACKGROUND_CROP_MAX_HEIGHT = 4096
 internal const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
 internal const val NON_HOME_BACKGROUND_OPACITY_MIN = 0.06f
 internal const val NON_HOME_BACKGROUND_OPACITY_MAX = 0.40f
@@ -305,72 +294,3 @@ internal val SUPER_ISLAND_RESTORE_DELAY_KEY_POINTS =
         300f,
         SUPER_ISLAND_RESTORE_DELAY_MAX_MS,
     )
-
-internal fun createNonHomeBackgroundCropOutputUri(context: Context): Uri {
-    val dir = File(context.filesDir, NON_HOME_BACKGROUND_CROP_DIR)
-    if (!dir.exists()) {
-        dir.mkdirs()
-    }
-    val output =
-        File(
-            dir,
-            "$NON_HOME_BACKGROUND_CROP_FILE_PREFIX${System.currentTimeMillis()}.jpg",
-        )
-    return FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        output,
-    )
-}
-
-internal fun resolveNonHomeBackgroundAspectRatio(context: Context): Pair<Float, Float> {
-    val metrics = context.resources.displayMetrics
-    val widthPx = metrics.widthPixels.coerceAtLeast(1)
-    val heightPx = metrics.heightPixels.coerceAtLeast(1)
-    return widthPx.toFloat() to heightPx.toFloat()
-}
-
-internal fun resolveNonHomeBackgroundCropSize(context: Context): Pair<Int, Int> {
-    val metrics = context.resources.displayMetrics
-    val widthPx = metrics.widthPixels.coerceAtLeast(1)
-    val heightPx = metrics.heightPixels.coerceAtLeast(1)
-    val shortEdge = min(widthPx, heightPx).coerceAtLeast(1)
-    val upscale =
-        (NON_HOME_BACKGROUND_CROP_TARGET_SHORT_EDGE.toFloat() / shortEdge.toFloat())
-            .coerceAtLeast(1f)
-    val width = (widthPx * upscale).roundToInt().coerceIn(widthPx, NON_HOME_BACKGROUND_CROP_MAX_WIDTH)
-    val height = (heightPx * upscale).roundToInt().coerceIn(heightPx, NON_HOME_BACKGROUND_CROP_MAX_HEIGHT)
-    return width to height
-}
-
-internal fun deleteManagedNonHomeBackgroundFile(
-    context: Context,
-    uriText: String,
-) {
-    if (uriText.isBlank()) return
-    val uri = runCatching { uriText.toUri() }.getOrNull() ?: return
-    val target =
-        when (uri.scheme) {
-            "file" -> File(uri.path ?: return)
-            "content" -> resolveManagedNonHomeBackgroundFileByContentUri(context, uri) ?: return
-            else -> return
-        }
-    if (target.name.startsWith(NON_HOME_BACKGROUND_CROP_FILE_PREFIX).not()) return
-    if (target.parentFile?.name != NON_HOME_BACKGROUND_CROP_DIR) return
-    runCatching { target.delete() }
-}
-
-internal fun resolveManagedNonHomeBackgroundFileByContentUri(
-    context: Context,
-    uri: Uri,
-): File? {
-    val expectedAuthority = "${context.packageName}.fileprovider"
-    if (uri.authority != expectedAuthority) return null
-    val fileName =
-        uri.lastPathSegment
-            ?.substringAfterLast('/')
-            ?.takeIf { it.startsWith(NON_HOME_BACKGROUND_CROP_FILE_PREFIX) }
-            ?: return null
-    val dir = File(context.filesDir, NON_HOME_BACKGROUND_CROP_DIR)
-    return File(dir, fileName)
-}

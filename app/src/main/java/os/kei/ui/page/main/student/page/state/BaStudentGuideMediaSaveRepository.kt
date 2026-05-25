@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student.page.state
 import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
@@ -30,13 +31,17 @@ internal data class BaStudentGuideFixedMediaPackSaveResult(
     val needsFolder: Boolean,
 )
 
-internal object BaStudentGuideMediaSaveRepository {
+internal class BaStudentGuideMediaSaveRepository(
+    private val derivationDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    private val settingsDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
+    private val mediaDispatcher: CoroutineDispatcher = AppDispatchers.media,
+) {
     suspend fun buildMediaSaveRequest(
         rawUrl: String,
         rawTitle: String,
         rawPrefix: String,
     ): GuideMediaSaveRequest? =
-        withContext(AppDispatchers.uiDerivation) {
+        withContext(derivationDispatcher) {
             buildGuideMediaSaveRequest(
                 rawUrl = rawUrl,
                 rawTitle = rawTitle,
@@ -49,7 +54,7 @@ internal object BaStudentGuideMediaSaveRepository {
         rawPackTitle: String,
         rawPrefix: String,
     ): GuideMediaPackSaveRequest? =
-        withContext(AppDispatchers.uiDerivation) {
+        withContext(derivationDispatcher) {
             buildGuideMediaPackSaveRequest(
                 rawItems = rawItems,
                 rawPackTitle = rawPackTitle,
@@ -58,7 +63,7 @@ internal object BaStudentGuideMediaSaveRepository {
         }
 
     suspend fun loadSaveLocation(): BaStudentGuideMediaSaveLocation =
-        withContext(AppDispatchers.baFetch) {
+        withContext(settingsDispatcher) {
             BaStudentGuideMediaSaveLocation(
                 useFixedLocation = BASettingsStore.loadMediaSaveCustomEnabled(),
                 fixedTreeUriRaw = BASettingsStore.loadMediaSaveFixedTreeUri(),
@@ -66,7 +71,7 @@ internal object BaStudentGuideMediaSaveRepository {
         }
 
     suspend fun saveFixedTreeUri(treeUriRaw: String) {
-        withContext(AppDispatchers.baFetch) {
+        withContext(settingsDispatcher) {
             BASettingsStore.saveMediaSaveFixedTreeUri(treeUriRaw)
         }
     }
@@ -84,6 +89,7 @@ internal object BaStudentGuideMediaSaveRepository {
             context = context,
             sourceUrl = request.sourceUrl,
             outputUri = targetUri,
+            ioDispatcher = mediaDispatcher,
         )
 
     suspend fun copyMediaPackToUri(
@@ -95,6 +101,7 @@ internal object BaStudentGuideMediaSaveRepository {
             context = context,
             request = request,
             outputUri = targetUri,
+            ioDispatcher = mediaDispatcher,
         )
 
     suspend fun copyMediaToFixedTree(
@@ -108,6 +115,7 @@ internal object BaStudentGuideMediaSaveRepository {
                 treeUri = treeUri,
                 mimeType = request.mimeType,
                 fileName = request.fileName,
+                ioDispatcher = mediaDispatcher,
             )
         if (targetUri == null) {
             clearFixedTreeUri()
@@ -128,6 +136,7 @@ internal object BaStudentGuideMediaSaveRepository {
                 treeUri = treeUri,
                 mimeType = "application/zip",
                 fileName = request.fileName,
+                ioDispatcher = mediaDispatcher,
             )
         if (targetUri == null) {
             clearFixedTreeUri()

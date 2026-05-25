@@ -1,13 +1,11 @@
 package os.kei.ui.page.main.settings.state
 
 import android.app.Activity
-import android.content.Intent
-import android.graphics.Bitmap
-import os.kei.core.ext.showToast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -15,25 +13,21 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import com.yalantis.ucrop.UCrop
 import os.kei.R
-import os.kei.core.intent.UriGrantCompat
 import os.kei.core.ui.resource.resolveString
-import os.kei.ui.page.main.settings.support.createNonHomeBackgroundCropOutputUri
-import os.kei.ui.page.main.settings.support.deleteManagedNonHomeBackgroundFile
-import os.kei.ui.page.main.settings.support.resolveNonHomeBackgroundAspectRatio
-import os.kei.ui.page.main.settings.support.resolveNonHomeBackgroundCropSize
 
 @Stable
 internal data class SettingsBackgroundController(
     val backgroundPickerLauncher: ActivityResultLauncher<Array<String>>,
-    val clearBackground: () -> Unit
+    val clearBackground: () -> Unit,
 )
 
 @Composable
 internal fun rememberSettingsBackgroundController(
+    settingsPageViewModel: SettingsPageViewModel,
     nonHomeBackgroundEnabled: Boolean,
     onNonHomeBackgroundEnabledChanged: (Boolean) -> Unit,
     nonHomeBackgroundUri: String,
-    onNonHomeBackgroundUriChanged: (String) -> Unit
+    onNonHomeBackgroundUriChanged: (String) -> Unit,
 ): SettingsBackgroundController {
     val context = LocalContext.current
     val latestBackgroundEnabled by rememberUpdatedState(nonHomeBackgroundEnabled)
@@ -41,100 +35,73 @@ internal fun rememberSettingsBackgroundController(
     val latestOnBackgroundEnabledChange by rememberUpdatedState(onNonHomeBackgroundEnabledChanged)
     val latestOnBackgroundUriChange by rememberUpdatedState(onNonHomeBackgroundUriChanged)
 
-    val cropLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val data = result.data
-        val cropError = data?.let { UCrop.getError(it) }
-        if (result.resultCode != Activity.RESULT_OK) {
-            if (cropError != null) {
-                val reason = cropError.javaClass.simpleName.ifBlank {
-                    context.resolveString(R.string.common_unknown)
+    val cropLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            val data = result.data
+            val cropError = data?.let { UCrop.getError(it) }
+            if (result.resultCode != Activity.RESULT_OK) {
+                if (cropError != null) {
+                    val reason =
+                        cropError.javaClass.simpleName.ifBlank {
+                            context.resolveString(R.string.common_unknown)
+                        }
+                    settingsPageViewModel.notifyNonHomeBackgroundCropFailed(reason)
                 }
-                context.showToast(context.resolveString(
-                    R.string.settings_non_home_background_toast_crop_failed,
-                    reason
-                ))
+                return@rememberLauncherForActivityResult
             }
-            return@rememberLauncherForActivityResult
+
+            val outputUri =
+                data?.let { UCrop.getOutput(it) } ?: run {
+                    settingsPageViewModel.notifyNonHomeBackgroundCropFailed(
+                        context.resolveString(R.string.common_unknown),
+                    )
+                    return@rememberLauncherForActivityResult
+                }
+
+            settingsPageViewModel.deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
+            latestOnBackgroundUriChange(outputUri.toString())
+            if (!latestBackgroundEnabled) {
+                latestOnBackgroundEnabledChange(true)
+            }
+            settingsPageViewModel.notifyNonHomeBackgroundSelected()
         }
 
-        val outputUri = data?.let { UCrop.getOutput(it) } ?: run {
-            context.showToast(context.resolveString(
-                R.string.settings_non_home_background_toast_crop_failed,
-                context.resolveString(R.string.common_unknown)
-            ))
-            return@rememberLauncherForActivityResult
+    val pickerLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            settingsPageViewModel.prepareNonHomeBackgroundCrop(context, uri)
         }
 
-        deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
-        latestOnBackgroundUriChange(outputUri.toString())
-        if (!latestBackgroundEnabled) {
-            latestOnBackgroundEnabledChange(true)
+    LaunchedEffect(settingsPageViewModel, cropLauncher) {
+        settingsPageViewModel.backgroundEvents.collect { event ->
+            when (event) {
+                is SettingsBackgroundEvent.LaunchNonHomeBackgroundCrop -> {
+                    runCatching {
+                        cropLauncher.launch(event.intent)
+                    }.onFailure { error ->
+                        val reason =
+                            error.javaClass.simpleName.ifBlank {
+                                context.resolveString(R.string.common_unknown)
+                            }
+                        settingsPageViewModel.notifyNonHomeBackgroundCropFailed(reason)
+                    }
+                }
+            }
         }
-        context.showToast(R.string.settings_non_home_background_toast_selected)
     }
 
-    val pickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        }
-
-        val outputUri = createNonHomeBackgroundCropOutputUri(context)
-        val (aspectRatioX, aspectRatioY) = resolveNonHomeBackgroundAspectRatio(context)
-        val (maxResultWidth, maxResultHeight) = resolveNonHomeBackgroundCropSize(context)
-        val cropOptions = UCrop.Options().apply {
-            setToolbarTitle(context.resolveString(R.string.settings_non_home_background_crop_title))
-            setCompressionFormat(Bitmap.CompressFormat.JPEG)
-            setCompressionQuality(92)
-            setFreeStyleCropEnabled(false)
-            setHideBottomControls(false)
-            setShowCropFrame(true)
-            setShowCropGrid(true)
-        }
-
-        val cropIntent = runCatching {
-            UCrop.of(uri, outputUri)
-                .withAspectRatio(aspectRatioX, aspectRatioY)
-                .withMaxResultSize(maxResultWidth, maxResultHeight)
-                .withOptions(cropOptions)
-                .getIntent(context)
-        }.getOrElse { error ->
-            val reason = error.javaClass.simpleName.ifBlank {
-                context.resolveString(R.string.common_unknown)
-            }
-            context.showToast(context.resolveString(
-                R.string.settings_non_home_background_toast_crop_failed,
-                reason
-            ))
-            return@rememberLauncherForActivityResult
-        }
-
-        val cropGrantFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        cropIntent.addFlags(cropGrantFlags)
-        UriGrantCompat.grantToIntentTargets(
-            context = context,
-            intent = cropIntent,
-            uris = listOf(uri, outputUri),
-            flags = cropGrantFlags
-        )
-        cropLauncher.launch(cropIntent)
-    }
-
-    return remember(pickerLauncher) {
+    return remember(pickerLauncher, settingsPageViewModel) {
         SettingsBackgroundController(
             backgroundPickerLauncher = pickerLauncher,
             clearBackground = {
-                deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
+                settingsPageViewModel.deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
                 latestOnBackgroundUriChange("")
-                context.showToast(R.string.settings_non_home_background_toast_cleared)
-            }
+                settingsPageViewModel.notifyNonHomeBackgroundCleared()
+            },
         )
     }
 }

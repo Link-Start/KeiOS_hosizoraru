@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.settings.state
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
@@ -107,9 +108,17 @@ internal sealed interface SettingsPageEvent {
     ) : SettingsPageEvent
 }
 
+internal sealed interface SettingsBackgroundEvent {
+    data class LaunchNonHomeBackgroundCrop(
+        val intent: Intent,
+    ) : SettingsBackgroundEvent
+}
+
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
     private var permissionKeepAliveRefreshJob: Job? = null
+    private var batteryOptimizationRefreshJob: Job? = null
+    private var searchTargetsJob: Job? = null
 
     private val _cacheState = MutableStateFlow(SettingsCacheUiState())
     val cacheState: StateFlow<SettingsCacheUiState> = _cacheState.asStateFlow()
@@ -127,6 +136,8 @@ internal class SettingsPageViewModel : ViewModel() {
         _permissionKeepAliveState.asStateFlow()
     private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<SettingsPageEvent> = _events.asSharedFlow()
+    private val _backgroundEvents = MutableSharedFlow<SettingsBackgroundEvent>(replay = 0, extraBufferCapacity = 4)
+    val backgroundEvents: SharedFlow<SettingsBackgroundEvent> = _backgroundEvents.asSharedFlow()
 
     val diagnosticsUiState: StateFlow<SettingsDiagnosticsUiState> =
         combine(cacheState, logState) { cache, log ->
@@ -222,10 +233,75 @@ internal class SettingsPageViewModel : ViewModel() {
         _chromeState.update { state -> state.copy(searchQuery = query.take(96)) }
     }
 
-    fun updateSearchTargets(targets: List<SettingsSearchTarget>) {
-        searchTargetsState.update { current ->
-            if (current == targets) current else targets
+    fun bindSearchTargets(context: Context) {
+        searchTargetsJob?.cancel()
+        searchTargetsJob =
+            viewModelScope.launch {
+                val targets = repository.buildSearchTargets(context.applicationContext)
+                searchTargetsState.update { current ->
+                    if (current == targets) current else targets
+                }
+            }
+    }
+
+    fun prepareNonHomeBackgroundCrop(
+        context: Context,
+        sourceUri: Uri,
+    ) {
+        viewModelScope.launch {
+            val result =
+                repository.buildNonHomeBackgroundCropIntent(
+                    context = context.applicationContext,
+                    sourceUri = sourceUri,
+                )
+            result
+                .onSuccess { intent ->
+                    _backgroundEvents.emit(SettingsBackgroundEvent.LaunchNonHomeBackgroundCrop(intent))
+                }.onFailure { error ->
+                    _events.emit(
+                        SettingsPageEvent.FailureToast(
+                            messageRes = R.string.settings_non_home_background_toast_crop_failed,
+                            reason = error.javaClass.simpleName,
+                        ),
+                    )
+                }
         }
+    }
+
+    fun deleteManagedNonHomeBackgroundFile(
+        context: Context,
+        uriText: String,
+    ) {
+        viewModelScope.launch {
+            repository.deleteManagedNonHomeBackgroundFile(
+                context = context.applicationContext,
+                uriText = uriText,
+            )
+        }
+    }
+
+    fun notifyNonHomeBackgroundCropFailed(reason: String) {
+        _events.tryEmit(
+            SettingsPageEvent.FailureToast(
+                messageRes = R.string.settings_non_home_background_toast_crop_failed,
+                reason = reason,
+            ),
+        )
+    }
+
+    fun notifyNonHomeBackgroundSelected() {
+        _events.tryEmit(SettingsPageEvent.Toast(R.string.settings_non_home_background_toast_selected))
+    }
+
+    fun notifyNonHomeBackgroundCleared() {
+        _events.tryEmit(SettingsPageEvent.Toast(R.string.settings_non_home_background_toast_cleared))
+    }
+
+    override fun onCleared() {
+        searchTargetsJob?.cancel()
+        permissionKeepAliveRefreshJob?.cancel()
+        batteryOptimizationRefreshJob?.cancel()
+        super.onCleared()
     }
 
     fun updateBottomBarVisible(visible: Boolean) {
@@ -285,8 +361,6 @@ internal class SettingsPageViewModel : ViewModel() {
             state.copy(shizukuRefreshToken = state.shizukuRefreshToken + 1)
         }
     }
-
-    private var batteryOptimizationRefreshJob: Job? = null
 
     fun refreshBatteryOptimization(controller: SettingsBatteryOptimizationController) {
         batteryOptimizationRefreshJob?.cancel()

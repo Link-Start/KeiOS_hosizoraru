@@ -55,7 +55,7 @@ internal sealed interface BaStudentGuideEvent {
 internal class BaStudentGuideMediaSaveCoordinator(
     private val appContext: Context,
     private val scope: CoroutineScope,
-    private val repository: BaStudentGuideMediaSaveRepository = BaStudentGuideMediaSaveRepository,
+    private val repository: BaStudentGuideMediaSaveRepository = BaStudentGuideMediaSaveRepository(),
 ) {
     private val mutableEvents = MutableSharedFlow<BaStudentGuideEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<BaStudentGuideEvent> = mutableEvents.asSharedFlow()

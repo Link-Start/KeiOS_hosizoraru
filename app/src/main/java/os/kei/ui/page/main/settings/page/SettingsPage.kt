@@ -150,6 +150,7 @@ fun SettingsPage(
         )
     val backgroundController =
         rememberSettingsBackgroundController(
+            settingsPageViewModel = settingsPageViewModel,
             nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
             onNonHomeBackgroundEnabledChanged = onNonHomeBackgroundEnabledChanged,
             nonHomeBackgroundUri = nonHomeBackgroundUri,
@@ -314,13 +315,9 @@ fun SettingsPage(
         }
     val settingsSearchPlaceholder = stringResource(R.string.settings_search_placeholder)
     val searchContentDescription = settingsSearchPlaceholder
-    val searchTargets = rememberSettingsSearchTargets()
     val trimmedSearchQuery = searchQuery.trim()
     val searchActive = trimmedSearchQuery.isNotEmpty()
     val matchingSearchTargets = pageSnapshotState.searchUiState.matchingTargets
-    LaunchedEffect(searchTargets, settingsPageViewModel) {
-        settingsPageViewModel.updateSearchTargets(searchTargets)
-    }
     val selectSettingsCategoryAction =
         remember(
             categories,

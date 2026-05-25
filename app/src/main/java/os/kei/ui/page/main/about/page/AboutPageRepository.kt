@@ -21,51 +21,61 @@ internal data class AboutPageDetailsState(
     val loaded: Boolean = false,
 )
 
+internal data class AboutPageManifestDetails(
+    val packageDetailInfo: PackageInfo?,
+    val permissionEntries: List<AboutPermissionEntry>,
+    val componentEntries: List<AboutComponentEntry>,
+)
+
 internal class AboutPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ) {
-    suspend fun loadDetails(
+    suspend fun loadManifestDetails(
+        context: Context,
+        notificationPermissionGranted: Boolean,
+    ): AboutPageManifestDetails =
+        withContext(ioDispatcher) {
+            val packageDetailInfo = loadPackageDetailInfo(context)
+            val permissionEntries =
+                buildPermissionEntries(
+                    context = context,
+                    packageInfo = packageDetailInfo,
+                    notificationPermissionGranted = notificationPermissionGranted,
+                )
+            val componentEntries =
+                buildComponentEntries(
+                    context = context,
+                    packageInfo = packageDetailInfo,
+                )
+            AboutPageManifestDetails(
+                packageDetailInfo = packageDetailInfo,
+                permissionEntries = permissionEntries,
+                componentEntries = componentEntries,
+            )
+        }
+
+    suspend fun loadShizukuDetails(shizukuApiUtils: ShizukuApiUtils): Map<String, String> =
+        withContext(ioDispatcher) {
+            shizukuApiUtils.detailedRows().toMap()
+        }
+
+    suspend fun buildSearchTargets(
         context: Context,
         appLabel: String,
         shizukuStatus: String,
-        notificationPermissionGranted: Boolean,
-        shizukuApiUtils: ShizukuApiUtils,
-    ): AboutPageDetailsState {
-        val details =
-            withContext(ioDispatcher) {
-                val packageDetailInfo = loadPackageDetailInfo(context)
-                val permissionEntries =
-                    buildPermissionEntries(
-                        context = context,
-                        packageInfo = packageDetailInfo,
-                        notificationPermissionGranted = notificationPermissionGranted,
-                    )
-                val componentEntries =
-                    buildComponentEntries(
-                        context = context,
-                        packageInfo = packageDetailInfo,
-                    )
-                AboutPageDetailsState(
-                    packageDetailInfo = packageDetailInfo,
-                    permissionEntries = permissionEntries,
-                    componentEntries = componentEntries,
-                    shizukuDetailMap = shizukuApiUtils.detailedRows().toMap(),
-                    loaded = true,
-                )
-            }
-        val searchTargets =
-            withContext(defaultDispatcher) {
-                buildAboutSearchTargets(
-                    context = context,
-                    appLabel = appLabel,
-                    shizukuStatus = shizukuStatus,
-                    permissionEntries = details.permissionEntries,
-                    componentEntries = details.componentEntries,
-                )
-            }
-        return details.copy(searchTargets = searchTargets)
-    }
+        permissionEntries: List<AboutPermissionEntry>,
+        componentEntries: List<AboutComponentEntry>,
+    ): List<AboutSearchTarget> =
+        withContext(defaultDispatcher) {
+            buildAboutSearchTargets(
+                context = context,
+                appLabel = appLabel,
+                shizukuStatus = shizukuStatus,
+                permissionEntries = permissionEntries,
+                componentEntries = componentEntries,
+            )
+        }
 
     suspend fun deriveSearchState(
         targets: List<AboutSearchTarget>,

@@ -14,7 +14,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -65,9 +64,7 @@ fun GitHubPage(
     val scrollBehavior = MiuixScrollBehavior()
     val isDark = isSystemInDarkTheme()
     val githubPageViewModel: GitHubPageViewModel = viewModel()
-    val isListScrolling by remember(listState) {
-        derivedStateOf { listState.isScrollInProgress }
-    }
+    val isListScrolling = listState.isScrollInProgress
     val fullBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress &&

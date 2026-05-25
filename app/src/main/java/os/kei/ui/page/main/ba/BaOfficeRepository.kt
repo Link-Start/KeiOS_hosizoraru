@@ -10,34 +10,27 @@ internal data class BaOfficeIdentity(
     val friendCode: String,
 )
 
+/**
+ * Repository for the BA office settings backed by [BASettingsStore]. All public APIs are
+ * `suspend` and dispatch on [AppDispatchers.baFetch] so callers cannot accidentally execute
+ * MMKV IO on the UI thread.
+ */
 internal object BaOfficeRepository {
-    fun loadSnapshot(): BaPageSnapshot = BASettingsStore.loadSnapshot()
-
     suspend fun loadSnapshotAsync(): BaPageSnapshot =
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.loadSnapshot()
         }
-
-    fun loadServerIndex(): Int = BASettingsStore.loadServerIndex()
 
     suspend fun loadServerIndexAsync(): Int =
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.loadServerIndex()
         }
 
-    fun clearListScrollState() {
-        BASettingsStore.clearListScrollState()
-    }
-
     suspend fun clearListScrollStateAsync() {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.clearListScrollState()
         }
     }
-
-    fun loadIdNickname(serverIndex: Int): String = BASettingsStore.loadIdNickname(serverIndex)
-
-    fun loadIdFriendCode(serverIndex: Int): String = BASettingsStore.loadIdFriendCode(serverIndex)
 
     suspend fun loadIdentityForServer(serverIndex: Int): BaOfficeIdentity =
         withContext(AppDispatchers.baFetch) {
@@ -47,21 +40,10 @@ internal object BaOfficeRepository {
             )
         }
 
-    fun saveIdIndependentByServerEnabled(enabled: Boolean) {
-        BASettingsStore.saveIdIndependentByServerEnabled(enabled)
-    }
-
     suspend fun saveIdIndependentByServerEnabledAsync(enabled: Boolean) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveIdIndependentByServerEnabled(enabled)
         }
-    }
-
-    fun saveIdNickname(
-        name: String,
-        serverIndex: Int? = null,
-    ) {
-        BASettingsStore.saveIdNickname(name, serverIndex)
     }
 
     suspend fun saveIdNicknameAsync(
@@ -73,13 +55,6 @@ internal object BaOfficeRepository {
         }
     }
 
-    fun saveIdFriendCode(
-        code: String,
-        serverIndex: Int? = null,
-    ) {
-        BASettingsStore.saveIdFriendCode(code, serverIndex)
-    }
-
     suspend fun saveIdFriendCodeAsync(
         code: String,
         serverIndex: Int? = null,
@@ -89,42 +64,10 @@ internal object BaOfficeRepository {
         }
     }
 
-    fun saveApRegenBaseMs(epochMs: Long) {
-        BASettingsStore.saveApRegenBaseMs(epochMs)
-    }
-
-    fun saveCafeLastHourMs(epochMs: Long) {
-        BASettingsStore.saveCafeLastHourMs(epochMs)
-    }
-
-    fun saveCafeStoredAp(storedAp: Double) {
-        BASettingsStore.saveCafeStoredAp(storedAp)
-    }
-
-    fun saveCafeApLastNotifiedLevel(level: Int) {
-        BASettingsStore.saveCafeApLastNotifiedLevel(level)
-    }
-
-    fun saveApLastNotifiedLevel(level: Int) {
-        BASettingsStore.saveApLastNotifiedLevel(level)
-    }
-
-    fun saveApLimit(limit: Int) {
-        BASettingsStore.saveApLimit(limit)
-    }
-
     suspend fun saveApLimitAsync(limit: Int) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveApLimit(limit)
         }
-    }
-
-    fun saveCafeLevel(level: Int) {
-        BASettingsStore.saveCafeLevel(level)
-    }
-
-    fun saveServerIndex(index: Int) {
-        BASettingsStore.saveServerIndex(index)
     }
 
     suspend fun saveServerIndexAsync(index: Int) {
@@ -133,18 +76,10 @@ internal object BaOfficeRepository {
         }
     }
 
-    fun saveCafeVisitLastNotifiedSlotMs(slotMs: Long) {
-        BASettingsStore.saveCafeVisitLastNotifiedSlotMs(slotMs)
-    }
-
     suspend fun saveCafeVisitLastNotifiedSlotMsAsync(slotMs: Long) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveCafeVisitLastNotifiedSlotMs(slotMs)
         }
-    }
-
-    fun saveArenaRefreshLastNotifiedSlotMs(slotMs: Long) {
-        BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(slotMs)
     }
 
     suspend fun saveArenaRefreshLastNotifiedSlotMsAsync(slotMs: Long) {
@@ -159,18 +94,10 @@ internal object BaOfficeRepository {
         }
     }
 
-    fun saveCoffeeHeadpatMs(epochMs: Long) {
-        BASettingsStore.saveCoffeeHeadpatMs(epochMs)
-    }
-
     suspend fun saveCoffeeHeadpatMsAsync(epochMs: Long) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveCoffeeHeadpatMs(epochMs)
         }
-    }
-
-    fun saveCoffeeInvite1UsedMs(epochMs: Long) {
-        BASettingsStore.saveCoffeeInvite1UsedMs(epochMs)
     }
 
     suspend fun saveCoffeeInvite1UsedMsAsync(epochMs: Long) {
@@ -179,17 +106,17 @@ internal object BaOfficeRepository {
         }
     }
 
-    fun saveCoffeeInvite2UsedMs(epochMs: Long) {
-        BASettingsStore.saveCoffeeInvite2UsedMs(epochMs)
-    }
-
     suspend fun saveCoffeeInvite2UsedMsAsync(epochMs: Long) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveCoffeeInvite2UsedMs(epochMs)
         }
     }
 
-    fun saveRuntimeState(
+    /**
+     * Persist runtime state on the caller's coroutine context. Callers must already be on
+     * [AppDispatchers.baFetch] (use [saveRuntimeStateAsync] otherwise).
+     */
+    internal fun saveRuntimeStateBlocking(
         apCurrent: Double? = null,
         apRegenBaseMs: Long? = null,
         apSyncMs: Long? = null,
@@ -205,5 +132,33 @@ internal object BaOfficeRepository {
             cafeLastHourMs = cafeLastHourMs,
             notifyHomeOverview = notifyHomeOverview,
         )
+    }
+
+    internal fun saveCafeApLastNotifiedLevelBlocking(level: Int) {
+        BASettingsStore.saveCafeApLastNotifiedLevel(level)
+    }
+
+    internal fun saveApLastNotifiedLevelBlocking(level: Int) {
+        BASettingsStore.saveApLastNotifiedLevel(level)
+    }
+
+    suspend fun saveRuntimeStateAsync(
+        apCurrent: Double? = null,
+        apRegenBaseMs: Long? = null,
+        apSyncMs: Long? = null,
+        cafeStoredAp: Double? = null,
+        cafeLastHourMs: Long? = null,
+        notifyHomeOverview: Boolean = true,
+    ) {
+        withContext(AppDispatchers.baFetch) {
+            saveRuntimeStateBlocking(
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
+                apSyncMs = apSyncMs,
+                cafeStoredAp = cafeStoredAp,
+                cafeLastHourMs = cafeLastHourMs,
+                notifyHomeOverview = notifyHomeOverview,
+            )
+        }
     }
 }

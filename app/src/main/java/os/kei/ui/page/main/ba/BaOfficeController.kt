@@ -229,14 +229,6 @@ internal class BaOfficeController(
         return update
     }
 
-    fun loadIdForServer(serverIndex: Int) {
-        if (!idIndependentByServer) return
-        idNickname = BaOfficeRepository.loadIdNickname(serverIndex)
-        idFriendCode = BaOfficeRepository.loadIdFriendCode(serverIndex)
-        idNicknameInput = idNickname
-        idFriendCodeInput = idFriendCode
-    }
-
     fun applyIdentity(identity: BaOfficeIdentity) {
         idNickname = identity.nickname
         idFriendCode = identity.friendCode

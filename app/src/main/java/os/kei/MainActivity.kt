@@ -330,9 +330,11 @@ class MainActivity : ComponentActivity() {
         val action = pendingShortcutAction ?: return
         if (action != SHORTCUT_ACTION_BA_AP_ISLAND) return
         pendingShortcutAction = null
-        val sent = BaApIslandShortcutNotificationCoordinator.send(this)
-        if (!sent) {
-            showToast(getString(R.string.ba_toast_notification_permission_required))
+        lifecycleScope.launch {
+            val sent = BaApIslandShortcutNotificationCoordinator.send(this@MainActivity)
+            if (!sent) {
+                showToast(getString(R.string.ba_toast_notification_permission_required))
+            }
         }
     }
 

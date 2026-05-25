@@ -98,6 +98,9 @@ internal class BaOfficeViewModel(
                     draft = snapshot.toNotificationDraftState(),
                     savedDraft = snapshot.toNotificationDraftState(),
                 )
+            _syncUiState.update { state ->
+                if (state.snapshotLoaded) state else state.copy(snapshotLoaded = true)
+            }
         }
     }
 

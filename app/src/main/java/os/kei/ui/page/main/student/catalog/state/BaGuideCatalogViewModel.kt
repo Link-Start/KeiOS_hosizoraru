@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -59,8 +60,10 @@ internal class BaGuideCatalogViewModel(
             scope = viewModelScope,
             repository = repository,
         )
-    private var pendingSafJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
-    private var pendingFixedJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
+    private val pendingSafJsonExportRequest =
+        MutableStateFlow<BaGuideCatalogJsonExportRequest?>(null)
+    private val pendingFixedJsonExportRequest =
+        MutableStateFlow<BaGuideCatalogJsonExportRequest?>(null)
     private val imageController =
         BaGuideCatalogImageController(
             scope = viewModelScope,
@@ -327,25 +330,21 @@ internal class BaGuideCatalogViewModel(
     }
 
     fun armPendingSafJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
-        pendingSafJsonExportRequest = request
+        pendingSafJsonExportRequest.value = request
     }
 
     fun consumePendingSafJsonExportRequest(): BaGuideCatalogJsonExportRequest? =
-        pendingSafJsonExportRequest.also {
-            pendingSafJsonExportRequest = null
-        }
+        pendingSafJsonExportRequest.getAndUpdate { null }
 
     fun armPendingFixedJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
-        pendingFixedJsonExportRequest = request
+        pendingFixedJsonExportRequest.value = request
     }
 
     fun consumePendingFixedJsonExportRequest(): BaGuideCatalogJsonExportRequest? =
-        pendingFixedJsonExportRequest.also {
-            pendingFixedJsonExportRequest = null
-        }
+        pendingFixedJsonExportRequest.getAndUpdate { null }
 
     fun clearPendingFixedJsonExportRequest() {
-        pendingFixedJsonExportRequest = null
+        pendingFixedJsonExportRequest.value = null
     }
 
     fun updateCatalogFilterSortState(snapshot: BaGuideCatalogFilterSortSnapshot) {

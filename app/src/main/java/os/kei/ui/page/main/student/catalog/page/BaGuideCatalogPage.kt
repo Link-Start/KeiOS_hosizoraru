@@ -85,6 +85,9 @@ fun BaGuideCatalogPage(
     val imageState by catalogViewModel.imageState.collectAsStateWithLifecycle()
     val pageChromeState by catalogViewModel.pageChromeState.collectAsStateWithLifecycle()
     val filterSortSnapshot by catalogViewModel.filterSortState.collectAsStateWithLifecycle()
+    val catalogVisibleFilterDefinitions by catalogViewModel
+        .catalogVisibleFilterDefinitions
+        .collectAsStateWithLifecycle()
     val tabs = BaGuideCatalogPageTab.entries
     val pageState =
         rememberBaGuideCatalogPageStateHolder(
@@ -160,6 +163,7 @@ fun BaGuideCatalogPage(
             pageState = pageState,
             tabs = tabs,
             catalogDataState = routeState.catalogDataState,
+            catalogVisibleFilterDefinitions = catalogVisibleFilterDefinitions,
             playbackUiState = playbackSessionState,
         )
     BindBaGuideCatalogImagePreloadEffect(

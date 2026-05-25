@@ -65,7 +65,6 @@ fun McpPage(
     val runningColor = Color(0xFF2E7D32)
     val stoppedColor = Color(0xFFC62828)
     LaunchedEffect(
-        mcpPageViewModel,
         uiState.running,
         uiState.runningSinceEpochMs,
         runtime.isDataActive,
@@ -98,7 +97,7 @@ fun McpPage(
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val mcpGlassRuntime = LocalGlassEffectRuntime.current
-    LaunchedEffect(context, mcpPageViewModel) {
+    LaunchedEffect(context) {
         mcpPageViewModel.updateLocalNetworkPermissionGranted(hasMcpLocalNetworkPermission(context))
     }
 
@@ -148,7 +147,7 @@ fun McpPage(
                 state = currentUiState,
             )
         }
-    LaunchedEffect(mcpPageViewModel, logsExportLauncher, context, unknownText) {
+    LaunchedEffect(logsExportLauncher, context, unknownText) {
         mcpPageViewModel.events.collect { event ->
             when (event) {
                 is McpPageEvent.Toast -> {

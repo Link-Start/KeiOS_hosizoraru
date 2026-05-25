@@ -574,13 +574,12 @@ fun OsPage(
                 bottomBarVisible = runtime.bottomBarVisible,
                 searchExpanded = enableSearchBar && chromeState.searchExpanded && !chromeState.overlaySearchSuppressed,
                 queryInput = queryInput,
-                onQueryInputChange = { value ->
-                    if (!chromeState.overlaySearchSuppressed) {
-                        osPageViewModel.updateQueryInput(value)
-                    }
-                },
+                onQueryInputChange = osPageViewModel::submitQueryInput,
                 onSearchExpandedChange = { expanded ->
-                    osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !chromeState.overlaySearchSuppressed)
+                    osPageViewModel.submitSearchExpanded(
+                        searchBarEnabled = enableSearchBar,
+                        expanded = expanded,
+                    )
                 },
                 searchLabel = textBundle.searchLabel,
                 floatingDockSide = runtime.floatingDockSide,

@@ -235,8 +235,23 @@ internal class OsPageViewModel : ViewModel() {
         _queryInput.value = value
     }
 
+    fun submitQueryInput(value: String) {
+        if (_chromeState.value.overlaySearchSuppressed) return
+        _queryInput.value = value
+    }
+
     fun updateSearchExpanded(expanded: Boolean) {
         _chromeState.update { state -> state.copy(searchExpanded = expanded) }
+    }
+
+    fun submitSearchExpanded(
+        searchBarEnabled: Boolean,
+        expanded: Boolean,
+    ) {
+        val effective = searchBarEnabled && expanded && !_chromeState.value.overlaySearchSuppressed
+        _chromeState.update { state ->
+            if (state.searchExpanded == effective) state else state.copy(searchExpanded = effective)
+        }
     }
 
     fun updateOverlaySheetVisible(visible: Boolean) {

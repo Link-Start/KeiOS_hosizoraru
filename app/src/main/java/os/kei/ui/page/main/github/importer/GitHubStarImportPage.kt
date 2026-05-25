@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -56,18 +57,20 @@ internal fun GitHubStarImportPage(
         else -> ""
     }
 
-    LaunchedEffect(viewModel, context, onClose) {
+    val onImportedHolder = rememberUpdatedState(onImported)
+    val onCloseHolder = rememberUpdatedState(onClose)
+    LaunchedEffect(viewModel, context) {
         viewModel.events.collect { event ->
             when (event) {
                 is GitHubStarImportEvent.Imported -> {
-                    onImported(event.result)
+                    onImportedHolder.value(event.result)
                     context.showToast(context.resolveString(
                         R.string.github_star_import_toast_imported,
                         event.result.changedCount
                     ))
                 }
 
-                GitHubStarImportEvent.Close -> onClose()
+                GitHubStarImportEvent.Close -> onCloseHolder.value()
             }
         }
     }

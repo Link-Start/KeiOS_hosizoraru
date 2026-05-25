@@ -15,6 +15,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.graphics.drawable.toDrawable
@@ -59,6 +60,14 @@ class GitHubShareImportActivity : ComponentActivity() {
         if (isFinishing) return
         requestNotificationPermissionIfNeededForActiveFlow()
 
+        val initialThemeMode = UiPrefs.getAppThemeMode()
+        val initialTransitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+        val initialPredictiveBackPolicy =
+            PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = initialTransitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
+            )
+
         setContent {
             val displayState = shareImportDisplayState
             if (
@@ -69,26 +78,19 @@ class GitHubShareImportActivity : ComponentActivity() {
                 return@setContent
             }
 
-            val appThemeMode = UiPrefs.getAppThemeMode()
-            val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-            val predictiveBackPolicy =
-                PredictiveBackOemCompat.currentPolicy(
-                    transitionAnimationsEnabled = transitionAnimationsEnabled,
-                    predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
-                )
             val colorSchemeMode =
-                when (appThemeMode) {
+                when (initialThemeMode) {
                     AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
                     AppThemeMode.LIGHT -> ColorSchemeMode.Light
                     AppThemeMode.DARK -> ColorSchemeMode.Dark
                 }
-            val controller = ThemeController(colorSchemeMode)
+            val controller = remember(colorSchemeMode) { ThemeController(colorSchemeMode) }
 
             MiuixTheme(controller = controller) {
-                ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
+                ProvideBackNavigationRuntime(policy = initialPredictiveBackPolicy) {
                     CompositionLocalProvider(
-                        LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
+                        LocalTransitionAnimationsEnabled provides initialTransitionAnimationsEnabled,
+                        LocalPredictiveBackAnimationsEnabled provides initialPredictiveBackPolicy.localPredictiveBackEnabled,
                     ) {
                         KeiOSActivityRootBackHandler(
                             needsInterception =

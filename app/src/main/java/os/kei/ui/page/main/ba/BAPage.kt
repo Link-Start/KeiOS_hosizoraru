@@ -97,17 +97,29 @@ fun BAPage(
         }
     val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
     val pagePresentationState =
-        buildBaPagePresentationState(
-            isPageActive = runtime.isPageActive,
-            officeOverviewTitle = officeOverviewTitle,
-            office = office,
-            calendarUiState = calendarUiState,
-            poolUiState = poolUiState,
-            officePageUiState = officePageUiState,
-            clockState = baClockState,
-            serverOptions = serverOptions,
-            cafeLevelOptions = cafeLevelOptions,
-        )
+        remember(
+            runtime.isPageActive,
+            officeOverviewTitle,
+            office,
+            calendarUiState,
+            poolUiState,
+            officePageUiState,
+            baClockState,
+            serverOptions,
+            cafeLevelOptions,
+        ) {
+            buildBaPagePresentationState(
+                isPageActive = runtime.isPageActive,
+                officeOverviewTitle = officeOverviewTitle,
+                office = office,
+                calendarUiState = calendarUiState,
+                poolUiState = poolUiState,
+                officePageUiState = officePageUiState,
+                clockState = baClockState,
+                serverOptions = serverOptions,
+                cafeLevelOptions = cafeLevelOptions,
+            )
+        }
     val baRouteState = pagePresentationState.routeState
     val settingsSheetState = pagePresentationState.settingsSheetState
     val notificationSettingsSheetState = pagePresentationState.notificationSettingsSheetState

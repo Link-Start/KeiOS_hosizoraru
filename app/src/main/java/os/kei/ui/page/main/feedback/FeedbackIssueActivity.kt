@@ -31,25 +31,29 @@ class FeedbackIssueActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val initialThemeMode = UiPrefs.getAppThemeMode()
+        val initialTransitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+        val initialPredictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
+            transitionAnimationsEnabled = initialTransitionAnimationsEnabled,
+            predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
+        )
+        val initialColorSchemeMode = when (initialThemeMode) {
+            AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
+            AppThemeMode.LIGHT -> ColorSchemeMode.Light
+            AppThemeMode.DARK -> ColorSchemeMode.Dark
+        }
+
         setContent {
-            val appThemeMode = UiPrefs.getAppThemeMode()
-            val colorSchemeMode = when (appThemeMode) {
-                AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
-                AppThemeMode.LIGHT -> ColorSchemeMode.Light
-                AppThemeMode.DARK -> ColorSchemeMode.Dark
+            val controller = androidx.compose.runtime.remember(initialColorSchemeMode) {
+                ThemeController(initialColorSchemeMode)
             }
-            val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-            val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-                transitionAnimationsEnabled = transitionAnimationsEnabled,
-                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
-            )
-            val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
-                ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
+                ProvideBackNavigationRuntime(policy = initialPredictiveBackPolicy) {
                     CompositionLocalProvider(
-                        LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
-                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
+                        LocalTransitionAnimationsEnabled provides initialTransitionAnimationsEnabled,
+                        LocalPredictiveBackAnimationsEnabled provides initialPredictiveBackPolicy.localPredictiveBackEnabled
                     ) {
                         val viewModel: FeedbackIssueViewModel = viewModel()
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()

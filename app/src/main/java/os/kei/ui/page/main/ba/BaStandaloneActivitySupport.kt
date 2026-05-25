@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
@@ -17,18 +18,25 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 
 @Composable
 internal fun BaStandaloneActivityTheme(content: @Composable () -> Unit) {
-    val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-    val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
-    )
-    val colorSchemeMode = when (UiPrefs.getAppThemeMode()) {
-        AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
-        AppThemeMode.LIGHT -> ColorSchemeMode.Light
-        AppThemeMode.DARK -> ColorSchemeMode.Dark
-    }
+    val transitionAnimationsEnabled = remember { UiPrefs.isTransitionAnimationsEnabled() }
+    val predictiveBackPolicy =
+        remember(transitionAnimationsEnabled) {
+            PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
+            )
+        }
+    val colorSchemeMode =
+        remember {
+            when (UiPrefs.getAppThemeMode()) {
+                AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
+                AppThemeMode.LIGHT -> ColorSchemeMode.Light
+                AppThemeMode.DARK -> ColorSchemeMode.Dark
+            }
+        }
+    val controller = remember(colorSchemeMode) { ThemeController(colorSchemeMode) }
 
-    MiuixTheme(controller = ThemeController(colorSchemeMode)) {
+    MiuixTheme(controller = controller) {
         ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
             CompositionLocalProvider(
                 LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,

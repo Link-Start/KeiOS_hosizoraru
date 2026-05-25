@@ -22,19 +22,18 @@ import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
 internal class OsPageTransferCoordinator(
     private val scope: CoroutineScope,
     private val repository: OsPageRepository,
+    private val transferRepository: OsPageCardTransferRepository,
     private val exportRepository: OsPageExportRepository,
     private val persistentState: StateFlow<OsPagePersistentState>,
     private val runtimeState: StateFlow<OsPageRuntimeState>,
     private val runtimeMutableState: MutableStateFlow<OsPageRuntimeState>,
     private val events: MutableSharedFlow<OsPageEvent>,
 ) {
-    fun prepareActivityCardsExport(
-        defaults: OsGoogleSystemServiceConfig,
-    ) {
+    fun prepareActivityCardsExport(defaults: OsGoogleSystemServiceConfig) {
         scope.launch {
             try {
                 val content =
-                    repository.buildActivityCardsExportJson(
+                    transferRepository.buildActivityCardsExportJson(
                         cards = persistentState.value.activityShortcutCards,
                         defaults = defaults,
                     )
@@ -55,7 +54,7 @@ internal class OsPageTransferCoordinator(
         scope.launch {
             try {
                 val content =
-                    repository.buildShellCardsExportJson(
+                    transferRepository.buildShellCardsExportJson(
                         cards = persistentState.value.shellCommandCards,
                     )
                 events.emit(
@@ -128,7 +127,7 @@ internal class OsPageTransferCoordinator(
     ) {
         scope.launch {
             try {
-                repository.writeExportContent(
+                transferRepository.writeExportContent(
                     contentResolver = contentResolver,
                     uri = uri,
                     content = content,
@@ -152,13 +151,13 @@ internal class OsPageTransferCoordinator(
         scope.launch {
             try {
                 val raw =
-                    repository.readImportContent(
+                    transferRepository.readImportContent(
                         contentResolver = contentResolver,
                         uri = uri,
                     )
                 val state = persistentState.value
                 val preview =
-                    repository.buildCardImportPreview(
+                    transferRepository.buildCardImportPreview(
                         raw = raw,
                         target = target,
                         activityShortcutCards = state.activityShortcutCards,
@@ -186,15 +185,22 @@ internal class OsPageTransferCoordinator(
         scope.launch {
             try {
                 when (val payload = preview.payload) {
-                    is OsActivityCardImportPayload -> importActivityCards(
-                        payload = payload,
-                        googleSystemServiceDefaults = googleSystemServiceDefaults,
-                        googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
-                        builtInActivityShortcutCards = builtInActivityShortcutCards,
-                    )
+                    is OsActivityCardImportPayload -> {
+                        importActivityCards(
+                            payload = payload,
+                            googleSystemServiceDefaults = googleSystemServiceDefaults,
+                            googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+                            builtInActivityShortcutCards = builtInActivityShortcutCards,
+                        )
+                    }
 
-                    is OsShellCardImportPayload -> importShellCards(payload)
-                    is OsUnknownCardImportPayload -> throw OsCardImportException(OsCardImportError.NoImportableData)
+                    is OsShellCardImportPayload -> {
+                        importShellCards(payload)
+                    }
+
+                    is OsUnknownCardImportPayload -> {
+                        throw OsCardImportException(OsCardImportError.NoImportableData)
+                    }
                 }
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
@@ -212,7 +218,7 @@ internal class OsPageTransferCoordinator(
         builtInActivityShortcutCards: List<OsActivityShortcutCard>,
     ) {
         val result =
-            repository.applyActivityCardImport(
+            transferRepository.applyActivityCardImport(
                 payload = payload,
                 existingCards = persistentState.value.activityShortcutCards,
                 defaults = googleSystemServiceDefaults,
@@ -225,7 +231,7 @@ internal class OsPageTransferCoordinator(
 
     private suspend fun importShellCards(payload: OsShellCardImportPayload) {
         val result =
-            repository.applyShellCardImport(
+            transferRepository.applyShellCardImport(
                 payload = payload,
                 existingCards = persistentState.value.shellCommandCards,
             )

@@ -41,6 +41,7 @@ internal class OsPageViewModel : ViewModel() {
 
     private val repository = OsPageRepository()
     private val exportRepository = OsPageExportRepository()
+    private val transferRepository = OsPageCardTransferRepository()
     private val cardRepository = OsPageCardRepository()
     private val visibilityRepository = OsPageVisibilityRepository()
     private val shellCommandRepository = OsPageShellCommandRepository()
@@ -173,6 +174,7 @@ internal class OsPageViewModel : ViewModel() {
         OsPageTransferCoordinator(
             scope = viewModelScope,
             repository = repository,
+            transferRepository = transferRepository,
             exportRepository = exportRepository,
             persistentState = persistentState,
             runtimeState = runtimeState,
@@ -425,8 +427,7 @@ internal class OsPageViewModel : ViewModel() {
         initialGoogleSystemServiceExpanded = initialGoogleSystemServiceExpanded,
     )
 
-    fun syncShellCommandCardExpansion(cards: List<OsShellCommandCard>) =
-        cardExpansionController.syncShellCommandCards(cards)
+    fun syncShellCommandCardExpansion(cards: List<OsShellCommandCard>) = cardExpansionController.syncShellCommandCards(cards)
 
     fun updateActivityCardExpanded(
         cardId: String,

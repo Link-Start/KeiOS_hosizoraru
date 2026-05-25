@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -57,34 +58,77 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
 
+/**
+ * Pure-data inputs for [HomePage]. Group all snapshot fields here so the page receives a
+ * single stable parameter instead of 30+ overloads. Keeping it [Immutable] lets Compose skip
+ * the page when nothing meaningful changes.
+ */
+@Immutable
+data class HomePageInputs(
+    val shizukuStatus: String,
+    val homeAppOverview: HomeAppOverview = HomeAppOverview(),
+    val mcpOverview: HomeMcpOverview = HomeMcpOverview(),
+    val homeGitHubOverview: HomeGitHubOverview = HomeGitHubOverview(),
+    val homeBaOverview: HomeBaOverview = HomeBaOverview(),
+    val homeIconHdrEnabled: Boolean,
+    val homeDynamicFullEffectEnabled: Boolean = false,
+    val liquidActionBarLayeredStyleEnabled: Boolean = true,
+    val visibleBottomPages: Set<BottomPage>,
+    val visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
+    val showCacheFreshnessInCards: Boolean = false,
+    val actionBarSelectedIndex: Int = 1,
+    val showBottomPageEditor: Boolean = false,
+)
+
+/**
+ * Callback bundle for [HomePage]. Each callback survives recomposition because the bundle
+ * is plain data; the call site can `remember` it once on the host side.
+ */
+@Immutable
+data class HomePageCallbacks(
+    val onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
+    val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
+    val onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
+    val onActionBarSelectedIndexChange: (Int) -> Unit = {},
+    val onBottomPageEditorVisibleChange: (Boolean) -> Unit = {},
+    val onShowBottomBar: () -> Unit = {},
+    val onOpenGitHubPage: () -> Unit = {},
+    val onOpenSettings: () -> Unit,
+    val onOpenAbout: () -> Unit,
+    val onActionBarInteractingChanged: (Boolean) -> Unit = {},
+)
+
 @Composable
 fun HomePage(
-    shizukuStatus: String,
-    homeAppOverview: HomeAppOverview = HomeAppOverview(),
-    mcpOverview: HomeMcpOverview = HomeMcpOverview(),
-    homeGitHubOverview: HomeGitHubOverview = HomeGitHubOverview(),
-    homeBaOverview: HomeBaOverview = HomeBaOverview(),
+    inputs: HomePageInputs,
+    callbacks: HomePageCallbacks,
     runtimeNowMsFlow: StateFlow<Long>,
-    homeIconHdrEnabled: Boolean,
-    homeDynamicFullEffectEnabled: Boolean = false,
     runtime: MainPageRuntime = MainPageRuntime(),
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
-    visibleBottomPages: Set<BottomPage>,
-    visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
-    showCacheFreshnessInCards: Boolean = false,
-    actionBarSelectedIndex: Int = 1,
-    showBottomPageEditor: Boolean = false,
-    onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
-    onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
-    onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
-    onActionBarSelectedIndexChange: (Int) -> Unit = {},
-    onBottomPageEditorVisibleChange: (Boolean) -> Unit = {},
-    onShowBottomBar: () -> Unit = {},
-    onOpenGitHubPage: () -> Unit = {},
-    onOpenSettings: () -> Unit,
-    onOpenAbout: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
+    val shizukuStatus = inputs.shizukuStatus
+    val homeAppOverview = inputs.homeAppOverview
+    val mcpOverview = inputs.mcpOverview
+    val homeGitHubOverview = inputs.homeGitHubOverview
+    val homeBaOverview = inputs.homeBaOverview
+    val homeIconHdrEnabled = inputs.homeIconHdrEnabled
+    val homeDynamicFullEffectEnabled = inputs.homeDynamicFullEffectEnabled
+    val liquidActionBarLayeredStyleEnabled = inputs.liquidActionBarLayeredStyleEnabled
+    val visibleBottomPages = inputs.visibleBottomPages
+    val visibleOverviewCards = inputs.visibleOverviewCards
+    val showCacheFreshnessInCards = inputs.showCacheFreshnessInCards
+    val actionBarSelectedIndex = inputs.actionBarSelectedIndex
+    val showBottomPageEditor = inputs.showBottomPageEditor
+    val onBottomPageVisibilityChange = callbacks.onBottomPageVisibilityChange
+    val onOverviewCardVisibilityChange = callbacks.onOverviewCardVisibilityChange
+    val onCacheFreshnessVisibilityChange = callbacks.onCacheFreshnessVisibilityChange
+    val onActionBarSelectedIndexChange = callbacks.onActionBarSelectedIndexChange
+    val onBottomPageEditorVisibleChange = callbacks.onBottomPageEditorVisibleChange
+    val onShowBottomBar = callbacks.onShowBottomBar
+    val onOpenGitHubPage = callbacks.onOpenGitHubPage
+    val onOpenSettings = callbacks.onOpenSettings
+    val onOpenAbout = callbacks.onOpenAbout
+    val onActionBarInteractingChanged = callbacks.onActionBarInteractingChanged
+
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
     val topAppBarScrollBehavior = MiuixScrollBehavior()

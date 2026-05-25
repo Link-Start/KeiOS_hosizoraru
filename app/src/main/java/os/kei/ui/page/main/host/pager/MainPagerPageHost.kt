@@ -109,32 +109,51 @@ internal fun MainPagerPageHost(
                         checkNotNull(homePageState) {
                             "Home page state is required for the Home tab"
                         }
+                    val homeInputs =
+                        remember(
+                            homeState,
+                            liquidActionBarLayeredStyleEnabled,
+                        ) {
+                            os.kei.ui.page.main.home.HomePageInputs(
+                                shizukuStatus = homeState.shizukuStatus,
+                                homeAppOverview = homeState.homeAppOverview,
+                                mcpOverview = homeState.homeMcpOverview,
+                                homeGitHubOverview = homeState.homeGitHubOverview,
+                                homeBaOverview = homeState.homeBaOverview,
+                                homeIconHdrEnabled = homeState.homeIconHdrEnabled,
+                                homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
+                                liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                                visibleBottomPages = homeState.visibleBottomPages,
+                                visibleOverviewCards = homeState.visibleOverviewCards,
+                                showCacheFreshnessInCards = homeState.showCacheFreshnessInCards,
+                                actionBarSelectedIndex = homeState.homeActionBarSelectedIndex,
+                                showBottomPageEditor = homeState.showHomeBottomPageEditor,
+                            )
+                        }
+                    val homeCallbacks =
+                        remember(
+                            homeState,
+                            onShowBottomBar,
+                            onActionBarInteractingChanged,
+                        ) {
+                            os.kei.ui.page.main.home.HomePageCallbacks(
+                                onBottomPageVisibilityChange = homeState.onBottomPageVisibilityChange,
+                                onOverviewCardVisibilityChange = homeState.onOverviewCardVisibilityChange,
+                                onCacheFreshnessVisibilityChange = homeState.onCacheFreshnessVisibilityChange,
+                                onActionBarSelectedIndexChange = homeState.onHomeActionBarSelectedIndexChange,
+                                onBottomPageEditorVisibleChange = homeState.onHomeBottomPageEditorVisibleChange,
+                                onShowBottomBar = onShowBottomBar,
+                                onOpenGitHubPage = homeState.onOpenGitHubPage,
+                                onOpenSettings = homeState.onOpenSettings,
+                                onOpenAbout = homeState.onOpenAbout,
+                                onActionBarInteractingChanged = onActionBarInteractingChanged,
+                            )
+                        }
                     HomePage(
-                        shizukuStatus = homeState.shizukuStatus,
-                        homeAppOverview = homeState.homeAppOverview,
-                        mcpOverview = homeState.homeMcpOverview,
-                        homeGitHubOverview = homeState.homeGitHubOverview,
-                        homeBaOverview = homeState.homeBaOverview,
+                        inputs = homeInputs,
+                        callbacks = homeCallbacks,
                         runtimeNowMsFlow = homeState.homeRuntimeNowMsFlow,
-                        homeIconHdrEnabled = homeState.homeIconHdrEnabled,
-                        homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
                         runtime = runtime,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        visibleBottomPages = homeState.visibleBottomPages,
-                        visibleOverviewCards = homeState.visibleOverviewCards,
-                        showCacheFreshnessInCards = homeState.showCacheFreshnessInCards,
-                        actionBarSelectedIndex = homeState.homeActionBarSelectedIndex,
-                        showBottomPageEditor = homeState.showHomeBottomPageEditor,
-                        onBottomPageVisibilityChange = homeState.onBottomPageVisibilityChange,
-                        onOverviewCardVisibilityChange = homeState.onOverviewCardVisibilityChange,
-                        onCacheFreshnessVisibilityChange = homeState.onCacheFreshnessVisibilityChange,
-                        onActionBarSelectedIndexChange = homeState.onHomeActionBarSelectedIndexChange,
-                        onBottomPageEditorVisibleChange = homeState.onHomeBottomPageEditorVisibleChange,
-                        onShowBottomBar = onShowBottomBar,
-                        onOpenGitHubPage = homeState.onOpenGitHubPage,
-                        onOpenSettings = homeState.onOpenSettings,
-                        onOpenAbout = homeState.onOpenAbout,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 

@@ -59,11 +59,13 @@ internal class OsPageViewModel : ViewModel() {
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
             .observePersistentState()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                initialValue = repository.observePersistentState().value,
-            )
+            .let { source ->
+                source.stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                    initialValue = source.value,
+                )
+            }
 
     private val _queryInput = MutableStateFlow("")
     val queryInput: StateFlow<String> = _queryInput.asStateFlow()

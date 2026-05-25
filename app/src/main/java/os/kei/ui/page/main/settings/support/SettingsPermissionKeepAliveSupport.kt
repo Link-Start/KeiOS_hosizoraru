@@ -56,34 +56,32 @@ internal class SettingsPermissionKeepAliveController(
     suspend fun loadSnapshot(
         notificationPermissionGranted: Boolean,
         shizukuStatus: String,
-    ): SettingsPermissionKeepAliveSnapshot {
-        val notificationsEnabled =
-            notificationPermissionGranted &&
-                NotificationManagerCompat.from(appContext).areNotificationsEnabled()
-        val notificationSettingsActionAvailable = buildNotificationSettingsIntent(appContext) != null
+    ): SettingsPermissionKeepAliveSnapshot =
+        withContext(AppDispatchers.fileIo) {
+            val notificationsEnabled =
+                notificationPermissionGranted &&
+                    NotificationManagerCompat.from(appContext).areNotificationsEnabled()
+            val notificationSettingsActionAvailable = buildNotificationSettingsIntent(appContext) != null
 
-        val shizukuGranted = shizukuApiUtils.canUseCommand()
-        val shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
-        val oemAutoStartSnapshot = resolveOemAutoStartSnapshot(appContext)
-        val appListSettingsActionAvailable = GitHubVersionUtils.buildAppListPermissionIntent(appContext) != null
+            val shizukuGranted = shizukuApiUtils.canUseCommand()
+            val shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
+            val oemAutoStartSnapshot = resolveOemAutoStartSnapshot(appContext)
+            val appListSettingsActionAvailable = GitHubVersionUtils.buildAppListPermissionIntent(appContext) != null
 
-        val appListState =
-            withContext(AppDispatchers.fileIo) {
-                resolveAppListAccessState(appContext, shizukuApiUtils)
-            }
-        return SettingsPermissionKeepAliveSnapshot(
-            notificationsEnabled = notificationsEnabled,
-            notificationSettingsActionAvailable = notificationSettingsActionAvailable,
-            shizukuGranted = shizukuGranted,
-            shizukuStatusText = shizukuStatusText,
-            appListAccessMode = appListState.mode,
-            appListDetectedCount = appListState.detectedCount,
-            appListSettingsActionAvailable = appListSettingsActionAvailable,
-            oemAutoStartState = oemAutoStartSnapshot.state,
-            oemAutoStartVendorLabel = oemAutoStartSnapshot.vendorLabel,
-            oemAutoStartActionAvailable = oemAutoStartSnapshot.settingsActionAvailable,
-        )
-    }
+            val appListState = resolveAppListAccessState(appContext, shizukuApiUtils)
+            SettingsPermissionKeepAliveSnapshot(
+                notificationsEnabled = notificationsEnabled,
+                notificationSettingsActionAvailable = notificationSettingsActionAvailable,
+                shizukuGranted = shizukuGranted,
+                shizukuStatusText = shizukuStatusText,
+                appListAccessMode = appListState.mode,
+                appListDetectedCount = appListState.detectedCount,
+                appListSettingsActionAvailable = appListSettingsActionAvailable,
+                oemAutoStartState = oemAutoStartSnapshot.state,
+                oemAutoStartVendorLabel = oemAutoStartSnapshot.vendorLabel,
+                oemAutoStartActionAvailable = oemAutoStartSnapshot.settingsActionAvailable,
+            )
+        }
 
     fun openNotificationSettings(): Boolean {
         val intent = buildNotificationSettingsIntent(appContext) ?: return false

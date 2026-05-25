@@ -293,7 +293,9 @@ internal class SettingsPageViewModel : ViewModel() {
         batteryOptimizationRefreshJob =
             viewModelScope.launch {
                 val snapshot = controller.loadSnapshot()
-                _batteryOptimizationState.value = snapshot
+                _batteryOptimizationState.update { current ->
+                    if (current == snapshot) current else snapshot
+                }
             }
     }
 
@@ -323,7 +325,9 @@ internal class SettingsPageViewModel : ViewModel() {
                 notificationPermissionGranted = notificationPermissionGranted,
                 shizukuStatus = shizukuStatus,
             )
-        _permissionKeepAliveState.update { snapshot }
+        _permissionKeepAliveState.update { current ->
+            if (current == snapshot) current else snapshot
+        }
     }
 
     fun reloadCacheEntries(context: Context) {

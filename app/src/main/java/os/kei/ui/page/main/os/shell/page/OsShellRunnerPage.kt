@@ -24,7 +24,6 @@ import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.osLucideClearAllIcon
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
-import os.kei.ui.page.main.os.shell.state.BindOsShellRunnerInputPersistEffect
 import os.kei.ui.page.main.os.shell.state.rememberOsShellRunnerTextBundle
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -175,12 +174,6 @@ fun OsShellRunnerPage(
             )
         }
 
-    BindOsShellRunnerInputPersistEffect(
-        persistInputEnabled = settings.persistInput,
-        commandInput = commandInput,
-        onPersistInput = actions.persistInput,
-    )
-
     OsShellRunnerContent(
         textBundle = textBundle,
         scrollBehavior = scrollBehavior,
@@ -196,9 +189,7 @@ fun OsShellRunnerPage(
                 shellRunnerViewModel = shellRunnerViewModel,
                 textBundle = textBundle,
                 outputScrollState = outputScrollState,
-                persistOutputEnabled = settings.persistOutput,
                 autoScrollOutputEnabled = settings.autoScrollOutput,
-                onPersistOutput = actions.persistOutput,
                 onFormatOutput = actions.formatOutput,
                 onCopyOutput = actions.copyOutput,
                 onClearOutput = { actions.clearOutput(true) },

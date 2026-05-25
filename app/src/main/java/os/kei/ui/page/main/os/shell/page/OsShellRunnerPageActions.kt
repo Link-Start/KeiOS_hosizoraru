@@ -44,8 +44,6 @@ internal class OsShellRunnerPageActions(
     val updateOutputLimitChars: (Int) -> Unit,
     val updateOutputSaveMode: (OsShellRunnerOutputSaveMode) -> Unit,
     val updateCopyMode: (os.kei.ui.page.main.os.shell.OsShellRunnerCopyMode) -> Unit,
-    val persistInput: (String) -> Unit,
-    val persistOutput: (String) -> Unit,
     val confirmDangerousCommand: () -> Unit,
 )
 
@@ -282,8 +280,6 @@ private fun rememberOsShellRunnerPageActionsInternal(
                     )
                 },
                 updateCopyMode = shellRunnerViewModel::updateCopyMode,
-                persistInput = shellRunnerViewModel::persistInput,
-                persistOutput = shellRunnerViewModel::persistOutput,
                 confirmDangerousCommand = {
                     val command = pageState.pendingDangerousCommand.trim()
                     pageState.dismissDangerousCommandConfirm()

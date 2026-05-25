@@ -3,6 +3,7 @@ package os.kei.ui.page.main.os.shell
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,9 +12,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -21,7 +26,12 @@ import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputSnapshot
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputState
 import os.kei.ui.page.main.os.shell.state.toOutputSnapshot
 
+@OptIn(FlowPreview::class)
 internal class OsShellRunnerViewModel : ViewModel() {
+    private companion object {
+        const val PERSIST_DEBOUNCE_MS = 220L
+    }
+
     private val repository = OsShellRunnerRepository()
     private val repositoryPersistentState = repository.observePersistentState()
     private val repositoryChromePrefs = repository.observeChromePrefs()
@@ -105,6 +115,11 @@ internal class OsShellRunnerViewModel : ViewModel() {
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = OsShellRunnerUiState(),
         )
+
+    init {
+        bindInputPersistence()
+        bindOutputPersistence()
+    }
 
     fun loadPersistentState(
         commandStoppedText: String,
@@ -385,18 +400,6 @@ internal class OsShellRunnerViewModel : ViewModel() {
         launchRepositoryUpdate { setCopyMode(mode) }
     }
 
-    fun persistInput(value: String) {
-        viewModelScope.launch {
-            repository.persistInput(value)
-        }
-    }
-
-    fun persistOutput(value: String) {
-        viewModelScope.launch {
-            repository.persistOutput(value)
-        }
-    }
-
     fun clearSavedInput() {
         viewModelScope.launch {
             repository.clearSavedInput()
@@ -438,6 +441,39 @@ internal class OsShellRunnerViewModel : ViewModel() {
     private fun launchRepositoryUpdate(update: suspend OsShellRunnerRepository.() -> Unit) {
         viewModelScope.launch {
             repository.update()
+        }
+    }
+
+    private fun bindInputPersistence() {
+        viewModelScope.launch {
+            repositoryPersistentState
+                .filter { state -> state.loaded }
+                .mapNotNull { state ->
+                    state
+                        .commandInput
+                        .takeIf { state.settings.persistInput }
+                }.distinctUntilChanged()
+                .debounce(PERSIST_DEBOUNCE_MS)
+                .collectLatest { input ->
+                    repository.persistInput(input)
+                }
+        }
+    }
+
+    private fun bindOutputPersistence() {
+        viewModelScope.launch {
+            repositoryPersistentState
+                .filter { state -> state.loaded }
+                .mapNotNull { state ->
+                    state
+                        .outputState
+                        .outputText
+                        .takeIf { state.settings.persistOutput }
+                }.distinctUntilChanged()
+                .debounce(PERSIST_DEBOUNCE_MS)
+                .collectLatest { output ->
+                    repository.persistOutput(output)
+                }
         }
     }
 

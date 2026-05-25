@@ -10,7 +10,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerOutputCard
 import os.kei.ui.page.main.os.shell.state.BindOsShellRunnerAutoScrollEffect
-import os.kei.ui.page.main.os.shell.state.BindOsShellRunnerOutputPersistEffect
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
 import os.kei.ui.page.main.os.shell.state.toOutputSnapshot
 
@@ -19,9 +18,7 @@ internal fun OsShellRunnerOutputCardHost(
     shellRunnerViewModel: OsShellRunnerViewModel,
     textBundle: OsShellRunnerTextBundle,
     outputScrollState: ScrollState,
-    persistOutputEnabled: Boolean,
     autoScrollOutputEnabled: Boolean,
-    onPersistOutput: (String) -> Unit,
     onFormatOutput: () -> Unit,
     onCopyOutput: () -> Unit,
     onClearOutput: () -> Unit,
@@ -29,11 +26,6 @@ internal fun OsShellRunnerOutputCardHost(
     val rawOutputState by shellRunnerViewModel.outputState.collectAsStateWithLifecycle()
     val outputSnapshot = remember(rawOutputState) { rawOutputState.toOutputSnapshot() }
 
-    BindOsShellRunnerOutputPersistEffect(
-        persistOutputEnabled = persistOutputEnabled,
-        outputText = outputSnapshot.text,
-        onPersistOutput = onPersistOutput,
-    )
     BindOsShellRunnerAutoScrollEffect(
         outputText = outputSnapshot.text,
         outputScrollState = outputScrollState,

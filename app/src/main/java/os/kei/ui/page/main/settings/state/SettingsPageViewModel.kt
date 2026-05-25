@@ -286,8 +286,15 @@ internal class SettingsPageViewModel : ViewModel() {
         }
     }
 
+    private var batteryOptimizationRefreshJob: Job? = null
+
     fun refreshBatteryOptimization(controller: SettingsBatteryOptimizationController) {
-        _batteryOptimizationState.update { controller.loadSnapshot() }
+        batteryOptimizationRefreshJob?.cancel()
+        batteryOptimizationRefreshJob =
+            viewModelScope.launch {
+                val snapshot = controller.loadSnapshot()
+                _batteryOptimizationState.value = snapshot
+            }
     }
 
     fun refreshPermissionKeepAlive(

@@ -33,8 +33,22 @@ class GitHubStarImportActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val initialThemeMode = UiPrefs.getAppThemeMode()
+        val initialTransitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+        val initialPredictiveBackPolicy =
+            PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = initialTransitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
+            )
+        val initialLiquidSwitchEnabled = UiPrefs.isLiquidSwitchEnabled()
+
         setContent {
-            GitHubStarImportTheme {
+            GitHubStarImportTheme(
+                themeMode = initialThemeMode,
+                transitionAnimationsEnabled = initialTransitionAnimationsEnabled,
+                predictiveBackPolicy = initialPredictiveBackPolicy,
+                liquidSwitchEnabled = initialLiquidSwitchEnabled,
+            ) {
                 GitHubStarImportPage(
                     onImported = { result ->
                         setResult(RESULT_OK, buildResultIntent(result))
@@ -121,23 +135,27 @@ private fun buildResultIntent(result: StarImportApplyResult): Intent {
 }
 
 @Composable
-private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
-    val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-    val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-        transitionAnimationsEnabled = transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
-    )
-    val colorSchemeMode = when (UiPrefs.getAppThemeMode()) {
+private fun GitHubStarImportTheme(
+    themeMode: AppThemeMode,
+    transitionAnimationsEnabled: Boolean,
+    predictiveBackPolicy: PredictiveBackOemCompat.Policy,
+    liquidSwitchEnabled: Boolean,
+    content: @Composable () -> Unit
+) {
+    val colorSchemeMode = when (themeMode) {
         AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
         AppThemeMode.LIGHT -> ColorSchemeMode.Light
         AppThemeMode.DARK -> ColorSchemeMode.Dark
     }
-    MiuixTheme(controller = ThemeController(colorSchemeMode)) {
+    val controller = androidx.compose.runtime.remember(colorSchemeMode) {
+        ThemeController(colorSchemeMode)
+    }
+    MiuixTheme(controller = controller) {
         ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
             CompositionLocalProvider(
                 LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                 LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
-                LocalLiquidControlsEnabled provides UiPrefs.isLiquidSwitchEnabled()
+                LocalLiquidControlsEnabled provides liquidSwitchEnabled
             ) {
                 content()
             }

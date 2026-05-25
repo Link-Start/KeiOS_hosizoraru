@@ -3,6 +3,7 @@ package os.kei.ui.page.main.os.state
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -46,20 +47,36 @@ internal fun rememberOsPageUiContext(
             distinctLayers = enableFullBackdropEffects,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = enableTopBarBackdropEffects)
-    val searchBarHideThresholdPx = with(density) { 28.dp.toPx() }
-    return OsPageUiContext(
-        context = context,
-        density = density,
-        textBundle = textBundle,
-        backdrops = backdrops,
-        topBarMaterialBackdrop = topBarMaterialBackdrop,
-        isDark = isDark,
-        inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant,
-        titleColor = MiuixTheme.colorScheme.onBackground,
-        cachedColor = AppStatusColors.Cached,
-        refreshingColor = AppStatusColors.Refreshing,
-        syncedColor = AppStatusColors.Fresh,
-        surfaceColor = MiuixTheme.colorScheme.surface,
-        searchBarHideThresholdPx = searchBarHideThresholdPx,
-    )
+    val searchBarHideThresholdPx = remember(density) { with(density) { 28.dp.toPx() } }
+    val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant
+    val titleColor = MiuixTheme.colorScheme.onBackground
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    return remember(
+        context,
+        density,
+        textBundle,
+        backdrops,
+        topBarMaterialBackdrop,
+        isDark,
+        inactiveColor,
+        titleColor,
+        surfaceColor,
+        searchBarHideThresholdPx,
+    ) {
+        OsPageUiContext(
+            context = context,
+            density = density,
+            textBundle = textBundle,
+            backdrops = backdrops,
+            topBarMaterialBackdrop = topBarMaterialBackdrop,
+            isDark = isDark,
+            inactiveColor = inactiveColor,
+            titleColor = titleColor,
+            cachedColor = AppStatusColors.Cached,
+            refreshingColor = AppStatusColors.Refreshing,
+            syncedColor = AppStatusColors.Fresh,
+            surfaceColor = surfaceColor,
+            searchBarHideThresholdPx = searchBarHideThresholdPx,
+        )
+    }
 }

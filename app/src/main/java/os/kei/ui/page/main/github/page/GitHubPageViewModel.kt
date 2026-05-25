@@ -1,10 +1,11 @@
 package os.kei.ui.page.main.github.page
 
+import android.app.Application
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -104,9 +105,12 @@ internal sealed interface GitHubTrackedImportStartResult {
     data object Busy : GitHubTrackedImportStartResult
 }
 
-internal class GitHubPageViewModel : ViewModel() {
+internal class GitHubPageViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
+    private val appContext: Context = application.applicationContext
     val repository = GitHubPageRepository()
-    private val appIconLoader = GitHubAppIconLoader(viewModelScope)
+    private val appIconLoader = GitHubAppIconLoader(appContext, viewModelScope)
     private var pageState: GitHubPageState? = null
     private var contentStateJob: Job? = null
     private var pendingShareImportClockJob: Job? = null
@@ -292,10 +296,8 @@ internal class GitHubPageViewModel : ViewModel() {
     fun retainTrackedExpansion(validItemIds: Set<String>) = trackedExpansionController.retainTrackedExpansion(validItemIds)
 
     fun bindContextObservers(
-        context: Context,
         state: GitHubPageState,
     ) {
-        val appContext = context.applicationContext
         if (onlineShareTargetsJob?.isActive != true) {
             onlineShareTargetsJob =
                 viewModelScope.launch {
@@ -341,13 +343,8 @@ internal class GitHubPageViewModel : ViewModel() {
         pendingShareImportPageActive.value = active
     }
 
-    fun requestAppIcons(
-        context: Context,
-        packageNames: List<String>,
-    ) = appIconLoader.requestIcons(
-        context = context,
-        packageNames = packageNames,
-    )
+    fun requestAppIcons(packageNames: List<String>) =
+        appIconLoader.requestIcons(packageNames = packageNames)
 
     fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
         val previousInput = appPickerStateInput

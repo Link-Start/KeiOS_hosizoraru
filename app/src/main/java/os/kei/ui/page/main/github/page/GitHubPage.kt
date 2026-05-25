@@ -108,10 +108,9 @@ fun GitHubPage(
             state.settleScrollChromeVisibility()
         }
     }
-    LaunchedEffect(context, state, runtime.hasActivated) {
+    LaunchedEffect(state, runtime.hasActivated) {
         if (!runtime.hasActivated) return@LaunchedEffect
         githubPageViewModel.bindContextObservers(
-            context = context,
             state = state,
         )
     }
@@ -240,7 +239,7 @@ fun GitHubPage(
         pickerExpanded = state.pickerExpanded,
         appPickerFilteredPackages = appPickerDerivedState.filteredApps.map { it.packageName },
         requestAppIcons = { packageNames ->
-            githubPageViewModel.requestAppIcons(context, packageNames)
+            githubPageViewModel.requestAppIcons(packageNames)
         },
     )
 

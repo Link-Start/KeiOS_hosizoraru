@@ -2,6 +2,8 @@ package os.kei.ui.page.main.student.catalog.state
 
 import android.content.Context
 import android.graphics.Bitmap
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.student.GameKeeMediaImageLoader
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogIconCache
 
@@ -16,7 +18,7 @@ internal class BaGuideCatalogImageRepository {
     suspend fun loadImages(
         context: Context,
         imageUrls: List<String>,
-    ): BaGuideCatalogImageLoadResult {
+    ): BaGuideCatalogImageLoadResult = withContext(AppDispatchers.media) {
         val appContext = context.applicationContext
         val bitmaps = linkedMapOf<String, Bitmap>()
         val missingUrls = linkedSetOf<String>()
@@ -40,7 +42,7 @@ internal class BaGuideCatalogImageRepository {
                     bitmaps[imageUrl] = bitmap
                 }
             }
-        return BaGuideCatalogImageLoadResult(
+        BaGuideCatalogImageLoadResult(
             bitmaps = bitmaps,
             missingUrls = missingUrls,
         )

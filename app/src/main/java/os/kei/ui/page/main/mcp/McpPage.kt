@@ -54,7 +54,6 @@ fun McpPage(
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
-    val runtimeNowMs by mcpPageViewModel.runtimeNowMs.collectAsStateWithLifecycle()
     val pageUiState = routeState.pageUiState
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
@@ -81,13 +80,11 @@ fun McpPage(
         rememberMcpPageOverviewState(
             context = context,
             uiState = uiState,
-            runtimeNowMs = runtimeNowMs,
             isDark = isDark,
             titleColor = titleColor,
             subtitleColor = subtitleColor,
             runningColor = runningColor,
             stoppedColor = stoppedColor,
-            runtimePendingText = stringResource(R.string.mcp_runtime_pending),
         )
 
     val listState = rememberLazyListState()
@@ -330,6 +327,7 @@ fun McpPage(
                 pageUiState = pageUiState,
                 toolBuckets = mcpToolBuckets,
                 overviewState = overviewState,
+                runtimeNowMsFlow = mcpPageViewModel.runtimeNowMs,
                 runtime = runtime,
                 innerPadding = innerPadding,
                 listState = listState,

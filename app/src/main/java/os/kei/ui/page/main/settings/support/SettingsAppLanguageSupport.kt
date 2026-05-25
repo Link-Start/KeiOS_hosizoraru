@@ -10,13 +10,19 @@ import androidx.core.net.toUri
 
 @Stable
 internal class SettingsAppLanguageController(
-    private val appContext: Context
+    private val appContext: Context,
 ) {
-    val actionAvailable: Boolean
-        get() = buildAppLanguageSettingsIntent(appContext) != null
+    /**
+     * Cached intent computed once per controller instance. The PackageManager IPC inside
+     * [buildAppLanguageSettingsIntent] is too expensive to run every recomposition, and the
+     * available activities for our own package don't change while this controller is alive.
+     */
+    private val cachedIntent: Intent? = buildAppLanguageSettingsIntent(appContext)
+
+    val actionAvailable: Boolean = cachedIntent != null
 
     fun openAppLanguageSettings(): Boolean {
-        val intent = buildAppLanguageSettingsIntent(appContext) ?: return false
+        val intent = cachedIntent ?: return false
         return runCatching {
             appContext.startActivity(intent)
         }.isSuccess

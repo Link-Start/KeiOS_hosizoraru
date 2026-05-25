@@ -63,7 +63,6 @@ import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTabSelectCoo
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTopBarActionItems
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideVoicePlayerController
 import os.kei.ui.page.main.student.page.support.rememberGuideSyncProgress
-import os.kei.ui.page.main.student.page.support.resolveGuideBottomTabs
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -134,6 +133,7 @@ fun BaStudentGuidePage(
     val profileLinkTitleState by guideViewModel.profileLinkTitleState.collectAsStateWithLifecycle()
     val pageChromeState by guideViewModel.pageChromeState.collectAsStateWithLifecycle()
     val voiceUiState by guideViewModel.voiceUiState.collectAsStateWithLifecycle()
+    val bottomTabsList by guideViewModel.bottomTabsList.collectAsStateWithLifecycle()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -160,7 +160,6 @@ fun BaStudentGuidePage(
     val playingVoiceUrl = voiceUiState.playingVoiceUrl
     val isVoicePlaying = voiceUiState.isVoicePlaying
     val voicePlayProgress = voiceUiState.voicePlayProgress
-    val bottomTabsList = remember(info) { resolveGuideBottomTabs(info) }
     LaunchedEffect(bottomTabsList, selectedBottomTabOrdinal) {
         guideViewModel.coerceSelectedBottomTab(bottomTabsList)
     }

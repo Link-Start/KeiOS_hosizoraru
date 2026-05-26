@@ -388,6 +388,7 @@ class AppDesignSystemScreenshotTest {
                             summaryContainerColor = Color(0x3322D3EE),
                             summaryBorderColor = Color(0x5522D3EE),
                             supportedAbis = listOf("arm64-v8a"),
+                            relativeTimeNowMillis = 1_700_000_000_000L,
                             showApkTrustCheck = true,
                             managedInstallEnabled = false,
                             managedInstallRunning = false,

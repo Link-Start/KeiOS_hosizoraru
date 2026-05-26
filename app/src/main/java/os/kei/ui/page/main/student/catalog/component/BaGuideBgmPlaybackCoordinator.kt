@@ -35,21 +35,32 @@ internal data class BaGuideBgmPlaybackUiState(
     val selectedAudioUrl: String = "",
     val queueModeName: String = BaGuideBgmQueueMode.Continuous.name,
     val nativeMediaNotificationEnabled: Boolean = false,
+    val selectedFavorite: GuideBgmFavoriteItem? = null,
+    val selectedQueueFavorite: GuideBgmFavoriteItem? = null,
 ) {
     val queueMode: BaGuideBgmQueueMode
         get() =
             BaGuideBgmQueueMode.entries.firstOrNull { it.name == queueModeName }
                 ?: BaGuideBgmQueueMode.Continuous
+}
 
-    val selectedFavorite: GuideBgmFavoriteItem?
-        get() =
-            queue.firstOrNull { it.audioUrl == selectedAudioUrl }
-                ?: favorites.firstOrNull { it.audioUrl == selectedAudioUrl }
-                ?: queue.firstOrNull()
-                ?: favorites.firstOrNull()
-
-    val selectedQueueFavorite: GuideBgmFavoriteItem?
-        get() = queue.firstOrNull { it.audioUrl == selectedAudioUrl }
+internal fun BaGuideBgmPlaybackUiState.withResolvedSelection(): BaGuideBgmPlaybackUiState {
+    val nextSelectedQueueFavorite = queue.firstOrNull { it.audioUrl == selectedAudioUrl }
+    val nextSelectedFavorite =
+        nextSelectedQueueFavorite
+            ?: favorites.firstOrNull { it.audioUrl == selectedAudioUrl }
+            ?: queue.firstOrNull()
+            ?: favorites.firstOrNull()
+    if (
+        selectedFavorite == nextSelectedFavorite &&
+        selectedQueueFavorite == nextSelectedQueueFavorite
+    ) {
+        return this
+    }
+    return copy(
+        selectedFavorite = nextSelectedFavorite,
+        selectedQueueFavorite = nextSelectedQueueFavorite,
+    )
 }
 
 internal class BaGuideBgmPlaybackCoordinator(
@@ -134,10 +145,11 @@ internal class BaGuideBgmPlaybackCoordinator(
             return
         }
         _uiState.update { state ->
-            state.copy(
-                favorites = favorites,
-                selectedAudioUrl = selectedAudioUrl,
-            )
+            state
+                .copy(
+                    favorites = favorites,
+                    selectedAudioUrl = selectedAudioUrl,
+                ).withResolvedSelection()
         }
         syncActiveQueue()
     }
@@ -155,10 +167,11 @@ internal class BaGuideBgmPlaybackCoordinator(
             return
         }
         _uiState.update { state ->
-            state.copy(
-                queue = selection.queue,
-                selectedAudioUrl = selection.selectedAudioUrl,
-            )
+            state
+                .copy(
+                    queue = selection.queue,
+                    selectedAudioUrl = selection.selectedAudioUrl,
+                ).withResolvedSelection()
         }
         syncActiveQueue()
     }
@@ -216,17 +229,18 @@ internal class BaGuideBgmPlaybackCoordinator(
                     .takeIf { saved -> BaGuideBgmQueueMode.entries.any { it.name == saved } }
                     ?: BaGuideBgmQueueMode.Continuous.name
             _uiState.update { state ->
-                state.copy(
-                    selectedAudioUrl = snapshot.selectedAudioUrl,
-                    queueModeName = queueModeName,
-                )
+                state
+                    .copy(
+                        selectedAudioUrl = snapshot.selectedAudioUrl,
+                        queueModeName = queueModeName,
+                    ).withResolvedSelection()
             }
             setRuntimeState(BaGuideBgmPlaybackRuntimeState(volume = snapshot.volume), force = true)
         }
     }
 
     fun select(audioUrl: String) {
-        _uiState.update { state -> state.copy(selectedAudioUrl = audioUrl) }
+        _uiState.update { state -> state.copy(selectedAudioUrl = audioUrl).withResolvedSelection() }
         persistSelection()
     }
 
@@ -241,7 +255,7 @@ internal class BaGuideBgmPlaybackCoordinator(
                 selectedAudioUrl = selectedAudioUrl,
                 offset = offset,
             ) ?: return false
-        _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl) }
+        _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl).withResolvedSelection() }
         if (startPlayback) {
             play(favorite, restart = restart)
         } else {
@@ -265,7 +279,7 @@ internal class BaGuideBgmPlaybackCoordinator(
         favorite: GuideBgmFavoriteItem,
         restart: Boolean = false,
     ) {
-        _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl) }
+        _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl).withResolvedSelection() }
         persistSelection()
         activeBackend.play(
             favorite = favorite,
@@ -278,7 +292,7 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     fun toggle(favorite: GuideBgmFavoriteItem) {
-        _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl) }
+        _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl).withResolvedSelection() }
         persistSelection()
         activeBackend.toggle(
             favorite = favorite,
@@ -340,7 +354,7 @@ internal class BaGuideBgmPlaybackCoordinator(
         if (nativeMediaNotificationEnabled) {
             val currentAudioUrl = activeBackend.currentAudioUrl()
             if (currentAudioUrl.isNotBlank() && queue.any { it.audioUrl == currentAudioUrl }) {
-                _uiState.update { state -> state.copy(selectedAudioUrl = currentAudioUrl) }
+                _uiState.update { state -> state.copy(selectedAudioUrl = currentAudioUrl).withResolvedSelection() }
                 persistSelection()
             }
             val nativeQueueMode = activeBackend.currentQueueMode()

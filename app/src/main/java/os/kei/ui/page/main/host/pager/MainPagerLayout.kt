@@ -225,6 +225,8 @@ internal fun MainPagerLayout(
                 rememberMainPageActivationState(
                     tabs = coordinator.tabs,
                     settledPageIndex = coordinator.pagerState.settledPage,
+                    targetPageIndex = coordinator.pagerState.targetPage,
+                    isPagerScrollInProgress = coordinator.pagerState.isScrollInProgress,
                 )
             val pageContent: @Composable (Int) -> Unit = { pageIndex ->
                 val pageType = coordinator.tabs[pageIndex]

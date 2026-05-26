@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import android.content.Context
@@ -54,7 +56,7 @@ internal fun BaPageCommonEffects(
             listState.animateScrollToItem(0)
             expandTopAppBarToPageTop(
                 scrollBehavior = scrollBehavior,
-                animationsEnabled = transitionAnimationsEnabled
+                animationsEnabled = transitionAnimationsEnabled,
             )
         } else {
             onConsumedScrollToTopSignalChange(scrollToTopSignal)
@@ -62,27 +64,27 @@ internal fun BaPageCommonEffects(
     }
 
     LaunchedEffect(listState, scrollBehavior, transitionAnimationsEnabled, snapshotFlowManager) {
-        snapshotFlowManager.snapshotFlow {
-            isPageSettledAtTop(
-                firstVisibleItemIndex = listState.firstVisibleItemIndex,
-                firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
-                listScrollInProgress = listState.isScrollInProgress
-            )
-        }
-            .distinctUntilChanged()
+        snapshotFlowManager
+            .snapshotFlow {
+                isPageSettledAtTop(
+                    firstVisibleItemIndex = listState.firstVisibleItemIndex,
+                    firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
+                    listScrollInProgress = listState.isScrollInProgress,
+                )
+            }.distinctUntilChanged()
             .collectLatest { settledAtTop ->
                 if (settledAtTop) {
                     expandTopAppBarToPageTop(
                         scrollBehavior = scrollBehavior,
-                        animationsEnabled = transitionAnimationsEnabled
+                        animationsEnabled = transitionAnimationsEnabled,
                     )
                 }
             }
     }
 
     LaunchedEffect(isPageActive, listState, office, runtimeTickerCoordinator) {
-        runtimePersistenceCoordinator.submit(office.normalizeRuntimeState())
         if (isPageActive) {
+            runtimePersistenceCoordinator.submit(office.normalizeRuntimeState())
             val nowMs = System.currentTimeMillis()
             onUiNowMsChange(nowMs)
             onUiMinuteMsChange(nowMs)
@@ -147,14 +149,14 @@ internal fun BaPageCommonEffects(
                 notifyEnabled = office.apNotifyEnabled,
                 lastNotifiedLevel = office.apLastNotifiedLevel,
             )
-        }
-            .distinctUntilChanged()
+        }.distinctUntilChanged()
             .collectLatest { request ->
                 delay(250.milliseconds)
-                val result = BaApNotificationSyncCoordinator.sync(
-                    context = notificationContext,
-                    request = request,
-                )
+                val result =
+                    BaApNotificationSyncCoordinator.sync(
+                        context = notificationContext,
+                        request = request,
+                    )
                 result.lastNotifiedLevel?.let { level ->
                     runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
                 }

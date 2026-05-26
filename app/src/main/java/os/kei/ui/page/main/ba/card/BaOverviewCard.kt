@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba.card
 
 import androidx.compose.foundation.Image
@@ -27,10 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
-import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
+import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_NICKNAME
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -98,10 +100,11 @@ internal fun BaOverviewCard(
         idFriendCodeInput.ifEmpty { BA_DEFAULT_FRIEND_CODE }.length.coerceIn(1, 8)
     val friendCodeFieldWidth = (friendCodeLengthForWidth * 10 + 28).coerceIn(86, 116).dp
     val nicknameSuffixWidth = 44.dp
-    val idTrailingSlotWidth = maxOf(
-        nicknameFieldWidth + 4.dp + nicknameSuffixWidth,
-        friendCodeFieldWidth
-    )
+    val idTrailingSlotWidth =
+        maxOf(
+            nicknameFieldWidth + 4.dp + nicknameSuffixWidth,
+            friendCodeFieldWidth,
+        )
 
     BaLiquidCard(
         backdrop = backdrop,
@@ -118,7 +121,7 @@ internal fun BaOverviewCard(
             BaOverviewIdFieldRow(
                 label = stringResource(R.string.ba_id_label_nickname),
                 trailingSlotWidth = idTrailingSlotWidth,
-                labelIconRes = R.drawable.collectible_icon_guidemission_s3,
+                labelIconRes = R.drawable.collectible_icon_guidemission_s3_small,
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -140,11 +143,12 @@ internal fun BaOverviewCard(
                         verticalPadding = 5.dp,
                     )
                     Box(
-                        modifier = Modifier
-                            .width(nicknameSuffixWidth)
-                            .height(34.dp)
-                            .wrapContentHeight(align = Alignment.CenterVertically)
-                            .offset(y = (-1).dp),
+                        modifier =
+                            Modifier
+                                .width(nicknameSuffixWidth)
+                                .height(34.dp)
+                                .wrapContentHeight(align = Alignment.CenterVertically)
+                                .offset(y = (-1).dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
@@ -204,16 +208,17 @@ internal fun BaOverviewCard(
                     }
                     AppLiquidIconButton(
                         backdrop = backdrop,
-                        painter = painterResource(id = R.drawable.common_icon_dailyreward),
+                        painter = painterResource(id = R.drawable.common_icon_dailyreward_small),
                         contentDescription = stringResource(R.string.ba_overview_cd_open_catalog),
                         variant = GlassVariant.Content,
                         onClick = onOpenGuideCatalog,
                         width = 48.dp,
                         height = 34.dp,
                         iconTint = Color.Unspecified,
-                        iconModifier = Modifier
-                            .width(26.dp)
-                            .height(26.dp)
+                        iconModifier =
+                            Modifier
+                                .width(26.dp)
+                                .height(26.dp),
                     )
                 }
 
@@ -232,7 +237,7 @@ internal fun BaOverviewCard(
                         ) {
                             Text(stringResource(R.string.ba_overview_server_label), color = MiuixTheme.colorScheme.onBackground)
                             Image(
-                                painter = painterResource(id = R.drawable.lobby_icon_work),
+                                painter = painterResource(id = R.drawable.lobby_icon_work_small),
                                 contentDescription = stringResource(R.string.ba_overview_cd_server_icon),
                                 modifier = Modifier.size(18.dp),
                             )
@@ -248,7 +253,7 @@ internal fun BaOverviewCard(
                         onSelectedIndexChange = onServerSelected,
                         onAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
                         backdrop = backdrop,
-                        variant = GlassVariant.Content
+                        variant = GlassVariant.Content,
                     )
                 }
             }
@@ -290,7 +295,7 @@ internal fun BaOverviewCard(
                 ) {
                     AppLiquidIconButton(
                         backdrop = backdrop,
-                        painter = painterResource(id = R.drawable.item_icon_consumable_ap_3),
+                        painter = painterResource(id = R.drawable.item_icon_consumable_ap_3_small),
                         contentDescription = stringResource(R.string.ba_overview_cd_claim_cafe_ap),
                         variant = GlassVariant.Content,
                         iconTint = Color.Unspecified,
@@ -352,18 +357,20 @@ private fun BaOverviewApPanel(
 ) {
     val uiNowMs = clockState.uiNowMs.longValue
     val uiMinuteMs = clockState.uiMinuteMs.longValue
-    val apNextPointAt = calculateApNextPointAtMs(
-        apLimit = apLimit,
-        apCurrent = apCurrent,
-        apRegenBaseMs = apRegenBaseMs,
-        nowMs = uiNowMs,
-    )
-    val apFullAt = calculateApFullAtMs(
-        apLimit = apLimit,
-        apCurrent = apCurrent,
-        apRegenBaseMs = apRegenBaseMs,
-        nowMs = uiMinuteMs,
-    )
+    val apNextPointAt =
+        calculateApNextPointAtMs(
+            apLimit = apLimit,
+            apCurrent = apCurrent,
+            apRegenBaseMs = apRegenBaseMs,
+            nowMs = uiNowMs,
+        )
+    val apFullAt =
+        calculateApFullAtMs(
+            apLimit = apLimit,
+            apCurrent = apCurrent,
+            apRegenBaseMs = apRegenBaseMs,
+            nowMs = uiMinuteMs,
+        )
     val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs, includeSeconds = true)
     val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
 
@@ -386,7 +393,7 @@ private fun BaOverviewApPanel(
                 ) {
                     Text("AP", color = accentGreen, fontWeight = FontWeight.Bold)
                     Image(
-                        painter = painterResource(id = R.drawable.ba_ap_icon_tight),
+                        painter = painterResource(id = R.drawable.ba_ap_icon_tight_small),
                         contentDescription = stringResource(R.string.ba_overview_cd_ap_icon),
                         modifier = Modifier.size(18.dp),
                     )
@@ -445,12 +452,13 @@ private fun BaOverviewApFullMetric(
 ) {
     val uiMinuteMs = clockState.uiMinuteMs.longValue
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val apFullAt = calculateApFullAtMs(
-        apLimit = apLimit,
-        apCurrent = apCurrent,
-        apRegenBaseMs = apRegenBaseMs,
-        nowMs = uiMinuteMs,
-    )
+    val apFullAt =
+        calculateApFullAtMs(
+            apLimit = apLimit,
+            apCurrent = apCurrent,
+            apRegenBaseMs = apRegenBaseMs,
+            nowMs = uiMinuteMs,
+        )
     val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
     BaLiquidMetricPanel(
         backdrop = backdrop,
@@ -488,9 +496,10 @@ private fun BaOverviewIdFieldRow(
                 Image(
                     painter = painterResource(id = labelIconRes),
                     contentDescription = null,
-                    modifier = Modifier
-                        .width(30.dp)
-                        .height(24.dp),
+                    modifier =
+                        Modifier
+                            .width(30.dp)
+                            .height(24.dp),
                 )
             }
         }

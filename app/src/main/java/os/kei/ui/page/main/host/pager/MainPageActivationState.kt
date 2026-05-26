@@ -22,14 +22,27 @@ internal class MainPageActivationState internal constructor(
 @Composable
 internal fun rememberMainPageActivationState(
     tabs: List<BottomPage>,
-    settledPageIndex: Int
+    settledPageIndex: Int,
+    targetPageIndex: Int,
+    isPagerScrollInProgress: Boolean,
 ): MainPageActivationState {
     val activatedPages = remember { mutableStateMapOf<BottomPage, Boolean>() }
     val readyPages = remember { mutableStateMapOf<BottomPage, Boolean>() }
     val settledPage = tabs.getOrNull(settledPageIndex)
+    val targetPage = tabs.getOrNull(targetPageIndex)
 
     LaunchedEffect(tabs, settledPage) {
         val page = settledPage ?: return@LaunchedEffect
+        activatedPages[page] = true
+        if (readyPages[page] != true) {
+            withFrameNanos { }
+            readyPages[page] = true
+        }
+    }
+
+    LaunchedEffect(tabs, targetPage, isPagerScrollInProgress) {
+        if (!isPagerScrollInProgress) return@LaunchedEffect
+        val page = targetPage ?: return@LaunchedEffect
         activatedPages[page] = true
         if (readyPages[page] != true) {
             withFrameNanos { }

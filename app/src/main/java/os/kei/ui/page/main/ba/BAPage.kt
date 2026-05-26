@@ -137,7 +137,13 @@ fun BAPage(
     val uiNowMsProvider = remember(ui) { { ui.uiNowMs } }
     val syncPageActive =
         runtime.hasActivated &&
+            runtime.contentReady &&
+            !runtime.isPagerScrollInProgress &&
             if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
+    val settledWorkActive =
+        rememberBaPageSettledWorkActive(
+            active = runtime.contentReady && runtime.isDataActive && !runtime.isPagerScrollInProgress,
+        )
     val baGlassRuntime = LocalGlassEffectRuntime.current
     val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
 
@@ -290,7 +296,7 @@ fun BAPage(
         listState = listState,
         scrollBehavior = scrollBehavior,
         scrollToTopSignal = runtime.scrollToTopSignal,
-        isPageActive = runtime.contentReady && runtime.isDataActive,
+        isPageActive = settledWorkActive,
         consumedScrollToTopSignal = baRouteState.consumedScrollToTopSignal,
         onConsumedScrollToTopSignalChange = officeViewModel::updateConsumedScrollToTopSignal,
         onDisposeActionBarInteraction = { onActionBarInteractingChanged(false) },
@@ -307,7 +313,7 @@ fun BAPage(
 
     BaCalendarPoolSyncEffects(
         calendarPoolViewModel = calendarPoolViewModel,
-        syncPageActive = syncPageActive,
+        syncPageActive = syncPageActive && settledWorkActive,
         routeState = baRouteState,
     )
     val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE

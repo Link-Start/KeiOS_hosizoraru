@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -52,27 +53,48 @@ internal fun BoxScope.BaPageFloatingDock(
         } else {
             MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.62f)
         }
+    val copyFriendCodeIcon = osLucideCopyIcon()
+    val calendarIcon = appLucideCalendarIcon()
+    val poolIcon = appLucideMailIcon()
+    val copyFriendCodeDescription = stringResource(R.string.ba_cd_copy_friend_code)
+    val calendarDescription = stringResource(R.string.ba_calendar_cd_open_activity)
+    val poolDescription = stringResource(R.string.ba_pool_cd_open_activity)
+    val primaryIconTint = MiuixTheme.colorScheme.primary
     val actions =
-        listOf(
-            AppFloatingDockAction(
-                icon = osLucideCopyIcon(),
-                contentDescription = stringResource(R.string.ba_cd_copy_friend_code),
-                iconTint = copyFriendCodeIconTint,
-                onClick = onCopyFriendCode,
-            ),
-            AppFloatingDockAction(
-                icon = appLucideCalendarIcon(),
-                contentDescription = stringResource(R.string.ba_calendar_cd_open_activity),
-                iconTint = MiuixTheme.colorScheme.primary,
-                onClick = onOpenCalendar,
-            ),
-            AppFloatingDockAction(
-                icon = appLucideMailIcon(),
-                contentDescription = stringResource(R.string.ba_pool_cd_open_activity),
-                iconTint = MiuixTheme.colorScheme.primary,
-                onClick = onOpenPool,
-            ),
-        )
+        remember(
+            copyFriendCodeIcon,
+            copyFriendCodeDescription,
+            copyFriendCodeIconTint,
+            onCopyFriendCode,
+            calendarIcon,
+            calendarDescription,
+            onOpenCalendar,
+            poolIcon,
+            poolDescription,
+            onOpenPool,
+            primaryIconTint,
+        ) {
+            listOf(
+                AppFloatingDockAction(
+                    icon = copyFriendCodeIcon,
+                    contentDescription = copyFriendCodeDescription,
+                    iconTint = copyFriendCodeIconTint,
+                    onClick = onCopyFriendCode,
+                ),
+                AppFloatingDockAction(
+                    icon = calendarIcon,
+                    contentDescription = calendarDescription,
+                    iconTint = primaryIconTint,
+                    onClick = onOpenCalendar,
+                ),
+                AppFloatingDockAction(
+                    icon = poolIcon,
+                    contentDescription = poolDescription,
+                    iconTint = primaryIconTint,
+                    onClick = onOpenPool,
+                ),
+            )
+        }
 
     AppFloatingVerticalActionDock(
         backdrop = backdrop,

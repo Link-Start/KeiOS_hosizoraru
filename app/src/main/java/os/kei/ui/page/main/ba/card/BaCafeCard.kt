@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba.card
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,9 +14,9 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
-import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
+import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
 import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
@@ -52,10 +54,15 @@ internal fun BaCafeCard(
     val nextHeadpatAt = calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)
     val nextStudentRefreshAt = nextCafeStudentRefreshMs(uiNowMs, serverIndex)
     val nextArenaRefreshAt = nextArenaRefreshMs(uiNowMs, serverIndex)
-    val nextHeadpatText = if (coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs) "0m" else formatBaRemainingTime(
-        nextHeadpatAt,
-        uiNowMs
-    )
+    val nextHeadpatText =
+        if (coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs) {
+            "0m"
+        } else {
+            formatBaRemainingTime(
+                nextHeadpatAt,
+                uiNowMs,
+            )
+        }
     val nextStudentRefreshText = formatBaRemainingTime(nextStudentRefreshAt, uiNowMs)
     val nextArenaRefreshText = formatBaRemainingTime(nextArenaRefreshAt, uiNowMs)
     val invite1AvailableAt = calculateInviteTicketAvailableMs(coffeeInvite1UsedMs)
@@ -80,7 +87,7 @@ internal fun BaCafeCard(
     ) {
         BaCardHeader(
             title = stringResource(R.string.ba_cafe_title),
-            titleIconRes = R.drawable.mp_cafe,
+            titleIconRes = R.drawable.mp_cafe_small,
             trailing = {
                 AppDropdownSelector(
                     selectedText = "Lv$cafeLevel",
@@ -95,7 +102,7 @@ internal fun BaCafeCard(
                     onAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
                     backdrop = backdrop,
                     variant = GlassVariant.Content,
-                    textColor = accentPink
+                    textColor = accentPink,
                 )
             },
         )
@@ -126,7 +133,7 @@ internal fun BaCafeCard(
         BaInlineActionPanel(
             backdrop = backdrop,
             buttonText = stringResource(R.string.ba_cafe_action_headpat),
-            buttonIconRes = R.drawable.fx_tex_ch0071_prop_05,
+            buttonIconRes = R.drawable.fx_tex_ch0071_prop_05_small,
             countdownText = nextHeadpatText,
             timeText = headpatTimeText,
             accentColor = accentPink,
@@ -138,7 +145,7 @@ internal fun BaCafeCard(
         BaInlineActionPanel(
             backdrop = backdrop,
             buttonText = stringResource(R.string.ba_cafe_action_invite_ticket_1),
-            buttonIconRes = R.drawable.cafe_icon_coupon,
+            buttonIconRes = R.drawable.cafe_icon_coupon_small,
             countdownText = invite1Text,
             timeText = invite1TimeText,
             accentColor = invite1Color,
@@ -150,7 +157,7 @@ internal fun BaCafeCard(
         BaInlineActionPanel(
             backdrop = backdrop,
             buttonText = stringResource(R.string.ba_cafe_action_invite_ticket_2),
-            buttonIconRes = R.drawable.cafe_icon_coupon,
+            buttonIconRes = R.drawable.cafe_icon_coupon_small,
             countdownText = invite2Text,
             timeText = invite2TimeText,
             accentColor = invite2Color,

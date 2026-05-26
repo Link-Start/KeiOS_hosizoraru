@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.ba
 
 import androidx.compose.foundation.layout.Arrangement
@@ -96,16 +98,18 @@ internal fun BaPageContent(
     val pageHorizontalPadding = AppChromeTokens.pageHorizontalPadding
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
         state = listState,
-        contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding() + topBarToHeaderGap,
-            bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
-            start = pageHorizontalPadding,
-            end = pageHorizontalPadding,
-        ),
+        contentPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding() + topBarToHeaderGap,
+                bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
+                start = pageHorizontalPadding,
+                end = pageHorizontalPadding,
+            ),
         verticalArrangement = Arrangement.spacedBy(pageGap),
     ) {
         item(key = "ba-overview", contentType = BaPageContentType.Overview) {

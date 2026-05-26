@@ -26,7 +26,7 @@ class BaGuideCatalogRepositoryTest {
                     ioDispatcher = Dispatchers.Unconfined,
                     refreshIntervalLoader = { 1 },
                     cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _ -> error("blocked") },
+                    catalogFetcher = { _, _, _, _ -> error("blocked") },
                     completeChecker = { it === cached },
                     expiredChecker = { _, _, _ -> true },
                 )
@@ -55,7 +55,7 @@ class BaGuideCatalogRepositoryTest {
                     ioDispatcher = Dispatchers.Unconfined,
                     refreshIntervalLoader = { 12 },
                     cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _ ->
+                    catalogFetcher = { _, _, _, _ ->
                         fetchCalled = true
                         BaGuideCatalogBundle.EMPTY
                     },
@@ -80,6 +80,39 @@ class BaGuideCatalogRepositoryTest {
             assertEquals(null, result.error)
             assertEquals(false, fetchCalled)
             assertEquals(88_000L, observedNowMs)
+        }
+
+    @Test
+    fun `network fetch receives repository clock`() =
+        runBlocking {
+            val fetched = catalogBundle("网络学生")
+            var fetchNowMs = 0L
+            val repository =
+                BaGuideCatalogRepository(
+                    ioDispatcher = Dispatchers.Unconfined,
+                    refreshIntervalLoader = { 12 },
+                    cachedBundleLoader = { null },
+                    catalogFetcher = { _, _, _, clock ->
+                        fetchNowMs = clock.nowMs()
+                        fetched
+                    },
+                    completeChecker = { false },
+                    expiredChecker = { _, _, _ -> true },
+                    clock = BaGuideDataClock { 99_000L },
+                )
+
+            val result =
+                repository.loadCatalog(
+                    context = null,
+                    currentCatalog = BaGuideCatalogBundle.EMPTY,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(fetched, result.catalog)
+            assertEquals(null, result.error)
+            assertEquals(99_000L, fetchNowMs)
         }
 
     @Test

@@ -3,7 +3,9 @@ package os.kei.ui.page.main.student.catalog.state
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.student.BaGuideDataClock
 import os.kei.ui.page.main.student.BaGuideGalleryItem
+import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -16,6 +18,7 @@ import os.kei.ui.page.main.student.normalizeGuideMediaSource
 internal class BaGuideStudentBgmResolveRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    private val clock: BaGuideDataClock = BaGuideSystemDataClock,
 ) {
     suspend fun loadCachedFavorite(entry: BaGuideCatalogEntry): BaGuideStudentBgmResolvedItem? =
         withContext(ioDispatcher) {
@@ -30,6 +33,7 @@ internal class BaGuideStudentBgmResolveRepository(
                 sourceUrl = entry.detailUrl,
                 networkDispatcher = ioDispatcher,
                 parseDispatcher = parseDispatcher,
+                clock = clock,
             )
         withContext(ioDispatcher) {
             BaStudentGuideStore.saveInfo(info)

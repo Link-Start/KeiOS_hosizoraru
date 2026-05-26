@@ -10,8 +10,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.ba.data.remote.GameKeeRepository
+import os.kei.ui.page.main.student.BaGuideDataClock
 import os.kei.ui.page.main.student.BaGuideRow
+import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
@@ -21,7 +24,6 @@ import java.time.ZoneOffset
 import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
-import os.kei.core.concurrency.AppDispatchers
 
 private const val BA_GUIDE_SECOND_PAGE_ID = 23941
 private const val BA_GUIDE_STUDENT_PID = 49443
@@ -159,6 +161,7 @@ internal suspend fun fetchBaGuideCatalogBundle(
     forceRefresh: Boolean = false,
     networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    clock: BaGuideDataClock = BaGuideSystemDataClock,
 ): BaGuideCatalogBundle {
     if (!forceRefresh) {
         val cached =
@@ -169,7 +172,7 @@ internal suspend fun fetchBaGuideCatalogBundle(
             return cached
         }
     }
-    val now = System.currentTimeMillis()
+    val now = clock.nowMs()
     val releaseDateIndex =
         withContext(networkDispatcher) {
             BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
@@ -249,6 +252,7 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     requestThrottleMs: Long = BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS,
     networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    clock: BaGuideDataClock = BaGuideSystemDataClock,
     onBundleUpdated: (BaGuideCatalogBundle) -> Unit = {},
 ): BaGuideCatalogBundle {
     if (source.entriesByTab.values.all { it.isEmpty() }) return source
@@ -283,6 +287,7 @@ internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
                 requestThrottleMs = requestThrottleMs,
                 networkDispatcher = networkDispatcher,
                 parseDispatcher = parseDispatcher,
+                clock = clock,
             )
         remainingFetch -= candidates.size
         if (networkPatch.isEmpty()) continue
@@ -436,6 +441,7 @@ private suspend fun collectReleaseDatePatchFromNetwork(
     requestThrottleMs: Long,
     networkDispatcher: CoroutineDispatcher,
     parseDispatcher: CoroutineDispatcher,
+    clock: BaGuideDataClock,
 ): CatalogReleaseDatePatch {
     if (entries.isEmpty()) return CatalogReleaseDatePatch()
     val results =
@@ -450,6 +456,7 @@ private suspend fun collectReleaseDatePatchFromNetwork(
                             entry = entry,
                             networkDispatcher = networkDispatcher,
                             parseDispatcher = parseDispatcher,
+                            clock = clock,
                         )
                     }
                 }.awaitAll()
@@ -475,6 +482,7 @@ private suspend fun probeReleaseDateFromNetwork(
     entry: BaGuideCatalogEntry,
     networkDispatcher: CoroutineDispatcher,
     parseDispatcher: CoroutineDispatcher,
+    clock: BaGuideDataClock,
 ): CatalogReleaseDateProbeResult {
     val contentId = entry.contentId
     if (contentId <= 0L || entry.detailUrl.isBlank()) {
@@ -484,7 +492,7 @@ private suspend fun probeReleaseDateFromNetwork(
             releaseDateSec = 0L,
         )
     }
-    val probedAtMs = System.currentTimeMillis().coerceAtLeast(1L)
+    val probedAtMs = clock.nowMs().coerceAtLeast(1L)
     return try {
         val contentDetail =
             withContext(networkDispatcher) {

@@ -21,13 +21,21 @@ internal object BaGuideImageCache {
     private fun normalizeTarget(raw: String): String {
         val value = raw.trim()
         if (value.isBlank()) return ""
-        val isFile = runCatching {
-            value.toUri().scheme.orEmpty().equals("file", ignoreCase = true)
-        }.getOrDefault(false)
+        val isFile =
+            runCatching {
+                value
+                    .toUri()
+                    .scheme
+                    .orEmpty()
+                    .equals("file", ignoreCase = true)
+            }.getOrDefault(false)
         return if (isFile) value else normalizeGuideUrl(value)
     }
 
-    private fun decodeSampledFile(file: File, maxDecodeDimension: Int): Bitmap? {
+    private fun decodeSampledFile(
+        file: File,
+        maxDecodeDimension: Int,
+    ): Bitmap? {
         if (!file.exists() || file.length() <= 0L) return null
         val safeMax = maxDecodeDimension.coerceIn(512, 4096)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -41,16 +49,15 @@ internal object BaGuideImageCache {
         while ((srcWidth / sample) > safeMax || (srcHeight / sample) > safeMax) {
             sample *= 2
         }
-        val decodeOptions = BitmapFactory.Options().apply {
-            inSampleSize = sample.coerceAtLeast(1)
-            inPreferredConfig = Bitmap.Config.ARGB_8888
-        }
+        val decodeOptions =
+            BitmapFactory.Options().apply {
+                inSampleSize = sample.coerceAtLeast(1)
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
         return BitmapFactory.decodeFile(file.absolutePath, decodeOptions)
     }
 
-    private fun cacheRoot(context: Context): File {
-        return File(context.cacheDir, ROOT_DIR).apply { mkdirs() }
-    }
+    private fun cacheRoot(context: Context): File = File(context.cacheDir, ROOT_DIR).apply { mkdirs() }
 
     private fun fileExtFromUrl(url: String): String {
         val path = url.substringBefore('?').substringBefore('#')
@@ -61,7 +68,10 @@ internal object BaGuideImageCache {
         }
     }
 
-    private fun cacheFileForUrl(context: Context, normalizedUrl: String): File {
+    private fun cacheFileForUrl(
+        context: Context,
+        normalizedUrl: String,
+    ): File {
         val name = sha1(normalizedUrl) + fileExtFromUrl(normalizedUrl)
         return File(cacheRoot(context), name)
     }
@@ -70,7 +80,7 @@ internal object BaGuideImageCache {
         if (!file.exists() || file.length() <= 0L) return false
         val refreshIntervalHours = BASettingsStore.loadCalendarRefreshIntervalHours().coerceAtLeast(1)
         val ttlMs = refreshIntervalHours * 60L * 60L * 1000L
-        val ageMs = (System.currentTimeMillis() - file.lastModified()).coerceAtLeast(0L)
+        val ageMs = (BaGuideSystemDataClock.nowMs() - file.lastModified()).coerceAtLeast(0L)
         return ageMs < ttlMs
     }
 
@@ -82,13 +92,15 @@ internal object BaGuideImageCache {
         return File(path)
     }
 
-    private fun memoryKey(normalizedUrl: String, maxDecodeDimension: Int): String {
-        return "${normalizedUrl}|${maxDecodeDimension.coerceIn(128, 4096)}"
-    }
+    private fun memoryKey(
+        normalizedUrl: String,
+        maxDecodeDimension: Int,
+    ): String = "$normalizedUrl|${maxDecodeDimension.coerceIn(128, 4096)}"
 
     private fun sha1(text: String): String {
         val digest = MessageDigest.getInstance("SHA-1")
-        return digest.digest(text.toByteArray())
+        return digest
+            .digest(text.toByteArray())
             .joinToString("") { byte -> "%02x".format(byte) }
     }
 
@@ -101,7 +113,7 @@ internal object BaGuideImageCache {
         context: Context,
         source: String,
         maxDecodeDimension: Int = 2048,
-        onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null
+        onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null,
     ): Bitmap? {
         val normalized = normalizeTarget(source)
         if (normalized.isBlank()) return null
@@ -135,11 +147,12 @@ internal object BaGuideImageCache {
             runCatching { diskFile.delete() }
         }
 
-        val downloaded = GameKeeNetworkClient.downloadToFile(
-            mediaUrl = normalized,
-            targetFile = diskFile,
-            onProgress = onProgress
-        ) is GameKeeNetworkResult.Success
+        val downloaded =
+            GameKeeNetworkClient.downloadToFile(
+                mediaUrl = normalized,
+                targetFile = diskFile,
+                onProgress = onProgress,
+            ) is GameKeeNetworkResult.Success
         if (downloaded && diskFile.exists() && diskFile.length() > 0L) {
             val bitmap = decodeSampledFile(diskFile, maxDecodeDimension)
             if (bitmap != null) {
@@ -149,14 +162,18 @@ internal object BaGuideImageCache {
             runCatching { diskFile.delete() }
         }
 
-        val fallback = when (val result = GameKeeNetworkClient.fetchImage(
-            imageUrl = normalized,
-            maxDecodeDimension = maxDecodeDimension,
-            onProgress = onProgress
-        )) {
-            is GameKeeNetworkResult.Success -> result.value
-            is GameKeeNetworkResult.Failure -> null
-        }
+        val fallback =
+            when (
+                val result =
+                    GameKeeNetworkClient.fetchImage(
+                        imageUrl = normalized,
+                        maxDecodeDimension = maxDecodeDimension,
+                        onProgress = onProgress,
+                    )
+            ) {
+                is GameKeeNetworkResult.Success -> result.value
+                is GameKeeNetworkResult.Failure -> null
+            }
         if (fallback != null) {
             synchronized(memory) { memory.put(key, fallback) }
         }
@@ -165,7 +182,7 @@ internal object BaGuideImageCache {
 
     fun peekBitmap(
         source: String,
-        maxDecodeDimension: Int = 2048
+        maxDecodeDimension: Int = 2048,
     ): Bitmap? {
         val normalized = normalizeTarget(source)
         if (normalized.isBlank()) return null

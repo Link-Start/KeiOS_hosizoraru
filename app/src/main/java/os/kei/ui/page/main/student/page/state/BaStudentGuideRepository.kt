@@ -153,6 +153,7 @@ internal class BaStudentGuideRepository(
                         sourceUrl = requestUrl,
                         networkDispatcher = ioDispatcher,
                         parseDispatcher = parseDispatcher,
+                        clock = clock,
                     ),
                 )
             } catch (error: CancellationException) {

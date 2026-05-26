@@ -53,6 +53,7 @@ internal class BaGuideCatalogRepository(
         forceRefresh: Boolean,
         networkDispatcher: CoroutineDispatcher,
         parseDispatcher: CoroutineDispatcher,
+        clock: BaGuideDataClock,
     ) -> BaGuideCatalogBundle =
         ::fetchBaGuideCatalogBundle,
     private val completeChecker: (BaGuideCatalogBundle?) -> Boolean =
@@ -199,6 +200,7 @@ internal class BaGuideCatalogRepository(
                         true,
                         ioDispatcher,
                         parseDispatcher,
+                        clock,
                     ),
                 )
             } catch (error: CancellationException) {
@@ -242,6 +244,7 @@ internal class BaGuideCatalogRepository(
             maxNetworkFetchPerPass = CATALOG_RELEASE_DATE_FETCH_LIMIT_PER_PASS,
             networkDispatcher = ioDispatcher,
             parseDispatcher = parseDispatcher,
+            clock = clock,
             onBundleUpdated = onBundleUpdated,
         )
 

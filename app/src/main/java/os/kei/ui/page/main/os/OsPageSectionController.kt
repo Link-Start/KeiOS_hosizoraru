@@ -3,6 +3,8 @@ package os.kei.ui.page.main.os
 import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +23,8 @@ internal class OsPageSectionController(
     private val runtimeMutableState: MutableStateFlow<OsPageRuntimeState>,
     private val events: MutableSharedFlow<OsPageEvent>,
 ) {
+    private var initialVisibleRefreshJob: Job? = null
+
     suspend fun hydrateInitialCache(
         isPageActive: Boolean,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
@@ -36,19 +40,19 @@ internal class OsPageSectionController(
             repository.saveVisibleCards(ensuredVisibleCards)
         }
         val visibleSections = visibleSectionKinds(ensuredVisibleCards)
-        val snapshot = repository.readInfoCache(visibleSections)
-        runtimeMutableState.update { state ->
-            state.copy(
-                sectionStates = hydratedSectionStates(visibleSections, snapshot),
-                cachePersisted = snapshot.hasPersistedCache,
-                cacheLoaded = true,
-                uiStatePersistenceReady = true,
-            )
+        if (!runtimeState.value.cacheLoaded) {
+            val snapshot = repository.readInfoCache(visibleSections)
+            runtimeMutableState.update { state ->
+                state.copy(
+                    sectionStates = hydratedSectionStates(visibleSections, snapshot),
+                    cachePersisted = snapshot.hasPersistedCache,
+                    cacheLoaded = true,
+                    uiStatePersistenceReady = true,
+                )
+            }
         }
         if (isPageActive) {
-            visibleSections.forEach { section ->
-                ensureLoad(section, false)
-            }
+            scheduleInitialVisibleRefresh(visibleSections, ensureLoad)
         }
     }
 
@@ -176,6 +180,52 @@ internal class OsPageSectionController(
         }
     }
 
+    private fun scheduleInitialVisibleRefresh(
+        visibleSections: Set<SectionKind>,
+        ensureLoad: suspend (SectionKind, Boolean) -> Unit,
+    ) {
+        if (initialVisibleRefreshJob?.isActive == true) return
+        val visibleCards = persistentState.value.uiSnapshot.visibleCards
+        val sectionStates = runtimeState.value.sectionStates
+        val sectionsToLoad =
+            visibleSections.filter { section ->
+                sectionLoadRepository.shouldLoad(
+                    section = section,
+                    forceRefresh = false,
+                    visibleCards = visibleCards,
+                    currentState = sectionStates[section] ?: SectionState(),
+                )
+            }
+        if (sectionsToLoad.isEmpty()) {
+            runtimeMutableState.update { state ->
+                state.copy(initialVisibleRefreshComplete = true)
+            }
+            return
+        }
+        runtimeMutableState.update { state ->
+            state.copy(initialVisibleRefreshComplete = false)
+        }
+        initialVisibleRefreshJob =
+            scope.launch {
+                delay(OS_INITIAL_VISIBLE_REFRESH_DELAY_MS)
+                try {
+                    sectionsToLoad.forEachIndexed { index, section ->
+                        ensureLoad(section, false)
+                        if (index < sectionsToLoad.lastIndex) {
+                            delay(OS_INITIAL_SECTION_LOAD_SPACING_MS)
+                        }
+                    }
+                } catch (error: Throwable) {
+                    error.rethrowIfCancellation()
+                    events.emit(OsPageEvent.OperationFailed(error))
+                } finally {
+                    runtimeMutableState.update { state ->
+                        state.copy(initialVisibleRefreshComplete = true)
+                    }
+                }
+            }
+    }
+
     private fun applyLoadedSection(
         section: SectionKind,
         result: OsSectionLoadResult.Loaded,
@@ -205,7 +255,10 @@ internal class OsPageSectionController(
                 repository.updateShellRunnerExpanded(false)
             }
 
-            OsSectionCard.GOOGLE_SYSTEM_SERVICE -> Unit
+            OsSectionCard.GOOGLE_SYSTEM_SERVICE -> {
+                Unit
+            }
+
             OsSectionCard.SYSTEM -> {
                 repository.updateSystemTableExpanded(false)
                 updateSection(SectionKind.SYSTEM) { SectionState() }
@@ -238,6 +291,9 @@ internal class OsPageSectionController(
         }
     }
 }
+
+private const val OS_INITIAL_VISIBLE_REFRESH_DELAY_MS = 360L
+private const val OS_INITIAL_SECTION_LOAD_SPACING_MS = 80L
 
 private fun hydratedSectionStates(
     visibleSections: Set<SectionKind>,

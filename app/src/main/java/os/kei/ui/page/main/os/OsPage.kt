@@ -344,6 +344,7 @@ fun OsPage(
 
     BindOsInitialCacheLoad(
         ready = persistentState.loaded,
+        cacheLoaded = runtimeState.cacheLoaded,
         isPageActive = runtime.contentReady && runtime.isDataActive,
         hydrateInitialCache = { isPageActive ->
             osPageViewModel.hydrateInitialCache(
@@ -368,6 +369,7 @@ fun OsPage(
 
     BindOsVisibleSectionLoadEffects(
         cacheLoaded = runtimeState.cacheLoaded,
+        initialVisibleRefreshComplete = runtimeState.initialVisibleRefreshComplete,
         isDataActive = runtime.contentReady && runtime.isDataActive,
         visibleCards = visibleCards,
         systemTableExpanded = systemTableExpanded,

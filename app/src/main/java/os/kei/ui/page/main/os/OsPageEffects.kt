@@ -237,11 +237,13 @@ internal fun BindOsShellCardReloadOnResume(
 @Composable
 internal fun BindOsInitialCacheLoad(
     ready: Boolean,
+    cacheLoaded: Boolean,
     isPageActive: Boolean,
     hydrateInitialCache: suspend (Boolean) -> Unit,
 ) {
-    LaunchedEffect(ready) {
+    LaunchedEffect(ready, cacheLoaded, isPageActive) {
         if (!ready) return@LaunchedEffect
+        if (cacheLoaded && !isPageActive) return@LaunchedEffect
         hydrateInitialCache(isPageActive)
     }
 }
@@ -259,6 +261,7 @@ internal fun BindOsShizukuInvalidation(
 @Composable
 internal fun BindOsVisibleSectionLoadEffects(
     cacheLoaded: Boolean,
+    initialVisibleRefreshComplete: Boolean,
     isDataActive: Boolean,
     visibleCards: Set<OsSectionCard>,
     systemTableExpanded: Boolean,
@@ -272,6 +275,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     BindOsSectionLoadEffect(
         expanded = systemTableExpanded,
         cacheLoaded = cacheLoaded,
+        initialVisibleRefreshComplete = initialVisibleRefreshComplete,
         isDataActive = isDataActive,
         visibleCards = visibleCards,
         card = OsSectionCard.SYSTEM,
@@ -281,6 +285,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     BindOsSectionLoadEffect(
         expanded = secureTableExpanded,
         cacheLoaded = cacheLoaded,
+        initialVisibleRefreshComplete = initialVisibleRefreshComplete,
         isDataActive = isDataActive,
         visibleCards = visibleCards,
         card = OsSectionCard.SECURE,
@@ -290,6 +295,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     BindOsSectionLoadEffect(
         expanded = globalTableExpanded,
         cacheLoaded = cacheLoaded,
+        initialVisibleRefreshComplete = initialVisibleRefreshComplete,
         isDataActive = isDataActive,
         visibleCards = visibleCards,
         card = OsSectionCard.GLOBAL,
@@ -299,6 +305,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     BindOsSectionLoadEffect(
         expanded = androidPropsExpanded,
         cacheLoaded = cacheLoaded,
+        initialVisibleRefreshComplete = initialVisibleRefreshComplete,
         isDataActive = isDataActive,
         visibleCards = visibleCards,
         card = OsSectionCard.ANDROID,
@@ -308,6 +315,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     BindOsSectionLoadEffect(
         expanded = javaPropsExpanded,
         cacheLoaded = cacheLoaded,
+        initialVisibleRefreshComplete = initialVisibleRefreshComplete,
         isDataActive = isDataActive,
         visibleCards = visibleCards,
         card = OsSectionCard.JAVA,
@@ -317,6 +325,7 @@ internal fun BindOsVisibleSectionLoadEffects(
     BindOsSectionLoadEffect(
         expanded = linuxEnvExpanded,
         cacheLoaded = cacheLoaded,
+        initialVisibleRefreshComplete = initialVisibleRefreshComplete,
         isDataActive = isDataActive,
         visibleCards = visibleCards,
         card = OsSectionCard.LINUX,
@@ -329,14 +338,22 @@ internal fun BindOsVisibleSectionLoadEffects(
 private fun BindOsSectionLoadEffect(
     expanded: Boolean,
     cacheLoaded: Boolean,
+    initialVisibleRefreshComplete: Boolean,
     isDataActive: Boolean,
     visibleCards: Set<OsSectionCard>,
     card: OsSectionCard,
     section: SectionKind,
     ensureLoad: suspend (SectionKind) -> Unit,
 ) {
-    LaunchedEffect(expanded, visibleCards, cacheLoaded, isDataActive) {
+    LaunchedEffect(
+        expanded,
+        visibleCards,
+        cacheLoaded,
+        initialVisibleRefreshComplete,
+        isDataActive,
+    ) {
         if (!cacheLoaded) return@LaunchedEffect
+        if (!initialVisibleRefreshComplete) return@LaunchedEffect
         if (isDataActive && expanded && isCardVisible(visibleCards, card)) {
             ensureLoad(section)
         }

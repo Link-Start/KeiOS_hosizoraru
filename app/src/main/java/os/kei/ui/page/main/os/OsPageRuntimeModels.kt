@@ -12,6 +12,7 @@ internal data class OsPageRuntimeState(
     val sectionStates: Map<SectionKind, SectionState> = defaultOsSectionStates(),
     val cacheLoaded: Boolean = false,
     val cachePersisted: Boolean = false,
+    val initialVisibleRefreshComplete: Boolean = false,
     val uiStatePersistenceReady: Boolean = false,
     val refreshing: Boolean = false,
     val refreshProgress: Float = 0f,

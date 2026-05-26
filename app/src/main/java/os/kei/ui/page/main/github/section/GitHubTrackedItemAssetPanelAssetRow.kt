@@ -42,6 +42,7 @@ internal fun GitHubTrackedItemAssetRow(
     summaryContainerColor: Color,
     summaryBorderColor: Color,
     supportedAbis: List<String>,
+    relativeTimeNowMillis: Long,
     showApkTrustCheck: Boolean,
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,
@@ -64,7 +65,12 @@ internal fun GitHubTrackedItemAssetRow(
     val isApkAsset = asset.name.endsWith(".apk", ignoreCase = true)
     val displayName = assetDisplayName(asset.name)
     val sizeLabel = formatAssetSize(asset.sizeBytes, context)
-    val relativeTimeLabel = assetRelativeTimeLabel(asset.updatedAtMillis, context)
+    val relativeTimeLabel =
+        assetRelativeTimeLabel(
+            updatedAtMillis = asset.updatedAtMillis,
+            nowMillis = relativeTimeNowMillis,
+            context = context,
+        )
     val preferredForDevice =
         assetIsPreferredForDevice(
             fileName = asset.name,

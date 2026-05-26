@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -164,6 +165,10 @@ internal fun GitHubTrackedItemAssetPanel(
                 }
 
                 renderedAssetBundle != null -> {
+                    val relativeTimeNowMillis =
+                        remember(renderedAssetBundle) {
+                            System.currentTimeMillis()
+                        }
                     renderedAssetBundle.assets.forEach { asset ->
                         GitHubTrackedItemAssetRow(
                             asset = asset,
@@ -172,6 +177,7 @@ internal fun GitHubTrackedItemAssetPanel(
                             summaryContainerColor = summaryContainerColor,
                             summaryBorderColor = summaryBorderColor,
                             supportedAbis = supportedAbis,
+                            relativeTimeNowMillis = relativeTimeNowMillis,
                             showApkTrustCheck =
                                 lookupConfig.decisionAssistEnabled &&
                                     lookupConfig.apkTrustCheckEnabled,

@@ -36,6 +36,7 @@ internal fun GitHubActionsArtifactCard(
     recommended: Boolean,
     canShareArtifact: Boolean,
     managedInstallEnabled: Boolean,
+    relativeTimeNowMillis: Long,
     downloading: Boolean,
     sharing: Boolean,
     context: Context,
@@ -141,7 +142,11 @@ internal fun GitHubActionsArtifactCard(
                     emphasized = true,
                 )
             }
-            assetRelativeTimeLabel(artifact.updatedAtMillis, context)?.let { label ->
+            assetRelativeTimeLabel(
+                updatedAtMillis = artifact.updatedAtMillis,
+                nowMillis = relativeTimeNowMillis,
+                context = context,
+            )?.let { label ->
                 GitHubActionsInfoPill(label = label, color = neutralPillColor)
             }
         },

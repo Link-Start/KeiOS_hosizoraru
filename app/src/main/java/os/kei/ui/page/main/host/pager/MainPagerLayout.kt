@@ -424,6 +424,16 @@ internal fun MainPagerLayout(
                     )
                 }
 
+                is MainLoadedPagerState -> {
+                    MainLoadedPager(
+                        state = pagerState,
+                        userScrollEnabled = coordinator.pagerScrollEnabled,
+                        animationsEnabled = transitionAnimationsEnabled,
+                        modifier = pagerModifier,
+                        pageContent = pageContent,
+                    )
+                }
+
                 else -> {
                     error("Unsupported main pager state: ${pagerState::class.java.name}")
                 }

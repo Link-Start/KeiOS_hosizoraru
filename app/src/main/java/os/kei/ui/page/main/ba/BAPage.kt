@@ -53,12 +53,11 @@ fun BAPage(
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
-    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
     val backdrops =
         rememberMainPageBackdropSet(
             keyPrefix = "ba",
             refreshOnCompositionEnter = true,
-            distinctLayers = fullBackdropEffectsEnabled,
+            distinctLayers = runtime.hasActivated,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val baServerCn = stringResource(R.string.ba_server_cn)

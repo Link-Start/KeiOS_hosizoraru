@@ -297,27 +297,15 @@ fun LiquidGlassBottomBar(
             updateVelocity = false,
         )
     }
-    LaunchedEffect(selectedPositionProvider, dampedDragAnimation, safeTabsCount) {
-        val provider = selectedPositionProvider ?: return@LaunchedEffect
-        snapshotFlow {
-            provider()?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
-        }.collectLatest { pagerDrivenPosition ->
-            if (
-                pagerDrivenPosition != null &&
-                dampedDragAnimation.pressProgress <= 0.001f &&
-                abs(dampedDragAnimation.value - pagerDrivenPosition) > 0.001f
-            ) {
-                dampedDragAnimation.snapToValue(
-                    value = pagerDrivenPosition,
-                    updateVelocity = false,
-                )
-            }
-        }
-    }
-
     LaunchedEffect(selectedIndex, safeTabsCount) {
-        snapshotFlow { selectedIndex.fastCoerceIn(0, safeTabsCount - 1) }
-            .collectLatest { currentIndex = it }
+        val index = selectedIndex.fastCoerceIn(0, safeTabsCount - 1)
+        currentIndex = index
+        if (selectedPositionProvider != null) {
+            dampedDragAnimation.snapToValue(
+                value = index.toFloat(),
+                updateVelocity = false,
+            )
+        }
     }
 
     LaunchedEffect(dampedDragAnimation, transitionAnimationsEnabled, safeTabsCount) {

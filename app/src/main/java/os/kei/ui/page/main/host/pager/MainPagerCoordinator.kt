@@ -123,7 +123,7 @@ internal fun rememberMainPagerCoordinator(
                 pageKeys = pageKeys,
             )
         } else {
-            rememberMainFoundationPagerState(
+            rememberMainLoadedPagerState(
                 initialPage = tabsState.initialPageIndex,
                 pageCount = tabs.size,
                 pageKeys = pageKeys,

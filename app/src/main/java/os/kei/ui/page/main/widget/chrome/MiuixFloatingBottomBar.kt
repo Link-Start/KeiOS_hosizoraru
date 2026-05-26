@@ -267,22 +267,11 @@ fun MiuixFloatingBottomTabStrip(
 
     LaunchedEffect(safeSelectedIndex) {
         currentIndex = safeSelectedIndex
-    }
-    LaunchedEffect(selectedPositionProvider, dampedDrag, safeCount) {
-        val provider = selectedPositionProvider ?: return@LaunchedEffect
-        snapshotFlow {
-            provider()?.fastCoerceIn(0f, (safeCount - 1).toFloat())
-        }.collectLatest { pagerDrivenPosition ->
-            if (
-                pagerDrivenPosition != null &&
-                dampedDrag.pressProgress <= 0.001f &&
-                abs(dampedDrag.value - pagerDrivenPosition) > 0.001f
-            ) {
-                dampedDrag.snapToValue(
-                    value = pagerDrivenPosition,
-                    updateVelocity = false,
-                )
-            }
+        if (selectedPositionProvider != null) {
+            dampedDrag.snapToValue(
+                value = safeSelectedIndex.toFloat(),
+                updateVelocity = false,
+            )
         }
     }
     LaunchedEffect(dampedDrag, animationsEnabled, safeCount) {

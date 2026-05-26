@@ -78,7 +78,7 @@ fun GitHubPage(
     val backdrops =
         rememberMainPageBackdropSet(
             keyPrefix = "github",
-            distinctLayers = fullBackdropEffectsEnabled,
+            distinctLayers = runtime.hasActivated,
         )
     val topBarColor =
         rememberAppTopBarColor(

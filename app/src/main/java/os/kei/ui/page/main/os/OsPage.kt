@@ -43,11 +43,10 @@ fun OsPage(
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
-    val fullBackdropEffectsEnabled = pageBackdropEffectsEnabled
     val osGlassRuntime = LocalGlassEffectRuntime.current
     val uiContext =
         rememberOsPageUiContext(
-            enableFullBackdropEffects = fullBackdropEffectsEnabled,
+            enableFullBackdropEffects = runtime.hasActivated,
             enableTopBarBackdropEffects = pageBackdropEffectsEnabled,
         )
     val context = uiContext.context

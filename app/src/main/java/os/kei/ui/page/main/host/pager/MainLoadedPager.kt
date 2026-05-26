@@ -12,10 +12,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 @Composable
@@ -90,8 +93,21 @@ private fun Modifier.drawLoadedPagerPage(
     } else {
         MainLoadedPagerSettledDrawDistance
     }
-    if (abs(pageIndex - state.pagePosition) <= drawDistance) {
-        drawContent()
+    val relativePosition = pageIndex - state.pagePosition
+    if (abs(relativePosition) <= drawDistance) {
+        val pageOffsetPx = relativePosition * size.width
+        val clipLeft = max(0f, -pageOffsetPx)
+        val clipRight = min(size.width, size.width - pageOffsetPx)
+        if (clipRight > clipLeft) {
+            clipRect(
+                left = clipLeft,
+                top = 0f,
+                right = clipRight,
+                bottom = size.height
+            ) {
+                this@drawWithContent.drawContent()
+            }
+        }
     }
 }
 

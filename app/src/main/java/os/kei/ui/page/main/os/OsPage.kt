@@ -613,6 +613,8 @@ private fun rememberOsPageContentRevealPhase(renderHeavyContent: Boolean): Int {
         withFrameNanos { }
         phase = OsPageMainListRevealPhase.PRIMARY_CARDS
         withFrameNanos { }
+        phase = OsPageMainListRevealPhase.COMMAND_CARD_FIRST
+        withFrameNanos { }
         phase = OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW
         withFrameNanos { }
         phase = OsPageMainListRevealPhase.COMMAND_CARDS_ALL

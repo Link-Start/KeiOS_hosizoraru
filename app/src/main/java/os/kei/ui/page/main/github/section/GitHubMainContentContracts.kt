@@ -31,6 +31,7 @@ internal data class GitHubMainContentLayout(
     val addButtonScrollConnection: NestedScrollConnection,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
+    val contentRevealPhase: Int = GitHubMainContentRevealPhase.DOCK,
     val onShowBottomBar: () -> Unit,
 )
 
@@ -136,3 +137,12 @@ internal data class GitHubMainContentActions(
     val onDismissShareImportResult: () -> Unit,
     val onActionBarInteractingChanged: (Boolean) -> Unit,
 )
+
+internal object GitHubMainContentRevealPhase {
+    const val OVERVIEW = 1
+    const val OVERVIEW_EXPANDED = 2
+    const val SHARE_IMPORT = 3
+    const val TRACKED_PREVIEW = 4
+    const val TRACKED_ALL = 5
+    const val DOCK = 6
+}

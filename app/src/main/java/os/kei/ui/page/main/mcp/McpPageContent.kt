@@ -89,6 +89,7 @@ internal fun McpPageContent(
                         McpServiceControlSection(
                             backdrop = backdrops.content,
                             expanded = pageUiState.controlExpanded,
+                            contentVisible = revealPhase >= MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY,
                             onExpandedChange = actions.onControlExpandedChange,
                             onSendTestNotification = actions.onSendTestNotification,
                             onShowResetConfigConfirm = actions.onShowResetConfigConfirm,
@@ -220,6 +221,8 @@ private fun rememberMcpHeavyContentRevealPhase(renderHeavyContent: Boolean): Int
         withFrameNanos { }
         phase = MCP_HEAVY_CONTENT_REVEAL_CONTROLS
         withFrameNanos { }
+        phase = MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY
+        withFrameNanos { }
         phase = MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS
         withFrameNanos { }
         phase = MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS
@@ -233,7 +236,8 @@ private fun rememberMcpHeavyContentRevealPhase(renderHeavyContent: Boolean): Int
 
 private const val MCP_HEAVY_CONTENT_REVEAL_OVERVIEW = 1
 private const val MCP_HEAVY_CONTENT_REVEAL_CONTROLS = 2
-private const val MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS = 3
-private const val MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS = 4
-private const val MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS = 5
-private const val MCP_HEAVY_CONTENT_REVEAL_DOCK = 6
+private const val MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY = 3
+private const val MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS = 4
+private const val MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS = 5
+private const val MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS = 6
+private const val MCP_HEAVY_CONTENT_REVEAL_DOCK = 7

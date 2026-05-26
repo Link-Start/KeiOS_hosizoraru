@@ -310,13 +310,15 @@ internal fun OsPageMainList(
                 )
             }
 
-            if (contentRevealPhase >= OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW) {
+            if (contentRevealPhase >= OsPageMainListRevealPhase.COMMAND_CARD_FIRST) {
                 addShellCommandCards(
                     cards =
                         if (contentRevealPhase >= OsPageMainListRevealPhase.COMMAND_CARDS_ALL) {
                             shellCommandCards
-                        } else {
+                        } else if (contentRevealPhase >= OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW) {
                             shellCommandCards.take(OS_PAGE_COMMAND_CARD_PREVIEW_COUNT)
+                        } else {
+                            shellCommandCards.take(1)
                         },
                     contentBackdrop = contentBackdrop,
                     expandedStates = shellCommandCardExpanded,
@@ -513,10 +515,11 @@ internal fun OsPageMainList(
 internal object OsPageMainListRevealPhase {
     const val OVERVIEW = 1
     const val PRIMARY_CARDS = 2
-    const val COMMAND_CARDS_PREVIEW = 3
-    const val COMMAND_CARDS_ALL = 4
-    const val DEEP_SECTIONS = 5
-    const val DOCK = 6
+    const val COMMAND_CARD_FIRST = 3
+    const val COMMAND_CARDS_PREVIEW = 4
+    const val COMMAND_CARDS_ALL = 5
+    const val DEEP_SECTIONS = 6
+    const val DOCK = 7
 }
 
 private const val OS_PAGE_COMMAND_CARD_PREVIEW_COUNT = 2

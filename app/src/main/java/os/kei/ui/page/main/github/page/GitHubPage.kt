@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.github.LocalGitHubAppIconBitmaps
 import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
@@ -36,10 +37,10 @@ import os.kei.ui.page.main.github.section.GitHubMainContentActions
 import os.kei.ui.page.main.github.section.GitHubMainContentControls
 import os.kei.ui.page.main.github.section.GitHubMainContentLayout
 import os.kei.ui.page.main.github.section.GitHubMainContentOverview
+import os.kei.ui.page.main.github.section.GitHubMainContentRevealPhase
 import os.kei.ui.page.main.github.section.GitHubMainContentShareImport
 import os.kei.ui.page.main.github.section.GitHubMainContentSurfaces
 import os.kei.ui.page.main.github.section.GitHubMainContentTracked
-import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -275,6 +276,8 @@ fun GitHubPage(
     )
 
     val githubGlassRuntime = LocalGlassEffectRuntime.current
+    val renderHeavyContent = shouldRenderGitHubHeavyContent(runtime)
+    val contentRevealPhase = rememberGitHubPageContentRevealPhase(renderHeavyContent)
     CompositionLocalProvider(
         LocalGlassEffectRuntime provides githubGlassRuntime,
         LocalGitHubAppIconBitmaps provides appIconState.bitmaps,
@@ -288,6 +291,7 @@ fun GitHubPage(
                     addButtonScrollConnection = state.addButtonScrollConnection,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
+                    contentRevealPhase = contentRevealPhase,
                     onShowBottomBar = onShowBottomBar,
                 ),
             surfaces =
@@ -501,4 +505,30 @@ private suspend fun LazyListState.animateItemToViewportCenter(index: Int) {
     if (abs(deltaPx) > 2) {
         animateScrollBy(deltaPx.toFloat())
     }
+}
+
+internal fun shouldRenderGitHubHeavyContent(runtime: MainPageRuntime): Boolean =
+    runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
+
+@Composable
+private fun rememberGitHubPageContentRevealPhase(renderHeavyContent: Boolean): Int {
+    var phase by remember { mutableIntStateOf(0) }
+    LaunchedEffect(renderHeavyContent) {
+        if (!renderHeavyContent) {
+            phase = 0
+            return@LaunchedEffect
+        }
+        phase = GitHubMainContentRevealPhase.OVERVIEW
+        withFrameNanos { }
+        phase = GitHubMainContentRevealPhase.OVERVIEW_EXPANDED
+        withFrameNanos { }
+        phase = GitHubMainContentRevealPhase.SHARE_IMPORT
+        withFrameNanos { }
+        phase = GitHubMainContentRevealPhase.TRACKED_PREVIEW
+        withFrameNanos { }
+        phase = GitHubMainContentRevealPhase.TRACKED_ALL
+        withFrameNanos { }
+        phase = GitHubMainContentRevealPhase.DOCK
+    }
+    return phase
 }

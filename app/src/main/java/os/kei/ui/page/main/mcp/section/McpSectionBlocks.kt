@@ -39,6 +39,7 @@ import java.util.Locale
 internal fun McpServiceControlSection(
     backdrop: LayerBackdrop,
     expanded: Boolean,
+    contentVisible: Boolean = true,
     onExpandedChange: (Boolean) -> Unit,
     onSendTestNotification: () -> Unit,
     onShowResetConfigConfirm: () -> Unit,
@@ -49,7 +50,7 @@ internal fun McpServiceControlSection(
         backdrop = backdrop,
         title = stringResource(R.string.mcp_section_service_control_title),
         subtitle = stringResource(R.string.mcp_section_service_control_subtitle),
-        expanded = expanded,
+        expanded = expanded && contentVisible,
         onExpandedChange = onExpandedChange,
         headerStartAction = {
             McpSectionHeaderIcon(

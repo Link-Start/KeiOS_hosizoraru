@@ -6,8 +6,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
-import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
+import os.kei.ui.page.main.student.BaGuideDataClock
+import os.kei.ui.page.main.student.BaGuideSystemDataClock
+import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -34,6 +36,7 @@ internal class BaStudentGuideRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
+    private val clock: BaGuideDataClock = BaGuideSystemDataClock,
 ) {
     private val npcSatelliteGuideFlagCache = ConcurrentHashMap<Long, Boolean>()
 
@@ -48,14 +51,11 @@ internal class BaStudentGuideRepository(
         }
     }
 
-    fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> =
-        bgmFavoriteRepository.favoritesFlow()
+    fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = bgmFavoriteRepository.favoritesFlow()
 
-    suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> =
-        bgmFavoriteRepository.hydrateFavorites()
+    suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> = bgmFavoriteRepository.hydrateFavorites()
 
-    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean =
-        bgmFavoriteRepository.toggleFavorite(item)
+    suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean = bgmFavoriteRepository.toggleFavorite(item)
 
     suspend fun loadMediaSettings(): BaStudentGuideMediaSettings =
         withContext(ioDispatcher) {
@@ -64,8 +64,7 @@ internal class BaStudentGuideRepository(
             )
         }
 
-    fun consumeInitialBottomTab(sourceUrl: String): GuideBottomTab? =
-        GuideDetailTabRequestStore.consume(sourceUrl)
+    fun consumeInitialBottomTab(sourceUrl: String): GuideBottomTab? = GuideDetailTabRequestStore.consume(sourceUrl)
 
     suspend fun resolveNpcSatelliteGuide(
         sourceUrl: String,
@@ -117,7 +116,7 @@ internal class BaStudentGuideRepository(
             return BaStudentGuideLoadResult(info = null, error = null)
         }
 
-        val now = System.currentTimeMillis()
+        val now = clock.nowMs()
         val refreshIntervalHours =
             withContext(ioDispatcher) {
                 BASettingsStore.loadCalendarRefreshIntervalHours()

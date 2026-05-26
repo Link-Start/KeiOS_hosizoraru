@@ -8,6 +8,8 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
+import os.kei.ui.page.main.student.BaGuideDataClock
+import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
@@ -59,6 +61,7 @@ internal class BaGuideCatalogRepository(
         ::isBaGuideCatalogCacheExpired,
     private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     private val catalogFavoritesClock: CatalogFavoritesClock = CatalogFavoritesSystemClock,
+    private val clock: BaGuideDataClock = BaGuideSystemDataClock,
 ) {
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = bgmFavoriteRepository.favoritesFlow()
 
@@ -136,6 +139,20 @@ internal class BaGuideCatalogRepository(
         }
     }
 
+    suspend fun loadTransferSettings(): BaGuideCatalogTransferSettingsUiState = BaGuideCatalogTransferSettingsRepository.loadSettings()
+
+    suspend fun saveTransferMediaSaveCustomEnabled(enabled: Boolean) {
+        BaGuideCatalogTransferSettingsRepository.saveMediaSaveCustomEnabled(enabled)
+    }
+
+    suspend fun saveTransferMediaSaveFixedTreeUri(uri: String) {
+        BaGuideCatalogTransferSettingsRepository.saveMediaSaveFixedTreeUri(uri)
+    }
+
+    suspend fun clearTransferMediaSaveFixedTreeUri() {
+        BaGuideCatalogTransferSettingsRepository.clearMediaSaveFixedTreeUri()
+    }
+
     suspend fun toggleBgmFavorite(item: GuideBgmFavoriteItem): Boolean = bgmFavoriteRepository.toggleFavorite(item)
 
     suspend fun removeBgmFavorite(audioUrl: String) {
@@ -156,7 +173,7 @@ internal class BaGuideCatalogRepository(
         loadFailedText: String,
         refreshFailedKeepCacheText: String,
     ): BaGuideCatalogLoadResult {
-        val now = System.currentTimeMillis()
+        val now = clock.nowMs()
         val refreshIntervalHours =
             withContext(ioDispatcher) {
                 refreshIntervalLoader()

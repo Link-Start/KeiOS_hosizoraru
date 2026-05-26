@@ -146,7 +146,7 @@ internal class BaGuideCatalogViewModel(
             _nativeBgmMediaNotificationEnabled.value = repository.loadNativeBgmMediaNotificationEnabled()
         }
         viewModelScope.launch {
-            _transferSettings.value = BaGuideCatalogTransferSettingsRepository.loadSettings()
+            _transferSettings.value = repository.loadTransferSettings()
         }
     }
 
@@ -470,7 +470,7 @@ internal class BaGuideCatalogViewModel(
         if (_transferSettings.value.mediaSaveCustomEnabled == enabled) return
         _transferSettings.update { state -> state.copy(mediaSaveCustomEnabled = enabled) }
         viewModelScope.launch {
-            BaGuideCatalogTransferSettingsRepository.saveMediaSaveCustomEnabled(enabled)
+            repository.saveTransferMediaSaveCustomEnabled(enabled)
         }
     }
 
@@ -478,7 +478,7 @@ internal class BaGuideCatalogViewModel(
         if (_transferSettings.value.mediaSaveFixedTreeUri == uri) return
         _transferSettings.update { state -> state.copy(mediaSaveFixedTreeUri = uri) }
         viewModelScope.launch {
-            BaGuideCatalogTransferSettingsRepository.saveMediaSaveFixedTreeUri(uri)
+            repository.saveTransferMediaSaveFixedTreeUri(uri)
         }
     }
 
@@ -486,7 +486,7 @@ internal class BaGuideCatalogViewModel(
         if (_transferSettings.value.mediaSaveFixedTreeUri.isEmpty()) return
         _transferSettings.update { state -> state.copy(mediaSaveFixedTreeUri = "") }
         viewModelScope.launch {
-            BaGuideCatalogTransferSettingsRepository.clearMediaSaveFixedTreeUri()
+            repository.clearTransferMediaSaveFixedTreeUri()
         }
     }
 

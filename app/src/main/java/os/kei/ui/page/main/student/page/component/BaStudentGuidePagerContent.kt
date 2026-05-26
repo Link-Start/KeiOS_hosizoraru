@@ -29,7 +29,7 @@ internal fun BaStudentGuidePagerContent(
     surfaceColor: Color,
     accent: Color,
     innerPadding: PaddingValues,
-    farJumpAlpha: Float,
+    farJumpAlphaProvider: () -> Float,
     navBackdrop: LayerBackdrop,
     topBarBackdrop: LayerBackdrop,
     galleryCacheRevision: Int,
@@ -64,7 +64,7 @@ internal fun BaStudentGuidePagerContent(
         modifier =
             Modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = farJumpAlpha }
+                .graphicsLayer { alpha = farJumpAlphaProvider() }
                 .layerBackdrop(topBarBackdrop)
                 .layerBackdrop(navBackdrop),
     ) { pageIndex ->

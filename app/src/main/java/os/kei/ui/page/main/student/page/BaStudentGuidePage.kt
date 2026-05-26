@@ -34,8 +34,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
-import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
@@ -407,7 +407,7 @@ fun BaStudentGuidePage(
                     surfaceColor = surfaceColor,
                     accent = accent,
                     innerPadding = innerPadding,
-                    farJumpAlpha = farJumpAlpha.value,
+                    farJumpAlphaProvider = { farJumpAlpha.value },
                     navBackdrop = navBackdrop,
                     topBarBackdrop = topBarBackdrop,
                     galleryCacheRevision = guidePrefetchState.galleryCacheRevision,

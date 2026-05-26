@@ -38,7 +38,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -60,10 +59,7 @@ import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
-import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
-import os.kei.ui.page.main.student.page.state.BaStudentGuideRepository
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
@@ -300,6 +296,7 @@ private fun BaPoolPage(
                     openBaPoolGuideLink(
                         context = context,
                         scope = pageScope,
+                        calendarPoolViewModel = calendarPoolViewModel,
                         rawUrl = url,
                         onOpenGuide = onOpenGuide,
                     )
@@ -440,35 +437,28 @@ private fun BaPoolLoadingPanel(accentColor: Color) {
 internal fun baCalendarPoolSyncNoticeColor(hasVisibleEntries: Boolean): Color =
     if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
 
-private val baGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$""", RegexOption.IGNORE_CASE)
-
 private fun openBaPoolGuideLink(
     context: Context,
     scope: CoroutineScope,
+    calendarPoolViewModel: BaCalendarPoolViewModel,
     rawUrl: String,
     onOpenGuide: () -> Unit,
 ) {
-    val normalized = normalizeGuideUrl(rawUrl)
-    if (normalized.isBlank()) {
-        context.showToast(R.string.main_toast_pool_guide_missing)
-        return
-    }
-    val uri = runCatching { normalized.toUri() }.getOrNull()
-    val host = uri?.host?.lowercase().orEmpty()
-    val hostAccepted = host == "www.gamekee.com" || host == "gamekee.com"
-    if (hostAccepted && baGuideDetailPathRegex.matches(uri?.path.orEmpty())) {
-        val contentId = extractGuideContentIdFromUrl(normalized)
-        if (contentId != null && contentId > 0L) {
-            scope.launch {
-                BaStudentGuideRepository().saveCurrentUrlAsync("https://www.gamekee.com/ba/tj/$contentId.html")
+    scope.launch {
+        when (val plan = calendarPoolViewModel.preparePoolGuideOpen(rawUrl)) {
+            BaPoolGuideOpenPlan.Missing -> {
+                context.showToast(R.string.main_toast_pool_guide_missing)
+            }
+
+            is BaPoolGuideOpenPlan.OpenInApp -> {
                 onOpenGuide()
             }
-            return
+
+            is BaPoolGuideOpenPlan.OpenExternal -> {
+                openBaStandaloneExternalLink(context, plan.url)
+            }
         }
-        context.showToast(R.string.main_toast_pool_guide_missing)
-        return
     }
-    openBaStandaloneExternalLink(context, normalized)
 }
 
 private fun openBaStandaloneExternalLink(

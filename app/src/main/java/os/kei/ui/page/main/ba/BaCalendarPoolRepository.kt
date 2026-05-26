@@ -15,6 +15,22 @@ import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
 import os.kei.ui.page.main.ba.support.fetchBaCalendarRemoteResult
 import os.kei.ui.page.main.ba.support.fetchBaPoolRemoteResult
 import os.kei.ui.page.main.ba.support.runWithHardTimeout
+import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
+import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.ui.page.main.student.page.state.BaStudentGuideRepository
+
+@Immutable
+internal sealed interface BaPoolGuideOpenPlan {
+    data object Missing : BaPoolGuideOpenPlan
+
+    data class OpenInApp(
+        val canonicalGuideUrl: String,
+    ) : BaPoolGuideOpenPlan
+
+    data class OpenExternal(
+        val url: String,
+    ) : BaPoolGuideOpenPlan
+}
 
 @Immutable
 internal data class BaCalendarSyncSnapshot(
@@ -36,6 +52,7 @@ internal data class BaPoolSyncSnapshot(
 
 internal object BaCalendarPoolRepository {
     private val poolStudentGuideUrlRepository = BaPoolStudentGuideUrlRepository()
+    private val studentGuideRepository = BaStudentGuideRepository()
 
     fun loadSettingsSnapshot() = BASettingsStore.loadSnapshot()
 
@@ -53,6 +70,20 @@ internal object BaCalendarPoolRepository {
             BASettingsStore.saveServerIndex(index)
         }
     }
+
+    suspend fun preparePoolGuideOpen(rawUrl: String): BaPoolGuideOpenPlan =
+        withContext(AppDispatchers.baFetch) {
+            val normalized = normalizeGuideUrl(rawUrl)
+            if (normalized.isBlank()) {
+                return@withContext BaPoolGuideOpenPlan.Missing
+            }
+            val gameKeeGuideUrl = normalized.toGameKeeGuideCanonicalUrlOrNull()
+            if (gameKeeGuideUrl != null) {
+                studentGuideRepository.saveCurrentUrlAsync(gameKeeGuideUrl)
+                return@withContext BaPoolGuideOpenPlan.OpenInApp(gameKeeGuideUrl)
+            }
+            BaPoolGuideOpenPlan.OpenExternal(normalized)
+        }
 
     suspend fun syncCalendar(
         context: Context,
@@ -346,4 +377,15 @@ internal object BaCalendarPoolRepository {
             imageWarmEntries = cachedEntries,
         )
     }
+}
+
+private val baGuideDetailPathRegex = Regex("""^/ba/tj/\d+(?:\.html)?$""", RegexOption.IGNORE_CASE)
+
+private fun String.toGameKeeGuideCanonicalUrlOrNull(): String? {
+    val uri = runCatching { android.net.Uri.parse(this) }.getOrNull() ?: return null
+    val host = uri.host?.lowercase().orEmpty()
+    val hostAccepted = host == "www.gamekee.com" || host == "gamekee.com"
+    if (!hostAccepted || !baGuideDetailPathRegex.matches(uri.path.orEmpty())) return null
+    val contentId = extractGuideContentIdFromUrl(this)?.takeIf { it > 0L } ?: return null
+    return "https://www.gamekee.com/ba/tj/$contentId.html"
 }

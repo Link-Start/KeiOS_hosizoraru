@@ -283,4 +283,7 @@ internal class BaCalendarPoolViewModel(
             }
         }
     }
+
+    suspend fun preparePoolGuideOpen(rawUrl: String): BaPoolGuideOpenPlan =
+        BaCalendarPoolRepository.preparePoolGuideOpen(rawUrl)
 }

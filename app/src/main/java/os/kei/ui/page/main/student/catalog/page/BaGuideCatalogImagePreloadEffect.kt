@@ -7,6 +7,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogRouteState
 
 private const val BA_GUIDE_CATALOG_IMAGE_PRELOAD_LIMIT = 72
@@ -17,11 +19,28 @@ internal fun BindBaGuideCatalogImagePreloadEffect(
     chromePresentation: BaGuideCatalogChromePresentation,
     requestCatalogImages: (List<String>) -> Unit,
 ) {
+    val activeTab = chromePresentation.activeTab
+    val catalogListDerivedStates = routeState.catalogListDerivedStates
+    val studentBgmEntries = routeState.studentBgmListDerivedState.filteredEntries
+    val favoriteBgms = routeState.favoriteBgmListDerivedState.displayedFavorites
+    val artworkImageUrl = chromePresentation.artworkImageUrl
+    val playbackFavorite = chromePresentation.playbackFavorite
     val imageUrls =
-        remember(routeState, chromePresentation) {
+        remember(
+            activeTab,
+            catalogListDerivedStates,
+            studentBgmEntries,
+            favoriteBgms,
+            artworkImageUrl,
+            playbackFavorite,
+        ) {
             buildBaGuideCatalogImagePreloadUrls(
-                routeState = routeState,
-                chromePresentation = chromePresentation,
+                activeTab = activeTab,
+                catalogListDerivedStates = catalogListDerivedStates,
+                studentBgmEntries = studentBgmEntries,
+                favoriteBgms = favoriteBgms,
+                artworkImageUrl = artworkImageUrl,
+                playbackFavorite = playbackFavorite,
             )
         }
     LaunchedEffect(imageUrls) {
@@ -30,8 +49,12 @@ internal fun BindBaGuideCatalogImagePreloadEffect(
 }
 
 internal fun buildBaGuideCatalogImagePreloadUrls(
-    routeState: BaGuideCatalogRouteState,
-    chromePresentation: BaGuideCatalogChromePresentation,
+    activeTab: BaGuideCatalogPageTab,
+    catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
+    studentBgmEntries: List<BaGuideCatalogEntry>,
+    favoriteBgms: List<GuideBgmFavoriteItem>,
+    artworkImageUrl: String,
+    playbackFavorite: GuideBgmFavoriteItem?,
 ): List<String> {
     val urls = linkedSetOf<String>()
 
@@ -56,17 +79,17 @@ internal fun buildBaGuideCatalogImagePreloadUrls(
             }
     }
 
-    chromePresentation.activeTab.catalogTab?.let { tab ->
-        addEntries(routeState.catalogListDerivedStates[tab]?.filteredEntries.orEmpty())
+    activeTab.catalogTab?.let { tab ->
+        addEntries(catalogListDerivedStates[tab]?.filteredEntries.orEmpty())
     }
-    if (chromePresentation.activeTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm) {
-        addEntries(routeState.studentBgmListDerivedState.filteredEntries)
+    if (activeTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm) {
+        addEntries(studentBgmEntries)
     }
-    if (chromePresentation.activeTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm) {
-        addFavorites(routeState.favoriteBgmListDerivedState.displayedFavorites)
+    if (activeTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm) {
+        addFavorites(favoriteBgms)
     }
-    addUrl(chromePresentation.artworkImageUrl)
-    chromePresentation.playbackFavorite?.let { favorite ->
+    addUrl(artworkImageUrl)
+    playbackFavorite?.let { favorite ->
         addUrl(favorite.studentImageUrl.ifBlank { favorite.imageUrl })
     }
     return urls.toList()

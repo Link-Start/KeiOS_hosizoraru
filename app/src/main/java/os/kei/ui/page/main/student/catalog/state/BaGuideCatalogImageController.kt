@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.catalog.state
 
 import android.content.Context
+import android.graphics.Bitmap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,19 +29,22 @@ internal class BaGuideCatalogImageController(
         if (normalizedUrls.isEmpty()) return
 
         val currentState = mutableState.value
-        val missingUrls =
-            normalizedUrls.filter { imageUrl ->
-                !currentState.bitmaps.containsKey(imageUrl) &&
-                    !currentState.missingUrls.contains(imageUrl) &&
-                    !loadingUrls.contains(imageUrl) &&
-                    repository.cachedBitmap(imageUrl) == null
+        val cachedBitmaps = linkedMapOf<String, Bitmap>()
+        val missingUrls = mutableListOf<String>()
+        normalizedUrls.forEach { imageUrl ->
+            if (currentState.bitmaps.containsKey(imageUrl) ||
+                currentState.missingUrls.contains(imageUrl) ||
+                loadingUrls.contains(imageUrl)
+            ) {
+                return@forEach
             }
-        val cachedBitmaps =
-            normalizedUrls
-                .filterNot { currentState.bitmaps.containsKey(it) }
-                .mapNotNull { imageUrl ->
-                    repository.cachedBitmap(imageUrl)?.let { bitmap -> imageUrl to bitmap }
-                }.toMap()
+            val cachedBitmap = repository.cachedBitmap(imageUrl)
+            if (cachedBitmap == null) {
+                missingUrls.add(imageUrl)
+            } else {
+                cachedBitmaps[imageUrl] = cachedBitmap
+            }
+        }
         if (cachedBitmaps.isNotEmpty()) {
             mutableState.update { state ->
                 state.copy(bitmaps = state.bitmaps + cachedBitmaps)

@@ -39,7 +39,7 @@ internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraf
 internal fun buildBaPageContentState(
     isPageActive: Boolean,
     officeOverviewTitle: String,
-    office: BaOfficeController,
+    officeState: BaOfficeState,
     routeState: BaPageRouteState,
     clockState: BaPageClockState,
     serverOptions: List<String>,
@@ -49,7 +49,7 @@ internal fun buildBaPageContentState(
     return BaPageContentState(
         isPageActive = isPageActive,
         officeOverviewTitle = officeOverviewTitle,
-        officeState = office.state(),
+        officeState = officeState,
         clockState = clockState,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,

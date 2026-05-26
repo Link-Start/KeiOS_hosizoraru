@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -60,12 +61,17 @@ fun BAPage(
             distinctLayers = fullBackdropEffectsEnabled,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
+    val baServerCn = stringResource(R.string.ba_server_cn)
+    val baServerGlobal = stringResource(R.string.ba_server_global)
+    val baServerJp = stringResource(R.string.ba_server_jp)
     val serverOptions =
-        listOf(
-            stringResource(R.string.ba_server_cn),
-            stringResource(R.string.ba_server_global),
-            stringResource(R.string.ba_server_jp),
-        )
+        remember(baServerCn, baServerGlobal, baServerJp) {
+            listOf(
+                baServerCn,
+                baServerGlobal,
+                baServerJp,
+            )
+        }
     val cafeLevelOptions = remember { (1..10).toList() }
     val officeViewModel: BaOfficeViewModel = applicationViewModel(create = ::BaOfficeViewModel)
 
@@ -81,6 +87,7 @@ fun BAPage(
     val officePageUiState by officeViewModel.pageUiState.collectAsStateWithLifecycle()
     val officeChromeUiState = officePageUiState.chromeUiState
     val office = officeViewModel.office
+    val officeState = office.state()
     val ui = rememberBaPageUiController()
     val calendarPoolViewModel: BaCalendarPoolViewModel = applicationViewModel(create = ::BaCalendarPoolViewModel)
     val calendarPoolRouteState by calendarPoolViewModel.routeState.collectAsStateWithLifecycle()
@@ -97,17 +104,29 @@ fun BAPage(
         }
     val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
     val pagePresentationState =
-        buildBaPagePresentationState(
-            isPageActive = runtime.isPageActive,
-            officeOverviewTitle = officeOverviewTitle,
-            office = office,
-            calendarUiState = calendarUiState,
-            poolUiState = poolUiState,
-            officePageUiState = officePageUiState,
-            clockState = baClockState,
-            serverOptions = serverOptions,
-            cafeLevelOptions = cafeLevelOptions,
-        )
+        remember(
+            runtime.isPageActive,
+            officeOverviewTitle,
+            officeState,
+            calendarUiState,
+            poolUiState,
+            officePageUiState,
+            baClockState,
+            serverOptions,
+            cafeLevelOptions,
+        ) {
+            buildBaPagePresentationState(
+                isPageActive = runtime.isPageActive,
+                officeOverviewTitle = officeOverviewTitle,
+                officeState = officeState,
+                calendarUiState = calendarUiState,
+                poolUiState = poolUiState,
+                officePageUiState = officePageUiState,
+                clockState = baClockState,
+                serverOptions = serverOptions,
+                cafeLevelOptions = cafeLevelOptions,
+            )
+        }
     val baRouteState = pagePresentationState.routeState
     val settingsSheetState = pagePresentationState.settingsSheetState
     val notificationSettingsSheetState = pagePresentationState.notificationSettingsSheetState
@@ -115,6 +134,7 @@ fun BAPage(
     val savedSettingsSheetState = pagePresentationState.savedSettingsSheetState
     val savedNotificationSettingsSheetState = pagePresentationState.savedNotificationSettingsSheetState
     val pageContentState = pagePresentationState.pageContentState
+    val currentServerIndexState = rememberUpdatedState(baRouteState.serverIndex)
     val uiNowMsProvider = remember(ui) { { ui.uiNowMs } }
     val syncPageActive =
         runtime.hasActivated &&
@@ -238,25 +258,34 @@ fun BAPage(
     }
 
     val pageContentActions =
-        buildBaPageContentActions(
-            context = context,
-            office = office,
-            scope = pageScope,
-            serverIndexProvider = { baRouteState.serverIndex },
-            onServerSelected = officeViewModel::selectServer,
-            onSettingsCafeLevelChange = { level ->
-                officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
-            },
-            onOverviewServerPopupAnchorBoundsChange = officeViewModel::updateOverviewServerPopupAnchorBounds,
-            onOverviewServerPopupChange = officeViewModel::updateOverviewServerPopupExpanded,
-            onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
-            onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
-            onRefreshCalendar = { refreshCalendar(force = true) },
-            onRefreshPool = { refreshPool(force = true) },
-            onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
-            onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-            onOpenGuideCatalog = onOpenGuideCatalog,
-        )
+        remember(
+            context,
+            office,
+            pageScope,
+            officeViewModel,
+            onOpenPoolStudentGuide,
+            onOpenGuideCatalog,
+        ) {
+            buildBaPageContentActions(
+                context = context,
+                office = office,
+                scope = pageScope,
+                serverIndexProvider = { currentServerIndexState.value },
+                onServerSelected = officeViewModel::selectServer,
+                onSettingsCafeLevelChange = { level ->
+                    officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
+                },
+                onOverviewServerPopupAnchorBoundsChange = officeViewModel::updateOverviewServerPopupAnchorBounds,
+                onOverviewServerPopupChange = officeViewModel::updateOverviewServerPopupExpanded,
+                onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
+                onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
+                onRefreshCalendar = { refreshCalendar(force = true) },
+                onRefreshPool = { refreshPool(force = true) },
+                onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
+                onOpenPoolStudentGuide = onOpenPoolStudentGuide,
+                onOpenGuideCatalog = onOpenGuideCatalog,
+            )
+        }
 
     BaPageCommonEffects(
         listState = listState,

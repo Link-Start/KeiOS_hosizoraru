@@ -1,5 +1,8 @@
 package os.kei.ui.page.main.ba
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 internal data class BaPagePresentationState(
     val routeState: BaPageRouteState,
     val settingsSheetState: BaSettingsSheetState,
@@ -13,7 +16,7 @@ internal data class BaPagePresentationState(
 internal fun buildBaPagePresentationState(
     isPageActive: Boolean,
     officeOverviewTitle: String,
-    office: BaOfficeController,
+    officeState: BaOfficeState,
     calendarUiState: BaCalendarUiState,
     poolUiState: BaPoolUiState,
     officePageUiState: BaOfficePageUiState,
@@ -43,7 +46,7 @@ internal fun buildBaPagePresentationState(
         )
     val savedSettingsDraftState =
         buildBaSavedSettingsDraftState(
-            office = office,
+            officeState = officeState,
             routeState = routeState,
         )
     val savedSettingsSheetState =
@@ -59,7 +62,7 @@ internal fun buildBaPagePresentationState(
         buildBaPageContentState(
             isPageActive = isPageActive,
             officeOverviewTitle = officeOverviewTitle,
-            office = office,
+            officeState = officeState,
             routeState = routeState,
             clockState = clockState,
             serverOptions = serverOptions,
@@ -77,11 +80,11 @@ internal fun buildBaPagePresentationState(
 }
 
 internal fun buildBaSavedSettingsDraftState(
-    office: BaOfficeController,
+    officeState: BaOfficeState,
     routeState: BaPageRouteState,
 ): BaPageSettingsDraftState =
     BaPageSettingsDraftState(
-        cafeLevel = office.cafeLevel,
+        cafeLevel = officeState.cafeLevel,
         mediaAdaptiveRotationEnabled = routeState.mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = routeState.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = routeState.mediaSaveFixedTreeUri,

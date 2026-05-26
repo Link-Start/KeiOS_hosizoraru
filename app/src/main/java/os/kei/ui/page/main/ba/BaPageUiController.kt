@@ -96,6 +96,11 @@ internal fun buildBaPageRouteState(
 internal class BaPageUiController {
     private val uiNowMsState = mutableLongStateOf(System.currentTimeMillis())
     private val uiMinuteMsState = mutableLongStateOf(System.currentTimeMillis())
+    private val clockState =
+        BaPageClockState(
+            uiNowMs = uiNowMsState,
+            uiMinuteMs = uiMinuteMsState,
+        )
     var uiNowMs: Long
         get() = uiNowMsState.longValue
         set(value) {
@@ -107,11 +112,7 @@ internal class BaPageUiController {
             uiMinuteMsState.longValue = value
         }
 
-    fun clockState(): BaPageClockState =
-        BaPageClockState(
-            uiNowMs = uiNowMsState,
-            uiMinuteMs = uiMinuteMsState,
-        )
+    fun clockState(): BaPageClockState = clockState
 }
 
 @Composable

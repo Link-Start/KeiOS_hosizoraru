@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -18,6 +20,7 @@ import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 
+@Immutable
 internal data class BaPageContentState(
     val isPageActive: Boolean,
     val officeOverviewTitle: String,
@@ -43,6 +46,7 @@ internal data class BaPageContentState(
     val showEndedPools: Boolean,
 )
 
+@Stable
 internal data class BaPageContentActions(
     val onApCurrentInputChange: (String) -> Unit,
     val onApCurrentDone: () -> Unit,
@@ -72,6 +76,11 @@ internal data class BaPageContentActions(
     val onSaveIdFriendCode: () -> Unit,
 )
 
+internal enum class BaPageContentType {
+    Overview,
+    Cafe,
+}
+
 @Composable
 internal fun BaPageContent(
     backdrop: Backdrop?,
@@ -99,7 +108,7 @@ internal fun BaPageContent(
         ),
         verticalArrangement = Arrangement.spacedBy(pageGap),
     ) {
-        item(key = "ba-overview", contentType = "ba_overview_card") {
+        item(key = "ba-overview", contentType = BaPageContentType.Overview) {
             BaOverviewCard(
                 backdrop = backdrop,
                 overviewTitle = state.officeOverviewTitle,
@@ -135,7 +144,7 @@ internal fun BaPageContent(
             )
         }
 
-        item(key = "ba-cafe", contentType = "ba_cafe_card") {
+        item(key = "ba-cafe", contentType = BaPageContentType.Cafe) {
             BaCafeCard(
                 backdrop = backdrop,
                 clockState = state.clockState,

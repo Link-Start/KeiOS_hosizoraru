@@ -13,5 +13,7 @@ internal data class GitHubPageContentDerivedState(
     val relativeTimeNowMillis: Long = 0L,
     val trackedItemIdKey: String = "",
     val sortedTrackIds: List<String> = emptyList(),
+    val trackedIconPreloadPackages: List<String> = emptyList(),
+    val installedIconPreloadPackages: List<String> = emptyList(),
     val hasKeiOsSelfTrack: Boolean = false
 )

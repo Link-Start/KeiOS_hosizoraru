@@ -45,6 +45,7 @@ internal class GitHubTrackAppPickerInput(
 
 internal data class GitHubTrackAppPickerDerivedState(
     val filteredApps: List<InstalledAppItem> = emptyList(),
+    val filteredIconPreloadPackages: List<String> = emptyList(),
     val deriving: Boolean = false,
     val input: GitHubTrackAppPickerInput? = null,
 ) {
@@ -144,6 +145,16 @@ internal fun filterAndSortGitHubTrackAppCandidates(
         .map { projection -> projection.app }
         .toList()
 }
+
+internal fun gitHubTrackAppPickerIconPreloadPackages(
+    apps: List<InstalledAppItem>,
+): List<String> =
+    apps
+        .asSequence()
+        .map { app -> app.packageName.trim() }
+        .filter { packageName -> packageName.isNotBlank() }
+        .distinct()
+        .toList()
 
 internal fun String.normalizedGitHubTrackAppPackageNameOrNull(): String? {
     val normalized = trim().lowercase(Locale.ROOT)

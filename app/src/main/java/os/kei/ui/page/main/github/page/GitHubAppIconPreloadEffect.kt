@@ -5,7 +5,6 @@ package os.kei.ui.page.main.github.page
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import os.kei.feature.github.model.InstalledAppItem
 
 private const val GITHUB_APP_ICON_PRELOAD_LIMIT = 96
 
@@ -13,7 +12,7 @@ private const val GITHUB_APP_ICON_PRELOAD_LIMIT = 96
 internal fun BindGitHubAppIconPreloadEffect(
     active: Boolean,
     trackedPackages: List<String>,
-    appList: List<InstalledAppItem>,
+    installedPackages: List<String>,
     selectedPackageName: String,
     pickerExpanded: Boolean,
     appPickerFilteredPackages: List<String>,
@@ -23,14 +22,14 @@ internal fun BindGitHubAppIconPreloadEffect(
         remember(
             active,
             trackedPackages,
-            appList,
+            installedPackages,
             selectedPackageName,
             pickerExpanded,
             appPickerFilteredPackages,
         ) {
             buildGitHubAppIconPreloadPackages(
                 trackedPackages = trackedPackages,
-                appList = appList,
+                installedPackages = installedPackages,
                 selectedPackageName = selectedPackageName,
                 pickerExpanded = pickerExpanded,
                 appPickerFilteredPackages = appPickerFilteredPackages,
@@ -44,7 +43,7 @@ internal fun BindGitHubAppIconPreloadEffect(
 
 internal fun buildGitHubAppIconPreloadPackages(
     trackedPackages: List<String>,
-    appList: List<InstalledAppItem>,
+    installedPackages: List<String>,
     selectedPackageName: String,
     pickerExpanded: Boolean,
     appPickerFilteredPackages: List<String>,
@@ -64,11 +63,7 @@ internal fun buildGitHubAppIconPreloadPackages(
             .take(GITHUB_APP_ICON_PRELOAD_LIMIT)
             .forEach(::addPackage)
     } else {
-        appList
-            .asSequence()
-            .map { it.packageName }
-            .take(12)
-            .forEach(::addPackage)
+        installedPackages.forEach(::addPackage)
     }
     return packages.toList()
 }

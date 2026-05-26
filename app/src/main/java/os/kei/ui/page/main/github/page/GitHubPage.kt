@@ -231,11 +231,11 @@ fun GitHubPage(
     }
     BindGitHubAppIconPreloadEffect(
         active = runtime.hasActivated,
-        trackedPackages = contentDerivedState.trackedUi.sortedTracked.map { it.packageName },
-        appList = state.appList,
+        trackedPackages = contentDerivedState.trackedIconPreloadPackages,
+        installedPackages = contentDerivedState.installedIconPreloadPackages,
         selectedPackageName = state.selectedApp?.packageName.orEmpty(),
         pickerExpanded = state.pickerExpanded,
-        appPickerFilteredPackages = appPickerDerivedState.filteredApps.map { it.packageName },
+        appPickerFilteredPackages = appPickerDerivedState.filteredIconPreloadPackages,
         requestAppIcons = { packageNames ->
             githubPageViewModel.requestAppIcons(packageNames)
         },

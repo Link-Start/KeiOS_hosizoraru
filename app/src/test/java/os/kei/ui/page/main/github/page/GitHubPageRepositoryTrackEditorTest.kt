@@ -138,6 +138,7 @@ class GitHubPageRepositoryTrackEditorTest {
             )
 
         assertEquals(listOf("com.demo.alpha", "com.demo.beta"), result.filteredApps.map { it.packageName })
+        assertEquals(listOf("com.demo.alpha", "com.demo.beta"), result.filteredIconPreloadPackages)
         assertEquals(false, result.deriving)
     }
 }

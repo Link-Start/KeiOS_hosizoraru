@@ -203,6 +203,8 @@ internal class GitHubPageContentStateDeriver(
                 relativeTimeNowMillis = input.nowMillis,
                 trackedItemIdKey = input.trackedItems.joinToString(separator = "\n") { item -> item.id },
                 sortedTrackIds = sortedTrackIds,
+                trackedIconPreloadPackages = sortedTracked.packageNamesForIconPreload(),
+                installedIconPreloadPackages = input.appList.packageNamesForIconPreload(limit = 12),
                 hasKeiOsSelfTrack = input.trackedItems.any { item ->
                     item.isKeiOsSelfTrack(packageName = input.selfPackageName)
                 }
@@ -274,4 +276,19 @@ internal class GitHubPageContentStateDeriver(
             .map { app -> app.packageName.trim() to app.label.trim() }
             .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
             .toMap()
+
+    private fun List<GitHubTrackedApp>.packageNamesForIconPreload(): List<String> =
+        asSequence()
+            .map { item -> item.packageName.trim() }
+            .filter { packageName -> packageName.isNotBlank() }
+            .distinct()
+            .toList()
+
+    private fun List<InstalledAppItem>.packageNamesForIconPreload(limit: Int): List<String> =
+        asSequence()
+            .map { app -> app.packageName.trim() }
+            .filter { packageName -> packageName.isNotBlank() }
+            .distinct()
+            .take(limit)
+            .toList()
 }

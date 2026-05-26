@@ -46,6 +46,7 @@ import os.kei.ui.page.main.github.actions.deriveGitHubActionsSheetState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.picker.filterAndSortGitHubTrackAppCandidates
+import os.kei.ui.page.main.github.picker.gitHubTrackAppPickerIconPreloadPackages
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.section.GitHubOverviewEntry
@@ -163,19 +164,21 @@ internal class GitHubPageRepository(
 
     suspend fun buildAppPickerState(input: GitHubTrackAppPickerInput): GitHubTrackAppPickerDerivedState =
         withContext(defaultDispatcher) {
+            val filteredApps =
+                filterAndSortGitHubTrackAppCandidates(
+                    apps = input.appList,
+                    query = input.query,
+                    includeUserApps = input.includeUserApps,
+                    includeSystemApps = input.includeSystemApps,
+                    includeTrackedApps = input.includeTrackedApps,
+                    trackedPackageNames = input.trackedPackageNames,
+                    pinnedPackageNames = input.pinnedPackageNames,
+                    sortMode = input.sortMode,
+                    sortDirection = input.sortDirection,
+                )
             GitHubTrackAppPickerDerivedState(
-                filteredApps =
-                    filterAndSortGitHubTrackAppCandidates(
-                        apps = input.appList,
-                        query = input.query,
-                        includeUserApps = input.includeUserApps,
-                        includeSystemApps = input.includeSystemApps,
-                        includeTrackedApps = input.includeTrackedApps,
-                        trackedPackageNames = input.trackedPackageNames,
-                        pinnedPackageNames = input.pinnedPackageNames,
-                        sortMode = input.sortMode,
-                        sortDirection = input.sortDirection,
-                    ),
+                filteredApps = filteredApps,
+                filteredIconPreloadPackages = gitHubTrackAppPickerIconPreloadPackages(filteredApps),
                 deriving = false,
                 input = input,
             )

@@ -296,7 +296,30 @@ class GitHubPageContentStateDeriverTest {
 
         assertEquals((items + selfTrack).joinToString(separator = "\n") { it.id }, derived.trackedItemIdKey)
         assertEquals(derived.trackedUi.sortedTracked.map { it.id }, derived.sortedTrackIds)
+        assertEquals(
+            derived.trackedUi.sortedTracked.map { it.packageName },
+            derived.trackedIconPreloadPackages
+        )
         assertTrue(derived.hasKeiOsSelfTrack)
+    }
+
+    @Test
+    fun `content derivation exposes installed icon preload packages`() = runBlocking {
+        val derived = GitHubPageContentStateDeriver().build(
+            baseInput(
+                appList = listOf(
+                    InstalledAppItem(label = "Alpha", packageName = " com.demo.alpha "),
+                    InstalledAppItem(label = "Duplicate", packageName = "com.demo.alpha"),
+                    InstalledAppItem(label = "Beta", packageName = "com.demo.beta"),
+                    InstalledAppItem(label = "Blank", packageName = " ")
+                )
+            )
+        )
+
+        assertEquals(
+            listOf("com.demo.alpha", "com.demo.beta"),
+            derived.installedIconPreloadPackages
+        )
     }
 
     private fun baseInput(

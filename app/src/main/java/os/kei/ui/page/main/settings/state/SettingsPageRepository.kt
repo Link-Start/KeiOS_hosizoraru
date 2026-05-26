@@ -18,6 +18,7 @@ import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.settings.cache.CacheStores
 import os.kei.ui.page.main.settings.page.SettingsSearchTarget
 import os.kei.ui.page.main.settings.page.buildSettingsSearchTargets
+import os.kei.ui.page.main.settings.page.deriveSettingsSearchTargets
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -99,6 +100,20 @@ internal class SettingsPageRepository(
             buildSettingsSearchTargets(appContext::getString)
         }
     }
+
+    suspend fun deriveSearchState(
+        targets: List<SettingsSearchTarget>,
+        query: String,
+    ): SettingsSearchUiState =
+        withContext(defaultDispatcher) {
+            SettingsSearchUiState(
+                matchingTargets =
+                    deriveSettingsSearchTargets(
+                        targets = targets,
+                        query = query,
+                    ),
+            )
+        }
 
     suspend fun buildNonHomeBackgroundCropIntent(
         context: Context,

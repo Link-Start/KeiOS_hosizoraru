@@ -32,11 +32,13 @@ internal data class AboutPageChromeState(
 internal class AboutPageViewModel : ViewModel() {
     private val repository = AboutPageRepository()
     private var detailsJob: Job? = null
+    private var lastDetailsRequest: AboutPageDetailsRequest? = null
 
     private val _detailsState = MutableStateFlow(AboutPageDetailsState())
     val detailsState: StateFlow<AboutPageDetailsState> = _detailsState.asStateFlow()
     private val _chromeState = MutableStateFlow(AboutPageChromeState())
     val chromeState: StateFlow<AboutPageChromeState> = _chromeState.asStateFlow()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val searchState: StateFlow<AboutSearchUiState> =
         combine(
@@ -64,6 +66,16 @@ internal class AboutPageViewModel : ViewModel() {
         shizukuApiUtils: ShizukuApiUtils,
     ) {
         val appContext = context.applicationContext
+        val request =
+            AboutPageDetailsRequest(
+                appLabel = appLabel,
+                shizukuStatus = shizukuStatus,
+                notificationPermissionGranted = notificationPermissionGranted,
+            )
+        if (_detailsState.value.loaded && lastDetailsRequest == request) {
+            return
+        }
+        lastDetailsRequest = request
         detailsJob?.cancel()
         detailsJob =
             viewModelScope.launch {
@@ -113,8 +125,13 @@ internal class AboutPageViewModel : ViewModel() {
             )
         }
     }
-
 }
+
+private data class AboutPageDetailsRequest(
+    val appLabel: String,
+    val shizukuStatus: String,
+    val notificationPermissionGranted: Boolean,
+)
 
 private fun AboutPageSectionExpansionState.withCardExpanded(
     card: AboutSearchCard,

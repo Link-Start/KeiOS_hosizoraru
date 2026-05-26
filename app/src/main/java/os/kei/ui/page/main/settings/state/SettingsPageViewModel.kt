@@ -8,6 +8,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -25,7 +28,6 @@ import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.settings.page.SettingsSearchTarget
-import os.kei.ui.page.main.settings.page.deriveSettingsSearchTargets
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
@@ -163,20 +165,29 @@ internal class SettingsPageViewModel : ViewModel() {
             initialValue = SettingsSupportUiState(),
         )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchUiState: StateFlow<SettingsSearchUiState> =
+        combine(searchTargetsState, chromeState) { targets, chrome ->
+            targets to chrome.trimmedSearchQuery
+        }.distinctUntilChanged()
+            .mapLatest { (targets, query) ->
+                repository.deriveSearchState(
+                    targets = targets,
+                    query = query,
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = SettingsSearchUiState(),
+            )
+
     val pageSnapshotState: StateFlow<SettingsPageSnapshotState> =
-        combine(diagnosticsUiState, supportUiState, chromeState, searchTargetsState) { diagnostics, support, chrome, targets ->
+        combine(diagnosticsUiState, supportUiState, chromeState, searchUiState) { diagnostics, support, chrome, search ->
             SettingsPageSnapshotState(
                 diagnosticsUiState = diagnostics,
                 supportUiState = support,
                 chromeState = chrome,
-                searchUiState =
-                    SettingsSearchUiState(
-                        matchingTargets =
-                            deriveSettingsSearchTargets(
-                                targets = targets,
-                                query = chrome.trimmedSearchQuery,
-                            ),
-                    ),
+                searchUiState = search,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -186,14 +197,7 @@ internal class SettingsPageViewModel : ViewModel() {
                     diagnosticsUiState = diagnosticsUiState.value,
                     supportUiState = supportUiState.value,
                     chromeState = chromeState.value,
-                    searchUiState =
-                        SettingsSearchUiState(
-                            matchingTargets =
-                                deriveSettingsSearchTargets(
-                                    targets = searchTargetsState.value,
-                                    query = chromeState.value.trimmedSearchQuery,
-                                ),
-                        ),
+                    searchUiState = searchUiState.value,
                 ),
         )
 

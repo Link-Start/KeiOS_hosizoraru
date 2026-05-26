@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.about.page
 
-import android.content.pm.PackageInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -67,7 +66,6 @@ import kotlin.math.abs
 @Composable
 fun AboutPage(
     appLabel: String,
-    packageInfo: PackageInfo?,
     notificationPermissionGranted: Boolean,
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
@@ -281,8 +279,7 @@ fun AboutPage(
     }
     val cardRenderState =
         AboutCardRenderState(
-            appLabel = appLabel,
-            packageInfo = packageInfo,
+            appDetails = detailsState.appDetails,
             palette = palette,
             searchActive = searchActive,
             expansionState = expansionState,
@@ -291,6 +288,7 @@ fun AboutPage(
             shizukuDetailMap = shizukuDetailMap,
             permissionEntries = permissionEntries,
             componentEntries = componentEntries,
+            techDetails = detailsState.techDetails,
         )
     val cardActions =
         remember(context, openLinkFailed, onCheckShizuku, viewModel) {

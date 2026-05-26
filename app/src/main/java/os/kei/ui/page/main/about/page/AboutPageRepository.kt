@@ -1,21 +1,27 @@
 package os.kei.ui.page.main.about.page
 
 import android.content.Context
-import android.content.pm.PackageInfo
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.about.model.AboutComponentEntry
 import os.kei.ui.page.main.about.model.AboutPermissionEntry
+import os.kei.ui.page.main.about.model.AboutTechDetails
+import os.kei.ui.page.main.about.model.buildAboutAppDetails
+import os.kei.ui.page.main.about.model.buildAboutTechDetails
 import os.kei.ui.page.main.about.model.buildComponentEntries
 import os.kei.ui.page.main.about.model.buildPermissionEntries
 import os.kei.ui.page.main.about.model.loadPackageDetailInfo
 
+@Immutable
 internal data class AboutPageDetailsState(
-    val packageDetailInfo: PackageInfo? = null,
+    val appDetails: AboutAppDetails = AboutAppDetails(),
     val permissionEntries: List<AboutPermissionEntry> = emptyList(),
     val componentEntries: List<AboutComponentEntry> = emptyList(),
+    val techDetails: AboutTechDetails = AboutTechDetails(),
     val searchTargets: List<AboutSearchTarget> = emptyList(),
     val shizukuDetailMap: Map<String, String> = emptyMap(),
     val loaded: Boolean = false,
@@ -47,9 +53,10 @@ internal class AboutPageRepository(
                         packageInfo = packageDetailInfo,
                     )
                 AboutPageDetailsState(
-                    packageDetailInfo = packageDetailInfo,
+                    appDetails = buildAboutAppDetails(context, appLabel, packageDetailInfo),
                     permissionEntries = permissionEntries,
                     componentEntries = componentEntries,
+                    techDetails = buildAboutTechDetails(context),
                     shizukuDetailMap = shizukuApiUtils.detailedRows().toMap(),
                     loaded = true,
                 )

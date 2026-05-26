@@ -184,7 +184,6 @@ class MainActivity : ComponentActivity() {
                     SystemBarAutoStyle(state.appThemeMode)
                     MainScreen(
                         appLabel = appLabel,
-                        packageInfo = packageInfo,
                         hostState = state,
                         hostCallbacks = hostCallbacks,
                         shizukuApiUtils = shizukuApiUtils,

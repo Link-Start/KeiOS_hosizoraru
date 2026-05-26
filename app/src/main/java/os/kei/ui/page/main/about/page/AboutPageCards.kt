@@ -2,11 +2,12 @@
 
 package os.kei.ui.page.main.about.page
 
-import android.content.pm.PackageInfo
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
+import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.about.model.AboutComponentEntry
 import os.kei.ui.page.main.about.model.AboutPermissionEntry
+import os.kei.ui.page.main.about.model.AboutTechDetails
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.about.section.AboutBuildSdkCardSection
 import os.kei.ui.page.main.about.section.AboutComponentCardSection
@@ -24,8 +25,7 @@ import os.kei.ui.page.main.about.state.AboutPageColorPalette
 import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
 
 internal data class AboutCardRenderState(
-    val appLabel: String,
-    val packageInfo: PackageInfo?,
+    val appDetails: AboutAppDetails,
     val palette: AboutPageColorPalette,
     val searchActive: Boolean,
     val expansionState: AboutPageSectionExpansionState,
@@ -34,6 +34,7 @@ internal data class AboutCardRenderState(
     val shizukuDetailMap: Map<String, String>,
     val permissionEntries: List<AboutPermissionEntry>,
     val componentEntries: List<AboutComponentEntry>,
+    val techDetails: AboutTechDetails,
 )
 
 internal data class AboutCardActions(
@@ -73,8 +74,7 @@ internal fun LazyListScope.aboutCardItem(
         when (card) {
             AboutSearchCard.App -> {
                 AboutAppCardSection(
-                    appLabel = state.appLabel,
-                    packageInfo = state.packageInfo,
+                    details = state.appDetails,
                     cardColor = palette.infoCardColor,
                     accent = palette.accent,
                     subtitleColor = palette.subtitleColor,
@@ -85,6 +85,7 @@ internal fun LazyListScope.aboutCardItem(
 
             AboutSearchCard.GitHub -> {
                 AboutGitHubCardSection(
+                    details = state.techDetails,
                     cardColor = palette.githubCardColor,
                     accent = palette.accent,
                     subtitleColor = palette.subtitleColor,
@@ -124,6 +125,7 @@ internal fun LazyListScope.aboutCardItem(
 
             AboutSearchCard.Network -> {
                 AboutNetworkServiceCardSection(
+                    rows = state.techDetails.networkRows,
                     cardColor = palette.networkServiceCardColor,
                     titleColor = palette.readyColor,
                     subtitleColor = palette.subtitleColor,
@@ -134,6 +136,7 @@ internal fun LazyListScope.aboutCardItem(
 
             AboutSearchCard.Media -> {
                 AboutMediaStorageCardSection(
+                    rows = state.techDetails.mediaRows,
                     cardColor = palette.mediaStorageCardColor,
                     accent = palette.accent,
                     subtitleColor = palette.subtitleColor,
@@ -169,6 +172,7 @@ internal fun LazyListScope.aboutCardItem(
 
             AboutSearchCard.Build -> {
                 AboutBuildSdkCardSection(
+                    rows = state.techDetails.buildRows,
                     cardColor = palette.buildCardColor,
                     accent = palette.accent,
                     subtitleColor = palette.subtitleColor,
@@ -179,6 +183,7 @@ internal fun LazyListScope.aboutCardItem(
 
             AboutSearchCard.Ui -> {
                 AboutUiFrameworkCardSection(
+                    rows = state.techDetails.uiRows,
                     cardColor = palette.uiFrameworkCardColor,
                     accent = palette.accent,
                     subtitleColor = palette.subtitleColor,
@@ -192,11 +197,12 @@ internal fun LazyListScope.aboutCardItem(
                     cardColor = palette.projectLicenseCardColor,
                     accent = palette.accent,
                     subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(
-                        state.searchActive,
-                        state.expansionState,
-                        AboutSearchCard.ProjectLicense,
-                    ),
+                    expanded =
+                        aboutCardExpanded(
+                            state.searchActive,
+                            state.expansionState,
+                            AboutSearchCard.ProjectLicense,
+                        ),
                     onExpandedChange = { actions.onExpandedChange(AboutSearchCard.ProjectLicense, it) },
                     onOpenLicenseUrl = actions.onOpenExternalUrl,
                 )
@@ -227,27 +233,30 @@ internal fun LazyListScope.aboutCardItem(
     }
 }
 
+private val AboutOverviewCards = listOf(AboutSearchCard.App, AboutSearchCard.Release, AboutSearchCard.GitHub)
+private val AboutSystemCards =
+    listOf(
+        AboutSearchCard.Runtime,
+        AboutSearchCard.Network,
+        AboutSearchCard.Media,
+        AboutSearchCard.Permission,
+        AboutSearchCard.Component,
+    )
+private val AboutTechCards =
+    listOf(
+        AboutSearchCard.Build,
+        AboutSearchCard.Ui,
+        AboutSearchCard.ProjectLicense,
+        AboutSearchCard.License,
+    )
+private val AboutLabCards = listOf(AboutSearchCard.Lab)
+
 private fun aboutCardsForCategory(category: AboutCategory): List<AboutSearchCard> =
     when (category) {
-        AboutCategory.Overview -> listOf(AboutSearchCard.App, AboutSearchCard.Release, AboutSearchCard.GitHub)
-        AboutCategory.System ->
-            listOf(
-                AboutSearchCard.Runtime,
-                AboutSearchCard.Network,
-                AboutSearchCard.Media,
-                AboutSearchCard.Permission,
-                AboutSearchCard.Component,
-            )
-
-        AboutCategory.Tech ->
-            listOf(
-                AboutSearchCard.Build,
-                AboutSearchCard.Ui,
-                AboutSearchCard.ProjectLicense,
-                AboutSearchCard.License,
-            )
-
-        AboutCategory.Lab -> listOf(AboutSearchCard.Lab)
+        AboutCategory.Overview -> AboutOverviewCards
+        AboutCategory.System -> AboutSystemCards
+        AboutCategory.Tech -> AboutTechCards
+        AboutCategory.Lab -> AboutLabCards
     }
 
 private fun aboutCardExpanded(

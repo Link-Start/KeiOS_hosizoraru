@@ -1,10 +1,12 @@
 package os.kei.ui.page.main.about.state
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@Immutable
 internal data class AboutPageSectionExpansionState(
     val appExpanded: Boolean = true,
     val releaseExpanded: Boolean = true,
@@ -21,6 +23,7 @@ internal data class AboutPageSectionExpansionState(
     val componentLabExpanded: Boolean = true,
 )
 
+@Immutable
 internal data class AboutPageColorPalette(
     val accent: Color,
     val subtitleColor: Color,

@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.widget
 
 import android.app.Application
-import android.content.pm.PackageInfo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +27,7 @@ import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.about.section.AboutReleaseCardSection
+import os.kei.ui.page.main.about.model.buildAboutAppDetails
 import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
 import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.importer.StarImportApkVerificationUiState
@@ -84,12 +84,18 @@ import top.yukonga.miuix.kmp.theme.ThemeController
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
 class AppDesignSystemScreenshotTest {
-    private fun currentPackageInfo(): PackageInfo? {
-        val context = ApplicationProvider.getApplicationContext<Application>()
-        return runCatching {
+    private fun currentAboutAppDetails() =
+        buildAboutAppDetails(
+            context = ApplicationProvider.getApplicationContext<Application>(),
+            appLabel = "KeiOS",
+            packageInfo = currentPackageInfo(),
+        )
+
+    private fun currentPackageInfo() =
+        runCatching {
+            val context = ApplicationProvider.getApplicationContext<Application>()
             context.packageManager.getPackageInfo(context.packageName, 0)
         }.getOrNull()
-    }
 
     @Test
     fun appCardHeaderLight() {
@@ -306,8 +312,7 @@ class AppDesignSystemScreenshotTest {
                                 .padding(16.dp),
                     ) {
                         AboutAppCardSection(
-                            appLabel = "KeiOS",
-                            packageInfo = currentPackageInfo(),
+                            details = currentAboutAppDetails(),
                             cardColor = Color(0x223B82F6),
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -332,8 +337,7 @@ class AppDesignSystemScreenshotTest {
                                 .padding(16.dp),
                     ) {
                         AboutAppCardSection(
-                            appLabel = "KeiOS",
-                            packageInfo = currentPackageInfo(),
+                            details = currentAboutAppDetails(),
                             cardColor = Color(0x223B82F6),
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,

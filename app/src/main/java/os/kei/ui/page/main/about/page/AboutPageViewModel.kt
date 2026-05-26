@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.about.page
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
 
+@Immutable
 internal data class AboutPageChromeState(
     val selectedCategoryIndex: Int = 0,
     val bottomBarVisible: Boolean = true,

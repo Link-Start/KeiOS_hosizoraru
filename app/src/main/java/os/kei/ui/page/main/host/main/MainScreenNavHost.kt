@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.host.main
 
-import android.content.pm.PackageInfo
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
@@ -61,7 +60,6 @@ internal fun MainScreenNavHost(
     pagerCoordinator: MainScreenPagerCoordinator,
     prefsState: MainScreenUiPrefsState,
     appLabel: String,
-    packageInfo: PackageInfo?,
     onCheckOrRequestShizuku: () -> Unit,
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
@@ -174,7 +172,6 @@ internal fun MainScreenNavHost(
             entry<KeiosRoute.About> {
                 AboutPage(
                     appLabel = appLabel,
-                    packageInfo = packageInfo,
                     notificationPermissionGranted = notificationPermissionGranted,
                     shizukuStatus = pagerCoordinator.shizukuStatus,
                     shizukuApiUtils = pagerCoordinator.shizukuApiUtils,

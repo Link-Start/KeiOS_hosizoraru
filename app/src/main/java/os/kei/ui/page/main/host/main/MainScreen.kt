@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.host.main
 
-import android.content.pm.PackageInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,7 +26,6 @@ import os.kei.ui.page.main.model.BottomPage
 @Composable
 fun MainScreen(
     appLabel: String,
-    packageInfo: PackageInfo?,
     hostState: MainHostUiState,
     hostCallbacks: MainHostCallbacks,
     shizukuApiUtils: ShizukuApiUtils,
@@ -39,7 +37,6 @@ fun MainScreen(
     val appContext = context.applicationContext
     val view = LocalView.current
     val currentAppLabel by rememberUpdatedState(appLabel)
-    val currentPackageInfo by rememberUpdatedState(packageInfo)
     val currentShizukuStatus by rememberUpdatedState(hostState.shizukuStatus)
     val currentNotificationPermissionGranted by rememberUpdatedState(hostState.notificationPermissionGranted)
     val currentOnCheckOrRequestShizuku by rememberUpdatedState(hostCallbacks.onCheckOrRequestShizuku)
@@ -154,7 +151,6 @@ fun MainScreen(
         pagerCoordinator = pagerCoordinator,
         prefsState = uiPrefsState,
         appLabel = currentAppLabel,
-        packageInfo = currentPackageInfo,
         onCheckOrRequestShizuku = currentOnCheckOrRequestShizuku,
         notificationPermissionGranted = currentNotificationPermissionGranted,
         onRequestNotificationPermission = hostCallbacks.onRequestNotificationPermission,

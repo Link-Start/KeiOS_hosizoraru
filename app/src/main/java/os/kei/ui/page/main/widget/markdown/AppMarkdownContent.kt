@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.produceState
@@ -25,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import top.yukonga.miuix.kmp.basic.Text
@@ -353,18 +354,15 @@ private fun AppMarkdownTable(
     accentColor: Color,
     onOpenLink: ((String) -> Unit)?,
 ) {
-    val shape = RoundedCornerShape(8.dp)
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(
-                    color = subtitleColor.copy(alpha = 0.06f),
-                    shape = shape,
-                ).border(
+                .appSquircleBackground(subtitleColor.copy(alpha = 0.06f), 8.dp)
+                .appSquircleBorder(
                     width = 0.6.dp,
                     color = subtitleColor.copy(alpha = 0.12f),
-                    shape = shape,
+                    cornerRadius = 8.dp,
                 ),
     ) {
         rows.forEachIndexed { rowIndex, row ->
@@ -531,10 +529,8 @@ private fun AppMarkdownCodeBlock(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .background(
-                    color = codeContainerColor,
-                    shape = RoundedCornerShape(8.dp),
-                ).padding(horizontal = 12.dp, vertical = 10.dp)
+                .appSquircleBackground(codeContainerColor, 8.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .copyModeAwareRow(copyPayload = text),
     ) {
         CopyModeSelectionContainer {

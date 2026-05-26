@@ -25,7 +25,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,6 +52,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -147,7 +147,7 @@ internal fun RowScope.LiquidActionItemSlot(
     }
     Box(
         modifier = Modifier
-            .clip(ContinuousCapsule)
+            .appSquircleClip(999.dp)
             .then(item.testTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier)
             .then(clickModifier)
             .fillMaxHeight()

@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.ba
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -14,12 +12,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.semantics.Role
@@ -37,17 +33,15 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.glassStyle
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-private val BaLiquidCardShape = RoundedCornerShape(24.dp)
-private val BaLiquidPanelShape = RoundedCornerShape(18.dp)
 
 @Composable
 private fun BaLiquidSurfaceColumn(
     backdrop: Backdrop?,
     modifier: Modifier,
-    shape: RoundedCornerShape,
     cornerRadius: Dp,
     accentColor: Color,
     accentAlpha: Float,
@@ -151,14 +145,13 @@ private fun BaLiquidSurfaceColumn(
         Column(
             modifier = modifier
                 .padding(pressSafePadding)
-                .clip(shape)
-                .background(fallbackSurface, shape)
+                .appSquircleBackground(fallbackSurface, cornerRadius)
                 .then(
                     if (borderColor.alpha > 0.01f && glass.borderWidth > 0.dp) {
-                        Modifier.border(
+                        Modifier.appSquircleBorder(
                             width = glass.borderWidth,
                             color = borderColor,
-                            shape = shape,
+                            cornerRadius = cornerRadius,
                         )
                     } else {
                         Modifier
@@ -190,7 +183,6 @@ internal fun BaLiquidCard(
         backdrop = backdrop,
         modifier = modifier
             .fillMaxWidth(),
-        shape = BaLiquidCardShape,
         cornerRadius = 24.dp,
         accentColor = accentColor,
         accentAlpha = accentAlpha,
@@ -224,7 +216,6 @@ internal fun BaLiquidPanel(
         backdrop = backdrop,
         modifier = modifier
             .fillMaxWidth(),
-        shape = BaLiquidPanelShape,
         cornerRadius = 18.dp,
         accentColor = accentColor,
         accentAlpha = accentAlpha,

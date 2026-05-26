@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -21,7 +20,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
@@ -54,6 +52,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
@@ -353,15 +352,13 @@ private fun LiquidTrackSlider(
         Box(Modifier.layerBackdrop(trackBackdrop)) {
             Box(
                 Modifier
-                    .clip(ContinuousCapsule)
-                    .background(style.inactiveColor)
+                    .appSquircleBackground(style.inactiveColor, 999.dp)
                     .height(style.trackHeight)
                     .fillMaxWidth()
             )
             Box(
                 Modifier
-                    .clip(ContinuousCapsule)
-                    .background(style.activeColor)
+                    .appSquircleBackground(style.activeColor, 999.dp)
                     .height(style.trackHeight)
                     .layout { measurable, constraints ->
                         val placeable = measurable.measure(constraints)
@@ -424,8 +421,7 @@ private fun LiquidTrackSlider(
                             ) *
                                 if (isLtr) 1f else -1f
                     }
-                    .clip(ContinuousCapsule)
-                    .background(resolveKeyPointColor(keyPoint, style, isActive))
+                    .appSquircleBackground(resolveKeyPointColor(keyPoint, style, isActive), 999.dp)
                     .size(keyPoint.size)
             )
         }

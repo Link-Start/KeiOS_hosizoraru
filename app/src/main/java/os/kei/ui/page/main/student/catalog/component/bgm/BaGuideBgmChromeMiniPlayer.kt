@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
+import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -43,6 +43,7 @@ import os.kei.ui.page.main.os.appLucideSkipForwardIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -97,7 +98,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
     ) {
         LiquidSurface(
             backdrop = backdrop,
-            shape = RoundedCornerShape(artworkCornerRadius),
+            shape = RoundedRectangle(artworkCornerRadius),
             tint = if (artworkImageUrl.isBlank()) accent.copy(alpha = 0.14f) else Color.Transparent,
             surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.12f),
             chromaticAberration = true,
@@ -110,7 +111,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                     Modifier
                         .fillMaxSize()
                         .padding(4.dp)
-                        .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)))
+                        .appSquircleClip((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp))
                         .background(defaultMiniArtworkBrush(accent)),
             )
             if (artworkImageUrl.isNotBlank()) {
@@ -121,7 +122,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                         Modifier
                             .fillMaxSize()
                             .padding(4.dp)
-                            .clip(RoundedCornerShape((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp))),
+                            .appSquircleClip((artworkCornerRadius - 2.dp).coerceAtLeast(8.dp)),
                 )
             } else {
                 Icon(

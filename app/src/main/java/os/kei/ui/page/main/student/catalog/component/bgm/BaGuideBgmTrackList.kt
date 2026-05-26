@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -101,7 +101,7 @@ private fun BaGuideBgmTrackChunk(
     onTrackShareClick: (BaGuideBgmTrack) -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
-    val listShape = RoundedCornerShape(24.dp)
+    val listShape = RoundedRectangle(24.dp)
     LiquidSurface(
         backdrop = backdrop,
         shape = listShape,
@@ -148,7 +148,7 @@ private fun BaGuideBgmEmptyTrackResult(
     val iconBackdrop = rememberCombinedBackdrop(backdrop, resultSurfaceBackdrop)
     LiquidSurface(
         backdrop = backdrop,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedRectangle(24.dp),
         tint = accent.copy(alpha = if (isDark) 0.10f else 0.07f),
         surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.16f else 0.22f),
         chromaticAberration = true,

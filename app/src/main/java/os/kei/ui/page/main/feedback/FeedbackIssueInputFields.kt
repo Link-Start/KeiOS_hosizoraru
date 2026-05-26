@@ -2,8 +2,6 @@
 
 package os.kei.ui.page.main.feedback
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -27,8 +25,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -119,7 +118,6 @@ private fun FeedbackLiquidPanel(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
-    val shape = RoundedRectangle(18.dp)
     val borderColor =
         if (isDark) {
             Color(0xFF8ABEFF).copy(alpha = 0.24f)
@@ -142,8 +140,8 @@ private fun FeedbackLiquidPanel(
                     } else {
                         Modifier.heightIn(min = minHeight)
                     },
-                ).background(panelColor, shape)
-                .border(width = 1.dp, color = borderColor, shape = shape)
+                ).appSquircleBackground(panelColor, 18.dp)
+                .appSquircleBorder(width = 1.dp, color = borderColor, cornerRadius = 18.dp)
                 .padding(contentPadding),
         content = content,
     )

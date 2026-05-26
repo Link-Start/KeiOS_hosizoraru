@@ -8,12 +8,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -23,6 +21,7 @@ import androidx.media3.ui.PlayerView
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -67,7 +66,7 @@ internal fun GuideInlineVideoPlayerBody(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(videoRatio)
-            .clip(RoundedCornerShape(14.dp)),
+            .appSquircleClip(14.dp),
         factory = { ctx ->
             PlayerView(ctx).apply {
                 layoutParams = android.view.ViewGroup.LayoutParams(

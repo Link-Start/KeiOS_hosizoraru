@@ -12,14 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
@@ -37,6 +35,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -153,7 +152,7 @@ private fun AboutAppIcon(
         modifier =
             Modifier
                 .size(size)
-                .clip(ContinuousCapsule)
+                .appSquircleClip(999.dp)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(

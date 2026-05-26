@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -37,7 +35,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
@@ -50,6 +47,8 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -70,7 +69,6 @@ internal fun BaGuideBgmTrackRow(
 ) {
     var moreExpanded by remember(track.id) { mutableStateOf(false) }
     var moreAnchorBounds by remember(track.id) { mutableStateOf<IntRect?>(null) }
-    val rowShape = RoundedCornerShape(14.dp)
     val offlineBadgeLabel = stringResource(R.string.ba_catalog_bgm_track_badge_offline)
     val rowStatusDescription =
         if (offlineSaved) {
@@ -85,10 +83,9 @@ internal fun BaGuideBgmTrackRow(
                 .fillMaxWidth()
                 .height(56.dp)
                 .semantics { contentDescription = "${track.title}, $rowStatusDescription" }
-                .clip(rowShape)
-                .background(
+                .appSquircleBackground(
                     color = if (active) accent.copy(alpha = 0.08f) else Color.Transparent,
-                    shape = rowShape,
+                    cornerRadius = 14.dp,
                 ).clickable(onClick = onClick)
                 .padding(start = 4.dp, end = 2.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -362,7 +359,7 @@ private fun BaGuideBgmPlayingBar(
             Modifier
                 .width(3.dp)
                 .fillMaxHeight(heightFraction.coerceIn(0.32f, 1f))
-                .clip(ContinuousCapsule)
+                .appSquircleClip(999.dp)
                 .background(accent),
     )
 }

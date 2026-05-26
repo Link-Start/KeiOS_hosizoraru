@@ -60,6 +60,7 @@ import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import kotlin.math.abs
 import kotlin.math.max
 import androidx.compose.ui.util.lerp as lerpFloat
@@ -304,7 +305,7 @@ internal fun BaGuideBgmDockGroupContent(
                         scaleY =
                             (0.96f + 0.04f * expanded) *
                             lerpFloat(1f, 0.996f, interactionProgress)
-                    }.clip(ContinuousCapsule)
+                    }.appSquircleClip(999.dp)
                     .then(interactiveHighlight.modifier)
                     .padding(horizontal = contentHorizontalPadding),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -343,7 +344,7 @@ internal fun BaGuideBgmDockGroupContent(
                     .height(selectedPillHeight)
                     .alpha(0f)
                     .zIndex(if (expanded >= compact) 1.5f else 0f)
-                    .clip(ContinuousCapsule)
+                    .appSquircleClip(999.dp)
                     .layerBackdrop(tabsBackdrop)
                     .graphicsLayer {
                         val interactionProgress = combinedInteractionProgressProvider()

@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -11,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -26,6 +24,9 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.min
 
@@ -120,35 +121,31 @@ internal fun AppFloatingLiquidVerticalDockSurface(
                         }
                     )
                 } else {
-                    Modifier.background(
-                        fallbackSurface.copy(alpha = surfaceAlpha),
-                        ContinuousCapsule
-                    )
+                    Modifier.appSquircleBackground(fallbackSurface.copy(alpha = surfaceAlpha), 999.dp)
                 }
             )
             .then(interactiveHighlight.modifier)
             .then(interactiveHighlight.gestureModifier)
             .graphicsLayer { clip = false }
-            .clip(ContinuousCapsule)
+            .appSquircleClip(999.dp)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(overlayTop, overlayBottom)
                 ),
-                ContinuousCapsule
             )
-            .border(
+            .appSquircleBorder(
                 width = 1.dp,
                 color = edgeColor,
-                shape = ContinuousCapsule
+                cornerRadius = 999.dp,
             ),
         contentAlignment = Alignment.Center
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(ContinuousCapsule)
-                .background(
-                    Brush.horizontalGradient(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .appSquircleClip(999.dp)
+                    .background(
+                        Brush.horizontalGradient(
                         colors = listOf(
                             sideRim,
                             Color.Transparent,
@@ -159,15 +156,14 @@ internal fun AppFloatingLiquidVerticalDockSurface(
                 )
         )
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(ContinuousCapsule)
-                .border(
-                    width = 1.dp,
-                    color = innerRim,
-                    shape = ContinuousCapsule
-                )
-        )
+                modifier = Modifier
+                    .fillMaxSize()
+                    .appSquircleBorder(
+                        width = 1.dp,
+                        color = innerRim,
+                        cornerRadius = 999.dp,
+                    )
+            )
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,

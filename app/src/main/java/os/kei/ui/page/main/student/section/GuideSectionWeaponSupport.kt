@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
@@ -28,6 +27,7 @@ import os.kei.R
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 
@@ -46,7 +46,7 @@ internal fun GuidePressableMediaSurface(
     )
     Box(
         modifier = modifier
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+            .appSquircleClip(14.dp)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

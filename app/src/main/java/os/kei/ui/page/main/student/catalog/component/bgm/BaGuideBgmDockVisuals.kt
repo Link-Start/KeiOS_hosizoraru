@@ -2,8 +2,6 @@
 
 package os.kei.ui.page.main.student.catalog.component.bgm
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -18,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,6 +31,9 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -130,22 +130,20 @@ internal fun BaGuideBgmDockSelectionPill(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .clip(ContinuousCapsule)
-                    .background(
+                    .appSquircleBackground(
                         if (isDark) {
                             Color.White.copy(alpha = 0.03f)
                         } else {
                             Color.White.copy(alpha = 0.08f)
                         },
-                        ContinuousCapsule,
+                        999.dp,
                     ),
         )
         Box(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .clip(ContinuousCapsule)
-                    .border(1.dp, borderColor, ContinuousCapsule),
+                    .appSquircleBorder(1.dp, borderColor, 999.dp),
         )
     }
 }
@@ -177,7 +175,7 @@ internal fun BaGuideBgmExpandedDockTab(
     Box(
         modifier =
             modifier
-                .clip(ContinuousCapsule)
+                .appSquircleClip(999.dp)
                 .then(
                     if (enabled) {
                         Modifier.clickable(

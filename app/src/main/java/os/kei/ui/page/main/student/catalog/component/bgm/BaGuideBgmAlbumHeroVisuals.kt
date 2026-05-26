@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +22,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -37,6 +35,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
+import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -48,6 +47,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -58,8 +58,7 @@ internal fun BaGuideBgmAlbumArtwork(
     backdrop: Backdrop,
     imageUrl: String = "",
 ) {
-    val shape = RoundedCornerShape(28.dp)
-    val innerShape = RoundedCornerShape(23.dp)
+    val shape = RoundedRectangle(28.dp)
     LiquidSurface(
         backdrop = backdrop,
         shape = shape,
@@ -78,7 +77,7 @@ internal fun BaGuideBgmAlbumArtwork(
                 Modifier
                     .matchParentSize()
                     .padding(12.dp)
-                    .clip(innerShape)
+                    .appSquircleClip(23.dp)
                     .background(defaultAlbumArtworkBrush(accent)),
         )
         if (imageUrl.isNotBlank()) {
@@ -89,7 +88,7 @@ internal fun BaGuideBgmAlbumArtwork(
                     Modifier
                         .matchParentSize()
                         .padding(12.dp)
-                        .clip(innerShape),
+                        .appSquircleClip(23.dp),
             )
         } else {
             Icon(

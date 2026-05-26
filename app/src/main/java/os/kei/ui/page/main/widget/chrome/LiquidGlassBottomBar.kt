@@ -3,7 +3,6 @@ package os.kei.ui.page.main.widget.chrome
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -37,7 +36,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -72,6 +70,8 @@ import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.max
@@ -135,7 +135,7 @@ fun RowScope.LiquidGlassBottomBarItem(
 
     Column(
         modifier = modifier
-            .clip(ContinuousCapsule)
+            .appSquircleClip(999.dp)
             .then(
                 if (interactive) {
                     Modifier.clickable(
@@ -421,8 +421,7 @@ fun LiquidGlassBottomBar(
                     .then(
                         if (useLightweightBackdrop) {
                             Modifier
-                                .clip(ContinuousCapsule)
-                                .background(palette.baseFillColor, ContinuousCapsule)
+                                .appSquircleBackground(palette.baseFillColor, 999.dp)
                         } else {
                             Modifier.drawBackdrop(
                                 backdrop = backdrop,
@@ -528,16 +527,14 @@ fun LiquidGlassBottomBar(
                         .then(dampedDragAnimation.modifier)
                         .then(
                             if (useLightweightBackdrop) {
-                                Modifier
-                                    .clip(ContinuousCapsule)
-                                    .background(
-                                        color = if (isInLightTheme) {
-                                            Color.Black.copy(0.10f)
-                                        } else {
-                                            Color.White.copy(0.10f)
-                                        },
-                                        shape = ContinuousCapsule
-                                    )
+                                Modifier.appSquircleBackground(
+                                    color = if (isInLightTheme) {
+                                        Color.Black.copy(0.10f)
+                                    } else {
+                                        Color.White.copy(0.10f)
+                                    },
+                                    cornerRadius = 999.dp,
+                                )
                             } else {
                                 Modifier.drawBackdrop(
                                     backdrop = combinedBackdrop,

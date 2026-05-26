@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.widget.core
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -15,13 +13,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
@@ -41,6 +37,8 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
@@ -67,7 +65,6 @@ fun AppOverviewCard(
     headerEndActions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val shape = RoundedCornerShape(CardLayoutRhythm.cardCornerRadius)
     val interactionSource = remember { MutableInteractionSource() }
     val clickable = onClick != null || onLongClick != null
     val clickModifier = if (clickable) {
@@ -182,19 +179,17 @@ fun AppOverviewMetricTile(
     } else {
         Color.White.copy(alpha = 0.86f)
     }
-    val shape = RoundedCornerShape(12.dp)
+    val cornerRadius = 12.dp
     val tileModifier = modifier
-        .clip(shape)
         .then(
             if (backdrop == null) {
                 Modifier
-                    .background(resolvedContainerColor, shape)
-                    .background(resolvedOverlayColor, shape)
+                    .appSquircleBackground(resolvedContainerColor, cornerRadius)
+                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
             } else {
                 Modifier
             }
-        )
-        .border(width = 1.dp, color = resolvedBorderColor, shape = shape)
+        ).appSquircleBorder(width = 1.dp, color = resolvedBorderColor, cornerRadius = cornerRadius)
     val content: @Composable () -> Unit = {
         Column(
             modifier = Modifier
@@ -238,7 +233,7 @@ fun AppOverviewMetricTile(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(resolvedOverlayColor, shape)
+                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
             )
             content()
         }
@@ -285,19 +280,17 @@ fun AppOverviewInlineMetricTile(
     } else {
         Color.White.copy(alpha = 0.84f)
     }
-    val shape = RoundedCornerShape(12.dp)
+    val cornerRadius = 12.dp
     val tileModifier = modifier
-        .clip(shape)
         .then(
             if (backdrop == null) {
                 Modifier
-                    .background(resolvedContainerColor, shape)
-                    .background(resolvedOverlayColor, shape)
+                    .appSquircleBackground(resolvedContainerColor, cornerRadius)
+                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
             } else {
                 Modifier
             }
-        )
-        .border(width = 1.dp, color = resolvedBorderColor, shape = shape)
+        ).appSquircleBorder(width = 1.dp, color = resolvedBorderColor, cornerRadius = cornerRadius)
     val content: @Composable () -> Unit = {
         Row(
             modifier = Modifier
@@ -347,7 +340,7 @@ fun AppOverviewInlineMetricTile(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(resolvedOverlayColor, shape)
+                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
             )
             content()
         }

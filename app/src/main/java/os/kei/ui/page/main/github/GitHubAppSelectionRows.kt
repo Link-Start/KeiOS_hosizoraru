@@ -4,8 +4,6 @@ package os.kei.ui.page.main.github
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,19 +18,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.sheet.SheetSurfaceCard
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -181,12 +180,11 @@ private fun InstallSourcePill(
         modifier =
             Modifier
                 .widthIn(max = 156.dp)
-                .clip(ContinuousCapsule)
-                .background(color.copy(alpha = if (isDark) 0.16f else 0.2f))
-                .border(
+                .appSquircleBackground(color.copy(alpha = if (isDark) 0.16f else 0.2f), 999.dp)
+                .appSquircleBorder(
                     width = 0.8.dp,
                     color = color.copy(alpha = if (isDark) 0.32f else 0.4f),
-                    shape = ContinuousCapsule,
+                    cornerRadius = 999.dp,
                 ).padding(metrics.contentPadding),
         contentAlignment = Alignment.Center,
     ) {
@@ -218,7 +216,7 @@ internal fun AppIconImage(
                 Modifier
                     .width(size)
                     .height(size)
-                    .clip(ContinuousCapsule),
+                    .appSquircleClip(999.dp),
         )
     } else {
         AppIconFallback(size = size)
@@ -230,9 +228,9 @@ private fun AppIconFallback(size: Dp) {
     Box(
         modifier =
             Modifier
-                .width(size)
-                .height(size)
-                .clip(ContinuousCapsule),
+                    .width(size)
+                    .height(size)
+                    .appSquircleClip(999.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.github.sheet
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -9,11 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,6 +21,8 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -81,7 +79,6 @@ private fun RepositoryScanCandidateRow(
         else -> MiuixTheme.colorScheme.primary
     }
     val isDark = isSystemInDarkTheme()
-    val shape = RoundedCornerShape(12.dp)
     val metaText = candidate.repositoryCandidateMetaText()
     val starCountText = candidate.repository.starCount.takeIf { it > 0 }?.formatCompactCount()
     val starLabel = starCountText?.let {
@@ -90,12 +87,11 @@ private fun RepositoryScanCandidateRow(
     SheetControlRow(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(accent.copy(alpha = if (isDark) 0.08f else 0.1f))
-            .border(
+            .appSquircleBackground(accent.copy(alpha = if (isDark) 0.08f else 0.1f), 12.dp)
+            .appSquircleBorder(
                 width = 0.8.dp,
                 color = accent.copy(alpha = if (selected || recommended) 0.34f else 0.18f),
-                shape = shape
+                cornerRadius = 12.dp,
             )
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),

@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -23,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
@@ -50,6 +47,8 @@ import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -320,8 +319,7 @@ private fun AppLiquidIconButtonContainer(
                         else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
                     }
                     Modifier
-                        .clip(shape)
-                        .background(fallbackColor)
+                        .appSquircleBackground(fallbackColor, 999.dp)
                 }
             )
             .then(
@@ -342,11 +340,10 @@ private fun AppLiquidIconButtonContainer(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(ContinuousCapsule)
-                    .border(
+                    .appSquircleBorder(
                         width = glass.borderWidth,
                         color = glass.borderColor.copy(alpha = glass.borderColor.alpha * borderAlpha),
-                        shape = shape
+                        cornerRadius = 999.dp,
                     )
             )
         }
@@ -354,8 +351,7 @@ private fun AppLiquidIconButtonContainer(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(shape)
-                    .background(pressedOverlayColor.copy(alpha = pressedOverlayAlpha))
+                    .appSquircleBackground(pressedOverlayColor.copy(alpha = pressedOverlayAlpha), 999.dp)
             )
         }
         content()
@@ -461,10 +457,10 @@ fun AppLiquidTextButton(
         label = "app_liquid_text_button_border_alpha"
     )
     val borderModifier = if (glass.showBorder && containerColor == null && borderAlpha > 0.01f) {
-        Modifier.border(
+        Modifier.appSquircleBorder(
             width = glass.borderWidth,
             color = glass.borderColor.copy(alpha = glass.borderColor.alpha * borderAlpha),
-            shape = ContinuousCapsule
+            cornerRadius = 999.dp,
         )
     } else {
         Modifier
@@ -561,7 +557,7 @@ fun AppLiquidTextButton(
                         containerOverlay != null -> containerOverlay
                         else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
                     }
-                    Modifier.background(fallbackColor, ContinuousCapsule)
+                    Modifier.appSquircleBackground(fallbackColor, 999.dp)
                 }
             )
             .then(
@@ -580,8 +576,7 @@ fun AppLiquidTextButton(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .clip(ContinuousCapsule)
-                    .background(pressedOverlayColor.copy(alpha = pressedOverlayAlpha))
+                    .appSquircleBackground(pressedOverlayColor.copy(alpha = pressedOverlayAlpha), 999.dp)
             )
         }
         DisableSelection {

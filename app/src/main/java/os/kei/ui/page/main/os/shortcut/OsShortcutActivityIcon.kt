@@ -10,15 +10,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import com.kyant.capsule.ContinuousCapsule
+import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.os.osActivityShortcutIconKey
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -43,7 +43,7 @@ internal fun ShortcutActivityIcon(
                 Modifier
                     .width(size)
                     .height(size)
-                    .clip(ContinuousCapsule),
+                    .appSquircleClip(999.dp),
         )
     } else if (fallbackToPackageIcon && normalizedPackageName.isNotBlank()) {
         AppIconImage(
@@ -57,7 +57,7 @@ internal fun ShortcutActivityIcon(
                 Modifier
                     .width(size)
                     .height(size)
-                    .clip(ContinuousCapsule),
+                    .appSquircleClip(999.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(

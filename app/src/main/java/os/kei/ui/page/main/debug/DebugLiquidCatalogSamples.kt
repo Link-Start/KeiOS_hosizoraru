@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.debug
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -30,6 +27,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
+import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
@@ -44,6 +42,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidRoundedCard
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.shape.appSquircleSurface
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -66,8 +65,7 @@ internal fun DebugLiquidBackdropPlaygroundSample(
         modifier = Modifier
             .fillMaxWidth()
             .height(252.dp)
-            .clip(RoundedCornerShape(28.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.18f))
+            .appSquircleSurface(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.18f), 28.dp)
     ) {
         Box(
             modifier = Modifier
@@ -230,7 +228,7 @@ internal fun DebugLiquidTransparentButtonSamples(
         )
         LiquidSurface(
             backdrop = backdrop,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedRectangle(14.dp),
             modifier = Modifier
                 .height(46.dp)
                 .weight(1f)

@@ -8,7 +8,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +18,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -42,6 +40,8 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 
 @Composable
 fun LiquidLinearProgressBar(
@@ -82,8 +82,7 @@ fun LiquidLinearProgressBar(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .clip(ContinuousCapsule)
-                    .background(inactiveColor),
+                    .appSquircleBackground(inactiveColor, 999.dp),
         )
         Box(
             modifier =
@@ -109,7 +108,7 @@ fun LiquidLinearProgressBar(
                         layout(width, placeable.height) {
                             placeable.place(0, 0)
                         }
-                    }.clip(ContinuousCapsule)
+                    }.appSquircleClip(999.dp)
                     .drawBackdrop(
                         backdrop = progressBackdrop,
                         shape = { ContinuousCapsule },

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
+import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.ui.page.main.model.BottomPage
@@ -452,7 +452,7 @@ internal fun HomePageHero(
                         .homeHeroForegroundBlur(
                             backdrop = foregroundBackdrop,
                             enabled = foregroundBlurEnabled,
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedRectangle(18.dp),
                             blurRadiusDp = HOME_HERO_FOREGROUND_BLUR_RADIUS_DP,
                         ),
             )

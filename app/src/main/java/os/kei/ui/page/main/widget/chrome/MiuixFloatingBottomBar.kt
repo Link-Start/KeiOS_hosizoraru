@@ -5,7 +5,6 @@ package os.kei.ui.page.main.widget.chrome
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -68,6 +66,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -324,9 +323,7 @@ fun MiuixFloatingBottomTabStrip(
                                 onDrawSurface = { drawRect(containerColor) },
                             )
                         } else {
-                            Modifier
-                                .clip(ContinuousCapsule)
-                                .background(containerColor, ContinuousCapsule)
+                            Modifier.appSquircleBackground(containerColor, 999.dp)
                         },
                     ).then(interactiveHighlight.modifier)
                     .height(MiuixFloatingBottomBarDefaults.Height)
@@ -355,8 +352,7 @@ fun MiuixFloatingBottomTabStrip(
                                 }
                         }.then(interactiveHighlight.gestureModifier)
                         .then(dampedDrag.modifier)
-                        .clip(ContinuousCapsule)
-                        .background(indicatorColor, ContinuousCapsule)
+                        .appSquircleBackground(indicatorColor, 999.dp)
                         .height(MiuixFloatingBottomBarDefaults.IndicatorHeight)
                         .width(tabWidthDp),
                 contentAlignment = Alignment.CenterStart,

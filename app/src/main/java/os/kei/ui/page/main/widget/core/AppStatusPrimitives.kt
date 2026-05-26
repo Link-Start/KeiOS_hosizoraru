@@ -1,28 +1,29 @@
 package os.kei.ui.page.main.widget.core
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.capsule.ContinuousCapsule
+import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -40,7 +41,7 @@ data class AppStatusPillMetrics(
 )
 
 internal object AppStatusPrimitives {
-    val pillShape = RoundedCornerShape(999.dp)
+    val pillShape = ContinuousCapsule
     val compactPillMetrics = AppStatusPillMetrics(
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
         typography = AppTypographyTokens.Caption
@@ -74,7 +75,7 @@ fun AppSupportingBlock(
     onClick: (() -> Unit)? = null
 ) {
     val isDark = isSystemInDarkTheme()
-    val shape = RoundedCornerShape(12.dp)
+    val shape = RoundedRectangle(12.dp)
     val backgroundColor = if (isDark) {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
     } else {
@@ -99,9 +100,11 @@ fun AppSupportingBlock(
         Modifier
     }
 
-    Box(modifier = modifier
-        .clip(shape)
-        .then(clickModifier)) {
+    Box(
+        modifier = modifier
+            .appSquircleClip(12.dp)
+            .then(clickModifier),
+    ) {
         if (LocalLiquidControlsEnabled.current) {
             Box(
                 modifier = Modifier
@@ -121,7 +124,7 @@ fun AppSupportingBlock(
                 textContent()
             }
         } else {
-            Box(modifier = Modifier.background(backgroundColor)) {
+            Box(modifier = Modifier.appSquircleBackground(backgroundColor, 12.dp)) {
                 textContent()
             }
         }

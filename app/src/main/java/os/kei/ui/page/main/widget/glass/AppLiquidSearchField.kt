@@ -2,8 +2,6 @@
 
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -57,6 +54,9 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -140,13 +140,13 @@ fun AppLiquidInputField(
         if (!glass.showBorder) {
             Modifier
         } else {
-            Modifier.border(
+            Modifier.appSquircleBorder(
                 width = glass.borderWidth,
                 color =
                     glass.borderColor.copy(
                         alpha = (glass.borderColor.alpha + 0.14f * focusProgress).coerceAtMost(1f),
                     ),
-                shape = ContinuousCapsule,
+                cornerRadius = 999.dp,
             )
         }
 
@@ -167,7 +167,7 @@ fun AppLiquidInputField(
         modifier =
             modifier
                 .defaultMinSize(minHeight = minHeight)
-                .clip(ContinuousCapsule)
+                .appSquircleClip(999.dp)
                 .then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
@@ -226,13 +226,13 @@ fun AppLiquidInputField(
                         )
                     } else {
                         Modifier
-                            .background(
+                            .appSquircleBackground(
                                 glass.baseColor.takeIf { it != Color.Transparent }
                                     ?: fallbackSurface.copy(alpha = glass.fallbackAlpha),
-                                ContinuousCapsule,
+                                999.dp,
                             ).then(
                                 if (glass.overlayColor != Color.Transparent) {
-                                    Modifier.background(glass.overlayColor, ContinuousCapsule)
+                                    Modifier.appSquircleBackground(glass.overlayColor, 999.dp)
                                 } else {
                                     Modifier
                                 },
@@ -415,7 +415,7 @@ fun AppLiquidSearchSurface(
                     translationY = -with(density) { 1.dp.toPx() } * pressProgress
                     scaleX = lerp(1f, 1.010f, pressProgress)
                     scaleY = lerp(1f, 0.992f, pressProgress)
-                }.clip(shape)
+                }.appSquircleClip(999.dp)
                 .then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
@@ -461,7 +461,7 @@ fun AppLiquidSearchSurface(
                             },
                         )
                     } else {
-                        Modifier.background(fallbackSurface.copy(alpha = fallbackAlpha), shape)
+                        Modifier.appSquircleBackground(fallbackSurface.copy(alpha = fallbackAlpha), 999.dp)
                     },
                 ).then(
                     appLiquidSearchMaterialOverlayModifier(
@@ -470,13 +470,13 @@ fun AppLiquidSearchSurface(
                         focusProgress = focusProgress,
                         pressProgress = pressProgress,
                     ),
-                ).border(
+                ).appSquircleBorder(
                     width = glass.borderWidth,
                     color =
                         glass.borderColor.copy(
                             alpha = (glass.borderColor.alpha + 0.10f * materialProgress).coerceAtMost(1f),
                         ),
-                    shape = shape,
+                    cornerRadius = 999.dp,
                 ),
         contentAlignment = contentAlignment,
         content = content,

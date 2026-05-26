@@ -2,8 +2,6 @@
 
 package os.kei.ui.page.main.student.tabcontent.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,11 +19,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
@@ -37,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
+import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.GuideRemoteIcon
@@ -54,6 +51,9 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.support.CopyModeDisableSelection
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
@@ -239,17 +239,17 @@ internal fun GuideProfileValueCapsule(
         }
     val capsuleModifier =
         Modifier
-            .clip(shape)
+            .appSquircleClip(999.dp)
             .then(
                 if (activeBackdrop == null) {
-                    Modifier.background(tint.copy(alpha = if (isDark) 0.20f else 0.16f))
+                    Modifier.appSquircleBackground(tint.copy(alpha = if (isDark) 0.20f else 0.16f), 999.dp)
                 } else {
                     Modifier
                 },
-            ).border(
+            ).appSquircleBorder(
                 width = 0.8.dp,
                 color = tint.copy(alpha = if (isDark) 0.42f else 0.46f),
-                shape = shape,
+                cornerRadius = 999.dp,
             ).then(clickModifier)
     val content: @Composable () -> Unit = {
         Text(
@@ -304,6 +304,7 @@ internal fun GuideProfileValueCapsule(
 private fun GuideProfileLiquidSurfaceBox(
     modifier: Modifier,
     shape: Shape,
+    cornerRadius: Dp,
     surfaceColor: Color,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     contentAlignment: Alignment = Alignment.TopStart,
@@ -325,7 +326,7 @@ private fun GuideProfileLiquidSurfaceBox(
                 modifier =
                     Modifier
                         .matchParentSize()
-                        .clip(shape),
+                        .appSquircleClip(cornerRadius),
                 shape = shape,
                 isInteractive = false,
                 surfaceColor = surfaceColor,
@@ -338,8 +339,7 @@ private fun GuideProfileLiquidSurfaceBox(
                 modifier =
                     Modifier
                         .matchParentSize()
-                        .clip(shape)
-                        .background(surfaceColor),
+                        .appSquircleBackground(surfaceColor, cornerRadius),
             )
         }
         Box(
@@ -573,7 +573,8 @@ internal fun GuideGiftPreferenceGrid(items: List<GiftPreferenceItem>) {
                             Modifier
                                 .width(cardWidth)
                                 .height(giftBoxHeight),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedRectangle(12.dp),
+                        cornerRadius = 12.dp,
                         surfaceColor = Color(0x203B82F6),
                     ) {
                         GuideRemoteIcon(
@@ -594,6 +595,7 @@ internal fun GuideGiftPreferenceGrid(items: List<GiftPreferenceItem>) {
                                         .width(emojiBubbleSize)
                                         .height(emojiBubbleSize),
                                 shape = ContinuousCapsule,
+                                cornerRadius = 999.dp,
                                 surfaceColor = if (isDark) Color(0x663B82F6) else Color(0xCCEFF6FF),
                                 contentAlignment = Alignment.Center,
                             ) {

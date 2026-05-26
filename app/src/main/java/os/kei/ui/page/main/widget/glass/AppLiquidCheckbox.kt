@@ -3,8 +3,6 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -17,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -41,6 +38,8 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import androidx.compose.ui.graphics.lerp as lerpColor
 
 @Composable
@@ -168,14 +167,12 @@ fun AppLiquidCheckbox(
                                 },
                             )
                         } else {
-                            Modifier
-                                .clip(ContinuousCapsule)
-                                .background(surfaceColor)
+                            Modifier.appSquircleBackground(surfaceColor, 999.dp)
                         },
-                    ).border(
+                    ).appSquircleBorder(
                         width = 1.dp,
                         color = borderColor,
-                        shape = ContinuousCapsule,
+                        cornerRadius = 999.dp,
                     ),
         )
         Canvas(modifier = Modifier.size(18.dp)) {

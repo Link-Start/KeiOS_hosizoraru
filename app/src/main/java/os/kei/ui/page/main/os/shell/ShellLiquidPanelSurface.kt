@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.os.shell
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -18,6 +16,8 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 
 @Composable
 internal fun ShellLiquidPanelSurface(
@@ -61,7 +61,7 @@ internal fun ShellLiquidPanelSurface(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = minHeight)
-                .border(width = 1.dp, color = borderColor, shape = shape),
+                .appSquircleBorder(width = 1.dp, color = borderColor, cornerRadius = 18.dp),
             shape = shape,
             tint = Color.Unspecified,
             surfaceColor = baseColor,
@@ -75,7 +75,7 @@ internal fun ShellLiquidPanelSurface(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(overlayColor, shape)
+                    .appSquircleBackground(overlayColor, 18.dp)
             )
             Box(
                 modifier = Modifier

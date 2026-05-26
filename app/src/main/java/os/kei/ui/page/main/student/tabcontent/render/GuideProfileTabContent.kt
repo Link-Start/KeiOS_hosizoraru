@@ -16,6 +16,7 @@ import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideGiftPreferenceGrid
+import os.kei.ui.page.main.student.tabcontent.profile.GuideNpcSatelliteProfileState
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoRows
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileRowsSection
@@ -42,6 +43,8 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     profileLinkMissingLinks: Set<String>,
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
+    profileHeaderState: GuideProfileTabHeaderState?,
+    npcProfileState: GuideNpcSatelliteProfileState?,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
@@ -77,12 +80,13 @@ internal fun LazyListScope.renderGuideProfileTabContent(
             guide = guide,
             error = error,
             backdrop = backdrop,
+            profileState = npcProfileState,
             onOpenGuide = onOpenGuide,
         )
         return
     }
 
-    val headerState = buildGuideProfileTabHeaderState(guide)
+    val headerState = profileHeaderState ?: buildGuideProfileTabHeaderState(guide)
 
     if (!error.isNullOrBlank()) {
         guideProfileCard {

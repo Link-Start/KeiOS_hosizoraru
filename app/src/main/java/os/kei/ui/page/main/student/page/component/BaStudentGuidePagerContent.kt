@@ -16,6 +16,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.page.state.BaStudentGuideContentPresentationState
 
 @Composable
 internal fun BaStudentGuidePagerContent(
@@ -42,6 +43,7 @@ internal fun BaStudentGuidePagerContent(
     profileLinkMissingLinks: Set<String>,
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
+    contentPresentationState: BaStudentGuideContentPresentationState,
     includeTargetPageInHeavyRender: Boolean,
     guidePagerBeyondViewportPageCount: Int,
     nestedScrollConnection: NestedScrollConnection,
@@ -90,6 +92,7 @@ internal fun BaStudentGuidePagerContent(
             profileLinkMissingLinks = profileLinkMissingLinks,
             isNpcSatelliteGuide = isNpcSatelliteGuide,
             mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+            contentPresentationState = contentPresentationState,
             includeTargetPageInHeavyRender = includeTargetPageInHeavyRender,
             nestedScrollConnection = nestedScrollConnection,
             onOpenExternal = onOpenExternal,

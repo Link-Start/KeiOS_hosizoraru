@@ -6,6 +6,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -174,6 +176,24 @@ internal class BaStudentGuideViewModel(
                     mediaSettings = auxState.value.mediaSettings,
                     requestedInitialBottomTab = auxState.value.requestedInitialBottomTab,
                 ),
+        )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val contentPresentationState: StateFlow<BaStudentGuideContentPresentationState> =
+        combine(
+            dataState.map { state -> state.info }.distinctUntilChanged(),
+            _isNpcSatelliteGuide,
+        ) { info, isNpcSatelliteGuide ->
+            info to isNpcSatelliteGuide
+        }.mapLatest { (info, isNpcSatelliteGuide) ->
+            deriveBaStudentGuideContentPresentationState(
+                info = info,
+                isNpcSatelliteGuide = isNpcSatelliteGuide,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = BaStudentGuideContentPresentationState(),
         )
 
     init {

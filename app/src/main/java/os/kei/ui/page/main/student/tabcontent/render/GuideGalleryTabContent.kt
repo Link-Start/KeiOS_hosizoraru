@@ -19,6 +19,7 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
     galleryCacheRevision: Int,
     bgmFavoriteAudioUrls: Set<String>,
     mediaAdaptiveRotationEnabled: Boolean,
+    galleryState: GuideGalleryTabResolvedState?,
     onOpenExternal: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit,
@@ -37,9 +38,9 @@ internal fun LazyListScope.renderGuideGalleryTabContent(
         return
     }
 
-    val galleryState = resolveGuideGalleryTabState(guide)
+    val resolvedGalleryState = galleryState ?: resolveGuideGalleryTabState(guide)
     renderGuideGalleryStateContent(
-        state = galleryState,
+        state = resolvedGalleryState,
         error = error,
         backdrop = backdrop,
         context = context,

@@ -7,12 +7,14 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.page.state.BaStudentGuideContentPresentationState
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideArchiveTabContent
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideGalleryTabContent
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideProfileTabContent
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideSimulateTabContent
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideSkillsTabContent
 import os.kei.ui.page.main.student.tabcontent.render.renderGuideVoiceTabContent
+import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 
 internal fun LazyListScope.renderBaStudentGuideTabContent(
     activeBottomTab: GuideBottomTab,
@@ -33,6 +35,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     profileLinkMissingLinks: Set<String>,
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
+    contentPresentationState: BaStudentGuideContentPresentationState?,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit,
@@ -62,6 +65,14 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
         }
 
         GuideBottomTab.Profile -> {
+            if (info != null && contentPresentationState == null) {
+                renderGuideDerivedContentPendingBlock(
+                    tabLabel = activeBottomTabLabel,
+                    backdrop = backdrop,
+                    accent = accent,
+                )
+                return
+            }
             renderGuideProfileTabContent(
                 tabLabel = activeBottomTabLabel,
                 info = info,
@@ -76,6 +87,8 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
                 profileLinkMissingLinks = profileLinkMissingLinks,
                 isNpcSatelliteGuide = isNpcSatelliteGuide,
                 mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                profileHeaderState = contentPresentationState?.profileHeaderState,
+                npcProfileState = contentPresentationState?.npcProfileState,
                 onOpenExternal = onOpenExternal,
                 onOpenGuide = onOpenGuide,
                 onSaveMedia = onSaveMedia,
@@ -104,6 +117,14 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
         }
 
         GuideBottomTab.Gallery -> {
+            if (info != null && contentPresentationState == null) {
+                renderGuideDerivedContentPendingBlock(
+                    tabLabel = activeBottomTabLabel,
+                    backdrop = backdrop,
+                    accent = accent,
+                )
+                return
+            }
             renderGuideGalleryTabContent(
                 tabLabel = activeBottomTabLabel,
                 info = info,
@@ -115,6 +136,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
                 galleryCacheRevision = galleryCacheRevision,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
                 mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                galleryState = contentPresentationState?.galleryState,
                 onOpenExternal = onOpenExternal,
                 onSaveMedia = onSaveMedia,
                 onSaveMediaPack = onSaveMediaPack,
@@ -123,13 +145,37 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
         }
 
         GuideBottomTab.Simulate -> {
+            if (info != null && contentPresentationState == null) {
+                renderGuideDerivedContentPendingBlock(
+                    tabLabel = activeBottomTabLabel,
+                    backdrop = backdrop,
+                    accent = accent,
+                )
+                return
+            }
             renderGuideSimulateTabContent(
                 tabLabel = activeBottomTabLabel,
                 info = info,
                 error = error,
                 backdrop = backdrop,
                 accent = accent,
+                simulateData = contentPresentationState?.simulateData,
             )
         }
+    }
+}
+
+private fun LazyListScope.renderGuideDerivedContentPendingBlock(
+    tabLabel: String,
+    backdrop: LayerBackdrop,
+    accent: Color,
+) {
+    item {
+        LiquidInfoBlock(
+            backdrop = backdrop,
+            title = tabLabel,
+            subtitle = "",
+            accent = accent,
+        )
     }
 }

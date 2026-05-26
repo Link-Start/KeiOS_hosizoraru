@@ -34,6 +34,7 @@ import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.page.state.BaStudentGuideContentPresentationState
 import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderState
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
@@ -68,6 +69,7 @@ internal fun BaStudentGuidePagerPage(
     profileLinkMissingLinks: Set<String>,
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
+    contentPresentationState: BaStudentGuideContentPresentationState,
     includeTargetPageInHeavyRender: Boolean,
     nestedScrollConnection: NestedScrollConnection,
     onOpenExternal: (String) -> Unit,
@@ -244,6 +246,8 @@ internal fun BaStudentGuidePagerPage(
                         profileLinkMissingLinks = profileLinkMissingLinks,
                         isNpcSatelliteGuide = isNpcSatelliteGuide,
                         mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                        contentPresentationState =
+                            contentPresentationState.takeIf { it.matches(info) },
                         onOpenExternal = onOpenExternal,
                         onOpenGuide = onOpenGuide,
                         onSaveMedia = onSaveMedia,

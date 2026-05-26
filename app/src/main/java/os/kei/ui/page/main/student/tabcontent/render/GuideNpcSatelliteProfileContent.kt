@@ -12,6 +12,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.tabcontent.profile.GuideNpcSatelliteProfileState
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoItem
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoRows
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileRowsSection
@@ -24,9 +25,10 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     guide: BaStudentGuideInfo,
     error: String?,
     backdrop: LayerBackdrop,
+    profileState: GuideNpcSatelliteProfileState?,
     onOpenGuide: (String) -> Unit,
 ) {
-    val profileState = buildGuideNpcSatelliteProfileState(guide)
+    val resolvedProfileState = profileState ?: buildGuideNpcSatelliteProfileState(guide)
 
     if (!error.isNullOrBlank()) {
         guideProfileCard {
@@ -48,62 +50,62 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
 
     renderNpcProfileGroup(
         titleRes = R.string.guide_profile_section_npc_aliases,
-        rows = profileState.aliasRows,
+        rows = resolvedProfileState.aliasRows,
     )
     renderNpcProfileGroup(
         titleRes = R.string.guide_profile_section_npc_identity,
-        rows = profileState.identityRows,
+        rows = resolvedProfileState.identityRows,
     )
     renderNpcProfileGroup(
         titleRes = R.string.guide_profile_section_npc_intro,
-        rows = profileState.introRows,
+        rows = resolvedProfileState.introRows,
         preferCapsule = false,
     )
 
-    if (profileState.relatedRoleItems.isNotEmpty() || profileState.relatedRoleHint.isNotBlank()) {
+    if (resolvedProfileState.relatedRoleItems.isNotEmpty() || resolvedProfileState.relatedRoleHint.isNotBlank()) {
         guideProfileCard(addTopSpacing = true) {
             GuideRelationRoleSection(
-                sectionTitle = profileState.relatedRoleTitle.ifBlank {
+                sectionTitle = resolvedProfileState.relatedRoleTitle.ifBlank {
                     stringResource(R.string.guide_profile_related_roles)
                 },
                 itemFallbackLabel = stringResource(R.string.guide_profile_related_role),
                 emptyText = stringResource(R.string.guide_profile_related_roles_empty),
-                roleHint = profileState.relatedRoleHint,
-                roleItems = profileState.relatedRoleItems,
+                roleHint = resolvedProfileState.relatedRoleHint,
+                roleItems = resolvedProfileState.relatedRoleItems,
                 backdrop = backdrop,
                 onOpenGuide = onOpenGuide,
             )
         }
     }
 
-    if (profileState.sameNameRoleItems.isNotEmpty() || profileState.sameNameRoleHint.isNotBlank()) {
+    if (resolvedProfileState.sameNameRoleItems.isNotEmpty() || resolvedProfileState.sameNameRoleHint.isNotBlank()) {
         guideProfileCard(addTopSpacing = true) {
             GuideRelationRoleSection(
-                sectionTitle = profileState.sameNameRoleTitle.ifBlank {
+                sectionTitle = resolvedProfileState.sameNameRoleTitle.ifBlank {
                     stringResource(R.string.guide_profile_related_same_name)
                 },
                 itemFallbackLabel = stringResource(R.string.guide_profile_same_name),
                 emptyText = stringResource(R.string.guide_profile_same_name_empty),
-                roleHint = profileState.sameNameRoleHint,
-                roleItems = profileState.sameNameRoleItems,
+                roleHint = resolvedProfileState.sameNameRoleHint,
+                roleItems = resolvedProfileState.sameNameRoleItems,
                 backdrop = backdrop,
                 onOpenGuide = onOpenGuide,
             )
         }
     }
 
-    if (profileState.normalRows.isNotEmpty()) {
+    if (resolvedProfileState.normalRows.isNotEmpty()) {
         guideProfileCard(addTopSpacing = true) {
             GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_npc_extra))
             GuideProfileRowsSection(
-                rows = profileState.normalRows,
+                rows = resolvedProfileState.normalRows,
                 emptyText = stringResource(R.string.guide_profile_npc_empty),
             )
         }
     } else if (
-        profileState.aliasRows.isEmpty() &&
-        profileState.identityRows.isEmpty() &&
-        profileState.introRows.isEmpty()
+        resolvedProfileState.aliasRows.isEmpty() &&
+        resolvedProfileState.identityRows.isEmpty() &&
+        resolvedProfileState.introRows.isEmpty()
     ) {
         guideProfileCard {
             Text(

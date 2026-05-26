@@ -12,19 +12,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.component.GuideLiquidCard
+import os.kei.ui.page.main.student.simulateRowsForDisplay
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateAbilityCard
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateBondCard
+import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateData
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateEquipmentCard
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateSectionCard
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateUnlockCard
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateWeaponCard
 import os.kei.ui.page.main.student.tabcontent.simulate.buildGuideSimulateData
-import os.kei.ui.page.main.student.simulateRowsForDisplay
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -33,7 +34,8 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
     info: BaStudentGuideInfo?,
     error: String?,
     backdrop: LayerBackdrop,
-    accent: Color
+    accent: Color,
+    simulateData: GuideSimulateData? = null,
 ) {
     val guide = info
     if (guide == null) {
@@ -48,8 +50,8 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
         return
     }
 
-    val simulateRows = guide.simulateRowsForDisplay()
-    val simulateData = buildGuideSimulateData(simulateRows)
+    val resolvedSimulateData =
+        simulateData ?: buildGuideSimulateData(guide.simulateRowsForDisplay())
 
     if (!error.isNullOrBlank()) {
         item {
@@ -76,28 +78,28 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
         item { Spacer(modifier = Modifier.height(10.dp)) }
     }
 
-    val hasAnySectionData = simulateData.initialRows.isNotEmpty() ||
-        simulateData.maxRows.isNotEmpty() ||
-        simulateData.weaponRows.isNotEmpty() ||
-        simulateData.equipmentRows.isNotEmpty() ||
-        simulateData.favorRows.isNotEmpty() ||
-        simulateData.unlockRows.isNotEmpty() ||
-        simulateData.bondRows.isNotEmpty()
+    val hasAnySectionData = resolvedSimulateData.initialRows.isNotEmpty() ||
+        resolvedSimulateData.maxRows.isNotEmpty() ||
+        resolvedSimulateData.weaponRows.isNotEmpty() ||
+        resolvedSimulateData.equipmentRows.isNotEmpty() ||
+        resolvedSimulateData.favorRows.isNotEmpty() ||
+        resolvedSimulateData.unlockRows.isNotEmpty() ||
+        resolvedSimulateData.bondRows.isNotEmpty()
 
     if (hasAnySectionData) {
         item {
             GuideSimulateAbilityCard(
-                data = simulateData,
+                data = resolvedSimulateData,
                 backdrop = backdrop
             )
         }
 
         val sectionCards = listOf(
-            Triple("专武", simulateData.weaponRows, simulateData.weaponHint),
-            Triple("装备", simulateData.equipmentRows, simulateData.equipmentHint),
-            Triple("爱用品", simulateData.favorRows, simulateData.favorHint),
-            Triple("能力解放", simulateData.unlockRows, simulateData.unlockHint),
-            Triple("羁绊等级奖励", simulateData.bondRows, simulateData.bondHint)
+            Triple("专武", resolvedSimulateData.weaponRows, resolvedSimulateData.weaponHint),
+            Triple("装备", resolvedSimulateData.equipmentRows, resolvedSimulateData.equipmentHint),
+            Triple("爱用品", resolvedSimulateData.favorRows, resolvedSimulateData.favorHint),
+            Triple("能力解放", resolvedSimulateData.unlockRows, resolvedSimulateData.unlockHint),
+            Triple("羁绊等级奖励", resolvedSimulateData.bondRows, resolvedSimulateData.bondHint)
         )
 
         sectionCards.forEach { (title, rows, hint) ->

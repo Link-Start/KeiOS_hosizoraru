@@ -2,18 +2,11 @@
 
 package os.kei.ui.page.main.student.catalog.component
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
@@ -21,9 +14,6 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun BaGuideCatalogTabContent(
@@ -39,34 +29,11 @@ internal fun BaGuideCatalogTabContent(
     innerPadding: PaddingValues,
     nestedScrollConnection: NestedScrollConnection,
     isPageActive: Boolean,
-    renderHeavyContent: Boolean,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
 ) {
-    if (!renderHeavyContent) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                        bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                        start = AppChromeTokens.pageHorizontalPadding,
-                        end = AppChromeTokens.pageHorizontalPadding,
-                    ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(tab.labelRes),
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = 13.sp,
-            )
-        }
-        return
-    }
-
     val effectiveLoading = loading || (derivedState.deriving && derivedState.filteredEntries.isEmpty())
     val tabListState =
         rememberBaGuideCatalogTabListState(

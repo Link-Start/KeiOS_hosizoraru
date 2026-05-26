@@ -12,7 +12,6 @@ internal data class BaStudentGuidePagerHeaderState(
 
 internal data class BaStudentGuideTabRenderState(
     val activeBottomTab: GuideBottomTab,
-    val shouldRenderHeavyContent: Boolean,
     val playingVoiceUrl: String,
     val isVoicePlaying: Boolean,
     val voicePlayProgress: Float,
@@ -40,10 +39,6 @@ internal fun buildBaStudentGuidePagerHeaderState(
 internal fun resolveBaStudentGuideTabRenderState(
     pageIndex: Int,
     bottomTabs: List<GuideBottomTab>,
-    currentPage: Int,
-    settledPage: Int,
-    targetPage: Int,
-    includeTargetPageInHeavyRender: Boolean,
     playingVoiceUrl: String,
     isVoicePlaying: Boolean,
     voicePlayProgress: Float,
@@ -51,13 +46,8 @@ internal fun resolveBaStudentGuideTabRenderState(
 ): BaStudentGuideTabRenderState {
     val activeBottomTab = bottomTabs.getOrElse(pageIndex) { GuideBottomTab.Archive }
     val isVoiceTab = activeBottomTab == GuideBottomTab.Voice
-    val shouldRenderHeavyContent =
-        pageIndex == currentPage ||
-            pageIndex == settledPage ||
-            (includeTargetPageInHeavyRender && pageIndex == targetPage)
     return BaStudentGuideTabRenderState(
         activeBottomTab = activeBottomTab,
-        shouldRenderHeavyContent = shouldRenderHeavyContent,
         playingVoiceUrl = if (isVoiceTab) playingVoiceUrl else "",
         isVoicePlaying = isVoiceTab && isVoicePlaying,
         voicePlayProgress = if (isVoiceTab) voicePlayProgress else 0f,

@@ -12,8 +12,6 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
-import os.kei.ui.page.main.host.pager.rememberPagerTargetWarmDataActive
-import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
@@ -49,15 +47,9 @@ internal fun BaGuideCatalogPagePager(
     chromeScrollState: BaGuideBgmBottomChromeScrollState,
     pageChromeBackdrop: LayerBackdrop,
     transitionAnimationsEnabled: Boolean,
-    includeTargetPageInHeavyRender: Boolean,
     accent: Color,
     onOpenGuide: (String) -> Unit,
 ) {
-    val targetWarmDataActive =
-        rememberPagerTargetWarmDataActive(
-            pagerState = pagerState,
-            activationDistance = CATALOG_PAGER_TARGET_WARM_DATA_DISTANCE,
-        ).value
     MainLoadedPager(
         state = pagerState,
         userScrollEnabled = !pageState.sliderInteractionActive,
@@ -68,47 +60,31 @@ internal fun BaGuideCatalogPagePager(
                 .layerBackdrop(pageChromeBackdrop),
     ) { pageIndex ->
         val pageTab = tabs.getOrElse(pageIndex) { BaGuideCatalogPageTab.Student }
-        val renderHeavyContent =
-            pagerState.shouldRenderStablePageContent(
-                pageIndex = pageIndex,
-                includeTargetPageInHeavyRender = includeTargetPageInHeavyRender,
-                targetWarmDataActive = targetWarmDataActive,
-            )
         val pageSearchQuery = pageState.searchQueryFor(pageTab)
         key(pageTab.name) {
-            if (!renderHeavyContent) {
-                BaGuideCatalogMusicPlaceholder(
-                    label =
-                        androidx.compose.ui.res
-                            .stringResource(pageTab.labelRes),
-                    topPadding = CATALOG_MUSIC_CONTENT_TOP_PADDING,
-                    bottomPadding = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
-                )
-            } else {
-                BaGuideCatalogPageTabContent(
-                    pageTab = pageTab,
-                    pageIndex = pageIndex,
-                    pagerState = pagerState,
-                    pageState = pageState,
-                    pageSearchQuery = pageSearchQuery,
-                    filterSortState = filterSortState,
-                    catalogDataState = catalogDataState,
-                    catalogListDerivedStates = catalogListDerivedStates,
-                    catalogFavoriteEntries = catalogFavoriteEntries,
-                    studentBgmListDerivedState = studentBgmListDerivedState,
-                    studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
-                    favoriteBgmListDerivedState = favoriteBgmListDerivedState,
-                    favoriteBgms = favoriteBgms,
-                    favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
-                    pageActions = pageActions,
-                    playbackCoordinator = playbackCoordinator,
-                    playbackUiState = playbackUiState,
-                    chromeScrollState = chromeScrollState,
-                    accent = accent,
-                    onOpenGuide = onOpenGuide,
-                    onSliderInteractionChanged = pageState::updateSliderInteractionActive,
-                )
-            }
+            BaGuideCatalogPageTabContent(
+                pageTab = pageTab,
+                pageIndex = pageIndex,
+                pagerState = pagerState,
+                pageState = pageState,
+                pageSearchQuery = pageSearchQuery,
+                filterSortState = filterSortState,
+                catalogDataState = catalogDataState,
+                catalogListDerivedStates = catalogListDerivedStates,
+                catalogFavoriteEntries = catalogFavoriteEntries,
+                studentBgmListDerivedState = studentBgmListDerivedState,
+                studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
+                favoriteBgmListDerivedState = favoriteBgmListDerivedState,
+                favoriteBgms = favoriteBgms,
+                favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
+                pageActions = pageActions,
+                playbackCoordinator = playbackCoordinator,
+                playbackUiState = playbackUiState,
+                chromeScrollState = chromeScrollState,
+                accent = accent,
+                onOpenGuide = onOpenGuide,
+                onSliderInteractionChanged = pageState::updateSliderInteractionActive,
+            )
         }
     }
 }

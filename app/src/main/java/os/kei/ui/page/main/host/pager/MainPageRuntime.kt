@@ -151,21 +151,6 @@ internal fun rememberPagerTargetWarmDataActive(
     return warmState
 }
 
-internal fun MainPagerStateContract.shouldRenderStablePageContent(
-    pageIndex: Int,
-    includeTargetPageInHeavyRender: Boolean = true,
-    targetWarmDataActive: Boolean = true,
-): Boolean {
-    val isCurrent = pageIndex == currentPage
-    val isTarget = pageIndex == targetPage
-    val isSettled = pageIndex == settledPage
-    return if (isScrollInProgress) {
-        isCurrent || isSettled || (includeTargetPageInHeavyRender && targetWarmDataActive && isTarget)
-    } else {
-        isCurrent || isSettled || (includeTargetPageInHeavyRender && isTarget)
-    }
-}
-
 private fun MainPagerStateContract.isTargetWarmDataActive(activationDistance: Float): Boolean =
     abs(pagePosition - targetPage) <= activationDistance
 

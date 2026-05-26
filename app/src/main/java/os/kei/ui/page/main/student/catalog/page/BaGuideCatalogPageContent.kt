@@ -72,7 +72,6 @@ internal fun BaGuideCatalogPageContent(
     studentExportSuccessText: String,
     bgmExportSuccessText: String,
     transitionAnimationsEnabled: Boolean,
-    includeTargetPageInHeavyRender: Boolean,
     searchAutoFocusEnabled: Boolean,
     enableSearchBar: Boolean,
     onBack: () -> Unit,
@@ -135,7 +134,6 @@ internal fun BaGuideCatalogPageContent(
                 chromeScrollState = chromeScrollState,
                 pageChromeBackdrop = pageChromeBackdrop,
                 transitionAnimationsEnabled = transitionAnimationsEnabled,
-                includeTargetPageInHeavyRender = includeTargetPageInHeavyRender,
                 accent = accent,
                 onOpenGuide = onOpenGuide,
             )

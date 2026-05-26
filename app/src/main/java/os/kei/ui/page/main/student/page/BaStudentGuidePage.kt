@@ -426,7 +426,6 @@ fun BaStudentGuidePage(
                     isNpcSatelliteGuide = guideUiState.isNpcSatelliteGuide,
                     mediaAdaptiveRotationEnabled = guideUiState.mediaSettings.mediaAdaptiveRotationEnabled,
                     contentPresentationState = contentPresentationState,
-                    includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
                     guidePagerBeyondViewportPageCount = preloadPolicy.guidePagerBeyondViewportPageCount,
                     nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                     onOpenExternal = pageActions.openExternal,

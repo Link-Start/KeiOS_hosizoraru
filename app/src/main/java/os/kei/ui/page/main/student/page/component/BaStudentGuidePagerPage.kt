@@ -70,7 +70,6 @@ internal fun BaStudentGuidePagerPage(
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
     contentPresentationState: BaStudentGuideContentPresentationState,
-    includeTargetPageInHeavyRender: Boolean,
     nestedScrollConnection: NestedScrollConnection,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
@@ -88,10 +87,6 @@ internal fun BaStudentGuidePagerPage(
         remember(
             pageIndex,
             bottomTabs,
-            pagerState.currentPage,
-            pagerState.settledPage,
-            pagerState.targetPage,
-            includeTargetPageInHeavyRender,
             playingVoiceUrl,
             isVoicePlaying,
             voicePlayProgress,
@@ -100,10 +95,6 @@ internal fun BaStudentGuidePagerPage(
             resolveBaStudentGuideTabRenderState(
                 pageIndex = pageIndex,
                 bottomTabs = bottomTabs,
-                currentPage = pagerState.currentPage,
-                settledPage = pagerState.settledPage,
-                targetPage = pagerState.targetPage,
-                includeTargetPageInHeavyRender = includeTargetPageInHeavyRender,
                 playingVoiceUrl = playingVoiceUrl,
                 isVoicePlaying = isVoicePlaying,
                 voicePlayProgress = voicePlayProgress,
@@ -153,118 +144,115 @@ internal fun BaStudentGuidePagerPage(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (tabRenderState.shouldRenderHeavyContent) {
-            val activeBottomTabLabel = stringResource(tabRenderState.activeBottomTab.labelRes)
-            val headerState =
-                remember(
-                    tabRenderState.activeBottomTab,
-                    activeBottomTabLabel,
-                    sourceUrl,
-                    info,
-                    error,
-                ) {
-                    buildBaStudentGuidePagerHeaderState(
-                        tabLabel = activeBottomTabLabel,
-                        sourceUrl = sourceUrl,
-                        info = info,
-                        error = error,
-                    )
-                }
-
-            LazyColumn(
-                state = pageListState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(nestedScrollConnection),
-                contentPadding =
-                    PaddingValues(
-                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                        bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                        start = 16.dp,
-                        end = 16.dp,
-                    ),
+        val activeBottomTabLabel = stringResource(tabRenderState.activeBottomTab.labelRes)
+        val headerState =
+            remember(
+                tabRenderState.activeBottomTab,
+                activeBottomTabLabel,
+                sourceUrl,
+                info,
+                error,
             ) {
-                item {
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 4.dp, vertical = 2.dp),
-                        horizontalArrangement =
-                            androidx.compose.foundation.layout.Arrangement
-                                .spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = headerState.title,
-                                color = MiuixTheme.colorScheme.onBackground,
-                                fontSize = AppTypographyTokens.SectionTitle.fontSize,
-                                lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                                fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-                            )
-                        }
-                        if (headerState.showSyncIndicator) {
-                            LiquidCircularProgressBar(
-                                progress = { syncProgress },
-                                size = 18.dp,
-                                strokeWidth = 2.dp,
-                                activeColor = headerState.indicatorColor,
-                                inactiveColor = headerState.indicatorColor.copy(alpha = 0.30f),
-                            )
-                        }
-                    }
-                }
-                item { Spacer(modifier = Modifier.height(12.dp)) }
-                if (sourceUrl.isBlank()) {
-                    item {
-                        LiquidInfoBlock(
-                            backdrop = pageBackdrop,
-                            title = stringResource(R.string.guide_empty_student_title),
-                            subtitle = stringResource(R.string.guide_empty_student_subtitle),
-                            accent = accent,
+                buildBaStudentGuidePagerHeaderState(
+                    tabLabel = activeBottomTabLabel,
+                    sourceUrl = sourceUrl,
+                    info = info,
+                    error = error,
+                )
+            }
+
+        LazyColumn(
+            state = pageListState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            contentPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                    bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                    start = 16.dp,
+                    end = 16.dp,
+                ),
+        ) {
+            item {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement =
+                        androidx.compose.foundation.layout.Arrangement
+                            .spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = headerState.title,
+                            color = MiuixTheme.colorScheme.onBackground,
+                            fontSize = AppTypographyTokens.SectionTitle.fontSize,
+                            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+                            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
                         )
                     }
-                } else {
-                    renderBaStudentGuideTabContent(
-                        activeBottomTab = tabRenderState.activeBottomTab,
-                        activeBottomTabLabel = activeBottomTabLabel,
-                        info = info,
-                        error = error,
+                    if (headerState.showSyncIndicator) {
+                        LiquidCircularProgressBar(
+                            progress = { syncProgress },
+                            size = 18.dp,
+                            strokeWidth = 2.dp,
+                            activeColor = headerState.indicatorColor,
+                            inactiveColor = headerState.indicatorColor.copy(alpha = 0.30f),
+                        )
+                    }
+                }
+            }
+            item { Spacer(modifier = Modifier.height(12.dp)) }
+            if (sourceUrl.isBlank()) {
+                item {
+                    LiquidInfoBlock(
                         backdrop = pageBackdrop,
+                        title = stringResource(R.string.guide_empty_student_title),
+                        subtitle = stringResource(R.string.guide_empty_student_subtitle),
                         accent = accent,
-                        context = context,
-                        sourceUrl = sourceUrl,
-                        galleryCacheRevision = galleryCacheRevision,
-                        playingVoiceUrl = tabRenderState.playingVoiceUrl,
-                        isVoicePlaying = tabRenderState.isVoicePlaying,
-                        voicePlayProgress = tabRenderState.voicePlayProgress,
-                        selectedVoiceLanguage = tabRenderState.selectedVoiceLanguage,
-                        bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
-                        profileLinkTitles = profileLinkTitles,
-                        profileLinkMissingLinks = profileLinkMissingLinks,
-                        isNpcSatelliteGuide = isNpcSatelliteGuide,
-                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                        contentPresentationState =
-                            contentPresentationState.takeIf { it.matches(info) },
-                        onOpenExternal = onOpenExternal,
-                        onOpenGuide = onOpenGuide,
-                        onSaveMedia = onSaveMedia,
-                        onSaveMediaPack = onSaveMediaPack,
-                        onToggleBgmFavorite = onToggleBgmFavorite,
-                        onRequestProfileLinkTitles = onRequestProfileLinkTitles,
-                        onToggleVoicePlayback = onToggleVoicePlayback,
-                        onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange,
                     )
                 }
+            } else {
+                renderBaStudentGuideTabContent(
+                    activeBottomTab = tabRenderState.activeBottomTab,
+                    activeBottomTabLabel = activeBottomTabLabel,
+                    info = info,
+                    error = error,
+                    backdrop = pageBackdrop,
+                    accent = accent,
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    galleryCacheRevision = galleryCacheRevision,
+                    playingVoiceUrl = tabRenderState.playingVoiceUrl,
+                    isVoicePlaying = tabRenderState.isVoicePlaying,
+                    voicePlayProgress = tabRenderState.voicePlayProgress,
+                    selectedVoiceLanguage = tabRenderState.selectedVoiceLanguage,
+                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                    profileLinkTitles = profileLinkTitles,
+                    profileLinkMissingLinks = profileLinkMissingLinks,
+                    isNpcSatelliteGuide = isNpcSatelliteGuide,
+                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                    contentPresentationState =
+                        contentPresentationState.takeIf { it.matches(info) },
+                    onOpenExternal = onOpenExternal,
+                    onOpenGuide = onOpenGuide,
+                    onSaveMedia = onSaveMedia,
+                    onSaveMediaPack = onSaveMediaPack,
+                    onToggleBgmFavorite = onToggleBgmFavorite,
+                    onRequestProfileLinkTitles = onRequestProfileLinkTitles,
+                    onToggleVoicePlayback = onToggleVoicePlayback,
+                    onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange,
+                )
             }
         }
 
         BaStudentGuidePagerLoadingOverlay(
             visible =
-                tabRenderState.shouldRenderHeavyContent &&
-                    sourceUrl.isNotBlank() &&
+                sourceUrl.isNotBlank() &&
                     info == null &&
                     error.isNullOrBlank(),
             innerPadding = innerPadding,

@@ -7,12 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -54,24 +48,18 @@ internal fun McpPageContent(
     refreshRunning: Boolean,
     actions: McpPageActions,
 ) {
-    val renderHeavyContent = shouldRenderMcpHeavyContent(runtime)
-    val revealPhase =
-        effectiveMcpPageContentRevealPhase(
-            runtime = runtime,
-            revealPhase = rememberMcpHeavyContentRevealPhase(renderHeavyContent),
-        )
+    val revealPhase = MCP_HEAVY_CONTENT_REVEAL_DOCK
     Box(modifier = Modifier.fillMaxSize()) {
-        if (renderHeavyContent) {
-            AppPageLazyColumn(
-                innerPadding = innerPadding,
-                state = listState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(nestedScrollConnection),
-                bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
-                sectionSpacing = 12.dp,
-            ) {
+        AppPageLazyColumn(
+            innerPadding = innerPadding,
+            state = listState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
+            sectionSpacing = 12.dp,
+        ) {
                 item(key = "mcp-overview", contentType = "mcp_overview_section") {
                     McpOverviewCardSection(
                         backdrop = backdrops.content,
@@ -195,57 +183,16 @@ internal fun McpPageContent(
                         )
                     }
                 }
-            }
         }
 
-        if (renderHeavyContent && revealPhase >= MCP_HEAVY_CONTENT_REVEAL_DOCK) {
-            McpPageFloatingActionDock(
-                backdrop = backdrops.content,
-                uiState = uiState,
-                runtime = runtime,
-                refreshRunning = refreshRunning,
-                actions = actions,
-            )
-        }
+        McpPageFloatingActionDock(
+            backdrop = backdrops.content,
+            uiState = uiState,
+            runtime = runtime,
+            refreshRunning = refreshRunning,
+            actions = actions,
+        )
     }
-}
-
-internal fun shouldRenderMcpHeavyContent(runtime: MainPageRuntime): Boolean =
-    runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
-
-internal fun effectiveMcpPageContentRevealPhase(
-    runtime: MainPageRuntime,
-    revealPhase: Int,
-): Int =
-    if (runtime.isPagerScrollInProgress && runtime.isDataActive) {
-        revealPhase.coerceAtMost(MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS)
-    } else {
-        revealPhase
-    }
-
-@Composable
-private fun rememberMcpHeavyContentRevealPhase(renderHeavyContent: Boolean): Int {
-    var phase by remember { mutableIntStateOf(0) }
-    LaunchedEffect(renderHeavyContent) {
-        if (!renderHeavyContent) {
-            phase = 0
-            return@LaunchedEffect
-        }
-        phase = MCP_HEAVY_CONTENT_REVEAL_OVERVIEW
-        withFrameNanos { }
-        phase = MCP_HEAVY_CONTENT_REVEAL_CONTROLS
-        withFrameNanos { }
-        phase = MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY
-        withFrameNanos { }
-        phase = MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS
-        withFrameNanos { }
-        phase = MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS
-        withFrameNanos { }
-        phase = MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS
-        withFrameNanos { }
-        phase = MCP_HEAVY_CONTENT_REVEAL_DOCK
-    }
-    return phase
 }
 
 internal const val MCP_HEAVY_CONTENT_REVEAL_OVERVIEW = 1

@@ -20,7 +20,6 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
-import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
@@ -101,33 +100,30 @@ internal fun SettingsCategoryPagerContent(
                 .layerBackdrop(topBarBackdrop)
                 .layerBackdrop(bottomBarBackdrop),
     ) { pageIndex ->
-        val renderHeavyContent = pagerState.shouldRenderStablePageContent(pageIndex)
-        if (renderHeavyContent) {
-            val category = categories[pageIndex]
-            val pageListState = listStates.forCategory(category)
-            val pageNestedScrollConnection =
-                remember(pageListState, scrollNestedConnection) {
-                    settingsChromeNestedScrollConnection(
-                        listState = pageListState,
-                        delegate = scrollNestedConnection,
-                    )
-                }
-            AppPageLazyColumn(
-                innerPadding = innerPadding,
-                state = pageListState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(pageNestedScrollConnection),
-                bottomExtra =
-                    appPageBottomPaddingWithFloatingOverlay(
-                        AppChromeTokens.floatingBottomBarOuterHeight,
-                    ),
-                sectionSpacing = 12.dp,
-                userScrollEnabled = !sliderInteractionActive,
-            ) {
-                settingsCategoryItems(category, settingsSearchCardInput)
+        val category = categories[pageIndex]
+        val pageListState = listStates.forCategory(category)
+        val pageNestedScrollConnection =
+            remember(pageListState, scrollNestedConnection) {
+                settingsChromeNestedScrollConnection(
+                    listState = pageListState,
+                    delegate = scrollNestedConnection,
+                )
             }
+        AppPageLazyColumn(
+            innerPadding = innerPadding,
+            state = pageListState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(pageNestedScrollConnection),
+            bottomExtra =
+                appPageBottomPaddingWithFloatingOverlay(
+                    AppChromeTokens.floatingBottomBarOuterHeight,
+                ),
+            sectionSpacing = 12.dp,
+            userScrollEnabled = !sliderInteractionActive,
+        ) {
+            settingsCategoryItems(category, settingsSearchCardInput)
         }
     }
 }

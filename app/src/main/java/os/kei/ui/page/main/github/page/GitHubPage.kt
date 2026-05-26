@@ -276,12 +276,6 @@ fun GitHubPage(
     )
 
     val githubGlassRuntime = LocalGlassEffectRuntime.current
-    val renderHeavyContent = shouldRenderGitHubHeavyContent(runtime)
-    val contentRevealPhase =
-        effectiveGitHubPageContentRevealPhase(
-            runtime = runtime,
-            revealPhase = rememberGitHubPageContentRevealPhase(renderHeavyContent),
-        )
     CompositionLocalProvider(
         LocalGlassEffectRuntime provides githubGlassRuntime,
         LocalGitHubAppIconBitmaps provides appIconState.bitmaps,
@@ -295,7 +289,7 @@ fun GitHubPage(
                     addButtonScrollConnection = state.addButtonScrollConnection,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
-                    contentRevealPhase = contentRevealPhase,
+                    contentRevealPhase = GitHubMainContentRevealPhase.DOCK,
                     onShowBottomBar = onShowBottomBar,
                 ),
             surfaces =
@@ -509,40 +503,4 @@ private suspend fun LazyListState.animateItemToViewportCenter(index: Int) {
     if (abs(deltaPx) > 2) {
         animateScrollBy(deltaPx.toFloat())
     }
-}
-
-internal fun shouldRenderGitHubHeavyContent(runtime: MainPageRuntime): Boolean =
-    runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
-
-internal fun effectiveGitHubPageContentRevealPhase(
-    runtime: MainPageRuntime,
-    revealPhase: Int,
-): Int =
-    if (runtime.isPagerScrollInProgress && runtime.isDataActive) {
-        revealPhase.coerceAtMost(GitHubMainContentRevealPhase.TRACKED_PREVIEW)
-    } else {
-        revealPhase
-    }
-
-@Composable
-private fun rememberGitHubPageContentRevealPhase(renderHeavyContent: Boolean): Int {
-    var phase by remember { mutableIntStateOf(0) }
-    LaunchedEffect(renderHeavyContent) {
-        if (!renderHeavyContent) {
-            phase = 0
-            return@LaunchedEffect
-        }
-        phase = GitHubMainContentRevealPhase.OVERVIEW
-        withFrameNanos { }
-        phase = GitHubMainContentRevealPhase.OVERVIEW_EXPANDED
-        withFrameNanos { }
-        phase = GitHubMainContentRevealPhase.SHARE_IMPORT
-        withFrameNanos { }
-        phase = GitHubMainContentRevealPhase.TRACKED_PREVIEW
-        withFrameNanos { }
-        phase = GitHubMainContentRevealPhase.TRACKED_ALL
-        withFrameNanos { }
-        phase = GitHubMainContentRevealPhase.DOCK
-    }
-    return phase
 }

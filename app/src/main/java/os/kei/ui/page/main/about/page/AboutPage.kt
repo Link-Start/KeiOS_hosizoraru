@@ -46,7 +46,6 @@ import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
-import os.kei.ui.page.main.host.pager.shouldRenderStablePageContent
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -410,30 +409,27 @@ fun AboutPage(
                         .layerBackdrop(topBarBackdrop)
                         .layerBackdrop(bottomBarBackdrop),
             ) { pageIndex ->
-                val renderHeavyContent = pagerState.shouldRenderStablePageContent(pageIndex)
-                if (renderHeavyContent) {
-                    val category = categories[pageIndex]
-                    val pageListState =
-                        when (category) {
-                            AboutCategory.Overview -> overviewListState
-                            AboutCategory.System -> systemListState
-                            AboutCategory.Tech -> techListState
-                            AboutCategory.Lab -> labListState
-                        }
-                    AppPageLazyColumn(
-                        innerPadding = innerPadding,
-                        state = pageListState,
-                        modifier = Modifier.fillMaxSize(),
-                        bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
-                        sectionSpacing = 14.dp,
-                    ) {
-                        aboutCategoryCards(
-                            category = category,
-                            matchingCards = matchingSearchCards,
-                            state = cardRenderState,
-                            actions = cardActions,
-                        )
+                val category = categories[pageIndex]
+                val pageListState =
+                    when (category) {
+                        AboutCategory.Overview -> overviewListState
+                        AboutCategory.System -> systemListState
+                        AboutCategory.Tech -> techListState
+                        AboutCategory.Lab -> labListState
                     }
+                AppPageLazyColumn(
+                    innerPadding = innerPadding,
+                    state = pageListState,
+                    modifier = Modifier.fillMaxSize(),
+                    bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
+                    sectionSpacing = 14.dp,
+                ) {
+                    aboutCategoryCards(
+                        category = category,
+                        matchingCards = matchingSearchCards,
+                        state = cardRenderState,
+                        actions = cardActions,
+                    )
                 }
             }
         }

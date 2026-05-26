@@ -253,7 +253,6 @@ fun BaGuideCatalogPage(
             studentExportSuccessText = studentExportSuccessText,
             bgmExportSuccessText = bgmExportSuccessText,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
-            includeTargetPageInHeavyRender = preloadPolicy.includeTargetPageInHeavyRender,
             searchAutoFocusEnabled = searchAutoFocusEnabled,
             enableSearchBar = enableSearchBar,
             onBack = onBack,

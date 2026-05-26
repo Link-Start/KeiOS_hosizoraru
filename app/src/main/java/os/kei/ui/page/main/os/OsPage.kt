@@ -6,10 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -141,12 +138,7 @@ fun OsPage(
             onCardTransferInProgressChange = overlayRuntimeActions::updateCardTransferInProgress,
         )
     val scrollBehavior = MiuixScrollBehavior()
-    val renderHeavyContent = shouldRenderOsHeavyContent(runtime)
-    val contentRevealPhase =
-        effectiveOsPageContentRevealPhase(
-            runtime = runtime,
-            revealPhase = rememberOsPageContentRevealPhase(renderHeavyContent),
-        )
+    val contentRevealPhase = OsPageMainListRevealPhase.DOCK
     val shellCommandCards = cardListDerivedState.shellCommandCards
     val activityCardExpanded = cardExpansionState.activityCards
     val shellCommandCardExpanded = cardExpansionState.shellCommandCards
@@ -490,25 +482,24 @@ fun OsPage(
             onTitleClick = onShowBottomBar,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
         ) { innerPadding ->
-            if (renderHeavyContent) {
-                OsPageOverlayCoordinator(
-                    context = context,
-                    sheetBackdrop = backdrops.sheet,
-                    overlayState = overlayState,
-                    visibleCards = visibleCards,
-                    activityShortcutCards = activityShortcutCards,
-                    activityIconBitmaps = activityIconState.bitmaps,
-                    packageIconBitmaps = activityIconState.packageBitmaps,
-                    shellCommandCards = shellCommandCards,
-                    activitySuggestionState = activitySuggestionState,
-                    activitySuggestionChromeState = activitySuggestionChromeState,
-                    actionState = actionState,
-                    overlayTransferActions = overlayTransferActions,
-                    cardTransferState = cardTransferState,
-                    textBundle = textBundle,
-                    osPageViewModel = osPageViewModel,
-                )
-                OsPageMainList(
+            OsPageOverlayCoordinator(
+                context = context,
+                sheetBackdrop = backdrops.sheet,
+                overlayState = overlayState,
+                visibleCards = visibleCards,
+                activityShortcutCards = activityShortcutCards,
+                activityIconBitmaps = activityIconState.bitmaps,
+                packageIconBitmaps = activityIconState.packageBitmaps,
+                shellCommandCards = shellCommandCards,
+                activitySuggestionState = activitySuggestionState,
+                activitySuggestionChromeState = activitySuggestionChromeState,
+                actionState = actionState,
+                overlayTransferActions = overlayTransferActions,
+                cardTransferState = cardTransferState,
+                textBundle = textBundle,
+                osPageViewModel = osPageViewModel,
+            )
+            OsPageMainList(
                     context = context,
                     listState = listState,
                     innerPadding = innerPadding,
@@ -596,46 +587,7 @@ fun OsPage(
                     searchLabel = textBundle.searchLabel,
                     floatingDockSide = runtime.floatingDockSide,
                     contentRevealPhase = contentRevealPhase,
-                )
-            }
+            )
         }
     }
-}
-
-internal fun shouldRenderOsHeavyContent(runtime: MainPageRuntime): Boolean =
-    runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
-
-internal fun effectiveOsPageContentRevealPhase(
-    runtime: MainPageRuntime,
-    revealPhase: Int,
-): Int =
-    if (runtime.isPagerScrollInProgress && runtime.isDataActive) {
-        revealPhase.coerceAtMost(OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW)
-    } else {
-        revealPhase
-    }
-
-@Composable
-private fun rememberOsPageContentRevealPhase(renderHeavyContent: Boolean): Int {
-    var phase by remember { mutableIntStateOf(0) }
-    LaunchedEffect(renderHeavyContent) {
-        if (!renderHeavyContent) {
-            phase = 0
-            return@LaunchedEffect
-        }
-        phase = OsPageMainListRevealPhase.OVERVIEW
-        withFrameNanos { }
-        phase = OsPageMainListRevealPhase.PRIMARY_CARDS
-        withFrameNanos { }
-        phase = OsPageMainListRevealPhase.COMMAND_CARD_FIRST
-        withFrameNanos { }
-        phase = OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW
-        withFrameNanos { }
-        phase = OsPageMainListRevealPhase.COMMAND_CARDS_ALL
-        withFrameNanos { }
-        phase = OsPageMainListRevealPhase.DEEP_SECTIONS
-        withFrameNanos { }
-        phase = OsPageMainListRevealPhase.DOCK
-    }
-    return phase
 }

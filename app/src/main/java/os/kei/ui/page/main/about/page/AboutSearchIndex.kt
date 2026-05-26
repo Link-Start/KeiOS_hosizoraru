@@ -29,12 +29,18 @@ internal data class AboutSearchTarget(
     val category: AboutCategory,
     private val tokens: List<String>,
 ) {
+    private val normalizedTokens: List<String> =
+        tokens
+            .asSequence()
+            .map { it.normalizedAboutSearchToken() }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .toList()
+
     fun matches(query: String): Boolean {
-        val normalizedQuery = query.trim().lowercase(Locale.ROOT)
+        val normalizedQuery = query.normalizedAboutSearchToken()
         if (normalizedQuery.isBlank()) return true
-        return tokens.any { token ->
-            token.lowercase(Locale.ROOT).contains(normalizedQuery)
-        }
+        return normalizedTokens.any { token -> token.contains(normalizedQuery) }
     }
 }
 
@@ -312,4 +318,12 @@ internal fun buildAboutSearchTargets(
         ),
     )
 
-private fun aboutTokens(vararg values: String): List<String> = values.filter { it.isNotBlank() }
+private fun aboutTokens(vararg values: String): List<String> =
+    values
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .toList()
+
+private fun String.normalizedAboutSearchToken(): String = trim().lowercase(Locale.ROOT)

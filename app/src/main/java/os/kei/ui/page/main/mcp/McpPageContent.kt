@@ -48,7 +48,6 @@ internal fun McpPageContent(
     refreshRunning: Boolean,
     actions: McpPageActions,
 ) {
-    val revealPhase = MCP_HEAVY_CONTENT_REVEAL_DOCK
     Box(modifier = Modifier.fillMaxSize()) {
         AppPageLazyColumn(
             innerPadding = innerPadding,
@@ -60,129 +59,121 @@ internal fun McpPageContent(
             bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
             sectionSpacing = 12.dp,
         ) {
-                item(key = "mcp-overview", contentType = "mcp_overview_section") {
-                    McpOverviewCardSection(
+            item(key = "mcp-overview", contentType = "mcp_overview_section") {
+                McpOverviewCardSection(
+                    backdrop = backdrops.content,
+                    titleColor = titleColor,
+                    subtitleColor = subtitleColor,
+                    overviewCardColor = overviewState.overviewCardColor,
+                    overviewBorderColor = overviewState.overviewBorderColor,
+                    overviewAccentColor = overviewState.overviewAccentColor,
+                    runtimeText = overviewState.runtimeText,
+                    isDark = isDark,
+                    running = uiState.running,
+                    overviewMetrics = overviewState.overviewMetrics,
+                    onToggleServer = actions.onToggleServer,
+                    onOpenEditSheet = actions.onOpenEditSheet,
+                )
+            }
+            item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
+                McpServiceControlSection(
+                    backdrop = backdrops.content,
+                    expanded = pageUiState.controlExpanded,
+                    contentVisible = true,
+                    onExpandedChange = actions.onControlExpandedChange,
+                    onSendTestNotification = actions.onSendTestNotification,
+                    onShowResetConfigConfirm = actions.onShowResetConfigConfirm,
+                    onCopySkillResource = actions.onCopySkillResource,
+                    onCopyWorkflowResource = actions.onCopyWorkflowResource,
+                )
+            }
+            item(key = "mcp-tool-entrypoints", contentType = "mcp_tool_entrypoints_section") {
+                McpToolEntrypointsSection(
+                    backdrop = backdrops.content,
+                    buckets = toolBuckets,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    onSearchQueryChange = actions.onToolsSearchQueryChange,
+                    expanded = pageUiState.toolEntrypointsExpanded,
+                    onExpandedChange = actions.onToolEntrypointsExpandedChange,
+                )
+            }
+            item(key = "mcp-tool-runtime", contentType = "mcp_tool_runtime_section") {
+                McpToolRuntimeSection(
+                    backdrop = backdrops.content,
+                    tools = toolBuckets.runtimeTools,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    expanded = pageUiState.runtimeToolsExpanded,
+                    onExpandedChange = actions.onRuntimeToolsExpandedChange,
+                )
+            }
+            item(key = "mcp-tool-system", contentType = "mcp_tool_system_section") {
+                McpToolSystemSection(
+                    backdrop = backdrops.content,
+                    tools = toolBuckets.systemTools,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    expanded = pageUiState.systemToolsExpanded,
+                    onExpandedChange = actions.onSystemToolsExpandedChange,
+                )
+            }
+            item(key = "mcp-tool-github", contentType = "mcp_tool_github_section") {
+                McpToolGithubSection(
+                    backdrop = backdrops.content,
+                    tools = toolBuckets.githubTools,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    expanded = pageUiState.githubToolsExpanded,
+                    onExpandedChange = actions.onGithubToolsExpandedChange,
+                )
+            }
+            item(key = "mcp-tool-ba", contentType = "mcp_tool_ba_section") {
+                McpToolBaSection(
+                    backdrop = backdrops.content,
+                    tools = toolBuckets.baTools,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    expanded = pageUiState.baToolsExpanded,
+                    onExpandedChange = actions.onBaToolsExpandedChange,
+                )
+            }
+            item(key = "mcp-tool-codex", contentType = "mcp_tool_codex_section") {
+                McpToolCodexSection(
+                    backdrop = backdrops.content,
+                    tools = toolBuckets.codexTools,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    expanded = pageUiState.codexToolsExpanded,
+                    onExpandedChange = actions.onCodexToolsExpandedChange,
+                )
+            }
+            item(key = "mcp-tool-workflows", contentType = "mcp_tool_workflows_section") {
+                McpToolWorkflowSection(
+                    backdrop = backdrops.content,
+                    tools = toolBuckets.workflowTools,
+                    searchQuery = pageUiState.toolsSearchQuery,
+                    expanded = pageUiState.workflowToolsExpanded,
+                    onExpandedChange = actions.onWorkflowToolsExpandedChange,
+                )
+            }
+            if (toolBuckets.advancedTools.isNotEmpty()) {
+                item(key = "mcp-tool-advanced", contentType = "mcp_tool_advanced_section") {
+                    McpToolAdvancedSection(
                         backdrop = backdrops.content,
-                        titleColor = titleColor,
-                        subtitleColor = subtitleColor,
-                        overviewCardColor = overviewState.overviewCardColor,
-                        overviewBorderColor = overviewState.overviewBorderColor,
-                        overviewAccentColor = overviewState.overviewAccentColor,
-                        runtimeText = overviewState.runtimeText,
-                        isDark = isDark,
-                        running = uiState.running,
-                        overviewMetrics = overviewState.overviewMetrics,
-                        onToggleServer = actions.onToggleServer,
-                        onOpenEditSheet = actions.onOpenEditSheet,
+                        tools = toolBuckets.advancedTools,
+                        searchQuery = pageUiState.toolsSearchQuery,
+                        expanded = pageUiState.advancedToolsExpanded,
+                        onExpandedChange = actions.onAdvancedToolsExpandedChange,
                     )
                 }
-                if (revealPhase >= MCP_HEAVY_CONTENT_REVEAL_CONTROLS) {
-                    item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
-                        McpServiceControlSection(
-                            backdrop = backdrops.content,
-                            expanded = pageUiState.controlExpanded,
-                            contentVisible = revealPhase >= MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY,
-                            onExpandedChange = actions.onControlExpandedChange,
-                            onSendTestNotification = actions.onSendTestNotification,
-                            onShowResetConfigConfirm = actions.onShowResetConfigConfirm,
-                            onCopySkillResource = actions.onCopySkillResource,
-                            onCopyWorkflowResource = actions.onCopyWorkflowResource,
-                        )
-                    }
-                }
-                if (revealPhase >= MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS) {
-                    item(key = "mcp-tool-entrypoints", contentType = "mcp_tool_entrypoints_section") {
-                        McpToolEntrypointsSection(
-                            backdrop = backdrops.content,
-                            buckets = toolBuckets,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            onSearchQueryChange = actions.onToolsSearchQueryChange,
-                            expanded = pageUiState.toolEntrypointsExpanded,
-                            onExpandedChange = actions.onToolEntrypointsExpandedChange,
-                        )
-                    }
-                }
-                if (revealPhase >= MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS) {
-                    item(key = "mcp-tool-runtime", contentType = "mcp_tool_runtime_section") {
-                        McpToolRuntimeSection(
-                            backdrop = backdrops.content,
-                            tools = toolBuckets.runtimeTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.runtimeToolsExpanded,
-                            onExpandedChange = actions.onRuntimeToolsExpandedChange,
-                        )
-                    }
-                    item(key = "mcp-tool-system", contentType = "mcp_tool_system_section") {
-                        McpToolSystemSection(
-                            backdrop = backdrops.content,
-                            tools = toolBuckets.systemTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.systemToolsExpanded,
-                            onExpandedChange = actions.onSystemToolsExpandedChange,
-                        )
-                    }
-                }
-                if (revealPhase >= MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS) {
-                    item(key = "mcp-tool-github", contentType = "mcp_tool_github_section") {
-                        McpToolGithubSection(
-                            backdrop = backdrops.content,
-                            tools = toolBuckets.githubTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.githubToolsExpanded,
-                            onExpandedChange = actions.onGithubToolsExpandedChange,
-                        )
-                    }
-                    item(key = "mcp-tool-ba", contentType = "mcp_tool_ba_section") {
-                        McpToolBaSection(
-                            backdrop = backdrops.content,
-                            tools = toolBuckets.baTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.baToolsExpanded,
-                            onExpandedChange = actions.onBaToolsExpandedChange,
-                        )
-                    }
-                    item(key = "mcp-tool-codex", contentType = "mcp_tool_codex_section") {
-                        McpToolCodexSection(
-                            backdrop = backdrops.content,
-                            tools = toolBuckets.codexTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.codexToolsExpanded,
-                            onExpandedChange = actions.onCodexToolsExpandedChange,
-                        )
-                    }
-                    item(key = "mcp-tool-workflows", contentType = "mcp_tool_workflows_section") {
-                        McpToolWorkflowSection(
-                            backdrop = backdrops.content,
-                            tools = toolBuckets.workflowTools,
-                            searchQuery = pageUiState.toolsSearchQuery,
-                            expanded = pageUiState.workflowToolsExpanded,
-                            onExpandedChange = actions.onWorkflowToolsExpandedChange,
-                        )
-                    }
-                    if (toolBuckets.advancedTools.isNotEmpty()) {
-                        item(key = "mcp-tool-advanced", contentType = "mcp_tool_advanced_section") {
-                            McpToolAdvancedSection(
-                                backdrop = backdrops.content,
-                                tools = toolBuckets.advancedTools,
-                                searchQuery = pageUiState.toolsSearchQuery,
-                                expanded = pageUiState.advancedToolsExpanded,
-                                onExpandedChange = actions.onAdvancedToolsExpandedChange,
-                            )
-                        }
-                    }
-                    item(key = "mcp-logs", contentType = "mcp_logs_section") {
-                        McpLogsSection(
-                            backdrop = backdrops.content,
-                            expanded = pageUiState.logsExpanded,
-                            onExpandedChange = actions.onLogsExpandedChange,
-                            uiState = uiState,
-                            logsExporting = pageUiState.logsExporting,
-                            onExportLogs = actions.onExportLogs,
-                            onClearLogs = actions.onClearLogs,
-                            subtitleColor = subtitleColor,
-                        )
-                    }
-                }
+            }
+            item(key = "mcp-logs", contentType = "mcp_logs_section") {
+                McpLogsSection(
+                    backdrop = backdrops.content,
+                    expanded = pageUiState.logsExpanded,
+                    onExpandedChange = actions.onLogsExpandedChange,
+                    uiState = uiState,
+                    logsExporting = pageUiState.logsExporting,
+                    onExportLogs = actions.onExportLogs,
+                    onClearLogs = actions.onClearLogs,
+                    subtitleColor = subtitleColor,
+                )
+            }
         }
 
         McpPageFloatingActionDock(
@@ -194,11 +185,3 @@ internal fun McpPageContent(
         )
     }
 }
-
-internal const val MCP_HEAVY_CONTENT_REVEAL_OVERVIEW = 1
-internal const val MCP_HEAVY_CONTENT_REVEAL_CONTROLS = 2
-internal const val MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY = 3
-internal const val MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS = 4
-internal const val MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS = 5
-internal const val MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS = 6
-internal const val MCP_HEAVY_CONTENT_REVEAL_DOCK = 7

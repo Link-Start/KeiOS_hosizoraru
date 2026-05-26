@@ -37,7 +37,6 @@ import os.kei.ui.page.main.github.section.GitHubMainContentActions
 import os.kei.ui.page.main.github.section.GitHubMainContentControls
 import os.kei.ui.page.main.github.section.GitHubMainContentLayout
 import os.kei.ui.page.main.github.section.GitHubMainContentOverview
-import os.kei.ui.page.main.github.section.GitHubMainContentRevealPhase
 import os.kei.ui.page.main.github.section.GitHubMainContentShareImport
 import os.kei.ui.page.main.github.section.GitHubMainContentSurfaces
 import os.kei.ui.page.main.github.section.GitHubMainContentTracked
@@ -289,7 +288,6 @@ fun GitHubPage(
                     addButtonScrollConnection = state.addButtonScrollConnection,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
-                    contentRevealPhase = GitHubMainContentRevealPhase.DOCK,
                     onShowBottomBar = onShowBottomBar,
                 ),
             surfaces =

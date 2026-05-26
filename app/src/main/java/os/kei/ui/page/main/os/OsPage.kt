@@ -17,7 +17,6 @@ import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
-import os.kei.ui.page.main.os.components.OsPageMainListRevealPhase
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
 import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.state.createOsPageActionState
@@ -138,7 +137,6 @@ fun OsPage(
             onCardTransferInProgressChange = overlayRuntimeActions::updateCardTransferInProgress,
         )
     val scrollBehavior = MiuixScrollBehavior()
-    val contentRevealPhase = OsPageMainListRevealPhase.DOCK
     val shellCommandCards = cardListDerivedState.shellCommandCards
     val activityCardExpanded = cardExpansionState.activityCards
     val shellCommandCardExpanded = cardExpansionState.shellCommandCards
@@ -586,7 +584,6 @@ fun OsPage(
                     },
                     searchLabel = textBundle.searchLabel,
                     floatingDockSide = runtime.floatingDockSide,
-                    contentRevealPhase = contentRevealPhase,
             )
         }
     }

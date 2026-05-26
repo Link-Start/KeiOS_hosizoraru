@@ -111,194 +111,178 @@ internal fun GitHubMainContent(
                     bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
                     sectionSpacing = CardLayoutRhythm.denseSectionGap,
                 ) {
-                    if (layout.contentRevealPhase >= GitHubMainContentRevealPhase.OVERVIEW) {
+                    item(
+                        key = "github_overview_card",
+                        contentType = "github_overview",
+                    ) {
+                        GitHubOverviewCard(
+                            backdrop = surfaces.contentBackdrop,
+                            isDark = surfaces.isDark,
+                            lookupConfig = overview.lookupConfig,
+                            overviewRefreshState = overview.refreshState,
+                            expanded = overview.expanded,
+                            onExpandedChange = actions.onOverviewExpandedChange,
+                            refreshProgress = overview.refreshProgress,
+                            lastRefreshMs = overview.lastRefreshMs,
+                            visibleEntries = overview.visibleEntries,
+                            metrics = overview.metrics,
+                            failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
+                            onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
+                            onRetryFailedTracked = actions.onRetryFailedTracked,
+                            onFailedFilterToggle = actions.onFailedFilterToggle,
+                        )
+                    }
+                    if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
                         item(
-                            key = "github_overview_card",
-                            contentType = "github_overview",
+                            key = "github_pending_share_import_track",
+                            contentType = "github_share_import",
                         ) {
-                            GitHubOverviewCard(
-                                backdrop = surfaces.contentBackdrop,
-                                isDark = surfaces.isDark,
-                                lookupConfig = overview.lookupConfig,
-                                overviewRefreshState = overview.refreshState,
-                                expanded =
-                                    overview.expanded &&
-                                        layout.contentRevealPhase >= GitHubMainContentRevealPhase.OVERVIEW_EXPANDED,
-                                onExpandedChange = actions.onOverviewExpandedChange,
-                                refreshProgress = overview.refreshProgress,
-                                lastRefreshMs = overview.lastRefreshMs,
-                                visibleEntries = overview.visibleEntries,
-                                metrics = overview.metrics,
-                                failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
-                                onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
-                                onRetryFailedTracked = actions.onRetryFailedTracked,
-                                onFailedFilterToggle = actions.onFailedFilterToggle,
+                            GitHubPendingShareImportCard(
+                                pending = shareImport.pendingTrack,
+                                nowMillis = shareImport.pendingNowMillis,
+                                repoOverlapCount = shareImport.pendingRepoOverlapCount,
+                                onOpen = actions.onOpenShareImportFlow,
+                                onCancel = actions.onCancelPendingShareImportTrack,
                             )
                         }
                     }
-                    if (layout.contentRevealPhase >= GitHubMainContentRevealPhase.SHARE_IMPORT) {
-                        if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
-                            item(
-                                key = "github_pending_share_import_track",
-                                contentType = "github_share_import",
-                            ) {
-                                GitHubPendingShareImportCard(
-                                    pending = shareImport.pendingTrack,
-                                    nowMillis = shareImport.pendingNowMillis,
-                                    repoOverlapCount = shareImport.pendingRepoOverlapCount,
-                                    onOpen = actions.onOpenShareImportFlow,
-                                    onCancel = actions.onCancelPendingShareImportTrack,
-                                )
-                            }
+                    shareImport.pendingAttachCandidate?.let { candidate ->
+                        item(
+                            key = "github_pending_share_import_attach",
+                            contentType = "github_share_import",
+                        ) {
+                            GitHubShareImportAttachCandidateCard(
+                                candidate = candidate,
+                                onOpen = actions.onOpenShareImportFlow,
+                                onCancel = actions.onCancelActiveShareImportFlow,
+                            )
                         }
-                        shareImport.pendingAttachCandidate?.let { candidate ->
+                    }
+                    if (shareImport.pendingTrack == null && shareImport.pendingAttachCandidate == null) {
+                        shareImport.pendingPreview?.let { preview ->
                             item(
-                                key = "github_pending_share_import_attach",
+                                key = "github_share_import_preview",
                                 contentType = "github_share_import",
                             ) {
-                                GitHubShareImportAttachCandidateCard(
-                                    candidate = candidate,
+                                GitHubShareImportPreviewCard(
+                                    preview = preview,
                                     onOpen = actions.onOpenShareImportFlow,
                                     onCancel = actions.onCancelActiveShareImportFlow,
                                 )
                             }
                         }
-                        if (shareImport.pendingTrack == null && shareImport.pendingAttachCandidate == null) {
-                            shareImport.pendingPreview?.let { preview ->
-                                item(
-                                    key = "github_share_import_preview",
-                                    contentType = "github_share_import",
-                                ) {
-                                    GitHubShareImportPreviewCard(
-                                        preview = preview,
-                                        onOpen = actions.onOpenShareImportFlow,
-                                        onCancel = actions.onCancelActiveShareImportFlow,
-                                    )
-                                }
-                            }
-                        }
-                        if (
-                            shareImport.pendingPreview == null &&
-                            shareImport.pendingTrack == null &&
-                            shareImport.pendingAttachCandidate == null
-                        ) {
-                            shareImport.pendingResult?.let { result ->
-                                item(
-                                    key = "github_share_import_result",
-                                    contentType = "github_share_import",
-                                ) {
-                                    GitHubShareImportResultCard(
-                                        result = result,
-                                        onOpen = actions.onOpenShareImportResult,
-                                        onDismiss = actions.onDismissShareImportResult,
-                                    )
-                                }
+                    }
+                    if (
+                        shareImport.pendingPreview == null &&
+                        shareImport.pendingTrack == null &&
+                        shareImport.pendingAttachCandidate == null
+                    ) {
+                        shareImport.pendingResult?.let { result ->
+                            item(
+                                key = "github_share_import_result",
+                                contentType = "github_share_import",
+                            ) {
+                                GitHubShareImportResultCard(
+                                    result = result,
+                                    onOpen = actions.onOpenShareImportResult,
+                                    onDismiss = actions.onDismissShareImportResult,
+                                )
                             }
                         }
                     }
-                    if (layout.contentRevealPhase >= GitHubMainContentRevealPhase.TRACKED_PREVIEW) {
-                        val visibleTracked =
-                            if (layout.contentRevealPhase >= GitHubMainContentRevealPhase.TRACKED_ALL) {
-                                tracked.sortedTracked
-                            } else {
-                                tracked.sortedTracked.take(GITHUB_TRACKED_ITEM_PREVIEW_COUNT)
-                            }
-                        GitHubTrackedItemsSection(
-                            content =
-                                GitHubTrackedItemsContent(
-                                    lookupConfig = overview.lookupConfig,
-                                    trackedItems = tracked.trackedItems,
-                                    filteredTracked = tracked.filteredTracked,
-                                    sortedTracked = visibleTracked,
-                                    installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
-                                    appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
-                                ),
-                            surfaces =
-                                GitHubTrackedItemsSurfaces(
-                                    contentBackdrop = surfaces.contentBackdrop,
-                                    isDark = surfaces.isDark,
-                                ),
-                            checkState =
-                                GitHubTrackedItemsCheckState(
-                                    checkStates = tracked.checkStates,
-                                    itemRefreshLoading = tracked.itemRefreshLoading,
-                                    actionsRecommendedRunSnapshots = tracked.actionsRecommendedRunSnapshots,
-                                ),
-                            assetState =
-                                GitHubTrackedItemsAssetState(
-                                    apkAssetBundles = tracked.apkAssetBundles,
-                                    apkAssetLoading = tracked.apkAssetLoading,
-                                    apkAssetErrors = tracked.apkAssetErrors,
-                                    apkAssetExpanded = tracked.apkAssetExpanded,
-                                    managedInstallLoading = tracked.managedInstallLoading,
-                                ),
-                            expansionState =
-                                tracked.expansionState,
-                            runtime =
-                                GitHubTrackedItemsRuntime(
-                                    context = context,
-                                    supportedAbis = supportedAbis,
-                                    relativeTimeNowMillis = tracked.relativeTimeNowMillis,
-                                ),
-                            actions =
-                                GitHubTrackedItemsActions(
-                                    onRefreshTrackedItem = actions.onRefreshTrackedItem,
-                                    onOpenActionsSheet = actions.onOpenActionsSheet,
-                                    onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
-                                    onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
-                                    onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
-                                    onCollapseTrackedCard = actions.onCollapseTrackedCard,
-                                    onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
-                                    onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
-                                    onPreReleaseVersionExpandedChange = actions.onPreReleaseVersionExpandedChange,
-                                    onCollapseApkAssetPanel = actions.onCollapseApkAssetPanel,
-                                    onLoadApkAssets = actions.onLoadApkAssets,
-                                    onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
-                                    onOpenExternalUrl = actions.onOpenExternalUrl,
-                                    onOpenApkInfo = actions.onOpenApkInfo,
-                                    onInstallApk = actions.onInstallApk,
-                                    onOpenApkInDownloader = actions.onOpenApkInDownloader,
-                                    onShareApkLink = actions.onShareApkLink,
-                                ),
-                        )
-                    }
-                }
-
-                if (layout.contentRevealPhase >= GitHubMainContentRevealPhase.DOCK) {
-                    AppFloatingVerticalSearchActionDock(
-                        backdrop = surfaces.contentBackdrop,
-                        expanded = controls.searchExpanded,
-                        query = controls.trackedSearch,
-                        onQueryChange = actions.onTrackedSearchChange,
-                        onExpandedChange = actions.onSearchExpandedChange,
-                        searchIcon = appLucideSearchIcon(),
-                        searchContentDescription = stringResource(R.string.github_topbar_search_label),
-                        placeholder = stringResource(R.string.github_topbar_search_label),
-                        addIcon = appLucideAddIcon(),
-                        addContentDescription = stringResource(R.string.github_cd_add_track),
-                        onAddClick = actions.onOpenTrackSheetForAdd,
-                        refreshIcon = appLucideRefreshIcon(),
-                        refreshContentDescription = stringResource(R.string.github_topbar_cd_check),
-                        onRefreshClick = actions.onRefreshVisibleTracked,
-                        showAddAction = true,
-                        refreshEnabled = !controls.deleteInProgress,
-                        refreshStatus = refreshStatus,
-                        dockSide = layout.floatingDockSide,
-                        keyboardLift = floatingKeyboardLift,
-                        modifier =
-                            Modifier
-                                .align(dockAlignment)
-                                .offset {
-                                    IntOffset(
-                                        x = 0,
-                                        y = -searchDockBottomState.value.roundToPx(),
-                                    )
-                                }.padding(
-                                    start = dockStartPadding,
-                                    end = dockEndPadding,
-                                ),
+                    GitHubTrackedItemsSection(
+                        content =
+                            GitHubTrackedItemsContent(
+                                lookupConfig = overview.lookupConfig,
+                                trackedItems = tracked.trackedItems,
+                                filteredTracked = tracked.filteredTracked,
+                                sortedTracked = tracked.sortedTracked,
+                                installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
+                                appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
+                            ),
+                        surfaces =
+                            GitHubTrackedItemsSurfaces(
+                                contentBackdrop = surfaces.contentBackdrop,
+                                isDark = surfaces.isDark,
+                            ),
+                        checkState =
+                            GitHubTrackedItemsCheckState(
+                                checkStates = tracked.checkStates,
+                                itemRefreshLoading = tracked.itemRefreshLoading,
+                                actionsRecommendedRunSnapshots = tracked.actionsRecommendedRunSnapshots,
+                            ),
+                        assetState =
+                            GitHubTrackedItemsAssetState(
+                                apkAssetBundles = tracked.apkAssetBundles,
+                                apkAssetLoading = tracked.apkAssetLoading,
+                                apkAssetErrors = tracked.apkAssetErrors,
+                                apkAssetExpanded = tracked.apkAssetExpanded,
+                                managedInstallLoading = tracked.managedInstallLoading,
+                            ),
+                        expansionState =
+                            tracked.expansionState,
+                        runtime =
+                            GitHubTrackedItemsRuntime(
+                                context = context,
+                                supportedAbis = supportedAbis,
+                                relativeTimeNowMillis = tracked.relativeTimeNowMillis,
+                            ),
+                        actions =
+                            GitHubTrackedItemsActions(
+                                onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                                onOpenActionsSheet = actions.onOpenActionsSheet,
+                                onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
+                                onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
+                                onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
+                                onCollapseTrackedCard = actions.onCollapseTrackedCard,
+                                onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
+                                onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
+                                onPreReleaseVersionExpandedChange = actions.onPreReleaseVersionExpandedChange,
+                                onCollapseApkAssetPanel = actions.onCollapseApkAssetPanel,
+                                onLoadApkAssets = actions.onLoadApkAssets,
+                                onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
+                                onOpenExternalUrl = actions.onOpenExternalUrl,
+                                onOpenApkInfo = actions.onOpenApkInfo,
+                                onInstallApk = actions.onInstallApk,
+                                onOpenApkInDownloader = actions.onOpenApkInDownloader,
+                                onShareApkLink = actions.onShareApkLink,
+                            ),
                     )
                 }
+
+                AppFloatingVerticalSearchActionDock(
+                    backdrop = surfaces.contentBackdrop,
+                    expanded = controls.searchExpanded,
+                    query = controls.trackedSearch,
+                    onQueryChange = actions.onTrackedSearchChange,
+                    onExpandedChange = actions.onSearchExpandedChange,
+                    searchIcon = appLucideSearchIcon(),
+                    searchContentDescription = stringResource(R.string.github_topbar_search_label),
+                    placeholder = stringResource(R.string.github_topbar_search_label),
+                    addIcon = appLucideAddIcon(),
+                    addContentDescription = stringResource(R.string.github_cd_add_track),
+                    onAddClick = actions.onOpenTrackSheetForAdd,
+                    refreshIcon = appLucideRefreshIcon(),
+                    refreshContentDescription = stringResource(R.string.github_topbar_cd_check),
+                    onRefreshClick = actions.onRefreshVisibleTracked,
+                    showAddAction = true,
+                    refreshEnabled = !controls.deleteInProgress,
+                    refreshStatus = refreshStatus,
+                    dockSide = layout.floatingDockSide,
+                    keyboardLift = floatingKeyboardLift,
+                    modifier =
+                        Modifier
+                            .align(dockAlignment)
+                            .offset {
+                                IntOffset(
+                                    x = 0,
+                                    y = -searchDockBottomState.value.roundToPx(),
+                                )
+                            }.padding(
+                                start = dockStartPadding,
+                                end = dockEndPadding,
+                            ),
+                )
             }
         }
         AppTopEndActionBarOverlay {
@@ -327,5 +311,3 @@ internal fun GitHubMainContent(
         }
     }
 }
-
-private const val GITHUB_TRACKED_ITEM_PREVIEW_COUNT = 1

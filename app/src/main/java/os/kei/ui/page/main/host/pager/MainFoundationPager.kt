@@ -186,12 +186,14 @@ internal fun MainFoundationPager(
     state: MainFoundationPagerState,
     userScrollEnabled: Boolean,
     beyondViewportPageCount: Int,
+    pageKey: (Int) -> Any,
     modifier: Modifier = Modifier,
     pageContent: @Composable (pageIndex: Int) -> Unit,
 ) {
     HorizontalPager(
         state = state.pagerState,
         modifier = modifier.fillMaxSize(),
+        key = pageKey,
         beyondViewportPageCount =
             if (state.pageCount > 1) {
                 beyondViewportPageCount.coerceAtLeast(0)

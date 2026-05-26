@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.home
 
 import androidx.compose.foundation.background
@@ -51,45 +53,49 @@ private const val HOME_CARD_HORIZONTAL_PADDING_DP = 12
 
 internal fun Modifier.homeKeiHdrAccent(
     enabled: Boolean,
-    sweepProgress: Float,
+    sweepProgress: () -> Float,
     sweepAlpha: Float = 0.62f,
     radialAlpha: Float = 0.20f,
     radialRadiusScale: Float = 0.72f,
     radialCenterX: Float = 0.5f,
-    radialCenterY: Float = 0.5f
+    radialCenterY: Float = 0.5f,
 ): Modifier {
     if (!enabled) return this
     return this
         .graphicsLayer {
             compositingStrategy = CompositingStrategy.Offscreen
-        }
-        .drawWithContent {
+        }.drawWithContent {
             drawContent()
-            val sweepVisibility = homeKeiHdrSweepVisibility(sweepProgress)
+            val currentSweepProgress = sweepProgress()
+            val sweepVisibility = homeKeiHdrSweepVisibility(currentSweepProgress)
             if (sweepVisibility > 0f) {
                 val visibleSweepAlpha = sweepAlpha * sweepVisibility
                 drawRect(
-                    brush = Brush.linearGradient(
-                        colorStops = arrayOf(
-                            0f to Color.Transparent,
-                            (sweepProgress - HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
-                            sweepProgress.coerceIn(0f, 1f) to Color.White.copy(alpha = visibleSweepAlpha),
-                            (sweepProgress + HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
-                            1f to Color.Transparent
-                        )
-                    ),
-                    blendMode = BlendMode.SrcAtop
+                    brush =
+                        Brush.linearGradient(
+                            colorStops =
+                                arrayOf(
+                                    0f to Color.Transparent,
+                                    (currentSweepProgress - HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
+                                    currentSweepProgress.coerceIn(0f, 1f) to Color.White.copy(alpha = visibleSweepAlpha),
+                                    (currentSweepProgress + HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
+                                    1f to Color.Transparent,
+                                ),
+                        ),
+                    blendMode = BlendMode.SrcAtop,
                 )
                 drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = radialAlpha * sweepVisibility),
-                            Color.Transparent
+                    brush =
+                        Brush.radialGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = radialAlpha * sweepVisibility),
+                                    Color.Transparent,
+                                ),
+                            center = Offset(size.width * radialCenterX, size.height * radialCenterY),
+                            radius = size.minDimension * radialRadiusScale,
                         ),
-                        center = Offset(size.width * radialCenterX, size.height * radialCenterY),
-                        radius = size.minDimension * radialRadiusScale
-                    ),
-                    blendMode = BlendMode.SrcAtop
+                    blendMode = BlendMode.SrcAtop,
                 )
             }
         }
@@ -110,31 +116,32 @@ internal fun Modifier.homeHeroForegroundBlur(
     backdrop: LayerBackdrop?,
     enabled: Boolean,
     shape: Shape,
-    blurRadiusDp: Float
+    blurRadiusDp: Float,
 ): Modifier {
     if (!enabled || backdrop == null) return this
     val isDark = isSystemInDarkTheme()
-    val logoBlend = remember(isDark) {
-        if (isDark) {
-            listOf(
-                BlendColorEntry(Color(0xE6A1A1A1), BlurBlendMode.ColorDodge),
-                BlendColorEntry(Color(0x4DE6E6E6), BlurBlendMode.LinearLight),
-                BlendColorEntry(Color(0xFFFF73AD), BlurBlendMode.Lab)
-            )
-        } else {
-            listOf(
-                BlendColorEntry(Color(0xCC4A4A4A), BlurBlendMode.ColorBurn),
-                BlendColorEntry(Color(0xFF4F4F4F), BlurBlendMode.LinearLight),
-                BlendColorEntry(Color(0xFFFF5C96), BlurBlendMode.Lab)
-            )
+    val logoBlend =
+        remember(isDark) {
+            if (isDark) {
+                listOf(
+                    BlendColorEntry(Color(0xE6A1A1A1), BlurBlendMode.ColorDodge),
+                    BlendColorEntry(Color(0x4DE6E6E6), BlurBlendMode.LinearLight),
+                    BlendColorEntry(Color(0xFFFF73AD), BlurBlendMode.Lab),
+                )
+            } else {
+                listOf(
+                    BlendColorEntry(Color(0xCC4A4A4A), BlurBlendMode.ColorBurn),
+                    BlendColorEntry(Color(0xFF4F4F4F), BlurBlendMode.LinearLight),
+                    BlendColorEntry(Color(0xFFFF5C96), BlurBlendMode.Lab),
+                )
+            }
         }
-    }
     return textureBlur(
         backdrop = backdrop,
         shape = shape,
         blurRadius = blurRadiusDp,
         colors = BlurColors(blendColors = logoBlend),
-        contentBlendMode = BlendMode.DstIn
+        contentBlendMode = BlendMode.DstIn,
     )
 }
 
@@ -147,16 +154,18 @@ internal fun HomeInfoCard(
 ) {
     val blurRadius = resolvedGlassBlurDp(8.dp, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(24.dp, GlassVariant.Content)
-    val containerColor = if (blurEnabled) {
-        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
-    } else {
-        MiuixTheme.colorScheme.surfaceContainer
-    }
+    val containerColor =
+        if (blurEnabled) {
+            MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
+        } else {
+            MiuixTheme.colorScheme.surfaceContainer
+        }
 
-    val cardModifier = Modifier
-        .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
-        .padding(bottom = 6.dp)
-        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    val cardModifier =
+        Modifier
+            .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
+            .padding(bottom = 6.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
 
     if (backdrop != null && blurEnabled) {
         LiquidSurface(
@@ -166,16 +175,17 @@ internal fun HomeInfoCard(
             isInteractive = false,
             surfaceColor = containerColor,
             blurRadius = blurRadius,
-            lensRadius = lensRadius
+            lensRadius = lensRadius,
         ) {
             HomeInfoCardContent(content)
         }
     } else {
         Box(
-            modifier = cardModifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainer)
+            modifier =
+                cardModifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainer),
         ) {
             HomeInfoCardContent(content)
         }
@@ -183,14 +193,13 @@ internal fun HomeInfoCard(
 }
 
 @Composable
-private fun HomeInfoCardContent(
-    content: @Composable () -> Unit
-) {
+private fun HomeInfoCardContent(content: @Composable () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         content()
     }
@@ -204,20 +213,21 @@ internal fun HomeBottomPageLabel(
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        val iconModifier = Modifier
-            .size(18.dp)
-            .graphicsLayer {
-                scaleX = page.iconScale
-                scaleY = page.iconScale
-            }
+        val iconModifier =
+            Modifier
+                .size(18.dp)
+                .graphicsLayer {
+                    scaleX = page.iconScale
+                    scaleY = page.iconScale
+                }
         if (page.iconRes != null) {
             Icon(
                 painter = painterResource(id = page.iconRes),
                 contentDescription = page.label,
                 tint = if (page.keepOriginalColors) Color.Unspecified else MiuixTheme.colorScheme.onBackground,
-                modifier = iconModifier
+                modifier = iconModifier,
             )
         } else {
             page.icon?.let { icon ->
@@ -225,13 +235,13 @@ internal fun HomeBottomPageLabel(
                     imageVector = icon,
                     contentDescription = page.label,
                     tint = MiuixTheme.colorScheme.onBackground,
-                    modifier = iconModifier
+                    modifier = iconModifier,
                 )
             }
         }
         Text(
             text = page.label,
-            color = MiuixTheme.colorScheme.onBackground
+            color = MiuixTheme.colorScheme.onBackground,
         )
     }
 }
@@ -241,23 +251,26 @@ internal fun HomeInfoGridCard(
     title: String,
     stats: List<HomeCardStatItem>,
     naText: String,
-    columns: Int = 2
+    columns: Int = 2,
 ) {
-    val summaryColor = if (isSystemInDarkTheme()) {
-        Color(0xFF8AB8FF)
-    } else {
-        Color(0xFF1E63D6)
-    }
+    val summaryColor =
+        if (isSystemInDarkTheme()) {
+            Color(0xFF8AB8FF)
+        } else {
+            Color(0xFF1E63D6)
+        }
     val labelColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
-    val rows = remember(stats, columns) {
-        homeInfoGridRows(stats, columns)
-    }
+    val rows =
+        remember(stats, columns) {
+            homeInfoGridRows(stats, columns)
+        }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 1.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 1.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = title,
@@ -266,22 +279,23 @@ internal fun HomeInfoGridCard(
             fontSize = 12.sp,
             lineHeight = 16.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         rows.forEach { rowStats ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 rowStats.forEach { stat ->
                     Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(vertical = 1.dp),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(vertical = 1.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = stat.label,
@@ -289,7 +303,7 @@ internal fun HomeInfoGridCard(
                             fontSize = 11.sp,
                             lineHeight = 14.sp,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             text = stat.value.ifBlank { naText },
@@ -299,7 +313,7 @@ internal fun HomeInfoGridCard(
                             fontWeight = if (stat.emphasize) FontWeight.SemiBold else FontWeight.Medium,
                             maxLines = stat.valueMaxLines,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -313,7 +327,7 @@ internal fun HomeInfoGridCard(
 
 private fun homeInfoGridRows(
     stats: List<HomeCardStatItem>,
-    columns: Int
+    columns: Int,
 ): List<List<HomeCardStatItem>> {
     val safeColumns = columns.coerceAtLeast(1)
     if (stats.size <= safeColumns) return listOf(stats)
@@ -334,5 +348,5 @@ internal data class HomeCardStatItem(
     val label: String,
     val value: String,
     val emphasize: Boolean = false,
-    val valueMaxLines: Int = 1
+    val valueMaxLines: Int = 1,
 )

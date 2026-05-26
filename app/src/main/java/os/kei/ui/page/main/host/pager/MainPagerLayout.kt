@@ -397,12 +397,17 @@ internal fun MainPagerLayout(
                     )
                 }
             }
+            val mainPagerPageKey =
+                remember(coordinator.tabs) {
+                    { index: Int -> coordinator.tabs.getOrNull(index)?.name ?: "main-page-$index" }
+                }
             when (val pagerState = coordinator.pagerState) {
                 is MainMiuixPagerState -> {
                     MainMiuixPager(
                         state = pagerState,
                         userScrollEnabled = coordinator.pagerScrollEnabled,
                         beyondViewportPageCount = coordinator.mainPagerBeyondViewportPageCount,
+                        pageKey = mainPagerPageKey,
                         modifier = pagerModifier,
                         pageContent = pageContent,
                     )
@@ -413,6 +418,7 @@ internal fun MainPagerLayout(
                         state = pagerState,
                         userScrollEnabled = coordinator.pagerScrollEnabled,
                         beyondViewportPageCount = coordinator.mainPagerBeyondViewportPageCount,
+                        pageKey = mainPagerPageKey,
                         modifier = pagerModifier,
                         pageContent = pageContent,
                     )

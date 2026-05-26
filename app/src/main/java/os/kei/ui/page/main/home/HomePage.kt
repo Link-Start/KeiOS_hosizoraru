@@ -340,7 +340,10 @@ fun HomePage(
                     contentPadding = listContentPadding,
                     overscrollEffect = null,
                 ) {
-                    item(key = "logo_spacer") {
+                    item(
+                        key = "logo_spacer",
+                        contentType = "home_logo_spacer",
+                    ) {
                         HomePageHeroSpacer(
                             logoHeightDp = heroMotionState.logoHeightDp,
                             logoPadding = logoPadding,
@@ -351,7 +354,10 @@ fun HomePage(
                         )
                     }
 
-                    item(key = "home_content") {
+                    item(
+                        key = "home_content",
+                        contentType = "home_content",
+                    ) {
                         Column(
                             modifier =
                                 Modifier

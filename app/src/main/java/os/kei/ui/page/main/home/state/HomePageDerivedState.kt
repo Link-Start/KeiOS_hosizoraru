@@ -32,7 +32,7 @@ private val HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP = 128.dp
 
 internal data class HomePageHeroMotionState(
     val bgAlpha: () -> Float,
-    val hdrSweepProgress: Float,
+    val hdrSweepProgress: () -> Float,
     val logoHeightDp: Dp,
     val homeHeaderSinkOffset: Dp,
     val avoidanceProgress: () -> Float,
@@ -44,7 +44,7 @@ internal data class HomePageHeroMotionState(
     val onLogoAreaBottomChanged: (Float) -> Unit,
     val onIconBottomChanged: (Float) -> Unit,
     val onTitleBottomChanged: (Float) -> Unit,
-    val onSummaryBottomChanged: (Float) -> Unit
+    val onSummaryBottomChanged: (Float) -> Unit,
 )
 
 @Immutable
@@ -52,7 +52,7 @@ internal data class HomePageOverviewCardState(
     val homeHeaderStatusPills: List<HomeHeaderStatusPillState>,
     val mcpOverviewStats: List<HomeCardStatItem>,
     val githubOverviewStats: List<HomeCardStatItem>,
-    val baOverviewStats: List<HomeCardStatItem>
+    val baOverviewStats: List<HomeCardStatItem>,
 )
 
 @Composable
@@ -60,7 +60,7 @@ internal fun rememberHomePageHeroMotionState(
     lazyListState: LazyListState,
     homeIconHdrEnabled: Boolean,
     runtime: MainPageRuntime,
-    hiddenOverviewCardCount: Int
+    hiddenOverviewCardCount: Int,
 ): HomePageHeroMotionState {
     val density = LocalDensity.current
     var logoHeightPx by remember { mutableIntStateOf(0) }
@@ -73,32 +73,37 @@ internal fun rememberHomePageHeroMotionState(
     var titleY by remember { mutableFloatStateOf(0f) }
     var summaryY by remember { mutableFloatStateOf(0f) }
     var initialLogoAreaY by remember { mutableFloatStateOf(0f) }
-    val avoidanceScrollDistancePx = remember(density) {
-        with(density) { HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP.toPx() }
-    }
+    val avoidanceScrollDistancePx =
+        remember(density) {
+            with(density) { HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP.toPx() }
+        }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val hdrSweepProgress = if (
-        homeIconHdrEnabled &&
-        transitionAnimationsEnabled &&
-        runtime.isDataActive &&
-        !runtime.isPagerScrollInProgress
-    ) {
-        val hdrSweep = rememberInfiniteTransition(label = "kei_hdr_sweep")
-        val animated by hdrSweep.animateFloat(
-            initialValue = -0.35f,
-            targetValue = 1.35f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = resolvedMotionDuration(4600, transitionAnimationsEnabled),
-                    easing = LinearEasing
+    val hdrSweepProgressProvider =
+        if (
+            homeIconHdrEnabled &&
+            transitionAnimationsEnabled &&
+            runtime.isDataActive &&
+            !runtime.isPagerScrollInProgress
+        ) {
+            val hdrSweep = rememberInfiniteTransition(label = "kei_hdr_sweep")
+            val animated =
+                hdrSweep.animateFloat(
+                    initialValue = -0.35f,
+                    targetValue = 1.35f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation =
+                                tween(
+                                    durationMillis = resolvedMotionDuration(4600, transitionAnimationsEnabled),
+                                    easing = LinearEasing,
+                                ),
+                        ),
+                    label = "kei_hdr_sweep_progress",
                 )
-            ),
-            label = "kei_hdr_sweep_progress"
-        )
-        animated
-    } else {
-        0f
-    }
+            remember(animated) { { animated.value } }
+        } else {
+            remember { { 0f } }
+        }
     var iconProgress by remember { mutableFloatStateOf(0f) }
     var titleProgress by remember { mutableFloatStateOf(0f) }
     var summaryProgress by remember { mutableFloatStateOf(0f) }
@@ -111,17 +116,19 @@ internal fun rememberHomePageHeroMotionState(
     val summaryProgressProvider = remember { { summaryProgress } }
 
     LaunchedEffect(lazyListState, snapshotFlowManager) {
-        snapshotFlowManager.snapshotFlow {
-            lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
-        }
-            .onEach { (index, offset) ->
+        snapshotFlowManager
+            .snapshotFlow {
+                lazyListState.firstVisibleItemIndex to lazyListState.firstVisibleItemScrollOffset
+            }.onEach { (index, offset) ->
                 lastListIndex = index
                 lastListOffsetPx = offset
-                val nextBgAlpha = 1f - homeHeroScrollProgress(
-                    index = index,
-                    offsetPx = offset,
-                    logoHeightPx = logoHeightPx
-                )
+                val nextBgAlpha =
+                    1f -
+                        homeHeroScrollProgress(
+                            index = index,
+                            offsetPx = offset,
+                            logoHeightPx = logoHeightPx,
+                        )
                 if (bgAlpha != nextBgAlpha) bgAlpha = nextBgAlpha
 
                 if (index > 0) {
@@ -131,10 +138,11 @@ internal fun rememberHomePageHeroMotionState(
                     if (summaryProgress != 1f) summaryProgress = 1f
                     return@onEach
                 }
-                val nextAvoidanceProgress = homeHeroAvoidanceProgress(
-                    offsetPx = offset.toFloat(),
-                    distancePx = avoidanceScrollDistancePx
-                )
+                val nextAvoidanceProgress =
+                    homeHeroAvoidanceProgress(
+                        offsetPx = offset.toFloat(),
+                        distancePx = avoidanceScrollDistancePx,
+                    )
                 if (avoidanceProgress != nextAvoidanceProgress) {
                     avoidanceProgress = nextAvoidanceProgress
                 }
@@ -152,31 +160,32 @@ internal fun rememberHomePageHeroMotionState(
                 val nextSummaryProgress =
                     ((offset.toFloat() - summaryDelay) / (stage1 - summaryDelay).coerceAtLeast(1f))
                         .coerceIn(0f, 1f)
-                val nextTitleProgress = ((offset.toFloat() - stage1) / stage2)
-                    .coerceIn(0f, 1f)
-                val nextIconProgress = ((offset.toFloat() - stage1 - stage2) / stage3)
-                    .coerceIn(0f, 1f)
+                val nextTitleProgress =
+                    ((offset.toFloat() - stage1) / stage2)
+                        .coerceIn(0f, 1f)
+                val nextIconProgress =
+                    ((offset.toFloat() - stage1 - stage2) / stage3)
+                        .coerceIn(0f, 1f)
                 if (summaryProgress != nextSummaryProgress) summaryProgress = nextSummaryProgress
                 if (titleProgress != nextTitleProgress) titleProgress = nextTitleProgress
                 if (iconProgress != nextIconProgress) iconProgress = nextIconProgress
-            }
-            .collect { }
+            }.collect { }
     }
 
     return remember(
         bgAlphaProvider,
-        hdrSweepProgress,
+        hdrSweepProgressProvider,
         logoHeightDp,
         hiddenOverviewCardCount,
         avoidanceProgressProvider,
         iconProgressProvider,
         titleProgressProvider,
         summaryProgressProvider,
-        density
+        density,
     ) {
         HomePageHeroMotionState(
             bgAlpha = bgAlphaProvider,
-            hdrSweepProgress = hdrSweepProgress,
+            hdrSweepProgress = hdrSweepProgressProvider,
             logoHeightDp = logoHeightDp,
             homeHeaderSinkOffset = (hiddenOverviewCardCount * HOME_HEADER_SINK_PER_HIDDEN_CARD_DP).dp,
             avoidanceProgress = avoidanceProgressProvider,
@@ -188,17 +197,19 @@ internal fun rememberHomePageHeroMotionState(
             },
             onLogoHeightPxChanged = { heightPx ->
                 logoHeightPx = heightPx
-                val nextBgAlpha = 1f - homeHeroScrollProgress(
-                    index = lastListIndex,
-                    offsetPx = lastListOffsetPx,
-                    logoHeightPx = heightPx
-                )
+                val nextBgAlpha =
+                    1f -
+                        homeHeroScrollProgress(
+                            index = lastListIndex,
+                            offsetPx = lastListOffsetPx,
+                            logoHeightPx = heightPx,
+                        )
                 if (bgAlpha != nextBgAlpha) bgAlpha = nextBgAlpha
             },
             onLogoAreaBottomChanged = { logoAreaY = it },
             onIconBottomChanged = { bottom -> if (iconY == 0f) iconY = bottom },
             onTitleBottomChanged = { bottom -> if (titleY == 0f) titleY = bottom },
-            onSummaryBottomChanged = { bottom -> if (summaryY == 0f) summaryY = bottom }
+            onSummaryBottomChanged = { bottom -> if (summaryY == 0f) summaryY = bottom },
         )
     }
 }
@@ -206,7 +217,7 @@ internal fun rememberHomePageHeroMotionState(
 private fun homeHeroScrollProgress(
     index: Int,
     offsetPx: Int,
-    logoHeightPx: Int
+    logoHeightPx: Int,
 ): Float {
     if (logoHeightPx <= 0) return 0f
     return if (index > 0) {
@@ -218,7 +229,7 @@ private fun homeHeroScrollProgress(
 
 private fun homeHeroAvoidanceProgress(
     offsetPx: Float,
-    distancePx: Float
+    distancePx: Float,
 ): Float {
     val progress = (offsetPx / distancePx.coerceAtLeast(1f)).coerceIn(0f, 1f)
     return progress * progress * (3f - 2f * progress)
@@ -283,177 +294,185 @@ internal fun rememberHomePageOverviewCardState(
     baServerLine: String,
     homeStatBaNotify: String,
     baNotifyLine: String,
-    baCacheFreshnessLine: String
+    baCacheFreshnessLine: String,
 ): HomePageOverviewCardState {
-    val homeHeaderStatusPills = remember(
-        homeStatusMcp,
-        homeStatusGitHub,
-        homeStatusBa,
-        homeStatusShizuku,
-        mcpRunning,
-        cacheStateColor,
-        baLoaded,
-        baActivated,
-        shizukuGranted,
-        runningColor,
-        stoppedColor,
-        inactiveColor
-    ) {
-        listOf(
-            HomeHeaderStatusPillState(
-                label = homeStatusMcp,
-                color = if (mcpRunning) runningColor else stoppedColor,
-                minWidth = 62.dp
-            ),
-            HomeHeaderStatusPillState(
-                label = homeStatusGitHub,
-                color = cacheStateColor,
-                minWidth = 72.dp
-            ),
-            HomeHeaderStatusPillState(
-                label = homeStatusBa,
-                color = when {
-                    !baLoaded -> inactiveColor
-                    baActivated -> runningColor
-                    else -> stoppedColor
-                },
-                minWidth = 62.dp
-            ),
-            HomeHeaderStatusPillState(
-                label = homeStatusShizuku,
-                color = if (shizukuGranted) runningColor else stoppedColor,
-                minWidth = 70.dp,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 8.dp,
-                    vertical = 5.dp
-                )
+    val homeHeaderStatusPills =
+        remember(
+            homeStatusMcp,
+            homeStatusGitHub,
+            homeStatusBa,
+            homeStatusShizuku,
+            mcpRunning,
+            cacheStateColor,
+            baLoaded,
+            baActivated,
+            shizukuGranted,
+            runningColor,
+            stoppedColor,
+            inactiveColor,
+        ) {
+            listOf(
+                HomeHeaderStatusPillState(
+                    label = homeStatusMcp,
+                    color = if (mcpRunning) runningColor else stoppedColor,
+                    minWidth = 62.dp,
+                ),
+                HomeHeaderStatusPillState(
+                    label = homeStatusGitHub,
+                    color = cacheStateColor,
+                    minWidth = 72.dp,
+                ),
+                HomeHeaderStatusPillState(
+                    label = homeStatusBa,
+                    color =
+                        when {
+                            !baLoaded -> inactiveColor
+                            baActivated -> runningColor
+                            else -> stoppedColor
+                        },
+                    minWidth = 62.dp,
+                ),
+                HomeHeaderStatusPillState(
+                    label = homeStatusShizuku,
+                    color = if (shizukuGranted) runningColor else stoppedColor,
+                    minWidth = 70.dp,
+                    contentPadding =
+                        androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 8.dp,
+                            vertical = 5.dp,
+                        ),
+                ),
             )
-        )
-    }
-    val mcpOverviewStats = remember(
-        homeStatStatus,
-        mcpStatusText,
-        homeStatRuntime,
-        mcpRuntimeText,
-        homeStatClients,
-        mcpConnectedClients,
-        homeStatNetwork,
-        networkModeText,
-        homeStatPort,
-        mcpPort,
-        homeStatToken,
-        mcpTokenStatusText
-    ) {
-        listOf(
-            HomeCardStatItem(label = homeStatStatus, value = mcpStatusText, emphasize = true),
-            HomeCardStatItem(label = homeStatRuntime, value = mcpRuntimeText, emphasize = true),
-            HomeCardStatItem(label = homeStatClients, value = mcpConnectedClients.toString()),
-            HomeCardStatItem(label = homeStatNetwork, value = networkModeText),
-            HomeCardStatItem(label = homeStatPort, value = mcpPort.toString()),
-            HomeCardStatItem(label = homeStatToken, value = mcpTokenStatusText)
-        )
-    }
-    val githubOverviewStats = remember(
-        homeStatStableUpdates,
-        githubUpdatableLine,
-        homeStatPreReleaseUpdates,
-        githubPreReleaseUpdateLine,
-        homeStatFailed,
-        githubFailedLine,
-        homeStatTracked,
-        trackedCountLine,
-        homeStatCached,
-        cacheHitCountLine,
-        homeStatCacheState,
-        githubCacheFreshnessLine,
-        showCacheFreshnessInCards,
-        homeStatShare,
-        githubShareLine,
-        githubPendingShareImport,
-        homeStatLastUpdate,
-        githubLastUpdateLine
-    ) {
-        val shareStat = HomeCardStatItem(
-            label = homeStatShare,
-            value = githubShareLine,
-            emphasize = githubPendingShareImport
-        )
-        val baseStats = buildList {
-            add(
-                HomeCardStatItem(
-                    label = homeStatStableUpdates,
-                    value = githubUpdatableLine,
-                    emphasize = true
-                )
-            )
-            add(
-                HomeCardStatItem(
-                    label = homeStatPreReleaseUpdates,
-                    value = githubPreReleaseUpdateLine,
-                    emphasize = true
-                )
-            )
-            add(HomeCardStatItem(label = homeStatFailed, value = githubFailedLine))
-            add(HomeCardStatItem(label = homeStatTracked, value = trackedCountLine))
-            add(HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine))
-            if (showCacheFreshnessInCards) {
-                add(HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine))
-            }
-            add(HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine))
         }
-        if (githubPendingShareImport) {
-            listOf(shareStat) + baseStats
-        } else {
-            baseStats.take(5) + shareStat + baseStats.drop(5)
-        }
-    }
-    val baOverviewStats = remember(
-        homeStatStatus,
-        baActivationLine,
-        homeStatAp,
-        baApLine,
-        homeStatCafeAp,
-        baCafeApLine,
-        homeStatApRemaining,
-        baApRemainingLine,
-        homeStatBaServer,
-        baServerLine,
-        homeStatBaNotify,
-        baNotifyLine,
-        homeStatCacheState,
-        showCacheFreshnessInCards,
-        baCacheFreshnessLine
-    ) {
-        buildList {
-            add(
-                HomeCardStatItem(
-                    label = homeStatStatus,
-                    value = baActivationLine,
-                    emphasize = true
-                )
+    val mcpOverviewStats =
+        remember(
+            homeStatStatus,
+            mcpStatusText,
+            homeStatRuntime,
+            mcpRuntimeText,
+            homeStatClients,
+            mcpConnectedClients,
+            homeStatNetwork,
+            networkModeText,
+            homeStatPort,
+            mcpPort,
+            homeStatToken,
+            mcpTokenStatusText,
+        ) {
+            listOf(
+                HomeCardStatItem(label = homeStatStatus, value = mcpStatusText, emphasize = true),
+                HomeCardStatItem(label = homeStatRuntime, value = mcpRuntimeText, emphasize = true),
+                HomeCardStatItem(label = homeStatClients, value = mcpConnectedClients.toString()),
+                HomeCardStatItem(label = homeStatNetwork, value = networkModeText),
+                HomeCardStatItem(label = homeStatPort, value = mcpPort.toString()),
+                HomeCardStatItem(label = homeStatToken, value = mcpTokenStatusText),
             )
-            add(HomeCardStatItem(label = homeStatAp, value = baApLine, emphasize = true))
-            add(HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine))
-            add(HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine))
-            add(HomeCardStatItem(label = homeStatBaServer, value = baServerLine))
-            add(HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine))
-            if (showCacheFreshnessInCards) {
-                add(HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine))
+        }
+    val githubOverviewStats =
+        remember(
+            homeStatStableUpdates,
+            githubUpdatableLine,
+            homeStatPreReleaseUpdates,
+            githubPreReleaseUpdateLine,
+            homeStatFailed,
+            githubFailedLine,
+            homeStatTracked,
+            trackedCountLine,
+            homeStatCached,
+            cacheHitCountLine,
+            homeStatCacheState,
+            githubCacheFreshnessLine,
+            showCacheFreshnessInCards,
+            homeStatShare,
+            githubShareLine,
+            githubPendingShareImport,
+            homeStatLastUpdate,
+            githubLastUpdateLine,
+        ) {
+            val shareStat =
+                HomeCardStatItem(
+                    label = homeStatShare,
+                    value = githubShareLine,
+                    emphasize = githubPendingShareImport,
+                )
+            val baseStats =
+                buildList {
+                    add(
+                        HomeCardStatItem(
+                            label = homeStatStableUpdates,
+                            value = githubUpdatableLine,
+                            emphasize = true,
+                        ),
+                    )
+                    add(
+                        HomeCardStatItem(
+                            label = homeStatPreReleaseUpdates,
+                            value = githubPreReleaseUpdateLine,
+                            emphasize = true,
+                        ),
+                    )
+                    add(HomeCardStatItem(label = homeStatFailed, value = githubFailedLine))
+                    add(HomeCardStatItem(label = homeStatTracked, value = trackedCountLine))
+                    add(HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine))
+                    if (showCacheFreshnessInCards) {
+                        add(HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine))
+                    }
+                    add(HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine))
+                }
+            if (githubPendingShareImport) {
+                listOf(shareStat) + baseStats
+            } else {
+                baseStats.take(5) + shareStat + baseStats.drop(5)
             }
         }
-    }
+    val baOverviewStats =
+        remember(
+            homeStatStatus,
+            baActivationLine,
+            homeStatAp,
+            baApLine,
+            homeStatCafeAp,
+            baCafeApLine,
+            homeStatApRemaining,
+            baApRemainingLine,
+            homeStatBaServer,
+            baServerLine,
+            homeStatBaNotify,
+            baNotifyLine,
+            homeStatCacheState,
+            showCacheFreshnessInCards,
+            baCacheFreshnessLine,
+        ) {
+            buildList {
+                add(
+                    HomeCardStatItem(
+                        label = homeStatStatus,
+                        value = baActivationLine,
+                        emphasize = true,
+                    ),
+                )
+                add(HomeCardStatItem(label = homeStatAp, value = baApLine, emphasize = true))
+                add(HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine))
+                add(HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine))
+                add(HomeCardStatItem(label = homeStatBaServer, value = baServerLine))
+                add(HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine))
+                if (showCacheFreshnessInCards) {
+                    add(HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine))
+                }
+            }
+        }
 
     return remember(
         homeHeaderStatusPills,
         mcpOverviewStats,
         githubOverviewStats,
-        baOverviewStats
+        baOverviewStats,
     ) {
         HomePageOverviewCardState(
             homeHeaderStatusPills = homeHeaderStatusPills,
             mcpOverviewStats = mcpOverviewStats,
             githubOverviewStats = githubOverviewStats,
-            baOverviewStats = baOverviewStats
+            baOverviewStats = baOverviewStats,
         )
     }
 }

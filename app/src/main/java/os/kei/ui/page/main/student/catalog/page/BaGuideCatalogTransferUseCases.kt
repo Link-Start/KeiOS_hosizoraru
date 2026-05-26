@@ -41,6 +41,7 @@ internal suspend fun buildBaGuideCatalogImportPreviewAsync(
     bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    clock: CatalogFavoritesClock = CatalogFavoritesSystemClock,
 ): BaGuideCatalogImportPreviewState {
     val raw =
         readBaGuideCatalogImportTextAsync(
@@ -51,7 +52,8 @@ internal suspend fun buildBaGuideCatalogImportPreviewAsync(
     return when (kind) {
         BaGuideCatalogImportKind.Student -> {
             withContext(parseDispatcher) {
-                val studentFavorites = parseCatalogFavoritesExport(raw)
+                val fallbackFavoritedAtMs = clock.nowMs()
+                val studentFavorites = parseCatalogFavoritesExport(raw, fallbackFavoritedAtMs)
                 BaGuideCatalogImportPreviewState(
                     kind = kind,
                     raw = raw,
@@ -77,10 +79,11 @@ internal suspend fun buildBaGuideCatalogImportPreviewAsync(
         }
 
         BaGuideCatalogImportKind.All -> {
+            val fallbackFavoritedAtMs = clock.nowMs()
             coroutineScope {
                 val studentPreview =
                     async(parseDispatcher) {
-                        val studentFavorites = parseCatalogFavoritesExport(raw)
+                        val studentFavorites = parseCatalogFavoritesExport(raw, fallbackFavoritedAtMs)
                         previewCatalogFavoritesImport(
                             imported = studentFavorites,
                             currentFavorites = currentFavorites,
@@ -106,15 +109,17 @@ internal suspend fun applyBaGuideCatalogFavoritesImportAsync(
     bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    clock: CatalogFavoritesClock = CatalogFavoritesSystemClock,
 ): BaGuideCatalogImportApplyResult =
     coroutineScope {
+        val fallbackFavoritedAtMs = clock.nowMs()
         val studentFavorites =
             when (preview.kind) {
                 BaGuideCatalogImportKind.All,
                 BaGuideCatalogImportKind.Student,
                 -> {
                     async(parseDispatcher) {
-                        parseCatalogFavoritesExport(preview.raw)
+                        parseCatalogFavoritesExport(preview.raw, fallbackFavoritedAtMs)
                     }
                 }
 
@@ -157,9 +162,10 @@ internal suspend fun readBaGuideCatalogImportTextAsync(
 internal suspend fun buildCatalogFavoritesExportJsonAsync(
     favorites: Map<Long, Long>,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    clock: CatalogFavoritesClock = CatalogFavoritesSystemClock,
 ): String =
     withContext(parseDispatcher) {
-        buildCatalogFavoritesExportJson(favorites)
+        buildCatalogFavoritesExportJson(favorites, clock.nowMs())
     }
 
 internal suspend fun buildCatalogAllFavoritesExportJsonAsync(
@@ -167,6 +173,7 @@ internal suspend fun buildCatalogAllFavoritesExportJsonAsync(
     bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
     ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
+    clock: CatalogFavoritesClock = CatalogFavoritesSystemClock,
 ): String {
     val bgmFavoritesJson =
         withContext(ioDispatcher) {
@@ -176,6 +183,7 @@ internal suspend fun buildCatalogAllFavoritesExportJsonAsync(
         buildCatalogAllFavoritesExportJson(
             favorites = favorites,
             bgmFavoritesJson = bgmFavoritesJson,
+            nowMs = clock.nowMs(),
         )
     }
 }

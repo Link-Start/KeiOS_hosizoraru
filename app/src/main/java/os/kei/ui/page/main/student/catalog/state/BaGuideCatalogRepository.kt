@@ -25,6 +25,8 @@ import os.kei.ui.page.main.student.catalog.loadCachedBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportApplyResult
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
+import os.kei.ui.page.main.student.catalog.page.CatalogFavoritesClock
+import os.kei.ui.page.main.student.catalog.page.CatalogFavoritesSystemClock
 import os.kei.ui.page.main.student.catalog.page.applyBaGuideCatalogFavoritesImportAsync
 import os.kei.ui.page.main.student.catalog.page.buildBaGuideCatalogImportPreviewAsync
 import os.kei.ui.page.main.student.catalog.page.buildBgmFavoritesExportJsonAsync
@@ -56,11 +58,11 @@ internal class BaGuideCatalogRepository(
     private val expiredChecker: (BaGuideCatalogBundle?, Int, Long) -> Boolean =
         ::isBaGuideCatalogCacheExpired,
     private val bgmFavoriteRepository: BaGuideBgmFavoriteRepository = BaGuideBgmFavoriteRepository(),
+    private val catalogFavoritesClock: CatalogFavoritesClock = CatalogFavoritesSystemClock,
 ) {
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = bgmFavoriteRepository.favoritesFlow()
 
-    suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> =
-        bgmFavoriteRepository.hydrateFavorites()
+    suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> = bgmFavoriteRepository.hydrateFavorites()
 
     fun bgmPlaybackSnapshot() = bgmFavoriteRepository.playbackSnapshot()
 
@@ -87,9 +89,17 @@ internal class BaGuideCatalogRepository(
             normalized
         }
 
-    suspend fun buildStudentFavoritesExportJson(favorites: Map<Long, Long>): String = buildCatalogFavoritesExportJsonAsync(favorites)
+    suspend fun buildStudentFavoritesExportJson(favorites: Map<Long, Long>): String =
+        buildCatalogFavoritesExportJsonAsync(
+            favorites = favorites,
+            clock = catalogFavoritesClock,
+        )
 
-    suspend fun buildAllFavoritesExportJson(favorites: Map<Long, Long>): String = buildCatalogAllFavoritesExportJsonAsync(favorites)
+    suspend fun buildAllFavoritesExportJson(favorites: Map<Long, Long>): String =
+        buildCatalogAllFavoritesExportJsonAsync(
+            favorites = favorites,
+            clock = catalogFavoritesClock,
+        )
 
     suspend fun buildBgmFavoritesExportJson(): String = buildBgmFavoritesExportJsonAsync()
 
@@ -105,12 +115,14 @@ internal class BaGuideCatalogRepository(
             kind = kind,
             currentFavorites = currentFavorites,
             bgmFavoriteRepository = bgmFavoriteRepository,
+            clock = catalogFavoritesClock,
         )
 
     suspend fun applyFavoritesImport(preview: BaGuideCatalogImportPreviewState): BaGuideCatalogImportApplyResult =
         applyBaGuideCatalogFavoritesImportAsync(
             preview = preview,
             bgmFavoriteRepository = bgmFavoriteRepository,
+            clock = catalogFavoritesClock,
         )
 
     suspend fun loadNativeBgmMediaNotificationEnabled(): Boolean =

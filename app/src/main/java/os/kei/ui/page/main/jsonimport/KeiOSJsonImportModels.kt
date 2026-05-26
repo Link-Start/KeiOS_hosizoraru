@@ -17,10 +17,12 @@ internal enum class KeiOSJsonImportStage {
     PreviewReady,
     Importing,
     Done,
-    Failed
+    Failed,
 }
 
-internal enum class KeiOSJsonImportKind(@param:StringRes val titleRes: Int) {
+internal enum class KeiOSJsonImportKind(
+    @param:StringRes val titleRes: Int,
+) {
     GitHubTracked(R.string.json_import_kind_github_tracked),
     OsActivityCards(R.string.json_import_kind_os_activity_cards),
     OsShellCards(R.string.json_import_kind_os_shell_cards),
@@ -30,7 +32,7 @@ internal enum class KeiOSJsonImportKind(@param:StringRes val titleRes: Int) {
     BaAllFavorites(R.string.json_import_kind_ba_all_favorites),
     McpLogs(R.string.json_import_kind_mcp_logs),
     OsInfoCard(R.string.json_import_kind_os_info_card),
-    Unknown(R.string.json_import_kind_unknown)
+    Unknown(R.string.json_import_kind_unknown),
 }
 
 internal data class KeiOSJsonImportIntentSource(
@@ -38,7 +40,7 @@ internal data class KeiOSJsonImportIntentSource(
     val inlineText: String? = null,
     val displayName: String = "",
     val mimeType: String = "",
-    val declaredSizeBytes: Long = -1L
+    val declaredSizeBytes: Long = -1L,
 ) {
     val isInlineText: Boolean
         get() = uri == null && inlineText != null
@@ -49,7 +51,7 @@ internal data class KeiOSJsonImportFile(
     val displayName: String,
     val mimeType: String,
     val sizeBytes: Long,
-    val sourceDescription: String
+    val sourceDescription: String,
 )
 
 internal data class KeiOSJsonImportHeader(
@@ -58,20 +60,20 @@ internal data class KeiOSJsonImportHeader(
     val version: Int = 0,
     val highVersion: Boolean = false,
     val readOnly: Boolean = false,
-    val legacyFormat: Boolean = false
+    val legacyFormat: Boolean = false,
 )
 
 @Immutable
 internal data class KeiOSJsonImportStat(
     val label: String,
     val value: String,
-    val emphasized: Boolean = false
+    val emphasized: Boolean = false,
 )
 
 @Immutable
 internal data class KeiOSJsonImportSample(
     val title: String,
-    val subtitle: String = ""
+    val subtitle: String = "",
 )
 
 @Immutable
@@ -91,7 +93,7 @@ internal data class KeiOSJsonImportPreview(
     val duplicateCount: Int = 0,
     val invalidCount: Int = 0,
     val stats: List<KeiOSJsonImportStat> = emptyList(),
-    val samples: List<KeiOSJsonImportSample> = emptyList()
+    val samples: List<KeiOSJsonImportSample> = emptyList(),
 )
 
 internal sealed interface KeiOSJsonImportPlan {
@@ -100,11 +102,11 @@ internal sealed interface KeiOSJsonImportPlan {
 
 internal data class ImportableKeiOSJsonPlan(
     override val preview: KeiOSJsonImportPreview,
-    val apply: suspend () -> KeiOSJsonImportApplyResult
+    val apply: suspend () -> KeiOSJsonImportApplyResult,
 ) : KeiOSJsonImportPlan
 
 internal data class ReadOnlyKeiOSJsonPlan(
-    override val preview: KeiOSJsonImportPreview
+    override val preview: KeiOSJsonImportPreview,
 ) : KeiOSJsonImportPlan
 
 @Immutable
@@ -114,7 +116,7 @@ internal data class KeiOSJsonImportApplyResult(
     val unchangedCount: Int = 0,
     val invalidCount: Int = 0,
     val duplicateCount: Int = 0,
-    val message: String = ""
+    val message: String = "",
 )
 
 @Immutable
@@ -126,19 +128,26 @@ internal data class KeiOSJsonImportUiState(
     val preview: KeiOSJsonImportPreview? = null,
     val applyResult: KeiOSJsonImportApplyResult? = null,
     val errorMessage: String = "",
-    val busy: Boolean = false
+    val busy: Boolean = false,
 ) {
     val canConfirmImport: Boolean
-        get() = stage == KeiOSJsonImportStage.PreviewReady &&
+        get() =
+            stage == KeiOSJsonImportStage.PreviewReady &&
                 preview?.canImport == true &&
                 preview.readOnly == false &&
                 !busy
 }
 
+internal sealed interface KeiOSJsonImportEvent {
+    data class OpenResult(
+        val kind: KeiOSJsonImportKind,
+    ) : KeiOSJsonImportEvent
+}
+
 internal class KeiOSJsonImportException(
     val reason: KeiOSJsonImportFailureReason,
     message: String = reason.name,
-    cause: Throwable? = null
+    cause: Throwable? = null,
 ) : IllegalArgumentException(message, cause)
 
 internal enum class KeiOSJsonImportFailureReason {
@@ -148,5 +157,5 @@ internal enum class KeiOSJsonImportFailureReason {
     UnsupportedFormat,
     ReadFailed,
     ParseFailed,
-    ApplyFailed
+    ApplyFailed,
 }

@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,7 +47,6 @@ import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.blur.isRenderEffectSupported
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -86,7 +84,6 @@ fun HomePage(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     val blurEnabled = isRenderEffectSupported()
     val shaderSupported = isRuntimeShaderSupported()
@@ -259,7 +256,6 @@ fun HomePage(
                 AppTopBarSection(
                     title = "",
                     largeTitle = "",
-                    scrollBehavior = topAppBarScrollBehavior,
                     color = Color.Transparent,
                     onTitleClick = onShowBottomBar,
                 )
@@ -333,10 +329,7 @@ fun HomePage(
 
                 LazyColumn(
                     state = lazyListState,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = listContentPadding,
                     overscrollEffect = null,
                 ) {

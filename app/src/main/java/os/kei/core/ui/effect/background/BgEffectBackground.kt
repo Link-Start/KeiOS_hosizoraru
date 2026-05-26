@@ -24,7 +24,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.roundToInt
+import kotlin.math.ceil
 
 private const val DYNAMIC_BACKGROUND_RENDER_SCALE = 0.18f
 
@@ -53,8 +53,8 @@ fun BgEffectBackground(
         }
     val renderSize =
         IntSize(
-            width = (targetSize.width * renderScale).roundToInt().coerceAtLeast(0),
-            height = (targetSize.height * renderScale).roundToInt().coerceAtLeast(0),
+            width = ceil(targetSize.width * renderScale).toInt().coerceAtLeast(0),
+            height = ceil(targetSize.height * renderScale).toInt().coerceAtLeast(0),
         )
 
     Box(

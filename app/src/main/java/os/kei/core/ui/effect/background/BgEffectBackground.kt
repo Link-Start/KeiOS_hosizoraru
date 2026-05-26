@@ -26,7 +26,7 @@ import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
-private const val DYNAMIC_BACKGROUND_RENDER_SCALE = 0.25f
+private const val DYNAMIC_BACKGROUND_RENDER_SCALE = 0.18f
 
 @Suppress("SuspiciousIndentation")
 @Composable

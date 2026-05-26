@@ -12,7 +12,7 @@ import kotlin.math.sin
 class BgEffectPainter {
     val shaderCode by lazy { OS3_BG_FRAG }
     val runtimeShader by lazy { RuntimeShader(shaderCode) }
-    val brush: Brush get() = runtimeShader.asBrush()
+    val brush: Brush by lazy { runtimeShader.asBrush() }
 
     private val resolution = FloatArray(2)
     private val bound = floatArrayOf(0.0f, 0.4489f, 1.0f, 0.5511f)

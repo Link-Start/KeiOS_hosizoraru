@@ -116,14 +116,8 @@ internal class MainPagerHomeOverviewViewModel(
         }
     }
 
-    fun requestRuntimeTicker(
-        mcpOverview: HomeMcpOverview,
-        runtime: MainPageRuntime,
-    ) {
-        runtimeTicker.request(
-            mcpOverview = mcpOverview,
-            runtime = runtime,
-        )
+    fun requestRuntimeTicker(request: MainPagerHomeRuntimeTickerRequest) {
+        runtimeTicker.request(request)
     }
 
     companion object {
@@ -175,11 +169,19 @@ internal fun rememberMainPagerHomeOverviewState(
         if (settingsReturnToken <= 0) return@LaunchedEffect
         homeOverviewViewModel.refresh("settings_return_$settingsReturnToken")
     }
-    LaunchedEffect(uiState.mcpOverview, homeRuntime) {
-        homeOverviewViewModel.requestRuntimeTicker(
-            mcpOverview = uiState.mcpOverview,
-            runtime = homeRuntime,
-        )
+    val runtimeTickerRequest =
+        remember(
+            uiState.mcpOverview,
+            homeRuntime.isPageActive,
+            homeRuntime.isDataActive,
+        ) {
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = uiState.mcpOverview,
+                runtime = homeRuntime,
+            )
+        }
+    LaunchedEffect(runtimeTickerRequest) {
+        homeOverviewViewModel.requestRuntimeTicker(runtimeTickerRequest)
     }
     val onOverviewCardVisibilityChange =
         remember(homeOverviewViewModel) {

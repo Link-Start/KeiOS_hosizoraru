@@ -288,6 +288,7 @@ internal fun MainPagerLayout(
                                 homeHdrEffectActive,
                                 homeDynamicFullEffectEnabled,
                                 coordinator.visibleTabsSnapshot,
+                                coordinator.homeAppOverview,
                                 coordinator.homeMcpOverview,
                                 coordinator.homeGitHubOverview,
                                 coordinator.homeBaOverview,

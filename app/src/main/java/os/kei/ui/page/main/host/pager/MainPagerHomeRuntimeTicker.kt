@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.host.pager
 
+import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -11,6 +12,17 @@ import os.kei.feature.home.model.HomeMcpOverview
 
 private const val HOME_RUNTIME_TICK_INTERVAL_MS = 30_000L
 
+@Immutable
+internal data class MainPagerHomeRuntimeTickerRequest(
+    val running: Boolean,
+    val runningSinceEpochMs: Long,
+    val pageActive: Boolean,
+    val dataActive: Boolean,
+) {
+    val shouldTick: Boolean
+        get() = pageActive && dataActive && running && runningSinceEpochMs > 0L
+}
+
 internal class MainPagerHomeRuntimeTicker(
     private val scope: CoroutineScope,
     initialNowMs: Long = System.currentTimeMillis(),
@@ -19,19 +31,10 @@ internal class MainPagerHomeRuntimeTicker(
     val nowMs: StateFlow<Long> = _nowMs.asStateFlow()
 
     private var tickerJob: Job? = null
-    private var lastRequest: Request? = null
+    private var lastRequest: MainPagerHomeRuntimeTickerRequest? = null
 
-    fun request(
-        mcpOverview: HomeMcpOverview,
-        runtime: MainPageRuntime,
-    ) {
-        val nextRequest =
-            Request(
-                running = mcpOverview.running,
-                runningSinceEpochMs = mcpOverview.runningSinceEpochMs,
-                pageActive = runtime.isPageActive,
-                dataActive = runtime.isDataActive,
-            )
+    fun request(request: MainPagerHomeRuntimeTickerRequest) {
+        val nextRequest = request
         if (nextRequest == lastRequest) return
         lastRequest = nextRequest
 
@@ -49,14 +52,15 @@ internal class MainPagerHomeRuntimeTicker(
     }
 
     override fun toString(): String = "MainPagerHomeRuntimeTicker(nowMs=${_nowMs.value})"
-
-    private data class Request(
-        val running: Boolean,
-        val runningSinceEpochMs: Long,
-        val pageActive: Boolean,
-        val dataActive: Boolean,
-    ) {
-        val shouldTick: Boolean
-            get() = pageActive && dataActive && running && runningSinceEpochMs > 0L
-    }
 }
+
+internal fun buildMainPagerHomeRuntimeTickerRequest(
+    mcpOverview: HomeMcpOverview,
+    runtime: MainPageRuntime,
+): MainPagerHomeRuntimeTickerRequest =
+    MainPagerHomeRuntimeTickerRequest(
+        running = mcpOverview.running,
+        runningSinceEpochMs = mcpOverview.runningSinceEpochMs,
+        pageActive = runtime.isPageActive,
+        dataActive = runtime.isDataActive,
+    )

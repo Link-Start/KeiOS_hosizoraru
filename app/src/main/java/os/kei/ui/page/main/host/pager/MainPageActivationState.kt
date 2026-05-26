@@ -5,13 +5,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.runtime.withFrameNanos
 import os.kei.ui.page.main.model.BottomPage
 
 @Stable
 internal class MainPageActivationState internal constructor(
-    private val activatedPages: Map<BottomPage, Boolean>,
-    private val readyPages: Map<BottomPage, Boolean>
+    private val activatedPages: SnapshotStateMap<BottomPage, Boolean>,
+    private val readyPages: SnapshotStateMap<BottomPage, Boolean>,
 ) {
     fun hasActivated(page: BottomPage): Boolean = activatedPages[page] == true
 
@@ -36,13 +37,10 @@ internal fun rememberMainPageActivationState(
         }
     }
 
-    return remember(
-        activatedPages.toMap(),
-        readyPages.toMap()
-    ) {
+    return remember(activatedPages, readyPages) {
         MainPageActivationState(
-            activatedPages = activatedPages.toMap(),
-            readyPages = readyPages.toMap()
+            activatedPages = activatedPages,
+            readyPages = readyPages,
         )
     }
 }

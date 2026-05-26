@@ -4,8 +4,11 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -17,6 +20,8 @@ internal class FeedbackIssueViewModel(
     private val appContext get() = getApplication<Application>().applicationContext
     private val _uiState = MutableStateFlow(FeedbackIssueUiState())
     val uiState: StateFlow<FeedbackIssueUiState> = _uiState.asStateFlow()
+    private val _events = MutableSharedFlow<FeedbackIssueEvent>(replay = 0)
+    val events: SharedFlow<FeedbackIssueEvent> = _events.asSharedFlow()
 
     init {
         // First-frame skeleton already shows because FeedbackIssueUiState.loading defaults to
@@ -77,16 +82,23 @@ internal class FeedbackIssueViewModel(
         _uiState.update { state -> state.copy(pendingSubmitMode = null) }
     }
 
-    fun buildBrowserIssueUrl(): String {
+    fun submitViaBrowser() {
         val state = _uiState.value
-        return FeedbackIssueMarkdown.buildBrowserIssueUrl(
-            title = state.title,
-            body = state.body,
-            deviceInfo = state.deviceInfo,
-        )
+        viewModelScope.launch {
+            _uiState.update { currentState -> currentState.copy(pendingSubmitMode = null) }
+            _events.emit(
+                FeedbackIssueEvent.OpenUrl(
+                    FeedbackIssueMarkdown.buildBrowserIssueUrl(
+                        title = state.title,
+                        body = state.body,
+                        deviceInfo = state.deviceInfo,
+                    ),
+                ),
+            )
+        }
     }
 
-    fun submitViaApi(onSuccessOpenUrl: (String) -> Unit) {
+    fun submitViaApi() {
         val title = _uiState.value.title.trim()
         val body = _uiState.value.body.trim()
         if (title.isBlank() || body.isBlank()) {
@@ -116,7 +128,7 @@ internal class FeedbackIssueViewModel(
                             statusMessage = appContext.getString(os.kei.R.string.feedback_issue_status_created),
                         )
                     }
-                    onSuccessOpenUrl(result.issueUrl)
+                    _events.emit(FeedbackIssueEvent.OpenUrl(result.issueUrl))
                 }
 
                 FeedbackIssueSubmitResult.MissingToken -> {
@@ -214,9 +226,9 @@ internal class FeedbackIssueViewModel(
         }
     }
 
-    fun suggestLogExportFileName(onReady: (String) -> Unit) {
+    fun requestLogExport() {
         viewModelScope.launch {
-            onReady(repository.buildLogExportFileName())
+            _events.emit(FeedbackIssueEvent.LaunchLogExport(repository.buildLogExportFileName()))
         }
     }
 }

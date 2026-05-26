@@ -50,6 +50,16 @@ internal data class FeedbackIssueUiState(
     val errorMessage: String = "",
 )
 
+internal sealed interface FeedbackIssueEvent {
+    data class LaunchLogExport(
+        val fileName: String,
+    ) : FeedbackIssueEvent
+
+    data class OpenUrl(
+        val url: String,
+    ) : FeedbackIssueEvent
+}
+
 internal data class FeedbackIssueDraftSnapshot(
     val deviceInfo: FeedbackDeviceInfo,
     val logStats: AppLogStore.Stats,

@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,8 +23,6 @@ import os.kei.R
 import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.TopInfoRowsGroup
-import os.kei.ui.page.main.os.topInfoDisplayLabel
-import os.kei.ui.page.main.os.topInfoDisplayValue
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import top.yukonga.miuix.kmp.basic.Text
@@ -75,10 +73,11 @@ internal fun LazyListScope.addTopInfoCard(
 private sealed interface TopInfoVirtualizedItem {
     data class Header(
         val group: TopInfoRowsGroup,
+        val displayIndex: Int,
     ) : TopInfoVirtualizedItem
 
     data class Entry(
-        val row: InfoRow,
+        val row: OsInfoRowDisplayItem,
     ) : TopInfoVirtualizedItem
 }
 
@@ -86,12 +85,18 @@ private sealed interface TopInfoVirtualizedItem {
 private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<TopInfoRowsGroup>) {
     val context = LocalContext.current
     val rows =
-        remember(groupedRows) {
+        remember(context, groupedRows) {
             buildList {
                 groupedRows.forEach { group ->
                     if (group.rows.isNotEmpty()) {
-                        add(TopInfoVirtualizedItem.Header(group))
-                        group.rows.forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
+                        add(
+                            TopInfoVirtualizedItem.Header(
+                                group = group,
+                                displayIndex = size,
+                            ),
+                        )
+                        buildTopInfoDisplayItems(context, group.rows)
+                            .forEach { entry -> add(TopInfoVirtualizedItem.Entry(entry)) }
                     }
                 }
             }
@@ -106,8 +111,8 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<TopInfoRowsGroup>)
 
                     is TopInfoVirtualizedItem.Entry -> {
                         OsTopInfoDisplayRow(
-                            label = topInfoDisplayLabel(context, item.row.key),
-                            value = topInfoDisplayValue(context, item.row),
+                            label = item.row.label,
+                            value = item.row.value,
                             labelMinWidth = 56.dp,
                             labelMaxWidth = 156.dp,
                         )
@@ -124,30 +129,30 @@ private fun OsVirtualizedGroupedTopInfoRows(groupedRows: List<TopInfoRowsGroup>)
                 .heightIn(max = 520.dp),
         userScrollEnabled = true,
     ) {
-        itemsIndexed(
+        items(
             items = rows,
-            key = { _, item ->
+            key = { item ->
                 when (item) {
                     is TopInfoVirtualizedItem.Header -> "header-${item.group.titleRes}"
-                    is TopInfoVirtualizedItem.Entry -> "entry-${item.row.key}"
+                    is TopInfoVirtualizedItem.Entry -> "entry-${item.row.stableKey}"
                 }
             },
-            contentType = { _, item ->
+            contentType = { item ->
                 when (item) {
                     is TopInfoVirtualizedItem.Header -> "os_top_info_header"
                     is TopInfoVirtualizedItem.Entry -> "os_top_info_entry"
                 }
             },
-        ) { index, item ->
+        ) { item ->
             when (item) {
                 is TopInfoVirtualizedItem.Header -> {
-                    TopInfoGroupHeader(item.group, index)
+                    TopInfoGroupHeader(item.group, item.displayIndex)
                 }
 
                 is TopInfoVirtualizedItem.Entry -> {
                     OsTopInfoDisplayRow(
-                        label = topInfoDisplayLabel(context, item.row.key),
-                        value = topInfoDisplayValue(context, item.row),
+                        label = item.row.label,
+                        value = item.row.value,
                         labelMinWidth = 56.dp,
                         labelMaxWidth = 156.dp,
                     )
@@ -179,12 +184,16 @@ private fun OsVirtualizedTopInfoRows(
     labelMaxWidth: Dp = 156.dp,
 ) {
     val context = LocalContext.current
+    val displayRows =
+        remember(context, rows) {
+            buildTopInfoDisplayItems(context, rows)
+        }
     if (rows.size <= SMALL_INFO_ROW_COUNT) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            rows.forEach { row ->
+            displayRows.forEach { row ->
                 OsTopInfoDisplayRow(
-                    label = topInfoDisplayLabel(context, row.key),
-                    value = topInfoDisplayValue(context, row),
+                    label = row.label,
+                    value = row.value,
                     labelMinWidth = labelMinWidth,
                     labelMaxWidth = labelMaxWidth,
                 )
@@ -199,14 +208,14 @@ private fun OsVirtualizedTopInfoRows(
                 .heightIn(max = 520.dp),
         userScrollEnabled = true,
     ) {
-        itemsIndexed(
-            items = rows,
-            key = { _, row -> row.key },
-            contentType = { _, _ -> "os_top_info_entry" },
-        ) { _, row ->
+        items(
+            items = displayRows,
+            key = { row -> row.stableKey },
+            contentType = { "os_top_info_entry" },
+        ) { row ->
             OsTopInfoDisplayRow(
-                label = topInfoDisplayLabel(context, row.key),
-                value = topInfoDisplayValue(context, row),
+                label = row.label,
+                value = row.value,
                 labelMinWidth = labelMinWidth,
                 labelMaxWidth = labelMaxWidth,
             )

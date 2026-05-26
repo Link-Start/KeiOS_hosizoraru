@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -93,11 +93,11 @@ internal fun OsVirtualizedInfoRows(
                 .heightIn(max = 520.dp),
         userScrollEnabled = true,
     ) {
-        itemsIndexed(
+        items(
             items = rows,
-            key = { _, row -> row.key },
-            contentType = { _, _ -> "os_info_row" },
-        ) { _, row ->
+            key = { row -> row.osInfoRowStableKey() },
+            contentType = { "os_info_row" },
+        ) { row ->
             OsSectionInfoRow(
                 label = row.key,
                 value = row.value,

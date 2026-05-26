@@ -27,6 +27,8 @@ import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
+import os.kei.ui.page.main.github.page.action.GitHubActionClock
+import os.kei.ui.page.main.github.page.action.GitHubSystemActionClock
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.query.DownloaderOption
@@ -107,6 +109,7 @@ internal sealed interface GitHubTrackedImportStartResult {
 
 internal class GitHubPageViewModel(
     application: Application,
+    private val clock: GitHubActionClock = GitHubSystemActionClock,
 ) : AndroidViewModel(application) {
     private val appContext: Context = application.applicationContext
     val repository = GitHubPageRepository()
@@ -131,7 +134,7 @@ internal class GitHubPageViewModel(
             repository = repository,
         )
     private val pendingShareImportPageActive = MutableStateFlow(false)
-    private val pendingShareImportNowMillis = MutableStateFlow(System.currentTimeMillis())
+    private val pendingShareImportNowMillis = MutableStateFlow(clock.nowMs())
 
     private val _contentDerivedState = MutableStateFlow(GitHubPageContentDerivedState())
     val contentDerivedState: StateFlow<GitHubPageContentDerivedState> = _contentDerivedState.asStateFlow()
@@ -295,9 +298,7 @@ internal class GitHubPageViewModel(
 
     fun retainTrackedExpansion(validItemIds: Set<String>) = trackedExpansionController.retainTrackedExpansion(validItemIds)
 
-    fun bindContextObservers(
-        state: GitHubPageState,
-    ) {
+    fun bindContextObservers(state: GitHubPageState) {
         if (onlineShareTargetsJob?.isActive != true) {
             onlineShareTargetsJob =
                 viewModelScope.launch {
@@ -343,8 +344,7 @@ internal class GitHubPageViewModel(
         pendingShareImportPageActive.value = active
     }
 
-    fun requestAppIcons(packageNames: List<String>) =
-        appIconLoader.requestIcons(packageNames = packageNames)
+    fun requestAppIcons(packageNames: List<String>) = appIconLoader.requestIcons(packageNames = packageNames)
 
     fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
         val previousInput = appPickerStateInput
@@ -499,11 +499,11 @@ internal class GitHubPageViewModel(
                     armedAtMillis.takeIf { pageActive }
                 }.distinctUntilChanged()
                     .collectLatest { armedAtMillis ->
-                        pendingShareImportNowMillis.value = System.currentTimeMillis()
+                        pendingShareImportNowMillis.value = clock.nowMs()
                         if (armedAtMillis == null) return@collectLatest
                         while (true) {
                             kotlinx.coroutines.delay(PENDING_SHARE_IMPORT_CARD_TICK_MS.milliseconds)
-                            pendingShareImportNowMillis.value = System.currentTimeMillis()
+                            pendingShareImportNowMillis.value = clock.nowMs()
                         }
                     }
             }

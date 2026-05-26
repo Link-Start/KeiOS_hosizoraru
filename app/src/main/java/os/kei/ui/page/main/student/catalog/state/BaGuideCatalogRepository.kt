@@ -322,16 +322,24 @@ internal class BaGuideCatalogRepository(
                 }.getOrDefault(BaGuideBgmFavoriteMetadataIndex.Empty)
             }
         return withContext(parseDispatcher) {
+            val displayedFavorites =
+                filterAndSortBgmFavorites(
+                    favorites = input.favorites,
+                    searchQuery = input.searchQuery,
+                    sortMode = input.sortMode,
+                    metadataIndex = metadataIndex,
+                )
+            val playbackSnapshot = bgmPlaybackSnapshot()
             BaGuideFavoriteBgmListDerivedState(
-                displayedFavorites =
-                    filterAndSortBgmFavorites(
-                        favorites = input.favorites,
-                        searchQuery = input.searchQuery,
-                        sortMode = input.sortMode,
-                        metadataIndex = metadataIndex,
+                displayedFavorites = displayedFavorites,
+                tracks =
+                    buildFavoriteBgmTracks(
+                        favorites = displayedFavorites,
+                        playbackSnapshot = playbackSnapshot,
                     ),
+                favoritesByTrackId = buildFavoritesByTrackId(displayedFavorites),
                 metadataIndex = metadataIndex,
-                playbackSnapshot = bgmPlaybackSnapshot(),
+                playbackSnapshot = playbackSnapshot,
                 deriving = false,
             )
         }

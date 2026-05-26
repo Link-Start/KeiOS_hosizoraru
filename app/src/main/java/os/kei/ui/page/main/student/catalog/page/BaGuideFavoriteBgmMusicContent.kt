@@ -22,18 +22,15 @@ import kotlinx.coroutines.flow.map
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
-import os.kei.ui.page.main.student.GuideBgmFavoritePlaybackSnapshot
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
-import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
 import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
-import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 
 @Composable
 internal fun BaGuideFavoriteBgmMusicContent(
@@ -79,6 +76,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
             ),
     )
     val displayedFavorites = derivedState.displayedFavorites
+    val tracks = derivedState.tracks
+    val favoritesByTrackId = derivedState.favoritesByTrackId
     val favoriteOfflineCacheState =
         rememberBaGuideFavoriteBgmOfflineCacheState(
             uiState = offlineCacheState,
@@ -114,17 +113,6 @@ internal fun BaGuideFavoriteBgmMusicContent(
             playbackState.selectedFavorite
                 ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
                 ?: displayedFavorites.firstOrNull()
-        }
-    val playbackSnapshot = derivedState.playbackSnapshot
-    val tracks =
-        remember(displayedFavorites, playbackSnapshot) {
-            displayedFavorites.map { favorite ->
-                favorite.toBaGuideBgmTrack(playbackSnapshot)
-            }
-        }
-    val favoritesByTrackId =
-        remember(displayedFavorites) {
-            displayedFavorites.associateBy { it.audioUrl }
         }
     val sectionTitle =
         selectedFavorite
@@ -244,17 +232,3 @@ private data class BaGuideFavoriteBgmPlaybackChromeState(
     val isPlaying: Boolean,
     val volume: Float,
 )
-
-private fun GuideBgmFavoriteItem.toBaGuideBgmTrack(playbackSnapshot: GuideBgmFavoritePlaybackSnapshot): BaGuideBgmTrack {
-    val durationMs = playbackSnapshot.progressFor(audioUrl)?.durationMs ?: 0L
-    return BaGuideBgmTrack(
-        id = audioUrl,
-        title = studentTitle.ifBlank { title }.ifBlank { audioUrl },
-        subtitle = title.ifBlank { note }.ifBlank { sourceUrl },
-        durationLabel = if (durationMs > 0L) formatAudioDuration(durationMs) else "",
-        searchAlias =
-            listOf(title, studentTitle, note, sourceUrl, audioUrl)
-                .filter { it.isNotBlank() }
-                .joinToString(" "),
-    )
-}

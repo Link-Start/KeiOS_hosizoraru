@@ -227,6 +227,7 @@ class BaGuideCatalogRepositoryTest {
             val older =
                 bgmFavorite(
                     sourceUrl = "https://www.gamekee.com/ba/1.html",
+                    audioUrl = "https://example.com/old.ogg",
                     title = "Old Track",
                     studentTitle = "日富美",
                     favoritedAtMs = 1L,
@@ -234,6 +235,7 @@ class BaGuideCatalogRepositoryTest {
             val newer =
                 bgmFavorite(
                     sourceUrl = "https://www.gamekee.com/ba/2.html",
+                    audioUrl = "https://example.com/new.ogg",
                     title = "New Track",
                     studentTitle = "阿露",
                     favoritedAtMs = 2L,
@@ -250,6 +252,9 @@ class BaGuideCatalogRepositoryTest {
                 )
 
             assertEquals(listOf("New Track", "Old Track"), result.displayedFavorites.map { it.title })
+            assertEquals(listOf(newer.audioUrl, older.audioUrl), result.tracks.map { it.id })
+            assertEquals(newer, result.favoritesByTrackId[newer.audioUrl])
+            assertEquals(older, result.favoritesByTrackId[older.audioUrl])
             assertEquals(false, result.deriving)
         }
 
@@ -331,12 +336,13 @@ class BaGuideCatalogRepositoryTest {
 
     private fun bgmFavorite(
         sourceUrl: String,
+        audioUrl: String = "https://example.com/audio.ogg",
         title: String = "BGM",
         studentTitle: String = "学生",
         favoritedAtMs: Long = 1L,
     ): GuideBgmFavoriteItem =
         GuideBgmFavoriteItem(
-            audioUrl = "https://example.com/audio.ogg",
+            audioUrl = audioUrl,
             title = title,
             studentTitle = studentTitle,
             studentImageUrl = "",

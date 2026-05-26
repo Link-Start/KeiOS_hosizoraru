@@ -7,10 +7,12 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
+import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmTrack
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmDisplayedModel
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmLookupState
 import os.kei.ui.page.main.student.catalog.filterByQuery
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
+import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 
 internal class BaGuideCatalogListInput(
     val catalog: BaGuideCatalogBundle,
@@ -122,6 +124,8 @@ internal data class BaGuideStudentBgmDisplayedDerivedState(
 @Immutable
 internal data class BaGuideFavoriteBgmListDerivedState(
     val displayedFavorites: List<GuideBgmFavoriteItem> = emptyList(),
+    val tracks: List<BaGuideBgmTrack> = emptyList(),
+    val favoritesByTrackId: Map<String, GuideBgmFavoriteItem> = emptyMap(),
     val metadataIndex: BaGuideBgmFavoriteMetadataIndex = BaGuideBgmFavoriteMetadataIndex.Empty,
     val playbackSnapshot: GuideBgmFavoritePlaybackSnapshot =
         GuideBgmFavoritePlaybackSnapshot(
@@ -135,6 +139,38 @@ internal data class BaGuideFavoriteBgmListDerivedState(
     companion object {
         val Empty = BaGuideFavoriteBgmListDerivedState()
     }
+}
+
+internal fun buildFavoriteBgmTracks(
+    favorites: List<GuideBgmFavoriteItem>,
+    playbackSnapshot: GuideBgmFavoritePlaybackSnapshot,
+): List<BaGuideBgmTrack> =
+    favorites.map { favorite ->
+        favorite.toBaGuideBgmTrack(playbackSnapshot)
+    }
+
+internal fun buildFavoritesByTrackId(
+    favorites: List<GuideBgmFavoriteItem>,
+): Map<String, GuideBgmFavoriteItem> =
+    favorites
+        .asSequence()
+        .filter { favorite -> favorite.audioUrl.isNotBlank() }
+        .associateBy { favorite -> favorite.audioUrl }
+
+private fun GuideBgmFavoriteItem.toBaGuideBgmTrack(
+    playbackSnapshot: GuideBgmFavoritePlaybackSnapshot,
+): BaGuideBgmTrack {
+    val durationMs = playbackSnapshot.progressFor(audioUrl)?.durationMs ?: 0L
+    return BaGuideBgmTrack(
+        id = audioUrl,
+        title = studentTitle.ifBlank { title }.ifBlank { audioUrl },
+        subtitle = title.ifBlank { note }.ifBlank { sourceUrl },
+        durationLabel = if (durationMs > 0L) formatAudioDuration(durationMs) else "",
+        searchAlias =
+            listOf(title, studentTitle, note, sourceUrl, audioUrl)
+                .filter { it.isNotBlank() }
+                .joinToString(" "),
+    )
 }
 
 @Immutable

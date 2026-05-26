@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.foundation.combinedClickable
@@ -28,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
@@ -63,62 +66,133 @@ fun AppOverviewCard(
     onLongClick: (() -> Unit)? = null,
     startAction: (@Composable () -> Unit)? = null,
     headerEndActions: (@Composable RowScope.() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val clickable = onClick != null || onLongClick != null
-    val clickModifier = if (clickable) {
-        Modifier.combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            role = Role.Button,
-            onClick = { onClick?.invoke() },
-            onLongClick = onLongClick
-        )
-    } else {
-        Modifier
-    }
+    val clickModifier =
+        if (clickable) {
+            Modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = { onClick?.invoke() },
+                onLongClick = onLongClick,
+            )
+        } else {
+            Modifier
+        }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressedScale by appMotionFloatState(
         targetValue = if (showIndication && clickable && isPressed) 0.992f else 1f,
         durationMillis = 120,
-        label = "app_overview_card_press_scale"
+        label = "app_overview_card_press_scale",
     )
-    val localBackdrop = rememberLayerBackdrop()
-    val cardBackdrop = backdrop ?: localBackdrop
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
+    if (backdrop != null) {
+        AppOverviewCardSurface(
+            modifier = modifier,
+            backdrop = backdrop,
+            captureBackdrop = null,
+            clickModifier = clickModifier,
+            interactionSource = interactionSource,
+            pressedScale = pressedScale,
+            title = title,
+            subtitle = subtitle,
+            titleColor = titleColor,
+            subtitleColor = subtitleColor,
+            containerColor = containerColor,
+            contentVerticalSpacing = contentVerticalSpacing,
+            showIndication = showIndication,
+            clickable = clickable,
+            blurRadius = blurRadius,
+            lensRadius = lensRadius,
+            startAction = startAction,
+            headerEndActions = headerEndActions,
+            content = content,
+        )
+    } else {
+        val localBackdrop = rememberLayerBackdrop()
+        AppOverviewCardSurface(
+            modifier = modifier,
+            backdrop = localBackdrop,
+            captureBackdrop = localBackdrop,
+            clickModifier = clickModifier,
+            interactionSource = interactionSource,
+            pressedScale = pressedScale,
+            title = title,
+            subtitle = subtitle,
+            titleColor = titleColor,
+            subtitleColor = subtitleColor,
+            containerColor = containerColor,
+            contentVerticalSpacing = contentVerticalSpacing,
+            showIndication = showIndication,
+            clickable = clickable,
+            blurRadius = blurRadius,
+            lensRadius = lensRadius,
+            startAction = startAction,
+            headerEndActions = headerEndActions,
+            content = content,
+        )
+    }
+}
 
+@Composable
+private fun AppOverviewCardSurface(
+    modifier: Modifier,
+    backdrop: Backdrop,
+    captureBackdrop: LayerBackdrop?,
+    clickModifier: Modifier,
+    interactionSource: MutableInteractionSource,
+    pressedScale: Float,
+    title: String,
+    subtitle: String,
+    titleColor: Color,
+    subtitleColor: Color,
+    containerColor: Color,
+    contentVerticalSpacing: Dp,
+    showIndication: Boolean,
+    clickable: Boolean,
+    blurRadius: Dp,
+    lensRadius: Dp,
+    startAction: (@Composable () -> Unit)?,
+    headerEndActions: (@Composable RowScope.() -> Unit)?,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = pressedScale
-                scaleY = pressedScale
-            }
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = pressedScale
+                    scaleY = pressedScale
+                },
     ) {
-        if (backdrop == null) {
+        if (captureBackdrop != null) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(localBackdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(captureBackdrop),
             )
         }
         LiquidSurface(
-            backdrop = cardBackdrop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(clickModifier),
+            backdrop = backdrop,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .then(clickModifier),
             shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
             isInteractive = showIndication && clickable,
             surfaceColor = containerColor,
             blurRadius = blurRadius,
             lensRadius = lensRadius,
-            interactionSource = interactionSource
+            interactionSource = interactionSource,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.overviewHeaderBodyGap)
+                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.overviewHeaderBodyGap),
             ) {
                 AppCardHeader(
                     title = title,
@@ -126,22 +200,24 @@ fun AppOverviewCard(
                     titleColor = titleColor,
                     subtitleColor = subtitleColor,
                     minHeight = 44.dp,
-                    contentPadding = PaddingValues(
-                        horizontal = CardLayoutRhythm.overviewHeaderHorizontalPadding,
-                        vertical = CardLayoutRhythm.overviewHeaderVerticalPadding
-                    ),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = CardLayoutRhythm.overviewHeaderHorizontalPadding,
+                            vertical = CardLayoutRhythm.overviewHeaderVerticalPadding,
+                        ),
                     titleTypography = AppTypographyTokens.CompactTitle,
                     startAction = startAction,
-                    endActions = headerEndActions
+                    endActions = headerEndActions,
                 )
                 AppCardBodyColumn(
-                    contentPadding = PaddingValues(
-                        start = CardLayoutRhythm.cardHorizontalPadding,
-                        end = CardLayoutRhythm.cardHorizontalPadding,
-                        bottom = CardLayoutRhythm.overviewBodyBottomPadding
-                    ),
+                    contentPadding =
+                        PaddingValues(
+                            start = CardLayoutRhythm.cardHorizontalPadding,
+                            end = CardLayoutRhythm.cardHorizontalPadding,
+                            bottom = CardLayoutRhythm.overviewBodyBottomPadding,
+                        ),
                     verticalSpacing = contentVerticalSpacing,
-                    content = content
+                    content = content,
                 )
             }
         }
@@ -159,46 +235,51 @@ fun AppOverviewMetricTile(
     borderColor: Color? = null,
     backdrop: Backdrop? = null,
     valueMaxLines: Int = 2,
-    emphasizedValue: Boolean = true
+    emphasizedValue: Boolean = true,
 ) {
     val isDark = isSystemInDarkTheme()
-    val resolvedContainerColor = containerColor ?: if (isDark) {
-        Color(0xFF0F1115).copy(alpha = 0.34f)
-    } else {
-        Color.White.copy(alpha = 0.62f)
-    }
-    val resolvedOverlayColor = if (containerColor != null) {
-        Color.Transparent
-    } else if (isDark) {
-        Color.White.copy(alpha = 0.05f)
-    } else {
-        Color(0xFFDCEBFF).copy(alpha = 0.24f)
-    }
-    val resolvedBorderColor = borderColor ?: if (isDark) {
-        Color.White.copy(alpha = 0.18f)
-    } else {
-        Color.White.copy(alpha = 0.86f)
-    }
+    val resolvedContainerColor =
+        containerColor ?: if (isDark) {
+            Color(0xFF0F1115).copy(alpha = 0.34f)
+        } else {
+            Color.White.copy(alpha = 0.62f)
+        }
+    val resolvedOverlayColor =
+        if (containerColor != null) {
+            Color.Transparent
+        } else if (isDark) {
+            Color.White.copy(alpha = 0.05f)
+        } else {
+            Color(0xFFDCEBFF).copy(alpha = 0.24f)
+        }
+    val resolvedBorderColor =
+        borderColor ?: if (isDark) {
+            Color.White.copy(alpha = 0.18f)
+        } else {
+            Color.White.copy(alpha = 0.86f)
+        }
     val cornerRadius = 12.dp
-    val tileModifier = modifier
-        .then(
-            if (backdrop == null) {
-                Modifier
-                    .appSquircleBackground(resolvedContainerColor, cornerRadius)
-                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
-            } else {
-                Modifier
-            }
-        ).appSquircleBorder(width = 1.dp, color = resolvedBorderColor, cornerRadius = cornerRadius)
+    val tileModifier =
+        modifier
+            .then(
+                if (backdrop == null) {
+                    Modifier
+                        .appSquircleBackground(resolvedContainerColor, cornerRadius)
+                        .appSquircleBackground(resolvedOverlayColor, cornerRadius)
+                } else {
+                    Modifier
+                },
+            ).appSquircleBorder(width = 1.dp, color = resolvedBorderColor, cornerRadius = cornerRadius)
     val content: @Composable () -> Unit = {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = CardLayoutRhythm.metricCardHorizontalPadding,
-                    vertical = CardLayoutRhythm.metricCardVerticalPadding
-                ),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricCardTextGap)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = CardLayoutRhythm.metricCardHorizontalPadding,
+                        vertical = CardLayoutRhythm.metricCardVerticalPadding,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricCardTextGap),
         ) {
             top.yukonga.miuix.kmp.basic.Text(
                 text = label,
@@ -206,7 +287,7 @@ fun AppOverviewMetricTile(
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             top.yukonga.miuix.kmp.basic.Text(
                 text = value.ifBlank { "N/A" },
@@ -215,7 +296,7 @@ fun AppOverviewMetricTile(
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 fontWeight = if (emphasizedValue) AppTypographyTokens.BodyEmphasis.fontWeight else AppTypographyTokens.Body.fontWeight,
                 maxLines = valueMaxLines,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -228,12 +309,13 @@ fun AppOverviewMetricTile(
             surfaceColor = resolvedContainerColor,
             blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
             lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
-            shadow = false
+            shadow = false,
         ) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .appSquircleBackground(resolvedOverlayColor, cornerRadius),
             )
             content()
         }
@@ -260,47 +342,52 @@ fun AppOverviewInlineMetricTile(
     showLabel: Boolean = true,
     valueTextAlign: TextAlign = TextAlign.End,
     backdrop: Backdrop? = null,
-    emphasizedValue: Boolean = true
+    emphasizedValue: Boolean = true,
 ) {
     val isDark = isSystemInDarkTheme()
-    val resolvedContainerColor = containerColor ?: if (isDark) {
-        Color(0xFF0F1115).copy(alpha = 0.32f)
-    } else {
-        Color.White.copy(alpha = 0.58f)
-    }
-    val resolvedOverlayColor = if (containerColor != null) {
-        Color.Transparent
-    } else if (isDark) {
-        Color.White.copy(alpha = 0.05f)
-    } else {
-        Color(0xFFDCEBFF).copy(alpha = 0.22f)
-    }
-    val resolvedBorderColor = borderColor ?: if (isDark) {
-        Color.White.copy(alpha = 0.17f)
-    } else {
-        Color.White.copy(alpha = 0.84f)
-    }
+    val resolvedContainerColor =
+        containerColor ?: if (isDark) {
+            Color(0xFF0F1115).copy(alpha = 0.32f)
+        } else {
+            Color.White.copy(alpha = 0.58f)
+        }
+    val resolvedOverlayColor =
+        if (containerColor != null) {
+            Color.Transparent
+        } else if (isDark) {
+            Color.White.copy(alpha = 0.05f)
+        } else {
+            Color(0xFFDCEBFF).copy(alpha = 0.22f)
+        }
+    val resolvedBorderColor =
+        borderColor ?: if (isDark) {
+            Color.White.copy(alpha = 0.17f)
+        } else {
+            Color.White.copy(alpha = 0.84f)
+        }
     val cornerRadius = 12.dp
-    val tileModifier = modifier
-        .then(
-            if (backdrop == null) {
-                Modifier
-                    .appSquircleBackground(resolvedContainerColor, cornerRadius)
-                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
-            } else {
-                Modifier
-            }
-        ).appSquircleBorder(width = 1.dp, color = resolvedBorderColor, cornerRadius = cornerRadius)
+    val tileModifier =
+        modifier
+            .then(
+                if (backdrop == null) {
+                    Modifier
+                        .appSquircleBackground(resolvedContainerColor, cornerRadius)
+                        .appSquircleBackground(resolvedOverlayColor, cornerRadius)
+                } else {
+                    Modifier
+                },
+            ).appSquircleBorder(width = 1.dp, color = resolvedBorderColor, cornerRadius = cornerRadius)
     val content: @Composable () -> Unit = {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = CardLayoutRhythm.metricCardHorizontalPadding,
-                    vertical = CardLayoutRhythm.metricCardVerticalPadding
-                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = CardLayoutRhythm.metricCardHorizontalPadding,
+                        vertical = CardLayoutRhythm.metricCardVerticalPadding,
+                    ),
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-            verticalAlignment = androidx.compose.ui.Alignment.Top
+            verticalAlignment = androidx.compose.ui.Alignment.Top,
         ) {
             if (showLabel) {
                 top.yukonga.miuix.kmp.basic.Text(
@@ -310,7 +397,7 @@ fun AppOverviewInlineMetricTile(
                     lineHeight = AppTypographyTokens.Caption.lineHeight,
                     modifier = Modifier.weight(labelWeight),
                     maxLines = labelMaxLines,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             top.yukonga.miuix.kmp.basic.Text(
@@ -322,7 +409,7 @@ fun AppOverviewInlineMetricTile(
                 textAlign = valueTextAlign,
                 modifier = Modifier.weight(if (showLabel) valueWeight else 1f),
                 maxLines = valueMaxLines,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -335,12 +422,13 @@ fun AppOverviewInlineMetricTile(
             surfaceColor = resolvedContainerColor,
             blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
             lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
-            shadow = false
+            shadow = false,
         ) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .appSquircleBackground(resolvedOverlayColor, cornerRadius)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .appSquircleBackground(resolvedOverlayColor, cornerRadius),
             )
             content()
         }
@@ -364,13 +452,13 @@ private fun AppOverviewCardPreviewLight() {
                 headerEndActions = {
                     StatusPill(
                         label = "3m ago",
-                        color = Color(0xFF2563EB)
+                        color = Color(0xFF2563EB),
                     )
                     StatusPill(
                         label = "Checked",
-                        color = Color(0xFF22C55E)
+                        color = Color(0xFF22C55E),
                     )
-                }
+                },
             ) {
                 AppInfoRow(label = "Tracked", value = "18")
                 AppInfoRow(label = "Updates", value = "4", valueColor = Color(0xFF2563EB))
@@ -395,9 +483,9 @@ private fun AppOverviewCardPreviewDark() {
                 headerEndActions = {
                     StatusPill(
                         label = "Cached",
-                        color = AppStatusColors.Cached
+                        color = AppStatusColors.Cached,
                     )
-                }
+                },
             ) {
                 AppInfoRow(label = "System", value = "82 items", labelColor = Color(0xFFCBD5E1), valueColor = Color.White)
                 AppInfoRow(label = "Android", value = "31 items", labelColor = Color(0xFFCBD5E1), valueColor = Color.White)

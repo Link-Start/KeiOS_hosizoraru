@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.animation.AnimatedVisibility
@@ -22,6 +24,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
@@ -49,67 +52,132 @@ fun AppSurfaceCard(
     pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val clickable = onClick != null || onLongClick != null
     val useLiquidClick = onClick != null && onLongClick == null
-    val clickModifier = if (clickable && !useLiquidClick) {
-        Modifier.combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            role = Role.Button,
-            onClick = { onClick?.invoke() },
-            onLongClick = onLongClick
-        )
-    } else {
-        Modifier
-    }
+    val clickModifier =
+        if (clickable && !useLiquidClick) {
+            Modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = { onClick?.invoke() },
+                onLongClick = onLongClick,
+            )
+        } else {
+            Modifier
+        }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressedScale by appMotionFloatState(
-        targetValue = if (showIndication && clickable && !useLiquidClick && isPressed) {
-            0.992f
-        } else {
-            1f
-        },
+        targetValue =
+            if (showIndication && clickable && !useLiquidClick && isPressed) {
+                0.992f
+            } else {
+                1f
+            },
         durationMillis = 120,
-        label = "app_surface_card_press_scale"
+        label = "app_surface_card_press_scale",
     )
-    val localBackdrop = rememberLayerBackdrop()
-    val cardBackdrop = backdrop ?: localBackdrop
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
-    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
-        if (showIndication && clickable) {
-            AppInteractiveTokens.compactLiquidPressSafePadding
-        } else {
-            0.dp
-        }
-    } else {
-        pressSafePadding
-    }
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(resolvedPressSafePadding)
-            .graphicsLayer {
-                scaleX = pressedScale
-                scaleY = pressedScale
-                clip = false
+    val resolvedPressSafePadding =
+        if (pressSafePadding == Dp.Unspecified) {
+            if (showIndication && clickable) {
+                AppInteractiveTokens.compactLiquidPressSafePadding
+            } else {
+                0.dp
             }
+        } else {
+            pressSafePadding
+        }
+    if (backdrop != null) {
+        AppSurfaceCardFrame(
+            modifier = modifier,
+            backdrop = backdrop,
+            captureBackdrop = null,
+            clickModifier = clickModifier,
+            interactionSource = interactionSource,
+            pressedScale = pressedScale,
+            resolvedPressSafePadding = resolvedPressSafePadding,
+            containerColor = containerColor,
+            showIndication = showIndication,
+            clickable = clickable,
+            blurRadius = blurRadius,
+            lensRadius = lensRadius,
+            clipContent = clipContent,
+            useLiquidClick = useLiquidClick,
+            onClick = onClick,
+            content = content,
+        )
+    } else {
+        val localBackdrop = rememberLayerBackdrop()
+        AppSurfaceCardFrame(
+            modifier = modifier,
+            backdrop = localBackdrop,
+            captureBackdrop = if (captureLocalBackdrop) localBackdrop else null,
+            clickModifier = clickModifier,
+            interactionSource = interactionSource,
+            pressedScale = pressedScale,
+            resolvedPressSafePadding = resolvedPressSafePadding,
+            containerColor = containerColor,
+            showIndication = showIndication,
+            clickable = clickable,
+            blurRadius = blurRadius,
+            lensRadius = lensRadius,
+            clipContent = clipContent,
+            useLiquidClick = useLiquidClick,
+            onClick = onClick,
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun AppSurfaceCardFrame(
+    modifier: Modifier,
+    backdrop: Backdrop,
+    captureBackdrop: LayerBackdrop?,
+    clickModifier: Modifier,
+    interactionSource: MutableInteractionSource,
+    pressedScale: Float,
+    resolvedPressSafePadding: Dp,
+    containerColor: Color,
+    showIndication: Boolean,
+    clickable: Boolean,
+    blurRadius: Dp,
+    lensRadius: Dp,
+    clipContent: Boolean,
+    useLiquidClick: Boolean,
+    onClick: (() -> Unit)?,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(resolvedPressSafePadding)
+                .graphicsLayer {
+                    scaleX = pressedScale
+                    scaleY = pressedScale
+                    clip = false
+                },
     ) {
-        if (backdrop == null && captureLocalBackdrop) {
+        if (captureBackdrop != null) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(localBackdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(captureBackdrop),
             )
         }
         LiquidSurface(
-            backdrop = cardBackdrop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(clickModifier),
+            backdrop = backdrop,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .then(clickModifier),
             shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
             isInteractive = showIndication && clickable,
             surfaceColor = containerColor,
@@ -117,11 +185,11 @@ fun AppSurfaceCard(
             lensRadius = lensRadius,
             interactionSource = interactionSource,
             clipContent = clipContent,
-            onClick = if (useLiquidClick) onClick else null
+            onClick = if (useLiquidClick) onClick else null,
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                content = content
+                content = content,
             )
         }
     }
@@ -148,19 +216,21 @@ fun AppFeatureCard(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     headerEndActions: (@Composable RowScope.() -> Unit)? = null,
-    contentPadding: PaddingValues = PaddingValues(
-        start = CardLayoutRhythm.cardHorizontalPadding,
-        end = CardLayoutRhythm.cardHorizontalPadding,
-        bottom = CardLayoutRhythm.cardVerticalPadding
-    ),
+    contentPadding: PaddingValues =
+        PaddingValues(
+            start = CardLayoutRhythm.cardHorizontalPadding,
+            end = CardLayoutRhythm.cardHorizontalPadding,
+            bottom = CardLayoutRhythm.cardVerticalPadding,
+        ),
     contentVerticalSpacing: Dp = CardLayoutRhythm.sectionGap,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    val headerClick = when {
-        collapsible -> ({ onExpandedChange(!expanded) })
-        onClick != null -> onClick
-        else -> null
-    }
+    val headerClick =
+        when {
+            collapsible -> ({ onExpandedChange(!expanded) })
+            onClick != null -> onClick
+            else -> null
+        }
     AppSurfaceCard(
         modifier = modifier,
         backdrop = backdrop,
@@ -169,7 +239,7 @@ fun AppFeatureCard(
         contentColor = contentColor,
         showIndication = showIndication,
         onClick = if (collapsible) null else onClick,
-        onLongClick = onLongClick
+        onLongClick = onLongClick,
     ) {
         AppCardHeader(
             title = title,
@@ -178,31 +248,32 @@ fun AppFeatureCard(
             eyebrowColor = eyebrowColor,
             titleColor = titleColor,
             subtitleColor = subtitleColor,
-            startAction = sectionIcon?.let { icon ->
-                {
-                    top.yukonga.miuix.kmp.basic.Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = titleColor
-                    )
-                }
-            },
+            startAction =
+                sectionIcon?.let { icon ->
+                    {
+                        top.yukonga.miuix.kmp.basic.Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = titleColor,
+                        )
+                    }
+                },
             endActions = headerEndActions,
             expandable = collapsible,
             expanded = expanded,
             expandTint = titleColor,
             onClick = headerClick,
-            onLongClick = onLongClick
+            onLongClick = onLongClick,
         )
         AnimatedVisibility(
             visible = !collapsible || expanded,
             enter = appExpandIn(),
-            exit = appExpandOut()
+            exit = appExpandOut(),
         ) {
             AppCardBodyColumn(
                 contentPadding = contentPadding,
                 verticalSpacing = contentVerticalSpacing,
-                content = content
+                content = content,
             )
         }
     }

@@ -18,13 +18,13 @@ import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
-import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
-import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
 internal class BaOfficeViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
     private val defaultSnapshot = BaPageSnapshot()
+    private val clock = BaSystemOfficeClock
+    private val repository = BaOfficePageRepository(clock)
     private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
     val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
     private val _syncUiState = MutableStateFlow(BaOfficeSyncUiState())
@@ -86,7 +86,7 @@ internal class BaOfficeViewModel(
 
     init {
         viewModelScope.launch {
-            val snapshot = BaOfficeRepository.loadSnapshotAsync()
+            val snapshot = repository.loadInitialSnapshot()
             if (office.matchesSnapshot(defaultSnapshot)) {
                 office.applySnapshot(snapshot)
             }
@@ -103,7 +103,7 @@ internal class BaOfficeViewModel(
 
     fun clearListScrollState() {
         viewModelScope.launch {
-            BaOfficeRepository.clearListScrollStateAsync()
+            repository.clearListScrollState()
         }
     }
 
@@ -335,25 +335,34 @@ internal class BaOfficeViewModel(
         refreshCalendar(force = true)
         refreshPool(force = true)
         viewModelScope.launch {
-            BaOfficeRepository.saveServerIndexAsync(selected)
-            if (office.idIndependentByServer) {
-                office.applyIdentity(BaOfficeRepository.loadIdentityForServer(selected))
+            val persisted =
+                repository.persistServerSelection(
+                    requestedIndex = selected,
+                    idIndependentByServer = office.idIndependentByServer,
+                    cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+                    arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+                )
+            persisted.identity?.let(office::applyIdentity)
+            persisted.cafeVisitLastNotifiedSlotMs?.let { slotMs ->
+                office.cafeVisitLastNotifiedSlotMs = slotMs
             }
-            resetCafeVisitBaselineIfNeeded(selected)
-            resetArenaRefreshBaselineIfNeeded(selected)
+            persisted.arenaRefreshLastNotifiedSlotMs?.let { slotMs ->
+                office.arenaRefreshLastNotifiedSlotMs = slotMs
+            }
             AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
         }
     }
 
     fun restoreServerFromStore() {
         viewModelScope.launch {
-            val savedServerIndex = BaOfficeRepository.loadServerIndexAsync()
-            if (savedServerIndex == _serverUiState.value.serverIndex) return@launch
-            if (office.idIndependentByServer) {
-                office.applyIdentity(BaOfficeRepository.loadIdentityForServer(savedServerIndex))
-            }
+            val restored =
+                repository.restoreServerSelection(
+                    currentServerIndex = _serverUiState.value.serverIndex,
+                    idIndependentByServer = office.idIndependentByServer,
+                ) ?: return@launch
+            restored.identity?.let(office::applyIdentity)
             _serverUiState.update { state ->
-                state.copy(serverIndex = savedServerIndex)
+                state.copy(serverIndex = restored.serverIndex)
             }
             refreshCalendar(force = true)
             refreshPool(force = true)
@@ -368,12 +377,14 @@ internal class BaOfficeViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val persisted =
-                    BaSettingsPersistenceRepository.persistSettingsDraftAsync(
+                val saveResult =
+                    repository.persistSettings(
                         sheetState = sheetState,
                         currentShowEndedActivities = currentShowEndedActivities,
                         currentShowCalendarPoolImages = currentShowCalendarPoolImages,
+                        serverIndex = serverIndex,
                     )
+                val persisted = saveResult.persisted
                 office.cafeLevel = persisted.savedCafeLevel
                 val clampUpdate = office.clampCafeStoredToCapUpdate()
                 office
@@ -406,23 +417,14 @@ internal class BaOfficeViewModel(
                         ),
                     )
 
-                val refreshCalendarForEnded =
-                    persisted.turningEndedActivitiesOn &&
-                        BaSettingsPersistenceRepository.calendarCacheIsBlankAsync(serverIndex)
-                val refreshCalendarForImages =
-                    persisted.turningImagesOn &&
-                        !BaSettingsPersistenceRepository.hasAnyImageInCalendarCacheAsync(serverIndex)
-                val refreshPoolForImages =
-                    persisted.turningImagesOn &&
-                        !BaSettingsPersistenceRepository.hasAnyImageInPoolCacheAsync(serverIndex)
                 AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
                 _events.emit(
                     BaOfficeEvent.SettingsSaved(
                         persisted = persisted,
                         clampUpdate = clampUpdate,
                         runtimeUpdate = office.applyRuntimeTick(),
-                        refreshCalendar = refreshCalendarForEnded || refreshCalendarForImages,
-                        refreshPool = refreshPoolForImages,
+                        refreshCalendar = saveResult.refreshCalendar,
+                        refreshPool = saveResult.refreshPool,
                     ),
                 )
             } catch (error: Throwable) {
@@ -442,7 +444,16 @@ internal class BaOfficeViewModel(
                 val previousCafeApNotifyThreshold = office.cafeApNotifyThreshold
                 val previousArenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled
                 val previousCafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled
-                val persisted = BaSettingsPersistenceRepository.persistNotificationSettingsDraftAsync(sheetState)
+                val saveResult =
+                    repository.persistNotificationSettings(
+                        sheetState = sheetState,
+                        previousCafeApNotifyEnabled = previousCafeApNotifyEnabled,
+                        previousCafeApNotifyThreshold = previousCafeApNotifyThreshold,
+                        previousArenaRefreshNotifyEnabled = previousArenaRefreshNotifyEnabled,
+                        previousCafeVisitNotifyEnabled = previousCafeVisitNotifyEnabled,
+                        serverIndex = serverIndex,
+                    )
+                val persisted = saveResult.persisted
 
                 office.apNotifyEnabled = sheetState.apNotifyEnabled
                 office.cafeApNotifyEnabled = persisted.cafeApNotifyEnabled
@@ -450,51 +461,15 @@ internal class BaOfficeViewModel(
                 office.cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled
                 office.apNotifyThreshold = persisted.savedThreshold
                 office.cafeApNotifyThreshold = persisted.savedCafeApThreshold
-                val savedDraft =
-                    BaPageNotificationDraftState(
-                        apNotifyEnabled = office.apNotifyEnabled,
-                        cafeApNotifyEnabled = office.cafeApNotifyEnabled,
-                        arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
-                        cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
-                        calendarUpcomingNotifyEnabled = persisted.calendarUpcomingNotifyEnabled,
-                        calendarEndingNotifyEnabled = persisted.calendarEndingNotifyEnabled,
-                        poolUpcomingNotifyEnabled = persisted.poolUpcomingNotifyEnabled,
-                        poolEndingNotifyEnabled = persisted.poolEndingNotifyEnabled,
-                        calendarPoolChangeNotifyEnabled = persisted.calendarPoolChangeNotifyEnabled,
-                        calendarPoolNotifyLeadHours = persisted.calendarPoolNotifyLeadHours,
-                        apNotifyThresholdText = office.apNotifyThreshold.toString(),
-                        cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
-                    )
-                if (!office.cafeApNotifyEnabled ||
-                    previousCafeApNotifyThreshold != office.cafeApNotifyThreshold ||
-                    !previousCafeApNotifyEnabled
-                ) {
+                val savedDraft = saveResult.savedDraft
+                if (saveResult.resetCafeApLastNotifiedLevel) {
                     office.cafeApLastNotifiedLevel = -1
-                    BaSettingsPersistenceRepository.resetCafeApLastNotifiedLevelAsync()
                 }
-                if (!office.arenaRefreshNotifyEnabled) {
-                    office.arenaRefreshLastNotifiedSlotMs = 0L
-                    BaSettingsPersistenceRepository.resetArenaRefreshLastNotifiedSlotAsync()
-                } else if (!previousArenaRefreshNotifyEnabled) {
-                    val baselineSlotMs =
-                        currentArenaRefreshSlotMs(
-                            nowMs = System.currentTimeMillis(),
-                            serverIndex = serverIndex,
-                        )
-                    office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
-                    BaSettingsPersistenceRepository.saveArenaRefreshLastNotifiedSlotAsync(baselineSlotMs)
+                saveResult.arenaRefreshLastNotifiedSlotMs?.let { slotMs ->
+                    office.arenaRefreshLastNotifiedSlotMs = slotMs
                 }
-                if (!office.cafeVisitNotifyEnabled) {
-                    office.cafeVisitLastNotifiedSlotMs = 0L
-                    BaSettingsPersistenceRepository.resetCafeVisitLastNotifiedSlotAsync()
-                } else if (!previousCafeVisitNotifyEnabled) {
-                    val baselineSlotMs =
-                        currentCafeStudentRefreshSlotMs(
-                            nowMs = System.currentTimeMillis(),
-                            serverIndex = serverIndex,
-                        )
-                    office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
-                    BaSettingsPersistenceRepository.saveCafeVisitLastNotifiedSlotAsync(baselineSlotMs)
+                saveResult.cafeVisitLastNotifiedSlotMs?.let { slotMs ->
+                    office.cafeVisitLastNotifiedSlotMs = slotMs
                 }
 
                 AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
@@ -523,7 +498,7 @@ internal class BaOfficeViewModel(
         viewModelScope.launch {
             try {
                 val persisted =
-                    BaSettingsPersistenceRepository.persistRefreshIntervalAsync(
+                    repository.persistRefreshInterval(
                         hours = hours,
                         calendarLastSyncMs = calendarLastSyncMs,
                     )
@@ -541,28 +516,6 @@ internal class BaOfficeViewModel(
                 _events.emit(BaOfficeEvent.OperationFailed(error))
             }
         }
-    }
-
-    private suspend fun resetCafeVisitBaselineIfNeeded(serverIndex: Int) {
-        if (!office.cafeVisitNotifyEnabled) return
-        val baselineSlotMs =
-            currentCafeStudentRefreshSlotMs(
-                nowMs = System.currentTimeMillis(),
-                serverIndex = serverIndex,
-            )
-        office.cafeVisitLastNotifiedSlotMs = baselineSlotMs
-        BaOfficeRepository.saveCafeVisitLastNotifiedSlotMsAsync(baselineSlotMs)
-    }
-
-    private suspend fun resetArenaRefreshBaselineIfNeeded(serverIndex: Int) {
-        if (!office.arenaRefreshNotifyEnabled) return
-        val baselineSlotMs =
-            currentArenaRefreshSlotMs(
-                nowMs = System.currentTimeMillis(),
-                serverIndex = serverIndex,
-            )
-        office.arenaRefreshLastNotifiedSlotMs = baselineSlotMs
-        BaOfficeRepository.saveArenaRefreshLastNotifiedSlotMsAsync(baselineSlotMs)
     }
 
     private fun notificationRuntimeDraft(base: BaPageNotificationDraftState): BaPageNotificationDraftState =

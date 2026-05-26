@@ -45,8 +45,8 @@ internal fun sanitizeBaFriendCodeInput(raw: String): String = raw.uppercase().fi
 internal fun applyBaCurrentApUpdate(
     currentAp: Double,
     newValue: Int,
+    nowMs: Long = System.currentTimeMillis(),
 ): Pair<Double, Long> {
-    val nowMs = System.currentTimeMillis()
     val integerPart = newValue.coerceIn(0, BA_AP_MAX)
     val fractionPart = fractionalApPart(currentAp)
     val next = normalizeAp(integerPart.toDouble() + fractionPart)
@@ -56,9 +56,9 @@ internal fun applyBaCurrentApUpdate(
 internal fun applyBaCurrentApDelta(
     currentAp: Double,
     delta: Double,
+    nowMs: Long = System.currentTimeMillis(),
 ): Pair<Double, Long>? {
     if (delta <= 0.0) return null
-    val nowMs = System.currentTimeMillis()
     return normalizeAp(currentAp + delta) to nowMs
 }
 
@@ -130,15 +130,17 @@ internal fun applyBaCafeDebugGain(
 internal fun consumeBaHeadpat(
     coffeeHeadpatMs: Long,
     serverIndex: Int,
+    nowMs: Long = System.currentTimeMillis(),
 ): Long? {
-    val nowMs = System.currentTimeMillis()
     val availableAt = calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)
     if (coffeeHeadpatMs > 0L && availableAt > nowMs) return null
     return nowMs
 }
 
-internal fun consumeBaInviteTicket(usedMs: Long): Long? {
-    val nowMs = System.currentTimeMillis()
+internal fun consumeBaInviteTicket(
+    usedMs: Long,
+    nowMs: Long = System.currentTimeMillis(),
+): Long? {
     val availableAt = calculateInviteTicketAvailableMs(usedMs)
     if (usedMs > 0L && availableAt > nowMs) return null
     return nowMs

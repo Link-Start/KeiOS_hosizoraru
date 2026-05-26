@@ -275,33 +275,41 @@ fun SettingsPage(
         remember(bottomBarVisibilityThresholdPx) {
             ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
         }
-    val activeCategoryIndex =
-        if (pagerState.isScrollInProgress) {
-            pagerState.targetPage
-        } else {
-            pagerState.settledPage
-        }.coerceIn(0, categories.lastIndex)
-    val activeCategory = categories[activeCategoryIndex]
-    val activePageListState = categoryListStates.forCategory(activeCategory)
-    val currentActivePageListState = rememberUpdatedState(activePageListState)
-    val currentActiveCategory = rememberUpdatedState(activeCategory)
+    val activeCategoryProvider =
+        remember(categories, pagerState) {
+            {
+                categories[
+                    settingsActiveCategoryIndex(
+                        scrolling = pagerState.isScrollInProgress,
+                        targetPage = pagerState.targetPage,
+                        settledPage = pagerState.settledPage,
+                        lastIndex = categories.lastIndex,
+                    ),
+                ]
+            }
+        }
+    val activePageListStateProvider =
+        remember(activeCategoryProvider, categoryListStates) {
+            { categoryListStates.forCategory(activeCategoryProvider()) }
+        }
     val currentBottomBarVisible = rememberUpdatedState(bottomBarVisible)
     val bottomBarNestedScrollConnection =
-        remember(bottomBarVisibilityController) {
+        remember(bottomBarVisibilityController, activeCategoryProvider, activePageListStateProvider) {
             object : NestedScrollConnection {
                 override fun onPostScroll(
                     consumed: Offset,
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (currentActiveCategory.value.keepsChromeVisibleOnBounds()) {
+                    val activeCategory = activeCategoryProvider()
+                    if (activeCategory.keepsChromeVisibleOnBounds()) {
                         bottomBarVisibilityController.showNow(
                             visible = currentBottomBarVisible.value,
                             onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
                         )
                         return Offset.Zero
                     }
-                    val currentListState = currentActivePageListState.value
+                    val currentListState = activePageListStateProvider()
                     bottomBarVisibilityController.updateWithinScrollBounds(
                         deltaY = consumed.y,
                         visible = currentBottomBarVisible.value,
@@ -331,11 +339,12 @@ fun SettingsPage(
             { index: Int ->
                 val safeIndex = index.coerceIn(0, categories.lastIndex)
                 val stablePageIndex =
-                    if (pagerState.isScrollInProgress) {
-                        pagerState.targetPage
-                    } else {
-                        pagerState.settledPage
-                    }
+                    settingsActiveCategoryIndex(
+                        scrolling = pagerState.isScrollInProgress,
+                        targetPage = pagerState.targetPage,
+                        settledPage = pagerState.settledPage,
+                        lastIndex = categories.lastIndex,
+                    )
                 if (safeIndex != stablePageIndex) {
                     settingsPageViewModel.updateSelectedCategoryIndex(safeIndex)
                     tabJumpCoordinator.launch {
@@ -389,12 +398,18 @@ fun SettingsPage(
             settingsPageViewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
     }
-    LaunchedEffect(activeCategory, activePageListState, bottomBarVisibilityController) {
+    LaunchedEffect(activeCategoryProvider, activePageListStateProvider, bottomBarVisibilityController) {
         snapshotFlow {
-            activePageListState.canScrollBackward to activePageListState.canScrollForward
+            val category = activeCategoryProvider()
+            val listState = activePageListStateProvider()
+            SettingsActiveChromeBoundsState(
+                category = category,
+                canScrollBackward = listState.canScrollBackward,
+                canScrollForward = listState.canScrollForward,
+            )
         }.distinctUntilChanged()
-            .collect { (canScrollBackward, canScrollForward) ->
-                if (activeCategory.keepsChromeVisibleOnBounds()) {
+            .collect { boundsState ->
+                if (boundsState.category.keepsChromeVisibleOnBounds()) {
                     bottomBarVisibilityController.showNow(
                         visible = currentBottomBarVisible.value,
                         onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
@@ -402,8 +417,8 @@ fun SettingsPage(
                 } else {
                     bottomBarVisibilityController.showForStaticContent(
                         visible = currentBottomBarVisible.value,
-                        canScrollBackward = canScrollBackward,
-                        canScrollForward = canScrollForward,
+                        canScrollBackward = boundsState.canScrollBackward,
+                        canScrollForward = boundsState.canScrollForward,
                         onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
                     )
                 }
@@ -524,4 +539,25 @@ fun SettingsPage(
             )
         }
     }
+}
+
+private data class SettingsActiveChromeBoundsState(
+    val category: SettingsCategory,
+    val canScrollBackward: Boolean,
+    val canScrollForward: Boolean,
+)
+
+internal fun settingsActiveCategoryIndex(
+    scrolling: Boolean,
+    targetPage: Int,
+    settledPage: Int,
+    lastIndex: Int,
+): Int {
+    val candidate =
+        if (scrolling) {
+            targetPage
+        } else {
+            settledPage
+        }
+    return candidate.coerceIn(0, lastIndex.coerceAtLeast(0))
 }

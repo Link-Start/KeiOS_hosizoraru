@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -9,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -22,6 +19,8 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
 
 @Suppress("FunctionName")
@@ -36,19 +35,22 @@ internal fun GitHubAssetCountBubble(
     val localBackdrop = rememberLayerBackdrop()
     val activeBackdrop = localBackdrop.takeIf { LocalLiquidControlsEnabled.current }
     val shape = CircleShape
+    val cornerRadius = 999.dp
     val bubbleModifier =
         Modifier
-            .clip(shape)
             .then(
                 if (activeBackdrop == null) {
-                    Modifier.background(color.copy(alpha = if (isDark) 0.18f else 0.12f))
+                    Modifier.appSquircleBackground(
+                        color = color.copy(alpha = if (isDark) 0.18f else 0.12f),
+                        cornerRadius = cornerRadius,
+                    )
                 } else {
                     Modifier
                 },
-            ).border(
+            ).appSquircleBorder(
                 width = 0.8.dp,
                 color = color.copy(alpha = if (isDark) 0.34f else 0.24f),
-                shape = shape,
+                cornerRadius = cornerRadius,
             )
     val content: @Composable () -> Unit = {
         if (loading) {

@@ -1,12 +1,12 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 
 internal data class AppLiquidSearchMaterialColors(
     val overlayTop: Color,
@@ -74,7 +74,7 @@ internal fun appLiquidSearchPlaceholderColor(
     }
 
 internal fun appLiquidSearchMaterialOverlayModifier(
-    shape: Shape,
+    cornerRadius: Dp,
     colors: AppLiquidSearchMaterialColors,
     focusProgress: Float,
     pressProgress: Float,
@@ -83,7 +83,6 @@ internal fun appLiquidSearchMaterialOverlayModifier(
     return Modifier
         .background(
             Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom)),
-            shape,
         ).background(
             Brush.horizontalGradient(
                 colors =
@@ -94,7 +93,6 @@ internal fun appLiquidSearchMaterialOverlayModifier(
                         colors.sideRim,
                     ),
             ),
-            shape,
         ).background(
             Brush.radialGradient(
                 colors =
@@ -108,7 +106,6 @@ internal fun appLiquidSearchMaterialOverlayModifier(
                         Color.Transparent,
                     ),
             ),
-            shape,
         ).background(
             Brush.verticalGradient(
                 colorStops =
@@ -124,20 +121,19 @@ internal fun appLiquidSearchMaterialOverlayModifier(
                             ),
                     ),
             ),
-            shape,
-        ).border(
+        ).appSquircleBorder(
             width = 1.1.dp,
             color =
                 colors.edge.copy(
                     alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f),
                 ),
-            shape = shape,
-        ).border(
+            cornerRadius = cornerRadius,
+        ).appSquircleBorder(
             width = 1.dp,
             color =
                 colors.innerRim.copy(
                     alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f),
                 ),
-            shape = shape,
+            cornerRadius = cornerRadius,
         )
 }

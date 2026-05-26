@@ -33,6 +33,9 @@ data class MainPageRuntime(
 ) {
     val isPageActive: Boolean
         get() = isWarmActive
+
+    val isSettledDataActive: Boolean
+        get() = contentReady && isDataActive && !isPagerScrollInProgress && contentWorkAllowed
 }
 
 @Immutable

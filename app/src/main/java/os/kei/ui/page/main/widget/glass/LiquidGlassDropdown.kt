@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
@@ -15,7 +14,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -34,6 +32,9 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val LiquidGlassDropdownContainerRadius = 26.dp
@@ -180,11 +181,11 @@ fun LiquidGlassDropdownColumn(
                 ambientColor = Color.Black.copy(alpha = if (isDark) metrics.darkOuterShadowAlpha else metrics.lightOuterShadowAlpha),
                 spotColor = Color.Black.copy(alpha = if (isDark) metrics.darkSpotShadowAlpha else metrics.lightSpotShadowAlpha)
             )
-            .clip(containerShape)
-            .border(
+            .appSquircleClip(metrics.containerRadius)
+            .appSquircleBorder(
                 width = 1.dp,
                 color = colors.borderColor,
-                shape = containerShape
+                cornerRadius = metrics.containerRadius,
             )
             .then(
                 if (activeBackdrop != null) {
@@ -222,9 +223,9 @@ fun LiquidGlassDropdownColumn(
                     )
                 } else {
                     Modifier
-                        .background(colors.fallbackBaseColor, containerShape)
-                        .background(colors.fallbackMiddleBrush, containerShape)
-                        .background(colors.fallbackSheenBrush, containerShape)
+                        .appSquircleBackground(colors.fallbackBaseColor, metrics.containerRadius)
+                        .background(colors.fallbackMiddleBrush)
+                        .background(colors.fallbackSheenBrush)
                 }
             )
     ) {

@@ -78,7 +78,7 @@ fun GitHubPage(
     val backdrops =
         rememberMainPageBackdropSet(
             keyPrefix = "github",
-            distinctLayers = runtime.hasActivated,
+            distinctLayers = fullBackdropEffectsEnabled,
         )
     val topBarColor =
         rememberAppTopBarColor(
@@ -97,6 +97,7 @@ fun GitHubPage(
     val contentDerivedState = pageUiState.contentDerivedState
     val appPickerDerivedState = pageUiState.appPickerDerivedState
     val isGitHubPageDataActive = runtime.contentReady && runtime.isDataActive
+    val isGitHubSettledDataActive = runtime.isSettledDataActive
     LaunchedEffect(isGitHubPageDataActive) {
         githubPageViewModel.setPageDataActive(isGitHubPageDataActive)
     }
@@ -108,9 +109,12 @@ fun GitHubPage(
             state.settleScrollChromeVisibility()
         }
     }
-    LaunchedEffect(context, state, runtime.hasActivated) {
-        if (!runtime.hasActivated) return@LaunchedEffect
-        githubPageViewModel.bindContextObservers(state = state)
+    LaunchedEffect(context, state, isGitHubSettledDataActive) {
+        if (isGitHubSettledDataActive) {
+            githubPageViewModel.bindContextObservers(state = state)
+        } else {
+            githubPageViewModel.unbindContextObservers()
+        }
     }
     SideEffect {
         state.updateScrollBounds(
@@ -230,7 +234,7 @@ fun GitHubPage(
         actions.syncActiveShareImportFlowFromStore()
     }
     BindGitHubAppIconPreloadEffect(
-        active = runtime.hasActivated,
+        active = isGitHubSettledDataActive,
         trackedPackages = contentDerivedState.trackedIconPreloadPackages,
         installedPackages = contentDerivedState.installedIconPreloadPackages,
         selectedPackageName = state.selectedApp?.packageName.orEmpty(),
@@ -245,7 +249,7 @@ fun GitHubPage(
         context = context,
         listState = listState,
         scrollToTopSignal = runtime.scrollToTopSignal,
-        isPageWarmActive = runtime.hasActivated && runtime.isWarmDataActive,
+        isPageWarmActive = runtime.contentReady && runtime.isWarmDataActive,
         isPageDataActive = isGitHubPageDataActive,
         state = state,
         actions = actions,

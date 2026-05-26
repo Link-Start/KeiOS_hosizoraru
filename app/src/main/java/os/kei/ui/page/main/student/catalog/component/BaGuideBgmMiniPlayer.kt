@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -44,6 +43,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -339,13 +339,13 @@ private fun NowPlayingDragHandle(
             modifier = Modifier
                 .width(if (expanded) 44.dp else 36.dp)
                 .height(4.dp)
-                .background(
+                .appSquircleBackground(
                     color = if (expanded) {
                         accent.copy(alpha = 0.40f)
                     } else {
                         MiuixTheme.colorScheme.outline.copy(alpha = 0.34f)
                     },
-                    shape = CircleShape
+                    cornerRadius = 999.dp,
                 )
         )
     }

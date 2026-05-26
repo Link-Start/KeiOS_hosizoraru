@@ -57,7 +57,7 @@ fun BAPage(
         rememberMainPageBackdropSet(
             keyPrefix = "ba",
             refreshOnCompositionEnter = true,
-            distinctLayers = runtime.hasActivated,
+            distinctLayers = pageBackdropEffectsEnabled,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val baServerCn = stringResource(R.string.ba_server_cn)
@@ -135,14 +135,9 @@ fun BAPage(
     val pageContentState = pagePresentationState.pageContentState
     val currentServerIndexState = rememberUpdatedState(baRouteState.serverIndex)
     val uiNowMsProvider = remember(ui) { { ui.uiNowMs } }
-    val syncPageActive =
-        runtime.hasActivated &&
-            runtime.contentReady &&
-            !runtime.isPagerScrollInProgress &&
-            if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
     val settledWorkActive =
         rememberBaPageSettledWorkActive(
-            active = runtime.contentReady && runtime.isDataActive && !runtime.isPagerScrollInProgress,
+            active = runtime.isSettledDataActive,
         )
     val baGlassRuntime = LocalGlassEffectRuntime.current
     val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
@@ -313,7 +308,7 @@ fun BAPage(
 
     BaCalendarPoolSyncEffects(
         calendarPoolViewModel = calendarPoolViewModel,
-        syncPageActive = syncPageActive && settledWorkActive,
+        syncPageActive = settledWorkActive,
         routeState = baRouteState,
     )
     val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE

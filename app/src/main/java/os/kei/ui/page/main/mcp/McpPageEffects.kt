@@ -27,10 +27,13 @@ internal fun BindMcpPageEffects(
         uiState.allowExternal,
         uiState.serverName,
         pageUiState.showEditSheet,
+        runtime.isSettledDataActive,
     ) {
+        if (!runtime.isSettledDataActive) return@LaunchedEffect
         mcpPageViewModel.syncServiceDraft(uiState)
     }
-    LaunchedEffect(uiState.tools, pageUiState.toolsSearchQuery) {
+    LaunchedEffect(uiState.tools, pageUiState.toolsSearchQuery, runtime.isSettledDataActive) {
+        if (!runtime.isSettledDataActive) return@LaunchedEffect
         mcpPageViewModel.requestToolBuckets(
             McpToolBucketInput(
                 tools = uiState.tools,

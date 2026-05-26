@@ -43,10 +43,11 @@ fun OsPage(
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
+    val settledDataActive = runtime.isSettledDataActive
     val osGlassRuntime = LocalGlassEffectRuntime.current
     val uiContext =
         rememberOsPageUiContext(
-            enableFullBackdropEffects = runtime.hasActivated,
+            enableFullBackdropEffects = pageBackdropEffectsEnabled,
             enableTopBarBackdropEffects = pageBackdropEffectsEnabled,
         )
     val context = uiContext.context
@@ -62,12 +63,12 @@ fun OsPage(
     val lifecycleOwner = LocalLifecycleOwner.current
     val osPageViewModel: OsPageViewModel = viewModel()
     LaunchedEffect(
-        runtime.hasActivated,
+        settledDataActive,
         textBundle.googleSystemServiceDefaults,
         textBundle.builtInActivityShortcutCards,
         textBundle.builtInShellCommandCards,
     ) {
-        if (!runtime.hasActivated) return@LaunchedEffect
+        if (!settledDataActive) return@LaunchedEffect
         osPageViewModel.loadPersistentState(
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             builtInActivityShortcutCards = textBundle.builtInActivityShortcutCards,
@@ -160,9 +161,8 @@ fun OsPage(
             osPageViewModel.closePersistentShell()
         }
     }
-    LaunchedEffect(runtime.contentReady, runtime.isDataActive) {
-        val active = runtime.contentReady && runtime.isDataActive
-        if (!active) {
+    LaunchedEffect(settledDataActive) {
+        if (!settledDataActive) {
             osPageViewModel.closePersistentShell()
         }
     }
@@ -345,7 +345,7 @@ fun OsPage(
     BindOsInitialCacheLoad(
         ready = persistentState.loaded,
         cacheLoaded = runtimeState.cacheLoaded,
-        isPageActive = runtime.contentReady && runtime.isDataActive,
+        isPageActive = settledDataActive,
         hydrateInitialCache = { isPageActive ->
             osPageViewModel.hydrateInitialCache(
                 isPageActive = isPageActive,
@@ -370,7 +370,7 @@ fun OsPage(
     BindOsVisibleSectionLoadEffects(
         cacheLoaded = runtimeState.cacheLoaded,
         initialVisibleRefreshComplete = runtimeState.initialVisibleRefreshComplete,
-        isDataActive = runtime.contentReady && runtime.isDataActive,
+        isDataActive = settledDataActive,
         visibleCards = visibleCards,
         systemTableExpanded = systemTableExpanded,
         secureTableExpanded = secureTableExpanded,
@@ -388,7 +388,7 @@ fun OsPage(
         requestActivitySuggestions = osPageViewModel::requestActivitySuggestions,
     )
     BindOsActivityShortcutIconPreloadEffect(
-        active = runtime.hasActivated,
+        active = settledDataActive,
         activityShortcutCards = activityShortcutCards,
         showActivitySuggestionSheet = activitySuggestionChromeState.showSheet,
         googleSystemServiceSuggestionTarget = activitySuggestionChromeState.target,

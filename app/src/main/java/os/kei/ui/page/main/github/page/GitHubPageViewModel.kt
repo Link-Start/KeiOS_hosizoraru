@@ -340,6 +340,13 @@ internal class GitHubPageViewModel(
         }
     }
 
+    fun unbindContextObservers() {
+        onlineShareTargetsJob?.cancel()
+        onlineShareTargetsJob = null
+        downloaderOptionsJob?.cancel()
+        downloaderOptionsJob = null
+    }
+
     fun setPageDataActive(active: Boolean) {
         if (pendingShareImportPageActive.value == active) return
         pendingShareImportPageActive.value = active

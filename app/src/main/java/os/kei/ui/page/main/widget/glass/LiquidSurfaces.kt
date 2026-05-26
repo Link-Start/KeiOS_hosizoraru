@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,6 +46,9 @@ import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -255,6 +259,7 @@ fun AppLiquidFloatingSurface(
     } else {
         pressSafePadding
     }
+    val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
 
     Box(
         modifier = modifier
@@ -299,65 +304,142 @@ fun AppLiquidFloatingSurface(
                         )
                     } else {
                         Modifier
-                            .clip(shape)
-                            .background(
-                                MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
-                                shape
-                            )
+                            .appLiquidOptimizedSurface(
+                                shape = shape,
+                                optimizedCornerRadius = optimizedCornerRadius,
+                                color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
+                        )
                     }
                 )
         )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            overlayColor,
-                            overlayColor.copy(alpha = overlayColor.alpha * 0.52f)
-                        )
-                    )
+                .appLiquidOptimizedBorder(
+                    shape = shape,
+                    optimizedCornerRadius = optimizedCornerRadius,
+                    color = pressedBorderColor,
                 )
         )
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
-                .border(1.dp, pressedBorderColor, shape)
-        )
-        if (consumeTouches && onClick == null) {
+                .then(
+                    if (clipContent) {
+                        Modifier.appLiquidOptimizedClip(
+                            shape = shape,
+                            optimizedCornerRadius = optimizedCornerRadius,
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(shape)
-                    .clickable(
-                        interactionSource = resolvedInteractionSource,
-                        indication = null,
-                        onClick = {}
+                    .then(
+                        if (!clipContent) {
+                            Modifier.appLiquidOptimizedClip(
+                                shape = shape,
+                                optimizedCornerRadius = optimizedCornerRadius,
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                overlayColor,
+                                overlayColor.copy(alpha = overlayColor.alpha * 0.52f)
+                            )
+                        )
                     )
             )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(if (clipContent) Modifier.clip(shape) else Modifier)
-                .then(
-                    when {
-                        onClick != null -> Modifier.clickable(
+            if (consumeTouches && onClick == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (!clipContent) {
+                                Modifier.appLiquidOptimizedClip(
+                                    shape = shape,
+                                    optimizedCornerRadius = optimizedCornerRadius,
+                                )
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .clickable(
                             interactionSource = resolvedInteractionSource,
                             indication = null,
-                            onClick = onClick
+                            onClick = {}
                         )
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        when {
+                            onClick != null -> Modifier.clickable(
+                                interactionSource = resolvedInteractionSource,
+                                indication = null,
+                                onClick = onClick
+                            )
 
-                        else -> Modifier
-                    }
-                ),
-            contentAlignment = Alignment.Center,
-            content = content
-        )
+                            else -> Modifier
+                        }
+                    ),
+                contentAlignment = Alignment.Center,
+                content = content
+            )
+        }
     }
 }
+
+private fun appLiquidOptimizedCornerRadius(shape: Shape): Dp? =
+    when (shape) {
+        CircleShape, ContinuousCapsule -> 999.dp
+
+        else -> null
+    }
+
+@Composable
+private fun Modifier.appLiquidOptimizedClip(
+    shape: Shape,
+    optimizedCornerRadius: Dp?,
+): Modifier =
+    if (optimizedCornerRadius != null) {
+        appSquircleClip(optimizedCornerRadius)
+    } else {
+        clip(shape)
+    }
+
+@Composable
+private fun Modifier.appLiquidOptimizedSurface(
+    shape: Shape,
+    optimizedCornerRadius: Dp?,
+    color: Color,
+): Modifier =
+    if (optimizedCornerRadius != null) {
+        appSquircleBackground(color = color, cornerRadius = optimizedCornerRadius)
+    } else {
+        clip(shape).background(color)
+    }
+
+@Composable
+private fun Modifier.appLiquidOptimizedBorder(
+    shape: Shape,
+    optimizedCornerRadius: Dp?,
+    color: Color,
+): Modifier =
+    if (optimizedCornerRadius != null) {
+        appSquircleBorder(width = 1.dp, color = color, cornerRadius = optimizedCornerRadius)
+    } else {
+        border(1.dp, color, shape)
+    }
 
 @Composable
 fun LiquidRoundedCard(

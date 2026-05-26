@@ -25,7 +25,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -35,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.widget.shape.appSquircleSurface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
@@ -130,7 +129,6 @@ fun LiquidGlassDialog(
         // Remove system's default dim background — we draw our own scrim.
         RemovePlatformDialogDefaultEffects()
 
-        val dialogShape = RoundedRectangle(LiquidDialogCornerRadius)
         // Official Backdrop recommendation: simple semi-transparent white surface.
         val surfaceColor = Color.White.copy(alpha = 0.5f)
         val titleColor = MiuixTheme.colorScheme.onBackground
@@ -162,8 +160,10 @@ fun LiquidGlassDialog(
                             scaleY = scale.value
                             this.alpha = alpha.value
                             transformOrigin = TransformOrigin.Center
-                        }.clip(dialogShape)
-                        .background(surfaceColor, dialogShape)
+                        }.appSquircleSurface(
+                            color = surfaceColor,
+                            cornerRadius = LiquidDialogCornerRadius,
+                        )
                         // Block clicks from passing through to scrim
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },

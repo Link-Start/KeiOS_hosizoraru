@@ -241,7 +241,7 @@ fun AppLiquidInputField(
                 ).then(
                     if (usesSearchMaterial) {
                         appLiquidSearchMaterialOverlayModifier(
-                            shape = ContinuousCapsule,
+                            cornerRadius = 999.dp,
                             colors = searchColors,
                             focusProgress = focusProgress,
                             pressProgress = 0f,
@@ -465,7 +465,7 @@ fun AppLiquidSearchSurface(
                     },
                 ).then(
                     appLiquidSearchMaterialOverlayModifier(
-                        shape = shape,
+                        cornerRadius = 999.dp,
                         colors = searchColors,
                         focusProgress = focusProgress,
                         pressProgress = pressProgress,

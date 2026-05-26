@@ -174,6 +174,26 @@ fun Modifier.appSquircleBorder(
         }
     }
 
+fun Modifier.drawAppSquircleBackground(
+    cornerRadius: Dp,
+    extension: Float = AppSquircleDefaults.Extension,
+    control: Float = AppSquircleDefaults.Control,
+    color: () -> Color,
+): Modifier =
+    drawWithCache {
+        val path = Path()
+        path.addAppSquircleRect(
+            width = size.width,
+            height = size.height,
+            cornerRadius = cornerRadius.toPx(),
+            extension = extension,
+            control = control,
+        )
+        onDrawBehind {
+            drawPath(path = path, color = color())
+        }
+    }
+
 object AppSquircleDefaults {
     const val Extension = 1.1f
     const val Control = 0.63f

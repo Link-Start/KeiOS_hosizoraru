@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -30,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -42,6 +40,9 @@ import androidx.compose.ui.unit.dp
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -241,14 +242,15 @@ fun LiquidGlassDropdownItem(
                         Modifier
                     }
                 )
-                .clip(rowShape)
-                .background(
-                    color = if (pillAlpha > 0.01f) {
-                        pillSurface.copy(alpha = pillSurface.alpha * pillAlpha)
+                .then(
+                    if (pillAlpha > 0.01f) {
+                        Modifier.appSquircleBackground(
+                            color = pillSurface.copy(alpha = pillSurface.alpha * pillAlpha),
+                            cornerRadius = LiquidGlassDropdownItemRadius,
+                        )
                     } else {
-                        Color.Transparent
-                    },
-                    shape = rowShape
+                        Modifier
+                    }
                 )
                 .then(
                     if (pillAlpha > 0.01f) {
@@ -256,10 +258,10 @@ fun LiquidGlassDropdownItem(
                             isDark = isDark,
                             material = material
                         )
-                        Modifier.border(
+                        Modifier.appSquircleBorder(
                             width = 1.dp,
                             color = borderColor.copy(alpha = borderColor.alpha * pillAlpha),
-                            shape = rowShape
+                            cornerRadius = LiquidGlassDropdownItemRadius,
                         )
                     } else {
                         Modifier
@@ -293,9 +295,9 @@ fun LiquidGlassDropdownItem(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .background(
+                        .appSquircleBackground(
                             color = MiuixTheme.colorScheme.onBackground.copy(alpha = pressedAlpha),
-                            shape = rowShape
+                            cornerRadius = LiquidGlassDropdownItemRadius,
                         )
                 )
             }

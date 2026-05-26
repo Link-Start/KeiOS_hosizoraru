@@ -19,8 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -53,6 +51,7 @@ import kotlinx.coroutines.flow.collectLatest
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import androidx.compose.ui.graphics.lerp as lerpColor
 
 val LocalLiquidControlsEnabled = staticCompositionLocalOf { true }
@@ -148,9 +147,8 @@ private fun AppFallbackSwitchToggle(
         Box(
             modifier =
                 Modifier
-                    .clip(Capsule())
-                    .drawBehind {
-                        drawRect(lerpColor(trackColor, accentColor, progress))
+                    .drawAppSquircleBackground(999.dp) {
+                        lerpColor(trackColor, accentColor, progress)
                     }.size(52.dp, 28.dp),
         )
         Box(
@@ -165,9 +163,8 @@ private fun AppFallbackSwitchToggle(
                             } else {
                                 lerp(travel / 2f - padding, -travel / 2f + padding, progress)
                             }
-                    }.clip(Capsule())
-                    .drawBehind {
-                        drawRect(thumbColor)
+                    }.drawAppSquircleBackground(999.dp) {
+                        thumbColor
                     }.size(24.dp),
         )
     }
@@ -301,9 +298,8 @@ private fun LiquidSwitchToggle(
         Box(
             Modifier
                 .layerBackdrop(trackBackdrop)
-                .clip(Capsule())
-                .drawBehind {
-                    drawRect(lerpColor(trackColor, accentColor, dampedDragAnimation.value))
+                .drawAppSquircleBackground(999.dp) {
+                    lerpColor(trackColor, accentColor, dampedDragAnimation.value)
                 }.size(64.dp, 28.dp),
         )
 

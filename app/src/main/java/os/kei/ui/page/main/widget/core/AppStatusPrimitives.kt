@@ -27,7 +27,6 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -110,7 +109,6 @@ fun AppSupportingBlock(
     Box(
         modifier =
             modifier
-                .appSquircleClip(12.dp)
                 .then(clickModifier),
     ) {
         if (LocalLiquidControlsEnabled.current) {

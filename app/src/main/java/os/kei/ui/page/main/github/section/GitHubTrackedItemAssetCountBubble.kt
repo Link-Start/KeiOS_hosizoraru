@@ -32,20 +32,19 @@ internal fun GitHubAssetCountBubble(
     loading: Boolean = false,
 ) {
     val isDark = isSystemInDarkTheme()
-    val localBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = localBackdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val shape = CircleShape
     val cornerRadius = 999.dp
     val bubbleModifier =
         Modifier
             .then(
-                if (activeBackdrop == null) {
+                if (liquidControlsEnabled) {
+                    Modifier
+                } else {
                     Modifier.appSquircleBackground(
                         color = color.copy(alpha = if (isDark) 0.18f else 0.12f),
                         cornerRadius = cornerRadius,
                     )
-                } else {
-                    Modifier
                 },
             ).appSquircleBorder(
                 width = 0.8.dp,
@@ -75,7 +74,8 @@ internal fun GitHubAssetCountBubble(
         modifier = modifier.size(28.dp),
         contentAlignment = Alignment.Center,
     ) {
-        if (activeBackdrop != null) {
+        if (liquidControlsEnabled) {
+            val localBackdrop = rememberLayerBackdrop()
             Box(
                 modifier =
                     Modifier
@@ -83,7 +83,7 @@ internal fun GitHubAssetCountBubble(
                         .layerBackdrop(localBackdrop),
             )
             LiquidSurface(
-                backdrop = activeBackdrop,
+                backdrop = localBackdrop,
                 modifier =
                     Modifier
                         .matchParentSize()

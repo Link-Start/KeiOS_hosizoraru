@@ -277,7 +277,11 @@ fun GitHubPage(
 
     val githubGlassRuntime = LocalGlassEffectRuntime.current
     val renderHeavyContent = shouldRenderGitHubHeavyContent(runtime)
-    val contentRevealPhase = rememberGitHubPageContentRevealPhase(renderHeavyContent)
+    val contentRevealPhase =
+        effectiveGitHubPageContentRevealPhase(
+            runtime = runtime,
+            revealPhase = rememberGitHubPageContentRevealPhase(renderHeavyContent),
+        )
     CompositionLocalProvider(
         LocalGlassEffectRuntime provides githubGlassRuntime,
         LocalGitHubAppIconBitmaps provides appIconState.bitmaps,
@@ -509,6 +513,16 @@ private suspend fun LazyListState.animateItemToViewportCenter(index: Int) {
 
 internal fun shouldRenderGitHubHeavyContent(runtime: MainPageRuntime): Boolean =
     runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
+
+internal fun effectiveGitHubPageContentRevealPhase(
+    runtime: MainPageRuntime,
+    revealPhase: Int,
+): Int =
+    if (runtime.isPagerScrollInProgress && runtime.isDataActive) {
+        revealPhase.coerceAtMost(GitHubMainContentRevealPhase.TRACKED_PREVIEW)
+    } else {
+        revealPhase
+    }
 
 @Composable
 private fun rememberGitHubPageContentRevealPhase(renderHeavyContent: Boolean): Int {

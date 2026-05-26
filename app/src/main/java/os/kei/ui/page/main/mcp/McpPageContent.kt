@@ -55,7 +55,11 @@ internal fun McpPageContent(
     actions: McpPageActions,
 ) {
     val renderHeavyContent = shouldRenderMcpHeavyContent(runtime)
-    val revealPhase = rememberMcpHeavyContentRevealPhase(renderHeavyContent)
+    val revealPhase =
+        effectiveMcpPageContentRevealPhase(
+            runtime = runtime,
+            revealPhase = rememberMcpHeavyContentRevealPhase(renderHeavyContent),
+        )
     Box(modifier = Modifier.fillMaxSize()) {
         if (renderHeavyContent) {
             AppPageLazyColumn(
@@ -209,6 +213,16 @@ internal fun McpPageContent(
 internal fun shouldRenderMcpHeavyContent(runtime: MainPageRuntime): Boolean =
     runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
 
+internal fun effectiveMcpPageContentRevealPhase(
+    runtime: MainPageRuntime,
+    revealPhase: Int,
+): Int =
+    if (runtime.isPagerScrollInProgress && runtime.isDataActive) {
+        revealPhase.coerceAtMost(MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS)
+    } else {
+        revealPhase
+    }
+
 @Composable
 private fun rememberMcpHeavyContentRevealPhase(renderHeavyContent: Boolean): Int {
     var phase by remember { mutableIntStateOf(0) }
@@ -234,10 +248,10 @@ private fun rememberMcpHeavyContentRevealPhase(renderHeavyContent: Boolean): Int
     return phase
 }
 
-private const val MCP_HEAVY_CONTENT_REVEAL_OVERVIEW = 1
-private const val MCP_HEAVY_CONTENT_REVEAL_CONTROLS = 2
-private const val MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY = 3
-private const val MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS = 4
-private const val MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS = 5
-private const val MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS = 6
-private const val MCP_HEAVY_CONTENT_REVEAL_DOCK = 7
+internal const val MCP_HEAVY_CONTENT_REVEAL_OVERVIEW = 1
+internal const val MCP_HEAVY_CONTENT_REVEAL_CONTROLS = 2
+internal const val MCP_HEAVY_CONTENT_REVEAL_CONTROL_BODY = 3
+internal const val MCP_HEAVY_CONTENT_REVEAL_ENTRYPOINTS = 4
+internal const val MCP_HEAVY_CONTENT_REVEAL_PRIMARY_TOOLS = 5
+internal const val MCP_HEAVY_CONTENT_REVEAL_SECONDARY_TOOLS = 6
+internal const val MCP_HEAVY_CONTENT_REVEAL_DOCK = 7

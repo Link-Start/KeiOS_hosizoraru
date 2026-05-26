@@ -142,7 +142,11 @@ fun OsPage(
         )
     val scrollBehavior = MiuixScrollBehavior()
     val renderHeavyContent = shouldRenderOsHeavyContent(runtime)
-    val contentRevealPhase = rememberOsPageContentRevealPhase(renderHeavyContent)
+    val contentRevealPhase =
+        effectiveOsPageContentRevealPhase(
+            runtime = runtime,
+            revealPhase = rememberOsPageContentRevealPhase(renderHeavyContent),
+        )
     val shellCommandCards = cardListDerivedState.shellCommandCards
     val activityCardExpanded = cardExpansionState.activityCards
     val shellCommandCardExpanded = cardExpansionState.shellCommandCards
@@ -600,6 +604,16 @@ fun OsPage(
 
 internal fun shouldRenderOsHeavyContent(runtime: MainPageRuntime): Boolean =
     runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
+
+internal fun effectiveOsPageContentRevealPhase(
+    runtime: MainPageRuntime,
+    revealPhase: Int,
+): Int =
+    if (runtime.isPagerScrollInProgress && runtime.isDataActive) {
+        revealPhase.coerceAtMost(OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW)
+    } else {
+        revealPhase
+    }
 
 @Composable
 private fun rememberOsPageContentRevealPhase(renderHeavyContent: Boolean): Int {

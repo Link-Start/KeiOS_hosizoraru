@@ -191,26 +191,16 @@ class GitHubShareImportActivity : ComponentActivity() {
         incomingGitHubShareText = null
         applyShareImportDisplayState(GitHubShareImportActivityDisplayState.Hidden)
         lifecycleScope.launch {
-            val lookupConfig = shareImportRepository.loadLookupConfig()
+            val resolvedShare = shareImportRepository.resolveIncomingShare(sharedText)
             if (resolveToken != incomingShareResolveToken || isFinishing) return@launch
-            val displayState =
-                GitHubShareImportActivityLaunchPolicy.forIncomingShare(
-                    sharedText = sharedText,
-                    lookupConfig = lookupConfig,
-                )
             applyResolvedIncomingShare(
-                sharedText = sharedText,
-                lookupConfig = lookupConfig,
-                displayState = displayState,
+                resolvedShare = resolvedShare,
             )
         }
     }
 
-    private fun applyResolvedIncomingShare(
-        sharedText: String,
-        lookupConfig: GitHubLookupConfig,
-        displayState: GitHubShareImportActivityDisplayState,
-    ) {
+    private fun applyResolvedIncomingShare(resolvedShare: GitHubShareImportResolvedIncomingShare) {
+        val displayState = resolvedShare.displayState
         applyShareImportDisplayState(displayState)
         notificationPermissionRequestReady = displayState != GitHubShareImportActivityDisplayState.Finish
         requestNotificationPermissionIfNeededForActiveFlow()
@@ -222,13 +212,13 @@ class GitHubShareImportActivity : ComponentActivity() {
             GitHubShareImportActivityDisplayState.Hidden -> {
                 incomingGitHubShareText = null
                 startIncomingShareInBackground(
-                    sharedText = sharedText,
-                    lookupConfig = lookupConfig,
+                    sharedText = resolvedShare.sharedText,
+                    lookupConfig = resolvedShare.lookupConfig,
                 )
             }
 
             GitHubShareImportActivityDisplayState.Sheet -> {
-                incomingGitHubShareText = sharedText
+                incomingGitHubShareText = resolvedShare.sharedText
                 incomingGitHubShareToken += 1
             }
 

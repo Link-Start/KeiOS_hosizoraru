@@ -11,9 +11,18 @@ import os.kei.feature.github.model.GitHubLookupConfig
 internal class GitHubShareImportWindowRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
 ) {
-    suspend fun loadLookupConfig(): GitHubLookupConfig =
+    suspend fun resolveIncomingShare(sharedText: String): GitHubShareImportResolvedIncomingShare =
         withContext(ioDispatcher) {
-            GitHubTrackStore.loadLookupConfig()
+            val lookupConfig = GitHubTrackStore.loadLookupConfig()
+            GitHubShareImportResolvedIncomingShare(
+                sharedText = sharedText.trim(),
+                lookupConfig = lookupConfig,
+                displayState =
+                    GitHubShareImportActivityLaunchPolicy.forIncomingShare(
+                        sharedText = sharedText,
+                        lookupConfig = lookupConfig,
+                    ),
+            )
         }
 
     suspend fun loadPendingTrack(): GitHubPendingShareImportTrackRecord? =
@@ -62,3 +71,9 @@ internal class GitHubShareImportWindowRepository(
         }
     }
 }
+
+internal data class GitHubShareImportResolvedIncomingShare(
+    val sharedText: String,
+    val lookupConfig: GitHubLookupConfig,
+    val displayState: GitHubShareImportActivityDisplayState,
+)

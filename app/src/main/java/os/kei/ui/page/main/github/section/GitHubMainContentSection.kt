@@ -46,14 +46,6 @@ internal fun GitHubMainContent(
 ) {
     val context = LocalContext.current
     val supportedAbis = remember { Build.SUPPORTED_ABIS?.toList().orEmpty() }
-    val installedAppLabelsByPackage =
-        remember(tracked.appList) {
-            tracked.appList
-                .asSequence()
-                .map { it.packageName.trim() to it.label.trim() }
-                .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
-                .toMap()
-        }
     val searchDockBottomTarget =
         appFloatingDockBottomTarget(
             contentBottomPadding = layout.contentBottomPadding,
@@ -205,7 +197,7 @@ internal fun GitHubMainContent(
                                 trackedItems = tracked.trackedItems,
                                 filteredTracked = tracked.filteredTracked,
                                 sortedTracked = tracked.sortedTracked,
-                                installedAppLabelsByPackage = installedAppLabelsByPackage,
+                                installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
                                 appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
                             ),
                         surfaces =
@@ -233,6 +225,7 @@ internal fun GitHubMainContent(
                             GitHubTrackedItemsRuntime(
                                 context = context,
                                 supportedAbis = supportedAbis,
+                                relativeTimeNowMillis = tracked.relativeTimeNowMillis,
                             ),
                         actions =
                             GitHubTrackedItemsActions(

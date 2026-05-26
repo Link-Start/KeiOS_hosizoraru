@@ -14,6 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -24,7 +25,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -39,6 +39,7 @@ import os.kei.ui.page.main.github.section.GitHubMainContentOverview
 import os.kei.ui.page.main.github.section.GitHubMainContentShareImport
 import os.kei.ui.page.main.github.section.GitHubMainContentSurfaces
 import os.kei.ui.page.main.github.section.GitHubMainContentTracked
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -63,8 +64,10 @@ fun GitHubPage(
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val isDark = isSystemInDarkTheme()
-    val githubPageViewModel: GitHubPageViewModel = viewModel()
-    val isListScrolling = listState.isScrollInProgress
+    val githubPageViewModel: GitHubPageViewModel = applicationViewModel(create = ::GitHubPageViewModel)
+    val isListScrolling by remember(listState) {
+        derivedStateOf { listState.isScrollInProgress }
+    }
     val fullBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress &&
@@ -105,11 +108,9 @@ fun GitHubPage(
             state.settleScrollChromeVisibility()
         }
     }
-    LaunchedEffect(state, runtime.hasActivated) {
+    LaunchedEffect(context, state, runtime.hasActivated) {
         if (!runtime.hasActivated) return@LaunchedEffect
-        githubPageViewModel.bindContextObservers(
-            state = state,
-        )
+        githubPageViewModel.bindContextObservers(state = state)
     }
     SideEffect {
         state.updateScrollBounds(
@@ -322,11 +323,11 @@ fun GitHubPage(
                 ),
             tracked =
                 GitHubMainContentTracked(
-                    appList = state.appList,
                     trackedItems = state.trackedItems,
                     filteredTracked = contentDerivedState.trackedUi.filteredTracked,
                     sortedTracked = contentDerivedState.trackedUi.sortedTracked,
                     appLastUpdatedAtByTrackId = contentDerivedState.appLastUpdatedAtByTrackId,
+                    installedAppLabelsByPackage = contentDerivedState.installedAppLabelsByPackage,
                     checkStates = state.checkStates,
                     itemRefreshLoading = state.itemRefreshLoading,
                     apkAssetBundles = state.apkAssetBundles,
@@ -336,6 +337,7 @@ fun GitHubPage(
                     managedInstallLoading = state.managedInstallLoading,
                     actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
                     expansionState = trackedItemsExpansionState,
+                    relativeTimeNowMillis = contentDerivedState.relativeTimeNowMillis,
                 ),
             shareImport =
                 GitHubMainContentShareImport(

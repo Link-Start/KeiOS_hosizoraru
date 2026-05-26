@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
@@ -61,7 +62,12 @@ fun OsPage(
     val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
     val lifecycleOwner = LocalLifecycleOwner.current
     val osPageViewModel: OsPageViewModel = viewModel()
-    LaunchedEffect(runtime.hasActivated) {
+    LaunchedEffect(
+        runtime.hasActivated,
+        textBundle.googleSystemServiceDefaults,
+        textBundle.builtInActivityShortcutCards,
+        textBundle.builtInShellCommandCards,
+    ) {
         if (!runtime.hasActivated) return@LaunchedEffect
         osPageViewModel.loadPersistentState(
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
@@ -152,12 +158,14 @@ fun OsPage(
     DisposableEffect(Unit) {
         onDispose {
             onActionBarInteractingChanged(false)
-            osPageViewModel.handlePageActiveChanged(false)
+            osPageViewModel.closePersistentShell()
         }
     }
     LaunchedEffect(runtime.contentReady, runtime.isDataActive) {
         val active = runtime.contentReady && runtime.isDataActive
-        osPageViewModel.handlePageActiveChanged(active)
+        if (!active) {
+            osPageViewModel.closePersistentShell()
+        }
     }
     BindOsShellCardReloadOnResume(
         lifecycleOwner = lifecycleOwner,
@@ -565,12 +573,13 @@ fun OsPage(
                 bottomBarVisible = runtime.bottomBarVisible,
                 searchExpanded = enableSearchBar && chromeState.searchExpanded && !chromeState.overlaySearchSuppressed,
                 queryInput = queryInput,
-                onQueryInputChange = osPageViewModel::submitQueryInput,
+                onQueryInputChange = { value ->
+                    if (!chromeState.overlaySearchSuppressed) {
+                        osPageViewModel.updateQueryInput(value)
+                    }
+                },
                 onSearchExpandedChange = { expanded ->
-                    osPageViewModel.submitSearchExpanded(
-                        searchBarEnabled = enableSearchBar,
-                        expanded = expanded,
-                    )
+                    osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !chromeState.overlaySearchSuppressed)
                 },
                 searchLabel = textBundle.searchLabel,
                 floatingDockSide = runtime.floatingDockSide,

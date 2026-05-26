@@ -60,13 +60,11 @@ internal class OsPageViewModel : ViewModel() {
     val persistentState: StateFlow<OsPagePersistentState> =
         repository
             .observePersistentState()
-            .let { source ->
-                source.stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
-                    initialValue = source.value,
-                )
-            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+                initialValue = repository.observePersistentState().value,
+            )
 
     private val _queryInput = MutableStateFlow("")
     val queryInput: StateFlow<String> = _queryInput.asStateFlow()
@@ -239,23 +237,8 @@ internal class OsPageViewModel : ViewModel() {
         _queryInput.value = value
     }
 
-    fun submitQueryInput(value: String) {
-        if (_chromeState.value.overlaySearchSuppressed) return
-        _queryInput.value = value
-    }
-
     fun updateSearchExpanded(expanded: Boolean) {
         _chromeState.update { state -> state.copy(searchExpanded = expanded) }
-    }
-
-    fun submitSearchExpanded(
-        searchBarEnabled: Boolean,
-        expanded: Boolean,
-    ) {
-        val effective = searchBarEnabled && expanded && !_chromeState.value.overlaySearchSuppressed
-        _chromeState.update { state ->
-            if (state.searchExpanded == effective) state else state.copy(searchExpanded = effective)
-        }
     }
 
     fun updateOverlaySheetVisible(visible: Boolean) {
@@ -318,17 +301,8 @@ internal class OsPageViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Releases the persistent shell when the page goes inactive (page hidden / pager swiped away).
-     * Called from the page lifecycle, never from a composition keyed effect, so the shell only
-     * closes on real activation transitions instead of every textBundle/locale recomposition.
-     */
-    fun handlePageActiveChanged(active: Boolean) {
-        if (!active) {
-            viewModelScope.launch {
-                repository.closePersistentShell()
-            }
-        }
+    fun closePersistentShell() {
+        repository.closePersistentShell()
     }
 
     fun openActivityShortcutCard(
@@ -676,7 +650,6 @@ internal class OsPageViewModel : ViewModel() {
         activitySuggestionController.cancel()
         rowsStateLoader.cancel()
         activityIconLoader.clearLoadingState()
-        repository.closePersistentShell()
         super.onCleared()
     }
 }

@@ -9,12 +9,14 @@ import os.kei.R
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.mcp.model.McpOverviewMetric
 import os.kei.ui.page.main.mcp.model.toMcpTokenPreview
+import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
 
 @Immutable
 internal data class McpPageOverviewState(
     val overviewAccentColor: Color,
     val overviewCardColor: Color,
     val overviewBorderColor: Color,
+    val runtimeText: String,
     val overviewMetrics: List<McpOverviewMetric>
 )
 
@@ -22,11 +24,13 @@ internal data class McpPageOverviewState(
 internal fun rememberMcpPageOverviewState(
     context: Context,
     uiState: McpServerUiState,
+    runtimeNowMs: Long,
     isDark: Boolean,
     titleColor: Color,
     subtitleColor: Color,
     runningColor: Color,
     stoppedColor: Color,
+    runtimePendingText: String
 ): McpPageOverviewState {
     val overviewAccentColor = if (uiState.running) runningColor else stoppedColor
     val overviewCardColor = if (isDark) {
@@ -38,6 +42,11 @@ internal fun rememberMcpPageOverviewState(
         overviewAccentColor.copy(alpha = 0.32f)
     } else {
         overviewAccentColor.copy(alpha = 0.26f)
+    }
+    val runtimeText = if (!uiState.running || uiState.runningSinceEpochMs <= 0L) {
+        runtimePendingText
+    } else {
+        formatMcpUptimeText(runtimeNowMs - uiState.runningSinceEpochMs)
     }
     val bindAddress = remember(uiState.allowExternal, uiState.addresses) {
         when {
@@ -117,12 +126,14 @@ internal fun rememberMcpPageOverviewState(
         overviewAccentColor,
         overviewCardColor,
         overviewBorderColor,
+        runtimeText,
         overviewMetrics
     ) {
         McpPageOverviewState(
             overviewAccentColor = overviewAccentColor,
             overviewCardColor = overviewCardColor,
             overviewBorderColor = overviewBorderColor,
+            runtimeText = runtimeText,
             overviewMetrics = overviewMetrics
         )
     }

@@ -7,8 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.system.HyperOsSettingsIntents
 
 @Immutable
@@ -21,24 +19,18 @@ internal data class SettingsBatteryOptimizationSnapshot(
 internal class SettingsBatteryOptimizationController(
     private val appContext: Context,
 ) {
-    /**
-     * Resolve the snapshot off the main thread. PowerManager is normally cheap but the
-     * intent resolver can hit the package manager, which has been observed to take tens
-     * of milliseconds on cold path — keep it off the UI thread regardless.
-     */
-    suspend fun loadSnapshot(): SettingsBatteryOptimizationSnapshot =
-        withContext(AppDispatchers.fileIo) {
-            val ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(appContext)
-            val requestActionAvailable =
-                buildBatteryOptimizationIntent(
-                    context = appContext,
-                    alreadyIgnored = ignoringBatteryOptimizations,
-                ) != null
-            SettingsBatteryOptimizationSnapshot(
-                ignoringBatteryOptimizations = ignoringBatteryOptimizations,
-                requestActionAvailable = requestActionAvailable,
-            )
-        }
+    fun loadSnapshot(): SettingsBatteryOptimizationSnapshot {
+        val ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(appContext)
+        val requestActionAvailable =
+            buildBatteryOptimizationIntent(
+                context = appContext,
+                alreadyIgnored = ignoringBatteryOptimizations,
+            ) != null
+        return SettingsBatteryOptimizationSnapshot(
+            ignoringBatteryOptimizations = ignoringBatteryOptimizations,
+            requestActionAvailable = requestActionAvailable,
+        )
+    }
 
     fun openBatteryOptimizationSettings(snapshot: SettingsBatteryOptimizationSnapshot): Boolean {
         val intent =

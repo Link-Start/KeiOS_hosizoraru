@@ -36,6 +36,7 @@ internal data class HomePageContentState(
     val homeStatStatus: String,
     val mcpStatusText: String,
     val homeStatRuntime: String,
+    val mcpRuntimeText: String,
     val homeStatClients: String,
     val mcpConnectedClients: Int,
     val homeStatNetwork: String,
@@ -89,6 +90,7 @@ internal fun rememberHomePageContentState(
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
     baOverview: HomeBaOverview,
+    runtimeNowMs: Long,
 ): HomePageContentState {
     val text = rememberHomePageContentTextBundle()
     val colors =
@@ -98,13 +100,14 @@ internal fun rememberHomePageContentState(
             inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant,
             githubCacheColor = AppStatusColors.Cached,
         )
-    return remember(shizukuStatus, appOverview, mcpOverview, githubOverview, baOverview, text, colors) {
+    return remember(shizukuStatus, appOverview, mcpOverview, githubOverview, baOverview, runtimeNowMs, text, colors) {
         deriveHomePageContentState(
             shizukuStatus = shizukuStatus,
             appOverview = appOverview,
             mcpOverview = mcpOverview,
             githubOverview = githubOverview,
             baOverview = baOverview,
+            runtimeNowMs = runtimeNowMs,
             text = text,
             colors = colors,
         )

@@ -31,10 +31,7 @@ internal data class BaRuntimePersistenceUpdate(
             notifyHomeOverview = notifyHomeOverview || newer.notifyHomeOverview,
         )
 
-    /**
-     * Persist within the caller's coroutine context. Must already be on an IO dispatcher.
-     */
-    private fun persistOnCurrentDispatcher() {
+    fun persist() {
         if (
             apCurrent != null ||
             apRegenBaseMs != null ||
@@ -42,7 +39,7 @@ internal data class BaRuntimePersistenceUpdate(
             cafeStoredAp != null ||
             cafeLastHourMs != null
         ) {
-            BaOfficeRepository.saveRuntimeStateBlocking(
+            BaOfficeRepository.saveRuntimeState(
                 apCurrent = apCurrent,
                 apRegenBaseMs = apRegenBaseMs,
                 apSyncMs = apSyncMs,
@@ -51,18 +48,14 @@ internal data class BaRuntimePersistenceUpdate(
                 notifyHomeOverview = notifyHomeOverview,
             )
         }
-        cafeApLastNotifiedLevel?.let(BaOfficeRepository::saveCafeApLastNotifiedLevelBlocking)
-        apLastNotifiedLevel?.let(BaOfficeRepository::saveApLastNotifiedLevelBlocking)
+        cafeApLastNotifiedLevel?.let(BaOfficeRepository::saveCafeApLastNotifiedLevel)
+        apLastNotifiedLevel?.let(BaOfficeRepository::saveApLastNotifiedLevel)
     }
 
     suspend fun persistAsync(ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch) {
         withContext(ioDispatcher) {
-            persistOnCurrentDispatcher()
+            persist()
         }
-    }
-
-    internal fun persistInsideIoContext() {
-        persistOnCurrentDispatcher()
     }
 }
 
@@ -88,7 +81,7 @@ internal class BaRuntimePersistenceCoordinator(
                 merged = merged.mergedWith(next)
             }
             withContext(ioDispatcher) {
-                merged.persistInsideIoContext()
+                merged.persist()
             }
         }
     }

@@ -51,6 +51,7 @@ internal data class GitHubTrackedItemsExpansionState(
 internal data class GitHubTrackedItemsRuntime(
     val context: Context,
     val supportedAbis: List<String>,
+    val relativeTimeNowMillis: Long,
 )
 
 internal data class GitHubTrackedItemsActions(

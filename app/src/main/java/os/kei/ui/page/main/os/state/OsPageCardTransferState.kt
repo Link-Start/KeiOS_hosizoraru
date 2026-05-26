@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
@@ -59,35 +58,24 @@ internal fun rememberOsPageCardTransferState(
             )
         }
 
-    val confirmPendingImport: () -> Unit =
-        remember(
-            overlayState,
-            osPageViewModel,
-            googleSystemServiceDefaults,
-            googleSettingsBuiltInSampleDefaults,
-            builtInActivityShortcutCards,
-        ) {
-            confirmPendingImport@{
-                val preview = overlayState.pendingCardImportPreview ?: return@confirmPendingImport
-                if (!preview.canImport || overlayState.cardTransferInProgress) {
-                    overlayState.onPendingCardImportPreviewChange(null)
-                    return@confirmPendingImport
-                }
-                overlayState.onCardTransferInProgressChange(true)
-                osPageViewModel.confirmCardImport(
-                    preview = preview,
-                    googleSystemServiceDefaults = googleSystemServiceDefaults,
-                    googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
-                    builtInActivityShortcutCards = builtInActivityShortcutCards,
-                )
-            }
+    val confirmPendingImport: () -> Unit = confirmPendingImport@{
+        val preview = overlayState.pendingCardImportPreview ?: return@confirmPendingImport
+        if (!preview.canImport || overlayState.cardTransferInProgress) {
+            overlayState.onPendingCardImportPreviewChange(null)
+            return@confirmPendingImport
         }
-
-    return remember(exportLauncher, importLauncher, confirmPendingImport) {
-        OsPageCardTransferState(
-            exportLauncher = exportLauncher,
-            importLauncher = importLauncher,
-            confirmImport = confirmPendingImport,
+        overlayState.onCardTransferInProgressChange(true)
+        osPageViewModel.confirmCardImport(
+            preview = preview,
+            googleSystemServiceDefaults = googleSystemServiceDefaults,
+            googleSettingsBuiltInSampleDefaults = googleSettingsBuiltInSampleDefaults,
+            builtInActivityShortcutCards = builtInActivityShortcutCards,
         )
     }
+
+    return OsPageCardTransferState(
+        exportLauncher = exportLauncher,
+        importLauncher = importLauncher,
+        confirmImport = confirmPendingImport,
+    )
 }

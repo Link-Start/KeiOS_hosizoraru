@@ -85,8 +85,7 @@ internal sealed interface GitHubStarImportEvent {
 internal class GitHubStarImportViewModel(
     private val repository: GitHubStarImportPageRepository = GitHubStarImportPageRepository(),
 ) : ViewModel() {
-    private val initialPlaceholder = GitHubStarImportUiState()
-    private val _uiState = MutableStateFlow(initialPlaceholder)
+    private val _uiState = MutableStateFlow(GitHubStarImportUiState())
     val uiState: StateFlow<GitHubStarImportUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<GitHubStarImportEvent>(
@@ -102,14 +101,13 @@ internal class GitHubStarImportViewModel(
     private var verifyJob: Job? = null
     private var importJob: Job? = null
     private var draftSaveJob: Job? = null
+    private var draftMutatedAfterLaunch = false
 
     init {
         viewModelScope.launch {
             val initialState = repository.loadInitialState()
-            // Atomically swap only if the user hasn't typed anything yet. saveDraft()'s
-            // _uiState.update { state.copy(...) } produces a new instance so the
-            // compareAndSet here fails the moment any input lands first.
-            if (_uiState.compareAndSet(initialPlaceholder, initialState)) {
+            if (!draftMutatedAfterLaunch) {
+                _uiState.value = initialState
                 rebuildListState()
             } else {
                 _uiState.update { state -> state.copy(apiTokenAvailable = initialState.apiTokenAvailable) }
@@ -471,6 +469,7 @@ internal class GitHubStarImportViewModel(
     }
 
     private fun saveDraft() {
+        draftMutatedAfterLaunch = true
         val state = _uiState.value
         val draft =
             GitHubStarImportDraft(

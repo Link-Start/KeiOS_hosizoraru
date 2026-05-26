@@ -20,13 +20,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -67,7 +67,7 @@ fun BAPage(
             stringResource(R.string.ba_server_jp),
         )
     val cafeLevelOptions = remember { (1..10).toList() }
-    val officeViewModel: BaOfficeViewModel = viewModel()
+    val officeViewModel: BaOfficeViewModel = applicationViewModel(create = ::BaOfficeViewModel)
 
     // Reset once per cold process start so app relaunch always lands at BA top.
     LaunchedEffect(Unit) {
@@ -82,7 +82,7 @@ fun BAPage(
     val officeChromeUiState = officePageUiState.chromeUiState
     val office = officeViewModel.office
     val ui = rememberBaPageUiController()
-    val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
+    val calendarPoolViewModel: BaCalendarPoolViewModel = applicationViewModel(create = ::BaCalendarPoolViewModel)
     val calendarPoolRouteState by calendarPoolViewModel.routeState.collectAsStateWithLifecycle()
     val calendarUiState = calendarPoolRouteState.calendarUiState
     val poolUiState = calendarPoolRouteState.poolUiState
@@ -97,29 +97,17 @@ fun BAPage(
         }
     val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
     val pagePresentationState =
-        remember(
-            runtime.isPageActive,
-            officeOverviewTitle,
-            office,
-            calendarUiState,
-            poolUiState,
-            officePageUiState,
-            baClockState,
-            serverOptions,
-            cafeLevelOptions,
-        ) {
-            buildBaPagePresentationState(
-                isPageActive = runtime.isPageActive,
-                officeOverviewTitle = officeOverviewTitle,
-                office = office,
-                calendarUiState = calendarUiState,
-                poolUiState = poolUiState,
-                officePageUiState = officePageUiState,
-                clockState = baClockState,
-                serverOptions = serverOptions,
-                cafeLevelOptions = cafeLevelOptions,
-            )
-        }
+        buildBaPagePresentationState(
+            isPageActive = runtime.isPageActive,
+            officeOverviewTitle = officeOverviewTitle,
+            office = office,
+            calendarUiState = calendarUiState,
+            poolUiState = poolUiState,
+            officePageUiState = officePageUiState,
+            clockState = baClockState,
+            serverOptions = serverOptions,
+            cafeLevelOptions = cafeLevelOptions,
+        )
     val baRouteState = pagePresentationState.routeState
     val settingsSheetState = pagePresentationState.settingsSheetState
     val notificationSettingsSheetState = pagePresentationState.notificationSettingsSheetState
@@ -127,6 +115,7 @@ fun BAPage(
     val savedSettingsSheetState = pagePresentationState.savedSettingsSheetState
     val savedNotificationSettingsSheetState = pagePresentationState.savedNotificationSettingsSheetState
     val pageContentState = pagePresentationState.pageContentState
+    val uiNowMsProvider = remember(ui) { { ui.uiNowMs } }
     val syncPageActive =
         runtime.hasActivated &&
             if (preloadingEnabled) runtime.isWarmDataActive else runtime.isDataActive
@@ -344,7 +333,7 @@ fun BAPage(
             office = office,
             viewModel = officeViewModel,
             runtimePersistenceCoordinator = runtimePersistenceCoordinator,
-            uiNowMs = ui.uiNowMs,
+            uiNowMsProvider = uiNowMsProvider,
             routeState = baRouteState,
             chromeUiState = officeChromeUiState,
             settingsSheetState = settingsSheetState,

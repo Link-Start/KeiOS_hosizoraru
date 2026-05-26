@@ -18,7 +18,7 @@ internal fun BaPageSheetHost(
     office: BaOfficeController,
     viewModel: BaOfficeViewModel,
     runtimePersistenceCoordinator: BaRuntimePersistenceCoordinator,
-    uiNowMs: Long,
+    uiNowMsProvider: () -> Long,
     routeState: BaPageRouteState,
     chromeUiState: BaOfficeChromeUiState,
     settingsSheetState: BaSettingsSheetState,
@@ -129,7 +129,7 @@ internal fun BaPageSheetHost(
         context = context,
         office = office,
         runtimePersistenceCoordinator = runtimePersistenceCoordinator,
-        uiNowMs = uiNowMs,
+        uiNowMsProvider = uiNowMsProvider,
         routeState = routeState,
         calendarUiState = calendarUiState,
         poolUiState = poolUiState,
@@ -144,7 +144,7 @@ private fun BaDebugSheetHost(
     context: Context,
     office: BaOfficeController,
     runtimePersistenceCoordinator: BaRuntimePersistenceCoordinator,
-    uiNowMs: Long,
+    uiNowMsProvider: () -> Long,
     routeState: BaPageRouteState,
     calendarUiState: BaCalendarUiState,
     poolUiState: BaPoolUiState,
@@ -179,6 +179,7 @@ private fun BaDebugSheetHost(
             )
         },
         onSendCalendarUpcomingTestNotification = {
+            val uiNowMs = uiNowMsProvider()
             val entries =
                 resolveCalendarDebugEntries(
                     context = context,
@@ -198,6 +199,7 @@ private fun BaDebugSheetHost(
             )
         },
         onSendCalendarEndingTestNotification = {
+            val uiNowMs = uiNowMsProvider()
             val entries =
                 resolveCalendarDebugEntries(
                     context = context,
@@ -217,6 +219,7 @@ private fun BaDebugSheetHost(
             )
         },
         onSendPoolUpcomingTestNotification = {
+            val uiNowMs = uiNowMsProvider()
             val entries =
                 resolvePoolDebugEntries(
                     context = context,
@@ -236,6 +239,7 @@ private fun BaDebugSheetHost(
             )
         },
         onSendPoolEndingTestNotification = {
+            val uiNowMs = uiNowMsProvider()
             val entries =
                 resolvePoolDebugEntries(
                     context = context,
@@ -255,6 +259,7 @@ private fun BaDebugSheetHost(
             )
         },
         onSendCalendarPoolChangeTestNotification = {
+            val uiNowMs = uiNowMsProvider()
             val detail =
                 if (routeState.debugUseRealCalendarPoolData) {
                     resolveRealChangeDebugDetail(

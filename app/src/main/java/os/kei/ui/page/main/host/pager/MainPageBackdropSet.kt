@@ -6,7 +6,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -48,23 +47,19 @@ fun rememberMainPageBackdropSet(
 
     if (!distinctLayers) {
         val sharedBackdrop = rememberPageBackdrop("shared")
-        return remember(sharedBackdrop) {
-            MainPageBackdropSet(
-                topBar = sharedBackdrop,
-                content = sharedBackdrop,
-                sheet = sharedBackdrop,
-            )
-        }
+        return MainPageBackdropSet(
+            topBar = sharedBackdrop,
+            content = sharedBackdrop,
+            sheet = sharedBackdrop
+        )
     }
 
     val topBarBackdrop = rememberPageBackdrop("topbar")
     val contentBackdrop = rememberPageBackdrop("content")
     val sheetBackdrop = rememberPageBackdrop("sheet")
-    return remember(topBarBackdrop, contentBackdrop, sheetBackdrop) {
-        MainPageBackdropSet(
-            topBar = topBarBackdrop,
-            content = contentBackdrop,
-            sheet = sheetBackdrop,
-        )
-    }
+    return MainPageBackdropSet(
+        topBar = topBarBackdrop,
+        content = contentBackdrop,
+        sheet = sheetBackdrop
+    )
 }

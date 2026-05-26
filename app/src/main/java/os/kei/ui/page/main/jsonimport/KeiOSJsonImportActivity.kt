@@ -12,12 +12,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.MainActivity
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -51,7 +51,7 @@ class KeiOSJsonImportActivity : ComponentActivity() {
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                     ) {
-                        val viewModel: KeiOSJsonImportViewModel = viewModel()
+                        val viewModel: KeiOSJsonImportViewModel = applicationViewModel(create = ::KeiOSJsonImportViewModel)
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                         val lifecycleOwner = LocalLifecycleOwner.current
 

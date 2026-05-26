@@ -12,7 +12,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.StateFlow
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -38,7 +37,6 @@ internal fun McpPageContent(
     pageUiState: McpPageUiState,
     toolBuckets: McpToolBuckets,
     overviewState: McpPageOverviewState,
-    runtimeNowMsFlow: StateFlow<Long>,
     runtime: MainPageRuntime,
     innerPadding: PaddingValues,
     listState: LazyListState,
@@ -69,8 +67,7 @@ internal fun McpPageContent(
                     overviewCardColor = overviewState.overviewCardColor,
                     overviewBorderColor = overviewState.overviewBorderColor,
                     overviewAccentColor = overviewState.overviewAccentColor,
-                    runtimeNowMsFlow = runtimeNowMsFlow,
-                    runningSinceEpochMs = uiState.runningSinceEpochMs,
+                    runtimeText = overviewState.runtimeText,
                     isDark = isDark,
                     running = uiState.running,
                     overviewMetrics = overviewState.overviewMetrics,

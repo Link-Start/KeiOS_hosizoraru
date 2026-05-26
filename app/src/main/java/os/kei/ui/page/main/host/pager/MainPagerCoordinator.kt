@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.flow.StateFlow
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -40,7 +39,7 @@ internal data class MainPagerCoordinatorState(
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
     val homeBaOverview: HomeBaOverview,
-    val homeRuntimeNowMsFlow: StateFlow<Long>,
+    val homeRuntimeNowMs: Long,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
     val homeActionBarSelectedIndex: Int,
@@ -233,7 +232,7 @@ internal fun rememberMainPagerCoordinator(
             homeMcpOverview = homeOverviewState.homeMcpOverview,
             homeGitHubOverview = homeOverviewState.homeGitHubOverview,
             homeBaOverview = homeOverviewState.homeBaOverview,
-            homeRuntimeNowMsFlow = homeOverviewState.runtimeNowMsFlow,
+            homeRuntimeNowMs = homeOverviewState.runtimeNowMs,
             visibleOverviewCards = homeOverviewState.visibleOverviewCards,
             showCacheFreshnessInCards = homeOverviewState.showCacheFreshnessInCards,
             homeActionBarSelectedIndex = homeOverviewState.actionBarSelectedIndex,

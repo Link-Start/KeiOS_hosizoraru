@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,24 +48,15 @@ internal data class BaGuideBgmFavoriteGroup(
 
 @Composable
 internal fun rememberBaGuideBgmFavoriteGroupLabels(): BaGuideBgmFavoriteGroupLabels {
-    val all = stringResource(R.string.ba_catalog_bgm_group_all)
-    val student = stringResource(R.string.ba_catalog_tab_student)
-    val npcSatellite = stringResource(R.string.ba_catalog_tab_npc_satellite)
-    val unknownAcademy = stringResource(R.string.ba_catalog_bgm_group_unknown_school)
-    val unknownType = stringResource(R.string.ba_catalog_bgm_group_unknown_type)
-    val played = stringResource(R.string.ba_catalog_bgm_group_played)
-    val unplayed = stringResource(R.string.ba_catalog_bgm_group_unplayed)
-    return remember(all, student, npcSatellite, unknownAcademy, unknownType, played, unplayed) {
-        BaGuideBgmFavoriteGroupLabels(
-            all = all,
-            student = student,
-            npcSatellite = npcSatellite,
-            unknownAcademy = unknownAcademy,
-            unknownType = unknownType,
-            played = played,
-            unplayed = unplayed
-        )
-    }
+    return BaGuideBgmFavoriteGroupLabels(
+        all = stringResource(R.string.ba_catalog_bgm_group_all),
+        student = stringResource(R.string.ba_catalog_tab_student),
+        npcSatellite = stringResource(R.string.ba_catalog_tab_npc_satellite),
+        unknownAcademy = stringResource(R.string.ba_catalog_bgm_group_unknown_school),
+        unknownType = stringResource(R.string.ba_catalog_bgm_group_unknown_type),
+        played = stringResource(R.string.ba_catalog_bgm_group_played),
+        unplayed = stringResource(R.string.ba_catalog_bgm_group_unplayed)
+    )
 }
 
 @Composable

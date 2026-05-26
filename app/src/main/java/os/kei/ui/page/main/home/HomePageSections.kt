@@ -241,14 +241,7 @@ internal fun HomeInfoGridCard(
     title: String,
     stats: List<HomeCardStatItem>,
     naText: String,
-    columns: Int = 2,
-    /**
-     * Optional provider for any stat marked [HomeCardStatItem.runtimeMode]. Invoking this
-     * composable inside the value [Text] keeps any flow read scoped to that single cell, so
-     * frequent emissions (e.g. an uptime ticker) only repaint one row instead of
-     * invalidating the whole card.
-     */
-    runtimeValueProvider: (@Composable () -> String)? = null,
+    columns: Int = 2
 ) {
     val summaryColor = if (isSystemInDarkTheme()) {
         Color(0xFF8AB8FF)
@@ -298,12 +291,15 @@ internal fun HomeInfoGridCard(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        HomeCardStatValueText(
-                            stat = stat,
-                            naText = naText,
-                            summaryColor = summaryColor,
-                            runtimeValueProvider = runtimeValueProvider,
-                            modifier = Modifier.weight(1f),
+                        Text(
+                            text = stat.value.ifBlank { naText },
+                            color = if (stat.emphasize) summaryColor else MiuixTheme.colorScheme.onSurface,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = if (stat.emphasize) FontWeight.SemiBold else FontWeight.Medium,
+                            maxLines = stat.valueMaxLines,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -313,35 +309,6 @@ internal fun HomeInfoGridCard(
             }
         }
     }
-}
-
-/**
- * Renders a single stat value. Pulled into its own composable so any flow read inside
- * [runtimeValueProvider] forms a leaf recomposition scope and only invalidates this cell.
- */
-@Composable
-private fun HomeCardStatValueText(
-    stat: HomeCardStatItem,
-    naText: String,
-    summaryColor: Color,
-    runtimeValueProvider: (@Composable () -> String)?,
-    modifier: Modifier = Modifier,
-) {
-    val resolvedText = if (stat.runtimeMode && runtimeValueProvider != null) {
-        runtimeValueProvider()
-    } else {
-        stat.value
-    }
-    Text(
-        text = resolvedText.ifBlank { naText },
-        color = if (stat.emphasize) summaryColor else MiuixTheme.colorScheme.onSurface,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        fontWeight = if (stat.emphasize) FontWeight.SemiBold else FontWeight.Medium,
-        maxLines = stat.valueMaxLines,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier,
-    )
 }
 
 private fun homeInfoGridRows(
@@ -367,11 +334,5 @@ internal data class HomeCardStatItem(
     val label: String,
     val value: String,
     val emphasize: Boolean = false,
-    val valueMaxLines: Int = 1,
-    /**
-     * Marks a stat whose value should be resolved at render time via the parent
-     * `runtimeValueProvider`. Lets a single cell subscribe to a hot StateFlow without
-     * dragging the whole stat list through frequent recomposition.
-     */
-    val runtimeMode: Boolean = false,
+    val valueMaxLines: Int = 1
 )

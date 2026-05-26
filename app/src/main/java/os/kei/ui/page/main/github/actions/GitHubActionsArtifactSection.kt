@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +37,7 @@ internal fun GitHubActionsArtifactsSection(
     visibleArtifactMatches: List<GitHubActionsVisibleArtifactMatch>,
     recommendedArtifactCount: Int,
     alternativesArtifactCount: Int,
+    relativeTimeNowMillis: Long,
     isDark: Boolean,
     backdrop: LayerBackdrop,
     onExpandedChange: (Boolean) -> Unit,
@@ -99,10 +99,6 @@ internal fun GitHubActionsArtifactsSection(
             }
 
             else -> {
-                val relativeTimeNowMillis =
-                    remember(selectedRun.runArtifacts, visibleArtifactMatches) {
-                        System.currentTimeMillis()
-                    }
                 if (!canResolveArtifacts) {
                     GitHubActionsArtifactHintText(
                         text = stringResource(R.string.github_actions_hint_token_required),

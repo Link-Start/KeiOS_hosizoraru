@@ -38,7 +38,7 @@ internal data class MainPagerHomeOverviewState(
     val showCacheFreshnessInCards: Boolean,
     val actionBarSelectedIndex: Int,
     val showBottomPageEditor: Boolean,
-    val runtimeNowMsFlow: StateFlow<Long>,
+    val runtimeNowMs: Long,
     val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
     val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
     val onActionBarSelectedIndexChange: (Int) -> Unit,
@@ -170,6 +170,7 @@ internal fun rememberMainPagerHomeOverviewState(
         )
     val uiState by homeOverviewViewModel.uiState.collectAsStateWithLifecycle()
     val chromeUiState by homeOverviewViewModel.chromeUiState.collectAsStateWithLifecycle()
+    val runtimeNowMs by homeOverviewViewModel.runtimeNowMs.collectAsStateWithLifecycle()
     LaunchedEffect(settingsReturnToken) {
         if (settingsReturnToken <= 0) return@LaunchedEffect
         homeOverviewViewModel.refresh("settings_return_$settingsReturnToken")
@@ -211,7 +212,7 @@ internal fun rememberMainPagerHomeOverviewState(
     return remember(
         uiState,
         chromeUiState,
-        homeOverviewViewModel,
+        runtimeNowMs,
         onOverviewCardVisibilityChange,
         onCacheFreshnessVisibilityChange,
         onActionBarSelectedIndexChange,
@@ -226,7 +227,7 @@ internal fun rememberMainPagerHomeOverviewState(
             showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,
             actionBarSelectedIndex = chromeUiState.actionBarSelectedIndex,
             showBottomPageEditor = chromeUiState.showBottomPageEditor,
-            runtimeNowMsFlow = homeOverviewViewModel.runtimeNowMs,
+            runtimeNowMs = runtimeNowMs,
             onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
             onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
             onActionBarSelectedIndexChange = onActionBarSelectedIndexChange,

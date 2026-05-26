@@ -11,7 +11,6 @@ import androidx.compose.ui.res.stringResource
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
@@ -35,7 +34,6 @@ internal fun rememberBaGuideCatalogChromePresentation(
     pageState: BaGuideCatalogPageStateHolder,
     tabs: List<BaGuideCatalogPageTab>,
     catalogDataState: BaGuideCatalogDataUiState,
-    catalogVisibleFilterDefinitions: Map<BaGuideCatalogTab, List<BaGuideCatalogFilterDefinition>>,
     playbackUiState: BaGuideBgmPlaybackUiState,
 ): BaGuideCatalogChromePresentation {
     val activePageIndex by remember(pagerState, pageState, tabs) {
@@ -52,10 +50,11 @@ internal fun rememberBaGuideCatalogChromePresentation(
     val activeTab = tabs.getOrElse(activePageIndex) { BaGuideCatalogPageTab.Student }
     val currentTitle = stringResource(id = activeTab.labelRes)
     val filterDefinitions =
-        remember(catalogVisibleFilterDefinitions, activeTab) {
+        remember(catalogDataState.catalog, activeTab) {
             activeTab.catalogTab
-                ?.let { tab -> catalogVisibleFilterDefinitions[tab] }
-                .orEmpty()
+                ?.let { tab ->
+                    catalogDataState.catalog.filterDefinitions(tab).filter { it.type == 0 }
+                }.orEmpty()
         }
     val searchQuery = pageState.searchQueryFor(activeTab)
     val searchPlaceholder = stringResource(activeTab.searchPlaceholderRes)

@@ -126,7 +126,7 @@ internal class OsShellRunnerViewModel : ViewModel() {
         outputResultLabel: String,
         outputTimeLabel: String,
     ) {
-        if (loadJob?.isActive == true) return
+        if (loadJob != null) return
         loadJob =
             viewModelScope.launch {
                 repository.loadPersistentState(

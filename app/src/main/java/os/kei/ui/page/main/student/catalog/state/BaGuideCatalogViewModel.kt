@@ -14,18 +14,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.getAndUpdate
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
@@ -60,10 +54,8 @@ internal class BaGuideCatalogViewModel(
             scope = viewModelScope,
             repository = repository,
         )
-    private val pendingSafJsonExportRequest =
-        MutableStateFlow<BaGuideCatalogJsonExportRequest?>(null)
-    private val pendingFixedJsonExportRequest =
-        MutableStateFlow<BaGuideCatalogJsonExportRequest?>(null)
+    private var pendingSafJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
+    private var pendingFixedJsonExportRequest: BaGuideCatalogJsonExportRequest? = null
     private val imageController =
         BaGuideCatalogImageController(
             scope = viewModelScope,
@@ -102,27 +94,6 @@ internal class BaGuideCatalogViewModel(
 
     val catalogListDerivedStates: StateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>> =
         listDerivationController.catalogListDerivedStates
-
-    /**
-     * Per-catalog-tab visible filter definitions (type == 0), pre-computed off the main thread
-     * each time the catalog bundle changes so the chrome composable can do an O(1) map lookup
-     * keyed on the active tab.
-     */
-    val catalogVisibleFilterDefinitions: StateFlow<Map<BaGuideCatalogTab, List<BaGuideCatalogFilterDefinition>>> =
-        _dataState
-            .map { it.catalog }
-            .distinctUntilChanged()
-            .map { catalog ->
-                BaGuideCatalogTab.entries.associateWith { tab ->
-                    catalog.filterDefinitions(tab).filter { it.type == 0 }
-                }
-            }
-            .flowOn(AppDispatchers.uiDerivation)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyMap(),
-            )
 
     val studentBgmListDerivedState: StateFlow<BaGuideStudentBgmListDerivedState> =
         listDerivationController.studentBgmListDerivedState
@@ -330,21 +301,25 @@ internal class BaGuideCatalogViewModel(
     }
 
     fun armPendingSafJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
-        pendingSafJsonExportRequest.value = request
+        pendingSafJsonExportRequest = request
     }
 
     fun consumePendingSafJsonExportRequest(): BaGuideCatalogJsonExportRequest? =
-        pendingSafJsonExportRequest.getAndUpdate { null }
+        pendingSafJsonExportRequest.also {
+            pendingSafJsonExportRequest = null
+        }
 
     fun armPendingFixedJsonExportRequest(request: BaGuideCatalogJsonExportRequest) {
-        pendingFixedJsonExportRequest.value = request
+        pendingFixedJsonExportRequest = request
     }
 
     fun consumePendingFixedJsonExportRequest(): BaGuideCatalogJsonExportRequest? =
-        pendingFixedJsonExportRequest.getAndUpdate { null }
+        pendingFixedJsonExportRequest.also {
+            pendingFixedJsonExportRequest = null
+        }
 
     fun clearPendingFixedJsonExportRequest() {
-        pendingFixedJsonExportRequest.value = null
+        pendingFixedJsonExportRequest = null
     }
 
     fun updateCatalogFilterSortState(snapshot: BaGuideCatalogFilterSortSnapshot) {

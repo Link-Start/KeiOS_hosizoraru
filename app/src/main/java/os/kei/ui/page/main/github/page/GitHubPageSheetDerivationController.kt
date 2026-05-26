@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import os.kei.core.ui.snapshot.AppSnapshotFlowManager
 import os.kei.ui.page.main.github.actions.GitHubActionsSheetInput
 import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
+import os.kei.ui.page.main.github.page.action.GitHubActionClock
+import os.kei.ui.page.main.github.page.action.GitHubSystemActionClock
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
@@ -29,6 +31,7 @@ internal class GitHubPageSheetDerivationController(
     private val scope: CoroutineScope,
     private val repository: GitHubPageRepository,
     private val snapshotFlowManager: AppSnapshotFlowManager,
+    private val clock: GitHubActionClock = GitHubSystemActionClock,
 ) {
     private var apkInfoSheetStateJob: Job? = null
     private var apkInfoSheetInput: GitHubApkInfoSheetInput? = null
@@ -142,6 +145,7 @@ internal class GitHubPageSheetDerivationController(
                             refreshingRunIds = state.actionsStatusRefreshingRunIds.toMap(),
                             artifactFilter = state.actionsArtifactFilter,
                             lookupConfig = state.lookupConfig,
+                            relativeTimeNowMillis = clock.nowMs(),
                         )
                     }.conflate()
                     .debounce(ACTIONS_SHEET_DERIVATION_DEBOUNCE_MS.milliseconds)

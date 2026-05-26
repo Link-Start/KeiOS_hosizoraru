@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 internal class GitHubAppIconLoader(
-    private val appContext: Context,
     private val scope: CoroutineScope,
     private val repository: GitHubAppIconRepository = GitHubAppIconRepository(),
 ) {
@@ -17,7 +16,10 @@ internal class GitHubAppIconLoader(
     private val mutableState = MutableStateFlow(GitHubAppIconUiState())
     val state: StateFlow<GitHubAppIconUiState> = mutableState.asStateFlow()
 
-    fun requestIcons(packageNames: List<String>) {
+    fun requestIcons(
+        context: Context,
+        packageNames: List<String>,
+    ) {
         val normalizedPackages =
             packageNames
                 .map { it.trim() }
@@ -48,6 +50,7 @@ internal class GitHubAppIconLoader(
         if (missingPackages.isEmpty()) return
 
         loadingPackages += missingPackages
+        val appContext = context.applicationContext
         scope.launch {
             try {
                 val result =

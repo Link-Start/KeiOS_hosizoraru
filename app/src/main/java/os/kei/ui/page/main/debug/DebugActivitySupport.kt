@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -26,16 +25,14 @@ internal fun Context.launchDebugActivity(activityClass: Class<out Activity>) {
 
 @Composable
 internal fun DebugActivityTheme(content: @Composable () -> Unit) {
-    val colorSchemeMode = remember {
-        when (UiPrefs.getAppThemeMode()) {
-            AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
-            AppThemeMode.LIGHT -> ColorSchemeMode.Light
-            AppThemeMode.DARK -> ColorSchemeMode.Dark
-        }
+    val appThemeMode = UiPrefs.getAppThemeMode()
+    val colorSchemeMode = when (appThemeMode) {
+        AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
+        AppThemeMode.LIGHT -> ColorSchemeMode.Light
+        AppThemeMode.DARK -> ColorSchemeMode.Dark
     }
-    val controller = remember(colorSchemeMode) { ThemeController(colorSchemeMode) }
 
-    MiuixTheme(controller = controller) {
+    MiuixTheme(controller = ThemeController(colorSchemeMode)) {
         content()
     }
 }

@@ -17,7 +17,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
@@ -25,6 +24,7 @@ import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -62,7 +62,7 @@ class FeedbackIssueActivity : ComponentActivity() {
                         LocalTransitionAnimationsEnabled provides initialTransitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides initialPredictiveBackPolicy.localPredictiveBackEnabled,
                     ) {
-                        val viewModel: FeedbackIssueViewModel = viewModel()
+                        val viewModel: FeedbackIssueViewModel = applicationViewModel(create = ::FeedbackIssueViewModel)
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                         val lifecycleOwner = LocalLifecycleOwner.current
                         val exportLauncher =

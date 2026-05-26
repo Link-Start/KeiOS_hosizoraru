@@ -5,7 +5,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 
 internal data class BaGuideCatalogImportActions(
     val importStudentFavoritesLauncher: ActivityResultLauncher<Array<String>>,
@@ -46,17 +45,10 @@ internal fun rememberBaGuideCatalogImportActions(
                 BaGuideCatalogImportKind.All,
             )
         }
-    return remember(
-        importStudentFavoritesLauncher,
-        importBgmFavoritesLauncher,
-        importAllFavoritesLauncher,
-        onConfirmFavoritesImport,
-    ) {
-        BaGuideCatalogImportActions(
-            importStudentFavoritesLauncher = importStudentFavoritesLauncher,
-            importBgmFavoritesLauncher = importBgmFavoritesLauncher,
-            importAllFavoritesLauncher = importAllFavoritesLauncher,
-            confirmFavoritesImport = onConfirmFavoritesImport,
-        )
-    }
+    return BaGuideCatalogImportActions(
+        importStudentFavoritesLauncher = importStudentFavoritesLauncher,
+        importBgmFavoritesLauncher = importBgmFavoritesLauncher,
+        importAllFavoritesLauncher = importAllFavoritesLauncher,
+        confirmFavoritesImport = onConfirmFavoritesImport,
+    )
 }

@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
-import os.kei.ui.page.main.about.model.AboutComponentEntry
-import os.kei.ui.page.main.about.model.AboutPermissionEntry
 import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
 
 internal data class AboutPageChromeState(
@@ -31,28 +29,14 @@ internal data class AboutPageChromeState(
         get() = searchQuery.trim()
 }
 
-private data class AboutPageDetailsInputs(
-    val appLabel: String = "",
-    val shizukuStatus: String = "",
-    val notificationPermissionGranted: Boolean = false,
-)
-
 internal class AboutPageViewModel : ViewModel() {
     private val repository = AboutPageRepository()
-    private var manifestJob: Job? = null
-    private var shizukuJob: Job? = null
-    private var searchTargetsJob: Job? = null
+    private var detailsJob: Job? = null
 
     private val _detailsState = MutableStateFlow(AboutPageDetailsState())
     val detailsState: StateFlow<AboutPageDetailsState> = _detailsState.asStateFlow()
     private val _chromeState = MutableStateFlow(AboutPageChromeState())
     val chromeState: StateFlow<AboutPageChromeState> = _chromeState.asStateFlow()
-
-    private var lastInputs: AboutPageDetailsInputs? = null
-    private var manifestKey: ManifestCacheKey? = null
-    private var shizukuStatusKey: String? = null
-    private var searchTargetsSignature: SearchTargetsSignature? = null
-
     @OptIn(ExperimentalCoroutinesApi::class)
     val searchState: StateFlow<AboutSearchUiState> =
         combine(
@@ -80,87 +64,17 @@ internal class AboutPageViewModel : ViewModel() {
         shizukuApiUtils: ShizukuApiUtils,
     ) {
         val appContext = context.applicationContext
-        val nextInputs =
-            AboutPageDetailsInputs(
-                appLabel = appLabel,
-                shizukuStatus = shizukuStatus,
-                notificationPermissionGranted = notificationPermissionGranted,
-            )
-        lastInputs = nextInputs
-
-        // Manifest details only depend on context + notification grant.
-        val manifestRequest = ManifestCacheKey(notificationPermissionGranted)
-        if (manifestKey != manifestRequest) {
-            manifestKey = manifestRequest
-            manifestJob?.cancel()
-            manifestJob =
-                viewModelScope.launch {
-                    val manifest =
-                        repository.loadManifestDetails(
-                            context = appContext,
-                            notificationPermissionGranted = notificationPermissionGranted,
-                        )
-                    _detailsState.update { state ->
-                        state.copy(
-                            packageDetailInfo = manifest.packageDetailInfo,
-                            permissionEntries = manifest.permissionEntries,
-                            componentEntries = manifest.componentEntries,
-                            loaded = true,
-                        )
-                    }
-                    rebuildSearchTargetsIfNeeded(appContext)
-                }
-        }
-
-        // Shizuku details only depend on shizuku status string + api utils.
-        if (shizukuStatusKey != shizukuStatus) {
-            shizukuStatusKey = shizukuStatus
-            shizukuJob?.cancel()
-            shizukuJob =
-                viewModelScope.launch {
-                    val shizukuDetailMap = repository.loadShizukuDetails(shizukuApiUtils)
-                    _detailsState.update { state ->
-                        if (state.shizukuDetailMap == shizukuDetailMap) {
-                            state
-                        } else {
-                            state.copy(shizukuDetailMap = shizukuDetailMap)
-                        }
-                    }
-                    rebuildSearchTargetsIfNeeded(appContext)
-                }
-        } else {
-            // Status didn't change but appLabel might have — still try to rebuild targets.
-            rebuildSearchTargetsIfNeeded(appContext)
-        }
-    }
-
-    private fun rebuildSearchTargetsIfNeeded(context: Context) {
-        val inputs = lastInputs ?: return
-        val current = _detailsState.value
-        if (!current.loaded) return
-        val signature =
-            SearchTargetsSignature(
-                appLabel = inputs.appLabel,
-                shizukuStatus = inputs.shizukuStatus,
-                permissionEntries = current.permissionEntries,
-                componentEntries = current.componentEntries,
-            )
-        if (searchTargetsSignature == signature) return
-        searchTargetsSignature = signature
-        searchTargetsJob?.cancel()
-        searchTargetsJob =
+        detailsJob?.cancel()
+        detailsJob =
             viewModelScope.launch {
-                val targets =
-                    repository.buildSearchTargets(
-                        context = context,
-                        appLabel = inputs.appLabel,
-                        shizukuStatus = inputs.shizukuStatus,
-                        permissionEntries = current.permissionEntries,
-                        componentEntries = current.componentEntries,
+                _detailsState.value =
+                    repository.loadDetails(
+                        context = appContext,
+                        appLabel = appLabel,
+                        shizukuStatus = shizukuStatus,
+                        notificationPermissionGranted = notificationPermissionGranted,
+                        shizukuApiUtils = shizukuApiUtils,
                     )
-                _detailsState.update { state ->
-                    if (state.searchTargets === targets) state else state.copy(searchTargets = targets)
-                }
             }
     }
 
@@ -200,14 +114,6 @@ internal class AboutPageViewModel : ViewModel() {
         }
     }
 
-    private data class ManifestCacheKey(val notificationPermissionGranted: Boolean)
-
-    private data class SearchTargetsSignature(
-        val appLabel: String,
-        val shizukuStatus: String,
-        val permissionEntries: List<AboutPermissionEntry>,
-        val componentEntries: List<AboutComponentEntry>,
-    )
 }
 
 private fun AboutPageSectionExpansionState.withCardExpanded(

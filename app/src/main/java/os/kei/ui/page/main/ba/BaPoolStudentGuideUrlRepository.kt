@@ -24,9 +24,7 @@ internal class BaPoolStudentGuideUrlRepository(
         allowCatalogNetwork: Boolean,
     ): List<BaPoolEntry> {
         if (entries.isEmpty()) return entries
-        val directlyResolved = withContext(AppDispatchers.uiDerivation) {
-            entries.map { BaPoolStudentGuideUrlResolver.Empty.resolve(it) }
-        }
+        val directlyResolved = entries.map { BaPoolStudentGuideUrlResolver.Empty.resolve(it) }
         if (serverIndex != 0 || directlyResolved.all { it.studentGuideUrl.isNotBlank() }) {
             return directlyResolved
         }
@@ -47,9 +45,7 @@ internal class BaPoolStudentGuideUrlRepository(
                 cachedCatalogResolver = loaded
             }
         }
-        return withContext(AppDispatchers.uiDerivation) {
-            entries.map(resolver::resolve)
-        }
+        return entries.map(resolver::resolve)
     }
 
     private suspend fun resolveWithNetworkCatalog(entries: List<BaPoolEntry>): List<BaPoolEntry> {
@@ -61,9 +57,7 @@ internal class BaPoolStudentGuideUrlRepository(
                 cachedCatalogResolver = loaded
             }
         }
-        return withContext(AppDispatchers.uiDerivation) {
-            entries.map(resolver::resolve)
-        }
+        return entries.map(resolver::resolve)
     }
 
     private suspend fun loadCachedResolver(): BaPoolStudentGuideUrlResolver {

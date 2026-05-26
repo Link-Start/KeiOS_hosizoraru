@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +57,7 @@ import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.back.BackNavigationSource
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
@@ -143,7 +143,7 @@ private fun BaPoolPage(
 
     val context = LocalContext.current
     val pageScope = rememberCoroutineScope()
-    val calendarPoolViewModel: BaCalendarPoolViewModel = viewModel()
+    val calendarPoolViewModel: BaCalendarPoolViewModel = applicationViewModel(create = ::BaCalendarPoolViewModel)
     val settingsUiState by calendarPoolViewModel.settingsUiState.collectAsStateWithLifecycle()
     val snapshot = settingsUiState.snapshot
     val chromeUiState by calendarPoolViewModel.chromeUiState.collectAsStateWithLifecycle()

@@ -1,8 +1,6 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
@@ -68,18 +66,10 @@ internal data class BaApIslandShortcutNotificationPlan(
 }
 
 internal object BaApIslandShortcutNotificationCoordinator {
-    /**
-     * Build and dispatch the BA AP island notification. This performs MMKV reads/writes and
-     * therefore must run on [AppDispatchers.baFetch]; the notification dispatchers themselves
-     * are safe on any background thread.
-     */
-    suspend fun send(context: Context): Boolean {
-        val plan = withContext(AppDispatchers.baFetch) {
-            val snapshot = BASettingsStore.loadSnapshot()
-            val plan = BaApIslandShortcutNotificationPlan.fromSnapshot(snapshot)
-            persistPlan(plan)
-            plan
-        }
+    fun send(context: Context): Boolean {
+        val snapshot = BASettingsStore.loadSnapshot()
+        val plan = BaApIslandShortcutNotificationPlan.fromSnapshot(snapshot)
+        persistPlan(plan)
         val apSent = BaApNotificationDispatcher.send(
             context = context,
             currentDisplay = plan.ap.currentDisplay,

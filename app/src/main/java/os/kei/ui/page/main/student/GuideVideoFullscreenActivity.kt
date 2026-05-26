@@ -66,17 +66,16 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
             intent?.getStringExtra(EXTRA_MEDIA_URL).orEmpty()
         )
 
-        val initialTransitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-        val initialPredictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
-            transitionAnimationsEnabled = initialTransitionAnimationsEnabled,
-            predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
-        )
-
         setContent {
-            ProvideBackNavigationRuntime(policy = initialPredictiveBackPolicy) {
+            val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+            val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
+            )
+            ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
                 CompositionLocalProvider(
-                    LocalTransitionAnimationsEnabled provides initialTransitionAnimationsEnabled,
-                    LocalPredictiveBackAnimationsEnabled provides initialPredictiveBackPolicy.localPredictiveBackEnabled
+                    LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
+                    LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
                 ) {
                     GuideVideoFullscreenScreen(
                         mediaUrl = normalizedUrl,

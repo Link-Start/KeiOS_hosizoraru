@@ -54,6 +54,7 @@ fun McpPage(
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
+    val runtimeNowMs by mcpPageViewModel.runtimeNowMs.collectAsStateWithLifecycle()
     val pageUiState = routeState.pageUiState
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
@@ -65,6 +66,7 @@ fun McpPage(
     val runningColor = Color(0xFF2E7D32)
     val stoppedColor = Color(0xFFC62828)
     LaunchedEffect(
+        mcpPageViewModel,
         uiState.running,
         uiState.runningSinceEpochMs,
         runtime.isDataActive,
@@ -79,11 +81,13 @@ fun McpPage(
         rememberMcpPageOverviewState(
             context = context,
             uiState = uiState,
+            runtimeNowMs = runtimeNowMs,
             isDark = isDark,
             titleColor = titleColor,
             subtitleColor = subtitleColor,
             runningColor = runningColor,
             stoppedColor = stoppedColor,
+            runtimePendingText = stringResource(R.string.mcp_runtime_pending),
         )
 
     val listState = rememberLazyListState()
@@ -97,7 +101,7 @@ fun McpPage(
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val mcpGlassRuntime = LocalGlassEffectRuntime.current
-    LaunchedEffect(context) {
+    LaunchedEffect(context, mcpPageViewModel) {
         mcpPageViewModel.updateLocalNetworkPermissionGranted(hasMcpLocalNetworkPermission(context))
     }
 
@@ -147,7 +151,7 @@ fun McpPage(
                 state = currentUiState,
             )
         }
-    LaunchedEffect(logsExportLauncher, context, unknownText) {
+    LaunchedEffect(mcpPageViewModel, logsExportLauncher, context, unknownText) {
         mcpPageViewModel.events.collect { event ->
             when (event) {
                 is McpPageEvent.Toast -> {
@@ -326,7 +330,6 @@ fun McpPage(
                 pageUiState = pageUiState,
                 toolBuckets = mcpToolBuckets,
                 overviewState = overviewState,
-                runtimeNowMsFlow = mcpPageViewModel.runtimeNowMs,
                 runtime = runtime,
                 innerPadding = innerPadding,
                 listState = listState,

@@ -60,6 +60,7 @@ internal fun GitHubTrackedItemAssetSections(
             onShareApkLink = actions.onShareApkLink,
             context = runtime.context,
             supportedAbis = runtime.supportedAbis,
+            relativeTimeNowMillis = runtime.relativeTimeNowMillis,
         )
     }
     if (item.isDirectApkTrack()) {
@@ -82,6 +83,7 @@ internal fun GitHubTrackedItemAssetSections(
             onShareApkLink = actions.onShareApkLink,
             context = runtime.context,
             supportedAbis = runtime.supportedAbis,
+            relativeTimeNowMillis = runtime.relativeTimeNowMillis,
         )
         GitHubDirectApkRemoteHealthCard(
             item = item,

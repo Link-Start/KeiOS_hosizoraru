@@ -8,17 +8,13 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.StateFlow
 import os.kei.R
 import os.kei.ui.page.main.mcp.model.McpOverviewMetric
-import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppOverviewInlineMetricTile
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -35,8 +31,7 @@ internal fun McpOverviewCardSection(
     overviewCardColor: Color,
     overviewBorderColor: Color,
     overviewAccentColor: Color,
-    runtimeNowMsFlow: StateFlow<Long>,
-    runningSinceEpochMs: Long,
+    runtimeText: String,
     isDark: Boolean,
     running: Boolean,
     overviewMetrics: List<McpOverviewMetric>,
@@ -52,13 +47,12 @@ internal fun McpOverviewCardSection(
         onClick = onToggleServer,
         onLongClick = onOpenEditSheet,
         headerEndActions = {
-            McpRuntimeStatusPill(
-                runtimeNowMsFlow = runtimeNowMsFlow,
-                running = running,
-                runningSinceEpochMs = runningSinceEpochMs,
+            StatusPill(
+                label = runtimeText,
                 color = overviewAccentColor,
-                backdrop = backdrop,
-                isDark = isDark,
+                backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
+                borderAlphaOverride = if (isDark) 0.35f else 0.42f,
+                backdrop = backdrop
             )
             StatusPill(
                 label = stringResource(
@@ -116,37 +110,6 @@ internal fun McpOverviewCardSection(
             }
         }
     }
-}
-
-/**
- * Subscribes to the per-second runtime ticker locally so only this small pill — not the entire
- * overview card or page — rebuilds when [runtimeNowMsFlow] emits.
- */
-@Composable
-private fun McpRuntimeStatusPill(
-    runtimeNowMsFlow: StateFlow<Long>,
-    running: Boolean,
-    runningSinceEpochMs: Long,
-    color: Color,
-    backdrop: Backdrop?,
-    isDark: Boolean,
-) {
-    val pendingText = stringResource(R.string.mcp_runtime_pending)
-    // Always collect the flow so its lifecycle observer is registered once for this slot,
-    // regardless of `running` toggling.
-    val runtimeNowMs by runtimeNowMsFlow.collectAsStateWithLifecycle()
-    val label = if (!running || runningSinceEpochMs <= 0L) {
-        pendingText
-    } else {
-        formatMcpUptimeText(runtimeNowMs - runningSinceEpochMs)
-    }
-    StatusPill(
-        label = label,
-        color = color,
-        backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
-        borderAlphaOverride = if (isDark) 0.35f else 0.42f,
-        backdrop = backdrop,
-    )
 }
 
 @Composable

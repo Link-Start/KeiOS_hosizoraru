@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,47 +47,27 @@ internal fun BaGuideBgmAlbumFooter(
 @Composable
 internal fun rememberBaGuideBgmDockSectionText(selectedDockKey: String): BaGuideBgmDockSectionText {
     val libraryLabel = stringResource(R.string.ba_catalog_bgm_nav_library)
-    val homeTitle = stringResource(R.string.ba_catalog_bgm_section_home_title)
-    val homeMeta = stringResource(R.string.ba_catalog_bgm_section_home_meta)
-    val homeFooterTitle = stringResource(R.string.ba_catalog_bgm_nav_home)
-    val discoverTitle = stringResource(R.string.ba_catalog_bgm_section_discover_title)
-    val discoverMeta = stringResource(R.string.ba_catalog_bgm_section_discover_meta)
-    val discoverFooterTitle = stringResource(R.string.ba_catalog_bgm_nav_discover)
-    val radioTitle = stringResource(R.string.ba_catalog_bgm_section_radio_title)
-    val radioMeta = stringResource(R.string.ba_catalog_bgm_section_radio_meta)
-    val radioFooterTitle = stringResource(R.string.ba_catalog_bgm_nav_radio)
-    val albumArtistTitle = stringResource(R.string.ba_catalog_bgm_album_artist)
-    val albumMeta = stringResource(R.string.ba_catalog_bgm_album_meta)
-    return remember(
-        selectedDockKey,
-        libraryLabel,
-        homeTitle, homeMeta, homeFooterTitle,
-        discoverTitle, discoverMeta, discoverFooterTitle,
-        radioTitle, radioMeta, radioFooterTitle,
-        albumArtistTitle, albumMeta,
-    ) {
-        when (selectedDockKey) {
-            BaGuideBgmDockKeys.Home -> BaGuideBgmDockSectionText(
-                heroTitle = homeTitle,
-                heroMeta = homeMeta,
-                footerTitle = homeFooterTitle,
-            )
-            BaGuideBgmDockKeys.Discover -> BaGuideBgmDockSectionText(
-                heroTitle = discoverTitle,
-                heroMeta = discoverMeta,
-                footerTitle = discoverFooterTitle,
-            )
-            BaGuideBgmDockKeys.Radio -> BaGuideBgmDockSectionText(
-                heroTitle = radioTitle,
-                heroMeta = radioMeta,
-                footerTitle = radioFooterTitle,
-            )
-            else -> BaGuideBgmDockSectionText(
-                heroTitle = albumArtistTitle,
-                heroMeta = albumMeta,
-                footerTitle = libraryLabel,
-            )
-        }
+    return when (selectedDockKey) {
+        BaGuideBgmDockKeys.Home -> BaGuideBgmDockSectionText(
+            heroTitle = stringResource(R.string.ba_catalog_bgm_section_home_title),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_section_home_meta),
+            footerTitle = stringResource(R.string.ba_catalog_bgm_nav_home)
+        )
+        BaGuideBgmDockKeys.Discover -> BaGuideBgmDockSectionText(
+            heroTitle = stringResource(R.string.ba_catalog_bgm_section_discover_title),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_section_discover_meta),
+            footerTitle = stringResource(R.string.ba_catalog_bgm_nav_discover)
+        )
+        BaGuideBgmDockKeys.Radio -> BaGuideBgmDockSectionText(
+            heroTitle = stringResource(R.string.ba_catalog_bgm_section_radio_title),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_section_radio_meta),
+            footerTitle = stringResource(R.string.ba_catalog_bgm_nav_radio)
+        )
+        else -> BaGuideBgmDockSectionText(
+            heroTitle = stringResource(R.string.ba_catalog_bgm_album_artist),
+            heroMeta = stringResource(R.string.ba_catalog_bgm_album_meta),
+            footerTitle = libraryLabel
+        )
     }
 }
 

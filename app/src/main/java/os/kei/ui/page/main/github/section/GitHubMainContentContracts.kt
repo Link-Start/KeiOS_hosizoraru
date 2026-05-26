@@ -11,7 +11,6 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -67,11 +66,11 @@ internal data class GitHubMainContentOverview(
 )
 
 internal data class GitHubMainContentTracked(
-    val appList: List<InstalledAppItem>,
     val trackedItems: List<GitHubTrackedApp>,
     val filteredTracked: List<GitHubTrackedApp>,
     val sortedTracked: List<GitHubTrackedApp>,
     val appLastUpdatedAtByTrackId: Map<String, Long>,
+    val installedAppLabelsByPackage: Map<String, String>,
     val checkStates: SnapshotStateMap<String, VersionCheckUi>,
     val itemRefreshLoading: SnapshotStateMap<String, Boolean>,
     val apkAssetBundles: SnapshotStateMap<String, GitHubReleaseAssetBundle>,
@@ -81,6 +80,7 @@ internal data class GitHubMainContentTracked(
     val managedInstallLoading: SnapshotStateMap<String, Boolean>,
     val actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
     val expansionState: GitHubTrackedItemsExpansionState,
+    val relativeTimeNowMillis: Long,
 )
 
 internal data class GitHubMainContentShareImport(

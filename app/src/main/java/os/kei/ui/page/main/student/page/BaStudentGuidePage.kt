@@ -31,10 +31,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -63,6 +63,7 @@ import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTabSelectCoo
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideTopBarActionItems
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideVoicePlayerController
 import os.kei.ui.page.main.student.page.support.rememberGuideSyncProgress
+import os.kei.ui.page.main.student.page.support.resolveGuideBottomTabs
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -127,13 +128,12 @@ fun BaStudentGuidePage(
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val scrollBehavior = MiuixScrollBehavior()
 
-    val guideViewModel: BaStudentGuideViewModel = viewModel()
+    val guideViewModel: BaStudentGuideViewModel = applicationViewModel(create = ::BaStudentGuideViewModel)
     val guideUiState by guideViewModel.uiState.collectAsStateWithLifecycle()
     val guideMediaImageState by guideViewModel.mediaImageState.collectAsStateWithLifecycle()
     val profileLinkTitleState by guideViewModel.profileLinkTitleState.collectAsStateWithLifecycle()
     val pageChromeState by guideViewModel.pageChromeState.collectAsStateWithLifecycle()
     val voiceUiState by guideViewModel.voiceUiState.collectAsStateWithLifecycle()
-    val bottomTabsList by guideViewModel.bottomTabsList.collectAsStateWithLifecycle()
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,
@@ -160,6 +160,7 @@ fun BaStudentGuidePage(
     val playingVoiceUrl = voiceUiState.playingVoiceUrl
     val isVoicePlaying = voiceUiState.isVoicePlaying
     val voicePlayProgress = voiceUiState.voicePlayProgress
+    val bottomTabsList = remember(info) { resolveGuideBottomTabs(info) }
     LaunchedEffect(bottomTabsList, selectedBottomTabOrdinal) {
         guideViewModel.coerceSelectedBottomTab(bottomTabsList)
     }

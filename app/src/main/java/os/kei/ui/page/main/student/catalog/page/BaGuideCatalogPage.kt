@@ -19,10 +19,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.student.catalog.component.LocalBaGuideCatalogImageBitmaps
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
@@ -80,14 +80,11 @@ fun BaGuideCatalogPage(
     val studentExportSuccessText = stringResource(R.string.ba_catalog_transfer_student_export_success)
     val allExportSuccessText = stringResource(R.string.ba_catalog_transfer_all_export_success)
     val bgmExportSuccessText = stringResource(R.string.ba_catalog_bgm_export_success)
-    val catalogViewModel: BaGuideCatalogViewModel = viewModel()
+    val catalogViewModel: BaGuideCatalogViewModel = applicationViewModel(create = ::BaGuideCatalogViewModel)
     val routeState = collectBaGuideCatalogRouteState(catalogViewModel)
     val imageState by catalogViewModel.imageState.collectAsStateWithLifecycle()
     val pageChromeState by catalogViewModel.pageChromeState.collectAsStateWithLifecycle()
     val filterSortSnapshot by catalogViewModel.filterSortState.collectAsStateWithLifecycle()
-    val catalogVisibleFilterDefinitions by catalogViewModel
-        .catalogVisibleFilterDefinitions
-        .collectAsStateWithLifecycle()
     val tabs = BaGuideCatalogPageTab.entries
     val pageState =
         rememberBaGuideCatalogPageStateHolder(
@@ -163,7 +160,6 @@ fun BaGuideCatalogPage(
             pageState = pageState,
             tabs = tabs,
             catalogDataState = routeState.catalogDataState,
-            catalogVisibleFilterDefinitions = catalogVisibleFilterDefinitions,
             playbackUiState = playbackSessionState,
         )
     BindBaGuideCatalogImagePreloadEffect(

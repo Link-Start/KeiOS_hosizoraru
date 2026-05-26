@@ -108,6 +108,7 @@ internal fun GitHubActionsSheetContent(
             visibleArtifactMatches = derivedState.visibleArtifactMatches,
             recommendedArtifactCount = derivedState.recommendedArtifactCount,
             alternativesArtifactCount = derivedState.alternativesArtifactCount,
+            relativeTimeNowMillis = derivedState.relativeTimeNowMillis,
             isDark = isDark,
             backdrop = backdrop,
             onExpandedChange = onArtifactsExpandedChange,

@@ -30,11 +30,6 @@ internal data class BaOfficeSyncUiState(
     val poolReloadSignal: Int = 0,
     val calendarHydrationReady: Boolean = false,
     val poolHydrationReady: Boolean = false,
-    /**
-     * `true` once [BaOfficeRepository.loadSnapshotAsync] completes the initial
-     * hydration, so the UI can switch from skeleton placeholders to real data.
-     */
-    val snapshotLoaded: Boolean = false,
 )
 
 internal data class BaOfficeRuntimeUiState(

@@ -26,6 +26,7 @@ internal data class GitHubActionsSheetInput(
     val refreshingRunIds: Map<Long, Boolean> = emptyMap(),
     val artifactFilter: GitHubActionsArtifactFilter = GitHubActionsArtifactFilter.Recommended,
     val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
+    val relativeTimeNowMillis: Long = 0L,
 )
 
 @Immutable
@@ -40,6 +41,7 @@ internal data class GitHubActionsSheetUiState(
     val recommendedArtifactCount: Int = 0,
     val alternativesArtifactCount: Int = 0,
     val visibleArtifactMatches: List<GitHubActionsVisibleArtifactMatch> = emptyList(),
+    val relativeTimeNowMillis: Long = 0L,
 )
 
 internal fun deriveGitHubActionsSheetState(input: GitHubActionsSheetInput): GitHubActionsSheetUiState {
@@ -101,5 +103,6 @@ internal fun deriveGitHubActionsSheetState(input: GitHubActionsSheetInput): GitH
         recommendedArtifactCount = selectedRun?.artifactMatches?.take(1)?.size ?: 0,
         alternativesArtifactCount = (selectedRun?.artifactMatches?.size ?: 0).let { (it - 1).coerceAtLeast(0) },
         visibleArtifactMatches = visibleMatches,
+        relativeTimeNowMillis = input.relativeTimeNowMillis,
     )
 }

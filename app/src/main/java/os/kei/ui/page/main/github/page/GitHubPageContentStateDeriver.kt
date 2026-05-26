@@ -196,9 +196,11 @@ internal class GitHubPageContentStateDeriver(
                     overviewMetrics = buildOverviewMetrics(input)
                 ),
                 appLastUpdatedAtByTrackId = buildAppLastUpdatedAtByTrackId(input),
+                installedAppLabelsByPackage = buildInstalledAppLabelsByPackage(input),
                 pendingShareImportRepoOverlapCount = pendingShareImportRepoOverlapCount,
                 showPendingShareImportCard = showPendingShareImportCard,
                 pendingShareImportNowMillis = input.nowMillis,
+                relativeTimeNowMillis = input.nowMillis,
                 trackedItemIdKey = input.trackedItems.joinToString(separator = "\n") { item -> item.id },
                 sortedTrackIds = sortedTrackIds,
                 hasKeiOsSelfTrack = input.trackedItems.any { item ->
@@ -265,4 +267,11 @@ internal class GitHubPageContentStateDeriver(
             }
         }
     }
+
+    private fun buildInstalledAppLabelsByPackage(input: GitHubPageContentInput): Map<String, String> =
+        input.appList
+            .asSequence()
+            .map { app -> app.packageName.trim() to app.label.trim() }
+            .filter { (packageName, label) -> packageName.isNotBlank() && label.isNotBlank() }
+            .toMap()
 }

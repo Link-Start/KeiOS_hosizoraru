@@ -113,7 +113,7 @@ internal class GitHubPageViewModel(
 ) : AndroidViewModel(application) {
     private val appContext: Context = application.applicationContext
     val repository = GitHubPageRepository()
-    private val appIconLoader = GitHubAppIconLoader(appContext, viewModelScope)
+    private val appIconLoader = GitHubAppIconLoader(viewModelScope)
     private var pageState: GitHubPageState? = null
     private var contentStateJob: Job? = null
     private var pendingShareImportClockJob: Job? = null
@@ -127,6 +127,7 @@ internal class GitHubPageViewModel(
             scope = viewModelScope,
             repository = repository,
             snapshotFlowManager = snapshotFlowManager,
+            clock = clock,
         )
     private val trackedExpansionController =
         GitHubTrackedExpansionStateController(
@@ -344,7 +345,11 @@ internal class GitHubPageViewModel(
         pendingShareImportPageActive.value = active
     }
 
-    fun requestAppIcons(packageNames: List<String>) = appIconLoader.requestIcons(packageNames = packageNames)
+    fun requestAppIcons(packageNames: List<String>) =
+        appIconLoader.requestIcons(
+            context = appContext,
+            packageNames = packageNames,
+        )
 
     fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
         val previousInput = appPickerStateInput

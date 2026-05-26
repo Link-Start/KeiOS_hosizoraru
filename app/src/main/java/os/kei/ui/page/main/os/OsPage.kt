@@ -6,7 +6,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -17,6 +20,7 @@ import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
+import os.kei.ui.page.main.os.components.OsPageMainListRevealPhase
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
 import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.state.createOsPageActionState
@@ -137,6 +141,8 @@ fun OsPage(
             onCardTransferInProgressChange = overlayRuntimeActions::updateCardTransferInProgress,
         )
     val scrollBehavior = MiuixScrollBehavior()
+    val renderHeavyContent = shouldRenderOsHeavyContent(runtime)
+    val contentRevealPhase = rememberOsPageContentRevealPhase(renderHeavyContent)
     val shellCommandCards = cardListDerivedState.shellCommandCards
     val activityCardExpanded = cardExpansionState.activityCards
     val shellCommandCardExpanded = cardExpansionState.shellCommandCards
@@ -480,111 +486,140 @@ fun OsPage(
             onTitleClick = onShowBottomBar,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
         ) { innerPadding ->
-            OsPageOverlayCoordinator(
-                context = context,
-                sheetBackdrop = backdrops.sheet,
-                overlayState = overlayState,
-                visibleCards = visibleCards,
-                activityShortcutCards = activityShortcutCards,
-                activityIconBitmaps = activityIconState.bitmaps,
-                packageIconBitmaps = activityIconState.packageBitmaps,
-                shellCommandCards = shellCommandCards,
-                activitySuggestionState = activitySuggestionState,
-                activitySuggestionChromeState = activitySuggestionChromeState,
-                actionState = actionState,
-                overlayTransferActions = overlayTransferActions,
-                cardTransferState = cardTransferState,
-                textBundle = textBundle,
-                osPageViewModel = osPageViewModel,
-            )
-            OsPageMainList(
-                context = context,
-                listState = listState,
-                innerPadding = innerPadding,
-                scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
-                contentBackdrop = backdrops.content,
-                isDark = isDark,
-                titleColor = titleColor,
-                refreshing = runtimeState.refreshing,
-                overviewState = overviewState,
-                indicatorProgress = indicatorProgress,
-                statusColor = statusColor,
-                indicatorBg = indicatorBg,
-                statusLabel = statusLabel,
-                overviewCardColor = overviewCardColor,
-                overviewBorderColor = overviewBorderColor,
-                overviewMetricRows = overviewMetricRows,
-                noMatchedResultsText = textBundle.noMatchedResultsText,
-                query = derivedState.query,
-                displayedTopInfoRows = derivedState.displayedTopInfoRows,
-                groupedTopInfoRows = derivedState.groupedTopInfoRows,
-                topInfoExpanded = topInfoExpanded,
-                onTopInfoExpandedChange = osPageViewModel::updateTopInfoExpanded,
-                shellRunnerRows = derivedState.shellRunnerRows,
-                shellRunnerExpanded = shellRunnerExpanded,
-                onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
-                onOpenShellRunner = mainListActions.onOpenShellRunner,
-                shellCommandCards = cardListDerivedState.visibleShellCommandCards,
-                shellCommandCardExpanded = shellCommandCardExpanded,
-                runningShellCommandCardIds = routeState.runningShellCommandCardIds,
-                onShellCommandCardExpandedChange = mainListActions.onShellCommandCardExpandedChange,
-                onOpenShellCommandCardEditor = mainListActions.onOpenShellCommandCardEditor,
-                onRunShellCommandCard = mainListActions.onRunShellCommandCard,
-                activityShortcutCards = cardListDerivedState.visibleActivityShortcutCards,
-                activityIconBitmaps = activityIconState.bitmaps,
-                defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
-                activityCardExpanded = activityCardExpanded,
-                onActivityCardExpandedChange = mainListActions.onActivityCardExpandedChange,
-                onOpenActivityShortcutCard = mainListActions.onOpenActivityShortcutCard,
-                onOpenActivityShortcutCardEditor = mainListActions.onOpenActivityShortcutCardEditor,
-                displayedSystemRows = derivedState.displayedSystemRows,
-                displayedSecureRows = derivedState.displayedSecureRows,
-                displayedGlobalRows = derivedState.displayedGlobalRows,
-                displayedAndroidRows = derivedState.displayedAndroidRows,
-                displayedJavaRows = derivedState.displayedJavaRows,
-                displayedLinuxRows = derivedState.displayedLinuxRows,
-                prunedSystemRows = derivedState.prunedSystemRows,
-                prunedSecureRows = derivedState.prunedSecureRows,
-                prunedGlobalRows = derivedState.prunedGlobalRows,
-                prunedAndroidRows = derivedState.prunedAndroidRows,
-                prunedJavaRows = derivedState.prunedJavaRows,
-                prunedLinuxRows = derivedState.prunedLinuxRows,
-                systemTableExpanded = systemTableExpanded,
-                onSystemTableExpandedChange = osPageViewModel::updateSystemTableExpanded,
-                secureTableExpanded = secureTableExpanded,
-                onSecureTableExpandedChange = osPageViewModel::updateSecureTableExpanded,
-                globalTableExpanded = globalTableExpanded,
-                onGlobalTableExpandedChange = osPageViewModel::updateGlobalTableExpanded,
-                androidPropsExpanded = androidPropsExpanded,
-                onAndroidPropsExpandedChange = osPageViewModel::updateAndroidPropsExpanded,
-                javaPropsExpanded = javaPropsExpanded,
-                onJavaPropsExpandedChange = osPageViewModel::updateJavaPropsExpanded,
-                linuxEnvExpanded = linuxEnvExpanded,
-                onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
-                isCardVisible = mainListActions.isCardVisible,
-                sectionSubtitle = mainListActions.sectionSubtitle,
-                exportingCard = runtimeState.exportingCard,
-                onExportCard = mainListActions.onExportCard,
-                onRefreshAll = mainListActions.onRefreshAll,
-                contentBottomPadding = runtime.contentBottomPadding,
-                showFloatingAddButton =
-                    !activitySuggestionChromeState.showSheet &&
-                        !overlayState.showShellCardVisibilityManager,
-                onOpenAddActivityShortcutCard = mainListActions.onOpenAddActivityShortcutCard,
-                bottomBarVisible = runtime.bottomBarVisible,
-                searchExpanded = enableSearchBar && chromeState.searchExpanded && !chromeState.overlaySearchSuppressed,
-                queryInput = queryInput,
-                onQueryInputChange = { value ->
-                    if (!chromeState.overlaySearchSuppressed) {
-                        osPageViewModel.updateQueryInput(value)
-                    }
-                },
-                onSearchExpandedChange = { expanded ->
-                    osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !chromeState.overlaySearchSuppressed)
-                },
-                searchLabel = textBundle.searchLabel,
-                floatingDockSide = runtime.floatingDockSide,
-            )
+            if (renderHeavyContent) {
+                OsPageOverlayCoordinator(
+                    context = context,
+                    sheetBackdrop = backdrops.sheet,
+                    overlayState = overlayState,
+                    visibleCards = visibleCards,
+                    activityShortcutCards = activityShortcutCards,
+                    activityIconBitmaps = activityIconState.bitmaps,
+                    packageIconBitmaps = activityIconState.packageBitmaps,
+                    shellCommandCards = shellCommandCards,
+                    activitySuggestionState = activitySuggestionState,
+                    activitySuggestionChromeState = activitySuggestionChromeState,
+                    actionState = actionState,
+                    overlayTransferActions = overlayTransferActions,
+                    cardTransferState = cardTransferState,
+                    textBundle = textBundle,
+                    osPageViewModel = osPageViewModel,
+                )
+                OsPageMainList(
+                    context = context,
+                    listState = listState,
+                    innerPadding = innerPadding,
+                    scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
+                    contentBackdrop = backdrops.content,
+                    isDark = isDark,
+                    titleColor = titleColor,
+                    refreshing = runtimeState.refreshing,
+                    overviewState = overviewState,
+                    indicatorProgress = indicatorProgress,
+                    statusColor = statusColor,
+                    indicatorBg = indicatorBg,
+                    statusLabel = statusLabel,
+                    overviewCardColor = overviewCardColor,
+                    overviewBorderColor = overviewBorderColor,
+                    overviewMetricRows = overviewMetricRows,
+                    noMatchedResultsText = textBundle.noMatchedResultsText,
+                    query = derivedState.query,
+                    displayedTopInfoRows = derivedState.displayedTopInfoRows,
+                    groupedTopInfoRows = derivedState.groupedTopInfoRows,
+                    topInfoExpanded = topInfoExpanded,
+                    onTopInfoExpandedChange = osPageViewModel::updateTopInfoExpanded,
+                    shellRunnerRows = derivedState.shellRunnerRows,
+                    shellRunnerExpanded = shellRunnerExpanded,
+                    onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
+                    onOpenShellRunner = mainListActions.onOpenShellRunner,
+                    shellCommandCards = cardListDerivedState.visibleShellCommandCards,
+                    shellCommandCardExpanded = shellCommandCardExpanded,
+                    runningShellCommandCardIds = routeState.runningShellCommandCardIds,
+                    onShellCommandCardExpandedChange = mainListActions.onShellCommandCardExpandedChange,
+                    onOpenShellCommandCardEditor = mainListActions.onOpenShellCommandCardEditor,
+                    onRunShellCommandCard = mainListActions.onRunShellCommandCard,
+                    activityShortcutCards = cardListDerivedState.visibleActivityShortcutCards,
+                    activityIconBitmaps = activityIconState.bitmaps,
+                    defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
+                    activityCardExpanded = activityCardExpanded,
+                    onActivityCardExpandedChange = mainListActions.onActivityCardExpandedChange,
+                    onOpenActivityShortcutCard = mainListActions.onOpenActivityShortcutCard,
+                    onOpenActivityShortcutCardEditor = mainListActions.onOpenActivityShortcutCardEditor,
+                    displayedSystemRows = derivedState.displayedSystemRows,
+                    displayedSecureRows = derivedState.displayedSecureRows,
+                    displayedGlobalRows = derivedState.displayedGlobalRows,
+                    displayedAndroidRows = derivedState.displayedAndroidRows,
+                    displayedJavaRows = derivedState.displayedJavaRows,
+                    displayedLinuxRows = derivedState.displayedLinuxRows,
+                    prunedSystemRows = derivedState.prunedSystemRows,
+                    prunedSecureRows = derivedState.prunedSecureRows,
+                    prunedGlobalRows = derivedState.prunedGlobalRows,
+                    prunedAndroidRows = derivedState.prunedAndroidRows,
+                    prunedJavaRows = derivedState.prunedJavaRows,
+                    prunedLinuxRows = derivedState.prunedLinuxRows,
+                    systemTableExpanded = systemTableExpanded,
+                    onSystemTableExpandedChange = osPageViewModel::updateSystemTableExpanded,
+                    secureTableExpanded = secureTableExpanded,
+                    onSecureTableExpandedChange = osPageViewModel::updateSecureTableExpanded,
+                    globalTableExpanded = globalTableExpanded,
+                    onGlobalTableExpandedChange = osPageViewModel::updateGlobalTableExpanded,
+                    androidPropsExpanded = androidPropsExpanded,
+                    onAndroidPropsExpandedChange = osPageViewModel::updateAndroidPropsExpanded,
+                    javaPropsExpanded = javaPropsExpanded,
+                    onJavaPropsExpandedChange = osPageViewModel::updateJavaPropsExpanded,
+                    linuxEnvExpanded = linuxEnvExpanded,
+                    onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
+                    isCardVisible = mainListActions.isCardVisible,
+                    sectionSubtitle = mainListActions.sectionSubtitle,
+                    exportingCard = runtimeState.exportingCard,
+                    onExportCard = mainListActions.onExportCard,
+                    onRefreshAll = mainListActions.onRefreshAll,
+                    contentBottomPadding = runtime.contentBottomPadding,
+                    showFloatingAddButton =
+                        !activitySuggestionChromeState.showSheet &&
+                            !overlayState.showShellCardVisibilityManager,
+                    onOpenAddActivityShortcutCard = mainListActions.onOpenAddActivityShortcutCard,
+                    bottomBarVisible = runtime.bottomBarVisible,
+                    searchExpanded = enableSearchBar && chromeState.searchExpanded && !chromeState.overlaySearchSuppressed,
+                    queryInput = queryInput,
+                    onQueryInputChange = { value ->
+                        if (!chromeState.overlaySearchSuppressed) {
+                            osPageViewModel.updateQueryInput(value)
+                        }
+                    },
+                    onSearchExpandedChange = { expanded ->
+                        osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !chromeState.overlaySearchSuppressed)
+                    },
+                    searchLabel = textBundle.searchLabel,
+                    floatingDockSide = runtime.floatingDockSide,
+                    contentRevealPhase = contentRevealPhase,
+                )
+            }
         }
     }
+}
+
+internal fun shouldRenderOsHeavyContent(runtime: MainPageRuntime): Boolean =
+    runtime.contentReady && (!runtime.isPagerScrollInProgress || runtime.isDataActive)
+
+@Composable
+private fun rememberOsPageContentRevealPhase(renderHeavyContent: Boolean): Int {
+    var phase by remember { mutableIntStateOf(0) }
+    LaunchedEffect(renderHeavyContent) {
+        if (!renderHeavyContent) {
+            phase = 0
+            return@LaunchedEffect
+        }
+        phase = OsPageMainListRevealPhase.OVERVIEW
+        withFrameNanos { }
+        phase = OsPageMainListRevealPhase.PRIMARY_CARDS
+        withFrameNanos { }
+        phase = OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW
+        withFrameNanos { }
+        phase = OsPageMainListRevealPhase.COMMAND_CARDS_ALL
+        withFrameNanos { }
+        phase = OsPageMainListRevealPhase.DEEP_SECTIONS
+        withFrameNanos { }
+        phase = OsPageMainListRevealPhase.DOCK
+    }
+    return phase
 }

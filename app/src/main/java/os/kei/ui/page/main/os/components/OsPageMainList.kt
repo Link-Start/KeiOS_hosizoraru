@@ -136,6 +136,7 @@ internal fun OsPageMainList(
     onSearchExpandedChange: (Boolean) -> Unit,
     searchLabel: String,
     floatingDockSide: AppFloatingDockSide,
+    contentRevealPhase: Int = OsPageMainListRevealPhase.DOCK,
 ) {
     val topMetricLabel = stringResource(R.string.os_overview_metric_top_info)
 
@@ -185,311 +186,337 @@ internal fun OsPageMainList(
             innerPadding = innerPadding,
             sectionSpacing = 0.dp,
         ) {
-            item(key = "os-overview-card") {
-                AppOverviewCard(
-                    title = stringResource(R.string.os_overview_title),
-                    backdrop = contentBackdrop,
-                    containerColor = overviewCardColor,
-                    borderColor = overviewBorderColor,
-                    contentColor = titleColor,
-                    onClick = {
-                        if (refreshing) return@AppOverviewCard
-                        onRefreshAll()
-                    },
-                    headerEndActions = {
-                        if (overviewState != SystemOverviewState.Idle) {
-                            LiquidCircularProgressBar(
-                                progress = { indicatorProgress },
-                                size = 16.dp,
-                                strokeWidth = 2.dp,
-                                activeColor = statusColor,
-                                inactiveColor = indicatorBg,
-                            )
-                        }
-                        StatusPill(
-                            label = statusLabel,
-                            color = statusColor,
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
-                            backgroundAlphaOverride = if (isDark) 0.24f else 0.34f,
-                            borderAlphaOverride = if (isDark) 0.42f else 0.52f,
-                            backdrop = contentBackdrop,
-                        )
-                    },
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
-                    ) {
-                        overviewMetricRows.forEach { pair ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
-                            ) {
-                                GitHubOverviewMetricItem(
-                                    label = pair.first.label,
-                                    value = pair.first.value,
-                                    titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                    valueColor =
-                                        pair.first.valueColor
-                                            ?: MiuixTheme.colorScheme.onBackground,
-                                    labelMaxLines = 1,
-                                    valueMaxLines = 1,
-                                    labelWeight = metricLabelWeight(pair.first.label),
-                                    valueWeight = metricValueWeight(pair.first.label),
-                                    backdrop = contentBackdrop,
-                                    modifier = Modifier.weight(1f),
+            if (contentRevealPhase >= OsPageMainListRevealPhase.OVERVIEW) {
+                item(key = "os-overview-card") {
+                    AppOverviewCard(
+                        title = stringResource(R.string.os_overview_title),
+                        backdrop = contentBackdrop,
+                        containerColor = overviewCardColor,
+                        borderColor = overviewBorderColor,
+                        contentColor = titleColor,
+                        onClick = {
+                            if (refreshing) return@AppOverviewCard
+                            onRefreshAll()
+                        },
+                        headerEndActions = {
+                            if (overviewState != SystemOverviewState.Idle) {
+                                LiquidCircularProgressBar(
+                                    progress = { indicatorProgress },
+                                    size = 16.dp,
+                                    strokeWidth = 2.dp,
+                                    activeColor = statusColor,
+                                    inactiveColor = indicatorBg,
                                 )
-                                val second = pair.second
-                                if (second != null) {
+                            }
+                            StatusPill(
+                                label = statusLabel,
+                                color = statusColor,
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
+                                backgroundAlphaOverride = if (isDark) 0.24f else 0.34f,
+                                borderAlphaOverride = if (isDark) 0.42f else 0.52f,
+                                backdrop = contentBackdrop,
+                            )
+                        },
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
+                        ) {
+                            overviewMetricRows.forEach { pair ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
+                                ) {
                                     GitHubOverviewMetricItem(
-                                        label = second.label,
-                                        value = second.value,
+                                        label = pair.first.label,
+                                        value = pair.first.value,
                                         titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
                                         valueColor =
-                                            second.valueColor
+                                            pair.first.valueColor
                                                 ?: MiuixTheme.colorScheme.onBackground,
                                         labelMaxLines = 1,
                                         valueMaxLines = 1,
-                                        labelWeight = metricLabelWeight(second.label),
-                                        valueWeight = metricValueWeight(second.label),
+                                        labelWeight = metricLabelWeight(pair.first.label),
+                                        valueWeight = metricValueWeight(pair.first.label),
                                         backdrop = contentBackdrop,
                                         modifier = Modifier.weight(1f),
                                     )
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
+                                    val second = pair.second
+                                    if (second != null) {
+                                        GitHubOverviewMetricItem(
+                                            label = second.label,
+                                            value = second.value,
+                                            titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
+                                            valueColor =
+                                                second.valueColor
+                                                    ?: MiuixTheme.colorScheme.onBackground,
+                                            labelMaxLines = 1,
+                                            valueMaxLines = 1,
+                                            labelWeight = metricLabelWeight(second.label),
+                                            valueWeight = metricValueWeight(second.label),
+                                            backdrop = contentBackdrop,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                item(key = "os-overview-space") {
+                    Spacer(modifier = Modifier.height(AppChromeTokens.pageSectionGap))
+                }
             }
 
-            item(key = "os-overview-space") {
-                Spacer(modifier = Modifier.height(AppChromeTokens.pageSectionGap))
+            if (contentRevealPhase >= OsPageMainListRevealPhase.PRIMARY_CARDS) {
+                addTopInfoCard(
+                    visible = isCardVisible(OsSectionCard.TOP_INFO),
+                    contentBackdrop = contentBackdrop,
+                    displayedTopInfoRows = displayedTopInfoRows,
+                    groupedTopInfoRows = groupedTopInfoRows,
+                    query = query,
+                    noMatchedResultsText = noMatchedResultsText,
+                    expanded = topInfoExpanded,
+                    onExpandedChange = onTopInfoExpandedChange,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.TOP_INFO,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.TOP_INFO) },
+                        )
+                    },
+                )
+
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.SHELL_RUNNER),
+                    card = OsSectionCard.SHELL_RUNNER,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_shell_card_title),
+                    subtitle = context.getString(R.string.os_shell_card_subtitle),
+                    expanded = shellRunnerExpanded,
+                    onExpandedChange = onShellRunnerExpandedChange,
+                    rows = shellRunnerRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        AppCompactIconAction(
+                            icon = osLucideEnterIcon(),
+                            contentDescription = stringResource(R.string.os_shell_card_cd_open),
+                            onClick = onOpenShellRunner,
+                        )
+                    },
+                )
             }
 
-            addTopInfoCard(
-                visible = isCardVisible(OsSectionCard.TOP_INFO),
-                contentBackdrop = contentBackdrop,
-                displayedTopInfoRows = displayedTopInfoRows,
-                groupedTopInfoRows = groupedTopInfoRows,
-                query = query,
-                noMatchedResultsText = noMatchedResultsText,
-                expanded = topInfoExpanded,
-                onExpandedChange = onTopInfoExpandedChange,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.TOP_INFO,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.TOP_INFO) },
-                    )
-                },
-            )
+            if (contentRevealPhase >= OsPageMainListRevealPhase.COMMAND_CARDS_PREVIEW) {
+                addShellCommandCards(
+                    cards =
+                        if (contentRevealPhase >= OsPageMainListRevealPhase.COMMAND_CARDS_ALL) {
+                            shellCommandCards
+                        } else {
+                            shellCommandCards.take(OS_PAGE_COMMAND_CARD_PREVIEW_COUNT)
+                        },
+                    contentBackdrop = contentBackdrop,
+                    expandedStates = shellCommandCardExpanded,
+                    runningCardIds = runningShellCommandCardIds,
+                    onExpandedChange = onShellCommandCardExpandedChange,
+                    onHeaderLongClick = onOpenShellCommandCardEditor,
+                    onRunCard = onRunShellCommandCard,
+                )
+            }
 
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.SHELL_RUNNER),
-                card = OsSectionCard.SHELL_RUNNER,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_shell_card_title),
-                subtitle = context.getString(R.string.os_shell_card_subtitle),
-                expanded = shellRunnerExpanded,
-                onExpandedChange = onShellRunnerExpandedChange,
-                rows = shellRunnerRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    AppCompactIconAction(
-                        icon = osLucideEnterIcon(),
-                        contentDescription = stringResource(R.string.os_shell_card_cd_open),
-                        onClick = onOpenShellRunner,
-                    )
-                },
-            )
+            if (contentRevealPhase >= OsPageMainListRevealPhase.DEEP_SECTIONS) {
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.SYSTEM),
+                    card = OsSectionCard.SYSTEM,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_section_system_title),
+                    subtitle =
+                        sectionSubtitle(
+                            SectionKind.SYSTEM,
+                            if (query.isBlank()) prunedSystemRows.size else displayedSystemRows.size,
+                        ),
+                    expanded = systemTableExpanded,
+                    onExpandedChange = onSystemTableExpandedChange,
+                    rows = displayedSystemRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.SYSTEM,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.SYSTEM) },
+                        )
+                    },
+                )
 
-            addShellCommandCards(
-                cards = shellCommandCards,
-                contentBackdrop = contentBackdrop,
-                expandedStates = shellCommandCardExpanded,
-                runningCardIds = runningShellCommandCardIds,
-                onExpandedChange = onShellCommandCardExpandedChange,
-                onHeaderLongClick = onOpenShellCommandCardEditor,
-                onRunCard = onRunShellCommandCard,
-            )
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.SECURE),
+                    card = OsSectionCard.SECURE,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_section_secure_title),
+                    subtitle =
+                        sectionSubtitle(
+                            SectionKind.SECURE,
+                            if (query.isBlank()) prunedSecureRows.size else displayedSecureRows.size,
+                        ),
+                    expanded = secureTableExpanded,
+                    onExpandedChange = onSecureTableExpandedChange,
+                    rows = displayedSecureRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.SECURE,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.SECURE) },
+                        )
+                    },
+                )
 
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.SYSTEM),
-                card = OsSectionCard.SYSTEM,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_section_system_title),
-                subtitle =
-                    sectionSubtitle(
-                        SectionKind.SYSTEM,
-                        if (query.isBlank()) prunedSystemRows.size else displayedSystemRows.size,
-                    ),
-                expanded = systemTableExpanded,
-                onExpandedChange = onSystemTableExpandedChange,
-                rows = displayedSystemRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.SYSTEM,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.SYSTEM) },
-                    )
-                },
-            )
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.GLOBAL),
+                    card = OsSectionCard.GLOBAL,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_section_global_title),
+                    subtitle =
+                        sectionSubtitle(
+                            SectionKind.GLOBAL,
+                            if (query.isBlank()) prunedGlobalRows.size else displayedGlobalRows.size,
+                        ),
+                    expanded = globalTableExpanded,
+                    onExpandedChange = onGlobalTableExpandedChange,
+                    rows = displayedGlobalRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.GLOBAL,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.GLOBAL) },
+                        )
+                    },
+                )
 
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.SECURE),
-                card = OsSectionCard.SECURE,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_section_secure_title),
-                subtitle =
-                    sectionSubtitle(
-                        SectionKind.SECURE,
-                        if (query.isBlank()) prunedSecureRows.size else displayedSecureRows.size,
-                    ),
-                expanded = secureTableExpanded,
-                onExpandedChange = onSecureTableExpandedChange,
-                rows = displayedSecureRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.SECURE,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.SECURE) },
-                    )
-                },
-            )
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.ANDROID),
+                    card = OsSectionCard.ANDROID,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_section_android_title),
+                    subtitle =
+                        sectionSubtitle(
+                            SectionKind.ANDROID,
+                            if (query.isBlank()) prunedAndroidRows.size else displayedAndroidRows.size,
+                        ),
+                    expanded = androidPropsExpanded,
+                    onExpandedChange = onAndroidPropsExpandedChange,
+                    rows = displayedAndroidRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.ANDROID,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.ANDROID) },
+                        )
+                    },
+                )
 
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.GLOBAL),
-                card = OsSectionCard.GLOBAL,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_section_global_title),
-                subtitle =
-                    sectionSubtitle(
-                        SectionKind.GLOBAL,
-                        if (query.isBlank()) prunedGlobalRows.size else displayedGlobalRows.size,
-                    ),
-                expanded = globalTableExpanded,
-                onExpandedChange = onGlobalTableExpandedChange,
-                rows = displayedGlobalRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.GLOBAL,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.GLOBAL) },
-                    )
-                },
-            )
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.JAVA),
+                    card = OsSectionCard.JAVA,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_section_java_title),
+                    subtitle =
+                        sectionSubtitle(
+                            SectionKind.JAVA,
+                            if (query.isBlank()) prunedJavaRows.size else displayedJavaRows.size,
+                        ),
+                    expanded = javaPropsExpanded,
+                    onExpandedChange = onJavaPropsExpandedChange,
+                    rows = displayedJavaRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.JAVA,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.JAVA) },
+                        )
+                    },
+                )
 
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.ANDROID),
-                card = OsSectionCard.ANDROID,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_section_android_title),
-                subtitle =
-                    sectionSubtitle(
-                        SectionKind.ANDROID,
-                        if (query.isBlank()) prunedAndroidRows.size else displayedAndroidRows.size,
-                    ),
-                expanded = androidPropsExpanded,
-                onExpandedChange = onAndroidPropsExpandedChange,
-                rows = displayedAndroidRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.ANDROID,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.ANDROID) },
-                    )
-                },
-            )
+                addKeyValueSectionCard(
+                    visible = isCardVisible(OsSectionCard.LINUX),
+                    card = OsSectionCard.LINUX,
+                    contentBackdrop = contentBackdrop,
+                    title = context.getString(R.string.os_section_linux_title),
+                    subtitle =
+                        sectionSubtitle(
+                            SectionKind.LINUX,
+                            if (query.isBlank()) prunedLinuxRows.size else displayedLinuxRows.size,
+                        ),
+                    expanded = linuxEnvExpanded,
+                    onExpandedChange = onLinuxEnvExpandedChange,
+                    rows = displayedLinuxRows,
+                    noMatchedResultsText = noMatchedResultsText,
+                    exportAction = {
+                        OsCardExportAction(
+                            card = OsSectionCard.LINUX,
+                            exportingCard = exportingCard,
+                            onExportClick = { onExportCard(OsSectionCard.LINUX) },
+                        )
+                    },
+                )
 
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.JAVA),
-                card = OsSectionCard.JAVA,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_section_java_title),
-                subtitle =
-                    sectionSubtitle(
-                        SectionKind.JAVA,
-                        if (query.isBlank()) prunedJavaRows.size else displayedJavaRows.size,
-                    ),
-                expanded = javaPropsExpanded,
-                onExpandedChange = onJavaPropsExpandedChange,
-                rows = displayedJavaRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.JAVA,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.JAVA) },
-                    )
-                },
-            )
-
-            addKeyValueSectionCard(
-                visible = isCardVisible(OsSectionCard.LINUX),
-                card = OsSectionCard.LINUX,
-                contentBackdrop = contentBackdrop,
-                title = context.getString(R.string.os_section_linux_title),
-                subtitle =
-                    sectionSubtitle(
-                        SectionKind.LINUX,
-                        if (query.isBlank()) prunedLinuxRows.size else displayedLinuxRows.size,
-                    ),
-                expanded = linuxEnvExpanded,
-                onExpandedChange = onLinuxEnvExpandedChange,
-                rows = displayedLinuxRows,
-                noMatchedResultsText = noMatchedResultsText,
-                exportAction = {
-                    OsCardExportAction(
-                        card = OsSectionCard.LINUX,
-                        exportingCard = exportingCard,
-                        onExportClick = { onExportCard(OsSectionCard.LINUX) },
-                    )
-                },
-            )
-
-            addShortcutActivityCards(
-                cards = activityShortcutCards,
-                iconBitmaps = activityIconBitmaps,
-                contentBackdrop = contentBackdrop,
-                defaultCardTitle = defaultActivityCardTitle,
-                expandedStates = activityCardExpanded,
-                onExpandedChange = onActivityCardExpandedChange,
-                onOpenActivity = onOpenActivityShortcutCard,
-                onHeaderLongClick = onOpenActivityShortcutCardEditor,
-            )
+                addShortcutActivityCards(
+                    cards = activityShortcutCards,
+                    iconBitmaps = activityIconBitmaps,
+                    contentBackdrop = contentBackdrop,
+                    defaultCardTitle = defaultActivityCardTitle,
+                    expandedStates = activityCardExpanded,
+                    onExpandedChange = onActivityCardExpandedChange,
+                    onOpenActivity = onOpenActivityShortcutCard,
+                    onHeaderLongClick = onOpenActivityShortcutCardEditor,
+                )
+            }
         }
 
-        AppFloatingVerticalSearchActionDock(
-            backdrop = contentBackdrop,
-            expanded = searchExpanded,
-            query = queryInput,
-            onQueryChange = onQueryInputChange,
-            onExpandedChange = onSearchExpandedChange,
-            searchIcon = appLucideSearchIcon(),
-            searchContentDescription = searchLabel,
-            placeholder = searchLabel,
-            addIcon = appLucideAddIcon(),
-            addContentDescription = stringResource(R.string.os_cd_add_activity_card),
-            onAddClick = onOpenAddActivityShortcutCard,
-            refreshIcon = appLucideRefreshIcon(),
-            refreshContentDescription = stringResource(R.string.common_refresh),
-            onRefreshClick = onRefreshAll,
-            showAddAction = showFloatingAddButton,
-            refreshEnabled = !refreshing,
-            refreshStatus = refreshStatus,
-            dockSide = floatingDockSide,
-            keyboardLift = floatingKeyboardLift,
-            modifier =
-                Modifier
-                    .align(dockAlignment)
-                    .offset { IntOffset(x = 0, y = -searchDockBottomState.value.roundToPx()) }
-                    .padding(start = dockStartPadding, end = dockEndPadding),
-        )
+        if (contentRevealPhase >= OsPageMainListRevealPhase.DOCK) {
+            AppFloatingVerticalSearchActionDock(
+                backdrop = contentBackdrop,
+                expanded = searchExpanded,
+                query = queryInput,
+                onQueryChange = onQueryInputChange,
+                onExpandedChange = onSearchExpandedChange,
+                searchIcon = appLucideSearchIcon(),
+                searchContentDescription = searchLabel,
+                placeholder = searchLabel,
+                addIcon = appLucideAddIcon(),
+                addContentDescription = stringResource(R.string.os_cd_add_activity_card),
+                onAddClick = onOpenAddActivityShortcutCard,
+                refreshIcon = appLucideRefreshIcon(),
+                refreshContentDescription = stringResource(R.string.common_refresh),
+                onRefreshClick = onRefreshAll,
+                showAddAction = showFloatingAddButton,
+                refreshEnabled = !refreshing,
+                refreshStatus = refreshStatus,
+                dockSide = floatingDockSide,
+                keyboardLift = floatingKeyboardLift,
+                modifier =
+                    Modifier
+                        .align(dockAlignment)
+                        .offset { IntOffset(x = 0, y = -searchDockBottomState.value.roundToPx()) }
+                        .padding(start = dockStartPadding, end = dockEndPadding),
+            )
+        }
     }
 }
+
+internal object OsPageMainListRevealPhase {
+    const val OVERVIEW = 1
+    const val PRIMARY_CARDS = 2
+    const val COMMAND_CARDS_PREVIEW = 3
+    const val COMMAND_CARDS_ALL = 4
+    const val DEEP_SECTIONS = 5
+    const val DOCK = 6
+}
+
+private const val OS_PAGE_COMMAND_CARD_PREVIEW_COUNT = 2

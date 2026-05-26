@@ -60,6 +60,7 @@ internal fun deriveHomePageContentState(
             lastRefreshMs = githubOverview.cachedRefreshMs,
             notRefreshedText = text.githubNotRefreshed,
             justNowText = text.justNow,
+            nowMs = githubOverview.cacheLabelNowMs,
         )
     val githubLastUpdateLine =
         when {

@@ -30,6 +30,7 @@ data class HomeGitHubOverview(
     val pendingShareImport: Boolean = false,
     val refreshIntervalHours: Int = 3,
     val cachedRefreshMs: Long = 0L,
+    val cacheLabelNowMs: Long = 0L,
     val cacheFreshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty,
     val loaded: Boolean = false,
 )

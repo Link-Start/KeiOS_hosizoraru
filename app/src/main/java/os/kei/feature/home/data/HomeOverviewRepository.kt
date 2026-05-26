@@ -38,10 +38,19 @@ import os.kei.ui.page.main.settings.cache.CacheStores
 
 private const val TAG = "HomeOverviewRepository"
 
+internal fun interface HomeOverviewClock {
+    fun nowMs(): Long
+}
+
+internal object HomeSystemOverviewClock : HomeOverviewClock {
+    override fun nowMs(): Long = System.currentTimeMillis()
+}
+
 internal class HomeOverviewRepository(
     private val context: Context,
     private val mcpUiState: StateFlow<McpServerUiState>,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
+    private val clock: HomeOverviewClock = HomeSystemOverviewClock,
 ) {
     private val appContext = context.applicationContext
     private val refreshRequests =
@@ -133,7 +142,10 @@ internal class HomeOverviewRepository(
                 }.getOrElse { HomeBaOverview(loaded = true) }
             val githubOverview =
                 runCatching {
-                    loadHomeGitHubOverview(cacheFreshnessById["github"] ?: CacheFreshnessSnapshot.Empty)
+                    loadHomeGitHubOverview(
+                        cacheFreshness = cacheFreshnessById["github"] ?: CacheFreshnessSnapshot.Empty,
+                        nowMs = clock.nowMs(),
+                    )
                 }.onFailure { error ->
                     AppLogger.w(
                         TAG,
@@ -204,7 +216,10 @@ internal fun buildHomeOverviewStoreRefreshFlow(
             .map { version -> "ba_store_$version" },
     )
 
-private fun loadHomeGitHubOverview(cacheFreshness: CacheFreshnessSnapshot): HomeGitHubOverview {
+private fun loadHomeGitHubOverview(
+    cacheFreshness: CacheFreshnessSnapshot,
+    nowMs: Long,
+): HomeGitHubOverview {
     val snapshot = GitHubTrackStore.loadSnapshot()
     val activeStrategyId = snapshot.lookupConfig.selectedStrategy.storageId
     val matchedCacheByTrackId =
@@ -232,6 +247,7 @@ private fun loadHomeGitHubOverview(cacheFreshness: CacheFreshnessSnapshot): Home
         pendingShareImport = snapshot.pendingShareImportTrack != null,
         refreshIntervalHours = snapshot.refreshIntervalHours,
         cachedRefreshMs = if (cacheHitCount > 0) snapshot.lastRefreshMs else 0L,
+        cacheLabelNowMs = nowMs,
         cacheFreshness = cacheFreshness,
         loaded = true,
     )

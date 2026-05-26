@@ -39,6 +39,8 @@ class HomePageContentDeriverTest {
                         updatableCount = 1,
                         preReleaseUpdateCount = 1,
                         failedCount = 1,
+                        cachedRefreshMs = 3_600_000L,
+                        cacheLabelNowMs = 7_200_000L,
                         cacheFreshness = freshCacheSnapshot(),
                     ),
                 baOverview =
@@ -63,6 +65,7 @@ class HomePageContentDeriverTest {
         assertEquals("failed 1", state.githubFocusLine)
         assertEquals("120/240", state.baFocusLine)
         assertEquals("fresh", state.githubCacheFreshnessLine)
+        assertEquals("3h 1h", state.githubLastUpdateLine)
         assertEquals("stale", state.baCacheFreshnessLine)
         assertEquals("v1.8.0 (80)", state.appVersionText)
     }

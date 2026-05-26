@@ -6,7 +6,7 @@ internal fun formatGitHubCacheAgo(
     lastRefreshMs: Long,
     notRefreshedText: String,
     justNowText: String,
-    nowMs: Long = System.currentTimeMillis()
+    nowMs: Long,
 ): String {
     if (lastRefreshMs <= 0L) return notRefreshedText
     val deltaMs = (nowMs - lastRefreshMs).coerceAtLeast(0L)

@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.emptyFlow
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
@@ -54,7 +55,17 @@ fun McpPage(
     val mcpPageViewModel: McpPageViewModel = viewModel()
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
-    val runtimeNowMs by mcpPageViewModel.runtimeNowMs.collectAsStateWithLifecycle()
+    val runtimeNowMsFlow =
+        remember(mcpPageViewModel, runtime.isPageActive) {
+            if (runtime.isPageActive) {
+                mcpPageViewModel.runtimeNowMs
+            } else {
+                emptyFlow()
+            }
+        }
+    val runtimeNowMs by runtimeNowMsFlow.collectAsStateWithLifecycle(
+        initialValue = mcpPageViewModel.runtimeNowMs.value,
+    )
     val pageUiState = routeState.pageUiState
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)

@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.emptyFlow
 import os.kei.R
 import os.kei.ui.page.main.os.shell.OsShellBehaviorSettingsSheet
 import os.kei.ui.page.main.os.shell.OsShellOutputSettingsSheet
@@ -58,7 +59,17 @@ internal fun OsShellRunnerSheets(
     dangerousCommandPreview: String,
     actions: OsShellRunnerSheetActions,
 ) {
-    val rawOutputState by shellRunnerViewModel.outputState.collectAsStateWithLifecycle()
+    val outputStateFlow =
+        remember(shellRunnerViewModel, showSaveSheet) {
+            if (showSaveSheet) {
+                shellRunnerViewModel.outputState
+            } else {
+                emptyFlow()
+            }
+        }
+    val rawOutputState by outputStateFlow.collectAsStateWithLifecycle(
+        initialValue = shellRunnerViewModel.outputState.value,
+    )
     val outputSnapshot = remember(rawOutputState) { rawOutputState.toOutputSnapshot() }
 
     OsShellRunnerSaveSheet(

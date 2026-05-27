@@ -56,8 +56,8 @@ internal fun BaGuideBgmChromeMiniPlayer(
     onPlaybackProgressChange: (Float) -> Unit,
     onPlaybackProgressChangeFinished: (Float) -> Unit,
     onPlaybackSliderInteractionChanged: (Boolean) -> Unit,
-    expandedProgress: Float,
-    compactProgress: Float,
+    expandedProgress: () -> Float,
+    compactProgress: () -> Float,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -65,8 +65,8 @@ internal fun BaGuideBgmChromeMiniPlayer(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
 ) {
-    val expanded = expandedProgress.coerceIn(0f, 1f)
-    val compact = compactProgress.coerceIn(0f, 1f)
+    val expanded = expandedProgress().coerceIn(0f, 1f)
+    val compact = compactProgress().coerceIn(0f, 1f)
     val artworkSize = debugBgmLerpDp(38.dp, 42.dp, expanded)
     val artworkCornerRadius = debugBgmLerpDp(10.dp, 11.dp, expanded)
     val contentPadding =

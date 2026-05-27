@@ -68,17 +68,16 @@ internal fun BaGuideBgmDockGroupContent(
     tabs: List<BaGuideBgmDockTab>,
     selectedDockKey: String,
     accent: Color,
-    expandedProgress: Float,
-    compactProgress: Float,
+    expandedProgress: () -> Float,
+    compactProgress: () -> Float,
+    expandedEnabled: Boolean,
+    compactEnabled: Boolean,
+    expandedOnTop: Boolean,
     backdrop: Backdrop,
     compactInteractionSource: MutableInteractionSource? = null,
     onSelectedDockKeyChange: (String) -> Unit,
     onCompactDockClick: () -> Unit,
 ) {
-    val expanded = expandedProgress.coerceIn(0f, 1f)
-    val compact = compactProgress.coerceIn(0f, 1f)
-    val expandedEnabled = expanded > 0.54f
-    val compactEnabled = compact > 0.54f
     val safeTabCount = tabs.size.coerceAtLeast(1)
     val selectedIndex = tabs.indexOfFirst { it.key == selectedDockKey }.coerceAtLeast(0)
     val resolvedCompactInteractionSource = compactInteractionSource ?: remember { MutableInteractionSource() }
@@ -277,7 +276,7 @@ internal fun BaGuideBgmDockGroupContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .zIndex(if (expanded >= compact) 1f else 0f)
+                    .zIndex(if (expandedOnTop) 1f else 0f)
                     .onGloballyPositioned { coords ->
                         val measuredTotalWidthPx = coords.size.width.toFloat()
                         if (abs(totalWidthPx - measuredTotalWidthPx) > 0.5f) {
@@ -294,6 +293,7 @@ internal fun BaGuideBgmDockGroupContent(
                         }
                     }.graphicsLayer {
                         val interactionProgress = combinedInteractionProgressProvider()
+                        val expanded = expandedProgress().coerceIn(0f, 1f)
                         alpha = expanded
                         translationX = panelOffsetProvider()
                         translationY = -with(density) { 1.25.dp.toPx() } * interactionProgress
@@ -340,11 +340,12 @@ internal fun BaGuideBgmDockGroupContent(
                     .width(maxWidth)
                     .height(selectedPillHeight)
                     .alpha(0f)
-                    .zIndex(if (expanded >= compact) 1.5f else 0f)
+                    .zIndex(if (expandedOnTop) 1.5f else 0f)
                     .appSquircleClip(999.dp)
                     .layerBackdrop(tabsBackdrop)
                     .graphicsLayer {
                         val interactionProgress = combinedInteractionProgressProvider()
+                        val expanded = expandedProgress().coerceIn(0f, 1f)
                         alpha = expanded
                         translationX = panelOffsetProvider()
                         translationY = -with(density) { 1.25.dp.toPx() } * interactionProgress
@@ -394,9 +395,10 @@ internal fun BaGuideBgmDockGroupContent(
                         }
                     }.width(selectedPillWidth)
                     .height(selectedPillHeight)
-                    .zIndex(if (expanded >= compact) 2f else 0f)
+                    .zIndex(if (expandedOnTop) 2f else 0f)
                     .graphicsLayer {
                         val interactionProgress = combinedInteractionProgressProvider()
+                        val expanded = expandedProgress().coerceIn(0f, 1f)
                         alpha = expanded
                         translationX = panelOffsetProvider()
                         translationY = -with(density) { 1.25.dp.toPx() } * interactionProgress
@@ -422,8 +424,9 @@ internal fun BaGuideBgmDockGroupContent(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .zIndex(if (compact > expanded) 1f else 0f)
+                    .zIndex(if (expandedOnTop) 0f else 1f)
                     .graphicsLayer {
+                        val compact = compactProgress().coerceIn(0f, 1f)
                         alpha = compact
                         scaleX = 0.88f + 0.12f * compact
                         scaleY = 0.88f + 0.12f * compact

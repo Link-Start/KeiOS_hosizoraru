@@ -27,13 +27,20 @@ import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileInfoRows
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileSectionHeader
 
 internal fun LazyListScope.guideProfileCard(
+    key: String,
     addTopSpacing: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (addTopSpacing) {
-        item { Spacer(modifier = Modifier.height(10.dp)) }
+        item(
+            key = "$key-spacer",
+            contentType = GuideProfileContentType.SPACER,
+        ) { Spacer(modifier = Modifier.height(10.dp)) }
     }
-    item {
+    item(
+        key = key,
+        contentType = GuideProfileContentType.CARD,
+    ) {
         GuideLiquidCard(
             modifier = Modifier.fillMaxWidth(),
             surfaceColor = Color(0x223B82F6),
@@ -68,7 +75,11 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     preferCapsule: Boolean,
 ) {
     if (infoRows.isEmpty() && galleryItems.isEmpty()) return
-    guideProfileCard(addTopSpacing = true) {
+    val mediaUrlResolverCacheKey = "$sourceUrl#$galleryCacheRevision#$titleRes"
+    guideProfileCard(
+        key = "guide-profile-media-$titleRes",
+        addTopSpacing = true,
+    ) {
         GuideProfileSectionHeader(title = stringResource(titleRes))
         GuideProfileInfoRows(rows = infoRows) { row ->
             val value = row.value.ifBlank { "-" }
@@ -97,6 +108,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
                         )
                     }
                 },
+                mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
                 embedded = true,
                 showMediaTypeLabel = false,
                 bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
@@ -105,4 +117,9 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
             )
         }
     }
+}
+
+private object GuideProfileContentType {
+    const val CARD = "guide_profile_card"
+    const val SPACER = "guide_profile_spacer"
 }

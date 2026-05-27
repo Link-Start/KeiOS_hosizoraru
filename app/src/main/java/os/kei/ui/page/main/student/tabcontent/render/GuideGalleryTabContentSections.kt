@@ -83,6 +83,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             )
         }
     }
+    val mediaUrlResolverCacheKey = "$sourceUrl#$galleryCacheRevision"
 
     var renderedCount = 0
     var insertedUnlockLevel = false
@@ -153,6 +154,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     onSaveMedia = onSaveMedia,
                     onSaveMediaPack = onSaveMediaPack,
                     mediaUrlResolver = mediaUrlResolver,
+                    mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
                     mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 )
             } else {
@@ -163,6 +165,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     onSaveMedia = onSaveMedia,
                     audioLoopScopeKey = sourceUrl,
                     mediaUrlResolver = mediaUrlResolver,
+                    mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
                     bgmFavoriteStudentTitle = studentTitle,
                     bgmFavoriteStudentImageUrl = studentImageUrl,
                     bgmFavoriteSourceUrl = sourceUrl,
@@ -199,6 +202,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                         onOpenMedia = onOpenExternal,
                         onSaveMedia = onSaveMedia,
                         mediaUrlResolver = mediaUrlResolver,
+                        mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
                     )
                 }
                 renderedCount += 1
@@ -256,6 +260,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     onOpenMedia = onOpenExternal,
                     onSaveMedia = onSaveMedia,
                     mediaUrlResolver = mediaUrlResolver,
+                    mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
                 )
             }
             renderedCount += 1
@@ -315,6 +320,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                 onOpenMedia = onOpenExternal,
                 onSaveMedia = onSaveMedia,
                 mediaUrlResolver = mediaUrlResolver,
+                mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
             )
         }
         renderedCount += 1
@@ -342,6 +348,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                     onOpenMedia = onOpenExternal,
                     onSaveMedia = onSaveMedia,
                     mediaUrlResolver = mediaUrlResolver,
+                    mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
                 )
             }
             renderedCount += 1
@@ -391,6 +398,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
                 onOpenMedia = onOpenExternal,
                 onSaveMedia = onSaveMedia,
                 mediaUrlResolver = mediaUrlResolver,
+                mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
             )
         }
         renderedCount += 1

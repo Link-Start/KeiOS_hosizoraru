@@ -89,7 +89,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     val headerState = profileHeaderState ?: buildGuideProfileTabHeaderState(guide)
 
     if (!error.isNullOrBlank()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-error") {
             Text(
                 text = error.orEmpty(),
                 color = MiuixTheme.colorScheme.error,
@@ -101,7 +101,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     }
 
     if (headerState.nicknameRows.isNotEmpty()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-nickname") {
             GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_nickname))
             GuideProfileInfoRows(rows = headerState.nicknameRows) { row ->
                 GuideProfileInfoItem(
@@ -114,7 +114,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     }
 
     if (headerState.studentInfoRows.isNotEmpty()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-student-info") {
             GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_info))
             GuideProfileInfoRows(rows = headerState.studentInfoRows) { row ->
                 val normalizedKey = normalizeProfileFieldKey(row.key)
@@ -171,7 +171,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     }
 
     if (headerState.hobbyRows.isNotEmpty()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-hobbies") {
             GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_hobbies))
             GuideProfileInfoRows(rows = headerState.hobbyRows) { row ->
                 GuideProfileInfoItem(
@@ -185,14 +185,14 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     }
 
     if (headerState.giftPreferenceItems.isNotEmpty()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-gifts") {
             GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_gifts))
             GuideGiftPreferenceGrid(items = headerState.giftPreferenceItems)
         }
         item { Spacer(modifier = Modifier.height(10.dp)) }
     }
 
-    guideProfileCard {
+    guideProfileCard(key = "guide-profile-same-name") {
         GuideSameNameRoleSection(
             sameNameRoleHint = headerState.sameNameRoleHint,
             sameNameRoleItems = headerState.sameNameRoleItems,
@@ -203,7 +203,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     item { Spacer(modifier = Modifier.height(10.dp)) }
 
     if (headerState.normalProfileRows.isNotEmpty()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-normal") {
             GuideProfileRowsSection(
                 rows = headerState.normalProfileRows,
                 emptyText = stringResource(R.string.guide_profile_empty),
@@ -215,7 +215,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
         headerState.hobbyRows.isEmpty() &&
         headerState.giftPreferenceItems.isEmpty()
     ) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-profile-empty") {
             Text(
                 text = stringResource(R.string.guide_profile_empty),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,

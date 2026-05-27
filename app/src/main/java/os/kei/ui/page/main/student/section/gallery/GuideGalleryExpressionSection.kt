@@ -1,6 +1,7 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section.gallery
 
-import os.kei.core.ext.showToast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -43,6 +44,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
@@ -79,19 +81,21 @@ internal fun GuideAudioSeekBar(
     enabled: Boolean,
     onSeekStarted: () -> Unit,
     onSeekChanged: (Float) -> Unit,
-    onSeekFinished: (Float) -> Unit
+    onSeekFinished: (Float) -> Unit,
 ) {
     val sliderBackdrop = rememberLayerBackdrop()
     var seekInteractionActive by remember { mutableStateOf(false) }
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(44.dp),
     ) {
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(sliderBackdrop)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(sliderBackdrop),
         )
         LiquidMusicProgressSlider(
             value = { progress.coerceIn(0f, 1f) },
@@ -112,9 +116,10 @@ internal fun GuideAudioSeekBar(
             enabled = enabled,
             activeColor = Color(0xFF3B82F6),
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.34f),
-            modifier = Modifier
-                .matchParentSize()
-                .padding(horizontal = 4.dp, vertical = 8.dp)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
         )
     }
 }
@@ -141,8 +146,9 @@ fun GuideGalleryExpressionCardItem(
     onSaveMedia: (url: String, title: String) -> Unit = { _, _ -> },
     onSaveMediaPack: (items: List<Pair<String, String>>, packTitle: String) -> Unit = { _, _ -> },
     mediaUrlResolver: (String) -> String = { it },
+    mediaUrlResolverCacheKey: Any? = null,
     mediaAdaptiveRotationEnabled: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (items.isEmpty()) return
     val context = LocalContext.current
@@ -158,48 +164,61 @@ fun GuideGalleryExpressionCardItem(
         previousSelectedIndex = selectedIndex
     }
     val selectedItem = items.getOrElse(selectedIndex) { items.first() }
-    val displayImageUrl = mediaUrlResolver(selectedItem.imageUrl)
-    val displayMediaUrl = mediaUrlResolver(selectedItem.mediaUrl)
-    val saveTargetUrl = remember(selectedItem.mediaType, displayImageUrl, displayMediaUrl) {
-        if (selectedItem.mediaType.lowercase() == "video") {
-            displayMediaUrl.ifBlank { displayImageUrl }
-        } else {
-            displayImageUrl.ifBlank { displayMediaUrl }
+    val resolverCacheKey = mediaUrlResolverCacheKey ?: mediaUrlResolver
+    val displayImageUrl =
+        remember(selectedItem.imageUrl, resolverCacheKey) {
+            mediaUrlResolver(selectedItem.imageUrl)
         }
-    }
-    val optionLabels = remember(context, items) {
-        items.mapIndexed { index, item ->
-            val normalizedTitle = normalizeGalleryTitle(item.title)
-            val rawVariant = when {
-                normalizedTitle.startsWith("角色表情") -> normalizedTitle.removePrefix("角色表情")
-                normalizedTitle.startsWith("表情") -> normalizedTitle.removePrefix("表情")
-                else -> ""
-            }
-            val variant = rawVariant
-                .replace(Regex("""\d+$"""), "")
-                .trim('（', '）', '(', ')', '-', '·', ' ')
-            if (variant.isBlank()) {
-                context.resolveString(R.string.guide_gallery_expression_fallback_format, index + 1)
-            } else if (variant == "包") {
-                context.resolveString(R.string.guide_gallery_expression_pack_format, index + 1)
+    val displayMediaUrl =
+        remember(selectedItem.mediaUrl, resolverCacheKey) {
+            mediaUrlResolver(selectedItem.mediaUrl)
+        }
+    val saveTargetUrl =
+        remember(selectedItem.mediaType, displayImageUrl, displayMediaUrl) {
+            if (selectedItem.mediaType.lowercase() == "video") {
+                displayMediaUrl.ifBlank { displayImageUrl }
             } else {
-                val displayVariant = when (variant) {
-                    "差分" -> context.resolveString(R.string.guide_gallery_expression_variant_difference)
-                    else -> variant
-                }
-                context.resolveString(
-                    R.string.guide_gallery_expression_variant_format,
-                    index + 1,
-                    displayVariant
-                )
+                displayImageUrl.ifBlank { displayMediaUrl }
             }
         }
-    }
-    val pickerMaxHeight = remember(optionLabels.size) {
-        val maxVisibleRows = 7
-        val visibleRows = optionLabels.size.coerceIn(1, maxVisibleRows)
-        8.dp + (46.dp * visibleRows)
-    }
+    val optionLabels =
+        remember(context, items) {
+            items.mapIndexed { index, item ->
+                val normalizedTitle = normalizeGalleryTitle(item.title)
+                val rawVariant =
+                    when {
+                        normalizedTitle.startsWith("角色表情") -> normalizedTitle.removePrefix("角色表情")
+                        normalizedTitle.startsWith("表情") -> normalizedTitle.removePrefix("表情")
+                        else -> ""
+                    }
+                val variant =
+                    rawVariant
+                        .replace(Regex("""\d+$"""), "")
+                        .trim('（', '）', '(', ')', '-', '·', ' ')
+                if (variant.isBlank()) {
+                    context.resolveString(R.string.guide_gallery_expression_fallback_format, index + 1)
+                } else if (variant == "包") {
+                    context.resolveString(R.string.guide_gallery_expression_pack_format, index + 1)
+                } else {
+                    val displayVariant =
+                        when (variant) {
+                            "差分" -> context.resolveString(R.string.guide_gallery_expression_variant_difference)
+                            else -> variant
+                        }
+                    context.resolveString(
+                        R.string.guide_gallery_expression_variant_format,
+                        index + 1,
+                        displayVariant,
+                    )
+                }
+            }
+        }
+    val pickerMaxHeight =
+        remember(optionLabels.size) {
+            val maxVisibleRows = 7
+            val visibleRows = optionLabels.size.coerceIn(1, maxVisibleRows)
+            8.dp + (46.dp * visibleRows)
+        }
     val canOpenMedia = selectedItem.mediaUrl.isNotBlank() && selectedItem.mediaUrl != selectedItem.imageUrl
     val isImageType = selectedItem.mediaType.lowercase() != "video"
     val isVideoType = selectedItem.mediaType.lowercase() == "video"
@@ -210,72 +229,80 @@ fun GuideGalleryExpressionCardItem(
     val canSwipeExpressions = optionLabels.size > 1
     val swipeThresholdPx = with(LocalDensity.current) { 56.dp.toPx() }
     var expressionDragAccumPx by remember(title, items.size) { mutableFloatStateOf(0f) }
-    val expressionDragState = rememberDraggableState { delta ->
-        expressionDragAccumPx += delta
-    }
-    val imageProgressState = remember(displayImageUrl) {
-        GuideMediaProgressState(if (displayImageUrl.isBlank()) 1f else 0f)
-    }
+    val expressionDragState =
+        rememberDraggableState { delta ->
+            expressionDragAccumPx += delta
+        }
+    val imageProgressState =
+        remember(displayImageUrl) {
+            GuideMediaProgressState(if (displayImageUrl.isBlank()) 1f else 0f)
+        }
     var imageLoading by remember(displayImageUrl) { mutableStateOf(displayImageUrl.isNotBlank()) }
     val packDownloadIcon = appLucidePackageIcon()
     val fullscreenIcon = appLucideFullscreenIcon()
-    val expressionPackTargets = remember(context, items, optionLabels, mediaUrlResolver) {
-        items.mapIndexedNotNull { index, item ->
-            val rawImage = mediaUrlResolver(item.imageUrl)
-            val rawMedia = mediaUrlResolver(item.mediaUrl)
-            val target = if (item.mediaType.lowercase() == "video") {
-                rawMedia.ifBlank { rawImage }
-            } else {
-                rawImage.ifBlank { rawMedia }
-            }.trim()
-            if (target.isBlank()) {
-                null
-            } else {
-                target to optionLabels.getOrElse(index) {
-                    context.resolveString(
-                        R.string.guide_gallery_expression_fallback_format,
-                        index + 1
-                    )
-                }
-            }
-        }.distinctBy { it.first }
-    }
+    val expressionPackTargets =
+        remember(context, items, optionLabels, resolverCacheKey) {
+            items
+                .mapIndexedNotNull { index, item ->
+                    val rawImage = mediaUrlResolver(item.imageUrl)
+                    val rawMedia = mediaUrlResolver(item.mediaUrl)
+                    val target =
+                        if (item.mediaType.lowercase() == "video") {
+                            rawMedia.ifBlank { rawImage }
+                        } else {
+                            rawImage.ifBlank { rawMedia }
+                        }.trim()
+                    if (target.isBlank()) {
+                        null
+                    } else {
+                        target to
+                            optionLabels.getOrElse(index) {
+                                context.resolveString(
+                                    R.string.guide_gallery_expression_fallback_format,
+                                    index + 1,
+                                )
+                            }
+                    }
+                }.distinctBy { it.first }
+        }
 
     GuideLiquidCard(
         modifier = modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
+        onClick = {},
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = title,
                     color = MiuixTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
                 Box(
-                    modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it }
+                    modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
                 ) {
                     AppDropdownAnchorButton(
                         backdrop = backdrop,
-                        text = optionLabels.getOrElse(selectedIndex) {
-                            stringResource(R.string.guide_gallery_expression_fallback_format, 1)
-                        },
+                        text =
+                            optionLabels.getOrElse(selectedIndex) {
+                                stringResource(R.string.guide_gallery_expression_fallback_format, 1)
+                            },
                         textColor = Color(0xFF3B82F6),
                         variant = GlassVariant.Compact,
-                        onClick = { showPicker = !showPicker }
+                        onClick = { showPicker = !showPicker },
                     )
                     if (showPicker) {
                         SnapshotWindowListPopup(
@@ -284,13 +311,13 @@ fun GuideGalleryExpressionCardItem(
                             anchorBounds = pickerPopupAnchorBounds,
                             placement = SnapshotPopupPlacement.ButtonEnd,
                             onDismissRequest = { showPicker = false },
-                            enableWindowDim = false
+                            enableWindowDim = false,
                         ) {
                             AppLiquidGlassDropdownColumn(
                                 modifier = Modifier.heightIn(max = pickerMaxHeight),
                                 accentColor = Color(0xFF3B82F6),
                                 initialScrollItemIndex = selectedIndex,
-                                backdrop = backdrop
+                                backdrop = backdrop,
                             ) {
                                 optionLabels.forEachIndexed { idx, option ->
                                     LiquidGlassDropdownSingleChoiceItem(
@@ -302,7 +329,7 @@ fun GuideGalleryExpressionCardItem(
                                             showSwipeHint = false
                                             selectedIndex = selected
                                             showPicker = false
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -313,11 +340,12 @@ fun GuideGalleryExpressionCardItem(
                     AppLiquidTextButton(
                         backdrop = backdrop,
                         text = "",
-                        leadingIcon = if (videoInlineExpanded && videoInlinePlaying) {
-                            MiuixIcons.Regular.Pause
-                        } else {
-                            MiuixIcons.Regular.Play
-                        },
+                        leadingIcon =
+                            if (videoInlineExpanded && videoInlinePlaying) {
+                                MiuixIcons.Regular.Pause
+                            } else {
+                                MiuixIcons.Regular.Play
+                            },
                         textColor = Color(0xFF3B82F6),
                         variant = GlassVariant.Compact,
                         onClick = {
@@ -328,7 +356,7 @@ fun GuideGalleryExpressionCardItem(
                             } else {
                                 videoControlRequestId += 1
                             }
-                        }
+                        },
                     )
                     AppLiquidTextButton(
                         backdrop = backdrop,
@@ -343,10 +371,10 @@ fun GuideGalleryExpressionCardItem(
                             } else {
                                 GuideVideoFullscreenActivity.launch(
                                     context = context,
-                                    mediaUrl = normalized
+                                    mediaUrl = normalized,
                                 )
                             }
-                        }
+                        },
                     )
                 }
                 if (saveTargetUrl.isNotBlank()) {
@@ -359,9 +387,9 @@ fun GuideGalleryExpressionCardItem(
                         onClick = {
                             onSaveMedia(
                                 saveTargetUrl,
-                                optionLabels.getOrElse(selectedIndex) { title }
+                                optionLabels.getOrElse(selectedIndex) { title },
                             )
-                        }
+                        },
                     )
                 }
                 if (expressionPackTargets.size > 1) {
@@ -373,7 +401,7 @@ fun GuideGalleryExpressionCardItem(
                         variant = GlassVariant.Compact,
                         onClick = {
                             onSaveMediaPack(expressionPackTargets, title)
-                        }
+                        },
                     )
                 }
                 if (isImageType && displayImageUrl.isNotBlank()) {
@@ -388,37 +416,38 @@ fun GuideGalleryExpressionCardItem(
                     text = stringResource(R.string.guide_expression_swipe_hint),
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
             if (displayImageUrl.isNotBlank() && selectedItem.mediaType.lowercase() != "video") {
                 GuidePressableMediaSurface(
-                    modifier = Modifier.draggable(
-                        state = expressionDragState,
-                        orientation = Orientation.Horizontal,
-                        enabled = canSwipeExpressions,
-                        onDragStopped = { velocity ->
-                            val totalDrag = expressionDragAccumPx
-                            expressionDragAccumPx = 0f
-                            val shouldGoNext = totalDrag <= -swipeThresholdPx || velocity <= -1600f
-                            val shouldGoPrev = totalDrag >= swipeThresholdPx || velocity >= 1600f
-                            when {
-                                shouldGoNext && selectedIndex < items.lastIndex -> {
-                                    showSwipeHint = false
-                                    selectedIndex += 1
-                                    showPicker = false
-                                }
+                    modifier =
+                        Modifier.draggable(
+                            state = expressionDragState,
+                            orientation = Orientation.Horizontal,
+                            enabled = canSwipeExpressions,
+                            onDragStopped = { velocity ->
+                                val totalDrag = expressionDragAccumPx
+                                expressionDragAccumPx = 0f
+                                val shouldGoNext = totalDrag <= -swipeThresholdPx || velocity <= -1600f
+                                val shouldGoPrev = totalDrag >= swipeThresholdPx || velocity >= 1600f
+                                when {
+                                    shouldGoNext && selectedIndex < items.lastIndex -> {
+                                        showSwipeHint = false
+                                        selectedIndex += 1
+                                        showPicker = false
+                                    }
 
-                                shouldGoPrev && selectedIndex > 0 -> {
-                                    showSwipeHint = false
-                                    selectedIndex -= 1
-                                    showPicker = false
+                                    shouldGoPrev && selectedIndex > 0 -> {
+                                        showSwipeHint = false
+                                        selectedIndex -= 1
+                                        showPicker = false
+                                    }
                                 }
-                            }
-                        }
-                    ),
-                    onClick = { showImageFullscreen = true }
+                            },
+                        ),
+                    onClick = { showImageFullscreen = true },
                 ) {
                     val slideToLeft = selectedIndex > previousSelectedIndex
                     AnimatedContent(
@@ -427,31 +456,34 @@ fun GuideGalleryExpressionCardItem(
                             if (!transitionAnimationsEnabled) {
                                 EnterTransition.None togetherWith ExitTransition.None
                             } else {
-                                val enter = slideInHorizontally(
-                                    animationSpec = tween(durationMillis = 220),
-                                    initialOffsetX = { fullWidth ->
-                                        if (slideToLeft) fullWidth / 3 else -fullWidth / 3
-                                    }
-                                ) + fadeIn(animationSpec = tween(durationMillis = 180))
-                                val exit = slideOutHorizontally(
-                                    animationSpec = tween(durationMillis = 180),
-                                    targetOffsetX = { fullWidth ->
-                                        if (slideToLeft) -fullWidth / 4 else fullWidth / 4
-                                    }
-                                ) + fadeOut(animationSpec = tween(durationMillis = 140))
+                                val enter =
+                                    slideInHorizontally(
+                                        animationSpec = tween(durationMillis = 220),
+                                        initialOffsetX = { fullWidth ->
+                                            if (slideToLeft) fullWidth / 3 else -fullWidth / 3
+                                        },
+                                    ) + fadeIn(animationSpec = tween(durationMillis = 180))
+                                val exit =
+                                    slideOutHorizontally(
+                                        animationSpec = tween(durationMillis = 180),
+                                        targetOffsetX = { fullWidth ->
+                                            if (slideToLeft) -fullWidth / 4 else fullWidth / 4
+                                        },
+                                    ) + fadeOut(animationSpec = tween(durationMillis = 140))
                                 enter togetherWith exit
                             }
                         },
-                        label = "guide_expression_swipe_transition"
+                        label = "guide_expression_swipe_transition",
                     ) { currentImageUrl ->
                         GuideRemoteImageAdaptive(
                             imageUrl = currentImageUrl,
                             progressState = if (isImageType) imageProgressState else null,
-                            onLoadingChanged = if (isImageType) {
-                                { loading -> imageLoading = loading }
-                            } else {
-                                null
-                            }
+                            onLoadingChanged =
+                                if (isImageType) {
+                                    { loading -> imageLoading = loading }
+                                } else {
+                                    null
+                                },
                         )
                     }
                 }
@@ -467,7 +499,7 @@ fun GuideGalleryExpressionCardItem(
                         onExpandedChange = { expanded -> videoInlineExpanded = expanded },
                         controlAction = GuideVideoControlAction.TogglePlayPause,
                         controlActionToken = videoControlRequestId,
-                        onIsPlayingChange = { playing -> videoInlinePlaying = playing }
+                        onIsPlayingChange = { playing -> videoInlinePlaying = playing },
                     )
                 } else {
                     AppLiquidTextButton(
@@ -476,7 +508,7 @@ fun GuideGalleryExpressionCardItem(
                         leadingIcon = MiuixIcons.Regular.Play,
                         textColor = Color(0xFF3B82F6),
                         variant = GlassVariant.Compact,
-                        onClick = { onOpenMedia(selectedItem.mediaUrl) }
+                        onClick = { onOpenMedia(selectedItem.mediaUrl) },
                     )
                 }
             }
@@ -487,7 +519,7 @@ fun GuideGalleryExpressionCardItem(
         GuideImageFullscreenDialog(
             imageUrl = displayImageUrl,
             mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-            onDismiss = { showImageFullscreen = false }
+            onDismiss = { showImageFullscreen = false },
         )
     }
 }

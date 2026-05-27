@@ -45,6 +45,7 @@ internal fun GuideGalleryCardItem(
     onSaveMedia: (url: String, title: String) -> Unit = { _, _ -> },
     audioLoopScopeKey: String = "",
     mediaUrlResolver: (String) -> String = { it },
+    mediaUrlResolverCacheKey: Any? = null,
     embedded: Boolean = false,
     showMediaTypeLabel: Boolean = true,
     showSaveAction: Boolean = true,
@@ -101,8 +102,16 @@ internal fun GuideGalleryCardItem(
             "imageset" -> stringResource(R.string.guide_gallery_image_set)
             else -> ""
         }
-    val displayImageUrl = mediaUrlResolver(preferredImageRaw)
-    val displayMediaUrl = mediaUrlResolver(item.mediaUrl.ifBlank { preferredImageRaw })
+    val resolverCacheKey = mediaUrlResolverCacheKey ?: mediaUrlResolver
+    val displayImageUrl =
+        remember(preferredImageRaw, resolverCacheKey) {
+            mediaUrlResolver(preferredImageRaw)
+        }
+    val mediaRaw = item.mediaUrl.ifBlank { preferredImageRaw }
+    val displayMediaUrl =
+        remember(mediaRaw, resolverCacheKey) {
+            mediaUrlResolver(mediaRaw)
+        }
     val noteText = item.note.trim()
     val noteLinks = remember(noteText) { extractGuideWebLinks(noteText) }
     val notePlainText = remember(noteText) { stripGuideWebLinks(noteText) }

@@ -1,6 +1,7 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section.gallery
 
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideMediaProgressState
@@ -49,43 +51,53 @@ fun GuideGalleryVideoGroupCardItem(
     onOpenMedia: (String) -> Unit,
     onSaveMedia: (url: String, title: String) -> Unit = { _, _ -> },
     mediaUrlResolver: (String) -> String = { it },
-    modifier: Modifier = Modifier
+    mediaUrlResolverCacheKey: Any? = null,
+    modifier: Modifier = Modifier,
 ) {
     if (items.isEmpty()) return
     val context = LocalContext.current
-    val displayTitle = if (title.isBlank()) {
-        stringResource(R.string.guide_gallery_video_format, 1)
-    } else {
-        guideLocalizedLabel(title)
-    }
+    val displayTitle =
+        if (title.isBlank()) {
+            stringResource(R.string.guide_gallery_video_format, 1)
+        } else {
+            guideLocalizedLabel(title)
+        }
     var selectedIndex by rememberSaveable(title, items.size) { mutableStateOf(0) }
     LaunchedEffect(items.size) {
         if (selectedIndex !in items.indices) selectedIndex = 0
     }
     val selectedItem = items.getOrElse(selectedIndex) { items.first() }
-    val displayMediaUrl = mediaUrlResolver(selectedItem.mediaUrl)
-    val displayPreviewUrl = mediaUrlResolver(
-        selectedItem.imageUrl.ifBlank { previewFallbackUrl }
-    )
-    val saveTargetUrl = remember(displayMediaUrl, displayPreviewUrl) {
-        displayMediaUrl.ifBlank { displayPreviewUrl }
-    }
+    val resolverCacheKey = mediaUrlResolverCacheKey ?: mediaUrlResolver
+    val displayMediaUrl =
+        remember(selectedItem.mediaUrl, resolverCacheKey) {
+            mediaUrlResolver(selectedItem.mediaUrl)
+        }
+    val previewRaw = selectedItem.imageUrl.ifBlank { previewFallbackUrl }
+    val displayPreviewUrl =
+        remember(previewRaw, resolverCacheKey) {
+            mediaUrlResolver(previewRaw)
+        }
+    val saveTargetUrl =
+        remember(displayMediaUrl, displayPreviewUrl) {
+            displayMediaUrl.ifBlank { displayPreviewUrl }
+        }
     var videoInlineExpanded by remember(displayMediaUrl) { mutableStateOf(false) }
     var videoInlinePlaying by remember(displayMediaUrl) { mutableStateOf(false) }
     var videoControlRequestId by remember(displayMediaUrl) { mutableIntStateOf(0) }
     val noteText = selectedItem.note.trim()
-    val optionLabels = if (items.size <= 1) {
-        listOf(stringResource(R.string.guide_gallery_video_format, 1))
-    } else {
-        items.mapIndexed { index, item ->
-            val normalized = item.title.trim()
-            if (normalized.isNotBlank() && normalized != title) {
-                guideLocalizedLabel(normalized, R.string.guide_gallery_item_fallback)
-            } else {
-                stringResource(R.string.guide_gallery_video_format, index + 1)
+    val optionLabels =
+        if (items.size <= 1) {
+            listOf(stringResource(R.string.guide_gallery_video_format, 1))
+        } else {
+            items.mapIndexed { index, item ->
+                val normalized = item.title.trim()
+                if (normalized.isNotBlank() && normalized != title) {
+                    guideLocalizedLabel(normalized, R.string.guide_gallery_item_fallback)
+                } else {
+                    stringResource(R.string.guide_gallery_video_format, index + 1)
+                }
             }
         }
-    }
 
     AppFeatureCard(
         title = displayTitle,
@@ -119,23 +131,23 @@ fun GuideGalleryVideoGroupCardItem(
                     } else {
                         GuideVideoFullscreenActivity.launch(
                             context = context,
-                            mediaUrl = normalized
+                            mediaUrl = normalized,
                         )
                     }
                 },
                 onSaveMedia = {
                     onSaveMedia(
                         saveTargetUrl,
-                        optionLabels.getOrElse(selectedIndex) { title }
+                        optionLabels.getOrElse(selectedIndex) { title },
                     )
-                }
+                },
             )
-        }
+        },
     ) {
         if (displayMediaUrl.isBlank()) {
             Text(
                 text = stringResource(R.string.guide_gallery_video_not_found),
-                color = MiuixTheme.colorScheme.onBackgroundVariant
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
             )
         } else {
             GuideInlineVideoPlayer(
@@ -147,7 +159,7 @@ fun GuideGalleryVideoGroupCardItem(
                 controlAction = GuideVideoControlAction.TogglePlayPause,
                 controlActionToken = videoControlRequestId,
                 onIsPlayingChange = { playing -> videoInlinePlaying = playing },
-                showCollapsedPreview = false
+                showCollapsedPreview = false,
             )
         }
     }
@@ -157,32 +169,34 @@ fun GuideGalleryVideoGroupCardItem(
 fun GuideGalleryUnlockLevelCardItem(
     level: String,
     backdrop: Backdrop?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (level.isBlank()) return
     val unlockLevelLabel = stringResource(R.string.guide_gallery_memory_unlock_level)
-    val rowCopyPayload = remember(unlockLevelLabel, level) {
-        buildGuideCopyPayload(unlockLevelLabel, level)
-    }
+    val rowCopyPayload =
+        remember(unlockLevelLabel, level) {
+            buildGuideCopyPayload(unlockLevelLabel, level)
+        }
     AppSurfaceCard(
         modifier = modifier.fillMaxWidth(),
-        containerColor = Color(0x223B82F6)
+        containerColor = Color(0x223B82F6),
     ) {
         CopyModeSelectionContainer {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .guideCopyable(rowCopyPayload)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .guideCopyable(rowCopyPayload)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = unlockLevelLabel,
                     color = MiuixTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 AppLiquidTextButton(
                     backdrop = backdrop,
@@ -190,7 +204,7 @@ fun GuideGalleryUnlockLevelCardItem(
                     enabled = false,
                     textColor = Color(0xFF3B82F6),
                     variant = GlassVariant.Compact,
-                    onClick = {}
+                    onClick = {},
                 )
             }
         }
@@ -210,7 +224,7 @@ internal fun GuideInlineVideoPlayer(
     onBufferingChange: (Boolean) -> Unit = {},
     previewProgressState: GuideMediaProgressState? = null,
     onPreviewLoadingChanged: ((Boolean) -> Unit)? = null,
-    showCollapsedPreview: Boolean = true
+    showCollapsedPreview: Boolean = true,
 ) {
     val context = LocalContext.current
     val normalizedUrl = remember(mediaUrl) { normalizeGuideMediaSource(mediaUrl) }
@@ -220,18 +234,19 @@ internal fun GuideInlineVideoPlayer(
     var isPlaying by remember(normalizedUrl) { mutableStateOf(false) }
     var loadError by remember(normalizedUrl) { mutableStateOf<String?>(null) }
     var loopEnabled by remember(normalizedUrl) { mutableStateOf(false) }
-    val openFullscreen = remember(context, normalizedUrl) {
-        {
-            if (normalizedUrl.isBlank()) {
-                context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
-            } else {
-                GuideVideoFullscreenActivity.launch(
-                    context = context,
-                    mediaUrl = normalizedUrl
-                )
+    val openFullscreen =
+        remember(context, normalizedUrl) {
+            {
+                if (normalizedUrl.isBlank()) {
+                    context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
+                } else {
+                    GuideVideoFullscreenActivity.launch(
+                        context = context,
+                        mediaUrl = normalizedUrl,
+                    )
+                }
             }
         }
-    }
 
     if (!expanded) {
         LaunchedEffect(
@@ -239,7 +254,7 @@ internal fun GuideInlineVideoPlayer(
             previewProgressState,
             onPreviewLoadingChanged,
             onBufferingChange,
-            onIsPlayingChange
+            onIsPlayingChange,
         ) {
             if (!showCollapsedPreview) {
                 previewProgressState?.set(1f)
@@ -256,17 +271,18 @@ internal fun GuideInlineVideoPlayer(
                     openFullscreen()
                 },
                 previewProgressState = previewProgressState,
-                onPreviewLoadingChanged = onPreviewLoadingChanged
+                onPreviewLoadingChanged = onPreviewLoadingChanged,
             )
         }
         return
     }
 
-    val player = rememberGuidePreparedVideoPlayer(
-        context = context,
-        mediaUrl = normalizedUrl,
-        active = expanded
-    )
+    val player =
+        rememberGuidePreparedVideoPlayer(
+            context = context,
+            mediaUrl = normalizedUrl,
+            active = expanded,
+        )
     BindGuideVideoPlayerState(
         player = player,
         onVideoRatioChanged = { ratio -> videoRatio = ratio },
@@ -287,7 +303,7 @@ internal fun GuideInlineVideoPlayer(
             isPlaying = false
             onBufferingChange(false)
             onIsPlayingChange(false)
-        }
+        },
     )
     BindGuideVideoForegroundPlaybackGuard(
         player = player,
@@ -296,15 +312,16 @@ internal fun GuideInlineVideoPlayer(
             isPlaying = false
             onBufferingChange(false)
             onIsPlayingChange(false)
-        }
+        },
     )
 
     LaunchedEffect(player, loopEnabled) {
-        player?.repeatMode = if (loopEnabled) {
-            Player.REPEAT_MODE_ONE
-        } else {
-            Player.REPEAT_MODE_OFF
-        }
+        player?.repeatMode =
+            if (loopEnabled) {
+                Player.REPEAT_MODE_ONE
+            } else {
+                Player.REPEAT_MODE_OFF
+            }
     }
 
     val activePlayer = player
@@ -333,10 +350,10 @@ internal fun GuideInlineVideoPlayer(
         loopEnabled = loopEnabled,
         onToggleLoop = { loopEnabled = !loopEnabled },
         onCollapse = { onExpandedChange(false) },
-        backdrop = backdrop
+        backdrop = backdrop,
     )
     GuideInlineVideoStatusHints(
         isBuffering = isBuffering,
-        loadError = loadError
+        loadError = loadError,
     )
 }

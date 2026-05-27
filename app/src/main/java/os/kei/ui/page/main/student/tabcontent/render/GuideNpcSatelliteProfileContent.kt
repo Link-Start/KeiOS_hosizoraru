@@ -31,7 +31,7 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     val resolvedProfileState = profileState ?: buildGuideNpcSatelliteProfileState(guide)
 
     if (!error.isNullOrBlank()) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-npc-profile-error") {
             Text(
                 text = error,
                 color = MiuixTheme.colorScheme.error,
@@ -63,11 +63,15 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     )
 
     if (resolvedProfileState.relatedRoleItems.isNotEmpty() || resolvedProfileState.relatedRoleHint.isNotBlank()) {
-        guideProfileCard(addTopSpacing = true) {
+        guideProfileCard(
+            key = "guide-npc-profile-related",
+            addTopSpacing = true,
+        ) {
             GuideRelationRoleSection(
-                sectionTitle = resolvedProfileState.relatedRoleTitle.ifBlank {
-                    stringResource(R.string.guide_profile_related_roles)
-                },
+                sectionTitle =
+                    resolvedProfileState.relatedRoleTitle.ifBlank {
+                        stringResource(R.string.guide_profile_related_roles)
+                    },
                 itemFallbackLabel = stringResource(R.string.guide_profile_related_role),
                 emptyText = stringResource(R.string.guide_profile_related_roles_empty),
                 roleHint = resolvedProfileState.relatedRoleHint,
@@ -79,11 +83,15 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     }
 
     if (resolvedProfileState.sameNameRoleItems.isNotEmpty() || resolvedProfileState.sameNameRoleHint.isNotBlank()) {
-        guideProfileCard(addTopSpacing = true) {
+        guideProfileCard(
+            key = "guide-npc-profile-same-name",
+            addTopSpacing = true,
+        ) {
             GuideRelationRoleSection(
-                sectionTitle = resolvedProfileState.sameNameRoleTitle.ifBlank {
-                    stringResource(R.string.guide_profile_related_same_name)
-                },
+                sectionTitle =
+                    resolvedProfileState.sameNameRoleTitle.ifBlank {
+                        stringResource(R.string.guide_profile_related_same_name)
+                    },
                 itemFallbackLabel = stringResource(R.string.guide_profile_same_name),
                 emptyText = stringResource(R.string.guide_profile_same_name_empty),
                 roleHint = resolvedProfileState.sameNameRoleHint,
@@ -95,7 +103,10 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     }
 
     if (resolvedProfileState.normalRows.isNotEmpty()) {
-        guideProfileCard(addTopSpacing = true) {
+        guideProfileCard(
+            key = "guide-npc-profile-extra",
+            addTopSpacing = true,
+        ) {
             GuideProfileSectionHeader(title = stringResource(R.string.guide_profile_section_npc_extra))
             GuideProfileRowsSection(
                 rows = resolvedProfileState.normalRows,
@@ -107,7 +118,7 @@ internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
         resolvedProfileState.identityRows.isEmpty() &&
         resolvedProfileState.introRows.isEmpty()
     ) {
-        guideProfileCard {
+        guideProfileCard(key = "guide-npc-profile-empty") {
             Text(
                 text = stringResource(R.string.guide_profile_npc_empty),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -122,7 +133,10 @@ private fun LazyListScope.renderNpcProfileGroup(
     preferCapsule: Boolean = true,
 ) {
     if (rows.isEmpty()) return
-    guideProfileCard(addTopSpacing = true) {
+    guideProfileCard(
+        key = "guide-npc-profile-group-$titleRes",
+        addTopSpacing = true,
+    ) {
         GuideProfileSectionHeader(title = stringResource(titleRes))
         GuideProfileInfoRows(rows = rows) { row ->
             val displayAsCapsule =

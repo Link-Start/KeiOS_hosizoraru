@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.foundation.layout.Box
@@ -17,8 +19,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
-import os.kei.ui.animation.DampedDragAnimation
-import os.kei.ui.animation.InteractiveHighlight
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -30,6 +30,8 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.animation.InteractiveHighlight
 
 @Composable
 internal fun LiquidActionBarLayeredVisualOverlay(
@@ -52,32 +54,35 @@ internal fun LiquidActionBarLayeredVisualOverlay(
     isLtr: Boolean,
     effectivePanelOffset: () -> Float,
     interactionLensScale: Float,
-    interactiveHighlight: InteractiveHighlight?
+    interactiveHighlight: InteractiveHighlight?,
 ) {
     if (!layeredStyleEnabled) return
     val density = LocalDensity.current
-    val horizontalPaddingPx = with(density) {
-        AppChromeTokens.liquidActionBarHorizontalPadding.toPx()
-    }
+    val horizontalPaddingPx =
+        with(density) {
+            AppChromeTokens.liquidActionBarHorizontalPadding.toPx()
+        }
     val breakoutPaddingPx = with(density) { singleBreakoutPadding.toPx() }
     val contentWidthPx = (totalWidthPx - horizontalPaddingPx * 2f).coerceAtLeast(0f)
     val slotWidthPx = if (items.isEmpty()) 0f else contentWidthPx / items.size
-    val breakoutScaleX = if (breakoutPaddingPx > 0f && tabWidthPx > 0f) {
-        tabWidthPx / (tabWidthPx + breakoutPaddingPx * 2f)
-    } else {
-        1f
-    }
-    val breakoutScaleY = if (singleBreakoutPadding > 0.dp) {
-        AppChromeTokens.liquidActionBarInnerHeight /
-            (AppChromeTokens.liquidActionBarInnerHeight + singleBreakoutPadding * 2)
-    } else {
-        1f
-    }
+    val breakoutScaleX =
+        if (breakoutPaddingPx > 0f && tabWidthPx > 0f) {
+            tabWidthPx / (tabWidthPx + breakoutPaddingPx * 2f)
+        } else {
+            1f
+        }
+    val breakoutScaleY =
+        if (singleBreakoutPadding > 0.dp) {
+            AppChromeTokens.liquidActionBarInnerHeight /
+                (AppChromeTokens.liquidActionBarInnerHeight + singleBreakoutPadding * 2)
+        } else {
+            1f
+        }
     Box(
         Modifier
             .width(barWidth)
             .height(AppChromeTokens.liquidActionBarOuterHeight)
-            .graphicsLayer { clip = false }
+            .graphicsLayer { clip = false },
     ) {
         Row(
             Modifier
@@ -89,8 +94,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                 .graphicsLayer {
                     translationX = effectivePanelOffset()
                     clip = false
-                }
-                .drawBackdrop(
+                }.drawBackdrop(
                     backdrop = backdrop,
                     shape = { ContinuousCapsule },
                     effects = {
@@ -100,22 +104,21 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                             blur(effectBlurDp.toPx())
                             lens(
                                 effectLensDp.toPx() * progress,
-                                effectLensDp.toPx() * progress
+                                effectLensDp.toPx() * progress,
                             )
                         }
                     },
                     highlight = {
                         Highlight.Default.copy(alpha = if (isBlurEnabled) dampedDragAnimation.pressProgress else 0f)
                     },
-                    onDrawSurface = { drawRect(palette.baseFillColor) }
-                )
-                .height(AppChromeTokens.liquidActionBarInnerHeight)
+                    onDrawSurface = { drawRect(palette.baseFillColor) },
+                ).height(AppChromeTokens.liquidActionBarInnerHeight)
                 .padding(horizontal = AppChromeTokens.liquidActionBarHorizontalPadding)
                 .graphicsLayer(colorFilter = ColorFilter.tint(accentColor)),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             items.forEach { item ->
-                LiquidActionItemSlot(item = item, tint = accentColor)
+                LiquidActionItemSlot(item = item, tint = { accentColor })
             }
         }
 
@@ -124,18 +127,18 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                 Modifier
                     .align(Alignment.CenterStart)
                     .graphicsLayer {
-                        val slotOffsetPx = if (isLtr) {
-                            dampedDragAnimation.value * slotWidthPx
-                        } else {
-                            contentWidthPx - (dampedDragAnimation.value + 1f) * slotWidthPx
-                        }
+                        val slotOffsetPx =
+                            if (isLtr) {
+                                dampedDragAnimation.value * slotWidthPx
+                            } else {
+                                contentWidthPx - (dampedDragAnimation.value + 1f) * slotWidthPx
+                            }
                         translationX = horizontalPaddingPx -
                             breakoutPaddingPx +
                             slotOffsetPx +
                             effectivePanelOffset()
                         clip = false
-                    }
-                    .then(if (isBlurEnabled && interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
+                    }.then(if (isBlurEnabled && interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
                     .then(dampedDragAnimation.modifier)
                     .drawBackdrop(
                         backdrop = combinedBackdrop,
@@ -146,7 +149,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                                 lens(
                                     9f.dp.toPx() * progress * interactionLensScale,
                                     12f.dp.toPx() * progress * interactionLensScale,
-                                    true
+                                    true,
                                 )
                             }
                         },
@@ -157,7 +160,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                         innerShadow = {
                             InnerShadow(
                                 radius = 7f.dp * dampedDragAnimation.pressProgress,
-                                alpha = if (isBlurEnabled) dampedDragAnimation.pressProgress else 0f
+                                alpha = if (isBlurEnabled) dampedDragAnimation.pressProgress else 0f,
                             )
                         },
                         layerBlock = {
@@ -172,22 +175,22 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                         onDrawSurface = {
                             val progress = dampedDragAnimation.pressProgress
                             drawRect(
-                                color = if (isInLightTheme) {
-                                    Color.Black.copy(0.1f)
-                                } else {
-                                    Color.White.copy(0.1f)
-                                },
-                                alpha = progress * (1f - progress)
+                                color =
+                                    if (isInLightTheme) {
+                                        Color.Black.copy(0.1f)
+                                    } else {
+                                        Color.White.copy(0.1f)
+                                    },
+                                alpha = progress * (1f - progress),
                             )
                             drawRect(Color.Black.copy(alpha = 0.03f * progress))
-                        }
-                    )
-                    .height(AppChromeTokens.liquidActionBarInnerHeight + singleBreakoutPadding * 2)
+                        },
+                    ).height(AppChromeTokens.liquidActionBarInnerHeight + singleBreakoutPadding * 2)
                     .width(
                         with(density) {
                             (slotWidthPx + breakoutPaddingPx * 2f).toDp()
-                        }
-                    )
+                        },
+                    ),
             )
         }
     }

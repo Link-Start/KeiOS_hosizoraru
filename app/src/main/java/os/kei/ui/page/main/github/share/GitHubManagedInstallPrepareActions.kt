@@ -6,7 +6,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.data.local.GitHubPendingShareImportManagedInstallRecord
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -17,12 +16,6 @@ import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 
-internal data class GitHubManagedInstallStartState(
-    val requestId: String,
-    val targetDisplayName: String,
-    val initialProgress: GitHubShareImportManagedInstallProgress,
-)
-
 internal class GitHubManagedInstallPrepareActions(
     private val manifestInfoScanner: suspend (GitHubReleaseAssetFile, GitHubLookupConfig) -> GitHubApkManifestInfo,
     private val assetUrlResolver: suspend (GitHubLookupConfig, GitHubReleaseAssetFile) -> String,
@@ -32,37 +25,20 @@ internal class GitHubManagedInstallPrepareActions(
         preview: GitHubShareImportPreview,
         selectedAsset: GitHubReleaseAssetFile,
     ): GitHubManagedInstallStartState {
-        val targetDisplayName =
-            preview.targetDisplayName.ifBlank {
-                buildShareImportTargetDisplayName(
-                    repo = preview.repo,
-                    assetName = selectedAsset.name,
-                )
-            }
-        val initialProgress =
-            GitHubShareImportManagedInstallProgress(
-                phase = GitHubShareImportPhase.Installing,
-                assetName = selectedAsset.name,
-                targetDisplayName = targetDisplayName,
-                progressPercent = 0,
-                totalBytes = selectedAsset.sizeBytes,
-            )
         val requestId = GitHubApkInstallRequestIds.newId(context.packageName)
+        val startState =
+            buildManagedInstallStartState(
+                preview = preview,
+                selectedAsset = selectedAsset,
+                requestId = requestId,
+            )
         withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.savePendingShareImportTrack(null)
             GitHubShareImportFlowStore.saveActiveManagedInstall(
-                GitHubPendingShareImportManagedInstallRecord(
-                    requestId = requestId,
-                    projectUrl = preview.projectUrl,
-                    owner = preview.owner,
-                    repo = preview.repo,
-                    releaseTag = preview.releaseTag,
-                    assetName = selectedAsset.name,
-                    targetDisplayName = targetDisplayName,
-                    progressPhase = initialProgress.phase.name,
-                    progressPercent = initialProgress.boundedProgressPercent,
-                    downloadedBytes = initialProgress.downloadedBytes,
-                    totalBytes = initialProgress.totalBytes,
+                buildManagedInstallInitialRecord(
+                    preview = preview,
+                    selectedAsset = selectedAsset,
+                    startState = startState,
                 ),
             )
         }
@@ -74,13 +50,9 @@ internal class GitHubManagedInstallPrepareActions(
             releaseTag = preview.releaseTag,
             assetName = selectedAsset.name,
             progressPercent = 4,
-            targetDisplayName = targetDisplayName,
+            targetDisplayName = startState.targetDisplayName,
         )
-        return GitHubManagedInstallStartState(
-            requestId = requestId,
-            targetDisplayName = targetDisplayName,
-            initialProgress = initialProgress,
-        )
+        return startState
     }
 
     suspend fun prepareRequest(
@@ -105,23 +77,13 @@ internal class GitHubManagedInstallPrepareActions(
             }
             val resolvedDownloadUrl = resolvedUrlDeferred.awaitActive(startState.requestId) ?: return@coroutineScope null
             val request =
-                GitHubApkInstallRequest(
-                    owner = preview.owner,
-                    repo = preview.repo,
-                    releaseTag = preview.releaseTag,
-                    projectUrl = preview.projectUrl,
-                    asset = selectedAsset,
+                buildManagedInstallRequest(
+                    preview = preview,
+                    selectedAsset = selectedAsset,
                     lookupConfig = lookupConfig,
-                    targetDisplayName = startState.targetDisplayName,
-                    scannedAppLabel = scannedManifestInfo.appLabel.trim(),
-                    scannedPackageName = scannedManifestInfo.packageName.trim(),
-                    scannedVersionName = scannedManifestInfo.versionName.trim(),
-                    scannedVersionCode = scannedManifestInfo.versionCode.trim(),
-                    scannedMinSdk = scannedManifestInfo.minSdk.trim(),
-                    scannedTargetSdk = scannedManifestInfo.targetSdk.trim(),
-                    scannedNativeAbis = scannedManifestInfo.normalizedNativeAbis(),
+                    startState = startState,
+                    manifestInfo = scannedManifestInfo,
                     resolvedDownloadUrl = resolvedDownloadUrl,
-                    requestId = startState.requestId,
                 )
             withContext(AppDispatchers.githubNetwork) {
                 GitHubShareImportFlowStore.saveActiveManagedInstall(
@@ -144,8 +106,3 @@ internal class GitHubManagedInstallPrepareActions(
             GitHubShareImportFlowStore.loadActiveManagedInstall()?.requestId == requestId
         }
 }
-
-private fun GitHubApkManifestInfo.normalizedNativeAbis(): List<String> =
-    nativeAbis
-        .map { abi -> abi.trim() }
-        .filter { abi -> abi.isNotBlank() }

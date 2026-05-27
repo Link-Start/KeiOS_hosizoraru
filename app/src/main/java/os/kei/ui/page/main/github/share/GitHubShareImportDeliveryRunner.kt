@@ -95,8 +95,7 @@ internal object GitHubShareImportDeliveryRunner {
             withContext(AppDispatchers.githubNetwork) {
                 GitHubShareImportFlowStore.loadActiveManagedInstall()
             } ?: return false
-        return activeManagedInstall.sessionId > 0 &&
-            activeManagedInstall.progressPhase == GitHubShareImportPhase.InstallReady.name
+        return shouldCommitActiveManagedInstall(activeManagedInstall)
     }
 
     private suspend fun persistSelectedPreview(

@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | Backdrop / blur cache | MIUIX `5e75455`, `132586a` | Cache blur/render-effect results by stable inputs, reuse shader uniform buffers, release graphics layers on detach, and skip RuntimeShader effects through one central capability gate. | Landed: `appGlassRuntimeEffectsEnabled()` and `activeGlassBackdrop()` gate shared glass controls, action bars, bottom bars, sliders, status pills, and support blocks. Backdrop library internals keep blur cache ownership. |
 | Dynamic backgrounds | InstallerX-Revived `5dfb116` | Keep Home/HDR/background visuals, move frame ticks to `Modifier.Node` with `invalidateDraw()`, update shader uniforms only when inputs change. | Landed: `BgEffectModifier` starts frame ticks only while dynamic background, effect background, and visible alpha are active; shader uniforms already update through cached `BgEffectPainter` setters. |
-| Install/share action state machine | InstallerX-Revived `5291941`, `e56e817` architecture idea | Keep GitHub download/install/share UI contracts stable, but make user actions route through small coordinators with explicit pending, active, result, and notification-facing state. | In progress: selected-asset delivery, active-preview readiness, and waiting-install record construction now resolve through pure state-machine helpers with unit coverage. |
+| Install/share action state machine | InstallerX-Revived `5291941`, `e56e817` architecture idea | Keep GitHub download/install/share UI contracts stable, but make user actions route through small coordinators with explicit pending, active, result, and notification-facing state. | Landed: selected-asset delivery, active-preview readiness, waiting-install records, managed-install start/request/progress/staged/success records, and active commit readiness now resolve through pure state-machine helpers with unit coverage. |
 
 ## P2
 
@@ -70,6 +70,15 @@
   - `./gradlew :app:testDebugUnitTest --tests 'os.kei.ui.page.main.github.share.GitHubShareImportStateMachineTest'`
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-28 InstallerX clean-room P1 managed-install completion:
+  - Added `GitHubManagedInstallStateMachine` for managed-install start state, initial active record, install request, progress merge, staged record, attach candidate, and active commit readiness.
+  - Reduced `GitHubManagedInstallPrepareActions`, `GitHubManagedInstallProgressNotifier`, and `GitHubManagedInstallResultApplier` to side-effect coordination plus helper calls.
+  - Extended state-machine unit tests for managed-install request trimming, record merge, staged data fallback, attach candidate selection, and commit readiness.
+  - `ktlint -F` scoped to the touched GitHub share/import managed-install files.
+  - `./gradlew :app:testDebugUnitTest`
+  - `./gradlew :app:compileDebugKotlin`
   - `git diff --check`
   - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
 

@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.share
 
+import os.kei.feature.github.data.local.GitHubPendingShareImportManagedInstallRecord
 import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubApkManifestInfo
@@ -117,3 +118,8 @@ internal fun buildWaitingInstallTrackRecord(
         armedAtMillis = armedAtMillis,
     )
 }
+
+internal fun shouldCommitActiveManagedInstall(record: GitHubPendingShareImportManagedInstallRecord?): Boolean =
+    record != null &&
+        record.sessionId > 0 &&
+        record.progressPhase == GitHubShareImportPhase.InstallReady.name

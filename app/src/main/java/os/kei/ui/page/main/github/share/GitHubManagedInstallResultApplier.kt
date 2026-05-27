@@ -80,34 +80,10 @@ internal class GitHubManagedInstallResultApplier(
             return ShareImportDeliveryCoordinatorResult.Cancelled
         }
         val nextRecord =
-            activeRecord.copy(
-                sessionId = result.sessionId,
-                appLabel =
-                    result.appLabel
-                        .ifBlank { request.scannedAppLabel }
-                        .ifBlank { activeRecord.appLabel },
-                packageName = result.packageName.ifBlank { activeRecord.packageName },
-                versionName =
-                    result.versionName
-                        .ifBlank { request.scannedVersionName }
-                        .ifBlank { activeRecord.versionName },
-                versionCode =
-                    result.versionCode
-                        .ifBlank { request.scannedVersionCode }
-                        .ifBlank { activeRecord.versionCode },
-                minSdk =
-                    result.minSdk
-                        .ifBlank { request.scannedMinSdk }
-                        .ifBlank { activeRecord.minSdk },
-                targetSdk =
-                    result.targetSdk
-                        .ifBlank { request.scannedTargetSdk }
-                        .ifBlank { activeRecord.targetSdk },
-                nativeAbis = request.scannedNativeAbis.ifEmpty { activeRecord.nativeAbis },
-                progressPhase = GitHubShareImportPhase.InstallReady.name,
-                progressPercent = 100,
-                downloadedBytes = result.downloadedBytes,
-                totalBytes = result.totalBytes,
+            buildStagedManagedInstallRecord(
+                activeRecord = activeRecord,
+                request = request,
+                result = result,
             )
         withContext(AppDispatchers.githubNetwork) {
             GitHubShareImportFlowStore.saveActiveManagedInstall(nextRecord)
@@ -153,32 +129,13 @@ internal class GitHubManagedInstallResultApplier(
         }
         val snapshot = loadInstalledPackageSnapshot(context, packageName)
         val candidate =
-            GitHubPendingShareImportAttachCandidate(
-                projectUrl = preview.projectUrl,
-                owner = preview.owner,
-                repo = preview.repo,
-                packageName = packageName,
-                appLabel =
-                    snapshot
-                        ?.appLabel
-                        .orEmpty()
-                        .ifBlank { result.appLabel }
-                        .ifBlank { request.scannedAppLabel }
-                        .ifBlank { request.targetDisplayName }
-                        .ifBlank { packageName },
-                versionName =
-                    snapshot
-                        ?.versionName
-                        .orEmpty()
-                        .ifBlank { request.scannedVersionName },
-                versionCode =
-                    snapshot
-                        ?.versionCode
-                        .orEmpty()
-                        .ifBlank { request.scannedVersionCode },
+            buildManagedInstallAttachCandidate(
+                preview = preview,
+                request = request,
+                result = result,
+                snapshot = snapshot,
                 eventAction = managedInstallAction(context),
                 detectedAtMillis = clock.nowMs(),
-                firstInstallTimeMs = snapshot?.firstInstallTimeMs ?: result.firstInstallTimeMs,
             )
         withContext(AppDispatchers.githubNetwork) {
             GitHubTrackStore.savePendingShareImportTrack(null)

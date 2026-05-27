@@ -2,7 +2,6 @@
 # Shizuku managed install mirrors the vvb2060/InstallerX binder route:
 # system service binder -> ShizukuBinderWrapper -> hidden PackageInstaller interfaces.
 # Keep the tiny hidden-api and Shizuku bridge surfaces stable across benchmark/release R8.
--keep public interface ** extends android.os.IInterface { *; }
 -dontwarn dalvik.system.VMRuntime
 -dontwarn android.app.ContextImpl
 -dontwarn android.app.LoadedApk
@@ -10,20 +9,19 @@
 -keep class org.lsposed.hiddenapibypass.Helper { *; }
 -keepclassmembers class org.lsposed.hiddenapibypass.Helper$* { *; }
 -keepnames class org.lsposed.hiddenapibypass.CoreOjClassLoader
--keepnames class moe.shizuku.api.BinderContainer
--keepclassmembers class moe.shizuku.api.BinderContainer {
-    public static final android.os.Parcelable$Creator CREATOR;
-}
 -keep class rikka.shizuku.ShizukuBinderWrapper {
     public <init>(android.os.IBinder);
     public android.os.IInterface queryLocalInterface(java.lang.String);
 }
--keepnames class rikka.shizuku.ShizukuProvider
 
-# Keep the managed install backend readable in release-only device traces while R8 can still
-# optimize call bodies. The receiver is a manifest component and the registry builds package-
-# scoped PendingIntents at runtime.
--keepnames class os.kei.feature.github.install.**
+# Keep the managed install bridge readable in release-only device traces while R8 can still
+# optimize call bodies. The receiver is a manifest component; the registries build package-
+# scoped PendingIntents at runtime; the installer and bridge wrap hidden package-manager APIs.
+-keepnames class os.kei.feature.github.install.GitHubShizukuInstallResultReceiver
+-keepnames class os.kei.feature.github.install.GitHubShizukuInstallCommitRegistry
+-keepnames class os.kei.feature.github.install.GitHubPageManagedInstallConfirmRegistry
+-keepnames class os.kei.feature.github.install.GitHubShizukuPackageInstaller
+-keepnames class os.kei.feature.github.install.ShizukuPackageInstallerBridge
 
 # Keep GitHub notification helpers readable for release-only focus-notification diagnosis.
 -keepnames class os.kei.feature.github.notification.GitHubRefreshNotificationHelper

@@ -1,6 +1,25 @@
 # ---------- KeiOS R8 baseline ----------
-# Keep enum member names stable because multiple stores persist enum.name across app restarts/upgrades.
--keepclassmembernames enum os.kei.** { *; }
+# Keep enum member names stable only where stores or protocol payloads persist enum.name.
+-keepclassmembernames enum os.kei.core.prefs.AppThemeMode { *; }
+-keepclassmembernames enum os.kei.feature.home.model.HomeOverviewCard { *; }
+-keepclassmembernames enum os.kei.ui.page.main.model.BottomPage { *; }
+-keepclassmembernames enum os.kei.ui.page.main.os.OsSectionCard { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubDirectApkRemoteHealth { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubReleaseChannel { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubRepositoryProfilePurpose { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubRepositoryProfileCapability { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubRepositoryProfileSource { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubRepositoryProfileConfidence { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubStarImportQuality { *; }
+-keepclassmembernames enum os.kei.feature.github.model.GitHubStarImportApkVerificationStatus { *; }
+-keepclassmembernames enum os.kei.ui.page.main.github.importer.StarImportViewFilter { *; }
+-keepclassmembernames enum os.kei.ui.page.main.github.importer.StarImportConflictStrategy { *; }
+-keepclassmembernames enum os.kei.ui.page.main.github.importer.StarImportUiSource { *; }
+-keepclassmembernames enum os.kei.ui.page.main.github.share.GitHubShareImportPhase { *; }
+-keepclassmembernames enum os.kei.ui.page.main.student.catalog.BaGuideCatalogTab { *; }
+-keepclassmembernames enum os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode { *; }
+-keepclassmembernames enum os.kei.mcp.server.McpToolExecutionProfile { *; }
 
 # Keep internal component class names stable for manifest lookups and About-page introspection.
 # This covers future KeiOS activities/services/receivers/providers without needing manual updates.

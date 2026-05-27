@@ -29,7 +29,7 @@
 | Text / color producer | MIUIX `94f1ff9` | Use producer/lambda color APIs for animated status text, pills, borders, progress text, and title highlights. | Landed: `StatusPill`, `LiquidLinearProgressBar`, `LiquidMusicProgressBar`, and `LiquidCircularProgressBar` accept color providers; dynamic borders/backgrounds/progress arcs read color in draw/layout paths. Remaining: title highlight and specialty text components. |
 | Top bar layout state | MIUIX `81a1401` | Save expensive measured title heights with saveable state and initialize animation values from current visibility state. | Landed: title width estimation is saveable by title, and title card layout is derived through a pure `deriveAppTopBarTitleLayout` function. Remaining: measured-height state for future large-title variants. |
 | Popup / reveal animation | MIUIX `054e2a1` | Share one popup reveal helper across dropdown/action menus to reduce per-component clipping animation variants. | Landed: `SnapshotWindowListPopup` uses `snapshotPopupReveal` for shared scale, translation, alpha, and clipping. Existing dropdown/action menus inherit it. |
-| Settings row specialization | InstallerX-Revived `6dc4099`, `2d71338` | Continue splitting universal settings rows into narrow navigation/switch/value/action rows and decouple disabled visuals from clickability. | Landed: `SettingsNavigationItem`, `SettingsValueItem`, `SettingsPickerItem`, and `SettingsToggleItem(enabled)` wrap the shared row core; disabled visuals and clickability are separated. Remaining direct `SettingsActionItem` call sites are permission rows with embedded action buttons. |
+| Settings row specialization | InstallerX-Revived `6dc4099`, `2d71338` | Continue splitting universal settings rows into narrow navigation/switch/value/action rows and decouple disabled visuals from clickability. | Landed: `SettingsNavigationItem`, `SettingsValueItem`, `SettingsPickerItem`, `SettingsButtonActionItem`, and `SettingsToggleItem(enabled)` wrap the shared row core; disabled visuals and clickability are separated. Direct `SettingsActionItem` use is now kept inside the shared settings support layer. |
 
 ## Verification Log
 
@@ -40,6 +40,7 @@
   - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
   - AVD debug smoke for P1: install, launch `os.kei.debug/os.kei.LauncherAndroidDesigns`, swipe page transitions, logcat fatal check.
   - AVD debug smoke for P2: install debug, open Settings, switch to Visual section, open/close theme dropdown, logcat fatal/RenderThread check.
+  - P2 continuation: permission rows migrated to `SettingsButtonActionItem`; direct `SettingsActionItem` usage is support-internal only.
 
 ## Guardrails
 

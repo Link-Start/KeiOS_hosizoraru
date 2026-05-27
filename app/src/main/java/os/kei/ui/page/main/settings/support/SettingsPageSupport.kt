@@ -190,6 +190,23 @@ internal fun SettingsPickerItem(
 }
 
 @Composable
+internal fun SettingsButtonActionItem(
+    title: String,
+    summary: String,
+    infoKey: String? = null,
+    infoValue: String? = null,
+    trailing: @Composable RowScope.() -> Unit,
+) {
+    SettingsActionItem(
+        title = title,
+        summary = summary,
+        infoKey = infoKey,
+        infoValue = infoValue,
+        trailing = trailing,
+    )
+}
+
+@Composable
 internal fun SettingsToggleItem(
     title: String,
     summary: String,

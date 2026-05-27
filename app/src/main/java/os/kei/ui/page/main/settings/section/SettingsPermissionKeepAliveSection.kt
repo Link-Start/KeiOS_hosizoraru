@@ -7,8 +7,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideLockIcon
-import os.kei.ui.page.main.settings.support.SettingsActionItem
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
+import os.kei.ui.page.main.settings.support.SettingsButtonActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
@@ -28,7 +28,7 @@ internal fun SettingsPermissionKeepAliveSection(
         sectionIcon = appLucideLockIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
     ) {
-        SettingsActionItem(
+        SettingsButtonActionItem(
             title = stringResource(R.string.settings_notification_permission_title),
             summary =
                 if (state.notificationPermissionGranted && state.notificationsEnabled) {
@@ -68,7 +68,7 @@ internal fun SettingsPermissionKeepAliveSection(
                 )
             },
         )
-        SettingsActionItem(
+        SettingsButtonActionItem(
             title = stringResource(R.string.settings_battery_optimization_title),
             summary =
                 if (state.ignoringBatteryOptimizations) {
@@ -97,7 +97,7 @@ internal fun SettingsPermissionKeepAliveSection(
                 )
             },
         )
-        SettingsActionItem(
+        SettingsButtonActionItem(
             title = stringResource(R.string.settings_oem_autostart_title),
             summary =
                 when (state.oemAutoStartState) {
@@ -177,7 +177,7 @@ internal fun SettingsPermissionKeepAliveSection(
                 }
             },
         )
-        SettingsActionItem(
+        SettingsButtonActionItem(
             title = stringResource(R.string.settings_app_list_access_title),
             summary =
                 when (state.appListAccessMode) {
@@ -234,7 +234,7 @@ internal fun SettingsPermissionKeepAliveSection(
                 )
             },
         )
-        SettingsActionItem(
+        SettingsButtonActionItem(
             title = stringResource(R.string.settings_shizuku_permission_title),
             summary =
                 if (state.shizukuGranted) {

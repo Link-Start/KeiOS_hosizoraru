@@ -7,13 +7,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,6 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -44,11 +46,10 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -288,87 +289,95 @@ private fun BaGuideBgmPlayingBars(
     animated: Boolean,
 ) {
     val heights = rememberBaGuideBgmPlayingBarHeights(animated)
-    Row(
-        modifier =
-            Modifier
-                .width(18.dp)
-                .height(18.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        BaGuideBgmPlayingBar(accent = accent, heightFraction = heights.first)
-        BaGuideBgmPlayingBar(accent = accent, heightFraction = heights.second)
-        BaGuideBgmPlayingBar(accent = accent, heightFraction = heights.third)
-    }
-}
-
-@Composable
-private fun rememberBaGuideBgmPlayingBarHeights(animated: Boolean): BaGuideBgmPlayingBarHeights {
-    if (!animated) {
-        return BaGuideBgmPlayingBarHeights(
-            first = BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT,
-            second = BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT,
-            third = BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT,
-        )
-    }
-    val transition = rememberInfiniteTransition(label = "ba_catalog_bgm_playing_bars")
-    val firstHeight by transition.animateFloat(
-        initialValue = 0.42f,
-        targetValue = 0.88f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 520),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "ba_catalog_bgm_playing_bar_first",
-    )
-    val secondHeight by transition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 0.48f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 640),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "ba_catalog_bgm_playing_bar_second",
-    )
-    val thirdHeight by transition.animateFloat(
-        initialValue = 0.56f,
-        targetValue = 1f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 580),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "ba_catalog_bgm_playing_bar_third",
-    )
-    return BaGuideBgmPlayingBarHeights(
-        first = firstHeight,
-        second = secondHeight,
-        third = thirdHeight,
-    )
-}
-
-@Composable
-private fun BaGuideBgmPlayingBar(
-    accent: Color,
-    heightFraction: Float,
-) {
     Box(
         modifier =
             Modifier
-                .width(3.dp)
-                .fillMaxHeight(heightFraction.coerceIn(0.32f, 1f))
-                .appSquircleClip(999.dp)
-                .background(accent),
+                .width(18.dp)
+                .height(18.dp)
+                .drawBehind {
+                    val barWidth = 3.dp.toPx()
+                    val gap = 3.dp.toPx()
+                    val totalWidth = barWidth * BA_GUIDE_BGM_PLAYING_BAR_COUNT + gap * (BA_GUIDE_BGM_PLAYING_BAR_COUNT - 1)
+                    val startX = (size.width - totalWidth) / 2f
+                    val corner = CornerRadius(barWidth / 2f, barWidth / 2f)
+                    val heightFractions =
+                        floatArrayOf(
+                            heights.first().coerceIn(BA_GUIDE_BGM_PLAYING_BAR_MIN_HEIGHT, 1f),
+                            heights.second().coerceIn(BA_GUIDE_BGM_PLAYING_BAR_MIN_HEIGHT, 1f),
+                            heights.third().coerceIn(BA_GUIDE_BGM_PLAYING_BAR_MIN_HEIGHT, 1f),
+                        )
+
+                    heightFractions.forEachIndexed { index, heightFraction ->
+                        val barHeight = size.height * heightFraction
+                        val left = startX + index * (barWidth + gap)
+                        drawRoundRect(
+                            color = accent,
+                            topLeft = Offset(left, size.height - barHeight),
+                            size = Size(barWidth, barHeight),
+                            cornerRadius = corner,
+                        )
+                    }
+                },
     )
 }
 
-private data class BaGuideBgmPlayingBarHeights(
-    val first: Float,
-    val second: Float,
-    val third: Float,
+@Composable
+private fun rememberBaGuideBgmPlayingBarHeights(animated: Boolean): BaGuideBgmPlayingBarHeightProviders {
+    if (!animated) {
+        return BaGuideBgmPlayingBarHeightProviders(
+            first = { BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT },
+            second = { BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT },
+            third = { BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT },
+        )
+    }
+    val transition = rememberInfiniteTransition(label = "ba_catalog_bgm_playing_bars")
+    val firstHeight =
+        transition.animateFloat(
+            initialValue = 0.42f,
+            targetValue = 0.88f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 520),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "ba_catalog_bgm_playing_bar_first",
+        )
+    val secondHeight =
+        transition.animateFloat(
+            initialValue = 0.92f,
+            targetValue = 0.48f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 640),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "ba_catalog_bgm_playing_bar_second",
+        )
+    val thirdHeight =
+        transition.animateFloat(
+            initialValue = 0.56f,
+            targetValue = 1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 580),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "ba_catalog_bgm_playing_bar_third",
+        )
+    return BaGuideBgmPlayingBarHeightProviders(
+        first = { firstHeight.value },
+        second = { secondHeight.value },
+        third = { thirdHeight.value },
+    )
+}
+
+private data class BaGuideBgmPlayingBarHeightProviders(
+    val first: () -> Float,
+    val second: () -> Float,
+    val third: () -> Float,
 )
 
 private const val BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT = 0.56f
+private const val BA_GUIDE_BGM_PLAYING_BAR_MIN_HEIGHT = 0.32f
+private const val BA_GUIDE_BGM_PLAYING_BAR_COUNT = 3
 private const val BA_GUIDE_BGM_TRACK_MENU_ITEM_COUNT = 4

@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.emptyFlow
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 
 @Composable
@@ -30,8 +31,19 @@ internal fun BaGuideStudentBgmNowPlayingMiniPlayer(
     onSliderInteractionChanged: (Boolean) -> Unit,
     onToggleQueueMode: () -> Unit,
     onOpenGuide: () -> Unit,
+    runtimeActive: Boolean = true,
 ) {
-    val runtimeState by playbackCoordinator.runtimeStateFlow.collectAsStateWithLifecycle()
+    val runtimeFlow =
+        remember(playbackCoordinator, runtimeActive) {
+            if (runtimeActive) {
+                playbackCoordinator.runtimeStateFlow
+            } else {
+                emptyFlow()
+            }
+        }
+    val runtimeState by runtimeFlow.collectAsStateWithLifecycle(
+        initialValue = playbackCoordinator.runtimeState,
+    )
     val displayedRuntimeState =
         remember(runtimeState, seekPreviewProgress) {
             if (seekPreviewProgress != null && runtimeState.durationMs > 0L) {

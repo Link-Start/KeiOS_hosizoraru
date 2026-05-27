@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student
 
 import android.content.Context
@@ -9,13 +11,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -30,7 +29,9 @@ import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.widget.shape.appSquircleClip
 
 @Stable
-internal class GuideMediaProgressState(initialProgress: Float) {
+internal class GuideMediaProgressState(
+    initialProgress: Float,
+) {
     private val mutableProgress = MutableStateFlow(initialProgress.coerceIn(0f, 1f))
     val progress: StateFlow<Float> = mutableProgress
 
@@ -50,19 +51,18 @@ internal fun normalizeGuideMediaSource(raw: String): String {
     }
 }
 
-
 internal fun loadGuideBitmapSource(
     context: Context,
     source: String,
     maxDecodeDimension: Int = 2048,
-    onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null
+    onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null,
 ): Bitmap? {
     if (source.isBlank()) return null
     return BaGuideImageCache.loadBitmap(
         context = context,
         source = source,
         maxDecodeDimension = maxDecodeDimension,
-        onProgress = onProgress
+        onProgress = onProgress,
     )
 }
 
@@ -70,7 +70,7 @@ internal fun normalizeGalleryDisplayTitle(
     title: String,
     mediaType: String,
     fallbackTitle: String,
-    audioBgmPrefix: String
+    audioBgmPrefix: String,
 ): String {
     val raw = title.trim().ifBlank { fallbackTitle }
     if (mediaType.lowercase() != "audio") return raw
@@ -87,16 +87,17 @@ fun GuideRemoteImage(
     modifier: Modifier = Modifier,
     imageHeight: androidx.compose.ui.unit.Dp = 220.dp,
     maxDecodeDimension: Int = 1920,
-    cropAlignment: Alignment = Alignment.Center
+    cropAlignment: Alignment = Alignment.Center,
 ) {
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) return
     val mediaBitmaps = LocalGuideMediaImageBitmaps.current
     val missingKeys = LocalGuideMediaImageMissingKeys.current
     val requestImages = LocalGuideMediaImageRequester.current
-    val key = remember(target, maxDecodeDimension) {
-        guideMediaImageKey(target, maxDecodeDimension)
-    }
+    val key =
+        remember(target, maxDecodeDimension) {
+            guideMediaImageKey(target, maxDecodeDimension)
+        }
     LaunchedEffect(key, target, maxDecodeDimension, requestImages) {
         requestImages(
             listOf(
@@ -116,10 +117,11 @@ fun GuideRemoteImage(
         contentDescription = null,
         contentScale = ContentScale.Crop,
         alignment = cropAlignment,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(imageHeight)
-            .appSquircleClip(14.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(imageHeight)
+                .appSquircleClip(14.dp),
     )
 }
 
@@ -129,7 +131,7 @@ internal fun GuideRemoteImageAdaptive(
     modifier: Modifier = Modifier,
     maxDecodeDimension: Int = 2048,
     progressState: GuideMediaProgressState? = null,
-    onLoadingChanged: ((Boolean) -> Unit)? = null
+    onLoadingChanged: ((Boolean) -> Unit)? = null,
 ) {
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (target.isBlank()) {
@@ -140,7 +142,7 @@ internal fun GuideRemoteImageAdaptive(
         return
     }
     val fallbackRatio = remember(target) { detectMediaRatioFromUrl(target) ?: (16f / 9f) }
-    var stableRatio by remember(target) { mutableStateOf(fallbackRatio.coerceIn(0.4f, 4f)) }
+    val stableRatio = remember(fallbackRatio) { fallbackRatio.coerceIn(0.4f, 4f) }
     val isGifSource = remember(target) { isGifMediaSource(target) }
     val mediaBitmaps = LocalGuideMediaImageBitmaps.current
     val missingKeys = LocalGuideMediaImageMissingKeys.current
@@ -156,9 +158,10 @@ internal fun GuideRemoteImageAdaptive(
             onLoadingChanged?.invoke(true)
         }
         val resolvedGifTarget = gifTargets[target] ?: target
-        val ratio = remember(resolvedGifTarget, target) {
-            detectMediaRatioFromUrl(resolvedGifTarget.ifBlank { target }) ?: (16f / 9f)
-        }
+        val ratio =
+            remember(resolvedGifTarget, target) {
+                detectMediaRatioFromUrl(resolvedGifTarget.ifBlank { target }) ?: (16f / 9f)
+            }
         AsyncImage(
             model = resolvedGifTarget,
             contentDescription = null,
@@ -175,16 +178,18 @@ internal fun GuideRemoteImageAdaptive(
                 progressState?.set(1f)
                 onLoadingChanged?.invoke(false)
             },
-            modifier = modifier
-                .fillMaxWidth()
-                .aspectRatio(ratio)
-                .appSquircleClip(14.dp)
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .aspectRatio(ratio)
+                    .appSquircleClip(14.dp),
         )
         return
     }
-    val imageKey = remember(target, maxDecodeDimension) {
-        guideMediaImageKey(target, maxDecodeDimension)
-    }
+    val imageKey =
+        remember(target, maxDecodeDimension) {
+            guideMediaImageKey(target, maxDecodeDimension)
+        }
     val bitmap = mediaBitmaps[imageKey]
     val imageMissing = missingKeys.contains(imageKey)
     LaunchedEffect(imageKey, target, maxDecodeDimension, bitmap, imageMissing, requestImages) {
@@ -207,31 +212,31 @@ internal fun GuideRemoteImageAdaptive(
     val rendered = bitmap
     if (rendered == null) {
         Spacer(
-            modifier = modifier
-                .fillMaxWidth()
-                .aspectRatio(stableRatio)
-                .appSquircleClip(14.dp)
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .aspectRatio(stableRatio)
+                    .appSquircleClip(14.dp),
         )
         return
     }
-    val ratio = remember(rendered.width, rendered.height) {
-        if (rendered.width > 0 && rendered.height > 0) {
-            rendered.width.toFloat() / rendered.height.toFloat()
-        } else {
-            stableRatio
-        }
-    }.coerceIn(0.4f, 4f)
-    if (kotlin.math.abs(ratio - stableRatio) > 0.001f) {
-        stableRatio = ratio
-    }
+    val ratio =
+        remember(rendered.width, rendered.height) {
+            if (rendered.width > 0 && rendered.height > 0) {
+                rendered.width.toFloat() / rendered.height.toFloat()
+            } else {
+                stableRatio
+            }
+        }.coerceIn(0.4f, 4f)
     Image(
         bitmap = remember(rendered) { rendered.asImageBitmap() },
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(ratio)
-            .appSquircleClip(14.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .aspectRatio(ratio)
+                .appSquircleClip(14.dp),
     )
 }
 
@@ -270,8 +275,9 @@ internal fun isHttpMediaSource(source: String): Boolean {
 }
 
 internal fun detectMediaRatioFromUrl(source: String): Float? {
-    val match = Regex("""/w_(\d{1,4})/h_(\d{1,4})/""")
-        .find(source)
+    val match =
+        Regex("""/w_(\d{1,4})/h_(\d{1,4})/""")
+            .find(source)
     val width = match?.groupValues?.getOrNull(1)?.toFloatOrNull()
     val height = match?.groupValues?.getOrNull(2)?.toFloatOrNull()
     if (width == null || height == null || width <= 0f || height <= 0f) return null
@@ -285,7 +291,7 @@ fun GuideRemoteIcon(
     imageUrl: String,
     modifier: Modifier = Modifier,
     iconWidth: androidx.compose.ui.unit.Dp = 20.dp,
-    iconHeight: androidx.compose.ui.unit.Dp = iconWidth
+    iconHeight: androidx.compose.ui.unit.Dp = iconWidth,
 ) {
     val density = LocalDensity.current
     val target = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
@@ -307,20 +313,23 @@ fun GuideRemoteIcon(
             model = resolvedGifTarget,
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = modifier
-                .width(iconWidth)
-                .height(iconHeight)
+            modifier =
+                modifier
+                    .width(iconWidth)
+                    .height(iconHeight),
         )
         return
     }
-    val iconDecodeDimension = remember(iconWidth, iconHeight, density) {
-        val widthPx = with(density) { iconWidth.roundToPx() }
-        val heightPx = with(density) { iconHeight.roundToPx() }
-        (maxOf(widthPx, heightPx) * 2).coerceIn(96, 768)
-    }
-    val imageKey = remember(target, iconDecodeDimension) {
-        guideMediaImageKey(target, iconDecodeDimension)
-    }
+    val iconDecodeDimension =
+        remember(iconWidth, iconHeight, density) {
+            val widthPx = with(density) { iconWidth.roundToPx() }
+            val heightPx = with(density) { iconHeight.roundToPx() }
+            (maxOf(widthPx, heightPx) * 2).coerceIn(96, 768)
+        }
+    val imageKey =
+        remember(target, iconDecodeDimension) {
+            guideMediaImageKey(target, iconDecodeDimension)
+        }
     LaunchedEffect(imageKey, target, iconDecodeDimension, requestImages) {
         requestImages(
             listOf(
@@ -339,8 +348,9 @@ fun GuideRemoteIcon(
         bitmap = imageBitmap,
         contentDescription = null,
         contentScale = ContentScale.Fit,
-        modifier = modifier
-            .width(iconWidth)
-            .height(iconHeight)
+        modifier =
+            modifier
+                .width(iconWidth)
+                .height(iconHeight),
     )
 }

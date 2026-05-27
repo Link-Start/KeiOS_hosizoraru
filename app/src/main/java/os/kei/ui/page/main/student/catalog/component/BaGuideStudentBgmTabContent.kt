@@ -413,6 +413,7 @@ internal fun BaGuideStudentBgmTabContent(
                         playbackCoordinator.toggleQueueMode()
                     },
                     onOpenGuide = { actions.openFavoriteGuide(favorite) },
+                    runtimeActive = isPageActive,
                 )
             }
         }

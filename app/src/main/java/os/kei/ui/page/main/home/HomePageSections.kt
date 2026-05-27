@@ -19,7 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -64,39 +64,39 @@ internal fun Modifier.homeKeiHdrAccent(
     return this
         .graphicsLayer {
             compositingStrategy = CompositingStrategy.Offscreen
-        }.drawWithContent {
-            drawContent()
-            val currentSweepProgress = sweepProgress()
-            val sweepVisibility = homeKeiHdrSweepVisibility(currentSweepProgress)
-            if (sweepVisibility > 0f) {
-                val visibleSweepAlpha = sweepAlpha * sweepVisibility
-                drawRect(
-                    brush =
-                        Brush.linearGradient(
-                            colorStops =
-                                arrayOf(
-                                    0f to Color.Transparent,
-                                    (currentSweepProgress - HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
-                                    currentSweepProgress.coerceIn(0f, 1f) to Color.White.copy(alpha = visibleSweepAlpha),
-                                    (currentSweepProgress + HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
-                                    1f to Color.Transparent,
-                                ),
-                        ),
-                    blendMode = BlendMode.SrcAtop,
+        }.drawWithCache {
+            val radialBrush =
+                Brush.radialGradient(
+                    colors = HOME_KEI_HDR_RADIAL_COLORS,
+                    center = Offset(size.width * radialCenterX, size.height * radialCenterY),
+                    radius = size.minDimension * radialRadiusScale,
                 )
-                drawRect(
-                    brush =
-                        Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    Color.White.copy(alpha = radialAlpha * sweepVisibility),
-                                    Color.Transparent,
-                                ),
-                            center = Offset(size.width * radialCenterX, size.height * radialCenterY),
-                            radius = size.minDimension * radialRadiusScale,
-                        ),
-                    blendMode = BlendMode.SrcAtop,
-                )
+            onDrawWithContent {
+                drawContent()
+                val currentSweepProgress = sweepProgress()
+                val sweepVisibility = homeKeiHdrSweepVisibility(currentSweepProgress)
+                if (sweepVisibility > 0f) {
+                    val visibleSweepAlpha = sweepAlpha * sweepVisibility
+                    drawRect(
+                        brush =
+                            Brush.linearGradient(
+                                colorStops =
+                                    arrayOf(
+                                        0f to Color.Transparent,
+                                        (currentSweepProgress - HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
+                                        currentSweepProgress.coerceIn(0f, 1f) to Color.White.copy(alpha = visibleSweepAlpha),
+                                        (currentSweepProgress + HOME_KEI_HDR_SWEEP_HALF_WIDTH).coerceIn(0f, 1f) to Color.Transparent,
+                                        1f to Color.Transparent,
+                                    ),
+                            ),
+                        blendMode = BlendMode.SrcAtop,
+                    )
+                    drawRect(
+                        brush = radialBrush,
+                        alpha = radialAlpha * sweepVisibility,
+                        blendMode = BlendMode.SrcAtop,
+                    )
+                }
             }
         }
 }
@@ -110,6 +110,7 @@ internal fun homeKeiHdrSweepVisibility(sweepProgress: Float): Float {
 
 private const val HOME_KEI_HDR_SWEEP_HALF_WIDTH = 0.16f
 private const val HOME_KEI_HDR_EDGE_FADE_WIDTH = 0.18f
+private val HOME_KEI_HDR_RADIAL_COLORS = listOf(Color.White, Color.Transparent)
 
 @Composable
 internal fun Modifier.homeHeroForegroundBlur(

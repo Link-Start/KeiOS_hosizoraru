@@ -29,7 +29,7 @@
 
 | Area | Source | KeiOS Landing Direction | Status |
 | --- | --- | --- |
-| Text / color producer | MIUIX `94f1ff9` | Use producer/lambda color APIs for animated status text, pills, borders, progress text, and title highlights. | Landed: `StatusPill`, `LiquidLinearProgressBar`, `LiquidMusicProgressBar`, and `LiquidCircularProgressBar` accept color providers; dynamic borders/backgrounds/progress arcs read color in draw/layout paths. Remaining: title highlight and specialty text components. |
+| Text / color producer | MIUIX `94f1ff9` | Use producer/lambda color APIs for animated status text, pills, borders, progress text, and title highlights. | Landed: `StatusPill`, `LiquidLinearProgressBar`, `LiquidMusicProgressBar`, `LiquidCircularProgressBar`, and `LiquidGlassDropdownItem` dynamic text/icon colors read through providers or draw/layout paths; Home title/icon HDR radial highlight brush is cached by draw size. Remaining: specialty components only as new animated text is added. |
 | Top bar layout state | MIUIX `81a1401` | Save expensive measured title heights with saveable state and initialize animation values from current visibility state. | Landed: title width estimation is saveable by title, and title card layout is derived through a pure `deriveAppTopBarTitleLayout` function. Remaining: measured-height state for future large-title variants. |
 | Popup / reveal animation | MIUIX `054e2a1` | Share one popup reveal helper across dropdown/action menus to reduce per-component clipping animation variants. | Landed: `SnapshotWindowListPopup` uses `snapshotPopupReveal` for shared scale, translation, alpha, and clipping. Existing dropdown/action menus inherit it. |
 | Settings row specialization | InstallerX-Revived `6dc4099`, `2d71338` | Continue splitting universal settings rows into narrow navigation/switch/value/action rows and decouple disabled visuals from clickability. | Landed: `SettingsNavigationItem`, `SettingsValueItem`, `SettingsPickerItem`, `SettingsButtonActionItem`, and `SettingsToggleItem(enabled)` wrap the shared row core; disabled visuals and clickability are separated. Direct `SettingsActionItem` use is now kept inside the shared settings support layer. |
@@ -81,6 +81,11 @@
   - `./gradlew :app:compileDebugKotlin`
   - `git diff --check`
   - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-28 P2 color producer continuation:
+  - Routed dropdown/action-menu animated text and icon colors through `ColorProducer` and draw-time icon tinting while keeping the spring transition.
+  - Moved Home title/icon HDR radial highlight brush into `drawWithCache`; sweep progress continues to read in draw.
+  - `ktlint -F` scoped to touched P2 files.
+  - `./gradlew :app:compileDebugKotlin`
 
 ## Guardrails
 

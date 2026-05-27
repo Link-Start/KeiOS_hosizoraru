@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,9 +31,12 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -119,16 +123,20 @@ fun LiquidGlassDropdownItem(
         ).let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
     // Smooth color transitions when selection changes — prevents the abrupt "blink" that a plain
     // ternary produces. Spring keeps it feeling natural and tied to the user's selection gesture.
-    val textColor by animateColorAsState(
-        targetValue = targetTextColor,
-        animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
-        label = "liquid_glass_dropdown_item_text_color",
-    )
-    val iconColor by animateColorAsState(
-        targetValue = targetIconColor,
-        animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
-        label = "liquid_glass_dropdown_item_icon_color",
-    )
+    val textColorState =
+        animateColorAsState(
+            targetValue = targetTextColor,
+            animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
+            label = "liquid_glass_dropdown_item_text_color",
+        )
+    val iconColorState =
+        animateColorAsState(
+            targetValue = targetIconColor,
+            animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
+            label = "liquid_glass_dropdown_item_icon_color",
+        )
+    val textColorProvider = remember(textColorState) { ColorProducer { textColorState.value } }
+    val iconColorProvider = remember(iconColorState) { ColorProducer { iconColorState.value } }
     val checkColor = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f)
     val selectedSurface =
         liquidGlassDropdownSelectedSurfaceColor(
@@ -170,8 +178,8 @@ fun LiquidGlassDropdownItem(
         ) {
             LiquidGlassDropdownRowContent(
                 text = text,
-                textColor = textColor,
-                iconColor = iconColor,
+                textColor = textColorProvider,
+                iconColor = iconColorProvider,
                 checkColor = checkColor,
                 showCheck = showCheck,
                 reserveCheckSlot = reserveCheckSlot,
@@ -279,8 +287,8 @@ fun LiquidGlassDropdownItem(
         ) {
             LiquidGlassDropdownRowContent(
                 text = text,
-                textColor = textColor,
-                iconColor = iconColor,
+                textColor = textColorProvider,
+                iconColor = iconColorProvider,
                 checkColor = checkColor,
                 showCheck = showCheck,
                 reserveCheckSlot = reserveCheckSlot,
@@ -358,8 +366,8 @@ private fun LiquidGlassDropdownMeasureItem(
     ) {
         LiquidGlassDropdownRowContent(
             text = text,
-            textColor = textColor,
-            iconColor = iconColor,
+            textColor = ColorProducer { textColor },
+            iconColor = ColorProducer { iconColor },
             checkColor = checkColor,
             showCheck = showCheck,
             reserveCheckSlot = reserveCheckSlot,
@@ -389,8 +397,8 @@ private fun liquidGlassDropdownRowContentModifier(): Modifier {
 @Composable
 private fun LiquidGlassDropdownRowContent(
     text: String,
-    textColor: Color,
-    iconColor: Color,
+    textColor: ColorProducer,
+    iconColor: ColorProducer,
     checkColor: Color,
     showCheck: Boolean,
     reserveCheckSlot: Boolean,
@@ -478,7 +486,7 @@ private fun LiquidGlassDropdownRowContent(
                 )
             }
         } else if (leadingIcon != null) {
-            Icon(
+            LiquidGlassDropdownIcon(
                 imageVector = leadingIcon,
                 contentDescription = null,
                 tint = iconColor,
@@ -489,12 +497,15 @@ private fun LiquidGlassDropdownRowContent(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
-            Text(
+            BasicText(
                 text = text,
                 color = textColor,
-                fontSize = textTypography.fontSize,
-                lineHeight = textTypography.lineHeight,
-                fontWeight = FontWeight.Medium,
+                style =
+                    TextStyle(
+                        fontSize = textTypography.fontSize,
+                        lineHeight = textTypography.lineHeight,
+                        fontWeight = FontWeight.Medium,
+                    ),
                 maxLines = textMaxLines,
                 overflow = if (textMaxLines == 1) TextOverflow.Ellipsis else TextOverflow.Clip,
             )
@@ -511,7 +522,7 @@ private fun LiquidGlassDropdownRowContent(
             }
         }
         if (trailingIcon != null) {
-            Icon(
+            LiquidGlassDropdownIcon(
                 imageVector = trailingIcon,
                 contentDescription = null,
                 tint = iconColor,
@@ -546,6 +557,21 @@ private fun LiquidGlassDropdownRowContent(
             }
         }
     }
+}
+
+@Composable
+private fun LiquidGlassDropdownIcon(
+    imageVector: ImageVector,
+    tint: ColorProducer,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+) {
+    Icon(
+        painter = rememberVectorPainter(imageVector),
+        tint = tint,
+        contentDescription = contentDescription,
+        modifier = modifier,
+    )
 }
 
 @Composable

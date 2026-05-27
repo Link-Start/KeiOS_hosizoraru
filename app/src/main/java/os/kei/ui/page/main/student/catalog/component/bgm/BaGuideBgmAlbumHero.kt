@@ -10,19 +10,21 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -64,47 +66,56 @@ internal fun BaGuideBgmAlbumHero(
             label = "ba_catalog_bgm_volume_control",
         )
     val volumeMotionDuration = resolvedMotionDuration(BaGuideBgmVolumeControlMotionMs, animationsEnabled)
-    val volumeHeight by volumeTransition.animateDp(
-        transitionSpec = {
-            tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
-        },
-        label = "ba_catalog_bgm_volume_height",
-    ) { visible ->
-        if (visible) BaGuideBgmVolumeControlHeight else 0.dp
-    }
-    val volumeAlpha by volumeTransition.animateFloat(
-        transitionSpec = {
-            tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
-        },
-        label = "ba_catalog_bgm_volume_alpha",
-    ) { visible ->
-        if (visible) 1f else 0f
-    }
-    val volumeOffsetY by volumeTransition.animateDp(
-        transitionSpec = {
-            tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
-        },
-        label = "ba_catalog_bgm_volume_offset",
-    ) { visible ->
-        if (visible) 0.dp else (-6).dp
-    }
-    val volumeScale by volumeTransition.animateFloat(
-        transitionSpec = {
-            tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
-        },
-        label = "ba_catalog_bgm_volume_scale",
-    ) { visible ->
-        if (visible) 1f else 0.98f
-    }
-    val volumeSpacing by volumeTransition.animateDp(
-        transitionSpec = {
-            tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
-        },
-        label = "ba_catalog_bgm_volume_spacing",
-    ) { visible ->
-        if (visible) 12.dp else 0.dp
-    }
-    val volumeOffsetPx = with(density) { volumeOffsetY.toPx() }
+    val volumeHeightState =
+        volumeTransition.animateDp(
+            transitionSpec = {
+                tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
+            },
+            label = "ba_catalog_bgm_volume_height",
+        ) { visible ->
+            if (visible) BaGuideBgmVolumeControlHeight else 0.dp
+        }
+    val volumeAlphaState =
+        volumeTransition.animateFloat(
+            transitionSpec = {
+                tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
+            },
+            label = "ba_catalog_bgm_volume_alpha",
+        ) { visible ->
+            if (visible) 1f else 0f
+        }
+    val volumeOffsetYState =
+        volumeTransition.animateDp(
+            transitionSpec = {
+                tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
+            },
+            label = "ba_catalog_bgm_volume_offset",
+        ) { visible ->
+            if (visible) 0.dp else (-6).dp
+        }
+    val volumeScaleState =
+        volumeTransition.animateFloat(
+            transitionSpec = {
+                tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
+            },
+            label = "ba_catalog_bgm_volume_scale",
+        ) { visible ->
+            if (visible) 1f else 0.98f
+        }
+    val volumeSpacingState =
+        volumeTransition.animateDp(
+            transitionSpec = {
+                tween(durationMillis = volumeMotionDuration, easing = FastOutSlowInEasing)
+            },
+            label = "ba_catalog_bgm_volume_spacing",
+        ) { visible ->
+            if (visible) 12.dp else 0.dp
+        }
+    val volumeHeightProvider = remember(volumeHeightState) { { volumeHeightState.value } }
+    val volumeAlphaProvider = remember(volumeAlphaState) { { volumeAlphaState.value } }
+    val volumeOffsetYProvider = remember(volumeOffsetYState) { { volumeOffsetYState.value } }
+    val volumeScaleProvider = remember(volumeScaleState) { { volumeScaleState.value } }
+    val volumeSpacingProvider = remember(volumeSpacingState) { { volumeSpacingState.value } }
     Column(
         modifier =
             Modifier
@@ -162,7 +173,7 @@ internal fun BaGuideBgmAlbumHero(
                 Modifier
                     .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(volumeSpacing),
+            verticalArrangement = Arrangement.Top,
         ) {
             BaGuideBgmAlbumPrimaryActions(
                 accent = accent,
@@ -174,11 +185,12 @@ internal fun BaGuideBgmAlbumHero(
                 onPlayPauseClick = onPlayPauseClick,
                 onVolumeClick = { onVolumeControlVisibleChange(!volumeControlVisible) },
             )
+            Spacer(modifier = Modifier.baGuideBgmAlbumAnimatedHeight(volumeSpacingProvider))
             Box(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(volumeHeight)
+                        .baGuideBgmAlbumAnimatedHeight(volumeHeightProvider)
                         .clipToBounds(),
             ) {
                 BaGuideBgmAlbumVolumeControl(
@@ -206,10 +218,11 @@ internal fun BaGuideBgmAlbumHero(
                         Modifier
                             .fillMaxWidth()
                             .graphicsLayer {
-                                alpha = volumeAlpha
-                                translationY = volumeOffsetPx
-                                scaleX = volumeScale
-                                scaleY = volumeScale
+                                alpha = volumeAlphaProvider()
+                                translationY = with(density) { volumeOffsetYProvider().toPx() }
+                                val scale = volumeScaleProvider()
+                                scaleX = scale
+                                scaleY = scale
                             },
                 )
             }
@@ -218,3 +231,18 @@ internal fun BaGuideBgmAlbumHero(
 }
 
 private const val BaGuideBgmVolumeControlMotionMs = 220
+
+private fun Modifier.baGuideBgmAlbumAnimatedHeight(height: () -> Dp): Modifier =
+    layout { measurable, constraints ->
+        val heightPx = height().roundToPx().coerceAtLeast(0)
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minHeight = heightPx,
+                    maxHeight = heightPx,
+                ),
+            )
+        layout(placeable.width, heightPx) {
+            placeable.place(0, 0)
+        }
+    }

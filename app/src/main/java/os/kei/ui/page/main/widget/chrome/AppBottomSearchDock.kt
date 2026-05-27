@@ -117,34 +117,38 @@ fun AppBottomSearchDock(
             targetState = expanded,
             label = "app_bottom_search_dock_content",
         )
-    val fieldAlpha by contentTransition.animateFloat(
-        transitionSpec = {
-            tween(
-                durationMillis =
-                    resolvedMotionDuration(
-                        AppBottomSearchDockContentFadeMs,
-                        animationsEnabled,
-                    ),
-            )
-        },
-        label = "app_bottom_search_field_alpha",
-    ) { visible ->
-        if (visible) 1f else 0f
-    }
-    val iconAlpha by contentTransition.animateFloat(
-        transitionSpec = {
-            tween(
-                durationMillis =
-                    resolvedMotionDuration(
-                        AppBottomSearchDockContentFadeMs,
-                        animationsEnabled,
-                    ),
-            )
-        },
-        label = "app_bottom_search_icon_alpha",
-    ) { visible ->
-        if (visible) 0f else 1f
-    }
+    val fieldAlphaState =
+        contentTransition.animateFloat(
+            transitionSpec = {
+                tween(
+                    durationMillis =
+                        resolvedMotionDuration(
+                            AppBottomSearchDockContentFadeMs,
+                            animationsEnabled,
+                        ),
+                )
+            },
+            label = "app_bottom_search_field_alpha",
+        ) { visible ->
+            if (visible) 1f else 0f
+        }
+    val iconAlphaState =
+        contentTransition.animateFloat(
+            transitionSpec = {
+                tween(
+                    durationMillis =
+                        resolvedMotionDuration(
+                            AppBottomSearchDockContentFadeMs,
+                            animationsEnabled,
+                        ),
+                )
+            },
+            label = "app_bottom_search_icon_alpha",
+        ) { visible ->
+            if (visible) 0f else 1f
+        }
+    val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
+    val iconAlphaProvider = remember(iconAlphaState) { { iconAlphaState.value } }
 
     LaunchedEffect(expanded) {
         if (!expanded) {
@@ -182,49 +186,46 @@ fun AppBottomSearchDock(
                         },
                     ),
         ) {
-            if (fieldAlpha > AppBottomSearchDockVisibleAlpha) {
-                AppBottomSearchField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    focusRequester = focusRequester,
-                    autoFocus = expanded && searchAutoFocusEnabled,
-                    onFocusActiveChange = { active ->
-                        if (active) onExpandedChange(true)
-                    },
-                    searchIcon = searchIcon,
-                    placeholder = placeholder,
-                    accent = accent,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer { alpha = fieldAlpha },
-                )
-            }
-            if (iconAlpha > AppBottomSearchDockVisibleAlpha) {
-                Icon(
-                    imageVector = searchIcon,
-                    contentDescription = contentDescription,
-                    tint = accent,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(17.dp)
-                            .size(iconSize)
-                            .graphicsLayer {
-                                alpha = iconAlpha
-                                val scale = 0.90f + 0.10f * iconAlpha
-                                scaleX = scale
-                                scaleY = scale
-                            },
-                )
-            }
+            AppBottomSearchField(
+                query = query,
+                onQueryChange = onQueryChange,
+                focusRequester = focusRequester,
+                enabled = expanded,
+                autoFocus = expanded && searchAutoFocusEnabled,
+                onFocusActiveChange = { active ->
+                    if (active) onExpandedChange(true)
+                },
+                searchIcon = searchIcon,
+                placeholder = placeholder,
+                accent = accent,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = fieldAlphaProvider() },
+            )
+            Icon(
+                imageVector = searchIcon,
+                contentDescription = if (expanded) null else contentDescription,
+                tint = accent,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(17.dp)
+                        .size(iconSize)
+                        .graphicsLayer {
+                            val iconAlpha = iconAlphaProvider()
+                            alpha = iconAlpha
+                            val scale = 0.90f + 0.10f * iconAlpha
+                            scaleX = scale
+                            scaleY = scale
+                        },
+            )
         }
     }
 }
 
 private const val AppBottomSearchDockWidthMotionMs = 220
 private const val AppBottomSearchDockContentFadeMs = 120
-private const val AppBottomSearchDockVisibleAlpha = 0.01f
 
 @Composable
 private fun appBottomSearchDockWidthProvider(
@@ -267,6 +268,7 @@ private fun AppBottomSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
+    enabled: Boolean,
     autoFocus: Boolean,
     onFocusActiveChange: (Boolean) -> Unit,
     searchIcon: ImageVector,
@@ -306,6 +308,7 @@ private fun AppBottomSearchField(
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,
+                    enabled = enabled,
                 ) {
                     onFocusActiveChange(true)
                     focusRequester.requestFocus()
@@ -323,6 +326,7 @@ private fun AppBottomSearchField(
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
+            enabled = enabled,
             singleLine = true,
             textStyle = textStyle,
             cursorBrush = SolidColor(accent),

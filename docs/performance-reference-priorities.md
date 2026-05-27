@@ -23,6 +23,7 @@
 | --- | --- | --- |
 | Backdrop / blur cache | MIUIX `5e75455`, `132586a` | Cache blur/render-effect results by stable inputs, reuse shader uniform buffers, release graphics layers on detach, and skip RuntimeShader effects through one central capability gate. | Landed: `appGlassRuntimeEffectsEnabled()` and `activeGlassBackdrop()` gate shared glass controls, action bars, bottom bars, sliders, status pills, and support blocks. Backdrop library internals keep blur cache ownership. |
 | Dynamic backgrounds | InstallerX-Revived `5dfb116` | Keep Home/HDR/background visuals, move frame ticks to `Modifier.Node` with `invalidateDraw()`, update shader uniforms only when inputs change. | Landed: `BgEffectModifier` starts frame ticks only while dynamic background, effect background, and visible alpha are active; shader uniforms already update through cached `BgEffectPainter` setters. |
+| Install/share action state machine | InstallerX-Revived `5291941`, `e56e817` architecture idea | Keep GitHub download/install/share UI contracts stable, but make user actions route through small coordinators with explicit pending, active, result, and notification-facing state. | Landed first pass: selected-asset delivery now resolves direct delivery, managed-install launch, and active managed-install commit through a pure state machine with unit coverage. |
 
 ## P2
 
@@ -32,7 +33,6 @@
 | Top bar layout state | MIUIX `81a1401` | Save expensive measured title heights with saveable state and initialize animation values from current visibility state. | Landed: title width estimation is saveable by title, and title card layout is derived through a pure `deriveAppTopBarTitleLayout` function. Remaining: measured-height state for future large-title variants. |
 | Popup / reveal animation | MIUIX `054e2a1` | Share one popup reveal helper across dropdown/action menus to reduce per-component clipping animation variants. | Landed: `SnapshotWindowListPopup` uses `snapshotPopupReveal` for shared scale, translation, alpha, and clipping. Existing dropdown/action menus inherit it. |
 | Settings row specialization | InstallerX-Revived `6dc4099`, `2d71338` | Continue splitting universal settings rows into narrow navigation/switch/value/action rows and decouple disabled visuals from clickability. | Landed: `SettingsNavigationItem`, `SettingsValueItem`, `SettingsPickerItem`, `SettingsButtonActionItem`, and `SettingsToggleItem(enabled)` wrap the shared row core; disabled visuals and clickability are separated. Direct `SettingsActionItem` use is now kept inside the shared settings support layer. |
-| Install/share action state machine | InstallerX-Revived `5291941`, `e56e817` architecture idea | Keep GitHub download/install/share UI contracts stable, but make user actions route through small coordinators with explicit pending, active, result, and notification-facing state. | Planned: useful for the next GitHub managed-install cleanup round after current MainScreen P0 closeout. |
 
 ## Verification Log
 
@@ -52,6 +52,16 @@
   - `git diff --check`
   - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
   - `rg "Navigator|navigator|navigate\\(|push\\(|pop\\(" app/src/main/java/os/kei/ui/page/main -g '*ViewModel.kt'`
+- 2026-05-28 InstallerX clean-room P1 install/share pass:
+  - Added `resolveSelectedAssetDeliveryPlan` for direct delivery, managed-install launch, and active managed-install commit.
+  - Routed `GitHubShareImportInstallFlowCoordinator` through the pure plan before invoking delivery side effects.
+  - Added unit coverage for disabled managed install, managed launch, commit-ready progress, and stale progress handling.
+  - `ktlint -F` scoped to the touched GitHub share/import state-machine files.
+  - `./gradlew :app:testDebugUnitTest --tests 'os.kei.ui.page.main.github.share.GitHubShareImportStateMachineTest'`
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
 
 ## Guardrails
 

@@ -8,6 +8,7 @@
 - Release build result: `./gradlew :app:assembleRelease` passed
 - Unit test result: `./gradlew :app:testDebugUnitTest` passed
 - Feature unit test result: `./gradlew :feature-github:testDebugUnitTest` passed
+- Benchmark build result: `./gradlew :app:assembleBenchmark` passed
 - Release mapping outputs present: `configuration.txt`, `mapping.txt`, `seeds.txt`, `usage.txt`, `resources.txt`
 - Missing-rule output: no release missing-rule file was produced
 
@@ -36,9 +37,13 @@ The app uses the Compose compiler plugin and has no app-level `androidx.compose.
 - `android.util.Log` side-effect stripping for `v/d/i` is release-only and keeps warning/error paths intact.
 - Ktor JDK management `dontwarn` entries are harmless and scoped to Android-incompatible debug probe references.
 
-## Validation Required After Rule Edits
+## Validation Completed After Rule Edits
 
 - `./gradlew :app:assembleRelease`
 - `./gradlew :app:testDebugUnitTest`
-- Release install smoke test for main navigation restore, GitHub Shizuku managed install, share import install result receiver, Focus/Super Island notification payloads, and OS/GitHub settings persistence.
+- `./gradlew :feature-github:testDebugUnitTest`
+- `./gradlew :app:assembleBenchmark`
+- Pixel_10_Pro AVD smoke test: installed `app/build/outputs/apk/benchmark/app-benchmark.apk`, launched package `os.kei.benchmark`, confirmed `os.kei.benchmark/os.kei.LauncherAndroidDesigns` in the foreground, and confirmed the Home screen UI dump exposes Home, OS, MCP, GitHub, and BA tabs.
+- Benchmark process logcat showed no startup `FATAL EXCEPTION`, `ClassNotFoundException`, `NoSuchMethodError`, `NoSuchFieldError`, or `VerifyError` entries after the R8 rule changes.
+- Startup logcat still shows first-frame Davey/Skipped-frame entries while existing MMKV-backed page stores load; this is runtime page-loading pressure and remains part of the broader Compose/page-load performance track.
 - Compare `app/build/outputs/mapping/release/seeds.txt` before and after edits, focusing on `os.kei.feature.github.install`, `os.kei.ui.navigation.KeiosRoute`, and enum seeds.

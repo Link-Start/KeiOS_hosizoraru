@@ -156,22 +156,41 @@ fun AboutPage(
     val searchActive = searchQuery.trim().isNotEmpty()
     val matchingSearchTargets = searchState.matchingTargets
     val matchingSearchCards = searchState.matchingCards
-    val activeCategoryIndex =
-        if (pagerState.isScrollInProgress) {
-            pagerState.targetPage
-        } else {
-            pagerState.settledPage
-        }.coerceIn(0, categories.lastIndex)
-    val activeCategory = categories[activeCategoryIndex]
-    val activePageListState =
-        when (activeCategory) {
-            AboutCategory.Overview -> overviewListState
-            AboutCategory.System -> systemListState
-            AboutCategory.Tech -> techListState
-            AboutCategory.Lab -> labListState
+    val activePageListStateProvider =
+        remember(
+            categories,
+            pagerState,
+            overviewListState,
+            systemListState,
+            techListState,
+            labListState,
+        ) {
+            {
+                val activeCategoryIndex =
+                    if (pagerState.isScrollInProgress) {
+                        pagerState.targetPage
+                    } else {
+                        pagerState.settledPage
+                    }.coerceIn(0, categories.lastIndex)
+                when (categories[activeCategoryIndex]) {
+                    AboutCategory.Overview -> overviewListState
+                    AboutCategory.System -> systemListState
+                    AboutCategory.Tech -> techListState
+                    AboutCategory.Lab -> labListState
+                }
+            }
         }
-    val activeChromeListState = if (searchActive) searchListState else activePageListState
-    val currentActiveChromeListState = rememberUpdatedState(activeChromeListState)
+    val activeChromeListStateProvider =
+        remember(searchActive, searchListState, activePageListStateProvider) {
+            {
+                if (searchActive) {
+                    searchListState
+                } else {
+                    activePageListStateProvider()
+                }
+            }
+        }
+    val currentActiveChromeListStateProvider = rememberUpdatedState(activeChromeListStateProvider)
     val currentShowBottomBar = rememberUpdatedState(showBottomBar)
     val bottomBarNestedScrollConnection =
         remember(bottomBarVisibilityController) {
@@ -181,7 +200,7 @@ fun AboutPage(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    val currentListState = currentActiveChromeListState.value
+                    val currentListState = currentActiveChromeListStateProvider.value()
                     bottomBarVisibilityController.updateWithinScrollBounds(
                         deltaY = consumed.y,
                         visible = currentShowBottomBar.value,
@@ -194,8 +213,9 @@ fun AboutPage(
             }
         }
 
-    LaunchedEffect(activeChromeListState, bottomBarVisibilityController) {
+    LaunchedEffect(activeChromeListStateProvider, bottomBarVisibilityController) {
         snapshotFlow {
+            val activeChromeListState = activeChromeListStateProvider()
             activeChromeListState.canScrollBackward to activeChromeListState.canScrollForward
         }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->

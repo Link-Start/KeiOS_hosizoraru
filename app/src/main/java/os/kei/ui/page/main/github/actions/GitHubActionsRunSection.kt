@@ -1,7 +1,17 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.actions
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -21,7 +31,7 @@ internal fun GitHubActionsRunsSection(
     onSelectRun: (Long) -> Unit,
     onRefreshRun: (Long) -> Unit,
     onOpenRun: () -> Unit,
-    onLoadMoreRuns: () -> Unit
+    onLoadMoreRuns: () -> Unit,
 ) {
     GitHubActionsCollapsibleSection(
         title = stringResource(R.string.github_actions_section_runs),
@@ -29,55 +39,103 @@ internal fun GitHubActionsRunsSection(
         countLabel = stringResource(R.string.github_actions_value_count, state.actionsRuns.size),
         expanded = state.actionsRunsExpanded,
         isDark = isDark,
-        onExpandedChange = onExpandedChange
+        onExpandedChange = onExpandedChange,
     ) {
         when {
             state.actionsRunsLoading && state.actionsRuns.isEmpty() -> {
                 GitHubActionsLoadingCard(
-                    text = stringResource(R.string.github_actions_loading_runs)
+                    text = stringResource(R.string.github_actions_loading_runs),
                 )
             }
+
             state.actionsRuns.isEmpty() -> {
-                val emptyText = if (state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink) {
-                    stringResource(R.string.github_actions_empty_runs_nightly)
-                } else {
-                    stringResource(R.string.github_actions_empty_runs)
-                }
+                val emptyText =
+                    if (state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink) {
+                        stringResource(R.string.github_actions_empty_runs_nightly)
+                    } else {
+                        stringResource(R.string.github_actions_empty_runs)
+                    }
                 GitHubActionsNoticeCard(
                     text = emptyText,
                     accent = MiuixTheme.colorScheme.onBackgroundVariant,
-                    isDark = isDark
+                    isDark = isDark,
                 )
             }
+
             else -> {
-                state.actionsRuns.forEach { match ->
-                    val runId = match.runArtifacts.run.id
-                    GitHubActionsRunCard(
-                        match = match,
-                        trackingPlan = state.actionsRunTrackingPlans[runId],
-                        selected = runId == selectedRunId,
-                        recommended = runId == recommendedRunId,
-                        refreshing = state.actionsStatusRefreshingRunIds[runId] == true,
-                        isDark = isDark,
-                        onClick = { onSelectRun(runId) },
-                        onRefresh = { onRefreshRun(runId) },
-                        onOpenRun = if (runId == selectedRunId) onOpenRun else null
-                    )
-                }
                 val showLoadMoreButton =
                     (state.actionsRunsLoading && state.actionsRuns.isNotEmpty()) ||
                         (
                             state.actionsRuns.size >= state.actionsRunLimit &&
                                 state.actionsRunLimit < ACTIONS_MAX_RUN_LIMIT
-                            )
-                if (showLoadMoreButton) {
-                    GitHubActionsLoadMoreRunsButton(
-                        backdrop = backdrop,
-                        visibleRunLimit = state.actionsRunLimit,
-                        loading = state.actionsRunsLoading,
-                        onClick = onLoadMoreRuns
-                    )
-                }
+                        )
+                GitHubActionsRunsLazyList(
+                    state = state,
+                    selectedRunId = selectedRunId,
+                    recommendedRunId = recommendedRunId,
+                    showLoadMoreButton = showLoadMoreButton,
+                    isDark = isDark,
+                    backdrop = backdrop,
+                    onSelectRun = onSelectRun,
+                    onRefreshRun = onRefreshRun,
+                    onOpenRun = onOpenRun,
+                    onLoadMoreRuns = onLoadMoreRuns,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubActionsRunsLazyList(
+    state: GitHubPageState,
+    selectedRunId: Long?,
+    recommendedRunId: Long?,
+    showLoadMoreButton: Boolean,
+    isDark: Boolean,
+    backdrop: LayerBackdrop,
+    onSelectRun: (Long) -> Unit,
+    onRefreshRun: (Long) -> Unit,
+    onOpenRun: () -> Unit,
+    onLoadMoreRuns: () -> Unit,
+) {
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 520.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 2.dp),
+    ) {
+        items(
+            items = state.actionsRuns,
+            key = { match -> match.runArtifacts.run.id },
+            contentType = { "github_actions_run" },
+        ) { match ->
+            val runId = match.runArtifacts.run.id
+            GitHubActionsRunCard(
+                match = match,
+                trackingPlan = state.actionsRunTrackingPlans[runId],
+                selected = runId == selectedRunId,
+                recommended = runId == recommendedRunId,
+                refreshing = state.actionsStatusRefreshingRunIds[runId] == true,
+                isDark = isDark,
+                onClick = { onSelectRun(runId) },
+                onRefresh = { onRefreshRun(runId) },
+                onOpenRun = if (runId == selectedRunId) onOpenRun else null,
+            )
+        }
+        if (showLoadMoreButton) {
+            item(
+                key = "github_actions_load_more_runs",
+                contentType = "github_actions_load_more_runs",
+            ) {
+                GitHubActionsLoadMoreRunsButton(
+                    backdrop = backdrop,
+                    visibleRunLimit = state.actionsRunLimit,
+                    loading = state.actionsRunsLoading,
+                    onClick = onLoadMoreRuns,
+                )
             }
         }
     }

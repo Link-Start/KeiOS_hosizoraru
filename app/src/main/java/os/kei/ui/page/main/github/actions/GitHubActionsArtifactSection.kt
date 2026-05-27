@@ -4,8 +4,12 @@ package os.kei.ui.page.main.github.actions
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -117,48 +121,96 @@ internal fun GitHubActionsArtifactsSection(
                         isDark = isDark,
                     )
                 }
-                visibleArtifactMatches.forEach { visibleMatch ->
-                    val artifactMatch = visibleMatch.match
-                    GitHubActionsArtifactCard(
-                        runMatch = selectedRun,
-                        artifactMatch = artifactMatch,
-                        recommended = visibleMatch.recommended,
-                        canShareArtifact = canResolveArtifacts,
-                        managedInstallEnabled = artifactMatch.supportsManagedApkInstall(lookupConfig),
-                        relativeTimeNowMillis = relativeTimeNowMillis,
-                        downloading = downloadingArtifactId == artifactMatch.artifact.id,
-                        sharing = sharingArtifactId == artifactMatch.artifact.id,
-                        context = context,
-                        isDark = isDark,
-                        backdrop = backdrop,
-                        onInstall = {
-                            onInstallArtifact(
-                                selectedRun.runArtifacts.run.id,
-                                artifactMatch.artifact.id,
-                            )
-                        },
-                        onDownload = {
-                            onDownloadArtifact(
-                                selectedRun.runArtifacts.run.id,
-                                artifactMatch.artifact.id,
-                            )
-                        },
-                        onShare = {
-                            onShareArtifact(
-                                selectedRun.runArtifacts.run.id,
-                                artifactMatch.artifact.id,
-                            )
-                        },
-                        onOpenDetail = {
-                            onOpenArtifactDetail(
-                                selectedRun,
-                                artifactMatch,
-                                visibleMatch.recommended,
-                            )
-                        },
-                    )
-                }
+                GitHubActionsArtifactsLazyList(
+                    lookupConfig = lookupConfig,
+                    selectedRun = selectedRun,
+                    visibleArtifactMatches = visibleArtifactMatches,
+                    canResolveArtifacts = canResolveArtifacts,
+                    downloadingArtifactId = downloadingArtifactId,
+                    sharingArtifactId = sharingArtifactId,
+                    relativeTimeNowMillis = relativeTimeNowMillis,
+                    context = context,
+                    isDark = isDark,
+                    backdrop = backdrop,
+                    onInstallArtifact = onInstallArtifact,
+                    onDownloadArtifact = onDownloadArtifact,
+                    onShareArtifact = onShareArtifact,
+                    onOpenArtifactDetail = onOpenArtifactDetail,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun GitHubActionsArtifactsLazyList(
+    lookupConfig: GitHubLookupConfig,
+    selectedRun: GitHubActionsRunMatch,
+    visibleArtifactMatches: List<GitHubActionsVisibleArtifactMatch>,
+    canResolveArtifacts: Boolean,
+    downloadingArtifactId: Long?,
+    sharingArtifactId: Long?,
+    relativeTimeNowMillis: Long,
+    context: Context,
+    isDark: Boolean,
+    backdrop: LayerBackdrop,
+    onInstallArtifact: (Long, Long) -> Unit,
+    onDownloadArtifact: (Long, Long) -> Unit,
+    onShareArtifact: (Long, Long) -> Unit,
+    onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit,
+) {
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 560.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 2.dp),
+    ) {
+        items(
+            items = visibleArtifactMatches,
+            key = { visibleMatch -> visibleMatch.match.artifact.id },
+            contentType = { "github_actions_artifact" },
+        ) { visibleMatch ->
+            val artifactMatch = visibleMatch.match
+            GitHubActionsArtifactCard(
+                runMatch = selectedRun,
+                artifactMatch = artifactMatch,
+                recommended = visibleMatch.recommended,
+                canShareArtifact = canResolveArtifacts,
+                managedInstallEnabled = artifactMatch.supportsManagedApkInstall(lookupConfig),
+                relativeTimeNowMillis = relativeTimeNowMillis,
+                downloading = downloadingArtifactId == artifactMatch.artifact.id,
+                sharing = sharingArtifactId == artifactMatch.artifact.id,
+                context = context,
+                isDark = isDark,
+                backdrop = backdrop,
+                onInstall = {
+                    onInstallArtifact(
+                        selectedRun.runArtifacts.run.id,
+                        artifactMatch.artifact.id,
+                    )
+                },
+                onDownload = {
+                    onDownloadArtifact(
+                        selectedRun.runArtifacts.run.id,
+                        artifactMatch.artifact.id,
+                    )
+                },
+                onShare = {
+                    onShareArtifact(
+                        selectedRun.runArtifacts.run.id,
+                        artifactMatch.artifact.id,
+                    )
+                },
+                onOpenDetail = {
+                    onOpenArtifactDetail(
+                        selectedRun,
+                        artifactMatch,
+                        visibleMatch.recommended,
+                    )
+                },
+            )
         }
     }
 }

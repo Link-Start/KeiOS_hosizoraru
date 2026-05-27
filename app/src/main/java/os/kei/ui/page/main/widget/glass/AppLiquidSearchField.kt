@@ -83,7 +83,7 @@ fun AppLiquidInputField(
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val isDark = isSystemInDarkTheme()
-    val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     var focused by remember { mutableStateOf(false) }
     val usesSearchMaterial = variant == GlassVariant.SearchField
     val focusProgressState =
@@ -395,7 +395,7 @@ fun AppLiquidSearchSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
-    val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val density = LocalDensity.current
     val focusProgressState =
         appMotionFloatState(

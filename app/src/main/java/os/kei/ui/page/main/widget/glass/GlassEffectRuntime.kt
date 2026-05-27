@@ -6,6 +6,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.lerp
+import com.kyant.backdrop.Backdrop
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 
 @Immutable
 data class GlassEffectRuntime(
@@ -44,6 +46,16 @@ val LocalGlassEffectRuntime = compositionLocalOf { GlassEffectRuntime() }
 @Composable
 @ReadOnlyComposable
 internal fun glassEffectRuntime(): GlassEffectRuntime = LocalGlassEffectRuntime.current
+
+@Composable
+@ReadOnlyComposable
+internal fun appGlassRuntimeEffectsEnabled(): Boolean =
+    LocalLiquidControlsEnabled.current && isRuntimeShaderSupported()
+
+@Composable
+@ReadOnlyComposable
+internal fun activeGlassBackdrop(backdrop: Backdrop?): Backdrop? =
+    backdrop.takeIf { appGlassRuntimeEffectsEnabled() }
 
 @Composable
 @ReadOnlyComposable

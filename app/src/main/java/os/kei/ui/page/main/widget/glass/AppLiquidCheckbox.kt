@@ -52,8 +52,7 @@ fun AppLiquidCheckbox(
     contentDescription: String? = null,
 ) {
     val isDark = isSystemInDarkTheme()
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
-    val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val accent = if (isDark) Color(0xFF7AB8FF) else Color(0xFF3B82F6)
     val uncheckedSurface =
         if (isDark) {

@@ -90,7 +90,7 @@ fun BgEffectBackground(
                             surface = surface,
                             effectBackground = effectBackground,
                             isFullSize = isFullSize,
-                            playing = dynamicBackground,
+                            playing = dynamicBackground && effectBackground,
                             alpha = alpha,
                         ),
             )

@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -195,11 +196,12 @@ fun LiquidActionBar(
     val clampedSelectedIndex = selectedIndex.coerceIn(0, items.lastIndex)
 
     val isInLightTheme = !isSystemInDarkTheme()
+    val effectiveBlurEnabled = isBlurEnabled && appGlassRuntimeEffectsEnabled()
     val accentColor = MiuixTheme.colorScheme.primary
     val palette =
         rememberLiquidActionBarPalette(
             layeredStyleEnabled = layeredStyleEnabled,
-            isBlurEnabled = isBlurEnabled,
+            isBlurEnabled = effectiveBlurEnabled,
             isInLightTheme = isInLightTheme,
             primary = accentColor,
             onSurface = MiuixTheme.colorScheme.onSurface,
@@ -388,7 +390,7 @@ fun LiquidActionBar(
     val interactionLensScale = 1f
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val effectLensDp = UiPerformanceBudget.backdropLens
-    val interactiveHighlightEnabled = isBlurEnabled && (layeredStyleEnabled || isInLightTheme)
+    val interactiveHighlightEnabled = effectiveBlurEnabled && (layeredStyleEnabled || isInLightTheme)
     val interactiveHighlight =
         if (interactiveHighlightEnabled) {
             remember(
@@ -479,7 +481,7 @@ fun LiquidActionBar(
                     backdrop = backdrop,
                     shape = { ContinuousCapsule },
                     effects = {
-                        if (isBlurEnabled) {
+                        if (effectiveBlurEnabled) {
                             vibrancy()
                             blur(effectBlurDp.toPx())
                             lens(effectLensDp.toPx(), effectLensDp.toPx())
@@ -488,7 +490,7 @@ fun LiquidActionBar(
                     highlight = {
                         liquidActionBarBaseHighlight(
                             layeredStyleEnabled = layeredStyleEnabled,
-                            isBlurEnabled = isBlurEnabled,
+                            isBlurEnabled = effectiveBlurEnabled,
                             isInLightTheme = isInLightTheme,
                         )
                     },
@@ -519,13 +521,13 @@ fun LiquidActionBar(
                         Modifier
                     },
                 ).then(
-                    if (isBlurEnabled && interactiveHighlight != null) {
+                    if (effectiveBlurEnabled && interactiveHighlight != null) {
                         interactiveHighlight.modifier
                     } else {
                         Modifier
                     },
                 ).then(
-                    if (!layeredStyleEnabled && isBlurEnabled && interactiveHighlight != null) {
+                    if (!layeredStyleEnabled && effectiveBlurEnabled && interactiveHighlight != null) {
                         interactiveHighlight.gestureModifier
                     } else {
                         Modifier
@@ -557,7 +559,7 @@ fun LiquidActionBar(
 
         LiquidActionBarLayeredVisualOverlay(
             layeredStyleEnabled = layeredStyleEnabled,
-            isBlurEnabled = isBlurEnabled,
+            isBlurEnabled = effectiveBlurEnabled,
             items = items,
             backdrop = backdrop,
             tabsBackdrop = tabsBackdrop,

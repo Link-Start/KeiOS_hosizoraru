@@ -70,7 +70,7 @@ fun AppSwitch(
         modifier
             .requiredSize(width = 64.dp, height = 48.dp)
 
-    if (!LocalLiquidControlsEnabled.current) {
+    if (!appGlassRuntimeEffectsEnabled()) {
         AppFallbackSwitchToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,

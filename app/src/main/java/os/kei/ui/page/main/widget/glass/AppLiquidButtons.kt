@@ -175,8 +175,7 @@ private fun AppLiquidIconButtonContainer(
     onPressedChange: ((Boolean) -> Unit)?,
     content: @Composable () -> Unit,
 ) {
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
-    val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val glass =
         glassStyle(
@@ -409,7 +408,7 @@ fun AppLiquidTextButton(
     consumeDragChangesForInteraction: Boolean = false,
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
-    val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val isDark = isSystemInDarkTheme()
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val longClick = onLongClick

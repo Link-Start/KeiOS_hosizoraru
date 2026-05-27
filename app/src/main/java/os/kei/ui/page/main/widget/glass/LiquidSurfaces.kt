@@ -109,6 +109,13 @@ fun LiquidSurface(
         } else {
             null
         }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
+    val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
+    val fallbackSurfaceColor =
+        when {
+            surfaceColor.isSpecified && surfaceColor.alpha > 0f -> surfaceColor
+            else -> MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.84f)
+        }
     val interactionModifier =
         if (isInteractive && enabled) {
             Modifier
@@ -118,45 +125,53 @@ fun LiquidSurface(
             Modifier
         }
     val surfaceModifier =
-        Modifier.drawBackdrop(
-            backdrop = backdrop,
-            shape = { shape },
-            effects = {
-                vibrancy()
-                blur(blurRadius.toPx())
-                lens(
-                    lensRadius.toPx(),
-                    lensRadius.toPx(),
-                    chromaticAberration = chromaticAberration,
-                    depthEffect = depthEffect,
-                )
-            },
-            highlight = {
-                Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
-            },
-            shadow = {
-                if (shadow) {
-                    Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
-                } else {
-                    Shadow(alpha = 0f)
-                }
-            },
-            innerShadow = {
-                val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
-                InnerShadow(radius = 6.dp * progress, alpha = progress)
-            },
-            layerBlock = interactiveLayerBlock,
-            exportedBackdrop = exportedBackdrop,
-            onDrawSurface = {
-                if (tint.isSpecified) {
-                    drawRect(tint, blendMode = BlendMode.Hue)
-                    drawRect(tint.copy(alpha = tint.alpha * 0.70f))
-                }
-                if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
-                    drawRect(surfaceColor)
-                }
-            },
-        )
+        if (activeBackdrop != null) {
+            Modifier.drawBackdrop(
+                backdrop = activeBackdrop,
+                shape = { shape },
+                effects = {
+                    vibrancy()
+                    blur(blurRadius.toPx())
+                    lens(
+                        lensRadius.toPx(),
+                        lensRadius.toPx(),
+                        chromaticAberration = chromaticAberration,
+                        depthEffect = depthEffect,
+                    )
+                },
+                highlight = {
+                    Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
+                },
+                shadow = {
+                    if (shadow) {
+                        Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
+                    } else {
+                        Shadow(alpha = 0f)
+                    }
+                },
+                innerShadow = {
+                    val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
+                    InnerShadow(radius = 6.dp * progress, alpha = progress)
+                },
+                layerBlock = interactiveLayerBlock,
+                exportedBackdrop = exportedBackdrop,
+                onDrawSurface = {
+                    if (tint.isSpecified) {
+                        drawRect(tint, blendMode = BlendMode.Hue)
+                        drawRect(tint.copy(alpha = tint.alpha * 0.70f))
+                    }
+                    if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
+                        drawRect(surfaceColor)
+                    }
+                },
+            )
+        } else {
+            Modifier.appLiquidOptimizedSurface(
+                shape = shape,
+                optimizedCornerRadius = optimizedCornerRadius,
+                color = fallbackSurfaceColor,
+            )
+        }
 
     if (clipContent) {
         Box(
@@ -272,6 +287,7 @@ fun AppLiquidFloatingSurface(
         } else {
             pressSafePadding
         }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
 
     Box(
@@ -292,9 +308,9 @@ fun AppLiquidFloatingSurface(
                 Modifier
                     .fillMaxSize()
                     .then(
-                        if (backdrop != null) {
+                        if (activeBackdrop != null) {
                             Modifier.drawBackdrop(
-                                backdrop = backdrop,
+                                backdrop = activeBackdrop,
                                 shape = { shape },
                                 effects = {
                                     vibrancy()

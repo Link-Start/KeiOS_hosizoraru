@@ -203,7 +203,7 @@ internal fun AppStandaloneBackdropHost(
         modifier = modifier.padding(resolvedPressSafePadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (LocalLiquidControlsEnabled.current) {
+        if (appGlassRuntimeEffectsEnabled()) {
             val backdrop = rememberLayerBackdrop()
             Box(
                 modifier =

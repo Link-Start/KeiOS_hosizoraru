@@ -162,7 +162,7 @@ fun LiquidGlassDropdownColumn(
             accentColor = accentColor,
             material = material,
         )
-    val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     LaunchedEffect(initialScrollItemIndex, scrollState.maxValue, density) {
         val itemIndex = initialScrollItemIndex?.coerceAtLeast(0) ?: return@LaunchedEffect
         if (scrollState.maxValue <= 0) return@LaunchedEffect

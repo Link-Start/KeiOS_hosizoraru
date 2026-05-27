@@ -225,7 +225,13 @@ private fun LiquidTrackSlider(
     snapToKeyPoints: Boolean = false,
     snapThreshold: Float? = null
 ) {
-    val trackBackdrop = rememberLayerBackdrop()
+    val activeBackdrop = activeGlassBackdrop(backdrop)
+    val trackBackdrop =
+        if (activeBackdrop != null) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
     val onValueChangeState = rememberUpdatedState(onValueChange)
     val onValueChangeFinishedState = rememberUpdatedState(onValueChangeFinished)
     val onInteractionChangedState = rememberUpdatedState(onInteractionChanged)
@@ -339,17 +345,28 @@ private fun LiquidTrackSlider(
                 dampedDragAnimation.updateValue(currentValue)
             }
         }
-        val thumbBackdrop = rememberCombinedBackdrop(
-            backdrop,
-            rememberBackdrop(trackBackdrop) { drawBackdrop ->
-                val progress = dampedDragAnimation.pressProgress
-                val scaleX = lerp(2f / 3f, 1f, progress)
-                val scaleY = lerp(SliderThumbRestingBackdropScaleY, 1f, progress)
-                scale(scaleX, scaleY) { drawBackdrop() }
+        val thumbBackdrop =
+            if (activeBackdrop != null && trackBackdrop != null) {
+                rememberCombinedBackdrop(
+                    activeBackdrop,
+                    rememberBackdrop(trackBackdrop) { drawBackdrop ->
+                        val progress = dampedDragAnimation.pressProgress
+                        val scaleX = lerp(2f / 3f, 1f, progress)
+                        val scaleY = lerp(SliderThumbRestingBackdropScaleY, 1f, progress)
+                        scale(scaleX, scaleY) { drawBackdrop() }
+                    }
+                )
+            } else {
+                null
             }
-        )
 
-        Box(Modifier.layerBackdrop(trackBackdrop)) {
+        Box(
+            if (trackBackdrop != null) {
+                Modifier.layerBackdrop(trackBackdrop)
+            } else {
+                Modifier
+            }
+        ) {
             Box(
                 Modifier
                     .appSquircleBackground(style.inactiveColor, 999.dp)
@@ -435,53 +452,62 @@ private fun LiquidTrackSlider(
                             ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) *
                             if (isLtr) 1f else -1f
                 }
-                .drawBackdrop(
-                    backdrop = thumbBackdrop,
-                    shape = { ContinuousCapsule },
-                    effects = {
-                        val progress = dampedDragAnimation.pressProgress
-                        vibrancy()
-                        blur(UiPerformanceBudget.backdropBlur.toPx() * (1f - progress))
-                        lens(
-                            10.dp.toPx() * progress,
-                            14.dp.toPx() * progress,
-                            chromaticAberration = true,
-                            depthEffect = true
+                .then(
+                    if (thumbBackdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = thumbBackdrop,
+                            shape = { ContinuousCapsule },
+                            effects = {
+                                val progress = dampedDragAnimation.pressProgress
+                                vibrancy()
+                                blur(UiPerformanceBudget.backdropBlur.toPx() * (1f - progress))
+                                lens(
+                                    10.dp.toPx() * progress,
+                                    14.dp.toPx() * progress,
+                                    chromaticAberration = true,
+                                    depthEffect = true
+                                )
+                            },
+                            highlight = {
+                                val progress = dampedDragAnimation.pressProgress
+                                Highlight.Ambient.copy(
+                                    width = Highlight.Ambient.width / 1.5f,
+                                    blurRadius = Highlight.Ambient.blurRadius / 1.5f,
+                                    alpha = progress
+                                )
+                            },
+                            shadow = {
+                                Shadow(
+                                    radius = 4.dp,
+                                    color = Color.Black.copy(alpha = 0.05f)
+                                )
+                            },
+                            innerShadow = {
+                                val progress = dampedDragAnimation.pressProgress
+                                InnerShadow(radius = 4.dp * progress, alpha = progress)
+                            },
+                            layerBlock = {
+                                scaleX = dampedDragAnimation.scaleX
+                                scaleY = dampedDragAnimation.scaleY
+                                val velocity = dampedDragAnimation.velocity / 10f
+                                scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                                scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
+                            },
+                            onDrawSurface = {
+                                val progress = dampedDragAnimation.pressProgress
+                                val surfaceAlpha = lerp(
+                                    SliderThumbRestingSurfaceAlpha,
+                                    SliderThumbPressedSurfaceAlpha,
+                                    progress
+                                )
+                                drawRect(Color.White.copy(alpha = surfaceAlpha))
+                            }
                         )
-                    },
-                    highlight = {
-                        val progress = dampedDragAnimation.pressProgress
-                        Highlight.Ambient.copy(
-                            width = Highlight.Ambient.width / 1.5f,
-                            blurRadius = Highlight.Ambient.blurRadius / 1.5f,
-                            alpha = progress
+                    } else {
+                        Modifier.appSquircleBackground(
+                            Color.White.copy(alpha = SliderThumbRestingSurfaceAlpha),
+                            999.dp
                         )
-                    },
-                    shadow = {
-                        Shadow(
-                            radius = 4.dp,
-                            color = Color.Black.copy(alpha = 0.05f)
-                        )
-                    },
-                    innerShadow = {
-                        val progress = dampedDragAnimation.pressProgress
-                        InnerShadow(radius = 4.dp * progress, alpha = progress)
-                    },
-                    layerBlock = {
-                        scaleX = dampedDragAnimation.scaleX
-                        scaleY = dampedDragAnimation.scaleY
-                        val velocity = dampedDragAnimation.velocity / 10f
-                        scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
-                        scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
-                    },
-                    onDrawSurface = {
-                        val progress = dampedDragAnimation.pressProgress
-                        val surfaceAlpha = lerp(
-                            SliderThumbRestingSurfaceAlpha,
-                            SliderThumbPressedSurfaceAlpha,
-                            progress
-                        )
-                        drawRect(Color.White.copy(alpha = surfaceAlpha))
                     }
                 )
                 .width(style.thumbWidth)

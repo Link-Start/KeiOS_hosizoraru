@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 
 private const val BG_EFFECT_TARGET_FPS = 30L
 private const val BG_EFFECT_TIME_WRAP_SECONDS = 62.831852f
+private const val BG_EFFECT_VISIBLE_ALPHA_THRESHOLD = 0.001f
 
 internal fun Modifier.bgEffectDraw(
     painter: BgEffectPainter,
@@ -83,9 +84,10 @@ private class BgEffectNode(
     private var animationJob: Job? = null
     private var animTime: Float = 0f
     private var startOffset: Float = 0f
+    private var alphaActive: Boolean = false
 
     override fun onAttach() {
-        if (playing) startAnimation()
+        syncAnimation()
     }
 
     override fun onDetach() {
@@ -102,25 +104,31 @@ private class BgEffectNode(
         playing: Boolean,
         alpha: () -> Float,
     ) {
+        val visualChanged =
+            this.painter !== painter ||
+                this.isDark != isDark ||
+                this.surface != surface ||
+                this.effectBackground != effectBackground ||
+                this.isFullSize != isFullSize ||
+                this.alpha !== alpha
+        val playbackChanged = this.playing != playing || this.effectBackground != effectBackground
         this.painter = painter
         this.isDark = isDark
         this.surface = surface
         this.effectBackground = effectBackground
         this.isFullSize = isFullSize
         this.alpha = alpha
-        if (this.playing != playing) {
+        if (playbackChanged) {
             this.playing = playing
-            if (playing) {
-                startAnimation()
-            } else {
-                animationJob?.cancel()
-                animationJob = null
-            }
+            syncAnimation()
         }
-        invalidateDraw()
+        if (visualChanged || playbackChanged) {
+            invalidateDraw()
+        }
     }
 
     private fun startAnimation() {
+        if (animationJob != null) return
         animationJob?.cancel()
         startOffset = animTime
         animationJob =
@@ -138,11 +146,29 @@ private class BgEffectNode(
             }
     }
 
+    private fun stopAnimation() {
+        animationJob?.cancel()
+        animationJob = null
+    }
+
+    private fun syncAnimation() {
+        if (playing && effectBackground && alphaActive) {
+            startAnimation()
+        } else {
+            stopAnimation()
+        }
+    }
+
     override fun ContentDrawScope.draw() {
         drawRect(surface)
         if (effectBackground) {
             val alphaValue = alpha()
-            if (alphaValue > 0f) {
+            val nextAlphaActive = alphaValue > BG_EFFECT_VISIBLE_ALPHA_THRESHOLD
+            if (alphaActive != nextAlphaActive) {
+                alphaActive = nextAlphaActive
+                syncAnimation()
+            }
+            if (nextAlphaActive) {
                 val drawHeight = if (isFullSize) size.height else size.height * 0.5f
                 painter.updateResolution(size.width, size.height)
                 painter.updateBoundIfNeeded(drawHeight, size.height, size.width)

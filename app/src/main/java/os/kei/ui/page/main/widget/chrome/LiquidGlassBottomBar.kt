@@ -70,6 +70,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -181,13 +182,14 @@ fun LiquidGlassBottomBar(
     val isInLightTheme = !isSystemInDarkTheme()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val animationScope = rememberCoroutineScope()
+    val effectiveLiquidEffectEnabled = isLiquidEffectEnabled && appGlassRuntimeEffectsEnabled()
 
     val safeTabsCount = tabsCount.coerceAtLeast(1)
     val horizontalPadding = AppChromeTokens.floatingBottomBarHorizontalPadding
 
     val palette =
         rememberLiquidBottomBarPalette(
-            isLiquidEffectEnabled = isLiquidEffectEnabled,
+            isLiquidEffectEnabled = effectiveLiquidEffectEnabled,
             isInLightTheme = isInLightTheme,
             primary = MiuixTheme.colorScheme.primary,
             onSurface = MiuixTheme.colorScheme.onSurface,
@@ -330,12 +332,12 @@ fun LiquidGlassBottomBar(
     }
 
     val pressProgressProvider =
-        remember(dampedDragAnimation, isLiquidEffectEnabled) {
-            { if (isLiquidEffectEnabled) dampedDragAnimation.pressProgress else 0f }
+        remember(dampedDragAnimation, effectiveLiquidEffectEnabled) {
+            { if (effectiveLiquidEffectEnabled) dampedDragAnimation.pressProgress else 0f }
         }
     val itemPressProgressState =
         appMotionFloatState(
-            targetValue = if (pressedTabIndex >= 0 && isLiquidEffectEnabled) 1f else 0f,
+            targetValue = if (pressedTabIndex >= 0 && effectiveLiquidEffectEnabled) 1f else 0f,
             durationMillis = 120,
             label = "liquid_bottom_bar_item_press",
         )
@@ -347,7 +349,7 @@ fun LiquidGlassBottomBar(
     val interactionLensScale = 1f
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val effectLensDp = UiPerformanceBudget.backdropLens
-    val useLightweightBackdrop = false
+    val useLightweightBackdrop = !effectiveLiquidEffectEnabled
 
     val selectionProgressValue =
         if (selectedPositionProvider != null || externalSelectionPosition != null) {
@@ -364,7 +366,7 @@ fun LiquidGlassBottomBar(
 
     val interactiveHighlight =
         if (
-            isLiquidEffectEnabled
+            effectiveLiquidEffectEnabled
         ) {
             remember(animationScope, tabWidthPx, isLtr, displaySelectionValueProvider, panelOffsetProvider) {
                 InteractiveHighlight(
@@ -394,7 +396,7 @@ fun LiquidGlassBottomBar(
 
     CompositionLocalProvider(
         LocalLiquidGlassBottomBarTabScale provides {
-            if (isLiquidEffectEnabled) lerp(1f, 1.2f, combinedPressProgressProvider()) else 1f
+            if (effectiveLiquidEffectEnabled) lerp(1f, 1.2f, combinedPressProgressProvider()) else 1f
         },
         LocalLiquidGlassBottomBarSelectionProgress provides selectionProgressProvider,
         LocalLiquidGlassBottomBarContentColor provides { palette.inactiveContentColor },
@@ -445,14 +447,14 @@ fun LiquidGlassBottomBar(
                                     backdrop = backdrop,
                                     shape = { ContinuousCapsule },
                                     effects = {
-                                        if (isLiquidEffectEnabled) {
+                                        if (effectiveLiquidEffectEnabled) {
                                             vibrancy()
                                             blur(effectBlurDp.toPx())
                                             lens(effectLensDp.toPx(), effectLensDp.toPx())
                                         }
                                     },
                                     highlight = {
-                                        Highlight.Default.copy(alpha = if (isLiquidEffectEnabled) 1f else 0f)
+                                        Highlight.Default.copy(alpha = if (effectiveLiquidEffectEnabled) 1f else 0f)
                                     },
                                     shadow = {
                                         Shadow.Default.copy(
@@ -499,7 +501,7 @@ fun LiquidGlassBottomBar(
                                     backdrop = backdrop,
                                     shape = { ContinuousCapsule },
                                     effects = {
-                                        if (isLiquidEffectEnabled) {
+                                        if (effectiveLiquidEffectEnabled) {
                                             val progress = combinedPressProgressProvider()
                                             vibrancy()
                                             blur(effectBlurDp.toPx())
@@ -510,7 +512,7 @@ fun LiquidGlassBottomBar(
                                         }
                                     },
                                     highlight = {
-                                        Highlight.Default.copy(alpha = if (isLiquidEffectEnabled) combinedPressProgressProvider() else 0f)
+                                        Highlight.Default.copy(alpha = if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f)
                                     },
                                     onDrawSurface = { drawRect(palette.baseFillColor) },
                                 )
@@ -564,7 +566,7 @@ fun LiquidGlassBottomBar(
                                     shape = { ContinuousCapsule },
                                     effects = {
                                         val progress =
-                                            if (isLiquidEffectEnabled) {
+                                            if (effectiveLiquidEffectEnabled) {
                                                 combinedPressProgressProvider()
                                             } else {
                                                 0f
@@ -578,20 +580,20 @@ fun LiquidGlassBottomBar(
                                         }
                                     },
                                     highlight = {
-                                        Highlight.Default.copy(alpha = if (isLiquidEffectEnabled) combinedPressProgressProvider() else 0f)
+                                        Highlight.Default.copy(alpha = if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f)
                                     },
                                     shadow = {
-                                        Shadow(alpha = if (isLiquidEffectEnabled) combinedPressProgressProvider() else 0f)
+                                        Shadow(alpha = if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f)
                                     },
                                     innerShadow = {
-                                        val progress = if (isLiquidEffectEnabled) combinedPressProgressProvider() else 0f
+                                        val progress = if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f
                                         InnerShadow(
                                             radius = 8f.dp * progress,
                                             alpha = progress,
                                         )
                                     },
                                     layerBlock = {
-                                        if (isLiquidEffectEnabled) {
+                                        if (effectiveLiquidEffectEnabled) {
                                             val clickScale = lerp(1f, 1.045f, itemPressProgressProvider())
                                             scaleX = dampedDragAnimation.scaleX * clickScale
                                             scaleY = dampedDragAnimation.scaleY * clickScale
@@ -610,7 +612,7 @@ fun LiquidGlassBottomBar(
                                     },
                                     onDrawSurface = {
                                         val progress =
-                                            if (isLiquidEffectEnabled) combinedPressProgressProvider() else 0f
+                                            if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f
                                         drawRect(
                                             color =
                                                 if (isInLightTheme) {

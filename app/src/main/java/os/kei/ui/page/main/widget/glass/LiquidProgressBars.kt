@@ -53,7 +53,7 @@ fun LiquidLinearProgressBar(
     height: Dp = 4.dp,
     contentDescription: String? = null,
 ) {
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
+    val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress
     Box(

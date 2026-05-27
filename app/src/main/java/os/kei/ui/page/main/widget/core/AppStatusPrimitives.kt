@@ -22,8 +22,8 @@ import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -111,7 +111,7 @@ fun AppSupportingBlock(
             modifier
                 .then(clickModifier),
     ) {
-        if (LocalLiquidControlsEnabled.current) {
+        if (appGlassRuntimeEffectsEnabled()) {
             AppSupportingBlockLiquid(
                 backgroundColor = backgroundColor,
                 accentColor = accentColor,

@@ -22,8 +22,8 @@ import os.kei.ui.page.main.widget.core.AppStatusPrimitives
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -49,7 +49,7 @@ fun StatusPill(
     val textColor = if (isDark) color else color.copy(alpha = 0.96f)
     val shape = AppStatusPrimitives.pillShape
     val cornerRadius = 999.dp
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
+    val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
     val pillModifier =
         Modifier
             .then(modifier)

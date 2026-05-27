@@ -36,8 +36,7 @@ internal fun AppFloatingLiquidVerticalDockSurface(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
-    val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val isDark = isSystemInDarkTheme()
     val glass = glassStyle(
         isDark = isDark,

@@ -65,6 +65,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.basic.Text
@@ -144,6 +145,7 @@ fun MiuixFloatingBottomTabStrip(
     val animationScope = rememberCoroutineScope()
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val isDark = isSystemInDarkTheme()
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val activeColor = MiuixTheme.colorScheme.primary
     val inactiveColor =
         if (isDark) {
@@ -300,9 +302,9 @@ fun MiuixFloatingBottomTabStrip(
                         tabWidthPx = (contentWidthPx / safeCount).coerceAtLeast(0f)
                     }.graphicsLayer { translationX = panelOffsetProvider() }
                     .then(
-                        if (backdrop != null) {
+                        if (activeBackdrop != null) {
                             Modifier.drawBackdrop(
-                                backdrop = backdrop,
+                                backdrop = activeBackdrop,
                                 shape = { ContinuousCapsule },
                                 effects = {
                                     vibrancy()

@@ -47,8 +47,8 @@ import os.kei.ui.page.main.student.rememberGuideTabCopyAction
 import os.kei.ui.page.main.student.stripGuideWebLinks
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -225,7 +225,7 @@ internal fun GuideProfileValueCapsule(
 ) {
     val isDark = isSystemInDarkTheme()
     val localBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = localBackdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val activeBackdrop = activeGlassBackdrop(localBackdrop)
     val shape = ContinuousCapsule
     val clickModifier =
         if (onClick != null || onLongClick != null) {
@@ -311,7 +311,7 @@ private fun GuideProfileLiquidSurfaceBox(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val localBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = localBackdrop.takeIf { LocalLiquidControlsEnabled.current }
+    val activeBackdrop = activeGlassBackdrop(localBackdrop)
 
     Box(modifier = modifier) {
         if (activeBackdrop != null) {

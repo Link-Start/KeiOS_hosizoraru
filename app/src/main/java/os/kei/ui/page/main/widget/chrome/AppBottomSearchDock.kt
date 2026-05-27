@@ -69,6 +69,7 @@ fun AppBottomSearchDock(
     placeholder: String,
     modifier: Modifier = Modifier,
     expandedWidth: Dp? = null,
+    expandedWidthProvider: (() -> Dp)? = null,
     compactDockReservedWidth: Dp = 116.dp,
     horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
@@ -104,7 +105,13 @@ fun AppBottomSearchDock(
                 ),
             label = "app_bottom_search_dock_width",
         )
-    val widthProvider = appBottomSearchDockWidthProvider(expandedWidth, animatedWidthState, targetWidth)
+    val widthProvider =
+        appBottomSearchDockWidthProvider(
+            expandedWidthProvider = expandedWidthProvider,
+            expandedWidth = expandedWidth,
+            animatedWidthState = animatedWidthState,
+            targetWidth = targetWidth,
+        )
     val contentTransition =
         updateTransition(
             targetState = expanded,
@@ -221,15 +228,16 @@ private const val AppBottomSearchDockVisibleAlpha = 0.01f
 
 @Composable
 private fun appBottomSearchDockWidthProvider(
+    expandedWidthProvider: (() -> Dp)?,
     expandedWidth: Dp?,
     animatedWidthState: State<Dp>,
     targetWidth: Dp,
 ): () -> Dp =
-    remember(expandedWidth, animatedWidthState, targetWidth) {
-        if (expandedWidth == null) {
-            { animatedWidthState.value }
-        } else {
-            { targetWidth }
+    remember(expandedWidthProvider, expandedWidth, animatedWidthState, targetWidth) {
+        when {
+            expandedWidthProvider != null -> expandedWidthProvider
+            expandedWidth == null -> ({ animatedWidthState.value })
+            else -> ({ targetWidth })
         }
     }
 

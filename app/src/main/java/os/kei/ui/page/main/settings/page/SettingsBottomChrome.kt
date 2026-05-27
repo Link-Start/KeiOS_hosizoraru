@@ -20,17 +20,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.widget.chrome.AppBottomSearchDock
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -75,7 +75,6 @@ internal fun SettingsBottomChrome(
     val gap = SettingsBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
-    val density = LocalDensity.current
     val keyboardLift =
         rememberAppFloatingKeyboardLift(
             focusedLift = 18.dp,
@@ -101,32 +100,37 @@ internal fun SettingsBottomChrome(
                 ),
             easing = FastOutSlowInEasing,
         )
-    val fullDockAlpha by transition.animateFloat(
-        transitionSpec = { fadeAnimationSpec },
-        label = "settings_full_dock_alpha",
-    ) { expanded -> if (expanded) 0f else 1f }
-    val compactDockAlpha by transition.animateFloat(
-        transitionSpec = { fadeAnimationSpec },
-        label = "settings_compact_dock_alpha",
-    ) { expanded -> if (expanded) 1f else 0f }
-    val fullDockScale by transition.animateFloat(
-        transitionSpec = { fadeAnimationSpec },
-        label = "settings_full_dock_scale",
-    ) { expanded -> if (expanded) 0.96f else 1f }
-    val compactDockScale by transition.animateFloat(
-        transitionSpec = { fadeAnimationSpec },
-        label = "settings_compact_dock_scale",
-    ) { expanded -> if (expanded) 1f else 0.92f }
+    val fullDockAlphaState =
+        transition.animateFloat(
+            transitionSpec = { fadeAnimationSpec },
+            label = "settings_full_dock_alpha",
+        ) { expanded -> if (expanded) 0f else 1f }
+    val compactDockAlphaState =
+        transition.animateFloat(
+            transitionSpec = { fadeAnimationSpec },
+            label = "settings_compact_dock_alpha",
+        ) { expanded -> if (expanded) 1f else 0f }
+    val fullDockScaleState =
+        transition.animateFloat(
+            transitionSpec = { fadeAnimationSpec },
+            label = "settings_full_dock_scale",
+        ) { expanded -> if (expanded) 0.96f else 1f }
+    val compactDockScaleState =
+        transition.animateFloat(
+            transitionSpec = { fadeAnimationSpec },
+            label = "settings_compact_dock_scale",
+        ) { expanded -> if (expanded) 1f else 0.92f }
+    val fullDockAlphaProvider = remember(fullDockAlphaState) { { fullDockAlphaState.value } }
+    val compactDockAlphaProvider = remember(compactDockAlphaState) { { compactDockAlphaState.value } }
+    val fullDockScaleProvider = remember(fullDockScaleState) { { fullDockScaleState.value } }
+    val compactDockScaleProvider = remember(compactDockScaleState) { { compactDockScaleState.value } }
     BoxWithConstraints(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .offset {
-                    with(density) {
-                        IntOffset(x = 0, y = -keyboardLift.roundToPx())
-                    }
-                }
-                .padding(
+                    IntOffset(x = 0, y = -keyboardLift.roundToPx())
+                }.padding(
                     start = outerPadding,
                     end = outerPadding,
                     top = 12.dp,
@@ -160,20 +164,24 @@ internal fun SettingsBottomChrome(
             } else {
                 collapsedDockWidth
             }
-        val searchX by transition.animateDp(
-            transitionSpec = { sizeAnimationSpec },
-            label = "settings_search_dock_x",
-        ) { expanded ->
-            if (expanded) size + gap else visibleDockWidth + gap
-        }
-        val searchWidth by transition.animateDp(
-            transitionSpec = { sizeAnimationSpec },
-            label = "settings_search_dock_width",
-        ) { expanded ->
-            if (expanded) expandedSearchWidth else size
-        }
+        val searchXState =
+            transition.animateDp(
+                transitionSpec = { sizeAnimationSpec },
+                label = "settings_search_dock_x",
+            ) { expanded ->
+                if (expanded) size + gap else visibleDockWidth + gap
+            }
+        val searchWidthState =
+            transition.animateDp(
+                transitionSpec = { sizeAnimationSpec },
+                label = "settings_search_dock_width",
+            ) { expanded ->
+                if (expanded) expandedSearchWidth else size
+            }
+        val searchXProvider = remember(searchXState) { { searchXState.value } }
+        val searchWidthProvider = remember(searchWidthState) { { searchWidthState.value } }
 
-        if (fullDockAlpha > SettingsBottomChromeVisibleAlpha && miuixMainNavigationEnabled) {
+        if (miuixMainNavigationEnabled) {
             SettingsMiuixCategoryBar(
                 categories = categories,
                 selectedPage = safeSelectedPage,
@@ -183,13 +191,16 @@ internal fun SettingsBottomChrome(
                     Modifier
                         .align(Alignment.CenterStart)
                         .requiredWidth(miuixDockLayout.barWidth)
+                        .zIndex(if (searchExpanded) 0f else 1f)
                         .graphicsLayer {
-                            alpha = fullDockAlpha
-                            scaleX = fullDockScale
-                            scaleY = fullDockScale
+                            val alpha = fullDockAlphaProvider()
+                            val scale = fullDockScaleProvider()
+                            this.alpha = alpha
+                            scaleX = scale
+                            scaleY = scale
                         },
             )
-        } else if (fullDockAlpha > SettingsBottomChromeVisibleAlpha) {
+        } else {
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 categories.forEachIndexed { index, category ->
                     val tabColor = liquidGlassBottomBarItemContentColor(index)
@@ -231,10 +242,13 @@ internal fun SettingsBottomChrome(
                         .align(Alignment.CenterStart)
                         .requiredWidth(collapsedDockWidth)
                         .height(size)
+                        .zIndex(if (searchExpanded) 0f else 1f)
                         .graphicsLayer {
-                            alpha = fullDockAlpha
-                            scaleX = fullDockScale
-                            scaleY = fullDockScale
+                            val alpha = fullDockAlphaProvider()
+                            val scale = fullDockScaleProvider()
+                            this.alpha = alpha
+                            scaleX = scale
+                            scaleY = scale
                         },
                 selectedIndex = safeSelectedPage,
                 selectedPosition = selectedPagePosition,
@@ -251,22 +265,23 @@ internal fun SettingsBottomChrome(
             )
         }
 
-        if (compactDockAlpha > SettingsBottomChromeVisibleAlpha) {
-            SettingsCompactCategoryDock(
-                category = categories[safeSelectedPage],
-                backdrop = backdrop,
-                onClick = { onSearchExpandedChange(false) },
-                modifier =
-                    Modifier
-                        .width(size)
-                        .height(size)
-                        .graphicsLayer {
-                            alpha = compactDockAlpha
-                            scaleX = compactDockScale
-                            scaleY = compactDockScale
-                        },
-            )
-        }
+        SettingsCompactCategoryDock(
+            category = categories[safeSelectedPage],
+            backdrop = backdrop,
+            onClick = { onSearchExpandedChange(false) },
+            modifier =
+                Modifier
+                    .width(size)
+                    .height(size)
+                    .zIndex(if (searchExpanded) 2f else 0f)
+                    .graphicsLayer {
+                        val alpha = compactDockAlphaProvider()
+                        val scale = compactDockScaleProvider()
+                        this.alpha = alpha
+                        scaleX = scale
+                        scaleY = scale
+                    },
+        )
 
         AppBottomSearchDock(
             backdrop = backdrop,
@@ -278,12 +293,13 @@ internal fun SettingsBottomChrome(
             contentDescription = searchContentDescription,
             placeholder = searchPlaceholder,
             modifier =
-                Modifier.offset {
-                    with(density) {
-                        IntOffset(x = searchX.roundToPx(), y = 0)
-                    }
-                },
-            expandedWidth = searchWidth,
+                Modifier
+                    .zIndex(3f)
+                    .offset {
+                        IntOffset(x = searchXProvider().roundToPx(), y = 0)
+                    },
+            expandedWidth = expandedSearchWidth,
+            expandedWidthProvider = searchWidthProvider,
         )
     }
 }
@@ -348,7 +364,6 @@ private val SettingsBottomChromeSearchGap: Dp = 8.dp
 private val SettingsBottomChromeMinSearchWidth: Dp = 196.dp
 private const val SettingsBottomChromeMotionMs = 220
 private const val SettingsBottomChromeFadeMotionMs = 120
-private const val SettingsBottomChromeVisibleAlpha = 0.01f
 
 private fun settingsExpandedSearchWidth(
     availableWidth: Dp,

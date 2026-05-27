@@ -1,7 +1,7 @@
 // Copyright 2026, compose-miuix-ui contributors
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("FunctionName")
+@file:Suppress("FunctionName", "PropertyName")
 
 package os.kei.ui.page.main.widget.shape
 
@@ -30,10 +30,10 @@ import androidx.compose.ui.graphics.Shader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import kotlin.math.max
@@ -174,6 +174,40 @@ fun Modifier.appSquircleBorder(
         }
     }
 
+fun Modifier.drawAppSquircleBorder(
+    width: Dp,
+    cornerRadius: Dp,
+    extension: Float = AppSquircleDefaults.Extension,
+    control: Float = AppSquircleDefaults.Control,
+    color: () -> Color,
+): Modifier =
+    drawWithCache {
+        val widthPx = width.toPx()
+        val cornerRadiusPx = cornerRadius.toPx()
+        val halfStroke = widthPx / 2f
+        val innerWidth = size.width - widthPx
+        val innerHeight = size.height - widthPx
+        val path = Path()
+        val drawable = widthPx > 0f && innerWidth > 0f && innerHeight > 0f
+        if (drawable) {
+            path.addAppSquircleRect(
+                width = innerWidth,
+                height = innerHeight,
+                cornerRadius = (cornerRadiusPx - halfStroke).coerceAtLeast(0f),
+                extension = extension,
+                control = control,
+            )
+        }
+        val stroke = Stroke(width = widthPx)
+        onDrawBehind {
+            if (drawable) {
+                translate(halfStroke, halfStroke) {
+                    drawPath(path = path, color = color(), style = stroke)
+                }
+            }
+        }
+    }
+
 fun Modifier.drawAppSquircleBackground(
     cornerRadius: Dp,
     extension: Float = AppSquircleDefaults.Extension,
@@ -306,7 +340,10 @@ private fun isAppRuntimeShaderSupported(): Boolean = Build.VERSION.SDK_INT >= Bu
 private val sdfCacheLock = Any()
 private val sdfShaderCache = mutableMapOf<Int, Shader>()
 
-private fun getOrCreateSdfShader(control: Float, key: Int): Shader =
+private fun getOrCreateSdfShader(
+    control: Float,
+    key: Int,
+): Shader =
     synchronized(sdfCacheLock) {
         sdfShaderCache.getOrPut(key) {
             ImageShader(
@@ -317,7 +354,10 @@ private fun getOrCreateSdfShader(control: Float, key: Int): Shader =
         }
     }
 
-private fun makeAlphaImageBitmap(size: Int, alphaBytes: ByteArray): ImageBitmap {
+private fun makeAlphaImageBitmap(
+    size: Int,
+    alphaBytes: ByteArray,
+): ImageBitmap {
     val pixels = IntArray(size * size)
     for (index in alphaBytes.indices) {
         val alpha = alphaBytes[index].toInt() and 0xFF
@@ -328,7 +368,10 @@ private fun makeAlphaImageBitmap(size: Int, alphaBytes: ByteArray): ImageBitmap 
     return bitmap.asImageBitmap()
 }
 
-private fun generateSdfBytes(size: Int, control: Float): ByteArray {
+private fun generateSdfBytes(
+    size: Int,
+    control: Float,
+): ByteArray {
     val handle = 1f - control
     val bx = FloatArray(BEZIER_SAMPLES + 1)
     val by = FloatArray(BEZIER_SAMPLES + 1)

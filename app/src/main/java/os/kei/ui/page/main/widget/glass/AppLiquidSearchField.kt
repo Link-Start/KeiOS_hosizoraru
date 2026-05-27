@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -507,16 +506,14 @@ fun AppStandaloneLiquidInputField(
     leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
     AppStandaloneBackdropHost(
-        backdrop = localBackdrop,
         modifier = modifier,
-    ) {
+    ) { activeBackdrop ->
         AppLiquidInputField(
             value = value,
             onValueChange = onValueChange,
             label = label,
-            backdrop = localBackdrop,
+            backdrop = activeBackdrop,
             modifier = fieldModifier,
             singleLine = singleLine,
             textAlign = textAlign,

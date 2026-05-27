@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.layout.Box
@@ -48,21 +50,20 @@ fun AppStandaloneLiquidTextButton(
     textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
     pressScaleEnabled: Boolean = true,
     pressOverlayEnabled: Boolean = true,
-    pressSafePadding: Dp = Dp.Unspecified
+    pressSafePadding: Dp = Dp.Unspecified,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
-    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
-        defaultLiquidPressSafePadding(variant)
-    } else {
-        pressSafePadding
-    }
+    val resolvedPressSafePadding =
+        if (pressSafePadding == Dp.Unspecified) {
+            defaultLiquidPressSafePadding(variant)
+        } else {
+            pressSafePadding
+        }
     AppStandaloneBackdropHost(
-        backdrop = localBackdrop,
         modifier = modifier,
-        pressSafePadding = resolvedPressSafePadding
-    ) {
+        pressSafePadding = resolvedPressSafePadding,
+    ) { activeBackdrop ->
         AppLiquidTextButton(
-            backdrop = localBackdrop,
+            backdrop = activeBackdrop,
             text = text,
             onClick = onClick,
             modifier = buttonModifier,
@@ -85,7 +86,7 @@ fun AppStandaloneLiquidTextButton(
             textLineHeight = textLineHeight,
             textFontWeight = textFontWeight,
             pressScaleEnabled = pressScaleEnabled,
-            pressOverlayEnabled = pressOverlayEnabled
+            pressOverlayEnabled = pressOverlayEnabled,
         )
     }
 }
@@ -106,21 +107,20 @@ fun AppStandaloneLiquidIconButton(
     iconTint: Color = MiuixTheme.colorScheme.primary,
     containerColor: Color? = null,
     enabled: Boolean = true,
-    pressSafePadding: Dp = Dp.Unspecified
+    pressSafePadding: Dp = Dp.Unspecified,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
-    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
-        defaultLiquidPressSafePadding(variant)
-    } else {
-        pressSafePadding
-    }
+    val resolvedPressSafePadding =
+        if (pressSafePadding == Dp.Unspecified) {
+            defaultLiquidPressSafePadding(variant)
+        } else {
+            pressSafePadding
+        }
     AppStandaloneBackdropHost(
-        backdrop = localBackdrop,
         modifier = modifier,
-        pressSafePadding = resolvedPressSafePadding
-    ) {
+        pressSafePadding = resolvedPressSafePadding,
+    ) { activeBackdrop ->
         AppLiquidIconButton(
-            backdrop = localBackdrop,
+            backdrop = activeBackdrop,
             icon = icon,
             contentDescription = contentDescription,
             onClick = onClick,
@@ -133,7 +133,7 @@ fun AppStandaloneLiquidIconButton(
             variant = variant,
             iconTint = iconTint,
             containerColor = containerColor,
-            enabled = enabled
+            enabled = enabled,
         )
     }
 }
@@ -155,21 +155,20 @@ fun AppStandaloneLiquidIconButton(
     iconModifier: Modifier = Modifier,
     containerColor: Color? = null,
     enabled: Boolean = true,
-    pressSafePadding: Dp = Dp.Unspecified
+    pressSafePadding: Dp = Dp.Unspecified,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
-    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
-        defaultLiquidPressSafePadding(variant)
-    } else {
-        pressSafePadding
-    }
+    val resolvedPressSafePadding =
+        if (pressSafePadding == Dp.Unspecified) {
+            defaultLiquidPressSafePadding(variant)
+        } else {
+            pressSafePadding
+        }
     AppStandaloneBackdropHost(
-        backdrop = localBackdrop,
         modifier = modifier,
-        pressSafePadding = resolvedPressSafePadding
-    ) {
+        pressSafePadding = resolvedPressSafePadding,
+    ) { activeBackdrop ->
         AppLiquidIconButton(
-            backdrop = localBackdrop,
+            backdrop = activeBackdrop,
             painter = painter,
             contentDescription = contentDescription,
             onClick = onClick,
@@ -183,34 +182,38 @@ fun AppStandaloneLiquidIconButton(
             iconTint = iconTint,
             iconModifier = iconModifier,
             containerColor = containerColor,
-            enabled = enabled
+            enabled = enabled,
         )
     }
 }
 
 @Composable
 internal fun AppStandaloneBackdropHost(
-    backdrop: LayerBackdrop,
     modifier: Modifier,
     pressSafePadding: Dp = Dp.Unspecified,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.(LayerBackdrop?) -> Unit,
 ) {
-    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
-        0.dp
-    } else {
-        pressSafePadding
-    }
+    val resolvedPressSafePadding =
+        if (pressSafePadding == Dp.Unspecified) {
+            0.dp
+        } else {
+            pressSafePadding
+        }
     Box(
         modifier = modifier.padding(resolvedPressSafePadding),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (LocalLiquidControlsEnabled.current) {
+            val backdrop = rememberLayerBackdrop()
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(backdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(backdrop),
             )
+            content(backdrop)
+        } else {
+            content(null)
         }
-        content()
     }
 }

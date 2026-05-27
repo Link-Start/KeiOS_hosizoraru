@@ -55,7 +55,10 @@ internal fun SettingsSearchContent(
         userScrollEnabled = !sliderInteractionActive,
     ) {
         if (matchingSearchTargets.isEmpty()) {
-            item(key = "settings_search_empty") {
+            item(
+                key = "settings_search_empty",
+                contentType = "settings_search_empty",
+            ) {
                 Text(
                     text = stringResource(R.string.common_no_matched_results),
                     color = MiuixTheme.colorScheme.onBackgroundVariant,

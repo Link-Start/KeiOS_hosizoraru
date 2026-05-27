@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section.gallery
 
 import android.os.SystemClock
@@ -19,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -31,10 +34,10 @@ import com.github.panpf.zoomimage.rememberCoilZoomState
 import com.github.panpf.zoomimage.zoom.ContinuousTransformType
 import com.github.panpf.zoomimage.zoom.GestureType
 import os.kei.R
+import os.kei.ui.page.main.student.GuideMediaImageRequest
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_GESTURE_COOLDOWN_MS
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX
 import os.kei.ui.page.main.student.IMAGE_TAP_DISMISS_SCALE_EPSILON
-import os.kei.ui.page.main.student.GuideMediaImageRequest
 import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
 import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
 import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
@@ -55,21 +58,22 @@ internal fun GuideImageFullscreenDialog(
     imageUrl: String,
     allowAutoRotate: Boolean = true,
     mediaAdaptiveRotationEnabled: Boolean,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val systemAutoRotateEnabled =
         rememberSystemAutoRotateEnabled(active = !mediaAdaptiveRotationEnabled)
-    val systemRotationDegrees = rememberDeviceRotationDegrees(
-        active = !mediaAdaptiveRotationEnabled && systemAutoRotateEnabled
-    )
+    val systemRotationDegrees =
+        rememberDeviceRotationDegrees(
+            active = !mediaAdaptiveRotationEnabled && systemAutoRotateEnabled,
+        )
     val normalizedImageUrl = remember(imageUrl) { normalizeGuideMediaSource(imageUrl) }
     if (normalizedImageUrl.isBlank()) return
     val isGifSource = remember(normalizedImageUrl) { isGifMediaSource(normalizedImageUrl) }
     val zoomState = rememberCoilZoomState()
     LaunchedEffect(zoomState) {
         zoomState.zoomable.setDisabledGestureTypes(
-            GestureType.ONE_FINGER_SCALE
+            GestureType.ONE_FINGER_SCALE,
         )
     }
     var retryToken by rememberSaveable(normalizedImageUrl) { mutableStateOf(0) }
@@ -106,18 +110,20 @@ internal fun GuideImageFullscreenDialog(
         }
     }
     val sampledLoading = !isGifSource && sampledBitmap == null && !helperLoadFailed
-    val ratioFromUrl = remember(normalizedImageUrl) {
-        detectMediaRatioFromUrl(normalizedImageUrl)
-    }
-    val ratio = remember(sampledBitmap?.width, sampledBitmap?.height, ratioFromUrl) {
-        val width = sampledBitmap?.width ?: 0
-        val height = sampledBitmap?.height ?: 0
-        when {
-            width > 0 && height > 0 -> width.toFloat() / height.toFloat()
-            ratioFromUrl != null -> ratioFromUrl
-            else -> 1f
+    val ratioFromUrl =
+        remember(normalizedImageUrl) {
+            detectMediaRatioFromUrl(normalizedImageUrl)
         }
-    }
+    val ratio =
+        remember(sampledBitmap?.width, sampledBitmap?.height, ratioFromUrl) {
+            val width = sampledBitmap?.width ?: 0
+            val height = sampledBitmap?.height ?: 0
+            when {
+                width > 0 && height > 0 -> width.toFloat() / height.toFloat()
+                ratioFromUrl != null -> ratioFromUrl
+                else -> 1f
+            }
+        }
     LaunchedEffect(zoomState.zoomable.continuousTransformType) {
         if (zoomState.zoomable.continuousTransformType != ContinuousTransformType.NONE) {
             lastTransformActiveAtMs = SystemClock.elapsedRealtime()
@@ -127,32 +133,35 @@ internal fun GuideImageFullscreenDialog(
 
     AppWindowDialogHost(
         show = true,
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .onSizeChanged { backGestureState.onDialogWidthChanged(it.width) }
-                .graphicsLayer {
-                    translationX = backGestureState.translationX
-                    alpha = backGestureState.contentAlpha
-                }
-                .background(Color.Black.copy(alpha = backGestureState.scrimAlpha))
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { backGestureState.onDialogWidthChanged(it.width) }
+                    .graphicsLayer {
+                        translationX = backGestureState.translationX
+                        alpha = backGestureState.contentAlpha
+                    }.drawBehind {
+                        drawRect(Color.Black.copy(alpha = backGestureState.scrimAlpha))
+                    },
         ) {
             BoxWithConstraints(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 val safeRatio = ratio.coerceAtLeast(0.1f)
-                val targetRotation = resolveGuideImageTargetRotation(
-                    safeRatio = safeRatio,
-                    viewportWidth = maxWidth.value,
-                    viewportHeight = maxHeight.value,
-                    allowAutoRotate = allowAutoRotate,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                    systemAutoRotateEnabled = systemAutoRotateEnabled,
-                    systemRotationDegrees = systemRotationDegrees
-                )
+                val targetRotation =
+                    resolveGuideImageTargetRotation(
+                        safeRatio = safeRatio,
+                        viewportWidth = maxWidth.value,
+                        viewportHeight = maxHeight.value,
+                        allowAutoRotate = allowAutoRotate,
+                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                        systemAutoRotateEnabled = systemAutoRotateEnabled,
+                        systemRotationDegrees = systemRotationDegrees,
+                    )
                 val rotationTransition = remember(normalizedImageUrl) { Animatable(0f) }
                 var appliedZoomRotation by rememberSaveable(normalizedImageUrl) { mutableIntStateOf(0) }
                 var initializedRotation by rememberSaveable(normalizedImageUrl) { mutableStateOf(false) }
@@ -193,10 +202,11 @@ internal fun GuideImageFullscreenDialog(
                     if (transitionAnimationsEnabled) {
                         rotationTransition.animateTo(
                             targetValue = delta.toFloat(),
-                            animationSpec = tween(
-                                durationMillis = resolvedMotionDuration(220, transitionAnimationsEnabled),
-                                easing = FastOutSlowInEasing
-                            )
+                            animationSpec =
+                                tween(
+                                    durationMillis = resolvedMotionDuration(220, transitionAnimationsEnabled),
+                                    easing = FastOutSlowInEasing,
+                                ),
                         )
                     } else {
                         rotationTransition.snapTo(delta.toFloat())
@@ -209,10 +219,11 @@ internal fun GuideImageFullscreenDialog(
                 CoilZoomAsyncImage(
                     model = if (isGifSource) normalizedImageUrl else sampledBitmap ?: normalizedImageUrl,
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { rotationZ = rotationTransition.value }
-                        .align(Alignment.Center),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { rotationZ = rotationTransition.value }
+                            .align(Alignment.Center),
                     contentScale = ContentScale.Fit,
                     zoomState = zoomState,
                     scrollBar = null,
@@ -225,29 +236,32 @@ internal fun GuideImageFullscreenDialog(
                             return@CoilZoomAsyncImage
                         }
                         val userTransform = zoomState.zoomable.userTransform
-                        val scaleNearBase = abs(userTransform.scaleX - 1f) <= IMAGE_TAP_DISMISS_SCALE_EPSILON &&
-                            abs(userTransform.scaleY - 1f) <= IMAGE_TAP_DISMISS_SCALE_EPSILON
-                        val offsetNearBase = abs(userTransform.offsetX) <= IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX &&
-                            abs(userTransform.offsetY) <= IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX
+                        val scaleNearBase =
+                            abs(userTransform.scaleX - 1f) <= IMAGE_TAP_DISMISS_SCALE_EPSILON &&
+                                abs(userTransform.scaleY - 1f) <= IMAGE_TAP_DISMISS_SCALE_EPSILON
+                        val offsetNearBase =
+                            abs(userTransform.offsetX) <= IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX &&
+                                abs(userTransform.offsetY) <= IMAGE_TAP_DISMISS_OFFSET_EPSILON_PX
                         if (!scaleNearBase || !offsetNearBase) {
                             return@CoilZoomAsyncImage
                         }
                         onDismiss()
-                    }
+                    },
                 )
 
                 if (sampledLoading) {
                     GuideFullscreenImageLoadingIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 }
             }
             if (!sampledLoading && helperLoadFailed && sampledBitmap == null) {
                 GuideFullscreenImageRetryHint(
                     onRetry = { retryToken += 1 },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 24.dp)
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp),
                 )
             }
         }
@@ -258,46 +272,48 @@ internal fun GuideImageFullscreenDialog(
 internal fun GuideVideoFullscreenDialog(
     mediaUrl: String,
     forceLandscape: Boolean = false,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val normalizedUrl = remember(mediaUrl) { normalizeGuideMediaSource(mediaUrl) }
     var loadError by remember(normalizedUrl) { mutableStateOf<String?>(null) }
     var videoRatio by remember(normalizedUrl) { mutableStateOf(16f / 9f) }
 
-    val player = rememberGuidePreparedVideoPlayer(
-        context = context,
-        mediaUrl = normalizedUrl,
-        active = true
-    )
+    val player =
+        rememberGuidePreparedVideoPlayer(
+            context = context,
+            mediaUrl = normalizedUrl,
+            active = true,
+        )
     BindGuideVideoPlayerState(
         player = player,
         onVideoRatioChanged = { ratio -> videoRatio = ratio },
-        onPlayerErrorChanged = { errorCode -> loadError = errorCode }
+        onPlayerErrorChanged = { errorCode -> loadError = errorCode },
     )
     BindGuideVideoForegroundPlaybackGuard(player = player)
 
     AppWindowDialogHost(
         show = true,
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
         ) {
             val activePlayer = player
             if (activePlayer != null) {
                 GuideVideoFullscreenPlayerLayer(
                     activePlayer = activePlayer,
                     videoRatio = videoRatio,
-                    forceLandscape = forceLandscape
+                    forceLandscape = forceLandscape,
                 )
             } else {
                 Text(
                     text = stringResource(R.string.guide_media_video_url_invalid),
                     color = Color(0xFFBFDBFE),
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
 
@@ -305,9 +321,10 @@ internal fun GuideVideoFullscreenDialog(
                 Text(
                     text = stringResource(R.string.guide_gallery_video_failed_with_reason, err),
                     color = Color(0xFFFCA5A5),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 24.dp)
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp),
                 )
             }
         }

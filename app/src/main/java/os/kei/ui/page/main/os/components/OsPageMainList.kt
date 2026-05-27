@@ -187,7 +187,10 @@ internal fun OsPageMainList(
             innerPadding = innerPadding,
             sectionSpacing = 0.dp,
         ) {
-            item(key = "os-overview-card") {
+            item(
+                key = "os-overview-card",
+                contentType = "os_overview_card",
+            ) {
                 AppOverviewCard(
                     title = stringResource(R.string.os_overview_title),
                     backdrop = contentBackdrop,
@@ -266,7 +269,10 @@ internal fun OsPageMainList(
                 }
             }
 
-            item(key = "os-overview-space") {
+            item(
+                key = "os-overview-space",
+                contentType = "os_overview_space",
+            ) {
                 Spacer(modifier = Modifier.height(AppChromeTokens.pageSectionGap))
             }
 

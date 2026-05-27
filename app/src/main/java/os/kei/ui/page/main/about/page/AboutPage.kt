@@ -374,7 +374,10 @@ fun AboutPage(
                 sectionSpacing = 14.dp,
             ) {
                 if (matchingSearchTargets.isEmpty()) {
-                    item(key = "about_search_empty") {
+                    item(
+                        key = "about_search_empty",
+                        contentType = "about_search_empty",
+                    ) {
                         Text(
                             text = stringResource(R.string.common_no_matched_results),
                             color = MiuixTheme.colorScheme.onBackgroundVariant,

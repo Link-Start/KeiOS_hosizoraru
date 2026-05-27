@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,6 +55,13 @@ import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@Immutable
+private data class ReleaseNotesFallbackLineUiState(
+    val id: String,
+    val text: String,
+    val accent: Boolean,
+)
 
 @Composable
 internal fun GitHubDecisionAssistDetailSheet(
@@ -181,28 +190,50 @@ private fun GitHubReleaseNotesDetailContent(
         selectedReleaseNotesTarget
             ?: releaseNotesTargets.firstOrNull()
     val selectedApkVersionLabel =
-        releaseNotesSelectedApkVersionLabel(
-            state = state,
-            assetBundle = assetBundle,
-            selectedTarget = selectedTarget,
-            releaseNotesApkVersion = releaseNotesApkVersion,
-            preciseApkVersionEnabled = preciseApkVersionEnabled,
-        )
+        remember(
+            state,
+            assetBundle,
+            selectedTarget,
+            releaseNotesApkVersion,
+            preciseApkVersionEnabled,
+        ) {
+            releaseNotesSelectedApkVersionLabel(
+                state = state,
+                assetBundle = assetBundle,
+                selectedTarget = selectedTarget,
+                releaseNotesApkVersion = releaseNotesApkVersion,
+                preciseApkVersionEnabled = preciseApkVersionEnabled,
+            )
+        }
     val selectedIndex =
-        releaseNotesTargets
-            .indexOfFirst { it.id == selectedTarget?.id }
-            .coerceAtLeast(0)
+        remember(releaseNotesTargets, selectedTarget) {
+            releaseNotesTargets
+                .indexOfFirst { it.id == selectedTarget?.id }
+                .coerceAtLeast(0)
+        }
     val stableMarker = stringResource(R.string.github_release_notes_marker_stable)
     val prereleaseMarker = stringResource(R.string.github_release_notes_marker_prerelease)
     val latestMarker = stringResource(R.string.github_release_notes_marker_latest)
     val releaseOptions =
-        releaseNotesTargets.map { target ->
-            releaseNotesTargetDropdownLabel(
-                target = target,
-                stableMarker = stableMarker,
-                prereleaseMarker = prereleaseMarker,
-                latestMarker = latestMarker,
-            )
+        remember(releaseNotesTargets, stableMarker, prereleaseMarker, latestMarker) {
+            releaseNotesTargets.map { target ->
+                releaseNotesTargetDropdownLabel(
+                    target = target,
+                    stableMarker = stableMarker,
+                    prereleaseMarker = prereleaseMarker,
+                    latestMarker = latestMarker,
+                )
+            }
+        }
+    val fallbackRows =
+        remember(lines) {
+            lines.mapIndexed { index, line ->
+                ReleaseNotesFallbackLineUiState(
+                    id = releaseNotesFallbackLineStableId(index = index, line = line),
+                    text = if (index == 0) line else "• $line",
+                    accent = index == 0,
+                )
+            }
         }
     SheetContentColumn(verticalSpacing = 10.dp) {
         SheetSummaryCard(
@@ -295,16 +326,18 @@ private fun GitHubReleaseNotesDetailContent(
         val copyLabel = stringResource(R.string.common_copy)
         val copiedToast = stringResource(R.string.github_release_notes_toast_copied)
         val translatePayload =
-            releaseNotesTranslationPayload(
-                title =
-                    selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
-                        ?: assetBundle?.releaseName.orEmpty(),
-                tag =
-                    selectedTarget?.tagName?.takeIf { it.isNotBlank() }
-                        ?: assetBundle?.tagName.orEmpty(),
-                rawMarkdown = rawMarkdown,
-                fallbackLines = lines,
-            )
+            remember(selectedTarget, assetBundle, rawMarkdown, lines) {
+                releaseNotesTranslationPayload(
+                    title =
+                        selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
+                            ?: assetBundle?.releaseName.orEmpty(),
+                    tag =
+                        selectedTarget?.tagName?.takeIf { it.isNotBlank() }
+                            ?: assetBundle?.tagName.orEmpty(),
+                    rawMarkdown = rawMarkdown,
+                    fallbackLines = lines,
+                )
+            }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -378,18 +411,25 @@ private fun GitHubReleaseNotesDetailContent(
                 SheetDescriptionText(stringResource(R.string.github_release_notes_detail_empty))
             } else {
                 CompositionLocalProvider(LocalTextCopyExpandedOverride provides true) {
-                    lines.forEachIndexed { index, line ->
-                        GitHubDecisionDetailTextLine(
-                            text = if (index == 0) line else "• $line",
-                            maxLines = Int.MAX_VALUE,
-                            accent = index == 0,
-                        )
+                    fallbackRows.forEach { row ->
+                        key(row.id) {
+                            GitHubDecisionDetailTextLine(
+                                text = row.text,
+                                maxLines = Int.MAX_VALUE,
+                                accent = row.accent,
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+private fun releaseNotesFallbackLineStableId(
+    index: Int,
+    line: String,
+): String = "release-note-$index-${line.hashCode()}"
 
 private fun releaseNotesSelectedApkVersionLabel(
     state: VersionCheckUi,

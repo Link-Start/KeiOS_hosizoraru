@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -49,12 +50,27 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
 ) {
     if (!error.isNullOrBlank()) {
-        item { GuideGalleryErrorCard(error = error) }
-        item { Spacer(modifier = Modifier.height(10.dp)) }
+        item(
+            key = guideGalleryListKey("error", error.hashCode()),
+            contentType = GuideGalleryContentType.ERROR,
+        ) {
+            GuideGalleryErrorCard(error = error)
+        }
+        item(
+            key = guideGalleryListKey("spacer", "error"),
+            contentType = GuideGalleryContentType.SPACER,
+        ) {
+            Spacer(modifier = Modifier.height(10.dp))
+        }
     }
 
     if (!state.hasRenderableContent) {
-        item { GuideGalleryEmptyCard() }
+        item(
+            key = "guide-gallery-empty",
+            contentType = GuideGalleryContentType.EMPTY,
+        ) {
+            GuideGalleryEmptyCard()
+        }
         return
     }
 
@@ -80,24 +96,54 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             return@forEachIndexed
         }
         if (renderedCount > 0) {
-            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item(
+                key = guideGalleryListKey("spacer", "display", renderedCount, index),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
 
         if (!insertedUnlockLevel &&
             state.memoryUnlockLevel.isNotBlank() &&
             index == state.firstMemoryHallIndex
         ) {
-            item {
+            item(
+                key = guideGalleryListKey("unlock", state.memoryUnlockLevel, index),
+                contentType = GuideGalleryContentType.UNLOCK,
+            ) {
                 GuideGalleryUnlockLevelCardItem(
                     level = state.memoryUnlockLevel,
                     backdrop = backdrop,
                 )
             }
-            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item(
+                key = guideGalleryListKey("spacer", "unlock", index),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
             insertedUnlockLevel = true
         }
 
-        item {
+        item(
+            key =
+                if (isExpression && state.expressionItems.isNotEmpty()) {
+                    guideGalleryListKey(
+                        "expression",
+                        state.firstExpressionIndex,
+                        state.expressionItems.size,
+                    )
+                } else {
+                    guideGalleryItemStableKey(item = item, index = index)
+                },
+            contentType =
+                if (isExpression && state.expressionItems.isNotEmpty()) {
+                    GuideGalleryContentType.EXPRESSION
+                } else {
+                    GuideGalleryContentType.MEDIA
+                },
+        ) {
             if (isExpression && state.expressionItems.isNotEmpty()) {
                 GuideGalleryExpressionCardItem(
                     title = stringResource(R.string.guide_gallery_expression_title),
@@ -132,11 +178,19 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             state.pvAndRoleVideoGroups.isNotEmpty() &&
             index == state.lastOfficialIntroIndex
         ) {
-            state.pvAndRoleVideoGroups.forEach { (title, items) ->
+            state.pvAndRoleVideoGroups.forEachIndexed { groupIndex, (title, items) ->
                 if (renderedCount > 0) {
-                    item { Spacer(modifier = Modifier.height(10.dp)) }
+                    item(
+                        key = guideGalleryListKey("spacer", "pv-role", groupIndex, renderedCount),
+                        contentType = GuideGalleryContentType.SPACER,
+                    ) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
                 }
-                item {
+                item(
+                    key = guideGalleryVideoGroupStableKey("pv-role", groupIndex, title, items),
+                    contentType = GuideGalleryContentType.VIDEO_GROUP,
+                ) {
                     GuideGalleryVideoGroupCardItem(
                         title = title,
                         items = items,
@@ -153,9 +207,17 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
 
             if (!insertedGalleryRelatedLinks && state.galleryRelatedLinkRows.isNotEmpty()) {
                 if (renderedCount > 0) {
-                    item { Spacer(modifier = Modifier.height(10.dp)) }
+                    item(
+                        key = guideGalleryListKey("spacer", "related", "after-pv", renderedCount),
+                        contentType = GuideGalleryContentType.SPACER,
+                    ) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
                 }
-                item {
+                item(
+                    key = guideGalleryRelatedLinksStableKey(state.galleryRelatedLinkRows),
+                    contentType = GuideGalleryContentType.RELATED_LINKS,
+                ) {
                     GuideGalleryRelatedLinksCard(
                         rows = state.galleryRelatedLinkRows,
                         onOpenExternal = onOpenExternal,
@@ -170,8 +232,22 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             state.memoryHallVideoGroup != null &&
             index == state.firstMemoryHallIndex
         ) {
-            item { Spacer(modifier = Modifier.height(10.dp)) }
-            item {
+            item(
+                key = guideGalleryListKey("spacer", "memory-video", index),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+            item(
+                key =
+                    guideGalleryVideoGroupStableKey(
+                        "memory-near",
+                        index,
+                        state.memoryHallVideoGroup.first,
+                        state.memoryHallVideoGroup.second,
+                    ),
+                contentType = GuideGalleryContentType.VIDEO_GROUP,
+            ) {
                 GuideGalleryVideoGroupCardItem(
                     title = state.memoryHallVideoGroup.first,
                     items = state.memoryHallVideoGroup.second,
@@ -192,9 +268,17 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         state.memoryHallVideoGroup != null
     ) {
         if (renderedCount > 0) {
-            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item(
+                key = guideGalleryListKey("spacer", "unlock-fallback", renderedCount),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
-        item {
+        item(
+            key = guideGalleryListKey("unlock", "fallback", state.memoryUnlockLevel),
+            contentType = GuideGalleryContentType.UNLOCK,
+        ) {
             GuideGalleryUnlockLevelCardItem(
                 level = state.memoryUnlockLevel,
                 backdrop = backdrop,
@@ -206,9 +290,23 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
 
     if (!insertedMemoryHallVideoNearGallery && state.memoryHallVideoGroup != null) {
         if (renderedCount > 0) {
-            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item(
+                key = guideGalleryListKey("spacer", "memory-fallback", renderedCount),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
-        item {
+        item(
+            key =
+                guideGalleryVideoGroupStableKey(
+                    "memory-fallback",
+                    renderedCount,
+                    state.memoryHallVideoGroup.first,
+                    state.memoryHallVideoGroup.second,
+                ),
+            contentType = GuideGalleryContentType.VIDEO_GROUP,
+        ) {
             GuideGalleryVideoGroupCardItem(
                 title = state.memoryHallVideoGroup.first,
                 items = state.memoryHallVideoGroup.second,
@@ -223,11 +321,19 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     }
 
     if (!insertedPvRoleAfterOfficial) {
-        state.pvAndRoleVideoGroups.forEach { (title, items) ->
+        state.pvAndRoleVideoGroups.forEachIndexed { groupIndex, (title, items) ->
             if (renderedCount > 0) {
-                item { Spacer(modifier = Modifier.height(10.dp)) }
+                item(
+                    key = guideGalleryListKey("spacer", "pv-fallback", groupIndex, renderedCount),
+                    contentType = GuideGalleryContentType.SPACER,
+                ) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
-            item {
+            item(
+                key = guideGalleryVideoGroupStableKey("pv-fallback", groupIndex, title, items),
+                contentType = GuideGalleryContentType.VIDEO_GROUP,
+            ) {
                 GuideGalleryVideoGroupCardItem(
                     title = title,
                     items = items,
@@ -243,9 +349,17 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         insertedPvRoleAfterOfficial = state.pvAndRoleVideoGroups.isNotEmpty()
         if (!insertedGalleryRelatedLinks && state.galleryRelatedLinkRows.isNotEmpty()) {
             if (renderedCount > 0) {
-                item { Spacer(modifier = Modifier.height(10.dp)) }
+                item(
+                    key = guideGalleryListKey("spacer", "related", "pv-fallback", renderedCount),
+                    contentType = GuideGalleryContentType.SPACER,
+                ) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
             }
-            item {
+            item(
+                key = guideGalleryRelatedLinksStableKey(state.galleryRelatedLinkRows),
+                contentType = GuideGalleryContentType.RELATED_LINKS,
+            ) {
                 GuideGalleryRelatedLinksCard(
                     rows = state.galleryRelatedLinkRows,
                     onOpenExternal = onOpenExternal,
@@ -256,11 +370,19 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         }
     }
 
-    state.otherTrailingVideoGroups.forEach { (title, items) ->
+    state.otherTrailingVideoGroups.forEachIndexed { groupIndex, (title, items) ->
         if (renderedCount > 0) {
-            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item(
+                key = guideGalleryListKey("spacer", "trailing", groupIndex, renderedCount),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
-        item {
+        item(
+            key = guideGalleryVideoGroupStableKey("trailing", groupIndex, title, items),
+            contentType = GuideGalleryContentType.VIDEO_GROUP,
+        ) {
             GuideGalleryVideoGroupCardItem(
                 title = title,
                 items = items,
@@ -276,9 +398,17 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
 
     if (!insertedGalleryRelatedLinks && state.galleryRelatedLinkRows.isNotEmpty()) {
         if (renderedCount > 0) {
-            item { Spacer(modifier = Modifier.height(10.dp)) }
+            item(
+                key = guideGalleryListKey("spacer", "related", "trailing", renderedCount),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
-        item {
+        item(
+            key = guideGalleryRelatedLinksStableKey(state.galleryRelatedLinkRows),
+            contentType = GuideGalleryContentType.RELATED_LINKS,
+        ) {
             GuideGalleryRelatedLinksCard(
                 rows = state.galleryRelatedLinkRows,
                 onOpenExternal = onOpenExternal,
@@ -286,6 +416,68 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         }
     }
 }
+
+private object GuideGalleryContentType {
+    const val ERROR = "guide_gallery_error"
+    const val EMPTY = "guide_gallery_empty"
+    const val SPACER = "guide_gallery_spacer"
+    const val UNLOCK = "guide_gallery_unlock"
+    const val MEDIA = "guide_gallery_media"
+    const val EXPRESSION = "guide_gallery_expression"
+    const val VIDEO_GROUP = "guide_gallery_video_group"
+    const val RELATED_LINKS = "guide_gallery_related_links"
+}
+
+private fun guideGalleryListKey(
+    type: String,
+    vararg parts: Any?,
+): String =
+    buildString {
+        append("guide-gallery-")
+        append(type)
+        parts.forEach { part ->
+            append('-')
+            append(part?.toString().orEmpty().hashCode())
+        }
+    }
+
+private fun guideGalleryItemStableKey(
+    item: BaGuideGalleryItem,
+    index: Int,
+): String =
+    guideGalleryListKey(
+        type = "media",
+        item.title,
+        item.mediaType,
+        item.mediaUrl,
+        item.imageUrl,
+        item.note,
+        index,
+    )
+
+private fun guideGalleryVideoGroupStableKey(
+    groupType: String,
+    groupIndex: Int,
+    title: String,
+    items: List<BaGuideGalleryItem>,
+): String =
+    guideGalleryListKey(
+        type = "video",
+        groupType,
+        groupIndex,
+        title,
+        items.size,
+        items.firstOrNull()?.mediaUrl.orEmpty(),
+        items.lastOrNull()?.mediaUrl.orEmpty(),
+    )
+
+private fun guideGalleryRelatedLinksStableKey(rows: List<BaGuideRow>): String =
+    guideGalleryListKey(
+        type = "related",
+        rows.size,
+        rows.firstOrNull()?.key.orEmpty(),
+        rows.lastOrNull()?.value.orEmpty(),
+    )
 
 @Composable
 private fun GuideGalleryErrorCard(error: String) {

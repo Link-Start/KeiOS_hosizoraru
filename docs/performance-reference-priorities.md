@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | Backdrop / blur cache | MIUIX `5e75455`, `132586a` | Cache blur/render-effect results by stable inputs, reuse shader uniform buffers, release graphics layers on detach, and skip RuntimeShader effects through one central capability gate. | Landed: `appGlassRuntimeEffectsEnabled()` and `activeGlassBackdrop()` gate shared glass controls, action bars, bottom bars, sliders, status pills, and support blocks. Backdrop library internals keep blur cache ownership. |
 | Dynamic backgrounds | InstallerX-Revived `5dfb116` | Keep Home/HDR/background visuals, move frame ticks to `Modifier.Node` with `invalidateDraw()`, update shader uniforms only when inputs change. | Landed: `BgEffectModifier` starts frame ticks only while dynamic background, effect background, and visible alpha are active; shader uniforms already update through cached `BgEffectPainter` setters. |
-| Install/share action state machine | InstallerX-Revived `5291941`, `e56e817` architecture idea | Keep GitHub download/install/share UI contracts stable, but make user actions route through small coordinators with explicit pending, active, result, and notification-facing state. | Landed first pass: selected-asset delivery now resolves direct delivery, managed-install launch, and active managed-install commit through a pure state machine with unit coverage. |
+| Install/share action state machine | InstallerX-Revived `5291941`, `e56e817` architecture idea | Keep GitHub download/install/share UI contracts stable, but make user actions route through small coordinators with explicit pending, active, result, and notification-facing state. | In progress: selected-asset delivery, active-preview readiness, and waiting-install record construction now resolve through pure state-machine helpers with unit coverage. |
 
 ## P2
 
@@ -57,6 +57,16 @@
   - Routed `GitHubShareImportInstallFlowCoordinator` through the pure plan before invoking delivery side effects.
   - Added unit coverage for disabled managed install, managed launch, commit-ready progress, and stale progress handling.
   - `ktlint -F` scoped to the touched GitHub share/import state-machine files.
+  - `./gradlew :app:testDebugUnitTest --tests 'os.kei.ui.page.main.github.share.GitHubShareImportStateMachineTest'`
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-28 InstallerX clean-room P1 delivery continuation:
+  - Added active-preview delivery readiness plans for missing preview, disabled install action, missing selected asset, and ready selected asset.
+  - Moved waiting-install track record construction into a pure helper so `GitHubShareImportDeliveryCoordinator` only coordinates IO, notifications, and external delivery.
+  - Extended `GitHubShareImportStateMachineTest` for active preview readiness and pending-track record construction.
+  - `ktlint -F` scoped to the touched GitHub share/import delivery files.
   - `./gradlew :app:testDebugUnitTest --tests 'os.kei.ui.page.main.github.share.GitHubShareImportStateMachineTest'`
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`

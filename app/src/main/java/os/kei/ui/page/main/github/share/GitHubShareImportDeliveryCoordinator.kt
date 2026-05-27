@@ -7,7 +7,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.data.local.GitHubPendingShareImportTrackRecord
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -24,33 +23,42 @@ internal class GitHubShareImportDeliveryCoordinator(
             withContext(AppDispatchers.githubNetwork) {
                 GitHubShareImportFlowStore.loadActivePreview()?.toShareImportPreview()
             }
-        if (preview == null) {
-            val reason = appContext.getString(R.string.github_share_import_error_resolve_failed)
-            GitHubShareImportNotificationHelper.notifyFailed(appContext, reason)
-            return ShareImportDeliveryCoordinatorResult.Failed(
-                R.string.github_share_import_error_resolve_failed,
-            )
-        }
-        if (!preview.sendInstallActionEnabled) {
-            GitHubShareImportNotificationHelper.notifyAssetReady(
-                context = appContext,
-                owner = preview.owner,
-                repo = preview.repo,
-                releaseTag = preview.releaseTag,
-                assetCount = preview.assets.size,
-                sendInstallActionEnabled = false,
-            )
-            return ShareImportDeliveryCoordinatorResult.Failed(
-                R.string.github_share_import_notify_action_select_apk,
-            )
-        }
-        val selectedAsset = preview.selectedAssetForSend
-        if (selectedAsset == null) {
-            val reason = appContext.getString(R.string.github_share_import_error_no_usable_apk)
-            GitHubShareImportNotificationHelper.notifyFailed(appContext, reason)
-            return ShareImportDeliveryCoordinatorResult.Failed(
-                R.string.github_share_import_error_no_usable_apk,
-            )
+        val deliveryPlan = resolveActivePreviewDeliveryPlan(preview)
+        when (deliveryPlan) {
+            GitHubShareImportActivePreviewDeliveryPlan.MissingPreview -> {
+                val reason = appContext.getString(R.string.github_share_import_error_resolve_failed)
+                GitHubShareImportNotificationHelper.notifyFailed(appContext, reason)
+                return ShareImportDeliveryCoordinatorResult.Failed(
+                    R.string.github_share_import_error_resolve_failed,
+                )
+            }
+
+            GitHubShareImportActivePreviewDeliveryPlan.InstallActionDisabled -> {
+                val readyPreview = requireNotNull(preview)
+                GitHubShareImportNotificationHelper.notifyAssetReady(
+                    context = appContext,
+                    owner = readyPreview.owner,
+                    repo = readyPreview.repo,
+                    releaseTag = readyPreview.releaseTag,
+                    assetCount = readyPreview.assets.size,
+                    sendInstallActionEnabled = false,
+                )
+                return ShareImportDeliveryCoordinatorResult.Failed(
+                    R.string.github_share_import_notify_action_select_apk,
+                )
+            }
+
+            GitHubShareImportActivePreviewDeliveryPlan.MissingSelectedAsset -> {
+                val reason = appContext.getString(R.string.github_share_import_error_no_usable_apk)
+                GitHubShareImportNotificationHelper.notifyFailed(appContext, reason)
+                return ShareImportDeliveryCoordinatorResult.Failed(
+                    R.string.github_share_import_error_no_usable_apk,
+                )
+            }
+
+            is GitHubShareImportActivePreviewDeliveryPlan.Ready -> {
+                Unit
+            }
         }
         val lookupConfig =
             withContext(AppDispatchers.githubNetwork) {
@@ -58,8 +66,8 @@ internal class GitHubShareImportDeliveryCoordinator(
             }
         return startDelivery(
             context = context,
-            preview = preview,
-            selectedAsset = selectedAsset,
+            preview = deliveryPlan.preview,
+            selectedAsset = deliveryPlan.selectedAsset,
             lookupConfig = lookupConfig,
             launchInNewTask = context !is Activity,
         )
@@ -132,23 +140,11 @@ internal class GitHubShareImportDeliveryCoordinator(
 
                 is ShareImportDeliveryResult.Success -> {
                     val scannedManifestInfo = scannedManifestInfoDeferred.await()
-                    val scannedPackageName = scannedManifestInfo?.packageName.orEmpty()
-                    val scannedVersionName = scannedManifestInfo?.versionName.orEmpty()
                     val pending =
-                        GitHubPendingShareImportTrackRecord(
-                            projectUrl = preview.projectUrl,
-                            owner = preview.owner,
-                            repo = preview.repo,
-                            releaseTag = preview.releaseTag,
-                            assetName = selectedAsset.name,
-                            packageName = scannedPackageName,
-                            versionName = scannedVersionName,
-                            targetDisplayName =
-                                buildShareImportTargetDisplayName(
-                                    repo = preview.repo,
-                                    assetName = selectedAsset.name,
-                                    packageName = scannedPackageName,
-                                ).ifBlank { preview.targetDisplayName },
+                        buildWaitingInstallTrackRecord(
+                            preview = preview,
+                            selectedAsset = selectedAsset,
+                            scannedManifestInfo = scannedManifestInfo,
                             armedAtMillis = clock.nowMs(),
                         )
                     withContext(AppDispatchers.githubNetwork) {

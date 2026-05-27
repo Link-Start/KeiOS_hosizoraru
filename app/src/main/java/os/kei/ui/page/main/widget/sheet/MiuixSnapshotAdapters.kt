@@ -173,12 +173,13 @@ fun SnapshotWindowListPopup(
         }
     val popupShowBelow = opensDownward
     val popupShowAbove = !opensDownward
-    val fractionProgress = remember { Animatable(0f) }
-    val alphaProgress = remember { Animatable(0f) }
+    val initialPopupProgress = if (show) 1f else 0f
+    val fractionProgress = remember { Animatable(initialPopupProgress) }
+    val alphaProgress = remember { Animatable(initialPopupProgress) }
     val fractionProgressProvider = remember(fractionProgress) { { fractionProgress.value.coerceIn(0f, 1f) } }
     val alphaProgressProvider = remember(alphaProgress) { { alphaProgress.value.coerceIn(0f, 1f) } }
-    var wasVisible by remember { mutableStateOf(false) }
-    var popupRender by remember { mutableStateOf(false) }
+    var wasVisible by remember { mutableStateOf(show) }
+    var popupRender by remember { mutableStateOf(show) }
     val composePopupPositionProvider =
         remember(
             density,

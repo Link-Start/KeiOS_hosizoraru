@@ -29,10 +29,10 @@
 
 | Area | Source | KeiOS Landing Direction | Status |
 | --- | --- | --- |
-| Text / color producer | MIUIX `94f1ff9` | Use producer/lambda color APIs for animated status text, pills, borders, progress text, and title highlights. | Landed: `StatusPill`, `LiquidLinearProgressBar`, `LiquidMusicProgressBar`, `LiquidCircularProgressBar`, and `LiquidGlassDropdownItem` dynamic text/icon colors read through providers or draw/layout paths; Home title/icon HDR radial highlight brush is cached by draw size. Remaining: specialty components only as new animated text is added. |
-| Top bar layout state | MIUIX `81a1401` | Save expensive measured title heights with saveable state and initialize animation values from current visibility state. | Landed: title width estimation is saveable by title, and title card layout is derived through a pure `deriveAppTopBarTitleLayout` function. Remaining: measured-height state for future large-title variants. |
-| Popup / reveal animation | MIUIX `054e2a1` | Share one popup reveal helper across dropdown/action menus to reduce per-component clipping animation variants. | Landed: `SnapshotWindowListPopup` uses `snapshotPopupReveal` for shared scale, translation, alpha, and clipping. Existing dropdown/action menus inherit it. |
-| Settings row specialization | InstallerX-Revived `6dc4099`, `2d71338` | Continue splitting universal settings rows into narrow navigation/switch/value/action rows and decouple disabled visuals from clickability. | Landed: `SettingsNavigationItem`, `SettingsValueItem`, `SettingsPickerItem`, `SettingsButtonActionItem`, and `SettingsToggleItem(enabled)` wrap the shared row core; disabled visuals and clickability are separated. Direct `SettingsActionItem` use is now kept inside the shared settings support layer. |
+| Text / color producer | MIUIX `94f1ff9` | Use producer/lambda color APIs for animated status text, pills, borders, progress text, and title highlights. | Complete: `StatusPill`, `LiquidLinearProgressBar`, `LiquidMusicProgressBar`, `LiquidCircularProgressBar`, and `LiquidGlassDropdownItem` dynamic text/icon colors read through providers or draw/layout paths; Home title/icon HDR radial highlight brush is cached by draw size. |
+| Top bar layout state | MIUIX `81a1401` | Save expensive measured title heights with saveable state and initialize animation values from current visibility state. | Complete for current KeiOS chrome: title width estimation is saveable by title, title card layout is derived through pure `deriveAppTopBarTitleLayout`, current fixed-height title card has no active large-title measured-height path, and popup reveal animation state now initializes from current visibility. |
+| Popup / reveal animation | MIUIX `054e2a1` | Share one popup reveal helper across dropdown/action menus to reduce per-component clipping animation variants. | Complete: `SnapshotWindowListPopup` uses shared `snapshotPopupReveal`, dropdown/action menus inherit it, and popup render/alpha/fraction state initializes from the current `show` value. |
+| Settings row specialization | InstallerX-Revived `6dc4099`, `2d71338` | Continue splitting universal settings rows into narrow navigation/switch/value/action rows and decouple disabled visuals from clickability. | Complete: `SettingsNavigationItem`, `SettingsValueItem`, `SettingsPickerItem`, `SettingsButtonActionItem`, and `SettingsToggleItem(enabled)` wrap the shared row core; disabled visuals and clickability are separated. Direct `SettingsActionItem` use is support-internal only. |
 
 ## Verification Log
 
@@ -86,6 +86,21 @@
   - Moved Home title/icon HDR radial highlight brush into `drawWithCache`; sweep progress continues to read in draw.
   - `ktlint -F` scoped to touched P2 files.
   - `./gradlew :app:compileDebugKotlin`
+- 2026-05-28 P2 completion pass:
+  - Initialized shared snapshot popup reveal `Animatable` and render flags from the current `show` value to remove the first-frame reveal mismatch.
+  - Audited active P2 rows and marked them complete for current KeiOS chrome, dropdown, popup, Home HDR, and Settings-row surfaces.
+  - `ktlint -F` scoped to touched P2 files.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "Remaining:|In progress" docs/performance-reference-priorities.md`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-28 P2 final audit pass:
+  - Rechecked the P2 table and implementation state: no `Remaining:` / `In progress` marker remains, no app `collectAsState(` usage remains, and direct `SettingsActionItem` use is confined to the settings support wrapper layer.
+  - Confirmed shared popup reveal state initializes from the current `show` value through `SnapshotWindowListPopup` render, alpha, and fraction state.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
 
 ## Guardrails
 

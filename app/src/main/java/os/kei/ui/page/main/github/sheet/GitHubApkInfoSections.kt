@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +42,13 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@Immutable
+private data class ManifestNodeRowUiState(
+    val id: String,
+    val displayLine: String,
+    val riskSignals: List<ApkDifferenceSignal>,
+)
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
@@ -357,6 +366,19 @@ internal fun ManifestNodeGroupCard(
     expanded: Boolean,
     onToggle: () -> Unit,
 ) {
+    val nodeRows =
+        remember(nodes) {
+            nodes
+                .take(MANIFEST_NODE_LIMIT)
+                .mapIndexed { index, node ->
+                    ManifestNodeRowUiState(
+                        id = node.manifestNodeStableId(index),
+                        displayLine = node.displayLine(),
+                        riskSignals = node.riskPills(),
+                    )
+                }
+        }
+    val hiddenNodeCount = remember(nodes) { (nodes.size - MANIFEST_NODE_LIMIT).coerceAtLeast(0) }
     AppSurfaceCard(onClick = onToggle) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
@@ -386,26 +408,35 @@ internal fun ManifestNodeGroupCard(
                 )
             }
             if (expanded) {
-                nodes.take(MANIFEST_NODE_LIMIT).forEach { node ->
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        DetailLine(node.displayLine(), maxLines = 3)
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            node.riskPills().forEach { signal ->
-                                StatusPill(signal.label, signal.color)
-                            }
-                        }
+                nodeRows.forEach { row ->
+                    key(row.id) {
+                        ManifestNodeRow(row)
                     }
                 }
-                val hidden = nodes.size - MANIFEST_NODE_LIMIT
-                if (hidden > 0) {
+                if (hiddenNodeCount > 0) {
                     DetailLine(
-                        stringResource(R.string.github_apk_info_more_count, hidden),
+                        stringResource(R.string.github_apk_info_more_count, hiddenNodeCount),
                         maxLines = 1,
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun ManifestNodeRow(row: ManifestNodeRowUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        DetailLine(row.displayLine, maxLines = 3)
+        if (row.riskSignals.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                row.riskSignals.forEach { signal ->
+                    StatusPill(signal.label, signal.color)
                 }
             }
         }
@@ -551,6 +582,17 @@ internal fun apkInfoSourceLabel(source: String): String =
         "html" -> stringResource(R.string.github_asset_fetch_source_html)
         else -> stringResource(R.string.common_unknown)
     }
+
+private fun GitHubApkManifestNode.manifestNodeStableId(index: Int): String =
+    listOf(
+        tagName,
+        displayName,
+        attributes["name"].orEmpty(),
+        attributes["authorities"].orEmpty(),
+        attributes["permission"].orEmpty(),
+        attributes["process"].orEmpty(),
+        index.toString(),
+    ).joinToString("|")
 
 @Composable
 internal fun DetailLine(

@@ -294,11 +294,17 @@ internal fun BaGuideStudentBgmTabContent(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (effectiveLoading && allStudentEntries.isEmpty()) {
-                item(key = "student-bgm-loading") {
+                item(
+                    key = "student-bgm-loading",
+                    contentType = "student_bgm_status",
+                ) {
                     AppAronaLoadingPanel(accent = accent)
                 }
             } else {
-                item(key = "student-bgm-header") {
+                item(
+                    key = "student-bgm-header",
+                    contentType = "student_bgm_header",
+                ) {
                     BaGuideStudentBgmHeader(
                         totalCount = allStudentEntries.size,
                         displayedCount = filteredEntries.size,
@@ -312,7 +318,10 @@ internal fun BaGuideStudentBgmTabContent(
             }
 
             if (!effectiveLoading && filteredEntries.isEmpty()) {
-                item(key = "student-bgm-empty") {
+                item(
+                    key = "student-bgm-empty",
+                    contentType = "student_bgm_status",
+                ) {
                     LiquidInfoBlock(
                         backdrop = null,
                         title = stringResource(R.string.ba_catalog_empty_title),

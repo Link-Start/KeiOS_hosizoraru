@@ -23,41 +23,45 @@ internal fun LazyListScope.renderBaGuideCatalogEntryListAdapter(
     accent: Color,
     loadingMoreText: String,
     onOpenGuide: (String) -> Unit,
-    onToggleFavorite: (Long) -> Unit
+    onToggleFavorite: (Long) -> Unit,
 ) {
     items(
         items = displayedEntries,
         key = { "${it.tab.name}-${it.entryId}-${it.contentId}" },
-        contentType = { "ba_guide_catalog_entry" }
+        contentType = { "ba_guide_catalog_entry" },
     ) { entry ->
         BaGuideCatalogEntryCard(
             entry = entry,
             isFavorite = favoriteCatalogEntries.containsKey(entry.contentId),
             onOpenGuide = onOpenGuide,
-            onToggleFavorite = onToggleFavorite
+            onToggleFavorite = onToggleFavorite,
         )
     }
 
     if (hasMoreEntries) {
-        item {
+        item(
+            key = "ba-guide-catalog-loading-more",
+            contentType = "ba_guide_catalog_loading_more",
+        ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 LiquidCircularProgressBar(
                     progress = { 0.3f },
                     size = 16.dp,
                     strokeWidth = 2.dp,
                     activeColor = accent,
-                    inactiveColor = accent.copy(alpha = 0.30f)
+                    inactiveColor = accent.copy(alpha = 0.30f),
                 )
                 Text(
                     text = loadingMoreText,
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
                 )
             }
         }

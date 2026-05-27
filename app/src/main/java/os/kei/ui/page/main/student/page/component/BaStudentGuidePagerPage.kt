@@ -175,7 +175,10 @@ internal fun BaStudentGuidePagerPage(
                     end = 16.dp,
                 ),
         ) {
-            item {
+            item(
+                key = "ba-student-guide-header-${tabRenderState.activeBottomTab.name}",
+                contentType = "ba_student_guide_header",
+            ) {
                 Row(
                     modifier =
                         Modifier
@@ -206,9 +209,17 @@ internal fun BaStudentGuidePagerPage(
                     }
                 }
             }
-            item { Spacer(modifier = Modifier.height(12.dp)) }
+            item(
+                key = "ba-student-guide-header-spacer-${tabRenderState.activeBottomTab.name}",
+                contentType = "ba_student_guide_spacer",
+            ) {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             if (sourceUrl.isBlank()) {
-                item {
+                item(
+                    key = "ba-student-guide-empty-source",
+                    contentType = "ba_student_guide_status",
+                ) {
                     LiquidInfoBlock(
                         backdrop = pageBackdrop,
                         title = stringResource(R.string.guide_empty_student_title),

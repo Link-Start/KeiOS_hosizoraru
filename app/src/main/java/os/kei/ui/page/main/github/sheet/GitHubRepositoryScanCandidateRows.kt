@@ -1,13 +1,22 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -18,50 +27,87 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private val RepositoryScanCandidateListMaxHeight = 360.dp
+
+@Immutable
+private data class RepositoryScanCandidateRowUiState(
+    val id: String,
+    val candidate: GitHubPackageRepositoryScanCandidate,
+    val recommended: Boolean,
+    val selected: Boolean,
+)
 
 @Composable
 internal fun RepositoryScanCandidateList(
     candidates: List<GitHubPackageRepositoryScanCandidate>,
     selectedRepoUrl: String,
-    onCandidateClick: (GitHubPackageRepositoryScanCandidate) -> Unit
+    onCandidateClick: (GitHubPackageRepositoryScanCandidate) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val rows =
+        remember(candidates, selectedRepoUrl) {
+            candidates.mapIndexed { index, candidate ->
+                RepositoryScanCandidateRowUiState(
+                    id = candidate.repositoryScanCandidateStableId(),
+                    candidate = candidate,
+                    recommended = index == 0,
+                    selected = candidate.trackedApp.repoUrl.sameRepoUrlAs(selectedRepoUrl),
+                )
+            }
+        }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             SheetInputTitle(stringResource(R.string.github_track_sheet_section_repo_candidates))
             Text(
-                text = stringResource(
-                    R.string.github_track_sheet_repo_candidate_count_format,
-                    candidates.size
-                ),
+                text =
+                    stringResource(
+                        R.string.github_track_sheet_repo_candidate_count_format,
+                        candidates.size,
+                    ),
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Caption.fontSize,
                 lineHeight = AppTypographyTokens.Caption.lineHeight,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         SheetDescriptionText(
-            text = stringResource(R.string.github_track_sheet_repo_candidates_summary)
+            text = stringResource(R.string.github_track_sheet_repo_candidates_summary),
         )
-        candidates.forEachIndexed { index, candidate ->
-            RepositoryScanCandidateRow(
-                candidate = candidate,
-                recommended = index == 0,
-                selected = candidate.trackedApp.repoUrl.sameRepoUrlAs(selectedRepoUrl),
-                onClick = { onCandidateClick(candidate) }
-            )
+        LazyColumn(
+            state = listState,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = RepositoryScanCandidateListMaxHeight),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 2.dp),
+        ) {
+            items(
+                items = rows,
+                key = { row -> row.id },
+                contentType = { "github_repository_scan_candidate" },
+            ) { row ->
+                RepositoryScanCandidateRow(
+                    candidate = row.candidate,
+                    recommended = row.recommended,
+                    selected = row.selected,
+                    onClick = { onCandidateClick(row.candidate) },
+                )
+            }
         }
     }
 }
@@ -71,43 +117,49 @@ private fun RepositoryScanCandidateRow(
     candidate: GitHubPackageRepositoryScanCandidate,
     recommended: Boolean,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val accent = when {
-        selected -> GitHubStatusPalette.Update
-        recommended -> GitHubStatusPalette.Active
-        else -> MiuixTheme.colorScheme.primary
-    }
+    val accent =
+        when {
+            selected -> GitHubStatusPalette.Update
+            recommended -> GitHubStatusPalette.Active
+            else -> MiuixTheme.colorScheme.primary
+        }
     val isDark = isSystemInDarkTheme()
     val metaText = candidate.repositoryCandidateMetaText()
-    val starCountText = candidate.repository.starCount.takeIf { it > 0 }?.formatCompactCount()
-    val starLabel = starCountText?.let {
-        stringResource(R.string.github_track_sheet_repo_candidate_stars_format, it)
-    }
+    val starCountText =
+        candidate.repository.starCount
+            .takeIf { it > 0 }
+            ?.formatCompactCount()
+    val starLabel =
+        starCountText?.let {
+            stringResource(R.string.github_track_sheet_repo_candidate_stars_format, it)
+        }
     SheetControlRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .appSquircleBackground(accent.copy(alpha = if (isDark) 0.08f else 0.1f), 12.dp)
-            .appSquircleBorder(
-                width = 0.8.dp,
-                color = accent.copy(alpha = if (selected || recommended) 0.34f else 0.18f),
-                cornerRadius = 12.dp,
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .appSquircleBackground(accent.copy(alpha = if (isDark) 0.08f else 0.1f), 12.dp)
+                .appSquircleBorder(
+                    width = 0.8.dp,
+                    color = accent.copy(alpha = if (selected || recommended) 0.34f else 0.18f),
+                    cornerRadius = 12.dp,
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
         minHeight = 68.dp,
         labelContent = {
             Text(
                 text = candidate.repository.fullName,
-                color = if (selected) {
-                    GitHubStatusPalette.Update
-                } else {
-                    MiuixTheme.colorScheme.onBackground
-                },
+                color =
+                    if (selected) {
+                        GitHubStatusPalette.Update
+                    } else {
+                        MiuixTheme.colorScheme.onBackground
+                    },
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = candidate.repository.description.ifBlank { candidate.trackedApp.repoUrl },
@@ -115,7 +167,7 @@ private fun RepositoryScanCandidateRow(
                 fontSize = AppTypographyTokens.Caption.fontSize,
                 lineHeight = AppTypographyTokens.Caption.lineHeight,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             if (metaText.isNotBlank()) {
                 Text(
@@ -124,46 +176,50 @@ private fun RepositoryScanCandidateRow(
                     fontSize = AppTypographyTokens.Caption.fontSize,
                     lineHeight = AppTypographyTokens.Caption.lineHeight,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
+        },
     ) {
         Column(
             horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             when {
-                selected -> StatusPill(
-                    label = stringResource(R.string.github_track_sheet_repo_candidate_selected),
-                    color = GitHubStatusPalette.Update,
-                    size = AppStatusPillSize.Compact
-                )
+                selected -> {
+                    StatusPill(
+                        label = stringResource(R.string.github_track_sheet_repo_candidate_selected),
+                        color = GitHubStatusPalette.Update,
+                        size = AppStatusPillSize.Compact,
+                    )
+                }
 
-                recommended -> StatusPill(
-                    label = stringResource(R.string.github_track_sheet_repo_candidate_recommended),
-                    color = GitHubStatusPalette.Active,
-                    size = AppStatusPillSize.Compact
-                )
+                recommended -> {
+                    StatusPill(
+                        label = stringResource(R.string.github_track_sheet_repo_candidate_recommended),
+                        color = GitHubStatusPalette.Active,
+                        size = AppStatusPillSize.Compact,
+                    )
+                }
             }
             if (starLabel != null) {
                 StatusPill(
                     label = starLabel,
                     color = MiuixTheme.colorScheme.primary,
-                    size = AppStatusPillSize.Compact
+                    size = AppStatusPillSize.Compact,
                 )
             }
             if (candidate.repository.archived) {
                 StatusPill(
                     label = stringResource(R.string.github_track_sheet_repo_candidate_archived),
                     color = GitHubStatusPalette.Error,
-                    size = AppStatusPillSize.Compact
+                    size = AppStatusPillSize.Compact,
                 )
             } else if (candidate.repository.fork) {
                 StatusPill(
                     label = stringResource(R.string.github_track_sheet_repo_candidate_fork),
                     color = GitHubStatusPalette.PreRelease,
-                    size = AppStatusPillSize.Compact
+                    size = AppStatusPillSize.Compact,
                 )
             }
         }
@@ -171,21 +227,19 @@ private fun RepositoryScanCandidateRow(
 }
 
 @Composable
-private fun GitHubPackageRepositoryScanCandidate.repositoryCandidateMetaText(): String {
-    return listOf(
+private fun GitHubPackageRepositoryScanCandidate.repositoryCandidateMetaText(): String =
+    listOf(
         releaseTag.ifBlank { null },
-        assetName.ifBlank { null }
+        assetName.ifBlank { null },
     ).filterNotNull().joinToString(" · ")
-}
 
-private fun Int.formatCompactCount(): String {
-    return when {
+private fun Int.formatCompactCount(): String =
+    when {
         this >= 100_000 -> "${this / 1000}k"
         this >= 10_000 -> "${(this / 1000.0).formatOneDecimal()}k"
         this >= 1_000 -> "${(this / 1000.0).formatOneDecimal()}k"
         else -> toString()
     }
-}
 
 private fun Double.formatOneDecimal(): String {
     val value = kotlin.math.floor(this * 10.0) / 10.0
@@ -196,6 +250,13 @@ private fun Double.formatOneDecimal(): String {
     }
 }
 
-private fun String.sameRepoUrlAs(other: String): Boolean {
-    return trim().trimEnd('/').equals(other.trim().trimEnd('/'), ignoreCase = true)
+private fun String.sameRepoUrlAs(other: String): Boolean = trim().trimEnd('/').equals(other.trim().trimEnd('/'), ignoreCase = true)
+
+private fun GitHubPackageRepositoryScanCandidate.repositoryScanCandidateStableId(): String {
+    val repoUrl = trackedApp.repoUrl.trim()
+    val packageName = trackedApp.packageName.trim()
+    val fullName = repository.fullName.trim()
+    val release = releaseTag.trim()
+    val asset = assetName.trim()
+    return listOf(repoUrl, packageName, fullName, release, asset).joinToString("|")
 }

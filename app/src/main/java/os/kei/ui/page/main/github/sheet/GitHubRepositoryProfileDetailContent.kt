@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.sheet
 
 import android.content.Context
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,11 +53,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun GitHubHealthDetailContent(
     item: GitHubTrackedApp,
     state: VersionCheckUi,
-    refreshing: Boolean = false
+    refreshing: Boolean = false,
 ) {
     val context = LocalContext.current
-    val health = buildGitHubRepositoryHealth(item, state)
-    val profileUi = GitHubRepositoryProfileUiMapper.build(state.repositoryProfile)
+    val health = remember(item, state) { buildGitHubRepositoryHealth(item, state) }
+    val profileUi = remember(state.repositoryProfile) { GitHubRepositoryProfileUiMapper.build(state.repositoryProfile) }
     var rulesExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
     SheetContentColumn(verticalSpacing = 10.dp) {
         RepositoryProfileOverviewCard(
@@ -62,7 +65,7 @@ internal fun GitHubHealthDetailContent(
             state = state,
             health = health,
             profileUi = profileUi,
-            refreshing = refreshing
+            refreshing = refreshing,
         )
         SheetSectionTitle(stringResource(R.string.github_health_detail_diagnosis_title))
         GitHubHealthDiagnosisCard(health = health, context = context)
@@ -79,7 +82,7 @@ internal fun GitHubHealthDetailContent(
         }
         GitHubHealthRulesCard(
             expanded = rulesExpanded,
-            onExpandedChange = { rulesExpanded = it }
+            onExpandedChange = { rulesExpanded = it },
         )
     }
 }
@@ -87,7 +90,7 @@ internal fun GitHubHealthDetailContent(
 @Composable
 private fun GitHubHealthRulesCard(
     expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     SheetExpandableCard(
         title = stringResource(R.string.github_health_detail_rule_title),
@@ -95,23 +98,23 @@ private fun GitHubHealthRulesCard(
         expandedSummary = stringResource(R.string.github_health_detail_rule_summary_expanded),
         expanded = expanded,
         onExpandedChange = onExpandedChange,
-        accentColor = GitHubStatusPalette.Active
+        accentColor = GitHubStatusPalette.Active,
     ) {
         DetailTextLine(
             text = stringResource(R.string.github_health_detail_rule_check),
-            maxLines = Int.MAX_VALUE
+            maxLines = Int.MAX_VALUE,
         )
         DetailTextLine(
             text = stringResource(R.string.github_health_detail_rule_release),
-            maxLines = Int.MAX_VALUE
+            maxLines = Int.MAX_VALUE,
         )
         DetailTextLine(
             text = stringResource(R.string.github_health_detail_rule_package),
-            maxLines = Int.MAX_VALUE
+            maxLines = Int.MAX_VALUE,
         )
         DetailTextLine(
             text = stringResource(R.string.github_health_detail_rule_scope),
-            maxLines = Int.MAX_VALUE
+            maxLines = Int.MAX_VALUE,
         )
     }
 }
@@ -122,44 +125,48 @@ internal fun RepositoryProfileOverviewCard(
     state: VersionCheckUi,
     health: GitHubRepositoryHealth,
     profileUi: GitHubRepositoryProfileUiSummary?,
-    refreshing: Boolean = false
+    refreshing: Boolean = false,
 ) {
     val levelLabel = stringResource(health.level.repositoryHealthLabelRes())
     SheetSummaryCard(
         title = stringResource(R.string.github_health_detail_summary),
-        badgeLabel = stringResource(
-            R.string.github_health_score_level_value,
-            health.score,
-            levelLabel
-        ),
-        badgeColor = health.level.repositoryHealthStatusColor()
+        badgeLabel =
+            stringResource(
+                R.string.github_health_score_level_value,
+                health.score,
+                levelLabel,
+            ),
+        badgeColor = health.level.repositoryHealthStatusColor(),
     ) {
         DetailInfoRow(
             label = stringResource(R.string.github_release_notes_detail_repo),
-            value = profileUi?.ownerRepo ?: "${item.owner}/${item.repo}"
+            value = profileUi?.ownerRepo ?: "${item.owner}/${item.repo}",
         )
         DetailInfoRow(
             label = stringResource(R.string.github_item_label_local_version),
-            value = state.localVersion.ifBlank { stringResource(R.string.common_unknown) }
+            value = state.localVersion.ifBlank { stringResource(R.string.common_unknown) },
         )
-        val latestRelease = state.latestStableRawTag
-            .ifBlank { state.latestPreRawTag }
-            .ifBlank { stringResource(R.string.common_unknown) }
+        val latestRelease =
+            state.latestStableRawTag
+                .ifBlank { state.latestPreRawTag }
+                .ifBlank { stringResource(R.string.common_unknown) }
         DetailInfoRow(
             label = stringResource(R.string.github_profile_label_latest_release),
-            value = latestRelease
+            value = latestRelease,
         )
-        profileUi?.fetchedAtMillis
+        profileUi
+            ?.fetchedAtMillis
             ?.takeIf { it > 0L }
             ?.let { fetchedAt ->
                 DetailInfoRow(
                     label = stringResource(R.string.github_profile_section_sources),
-                    value = if (refreshing) {
-                        stringResource(R.string.common_loading)
-                    } else {
-                        formatReleaseUpdatedAtNoYear(fetchedAt)
-                            ?: stringResource(R.string.common_unknown)
-                    }
+                    value =
+                        if (refreshing) {
+                            stringResource(R.string.common_loading)
+                        } else {
+                            formatReleaseUpdatedAtNoYear(fetchedAt)
+                                ?: stringResource(R.string.common_unknown)
+                        },
                 )
             }
     }
@@ -170,7 +177,7 @@ internal fun ProfileSignalSection(section: GitHubRepositoryProfileUiSection) {
     SheetSectionTitle(stringResource(section.titleRes))
     SheetSectionCard(
         verticalSpacing = 8.dp,
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
     ) {
         section.rows.forEach { row ->
             ProfileSignalRow(row)
@@ -183,12 +190,12 @@ private fun ProfileSignalRow(row: GitHubRepositoryProfileUiRow) {
     val rowColor = row.level?.repositoryHealthStatusColor()
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.Top,
         ) {
             Text(
                 text = stringResource(row.labelRes),
@@ -197,21 +204,21 @@ private fun ProfileSignalRow(row: GitHubRepositoryProfileUiRow) {
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             row.level?.let { level ->
                 StatusPill(
                     label = stringResource(level.repositoryHealthLabelRes()),
                     color = level.repositoryHealthStatusColor(),
                     size = AppStatusPillSize.Compact,
-                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp)
+                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
                 )
             }
         }
         ProfileMetaLine(
             sourceLabelRes = row.sourceLabelRes,
             confidenceLabelRes = row.confidenceLabelRes,
-            fetchedAtMillis = row.fetchedAtMillis
+            fetchedAtMillis = row.fetchedAtMillis,
         )
         Text(
             text = gitHubRepositoryProfileUiText(row.value),
@@ -220,7 +227,7 @@ private fun ProfileSignalRow(row: GitHubRepositoryProfileUiRow) {
             lineHeight = AppTypographyTokens.Body.lineHeight,
             fontWeight = if (rowColor != null) AppTypographyTokens.BodyEmphasis.fontWeight else null,
             maxLines = Int.MAX_VALUE,
-            overflow = TextOverflow.Clip
+            overflow = TextOverflow.Clip,
         )
     }
 }
@@ -229,17 +236,18 @@ private fun ProfileSignalRow(row: GitHubRepositoryProfileUiRow) {
 private fun ProfileMetaLine(
     sourceLabelRes: Int,
     confidenceLabelRes: Int,
-    fetchedAtMillis: Long
+    fetchedAtMillis: Long,
 ) {
-    val parts = buildList {
-        if (sourceLabelRes != 0) {
-            add(stringResource(sourceLabelRes))
+    val parts =
+        buildList {
+            if (sourceLabelRes != 0) {
+                add(stringResource(sourceLabelRes))
+            }
+            if (confidenceLabelRes != 0) {
+                add(stringResource(confidenceLabelRes))
+            }
+            formatReleaseUpdatedAtNoYear(fetchedAtMillis)?.let(::add)
         }
-        if (confidenceLabelRes != 0) {
-            add(stringResource(confidenceLabelRes))
-        }
-        formatReleaseUpdatedAtNoYear(fetchedAtMillis)?.let(::add)
-    }
     if (parts.isEmpty()) return
     Text(
         text = parts.joinToString(" · "),
@@ -247,7 +255,7 @@ private fun ProfileMetaLine(
         fontSize = AppTypographyTokens.Caption.fontSize,
         lineHeight = AppTypographyTokens.Caption.lineHeight,
         maxLines = 2,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -256,7 +264,7 @@ internal fun SourceAvailabilitySection(rows: List<GitHubRepositoryProfileSourceU
     SheetSectionTitle(stringResource(R.string.github_profile_section_sources))
     SheetSectionCard(
         verticalSpacing = 8.dp,
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
     ) {
         if (rows.isEmpty()) {
             SheetDescriptionText(stringResource(R.string.github_health_detail_profile_empty))
@@ -273,11 +281,11 @@ private fun SourceAvailabilityRow(row: GitHubRepositoryProfileSourceUiRow) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(
                 text = stringResource(row.sourceLabelRes),
@@ -285,7 +293,7 @@ private fun SourceAvailabilityRow(row: GitHubRepositoryProfileSourceUiRow) {
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             SourceAvailabilityMeta(row)
             row.message.takeIf { it.isNotBlank() }?.let { message ->
@@ -295,7 +303,7 @@ private fun SourceAvailabilityRow(row: GitHubRepositoryProfileSourceUiRow) {
                     fontSize = AppTypographyTokens.Caption.fontSize,
                     lineHeight = AppTypographyTokens.Caption.lineHeight,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -303,23 +311,24 @@ private fun SourceAvailabilityRow(row: GitHubRepositoryProfileSourceUiRow) {
             label = stringResource(row.statusLabelRes),
             color = row.level.repositoryHealthStatusColor(),
             size = AppStatusPillSize.Compact,
-            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp)
+            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
         )
     }
 }
 
 @Composable
 private fun SourceAvailabilityMeta(row: GitHubRepositoryProfileSourceUiRow) {
-    val parts = buildList {
-        row.elapsed?.let { add(gitHubRepositoryProfileUiText(it)) }
-        if (row.fromCache) {
-            add(stringResource(R.string.github_profile_source_from_cache))
+    val parts =
+        buildList {
+            row.elapsed?.let { add(gitHubRepositoryProfileUiText(it)) }
+            if (row.fromCache) {
+                add(stringResource(R.string.github_profile_source_from_cache))
+            }
+            if (row.required) {
+                add(stringResource(R.string.github_profile_source_required))
+            }
+            formatReleaseUpdatedAtNoYear(row.fetchedAtMillis)?.let(::add)
         }
-        if (row.required) {
-            add(stringResource(R.string.github_profile_source_required))
-        }
-        formatReleaseUpdatedAtNoYear(row.fetchedAtMillis)?.let(::add)
-    }
     if (parts.isEmpty()) return
     Text(
         text = parts.joinToString(" · "),
@@ -327,19 +336,19 @@ private fun SourceAvailabilityMeta(row: GitHubRepositoryProfileSourceUiRow) {
         fontSize = AppTypographyTokens.Caption.fontSize,
         lineHeight = AppTypographyTokens.Caption.lineHeight,
         maxLines = 2,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
 @Composable
 private fun GitHubHealthDiagnosisCard(
     health: GitHubRepositoryHealth,
-    context: Context
+    context: Context,
 ) {
     val impactLines = buildGitHubRepositoryHealthImpactLines(health)
     SheetSectionCard(
         verticalSpacing = 6.dp,
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
     ) {
         if (impactLines.isEmpty()) {
             DetailTextLine(stringResource(R.string.github_health_detail_diagnosis_empty))
@@ -347,7 +356,7 @@ private fun GitHubHealthDiagnosisCard(
             impactLines.forEach { (reason, impact) ->
                 GitHubHealthDiagnosisLine(
                     impact = impact,
-                    reason = context.getString(reason.labelRes())
+                    reason = context.getString(reason.labelRes()),
                 )
             }
         }
@@ -357,28 +366,29 @@ private fun GitHubHealthDiagnosisCard(
 @Composable
 private fun GitHubHealthDiagnosisLine(
     impact: Int,
-    reason: String
+    reason: String,
 ) {
-    val impactColor = when {
-        impact > 0 -> GitHubStatusPalette.Update
-        impact < 0 -> GitHubStatusPalette.Error
-        else -> MiuixTheme.colorScheme.onBackgroundVariant
-    }
+    val impactColor =
+        when {
+            impact > 0 -> GitHubStatusPalette.Update
+            impact < 0 -> GitHubStatusPalette.Error
+            else -> MiuixTheme.colorScheme.onBackgroundVariant
+        }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         StatusPill(
             label = if (impact > 0) "+$impact" else impact.toString(),
             color = impactColor,
             size = AppStatusPillSize.Compact,
-            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp)
+            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
         )
         DetailTextLine(
             text = reason,
             maxLines = 3,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
     }
 }
@@ -386,12 +396,12 @@ private fun GitHubHealthDiagnosisLine(
 @Composable
 private fun DetailInfoRow(
     label: String,
-    value: String
+    value: String,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             text = label,
@@ -400,7 +410,7 @@ private fun DetailInfoRow(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = value,
@@ -409,7 +419,7 @@ private fun DetailInfoRow(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
             maxLines = 3,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -419,7 +429,7 @@ private fun DetailTextLine(
     text: String,
     maxLines: Int = 3,
     accent: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
@@ -429,6 +439,6 @@ private fun DetailTextLine(
         lineHeight = if (accent) AppTypographyTokens.Body.lineHeight else AppTypographyTokens.Supporting.lineHeight,
         fontWeight = if (accent) AppTypographyTokens.BodyEmphasis.fontWeight else null,
         maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
     )
 }

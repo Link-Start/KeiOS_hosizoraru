@@ -10,10 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +60,7 @@ internal fun ShellOutputLiquidPanel(
         } else {
             Color(0xFFDC2626)
         }
+    val outputRows = remember(entries) { entries.toStableShellOutputRows() }
 
     ShellLiquidPanelSurface(
         modifier = modifier,
@@ -94,13 +96,13 @@ internal fun ShellOutputLiquidPanel(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    itemsIndexed(
-                        items = entries,
-                        key = { index, entry -> entry.stableShellOutputEntryKey(index) },
-                        contentType = { _, _ -> "shell_output_entry" },
-                    ) { _, entry ->
+                    items(
+                        items = outputRows,
+                        key = { row -> row.stableKey },
+                        contentType = { "shell_output_entry" },
+                    ) { row ->
                         ShellOutputEntryBlock(
-                            entry = entry,
+                            entry = row.entry,
                             commandColor = commandColor,
                             successOutputColor = successOutputColor,
                             stoppedOutputColor = stoppedOutputColor,
@@ -152,13 +154,32 @@ private fun ShellOutputEntryBlock(
     }
 }
 
-private fun ShellOutputDisplayEntry.stableShellOutputEntryKey(index: Int): String =
+internal data class StableShellOutputRow(
+    val entry: ShellOutputDisplayEntry,
+    val stableKey: String,
+)
+
+internal fun List<ShellOutputDisplayEntry>.toStableShellOutputRows(): List<StableShellOutputRow> {
+    if (isEmpty()) return emptyList()
+    val occurrenceCounts = HashMap<String, Int>(size)
+    return map { entry ->
+        val baseKey = entry.stableShellOutputEntryBaseKey()
+        val occurrence = occurrenceCounts.getOrDefault(baseKey, 0)
+        occurrenceCounts[baseKey] = occurrence + 1
+        StableShellOutputRow(
+            entry = entry,
+            stableKey = "$baseKey#$occurrence",
+        )
+    }
+}
+
+private fun ShellOutputDisplayEntry.stableShellOutputEntryBaseKey(): String =
     buildString {
-        append(index)
-        append(':')
         append(timeLabel)
         append(':')
         append(command.hashCode())
+        append(':')
+        append(result.hashCode())
         append(':')
         append(result.length)
     }

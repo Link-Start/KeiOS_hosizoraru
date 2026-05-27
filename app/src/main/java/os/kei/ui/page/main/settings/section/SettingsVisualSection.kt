@@ -9,8 +9,9 @@ import os.kei.R
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.ui.page.main.os.appLucideLayersIcon
-import os.kei.ui.page.main.settings.support.SettingsActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
+import os.kei.ui.page.main.settings.support.SettingsNavigationItem
+import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
@@ -58,7 +59,7 @@ internal fun SettingsVisualSection(
         sectionIcon = appLucideLayersIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
     ) {
-        SettingsActionItem(
+        SettingsPickerItem(
             title = stringResource(R.string.settings_theme_mode_title),
             summary = themeSummary,
         ) {
@@ -79,7 +80,7 @@ internal fun SettingsVisualSection(
                 variant = GlassVariant.SheetAction,
             )
         }
-        SettingsActionItem(
+        SettingsPickerItem(
             title = stringResource(R.string.settings_launcher_icon_design_title),
             summary = launcherIconSummary,
             infoKey = stringResource(R.string.common_scope),
@@ -103,12 +104,13 @@ internal fun SettingsVisualSection(
                 variant = GlassVariant.SheetAction,
             )
         }
-        SettingsActionItem(
+        SettingsNavigationItem(
             title = stringResource(R.string.settings_app_language_title),
             summary = stringResource(R.string.settings_app_language_summary),
             infoKey = stringResource(R.string.common_scope),
             infoValue = stringResource(R.string.settings_app_language_scope),
-            onClick = if (state.appLanguageActionAvailable) actions.onOpenAppLanguageSettings else null,
+            onClick = actions.onOpenAppLanguageSettings,
+            enabled = state.appLanguageActionAvailable,
             trailing = {
                 AppStandaloneLiquidTextButton(
                     variant = GlassVariant.Compact,

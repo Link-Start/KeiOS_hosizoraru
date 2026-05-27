@@ -74,15 +74,21 @@ internal fun SettingsActionItem(
     infoKey: String? = null,
     infoValue: String? = null,
     onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
+    val contentAlpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .let { base ->
                     if (onClick != null) {
-                        base.clickable(role = Role.Button, onClick = onClick)
+                        base.clickable(
+                            enabled = enabled,
+                            role = Role.Button,
+                            onClick = onClick,
+                        )
                     } else {
                         base
                     }
@@ -97,7 +103,7 @@ internal fun SettingsActionItem(
         ) {
             Text(
                 text = title,
-                color = MiuixTheme.colorScheme.onBackground,
+                color = MiuixTheme.colorScheme.onBackground.copy(alpha = contentAlpha),
                 fontSize = AppTypographyTokens.CompactTitle.fontSize,
                 lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
                 fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
@@ -112,7 +118,7 @@ internal fun SettingsActionItem(
         if (summary.isNotBlank()) {
             Text(
                 text = summary,
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f * contentAlpha),
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
             )
@@ -127,6 +133,63 @@ internal fun SettingsActionItem(
 }
 
 @Composable
+internal fun SettingsNavigationItem(
+    title: String,
+    summary: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    infoKey: String? = null,
+    infoValue: String? = null,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
+    SettingsActionItem(
+        title = title,
+        summary = summary,
+        infoKey = infoKey,
+        infoValue = infoValue,
+        onClick = onClick,
+        enabled = enabled,
+        trailing = trailing,
+    )
+}
+
+@Composable
+internal fun SettingsValueItem(
+    title: String,
+    summary: String,
+    infoKey: String? = null,
+    infoValue: String? = null,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
+    SettingsActionItem(
+        title = title,
+        summary = summary,
+        infoKey = infoKey,
+        infoValue = infoValue,
+        trailing = trailing,
+    )
+}
+
+@Composable
+internal fun SettingsPickerItem(
+    title: String,
+    summary: String,
+    infoKey: String? = null,
+    infoValue: String? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable RowScope.() -> Unit,
+) {
+    SettingsActionItem(
+        title = title,
+        summary = summary,
+        infoKey = infoKey,
+        infoValue = infoValue,
+        onClick = onClick,
+        trailing = trailing,
+    )
+}
+
+@Composable
 internal fun SettingsToggleItem(
     title: String,
     summary: String,
@@ -134,6 +197,7 @@ internal fun SettingsToggleItem(
     onCheckedChange: (Boolean) -> Unit,
     infoKey: String? = null,
     infoValue: String? = null,
+    enabled: Boolean = true,
 ) {
     SettingsActionItem(
         title = title,
@@ -141,10 +205,12 @@ internal fun SettingsToggleItem(
         infoKey = infoKey,
         infoValue = infoValue,
         onClick = { onCheckedChange(!checked) },
+        enabled = enabled,
         trailing = {
             AppSwitch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
+                enabled = enabled,
             )
         },
     )

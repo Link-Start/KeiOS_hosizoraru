@@ -16,10 +16,10 @@ import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_KEY_POINT
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MAGNET_THRESHOLD
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MAX_MS
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MIN_MS
-import os.kei.ui.page.main.settings.support.SettingsActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
+import os.kei.ui.page.main.settings.support.SettingsValueItem
 import os.kei.ui.page.main.settings.support.formatMilliseconds
 import kotlin.math.roundToInt
 
@@ -65,7 +65,7 @@ internal fun SettingsNotifySection(
             infoValue = stringResource(R.string.settings_super_island_bypass_note),
         )
         val restoreDelayTitle = stringResource(R.string.settings_super_island_restore_delay_title)
-        SettingsActionItem(
+        SettingsValueItem(
             title = restoreDelayTitle,
             summary =
                 stringResource(

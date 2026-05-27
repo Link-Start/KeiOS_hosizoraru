@@ -6,6 +6,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -31,42 +36,73 @@ fun AppTopBarTitleCard(
 ) {
     if (title.isBlank()) return
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+    val estimatedTextWidthValueAt18Sp by rememberSaveable(title) {
+        mutableIntStateOf(estimateTopBarTitleWidthValueAt18Sp(title))
+    }
     BoxWithConstraints(
         modifier = modifier.padding(start = startReserve, end = endReserve),
         contentAlignment = Alignment.Center,
     ) {
         val availableWidth = maxWidth.coerceAtLeast(AppChromeTokens.topBarTitleMinWidth)
         val cardMaxWidth = availableWidth.coerceAtMost(AppChromeTokens.topBarTitleMaxWidth)
-        val horizontalPadding =
-            when {
-                cardMaxWidth < 112.dp -> 13.dp
-                cardMaxWidth < 150.dp -> 15.dp
-                else -> 18.dp
+        val layout =
+            remember(cardMaxWidth, fontScale, estimatedTextWidthValueAt18Sp) {
+                deriveAppTopBarTitleLayout(
+                    cardMaxWidth = cardMaxWidth,
+                    fontScale = fontScale,
+                    estimatedTextWidthAt18Sp = estimatedTextWidthValueAt18Sp.dp,
+                )
             }
-        val estimatedTextWidthAt18Sp = estimateTopBarTitleWidthAt18Sp(title)
-        val targetContentWidth =
-            (cardMaxWidth - horizontalPadding * 2)
-                .coerceAtLeast(36.dp)
-        val scaledEstimate = estimatedTextWidthAt18Sp * fontScale
-        val textScale =
-            (targetContentWidth.value / scaledEstimate.value)
-                .coerceIn(0.52f, 1f)
-        val titleTextSize = (18f * textScale).sp
-        val titleLineHeight = (22f * textScale).coerceAtLeast(15.5f).sp
-        val scaledTextWidth = scaledEstimate * textScale
-        val cardWidth =
-            (scaledTextWidth + horizontalPadding * 2)
-                .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
         AppTopBarTitleCardSurface(
             title = title,
             backdrop = backdrop,
-            width = cardWidth,
-            textSize = titleTextSize,
-            lineHeight = titleLineHeight,
-            horizontalPadding = horizontalPadding,
+            width = layout.cardWidth,
+            textSize = layout.textSize,
+            lineHeight = layout.lineHeight,
+            horizontalPadding = layout.horizontalPadding,
             onClick = onClick,
         )
     }
+}
+
+@Immutable
+private data class AppTopBarTitleLayout(
+    val cardWidth: Dp,
+    val textSize: TextUnit,
+    val lineHeight: TextUnit,
+    val horizontalPadding: Dp,
+)
+
+private fun deriveAppTopBarTitleLayout(
+    cardMaxWidth: Dp,
+    fontScale: Float,
+    estimatedTextWidthAt18Sp: Dp,
+): AppTopBarTitleLayout {
+    val horizontalPadding =
+        when {
+            cardMaxWidth < 112.dp -> 13.dp
+            cardMaxWidth < 150.dp -> 15.dp
+            else -> 18.dp
+        }
+    val targetContentWidth =
+        (cardMaxWidth - horizontalPadding * 2)
+            .coerceAtLeast(36.dp)
+    val scaledEstimate = estimatedTextWidthAt18Sp * fontScale
+    val textScale =
+        (targetContentWidth.value / scaledEstimate.value)
+            .coerceIn(0.52f, 1f)
+    val titleTextSize = (18f * textScale).sp
+    val titleLineHeight = (22f * textScale).coerceAtLeast(15.5f).sp
+    val scaledTextWidth = scaledEstimate * textScale
+    val cardWidth =
+        (scaledTextWidth + horizontalPadding * 2)
+            .coerceIn(AppChromeTokens.topBarTitleMinWidth, cardMaxWidth)
+    return AppTopBarTitleLayout(
+        cardWidth = cardWidth,
+        textSize = titleTextSize,
+        lineHeight = titleLineHeight,
+        horizontalPadding = horizontalPadding,
+    )
 }
 
 @Composable
@@ -113,6 +149,9 @@ private fun AppTopBarTitleCardSurface(
 }
 
 internal fun estimateTopBarTitleWidthAt18Sp(title: String): Dp =
+    estimateTopBarTitleWidthValueAt18Sp(title).dp
+
+private fun estimateTopBarTitleWidthValueAt18Sp(title: String): Int =
     title
         .sumOf { char ->
             when {
@@ -121,6 +160,6 @@ internal fun estimateTopBarTitleWidthAt18Sp(title: String): Dp =
                 char.isJapaneseKana() -> 18
                 else -> 19
             }
-        }.dp
+        }
 
 private fun Char.isJapaneseKana(): Boolean = this in '\u3040'..'\u30FF' || this in '\u31F0'..'\u31FF'

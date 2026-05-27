@@ -26,8 +26,8 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
 
 @Composable
@@ -41,12 +41,37 @@ fun StatusPill(
     borderAlphaOverride: Float? = null,
     backdrop: Backdrop? = null,
 ) {
+    StatusPill(
+        label = label,
+        color = { color },
+        modifier = modifier,
+        size = size,
+        contentPadding = contentPadding,
+        backgroundAlphaOverride = backgroundAlphaOverride,
+        borderAlphaOverride = borderAlphaOverride,
+        backdrop = backdrop,
+    )
+}
+
+@Composable
+fun StatusPill(
+    label: String,
+    color: () -> Color,
+    modifier: Modifier = Modifier,
+    size: AppStatusPillSize = AppStatusPillSize.Default,
+    contentPadding: PaddingValues? = null,
+    backgroundAlphaOverride: Float? = null,
+    borderAlphaOverride: Float? = null,
+    backdrop: Backdrop? = null,
+) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val colorProvider = color
+    val resolvedColor = colorProvider()
     val metrics = rememberAppStatusPillMetrics(size)
     val resolvedPadding = contentPadding ?: metrics.contentPadding
     val backgroundAlpha = backgroundAlphaOverride ?: if (isDark) 0.18f else 0.24f
     val borderAlpha = borderAlphaOverride ?: if (isDark) 0.35f else 0.42f
-    val textColor = if (isDark) color else color.copy(alpha = 0.96f)
+    val textColor = if (isDark) resolvedColor else resolvedColor.copy(alpha = 0.96f)
     val shape = AppStatusPrimitives.pillShape
     val cornerRadius = 999.dp
     val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
@@ -55,15 +80,18 @@ fun StatusPill(
             .then(modifier)
             .then(
                 if (!liquidControlsEnabled) {
-                    Modifier.appSquircleBackground(color.copy(alpha = backgroundAlpha), cornerRadius)
+                    Modifier.drawAppSquircleBackground(cornerRadius) {
+                        colorProvider().copy(alpha = backgroundAlpha)
+                    }
                 } else {
                     Modifier
                 },
-            ).appSquircleBorder(
+            ).drawAppSquircleBorder(
                 width = 0.8.dp,
-                color = color.copy(alpha = borderAlpha),
                 cornerRadius = cornerRadius,
-            )
+            ) {
+                colorProvider().copy(alpha = borderAlpha)
+            }
     val content: @Composable () -> Unit = {
         DisableSelection {
             Text(
@@ -91,7 +119,7 @@ fun StatusPill(
                 backdrop = backdrop,
                 captureBackdrop = null,
                 shape = shape,
-                surfaceColor = color.copy(alpha = backgroundAlpha),
+                surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),
                 resolvedPadding = resolvedPadding,
                 content = content,
             )
@@ -104,7 +132,7 @@ fun StatusPill(
                 backdrop = localBackdrop,
                 captureBackdrop = localBackdrop,
                 shape = shape,
-                surfaceColor = color.copy(alpha = backgroundAlpha),
+                surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),
                 resolvedPadding = resolvedPadding,
                 content = content,
             )

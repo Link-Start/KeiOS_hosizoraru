@@ -13,9 +13,9 @@ import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.os.appLucideNotesIcon
-import os.kei.ui.page.main.settings.support.SettingsActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
+import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.formatBytes
 import os.kei.ui.page.main.settings.support.formatLogTime
 import os.kei.ui.page.main.widget.core.AppDualActionRow
@@ -57,7 +57,7 @@ internal fun SettingsLogSection(
         sectionIcon = appLucideNotesIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
     ) {
-        SettingsActionItem(
+        SettingsPickerItem(
             title = stringResource(R.string.settings_log_level_title),
             summary = stringResource(R.string.settings_log_level_summary),
             infoKey = stringResource(R.string.common_scope),

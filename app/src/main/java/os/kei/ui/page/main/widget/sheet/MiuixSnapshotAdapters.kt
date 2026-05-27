@@ -293,55 +293,70 @@ fun SnapshotWindowListPopup(
                         .defaultMinSize(minWidth = popupMinWidth)
                         .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
                         .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier)
-                        .graphicsLayer {
-                            val fraction = fractionProgressProvider()
-                            // Smooth scale + directional translation stays in the layer phase so
-                            // popup animation frames do not recompose the popup content.
-                            val scale = SnapshotPopupInitialScale + (1f - SnapshotPopupInitialScale) * fraction
-                            val translationY =
-                                if (popupShowBelow) {
-                                    -translationOffsetPx * (1f - fraction)
-                                } else {
-                                    translationOffsetPx * (1f - fraction)
-                                }
-                            scaleX = scale
-                            scaleY = scale
-                            this.translationY = translationY
-                            alpha = alphaProgressProvider()
-                            transformOrigin = popupTransformOrigin
-                        }.drawWithContent {
-                            val progress = fractionProgressProvider()
-                            val showMiddle = !popupShowBelow && !popupShowAbove
-                            val clipStart =
-                                when {
-                                    popupShowAbove -> size.height * (1f - progress)
-                                    showMiddle -> size.height * (0.5f - 0.5f * progress)
-                                    else -> 0f
-                                }
-                            val clipBottom =
-                                when {
-                                    popupShowBelow -> size.height * progress
-                                    popupShowAbove -> size.height
-                                    showMiddle -> size.height * (0.5f + 0.5f * progress)
-                                    else -> size.height
-                                }
-                            if (clipBottom > clipStart) {
-                                clipRect(
-                                    left = 0f,
-                                    top = clipStart,
-                                    right = size.width,
-                                    bottom = clipBottom,
-                                ) {
-                                    this@drawWithContent.drawContent()
-                                }
-                            }
-                        },
+                        .snapshotPopupReveal(
+                            fractionProgress = fractionProgressProvider,
+                            alphaProgress = alphaProgressProvider,
+                            transformOrigin = popupTransformOrigin,
+                            showBelow = popupShowBelow,
+                            showAbove = popupShowAbove,
+                            translationOffsetPx = translationOffsetPx,
+                        ),
             ) {
                 content()
             }
         }
     }
 }
+
+private fun Modifier.snapshotPopupReveal(
+    fractionProgress: () -> Float,
+    alphaProgress: () -> Float,
+    transformOrigin: TransformOrigin,
+    showBelow: Boolean,
+    showAbove: Boolean,
+    translationOffsetPx: Float,
+): Modifier =
+    graphicsLayer {
+        val fraction = fractionProgress()
+        val scale = SnapshotPopupInitialScale + (1f - SnapshotPopupInitialScale) * fraction
+        val translationY =
+            if (showBelow) {
+                -translationOffsetPx * (1f - fraction)
+            } else {
+                translationOffsetPx * (1f - fraction)
+            }
+        scaleX = scale
+        scaleY = scale
+        this.translationY = translationY
+        alpha = alphaProgress()
+        this.transformOrigin = transformOrigin
+    }.drawWithContent {
+        val progress = fractionProgress()
+        val showMiddle = !showBelow && !showAbove
+        val clipStart =
+            when {
+                showAbove -> size.height * (1f - progress)
+                showMiddle -> size.height * (0.5f - 0.5f * progress)
+                else -> 0f
+            }
+        val clipBottom =
+            when {
+                showBelow -> size.height * progress
+                showAbove -> size.height
+                showMiddle -> size.height * (0.5f + 0.5f * progress)
+                else -> size.height
+            }
+        if (clipBottom > clipStart) {
+            clipRect(
+                left = 0f,
+                top = clipStart,
+                right = size.width,
+                bottom = clipBottom,
+            ) {
+                this@drawWithContent.drawContent()
+            }
+        }
+    }
 
 @Composable
 fun SnapshotWindowBottomSheet(

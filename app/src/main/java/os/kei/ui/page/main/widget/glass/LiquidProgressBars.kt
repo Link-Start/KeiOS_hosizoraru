@@ -40,8 +40,8 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 
 @Composable
 fun LiquidLinearProgressBar(
@@ -53,9 +53,32 @@ fun LiquidLinearProgressBar(
     height: Dp = 4.dp,
     contentDescription: String? = null,
 ) {
+    LiquidLinearProgressBar(
+        progress = progress,
+        modifier = modifier,
+        valueRange = valueRange,
+        activeColor = { activeColor },
+        inactiveColor = { inactiveColor },
+        height = height,
+        contentDescription = contentDescription,
+    )
+}
+
+@Composable
+fun LiquidLinearProgressBar(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    activeColor: () -> Color,
+    inactiveColor: () -> Color,
+    height: Dp = 4.dp,
+    contentDescription: String? = null,
+) {
     val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress
+    val activeColorProvider = activeColor
+    val inactiveColorProvider = inactiveColor
     Box(
         modifier =
             modifier
@@ -90,7 +113,9 @@ fun LiquidLinearProgressBar(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .appSquircleBackground(inactiveColor, 999.dp),
+                    .drawAppSquircleBackground(999.dp) {
+                        inactiveColorProvider()
+                    },
         )
         Box(
             modifier =
@@ -141,12 +166,14 @@ fun LiquidLinearProgressBar(
                                     InnerShadow(radius = 3.dp, alpha = 0.18f)
                                 },
                                 onDrawSurface = {
-                                    drawRect(activeColor)
+                                    drawRect(activeColorProvider())
                                     drawRect(Color.White.copy(alpha = 0.10f))
                                 },
                             )
                         } else {
-                            Modifier.appSquircleBackground(activeColor, 999.dp)
+                            Modifier.drawAppSquircleBackground(999.dp) {
+                                activeColorProvider()
+                            }
                         },
                     ),
         )
@@ -174,6 +201,26 @@ fun LiquidMusicProgressBar(
 }
 
 @Composable
+fun LiquidMusicProgressBar(
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    activeColor: () -> Color,
+    inactiveColor: () -> Color,
+    contentDescription: String? = null,
+) {
+    LiquidLinearProgressBar(
+        progress = progress,
+        modifier = modifier,
+        valueRange = valueRange,
+        activeColor = activeColor,
+        inactiveColor = inactiveColor,
+        height = 3.dp,
+        contentDescription = contentDescription,
+    )
+}
+
+@Composable
 fun LiquidCircularProgressBar(
     progress: (() -> Float)? = null,
     modifier: Modifier = Modifier,
@@ -184,8 +231,33 @@ fun LiquidCircularProgressBar(
     strokeWidth: Dp = 2.dp,
     contentDescription: String? = null,
 ) {
+    LiquidCircularProgressBar(
+        progress = progress,
+        modifier = modifier,
+        valueRange = valueRange,
+        activeColor = { activeColor },
+        inactiveColor = { inactiveColor },
+        size = size,
+        strokeWidth = strokeWidth,
+        contentDescription = contentDescription,
+    )
+}
+
+@Composable
+fun LiquidCircularProgressBar(
+    progress: (() -> Float)? = null,
+    modifier: Modifier = Modifier,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    activeColor: () -> Color,
+    inactiveColor: () -> Color,
+    size: Dp = 18.dp,
+    strokeWidth: Dp = 2.dp,
+    contentDescription: String? = null,
+) {
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress
+    val activeColorProvider = activeColor
+    val inactiveColorProvider = inactiveColor
     val indeterminateStates =
         rememberLiquidCircularIndeterminateStates(enabled = progressProvider == null)
     Canvas(
@@ -212,9 +284,9 @@ fun LiquidCircularProgressBar(
             androidx.compose.ui.geometry.Size(
                 width = this.size.width - strokePx,
                 height = this.size.height - strokePx,
-            )
+        )
         drawArc(
-            color = inactiveColor,
+            color = inactiveColorProvider(),
             startAngle = 0f,
             sweepAngle = 360f,
             useCenter = false,
@@ -239,9 +311,9 @@ fun LiquidCircularProgressBar(
                 72f + 148f * (indeterminateStates?.pulse?.value ?: 0f)
             } else {
                 (fraction * 360f).coerceIn(0f, 360f)
-            }
+        }
         drawArc(
-            color = activeColor,
+            color = activeColorProvider(),
             startAngle = startAngle,
             sweepAngle = sweepAngle,
             useCenter = false,

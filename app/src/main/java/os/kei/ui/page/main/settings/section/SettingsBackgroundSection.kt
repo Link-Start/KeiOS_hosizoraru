@@ -17,10 +17,10 @@ import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_OPACITY_KEY_POIN
 import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_OPACITY_MAGNET_THRESHOLD
 import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_OPACITY_MAX
 import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_OPACITY_MIN
-import os.kei.ui.page.main.settings.support.SettingsActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
+import os.kei.ui.page.main.settings.support.SettingsValueItem
 import os.kei.ui.page.main.settings.support.formatOpacityPercent
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
@@ -64,7 +64,7 @@ internal fun SettingsBackgroundSection(
             infoKey = stringResource(R.string.common_scope),
             infoValue = stringResource(R.string.settings_non_home_background_scope),
         )
-        SettingsActionItem(
+        SettingsValueItem(
             title = stringResource(R.string.settings_non_home_background_image_title),
             summary =
                 if (nonHomeBackgroundUri.isBlank()) {
@@ -99,7 +99,7 @@ internal fun SettingsBackgroundSection(
             },
         )
         val opacityTitle = stringResource(R.string.settings_non_home_background_opacity_title)
-        SettingsActionItem(
+        SettingsValueItem(
             title = opacityTitle,
             summary =
                 stringResource(

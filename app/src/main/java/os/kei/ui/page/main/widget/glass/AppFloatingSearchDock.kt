@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
@@ -425,17 +426,21 @@ private fun AppFloatingVerticalDockAction(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val animatedTint by animateColorAsState(
-        targetValue = iconTint,
-        animationSpec = tween(durationMillis = 180),
-        label = "app_floating_vertical_dock_action_tint",
-    )
-    val pressedScale by appMotionFloatState(
-        targetValue = if (isPressed) AppInteractiveTokens.pressedScale else 1f,
-        durationMillis = 110,
-        label = "app_floating_vertical_dock_action_scale",
-    )
-    val rotation = rememberFloatingDockActionRotation(rotating)
+    val animatedTintState =
+        animateColorAsState(
+            targetValue = iconTint,
+            animationSpec = tween(durationMillis = 180),
+            label = "app_floating_vertical_dock_action_tint",
+        )
+    val animatedTintProvider = remember(animatedTintState) { { animatedTintState.value } }
+    val pressedScaleState =
+        appMotionFloatState(
+            targetValue = if (isPressed) AppInteractiveTokens.pressedScale else 1f,
+            durationMillis = 110,
+            label = "app_floating_vertical_dock_action_scale",
+        )
+    val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
+    val rotationProvider = rememberFloatingDockActionRotationProvider(rotating)
 
     Box(
         modifier =
@@ -458,30 +463,33 @@ private fun AppFloatingVerticalDockAction(
                 Modifier
                     .size(iconSize)
                     .graphicsLayer {
+                        val pressedScale = pressedScaleProvider()
                         scaleX = pressedScale
                         scaleY = pressedScale
-                        rotationZ = if (rotating) rotation else 0f
+                        rotationZ = if (rotating) rotationProvider() else 0f
+                        colorFilter = ColorFilter.tint(animatedTintProvider())
                     },
-            tint = animatedTint,
+            tint = Color.White,
         )
     }
 }
 
 @Composable
-private fun rememberFloatingDockActionRotation(rotating: Boolean): Float {
-    if (!rotating) return 0f
+private fun rememberFloatingDockActionRotationProvider(rotating: Boolean): () -> Float {
+    if (!rotating) return remember { { 0f } }
     val infiniteTransition = rememberInfiniteTransition(label = "app_floating_vertical_dock_action_rotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 820, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "app_floating_vertical_dock_action_rotation",
-    )
-    return rotation
+    val rotationState =
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 820, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "app_floating_vertical_dock_action_rotation",
+        )
+    return remember(rotationState) { { rotationState.value } }
 }
 
 private const val AppFloatingSearchDockWidthMotionMs = 220

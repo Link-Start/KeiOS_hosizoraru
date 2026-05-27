@@ -1,7 +1,9 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.importer
 
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -17,8 +19,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
+import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.StarImportApplyResult
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -33,7 +37,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 @Composable
 internal fun GitHubStarImportPage(
     onImported: (StarImportApplyResult) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
@@ -46,36 +50,49 @@ internal fun GitHubStarImportPage(
     val sourceRequirementMessage = stringResource(uiState.source.requirementMessageRes)
     val listUrlRequirementMessage = stringResource(StarImportUiSource.ListUrl.requirementMessageRes)
     val loadingPhaseRes = uiState.loadingPhaseRes
-    val loadingPhase = when {
-        uiState.readyStarListCount > 0 -> stringResource(
-            R.string.github_star_import_status_lists_ready_format,
-            uiState.readyStarListCount
-        )
+    val loadingPhase =
+        when {
+            uiState.readyStarListCount > 0 -> {
+                stringResource(
+                    R.string.github_star_import_status_lists_ready_format,
+                    uiState.readyStarListCount,
+                )
+            }
 
-        loadingPhaseRes != null -> stringResource(loadingPhaseRes)
-        else -> ""
-    }
+            loadingPhaseRes != null -> {
+                stringResource(loadingPhaseRes)
+            }
+
+            else -> {
+                ""
+            }
+        }
 
     LaunchedEffect(viewModel, context, onClose) {
         viewModel.events.collect { event ->
             when (event) {
                 is GitHubStarImportEvent.Imported -> {
                     onImported(event.result)
-                    context.showToast(context.resolveString(
-                        R.string.github_star_import_toast_imported,
-                        event.result.changedCount
-                    ))
+                    context.showToast(
+                        context.resolveString(
+                            R.string.github_star_import_toast_imported,
+                            event.result.changedCount,
+                        ),
+                    )
                 }
 
-                GitHubStarImportEvent.Close -> onClose()
+                GitHubStarImportEvent.Close -> {
+                    onClose()
+                }
             }
         }
     }
 
     KeiOSActivityRootBackHandler(
-        needsInterception = uiState.hasPendingImportWork ||
+        needsInterception =
+            uiState.hasPendingImportWork ||
                 uiState.showExitConfirm ||
-                uiState.importing
+                uiState.importing,
     ) {
         viewModel.requestClose()
     }
@@ -92,7 +109,7 @@ internal fun GitHubStarImportPage(
                 icon = appLucideBackIcon(),
                 contentDescription = stringResource(R.string.common_close),
                 onClick = viewModel::requestClose,
-                backdrop = pageBackdrop
+                backdrop = pageBackdrop,
             )
         },
         actions = {
@@ -104,20 +121,24 @@ internal fun GitHubStarImportPage(
                 enabled = uiState.lookupConfigReady && !uiState.loading && !uiState.importing,
                 width = 52.dp,
                 height = 52.dp,
-                variant = GlassVariant.Bar
+                variant = GlassVariant.Bar,
             )
-        }
+        },
     ) { innerPadding ->
         AppPageLazyColumn(
             innerPadding = innerPadding,
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .layerBackdrop(pageBackdrop),
-            sectionSpacing = 10.dp
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .layerBackdrop(pageBackdrop),
+            sectionSpacing = 10.dp,
         ) {
-            item {
+            item(
+                key = "star-import-source",
+                contentType = "star_import_source",
+            ) {
                 StarImportSourceCard(
                     source = uiState.source,
                     tokenAvailable = uiState.apiTokenAvailable,
@@ -129,17 +150,23 @@ internal fun GitHubStarImportPage(
                     onSourceChange = viewModel::updateSource,
                     onUsernameInputChange = viewModel::updateUsernameInput,
                     onListUrlInputChange = viewModel::updateListUrlInput,
-                    onLoadPreview = { viewModel.loadPreview(sourceRequirementMessage) }
+                    onLoadPreview = { viewModel.loadPreview(sourceRequirementMessage) },
                 )
             }
-            item {
+            item(
+                key = "star-import-source-guide",
+                contentType = "star_import_source_guide",
+            ) {
                 StarImportSourceGuideCard(
                     source = uiState.source,
-                    sourceReady = uiState.lookupConfigReady
+                    sourceReady = uiState.lookupConfigReady,
                 )
             }
             if (uiState.starLists.isNotEmpty()) {
-                item {
+                item(
+                    key = "star-import-list-picker",
+                    contentType = "star_import_list_picker",
+                ) {
                     StarImportStarListPickerCard(
                         lists = uiState.starLists,
                         loading = uiState.loading,
@@ -147,13 +174,16 @@ internal fun GitHubStarImportPage(
                             viewModel.updateListUrlInput(list.url)
                             viewModel.loadPreview(
                                 requirementMessage = listUrlRequirementMessage,
-                                forcedStarListUrl = list.url
+                                forcedStarListUrl = list.url,
                             )
-                        }
+                        },
                     )
                 }
             }
-            item {
+            item(
+                key = "star-import-status",
+                contentType = "star_import_status",
+            ) {
                 StarImportStatusCard(
                     preview = uiState.preview,
                     loading = uiState.loading,
@@ -162,11 +192,14 @@ internal fun GitHubStarImportPage(
                     importing = uiState.importing,
                     error = uiState.error,
                     selectedCount = uiState.selectedImportableCount,
-                    discoveredListCount = uiState.starLists.size
+                    discoveredListCount = uiState.starLists.size,
                 )
             }
             if (uiState.preview != null) {
-                item {
+                item(
+                    key = "star-import-list-controls",
+                    contentType = "star_import_list_controls",
+                ) {
                     StarImportListControlCard(
                         filterInput = uiState.filterInput,
                         viewFilter = uiState.viewFilter,
@@ -180,10 +213,12 @@ internal fun GitHubStarImportPage(
                         selectedCount = uiState.selectedImportableCount,
                         verifiedApkCount = listUiState.verifiedApkCount,
                         checkingCount = listUiState.checkingCount,
-                        verifySelectedEnabled = listUiState.selectedVerificationTargets.isNotEmpty() &&
+                        verifySelectedEnabled =
+                            listUiState.selectedVerificationTargets.isNotEmpty() &&
                                 !uiState.loading &&
                                 !uiState.importing,
-                        verifyVisibleEnabled = listUiState.visibleVerificationTargets.isNotEmpty() &&
+                        verifyVisibleEnabled =
+                            listUiState.visibleVerificationTargets.isNotEmpty() &&
                                 !uiState.loading &&
                                 !uiState.importing,
                         importEnabled = uiState.importEnabled,
@@ -202,27 +237,13 @@ internal fun GitHubStarImportPage(
                         onSelectVerifiedVisible = viewModel::selectVerifiedVisible,
                         onSelectVisible = viewModel::selectVisible,
                         onClearSelection = viewModel::clearSelection,
-                        onImport = viewModel::requestImport
+                        onImport = viewModel::requestImport,
                     )
                 }
-                items(
-                    items = listUiState.filteredCandidates,
-                    key = { candidate -> candidate.trackedApp.id },
-                    contentType = { "github_star_import_candidate" }
-                ) { candidate ->
-                    StarImportCandidateCard(
-                        candidate = candidate,
-                        selected = candidate.trackedApp.id in uiState.selectedIds,
-                        trackedSelectable = uiState.conflictStrategy == StarImportConflictStrategy.IncludeTracked,
-                        apkVerificationState = uiState.apkVerificationStates[candidate.trackedApp.id],
-                        onToggle = { viewModel.toggleCandidate(candidate) }
-                    )
-                }
-                if (listUiState.filteredCandidates.isEmpty()) {
-                    item {
-                        StarImportEmptyCard()
-                    }
-                }
+                starImportCandidateRows(
+                    rows = listUiState.filteredRows,
+                    onToggle = viewModel::toggleCandidate,
+                )
             }
         }
     }
@@ -234,14 +255,41 @@ internal fun GitHubStarImportPage(
         onConfirmImport = {
             viewModel.applyImport(
                 context = context,
-                selected = uiState.pendingImportCandidates
+                selected = uiState.pendingImportCandidates,
             )
-        }
+        },
     )
     GitHubStarImportExitConfirmDialog(
         show = uiState.showExitConfirm,
         selectedCount = uiState.selectedImportableCount,
         onDismissRequest = viewModel::dismissExitConfirm,
-        onConfirmExit = viewModel::confirmExit
+        onConfirmExit = viewModel::confirmExit,
     )
+}
+
+private fun LazyListScope.starImportCandidateRows(
+    rows: List<StarImportCandidateRowUiState>,
+    onToggle: (GitHubRepositoryImportCandidate) -> Unit,
+) {
+    items(
+        items = rows,
+        key = { row -> row.id },
+        contentType = { "github_star_import_candidate" },
+    ) { row ->
+        StarImportCandidateCard(
+            candidate = row.candidate,
+            selected = row.selected,
+            trackedSelectable = row.trackedSelectable,
+            apkVerificationState = row.apkVerificationState,
+            onToggle = { onToggle(row.candidate) },
+        )
+    }
+    if (rows.isEmpty()) {
+        item(
+            key = "star-import-empty",
+            contentType = "star_import_empty",
+        ) {
+            StarImportEmptyCard()
+        }
+    }
 }

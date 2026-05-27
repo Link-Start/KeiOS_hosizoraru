@@ -98,6 +98,7 @@
 - 2026-05-28 P2 final audit pass:
   - Rechecked the P2 table and implementation state: no `Remaining:` / `In progress` marker remains, no app `collectAsState(` usage remains, and direct `SettingsActionItem` use is confined to the settings support wrapper layer.
   - Confirmed shared popup reveal state initializes from the current `show` value through `SnapshotWindowListPopup` render, alpha, and fraction state.
+  - Removed the remaining UI-layer `SharedFlow` parameter from OS page event binding; the Route now owns the flow and passes a remembered event collector into `BindOsPageEvents`.
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

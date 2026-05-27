@@ -12,7 +12,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -28,9 +27,11 @@ import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 
+private typealias OsPageEventCollector = suspend (suspend (OsPageEvent) -> Unit) -> Unit
+
 @Composable
 internal fun BindOsPageEvents(
-    events: SharedFlow<OsPageEvent>,
+    collectEvents: OsPageEventCollector,
     onLaunchExportDocument: (String, String) -> Unit,
     onExportFailed: (Throwable) -> Unit,
     onCardExportWritten: () -> Unit,
@@ -80,8 +81,8 @@ internal fun BindOsPageEvents(
     val currentActivityShortcutInvalidTarget = rememberUpdatedState(onActivityShortcutInvalidTarget)
     val currentShowActivityShortcutEditor = rememberUpdatedState(onShowActivityShortcutEditor)
     val currentShowShellCommandCardEditor = rememberUpdatedState(onShowShellCommandCardEditor)
-    LaunchedEffect(events) {
-        events.collect { event ->
+    LaunchedEffect(collectEvents) {
+        collectEvents { event ->
             when (event) {
                 is OsPageEvent.LaunchExportDocument -> {
                     currentLaunchExportDocument.value(event.fileName, event.content)

@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
@@ -199,8 +200,16 @@ fun OsPage(
             retainShellCommandCardExpansion = osPageViewModel::retainShellCommandCardExpansion,
             textBundle = textBundle,
         )
+    val collectOsPageEvents: suspend (suspend (OsPageEvent) -> Unit) -> Unit =
+        remember(osPageViewModel) {
+            { eventHandler ->
+                osPageViewModel.events.collect { event ->
+                    eventHandler(event)
+                }
+            }
+        }
     BindOsPageEvents(
-        events = osPageViewModel.events,
+        collectEvents = collectOsPageEvents,
         onLaunchExportDocument = { fileName, content ->
             overlayState.onPendingExportContentChange(content)
             overlayState.onCardTransferInProgressChange(false)

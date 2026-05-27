@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.PlatformTextStyle
@@ -89,19 +91,20 @@ fun AppBottomSearchDock(
                 AppChromeTokens.pageSectionGap
         ).coerceAtLeast(size)
     val targetWidth = if (expanded) expandedWidth ?: maxExpandedWidth else size
-    val animatedWidth by animateDpAsState(
-        targetValue = targetWidth,
-        animationSpec =
-            tween(
-                durationMillis =
-                    resolvedMotionDuration(
-                        AppBottomSearchDockWidthMotionMs,
-                        animationsEnabled,
-                    ),
-            ),
-        label = "app_bottom_search_dock_width",
-    )
-    val width = if (expandedWidth == null) animatedWidth else targetWidth
+    val animatedWidthState =
+        animateDpAsState(
+            targetValue = targetWidth,
+            animationSpec =
+                tween(
+                    durationMillis =
+                        resolvedMotionDuration(
+                            AppBottomSearchDockWidthMotionMs,
+                            animationsEnabled,
+                        ),
+                ),
+            label = "app_bottom_search_dock_width",
+        )
+    val widthProvider = appBottomSearchDockWidthProvider(expandedWidth, animatedWidthState, targetWidth)
     val contentTransition =
         updateTransition(
             targetState = expanded,
@@ -146,8 +149,10 @@ fun AppBottomSearchDock(
     AppLiquidSearchSurface(
         modifier =
             modifier
-                .width(width)
-                .height(size),
+                .appBottomSearchDockSize(
+                    width = widthProvider,
+                    height = size,
+                ),
         shape = if (expanded) ContinuousCapsule else CircleShape,
         backdrop = backdrop,
         focused = expanded,
@@ -213,6 +218,41 @@ fun AppBottomSearchDock(
 private const val AppBottomSearchDockWidthMotionMs = 220
 private const val AppBottomSearchDockContentFadeMs = 120
 private const val AppBottomSearchDockVisibleAlpha = 0.01f
+
+@Composable
+private fun appBottomSearchDockWidthProvider(
+    expandedWidth: Dp?,
+    animatedWidthState: State<Dp>,
+    targetWidth: Dp,
+): () -> Dp =
+    remember(expandedWidth, animatedWidthState, targetWidth) {
+        if (expandedWidth == null) {
+            { animatedWidthState.value }
+        } else {
+            { targetWidth }
+        }
+    }
+
+private fun Modifier.appBottomSearchDockSize(
+    width: () -> Dp,
+    height: Dp,
+): Modifier =
+    layout { measurable, constraints ->
+        val widthPx = width().roundToPx()
+        val heightPx = height.roundToPx()
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minWidth = widthPx,
+                    maxWidth = widthPx,
+                    minHeight = heightPx,
+                    maxHeight = heightPx,
+                ),
+            )
+        layout(widthPx, heightPx) {
+            placeable.place(0, 0)
+        }
+    }
 
 @Composable
 private fun AppBottomSearchField(

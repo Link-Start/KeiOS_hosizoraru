@@ -53,7 +53,7 @@ fun LiquidLinearProgressBar(
     height: Dp = 4.dp,
     contentDescription: String? = null,
 ) {
-    val progressBackdrop = rememberLayerBackdrop()
+    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress
     Box(
@@ -72,12 +72,20 @@ fun LiquidLinearProgressBar(
                 },
         contentAlignment = Alignment.CenterStart,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(progressBackdrop),
-        )
+        val progressBackdrop =
+            if (liquidControlsEnabled) {
+                rememberLayerBackdrop()
+            } else {
+                null
+            }
+        if (progressBackdrop != null) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(progressBackdrop),
+            )
+        }
         Box(
             modifier =
                 Modifier
@@ -109,30 +117,36 @@ fun LiquidLinearProgressBar(
                             placeable.place(0, 0)
                         }
                     }.appSquircleClip(999.dp)
-                    .drawBackdrop(
-                        backdrop = progressBackdrop,
-                        shape = { ContinuousCapsule },
-                        effects = {
-                            vibrancy()
-                            blur(4.dp.toPx())
-                            lens(
-                                12.dp.toPx(),
-                                20.dp.toPx(),
-                                depthEffect = true,
+                    .then(
+                        if (progressBackdrop != null) {
+                            Modifier.drawBackdrop(
+                                backdrop = progressBackdrop,
+                                shape = { ContinuousCapsule },
+                                effects = {
+                                    vibrancy()
+                                    blur(4.dp.toPx())
+                                    lens(
+                                        12.dp.toPx(),
+                                        20.dp.toPx(),
+                                        depthEffect = true,
+                                    )
+                                },
+                                highlight = {
+                                    Highlight.Ambient.copy(alpha = 0.52f)
+                                },
+                                shadow = {
+                                    Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.06f))
+                                },
+                                innerShadow = {
+                                    InnerShadow(radius = 3.dp, alpha = 0.18f)
+                                },
+                                onDrawSurface = {
+                                    drawRect(activeColor)
+                                    drawRect(Color.White.copy(alpha = 0.10f))
+                                },
                             )
-                        },
-                        highlight = {
-                            Highlight.Ambient.copy(alpha = 0.52f)
-                        },
-                        shadow = {
-                            Shadow(radius = 3.dp, color = Color.Black.copy(alpha = 0.06f))
-                        },
-                        innerShadow = {
-                            InnerShadow(radius = 3.dp, alpha = 0.18f)
-                        },
-                        onDrawSurface = {
-                            drawRect(activeColor)
-                            drawRect(Color.White.copy(alpha = 0.10f))
+                        } else {
+                            Modifier.appSquircleBackground(activeColor, 999.dp)
                         },
                     ),
         )

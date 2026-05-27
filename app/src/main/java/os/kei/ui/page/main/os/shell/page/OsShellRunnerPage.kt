@@ -80,6 +80,7 @@ fun OsShellRunnerPage(
     val shellSuccessAccentColor = if (isDark) Color(0xFF7EE7A8) else Color(0xFF15803D)
     val shellStoppedAccentColor = if (isDark) Color(0xFFFF9E9E) else Color(0xFFDC2626)
     val outputScrollState = rememberScrollState()
+    val outputLazyListState = rememberLazyListState()
     val liquidActionBarLayeredStyleEnabled = chromePrefs.liquidActionBarLayeredStyleEnabled
 
     val surfaceColor = MiuixTheme.colorScheme.surface
@@ -189,6 +190,7 @@ fun OsShellRunnerPage(
                 shellRunnerViewModel = shellRunnerViewModel,
                 textBundle = textBundle,
                 outputScrollState = outputScrollState,
+                outputLazyListState = outputLazyListState,
                 autoScrollOutputEnabled = settings.autoScrollOutput,
                 onFormatOutput = actions.formatOutput,
                 onCopyOutput = actions.copyOutput,

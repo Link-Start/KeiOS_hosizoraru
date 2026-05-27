@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.os.shell.page
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -18,6 +19,7 @@ internal fun OsShellRunnerOutputCardHost(
     shellRunnerViewModel: OsShellRunnerViewModel,
     textBundle: OsShellRunnerTextBundle,
     outputScrollState: ScrollState,
+    outputLazyListState: LazyListState,
     autoScrollOutputEnabled: Boolean,
     onFormatOutput: () -> Unit,
     onCopyOutput: () -> Unit,
@@ -28,7 +30,9 @@ internal fun OsShellRunnerOutputCardHost(
 
     BindOsShellRunnerAutoScrollEffect(
         outputText = outputSnapshot.text,
+        outputEntriesSize = outputSnapshot.entries.size,
         outputScrollState = outputScrollState,
+        outputLazyListState = outputLazyListState,
         enabled = autoScrollOutputEnabled,
     )
 
@@ -37,6 +41,7 @@ internal fun OsShellRunnerOutputCardHost(
         outputHint = textBundle.outputHint,
         outputSnapshot = outputSnapshot,
         outputScrollState = outputScrollState,
+        outputLazyListState = outputLazyListState,
         formatOutputActionDescription = textBundle.formatOutputActionDescription,
         copyOutputActionDescription = textBundle.copyOutputActionDescription,
         clearOutputActionDescription = textBundle.clearOutputActionDescription,

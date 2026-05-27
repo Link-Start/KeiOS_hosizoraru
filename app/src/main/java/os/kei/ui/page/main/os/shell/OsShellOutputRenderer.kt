@@ -1,12 +1,16 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.os.shell
 
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -24,7 +28,7 @@ internal data class ShellOutputDisplayEntry(
     val command: String,
     val result: String,
     val isStopped: Boolean,
-    val timeLabel: String = ""
+    val timeLabel: String = "",
 )
 
 @Composable
@@ -33,89 +37,74 @@ internal fun ShellOutputLiquidPanel(
     hint: String,
     entries: List<ShellOutputDisplayEntry>,
     scrollState: ScrollState,
-    modifier: Modifier = Modifier
+    lazyListState: LazyListState,
+    modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
-    val commandColor = if (isDark) {
-        Color(0xFF7AB8FF)
-    } else {
-        Color(0xFF2563EB)
-    }
-    val successOutputColor = if (isDark) {
-        Color(0xFF7EE7A8)
-    } else {
-        Color(0xFF15803D)
-    }
-    val stoppedOutputColor = if (isDark) {
-        Color(0xFFFF9E9E)
-    } else {
-        Color(0xFFDC2626)
-    }
+    val commandColor =
+        if (isDark) {
+            Color(0xFF7AB8FF)
+        } else {
+            Color(0xFF2563EB)
+        }
+    val successOutputColor =
+        if (isDark) {
+            Color(0xFF7EE7A8)
+        } else {
+            Color(0xFF15803D)
+        }
+    val stoppedOutputColor =
+        if (isDark) {
+            Color(0xFFFF9E9E)
+        } else {
+            Color(0xFFDC2626)
+        }
 
     ShellLiquidPanelSurface(
         modifier = modifier,
-        minHeight = 160.dp
+        minHeight = 160.dp,
     ) {
         if (text.isBlank()) {
             Text(
                 text = hint,
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight
+                lineHeight = AppTypographyTokens.Body.lineHeight,
             )
-        } else {
+        } else if (entries.isEmpty()) {
             SelectionContainer(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState),
             ) {
-                if (entries.isEmpty()) {
-                    Text(
-                        text = text,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = AppTypographyTokens.Body.fontSize,
-                        lineHeight = AppTypographyTokens.Body.lineHeight,
-                        maxLines = Int.MAX_VALUE,
-                        overflow = TextOverflow.Clip
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        entries.forEach { entry ->
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = "$ ${entry.command}",
-                                    color = commandColor,
-                                    fontSize = AppTypographyTokens.Body.fontSize,
-                                    lineHeight = AppTypographyTokens.Body.lineHeight,
-                                    maxLines = Int.MAX_VALUE,
-                                    overflow = TextOverflow.Clip
-                                )
-                                Text(
-                                    text = entry.result,
-                                    color = if (entry.isStopped) stoppedOutputColor else successOutputColor,
-                                    fontSize = AppTypographyTokens.Body.fontSize,
-                                    lineHeight = AppTypographyTokens.Body.lineHeight,
-                                    maxLines = Int.MAX_VALUE,
-                                    overflow = TextOverflow.Clip
-                                )
-                                if (entry.timeLabel.isNotBlank()) {
-                                    Text(
-                                        text = entry.timeLabel,
-                                        color = successOutputColor,
-                                        fontSize = AppTypographyTokens.Body.fontSize,
-                                        lineHeight = AppTypographyTokens.Body.lineHeight,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Clip
-                                    )
-                                }
-                            }
-                        }
+                Text(
+                    text = text,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.Body.fontSize,
+                    lineHeight = AppTypographyTokens.Body.lineHeight,
+                    maxLines = Int.MAX_VALUE,
+                    overflow = TextOverflow.Clip,
+                )
+            }
+        } else {
+            SelectionContainer(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    itemsIndexed(
+                        items = entries,
+                        key = { index, entry -> entry.stableShellOutputEntryKey(index) },
+                        contentType = { _, _ -> "shell_output_entry" },
+                    ) { _, entry ->
+                        ShellOutputEntryBlock(
+                            entry = entry,
+                            commandColor = commandColor,
+                            successOutputColor = successOutputColor,
+                            stoppedOutputColor = stoppedOutputColor,
+                        )
                     }
                 }
             }
@@ -123,14 +112,66 @@ internal fun ShellOutputLiquidPanel(
     }
 }
 
+@Composable
+private fun ShellOutputEntryBlock(
+    entry: ShellOutputDisplayEntry,
+    commandColor: Color,
+    successOutputColor: Color,
+    stoppedOutputColor: Color,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text = "$ ${entry.command}",
+            color = commandColor,
+            fontSize = AppTypographyTokens.Body.fontSize,
+            lineHeight = AppTypographyTokens.Body.lineHeight,
+            maxLines = Int.MAX_VALUE,
+            overflow = TextOverflow.Clip,
+        )
+        Text(
+            text = entry.result,
+            color = if (entry.isStopped) stoppedOutputColor else successOutputColor,
+            fontSize = AppTypographyTokens.Body.fontSize,
+            lineHeight = AppTypographyTokens.Body.lineHeight,
+            maxLines = Int.MAX_VALUE,
+            overflow = TextOverflow.Clip,
+        )
+        if (entry.timeLabel.isNotBlank()) {
+            Text(
+                text = entry.timeLabel,
+                color = successOutputColor,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+            )
+        }
+    }
+}
+
+private fun ShellOutputDisplayEntry.stableShellOutputEntryKey(index: Int): String =
+    buildString {
+        append(index)
+        append(':')
+        append(timeLabel)
+        append(':')
+        append(command.hashCode())
+        append(':')
+        append(result.length)
+    }
+
 internal fun trimShellOutputEntries(
     entries: List<ShellOutputDisplayEntry>,
-    maxChars: Int
+    maxChars: Int,
 ): List<ShellOutputDisplayEntry> {
     if (entries.isEmpty()) return emptyList()
-    var totalChars = entries.sumOf { entry ->
-        entry.command.length + entry.result.length + entry.timeLabel.length + 8
-    }
+    var totalChars =
+        entries.sumOf { entry ->
+            entry.command.length + entry.result.length + entry.timeLabel.length + 8
+        }
     if (totalChars <= maxChars) return entries
     val trimmed = entries.toMutableList()
     while (trimmed.isNotEmpty() && totalChars > maxChars) {
@@ -144,17 +185,19 @@ internal fun parseShellOutputDisplayEntries(
     raw: String,
     stoppedOutputText: String,
     outputResultLabel: String,
-    outputTimeLabel: String
+    outputTimeLabel: String,
 ): List<ShellOutputDisplayEntry> {
-    val normalized = raw
-        .replace("\r\n", "\n")
-        .replace('\r', '\n')
-        .trim()
+    val normalized =
+        raw
+            .replace("\r\n", "\n")
+            .replace('\r', '\n')
+            .trim()
     if (normalized.isBlank()) return emptyList()
     val lines = normalized.lines()
-    val commandLineIndices = lines.indices.filter { index ->
-        lines[index].startsWith("$ ")
-    }
+    val commandLineIndices =
+        lines.indices.filter { index ->
+            lines[index].startsWith("$ ")
+        }
     if (commandLineIndices.isEmpty()) return emptyList()
     val stoppedMarker = stoppedOutputText.trim()
     return buildList {
@@ -162,11 +205,12 @@ internal fun parseShellOutputDisplayEntries(
             val end = commandLineIndices.getOrNull(index + 1) ?: lines.size
             val command = lines[start].removePrefix("$").trim()
             if (command.isBlank()) return@forEachIndexed
-            val outputLines = normalizeShellOutputBlockLines(
-                lines = lines.subList(start + 1, end),
-                outputResultLabel = outputResultLabel,
-                outputTimeLabel = outputTimeLabel
-            )
+            val outputLines =
+                normalizeShellOutputBlockLines(
+                    lines = lines.subList(start + 1, end),
+                    outputResultLabel = outputResultLabel,
+                    outputTimeLabel = outputTimeLabel,
+                )
             val (resultLines, timeLabel) = splitShellOutputResultAndTime(outputLines)
             val result = resultLines.joinToString("\n").trimEnd()
             add(
@@ -174,8 +218,8 @@ internal fun parseShellOutputDisplayEntries(
                     command = command,
                     result = result,
                     isStopped = result.trim() == stoppedMarker,
-                    timeLabel = timeLabel.orEmpty()
-                )
+                    timeLabel = timeLabel.orEmpty(),
+                ),
             )
         }
     }
@@ -200,7 +244,7 @@ private fun splitShellOutputResultAndTime(lines: List<String>): Pair<List<String
 private fun normalizeShellOutputBlockLines(
     lines: List<String>,
     outputResultLabel: String,
-    outputTimeLabel: String
+    outputTimeLabel: String,
 ): List<String> {
     if (lines.isEmpty()) return emptyList()
     var start = 0

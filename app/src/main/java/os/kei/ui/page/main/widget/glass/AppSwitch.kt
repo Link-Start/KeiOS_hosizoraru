@@ -118,11 +118,13 @@ private fun AppFallbackSwitchToggle(
             Color(0xFF787880).copy(alpha = 0.36f)
         }
     val thumbColor = if (isLightTheme) Color.White else Color(0xFFE5E7EB)
-    val progress by appMotionFloatState(
-        targetValue = if (checked) 1f else 0f,
-        durationMillis = 160,
-        label = "app_fallback_switch_progress",
-    )
+    val progressState =
+        appMotionFloatState(
+            targetValue = if (checked) 1f else 0f,
+            durationMillis = 160,
+            label = "app_fallback_switch_progress",
+        )
+    val progressProvider = remember(progressState) { { progressState.value } }
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val interactionSource = remember { MutableInteractionSource() }
 
@@ -148,7 +150,7 @@ private fun AppFallbackSwitchToggle(
             modifier =
                 Modifier
                     .drawAppSquircleBackground(999.dp) {
-                        lerpColor(trackColor, accentColor, progress)
+                        lerpColor(trackColor, accentColor, progressProvider())
                     }.size(52.dp, 28.dp),
         )
         Box(
@@ -157,6 +159,7 @@ private fun AppFallbackSwitchToggle(
                     .graphicsLayer {
                         val padding = 2.dp.toPx()
                         val travel = 24.dp.toPx()
+                        val progress = progressProvider()
                         translationX =
                             if (isLtr) {
                                 lerp(-travel / 2f + padding, travel / 2f - padding, progress)

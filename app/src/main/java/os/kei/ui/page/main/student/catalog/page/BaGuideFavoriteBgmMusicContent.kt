@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
@@ -60,14 +61,18 @@ internal fun BaGuideFavoriteBgmMusicContent(
     val contentBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    val playbackChromeState by remember(playbackCoordinator) {
-        playbackCoordinator.runtimeStateFlow
-            .map { runtimeState ->
-                BaGuideFavoriteBgmPlaybackChromeState(
-                    isPlaying = runtimeState.isPlaying,
-                    volume = runtimeState.volume,
-                )
-            }.distinctUntilChanged()
+    val playbackChromeState by remember(playbackCoordinator, isPageActive) {
+        if (isPageActive) {
+            playbackCoordinator.runtimeStateFlow
+                .map { runtimeState ->
+                    BaGuideFavoriteBgmPlaybackChromeState(
+                        isPlaying = runtimeState.isPlaying,
+                        volume = runtimeState.volume,
+                    )
+                }.distinctUntilChanged()
+        } else {
+            emptyFlow()
+        }
     }.collectAsStateWithLifecycle(
         initialValue =
             BaGuideFavoriteBgmPlaybackChromeState(
@@ -137,7 +142,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
         playbackCoordinator.play(favorite, restart = restart)
     }
 
-    LaunchedEffect(selectedFavorite?.audioUrl, playbackCoordinator.queueMode) {
+    LaunchedEffect(selectedFavorite?.audioUrl, playbackCoordinator.queueMode, isPageActive) {
+        if (!isPageActive) return@LaunchedEffect
         playbackCoordinator.prepareSelected()
     }
 

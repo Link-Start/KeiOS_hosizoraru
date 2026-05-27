@@ -33,6 +33,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -91,10 +92,14 @@ internal fun BaGuideStudentBgmTabContent(
     val lookupStates by lookupCoordinator.states.collectAsStateWithLifecycle()
     val tabState = rememberBaGuideStudentBgmTabStateHolder(searchQuery)
     val selectedAudioUrl = playbackState.selectedAudioUrl
-    val selectedPlaybackIsPlaying by remember(playbackCoordinator) {
-        playbackCoordinator.runtimeStateFlow
-            .map { runtime -> runtime.isPlaying }
-            .distinctUntilChanged()
+    val selectedPlaybackIsPlaying by remember(playbackCoordinator, isPageActive) {
+        if (isPageActive) {
+            playbackCoordinator.runtimeStateFlow
+                .map { runtime -> runtime.isPlaying }
+                .distinctUntilChanged()
+        } else {
+            emptyFlow()
+        }
     }.collectAsStateWithLifecycle(initialValue = playbackCoordinator.runtimeState.isPlaying)
     val queueMode = playbackState.queueMode
     val bgmMissingText = stringResource(R.string.ba_catalog_student_bgm_toast_missing)
@@ -182,7 +187,8 @@ internal fun BaGuideStudentBgmTabContent(
                 favoriteAudioUrls = favoriteAudioUrls,
             )
         }
-    LaunchedEffect(displayedInput) {
+    LaunchedEffect(displayedInput, isPageActive) {
+        if (!isPageActive) return@LaunchedEffect
         onRequestDisplayedDerivedState(displayedInput)
     }
     val displayedBgmModel = displayedDerivedState.model
@@ -265,7 +271,8 @@ internal fun BaGuideStudentBgmTabContent(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-    LaunchedEffect(selectedFavorite?.audioUrl, queueMode) {
+    LaunchedEffect(selectedFavorite?.audioUrl, queueMode, isPageActive) {
+        if (!isPageActive) return@LaunchedEffect
         playbackCoordinator.prepareSelected()
     }
 

@@ -355,7 +355,10 @@ private fun BaPoolListContent(
         bottomExtra = 40.dp,
         sectionSpacing = 14.dp,
     ) {
-        item {
+        item(
+            key = "ba-pool-server-panel",
+            contentType = "ba_pool_server_panel",
+        ) {
             BaCalendarPoolServerPanel(
                 backdrop = backdrop,
                 serverOptions = serverOptions,
@@ -371,13 +374,19 @@ private fun BaPoolListContent(
         }
         when {
             loading -> {
-                item {
+                item(
+                    key = "ba-pool-loading",
+                    contentType = "ba_pool_status",
+                ) {
                     BaPoolLoadingPanel(accentColor = syncTextColor)
                 }
             }
 
             !error.isNullOrBlank() -> {
-                item {
+                item(
+                    key = "ba-pool-error",
+                    contentType = "ba_pool_status",
+                ) {
                     BaPoolStatePanel(
                         backdrop = backdrop,
                         text = error,
@@ -391,7 +400,10 @@ private fun BaPoolListContent(
             }
 
             visibleEntries.isEmpty() -> {
-                item {
+                item(
+                    key = "ba-pool-empty-$showEndedPools",
+                    contentType = "ba_pool_status",
+                ) {
                     BaPoolStatePanel(
                         backdrop = backdrop,
                         text =

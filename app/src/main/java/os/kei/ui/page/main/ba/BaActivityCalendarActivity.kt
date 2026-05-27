@@ -295,7 +295,10 @@ private fun BaActivityCalendarListContent(
         bottomExtra = 40.dp,
         sectionSpacing = 14.dp,
     ) {
-        item {
+        item(
+            key = "ba-calendar-server-panel",
+            contentType = "ba_calendar_server_panel",
+        ) {
             BaCalendarPoolServerPanel(
                 backdrop = backdrop,
                 serverOptions = serverOptions,
@@ -311,7 +314,10 @@ private fun BaActivityCalendarListContent(
         }
         when {
             loading -> {
-                item {
+                item(
+                    key = "ba-calendar-loading",
+                    contentType = "ba_calendar_status",
+                ) {
                     BaActivityCalendarLoadingPanel(
                         accentColor = syncTextColor,
                     )
@@ -319,7 +325,10 @@ private fun BaActivityCalendarListContent(
             }
 
             !error.isNullOrBlank() -> {
-                item {
+                item(
+                    key = "ba-calendar-error",
+                    contentType = "ba_calendar_status",
+                ) {
                     BaCalendarStatePanel(
                         backdrop = backdrop,
                         text = error,
@@ -333,7 +342,10 @@ private fun BaActivityCalendarListContent(
             }
 
             visibleEntries.isEmpty() -> {
-                item {
+                item(
+                    key = "ba-calendar-empty-$showEndedActivities",
+                    contentType = "ba_calendar_status",
+                ) {
                     BaCalendarStatePanel(
                         backdrop = backdrop,
                         text =

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.mcp.skill.component
 
 import androidx.compose.foundation.layout.Arrangement
@@ -5,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,18 +34,20 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 
+@Immutable
 internal data class McpSkillCopyAction(
     val title: String,
     val summary: String,
     val payload: String,
     val label: String,
-    val icon: ImageVector
+    val icon: ImageVector,
 )
 
+@Immutable
 internal data class McpSkillResourceAction(
     val title: String,
     val summary: String,
-    val payload: String
+    val payload: String,
 )
 
 @Composable
@@ -52,30 +57,31 @@ internal fun McpSkillOnboardingCard(
     subtitleColor: Color,
     accentColor: Color,
     onCopyClawPrompt: () -> Unit,
-    onCopyCurrentConfig: () -> Unit
+    onCopyCurrentConfig: () -> Unit,
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
-        showIndication = false
+        showIndication = false,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(CardLayoutRhythm.cardContentPadding),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(CardLayoutRhythm.cardContentPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
                 text = textBundle.onboardingTitle,
                 color = titleColor,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 19.sp,
-                lineHeight = 25.sp
+                lineHeight = 25.sp,
             )
             Text(
                 text = textBundle.onboardingSummary,
                 color = subtitleColor,
                 fontSize = 14.sp,
-                lineHeight = 21.sp
+                lineHeight = 21.sp,
             )
             AppDualActionRow(
                 spacing = CardLayoutRhythm.infoRowGap,
@@ -85,7 +91,7 @@ internal fun McpSkillOnboardingCard(
                         icon = osLucideCopyIcon(),
                         color = accentColor,
                         modifier = modifier,
-                        onClick = onCopyClawPrompt
+                        onClick = onCopyClawPrompt,
                     )
                 },
                 second = { modifier ->
@@ -94,15 +100,15 @@ internal fun McpSkillOnboardingCard(
                         icon = appLucideConfigIcon(),
                         color = accentColor,
                         modifier = modifier,
-                        onClick = onCopyCurrentConfig
+                        onClick = onCopyCurrentConfig,
                     )
-                }
+                },
             )
             Text(
                 text = "${textBundle.copyCurrentConfigText}: ${textBundle.currentConfigSummary}",
                 color = subtitleColor,
                 fontSize = 12.sp,
-                lineHeight = 17.sp
+                lineHeight = 17.sp,
             )
         }
     }
@@ -115,23 +121,24 @@ internal fun McpSkillQuickCopyCard(
     titleColor: Color,
     subtitleColor: Color,
     accentColor: Color,
-    onCopy: (McpSkillCopyAction) -> Unit
+    onCopy: (McpSkillCopyAction) -> Unit,
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
-        showIndication = false
+        showIndication = false,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(CardLayoutRhythm.cardContentPadding),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(CardLayoutRhythm.cardContentPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             SkillCardHeader(
                 title = textBundle.quickCopyTitle,
                 summary = textBundle.quickCopySummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
             actions.chunked(2).forEach { rowActions ->
                 AppDualActionRow(
@@ -142,7 +149,7 @@ internal fun McpSkillQuickCopyCard(
                             icon = rowActions[0].icon,
                             color = accentColor,
                             modifier = modifier,
-                            onClick = { onCopy(rowActions[0]) }
+                            onClick = { onCopy(rowActions[0]) },
                         )
                     },
                     second = { modifier ->
@@ -152,10 +159,10 @@ internal fun McpSkillQuickCopyCard(
                                 icon = action.icon,
                                 color = accentColor,
                                 modifier = modifier,
-                                onClick = { onCopy(action) }
+                                onClick = { onCopy(action) },
                             )
                         }
-                    }
+                    },
                 )
             }
             actions.take(3).forEach { action ->
@@ -163,7 +170,7 @@ internal fun McpSkillQuickCopyCard(
                     text = "${action.title}: ${action.summary}",
                     color = subtitleColor,
                     fontSize = 12.sp,
-                    lineHeight = 17.sp
+                    lineHeight = 17.sp,
                 )
             }
         }
@@ -177,23 +184,24 @@ internal fun McpSkillResourcesCard(
     titleColor: Color,
     subtitleColor: Color,
     accentColor: Color,
-    onCopy: (McpSkillResourceAction) -> Unit
+    onCopy: (McpSkillResourceAction) -> Unit,
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
-        showIndication = false
+        showIndication = false,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(CardLayoutRhythm.cardContentPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(CardLayoutRhythm.cardContentPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SkillCardHeader(
                 title = textBundle.resourcesTitle,
                 summary = textBundle.resourcesSummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
             resources.forEach { resource ->
                 AppControlRow(
@@ -205,9 +213,9 @@ internal fun McpSkillResourcesCard(
                         SkillTinyCopyButton(
                             contentDescription = resource.title,
                             accentColor = accentColor,
-                            onClick = { onCopy(resource) }
+                            onClick = { onCopy(resource) },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -218,44 +226,45 @@ internal fun McpSkillResourcesCard(
 internal fun McpSkillFlowsCard(
     textBundle: McpSkillPageTextBundle,
     titleColor: Color,
-    subtitleColor: Color
+    subtitleColor: Color,
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
-        showIndication = false
+        showIndication = false,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(CardLayoutRhythm.cardContentPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(CardLayoutRhythm.cardContentPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             SkillCardHeader(
                 title = textBundle.flowsTitle,
                 summary = textBundle.flowsSummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
             SkillFlowRow(
                 icon = appLucideRefreshIcon(),
                 title = textBundle.flowConnectTitle,
                 summary = textBundle.flowConnectSummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
             SkillFlowRow(
                 icon = appLucideBranchIcon(),
                 title = textBundle.flowWorkflowTitle,
                 summary = textBundle.flowWorkflowSummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
             SkillFlowRow(
                 icon = appLucideWarningIcon(),
                 title = textBundle.flowDiagnosticsTitle,
                 summary = textBundle.flowDiagnosticsSummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
         }
     }
@@ -268,36 +277,38 @@ internal fun McpSkillReferenceCard(
     titleColor: Color,
     subtitleColor: Color,
     accentColor: Color,
-    onExpandedChange: (Boolean) -> Unit
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
         showIndication = true,
-        onClick = { onExpandedChange(!expanded) }
+        onClick = { onExpandedChange(!expanded) },
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(CardLayoutRhythm.cardContentPadding),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(CardLayoutRhythm.cardContentPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             SkillCardHeader(
                 title = textBundle.referenceTitle,
                 summary = textBundle.referenceSummary,
                 titleColor = titleColor,
-                subtitleColor = subtitleColor
+                subtitleColor = subtitleColor,
             )
             AppLiquidTextButton(
                 backdrop = null,
                 variant = GlassVariant.Compact,
-                text = if (expanded) {
-                    textBundle.collapseReferenceText
-                } else {
-                    textBundle.expandReferenceText
-                },
+                text =
+                    if (expanded) {
+                        textBundle.collapseReferenceText
+                    } else {
+                        textBundle.expandReferenceText
+                    },
                 textColor = accentColor,
                 leadingIcon = if (expanded) appLucideListIcon() else appLucideNotesIcon(),
-                onClick = { onExpandedChange(!expanded) }
+                onClick = { onExpandedChange(!expanded) },
             )
         }
     }
@@ -308,24 +319,24 @@ private fun SkillCardHeader(
     title: String,
     summary: String,
     titleColor: Color,
-    subtitleColor: Color
+    subtitleColor: Color,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = title,
             color = titleColor,
             fontWeight = FontWeight.SemiBold,
             fontSize = 17.sp,
-            lineHeight = 23.sp
+            lineHeight = 23.sp,
         )
         Text(
             text = summary,
             color = subtitleColor,
             fontSize = 14.sp,
-            lineHeight = 20.sp
+            lineHeight = 20.sp,
         )
     }
 }
@@ -336,7 +347,7 @@ private fun SkillFlowRow(
     title: String,
     summary: String,
     titleColor: Color,
-    subtitleColor: Color
+    subtitleColor: Color,
 ) {
     AppControlRow(
         title = title,
@@ -347,9 +358,9 @@ private fun SkillFlowRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = subtitleColor
+                tint = subtitleColor,
             )
-        }
+        },
     )
 }
 
@@ -359,7 +370,7 @@ private fun SkillCopyButton(
     icon: ImageVector,
     color: Color,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     AppLiquidTextButton(
         backdrop = null,
@@ -369,7 +380,7 @@ private fun SkillCopyButton(
         leadingIcon = icon,
         modifier = modifier,
         textMaxLines = 2,
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -377,7 +388,7 @@ private fun SkillCopyButton(
 private fun SkillTinyCopyButton(
     contentDescription: String,
     accentColor: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     AppLiquidIconButton(
         backdrop = null,
@@ -387,90 +398,92 @@ private fun SkillTinyCopyButton(
         width = 34.dp,
         height = 30.dp,
         iconTint = accentColor,
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
-@Composable
 internal fun buildMcpSkillCopyActions(
     textBundle: McpSkillPageTextBundle,
     markdown: String,
     workflowResourceUri: String,
     domainTemplateUri: String,
     bootstrapPrompt: String,
-    diagnosticsPrompt: String
-): List<McpSkillCopyAction> {
-    return listOf(
+    diagnosticsPrompt: String,
+    notesIcon: ImageVector,
+    workflowIcon: ImageVector,
+    domainIcon: ImageVector,
+    bootstrapIcon: ImageVector,
+    diagnosticsIcon: ImageVector,
+): List<McpSkillCopyAction> =
+    listOf(
         McpSkillCopyAction(
             title = textBundle.copyFullSkillText,
             summary = textBundle.fullSkillSummary,
             payload = markdown,
             label = "mcp-skill-markdown",
-            icon = appLucideNotesIcon()
+            icon = notesIcon,
         ),
         McpSkillCopyAction(
             title = textBundle.copyWorkflowResourceText,
             summary = textBundle.workflowResourceSummary,
             payload = workflowResourceUri,
             label = "mcp-workflow-resource",
-            icon = appLucideBranchIcon()
+            icon = workflowIcon,
         ),
         McpSkillCopyAction(
             title = textBundle.copyDomainTemplateText,
             summary = textBundle.domainTemplateSummary,
             payload = domainTemplateUri,
             label = "mcp-domain-template",
-            icon = appLucidePackageIcon()
+            icon = domainIcon,
         ),
         McpSkillCopyAction(
             title = textBundle.copyBootstrapPromptText,
             summary = textBundle.bootstrapPromptSummary,
             payload = bootstrapPrompt,
             label = "mcp-bootstrap-prompt",
-            icon = appLucideInfoIcon()
+            icon = bootstrapIcon,
         ),
         McpSkillCopyAction(
             title = textBundle.copyDiagnosticsPromptText,
             summary = textBundle.diagnosticsPromptSummary,
             payload = diagnosticsPrompt,
             label = "mcp-diagnostics-prompt",
-            icon = appLucideWarningIcon()
-        )
+            icon = diagnosticsIcon,
+        ),
     )
-}
 
 internal fun buildMcpSkillResourceActions(
     textBundle: McpSkillPageTextBundle,
     skillResourceUri: String,
     workflowResourceUri: String,
     domainTemplateUri: String,
-    toolTemplateUri: String
-): List<McpSkillResourceAction> {
-    return listOf(
+    toolTemplateUri: String,
+): List<McpSkillResourceAction> =
+    listOf(
         McpSkillResourceAction(
             title = textBundle.resourceSkillTitle,
             summary = textBundle.resourceSkillSummary,
-            payload = skillResourceUri
+            payload = skillResourceUri,
         ),
         McpSkillResourceAction(
             title = textBundle.resourceWorkflowTitle,
             summary = textBundle.resourceWorkflowSummary,
-            payload = workflowResourceUri
+            payload = workflowResourceUri,
         ),
         McpSkillResourceAction(
             title = textBundle.resourceDomainGithubTitle,
             summary = textBundle.resourceDomainGithubSummary,
-            payload = domainTemplateUri.replace("{domain}", "github")
+            payload = domainTemplateUri.replace("{domain}", "github"),
         ),
         McpSkillResourceAction(
             title = textBundle.resourceDomainRuntimeTitle,
             summary = textBundle.resourceDomainRuntimeSummary,
-            payload = domainTemplateUri.replace("{domain}", "runtime")
+            payload = domainTemplateUri.replace("{domain}", "runtime"),
         ),
         McpSkillResourceAction(
             title = textBundle.resourceToolTemplateTitle,
             summary = textBundle.resourceToolTemplateSummary,
-            payload = toolTemplateUri
-        )
+            payload = toolTemplateUri,
+        ),
     )
-}

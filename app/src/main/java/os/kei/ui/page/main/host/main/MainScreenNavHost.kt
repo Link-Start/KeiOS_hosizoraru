@@ -68,6 +68,16 @@ internal fun MainScreenNavHost(
     transientExternalLaunchActive: Boolean,
     onAppThemeModeChanged: (AppThemeMode) -> Unit,
 ) {
+    val backCoordinator =
+        rememberMainScreenBackCoordinator(
+            backStack = backStack,
+            navigator = navigator,
+            pagerCoordinator = pagerCoordinator,
+        )
+    val onRouteBack =
+        remember(backCoordinator) {
+            { backCoordinator.onRouteBack() }
+        }
     val entryProvider =
         entryProvider<NavKey> {
             entry<KeiosRoute.Main> {
@@ -160,13 +170,13 @@ internal fun MainScreenNavHost(
                     shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
                     appThemeMode = appThemeMode,
                     onAppThemeModeChanged = onAppThemeModeChanged,
-                    onBack = { navigator.pop() },
+                    onBack = onRouteBack,
                 )
             }
             entry<KeiosRoute.McpSkill> {
                 McpSkillPage(
                     mcpServerManager = mcpServerManager,
-                    onBack = { navigator.pop() },
+                    onBack = onRouteBack,
                 )
             }
             entry<KeiosRoute.About> {
@@ -177,7 +187,7 @@ internal fun MainScreenNavHost(
                     shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
                     onCheckShizuku = onCheckOrRequestShizuku,
                     miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
-                    onBack = { navigator.pop() },
+                    onBack = onRouteBack,
                 )
             }
             entry<KeiosRoute.BaStudentGuide> {
@@ -186,7 +196,7 @@ internal fun MainScreenNavHost(
                     miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
                     liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                     preloadingEnabled = prefsState.preloadingEnabled,
-                    onBack = { navigator.pop() },
+                    onBack = onRouteBack,
                 )
             }
             entry<KeiosRoute.BaGuideCatalog> { route ->
@@ -197,7 +207,7 @@ internal fun MainScreenNavHost(
                     notificationPermissionGranted = notificationPermissionGranted,
                     onRequestNotificationPermission = onRequestNotificationPermission,
                     openBgmPlaybackToken = route.openBgmPlaybackToken,
-                    onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+                    onBack = onRouteBack,
                     onOpenGuide = pagerCoordinator.onOpenGuideDetail,
                 )
             }
@@ -236,7 +246,7 @@ internal fun MainScreenNavHost(
             sceneStrategies = listOf(SinglePaneSceneStrategy()),
             sceneDecoratorStrategies = emptyList(),
             sharedTransitionScope = null,
-            onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+            onBack = onRouteBack,
         )
     val navigationEventState = rememberNavigationEventState(sceneState)
     CompositionLocalProvider(
@@ -258,7 +268,7 @@ internal fun MainScreenNavHost(
                     NavigationBackHandler(
                         sceneState = sceneState,
                         state = navigationEventState,
-                        onBack = { handleMainScreenBack(backStack, navigator, pagerCoordinator) },
+                        onBack = onRouteBack,
                     )
                 }
                 NavDisplay(
@@ -271,9 +281,8 @@ internal fun MainScreenNavHost(
                 KeiOSBackNavigationHandler(
                     enabled = !routePredictiveBackEnabled && backStack.size > 1,
                     source = BackNavigationSource.MainRoute,
-                ) {
-                    handleMainScreenBack(backStack, navigator, pagerCoordinator)
-                }
+                    onBack = onRouteBack,
+                )
             }
             LiquidToastHost(
                 state = liquidToastState,
@@ -281,17 +290,6 @@ internal fun MainScreenNavHost(
             )
         }
     }
-}
-
-private fun handleMainScreenBack(
-    backStack: List<NavKey>,
-    navigator: Navigator,
-    pagerCoordinator: MainScreenPagerCoordinator,
-) {
-    if (backStack.lastOrNull() is KeiosRoute.BaGuideCatalog) {
-        pagerCoordinator.onBaGuideCatalogBack()
-    }
-    navigator.pop()
 }
 
 private fun <T : Any> disabledPredictiveBackTransitionSpec(): AnimatedContentTransitionScope<Scene<T>>.(Int) -> ContentTransform =

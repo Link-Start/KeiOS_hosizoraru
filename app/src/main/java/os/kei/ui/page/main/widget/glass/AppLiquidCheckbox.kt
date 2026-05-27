@@ -38,8 +38,8 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import androidx.compose.ui.graphics.lerp as lerpColor
 
 @Composable
@@ -77,22 +77,27 @@ fun AppLiquidCheckbox(
         }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val checkProgress by appMotionFloatState(
-        targetValue = if (checked) 1f else 0f,
-        durationMillis = 140,
-        label = "app_liquid_checkbox_check",
-    )
-    val pressProgress by appMotionFloatState(
-        targetValue = if (isPressed) 1f else 0f,
-        durationMillis = 110,
-        label = "app_liquid_checkbox_press",
-    )
+    val checkProgressState =
+        appMotionFloatState(
+            targetValue = if (checked) 1f else 0f,
+            durationMillis = 140,
+            label = "app_liquid_checkbox_check",
+        )
+    val pressProgressState =
+        appMotionFloatState(
+            targetValue = if (isPressed) 1f else 0f,
+            durationMillis = 110,
+            label = "app_liquid_checkbox_press",
+        )
+    val checkProgressProvider = remember(checkProgressState) { { checkProgressState.value } }
+    val pressProgressProvider = remember(pressProgressState) { { pressProgressState.value } }
 
     Box(
         modifier =
             modifier
                 .requiredSize(34.dp)
                 .graphicsLayer {
+                    val pressProgress = pressProgressProvider()
                     val scale = 1f - pressProgress * 0.035f
                     scaleX = scale
                     scaleY = scale
@@ -118,7 +123,6 @@ fun AppLiquidCheckbox(
                 },
         contentAlignment = Alignment.Center,
     ) {
-        val surfaceColor = lerpColor(uncheckedSurface, checkedSurface, checkProgress)
         Box(
             modifier =
                 Modifier
@@ -145,9 +149,13 @@ fun AppLiquidCheckbox(
                                     Shadow.Default.copy(color = Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
                                 },
                                 innerShadow = {
+                                    val pressProgress = pressProgressProvider()
                                     InnerShadow(radius = 4.dp * pressProgress, alpha = pressProgress)
                                 },
                                 onDrawSurface = {
+                                    val checkProgress = checkProgressProvider()
+                                    val pressProgress = pressProgressProvider()
+                                    val surfaceColor = lerpColor(uncheckedSurface, checkedSurface, checkProgress)
                                     drawRect(surfaceColor)
                                     if (pressProgress > 0f) {
                                         drawRect(
@@ -167,7 +175,9 @@ fun AppLiquidCheckbox(
                                 },
                             )
                         } else {
-                            Modifier.appSquircleBackground(surfaceColor, 999.dp)
+                            Modifier.drawAppSquircleBackground(999.dp) {
+                                lerpColor(uncheckedSurface, checkedSurface, checkProgressProvider())
+                            }
                         },
                     ).appSquircleBorder(
                         width = 1.dp,
@@ -176,6 +186,7 @@ fun AppLiquidCheckbox(
                     ),
         )
         Canvas(modifier = Modifier.size(18.dp)) {
+            val checkProgress = checkProgressProvider()
             if (checkProgress <= 0.01f) return@Canvas
             val stroke =
                 Stroke(

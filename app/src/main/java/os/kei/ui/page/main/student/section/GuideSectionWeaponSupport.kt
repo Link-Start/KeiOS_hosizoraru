@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section
 
 import androidx.compose.foundation.Image
@@ -19,48 +21,51 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleClip
-import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 
 @Composable
 internal fun GuidePressableMediaSurface(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
-    val pressOverlayAlpha by appMotionFloatState(
-        targetValue = if (pressed) 0.065f else 0f,
-        durationMillis = 130,
-        label = "guide_media_press_overlay"
-    )
+    val pressOverlayAlphaState =
+        appMotionFloatState(
+            targetValue = if (pressed) 0.065f else 0f,
+            durationMillis = 130,
+            label = "guide_media_press_overlay",
+        )
     Box(
-        modifier = modifier
-            .appSquircleClip(14.dp)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
+        modifier =
+            modifier
+                .appSquircleClip(14.dp)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
     ) {
         content()
-        if (pressOverlayAlpha > 0f) {
-            Box(
-                modifier = Modifier
+        Box(
+            modifier =
+                Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF1E3A8A).copy(alpha = pressOverlayAlpha))
-            )
-        }
+                    .graphicsLayer { alpha = pressOverlayAlphaState.value }
+                    .background(Color(0xFF1E3A8A)),
+        )
     }
 }
 
@@ -72,7 +77,7 @@ internal fun GuideEffectLevelPicker(
     showLevelPopup: Boolean,
     onTogglePopup: () -> Unit,
     onDismissPopup: () -> Unit,
-    onLevelSelected: (Int) -> Unit
+    onLevelSelected: (Int) -> Unit,
 ) {
     if (levelOptions.isEmpty()) return
     var levelPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
@@ -88,46 +93,46 @@ internal fun GuideEffectLevelPicker(
         onSelectedIndexChange = onLevelSelected,
         onAnchorBoundsChange = { levelPopupAnchorBounds = it },
         backdrop = backdrop,
-        variant = GlassVariant.Compact
+        variant = GlassVariant.Compact,
     )
 }
 
 @Composable
 internal fun GuideWeaponStarBadgeRow(
     starLabel: String,
-    iconSize: Dp
+    iconSize: Dp,
 ) {
     val count = parseWeaponStarCount(starLabel)
     if (count <= 0) {
         Text(
             text = starLabel,
-            color = Color(0xFFEC4899)
+            color = Color(0xFFEC4899),
         )
         return
     }
     Row(
         horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(count.coerceAtMost(5)) {
             Image(
                 painter = painterResource(R.drawable.ba_weapon_star_badge),
                 contentDescription = null,
-                modifier = Modifier.size(iconSize)
+                modifier = Modifier.size(iconSize),
             )
         }
     }
 }
 
-internal fun parseWeaponStarCount(starLabel: String): Int {
-    return Regex("""(\d{1,2})""")
+internal fun parseWeaponStarCount(starLabel: String): Int =
+    Regex("""(\d{1,2})""")
         .find(starLabel)
         ?.groupValues
         ?.getOrNull(1)
         ?.toIntOrNull()
         ?: 0
-}
 
-internal fun showLoadingText(loading: Boolean, hasInfo: Boolean): Boolean {
-    return loading && hasInfo
-}
+internal fun showLoadingText(
+    loading: Boolean,
+    hasInfo: Boolean,
+): Boolean = loading && hasInfo

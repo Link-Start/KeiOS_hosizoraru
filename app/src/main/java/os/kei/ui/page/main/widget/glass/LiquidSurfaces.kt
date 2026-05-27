@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.LocalIndication
@@ -7,12 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,6 +51,7 @@ import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -76,27 +79,29 @@ fun LiquidSurface(
     clipContent: Boolean = true,
     contentAlignment: Alignment = Alignment.TopStart,
     onClick: (() -> Unit)? = null,
-    content: @Composable BoxScope.() -> Unit = {}
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     val animationScope = rememberCoroutineScope()
-    val interactiveHighlight = remember(animationScope) {
-        InteractiveHighlight(
-            animationScope = animationScope,
-            consumeDragChanges = consumeDragChanges
-        )
-    }
+    val interactiveHighlight =
+        remember(animationScope) {
+            InteractiveHighlight(
+                animationScope = animationScope,
+                consumeDragChanges = consumeDragChanges,
+            )
+        }
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
-    val clickableModifier = if (onClick != null) {
-        Modifier.clickable(
-            interactionSource = resolvedInteractionSource,
-            indication = if (isInteractive) null else LocalIndication.current,
-            enabled = enabled,
-            role = Role.Button,
-            onClick = onClick
-        )
-    } else {
-        Modifier
-    }
+    val clickableModifier =
+        if (onClick != null) {
+            Modifier.clickable(
+                interactionSource = resolvedInteractionSource,
+                indication = if (isInteractive) null else LocalIndication.current,
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            )
+        } else {
+            Modifier
+        }
 
     val interactiveLayerBlock: (GraphicsLayerScope.() -> Unit)? =
         if (isInteractive && enabled) {
@@ -104,98 +109,102 @@ fun LiquidSurface(
         } else {
             null
         }
-    val interactionModifier = if (isInteractive && enabled) {
-        Modifier
-            .then(interactiveHighlight.modifier)
-            .then(interactiveHighlight.gestureModifier)
-    } else {
-        Modifier
-    }
-    val surfaceModifier = Modifier.drawBackdrop(
-        backdrop = backdrop,
-        shape = { shape },
-        effects = {
-            vibrancy()
-            blur(blurRadius.toPx())
-            lens(
-                lensRadius.toPx(),
-                lensRadius.toPx(),
-                chromaticAberration = chromaticAberration,
-                depthEffect = depthEffect
-            )
-        },
-        highlight = {
-            Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
-        },
-        shadow = {
-            if (shadow) {
-                Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
-            } else {
-                Shadow(alpha = 0f)
-            }
-        },
-        innerShadow = {
-            val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
-            InnerShadow(radius = 6.dp * progress, alpha = progress)
-        },
-        layerBlock = interactiveLayerBlock,
-        exportedBackdrop = exportedBackdrop,
-        onDrawSurface = {
-            if (tint.isSpecified) {
-                drawRect(tint, blendMode = BlendMode.Hue)
-                drawRect(tint.copy(alpha = tint.alpha * 0.70f))
-            }
-            if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
-                drawRect(surfaceColor)
-            }
+    val interactionModifier =
+        if (isInteractive && enabled) {
+            Modifier
+                .then(interactiveHighlight.modifier)
+                .then(interactiveHighlight.gestureModifier)
+        } else {
+            Modifier
         }
-    )
+    val surfaceModifier =
+        Modifier.drawBackdrop(
+            backdrop = backdrop,
+            shape = { shape },
+            effects = {
+                vibrancy()
+                blur(blurRadius.toPx())
+                lens(
+                    lensRadius.toPx(),
+                    lensRadius.toPx(),
+                    chromaticAberration = chromaticAberration,
+                    depthEffect = depthEffect,
+                )
+            },
+            highlight = {
+                Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
+            },
+            shadow = {
+                if (shadow) {
+                    Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
+                } else {
+                    Shadow(alpha = 0f)
+                }
+            },
+            innerShadow = {
+                val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
+                InnerShadow(radius = 6.dp * progress, alpha = progress)
+            },
+            layerBlock = interactiveLayerBlock,
+            exportedBackdrop = exportedBackdrop,
+            onDrawSurface = {
+                if (tint.isSpecified) {
+                    drawRect(tint, blendMode = BlendMode.Hue)
+                    drawRect(tint.copy(alpha = tint.alpha * 0.70f))
+                }
+                if (surfaceColor.isSpecified && surfaceColor.alpha > 0f) {
+                    drawRect(surfaceColor)
+                }
+            },
+        )
 
     if (clipContent) {
         Box(
-            modifier = modifier
-                .then(surfaceModifier)
-                .then(clickableModifier)
-                .then(interactionModifier)
-                .graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                    clip = false
-                },
+            modifier =
+                modifier
+                    .then(surfaceModifier)
+                    .then(clickableModifier)
+                    .then(interactionModifier)
+                    .graphicsLayer {
+                        alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                        clip = false
+                    },
             contentAlignment = contentAlignment,
-            content = content
+            content = content,
         )
     } else {
         Box(
-            modifier = modifier
-                .then(clickableModifier)
-                .then(interactionModifier)
-                .graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                    clip = false
-                },
-            contentAlignment = contentAlignment
+            modifier =
+                modifier
+                    .then(clickableModifier)
+                    .then(interactionModifier)
+                    .graphicsLayer {
+                        alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                        clip = false
+                    },
+            contentAlignment = contentAlignment,
         ) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .then(surfaceModifier)
-                    .graphicsLayer { clip = false }
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .then(surfaceModifier)
+                        .graphicsLayer { clip = false },
             )
             Box(
-                modifier = Modifier.graphicsLayer {
-                    interactiveLayerBlock?.invoke(this)
-                    clip = false
-                },
+                modifier =
+                    Modifier.graphicsLayer {
+                        interactiveLayerBlock?.invoke(this)
+                        clip = false
+                    },
                 contentAlignment = contentAlignment,
-                content = content
+                content = content,
             )
         }
     }
 }
 
-private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(
-    interactiveHighlight: InteractiveHighlight
-) {
+private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(interactiveHighlight: InteractiveHighlight) {
     val progress = interactiveHighlight.pressProgress
     val scale = lerp(1f, 1f + 4.dp.toPx() / size.height, progress)
     val maxOffset = size.minDimension
@@ -207,11 +216,11 @@ private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(
     val maxDragScale = 4.dp.toPx() / size.height
     val offsetAngle = atan2(offset.y, offset.x)
     scaleX = scale +
-            maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
-            (size.width / size.height).fastCoerceAtMost(1f)
+        maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
+        (size.width / size.height).fastCoerceAtMost(1f)
     scaleY = scale +
-            maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
-            (size.height / size.width).fastCoerceAtMost(1f)
+        maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
+        (size.height / size.width).fastCoerceAtMost(1f)
 }
 
 @Composable
@@ -226,140 +235,137 @@ fun AppLiquidFloatingSurface(
     pressDurationMillis: Int = 130,
     pressLabel: String = "app_liquid_floating_surface_press",
     pressSafePadding: Dp = Dp.Unspecified,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     val pressed by resolvedInteractionSource.collectIsPressedAsState()
-    val pressProgress by appMotionFloatState(
-        targetValue = if (pressed) 1f else 0f,
-        durationMillis = pressDurationMillis,
-        label = pressLabel
-    )
+    val pressProgressState =
+        appMotionFloatState(
+            targetValue = if (pressed) 1f else 0f,
+            durationMillis = pressDurationMillis,
+            label = pressLabel,
+        )
+    val pressProgressProvider = remember(pressProgressState) { { pressProgressState.value } }
     val density = LocalDensity.current
     val isDark = isSystemInDarkTheme()
     val surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.20f else 0.40f)
-    val overlayColor = if (isDark) {
-        Color.White.copy(alpha = 0.04f)
-    } else {
-        Color.White.copy(alpha = 0.08f)
-    }
-    val borderColor = if (isDark) {
-        Color.White.copy(alpha = 0.18f)
-    } else {
-        Color.White.copy(alpha = 0.54f)
-    }
-    val shadowAlpha = (if (isDark) 0.12f else 0.05f) * (1f - 0.35f * pressProgress)
-    val pressedBorderColor = borderColor.copy(alpha = borderColor.alpha * (1f - 0.72f * pressProgress))
-    val resolvedPressSafePadding = if (pressSafePadding == Dp.Unspecified) {
-        if (onClick != null || consumeTouches) {
-            AppInteractiveTokens.denseLiquidPressSafePadding
+    val overlayColor =
+        if (isDark) {
+            Color.White.copy(alpha = 0.04f)
         } else {
-            0.dp
+            Color.White.copy(alpha = 0.08f)
         }
-    } else {
-        pressSafePadding
-    }
+    val borderColor =
+        if (isDark) {
+            Color.White.copy(alpha = 0.18f)
+        } else {
+            Color.White.copy(alpha = 0.54f)
+        }
+    val resolvedPressSafePadding =
+        if (pressSafePadding == Dp.Unspecified) {
+            if (onClick != null || consumeTouches) {
+                AppInteractiveTokens.denseLiquidPressSafePadding
+            } else {
+                0.dp
+            }
+        } else {
+            pressSafePadding
+        }
     val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
 
     Box(
-        modifier = modifier
-            .padding(resolvedPressSafePadding)
-            .graphicsLayer {
-                translationY = -with(density) { 1.25.dp.toPx() } * pressProgress
-                scaleX = lerp(1f, 1.010f, pressProgress)
-                scaleY = lerp(1f, 0.992f, pressProgress)
-                clip = false
-            },
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .padding(resolvedPressSafePadding)
+                .graphicsLayer {
+                    val pressProgress = pressProgressProvider()
+                    translationY = -with(density) { 1.25.dp.toPx() } * pressProgress
+                    scaleX = lerp(1f, 1.010f, pressProgress)
+                    scaleY = lerp(1f, 0.992f, pressProgress)
+                    clip = false
+                },
+        contentAlignment = Alignment.Center,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (backdrop != null) {
-                        Modifier.drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { shape },
-                            effects = {
-                                vibrancy()
-                                blur(UiPerformanceBudget.backdropBlur.toPx())
-                                lens(
-                                    (UiPerformanceBudget.backdropLens *
-                                            (0.90f + 0.08f * pressProgress)).toPx(),
-                                    (UiPerformanceBudget.backdropLens *
-                                            (0.90f + 0.10f * pressProgress)).toPx()
-                                )
-                            },
-                            highlight = {
-                                Highlight.Default.copy(
-                                    alpha = (if (isDark) 0.46f else 0.82f) + 0.06f * pressProgress
-                                )
-                            },
-                            shadow = {
-                                Shadow.Default.copy(
-                                    color = Color.Black.copy(alpha = shadowAlpha)
-                                )
-                            },
-                            onDrawSurface = { drawRect(surfaceColor) }
-                        )
-                    } else {
-                        Modifier
-                            .appLiquidOptimizedSurface(
-                                shape = shape,
-                                optimizedCornerRadius = optimizedCornerRadius,
-                                color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
-                        )
-                    }
-                )
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .appLiquidOptimizedBorder(
-                    shape = shape,
-                    optimizedCornerRadius = optimizedCornerRadius,
-                    color = pressedBorderColor,
-                )
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (clipContent) {
-                        Modifier.appLiquidOptimizedClip(
-                            shape = shape,
-                            optimizedCornerRadius = optimizedCornerRadius,
-                        )
-                    } else {
-                        Modifier
-                    }
-                ),
-        ) {
-            Box(
-                modifier = Modifier
+            modifier =
+                Modifier
                     .fillMaxSize()
                     .then(
-                        if (!clipContent) {
+                        if (backdrop != null) {
+                            Modifier.drawBackdrop(
+                                backdrop = backdrop,
+                                shape = { shape },
+                                effects = {
+                                    vibrancy()
+                                    blur(UiPerformanceBudget.backdropBlur.toPx())
+                                    val pressProgress = pressProgressProvider()
+                                    lens(
+                                        (
+                                            UiPerformanceBudget.backdropLens *
+                                                (0.90f + 0.08f * pressProgress)
+                                        ).toPx(),
+                                        (
+                                            UiPerformanceBudget.backdropLens *
+                                                (0.90f + 0.10f * pressProgress)
+                                        ).toPx(),
+                                    )
+                                },
+                                highlight = {
+                                    val pressProgress = pressProgressProvider()
+                                    Highlight.Default.copy(
+                                        alpha = (if (isDark) 0.46f else 0.82f) + 0.06f * pressProgress,
+                                    )
+                                },
+                                shadow = {
+                                    val pressProgress = pressProgressProvider()
+                                    val shadowAlpha = (if (isDark) 0.12f else 0.05f) * (1f - 0.35f * pressProgress)
+                                    Shadow.Default.copy(
+                                        color = Color.Black.copy(alpha = shadowAlpha),
+                                    )
+                                },
+                                onDrawSurface = { drawRect(surfaceColor) },
+                            )
+                        } else {
+                            Modifier
+                                .appLiquidOptimizedSurface(
+                                    shape = shape,
+                                    optimizedCornerRadius = optimizedCornerRadius,
+                                    color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.96f),
+                                )
+                        },
+                    ),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .appLiquidOptimizedBorder(
+                        shape = shape,
+                        optimizedCornerRadius = optimizedCornerRadius,
+                        color = {
+                            val pressProgress = pressProgressProvider()
+                            borderColor.copy(alpha = borderColor.alpha * (1f - 0.72f * pressProgress))
+                        },
+                    ),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (clipContent) {
                             Modifier.appLiquidOptimizedClip(
                                 shape = shape,
                                 optimizedCornerRadius = optimizedCornerRadius,
                             )
                         } else {
                             Modifier
-                        }
-                    )
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                overlayColor,
-                                overlayColor.copy(alpha = overlayColor.alpha * 0.52f)
-                            )
-                        )
-                    )
-            )
-            if (consumeTouches && onClick == null) {
-                Box(
-                    modifier = Modifier
+                        },
+                    ),
+        ) {
+            Box(
+                modifier =
+                    Modifier
                         .fillMaxSize()
                         .then(
                             if (!clipContent) {
@@ -369,31 +375,59 @@ fun AppLiquidFloatingSurface(
                                 )
                             } else {
                                 Modifier
-                            }
-                        )
-                        .clickable(
-                            interactionSource = resolvedInteractionSource,
-                            indication = null,
-                            onClick = {}
-                        )
+                            },
+                        ).background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        overlayColor,
+                                        overlayColor.copy(alpha = overlayColor.alpha * 0.52f),
+                                    ),
+                            ),
+                        ),
+            )
+            if (consumeTouches && onClick == null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (!clipContent) {
+                                    Modifier.appLiquidOptimizedClip(
+                                        shape = shape,
+                                        optimizedCornerRadius = optimizedCornerRadius,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            ).clickable(
+                                interactionSource = resolvedInteractionSource,
+                                indication = null,
+                                onClick = {},
+                            ),
                 )
             }
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        when {
-                            onClick != null -> Modifier.clickable(
-                                interactionSource = resolvedInteractionSource,
-                                indication = null,
-                                onClick = onClick
-                            )
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .then(
+                            when {
+                                onClick != null -> {
+                                    Modifier.clickable(
+                                        interactionSource = resolvedInteractionSource,
+                                        indication = null,
+                                        onClick = onClick,
+                                    )
+                                }
 
-                            else -> Modifier
-                        }
-                    ),
+                                else -> {
+                                    Modifier
+                                }
+                            },
+                        ),
                 contentAlignment = Alignment.Center,
-                content = content
+                content = content,
             )
         }
     }
@@ -402,7 +436,6 @@ fun AppLiquidFloatingSurface(
 private fun appLiquidOptimizedCornerRadius(shape: Shape): Dp? =
     when (shape) {
         CircleShape, ContinuousCapsule -> 999.dp
-
         else -> null
     }
 
@@ -442,6 +475,18 @@ private fun Modifier.appLiquidOptimizedBorder(
     }
 
 @Composable
+private fun Modifier.appLiquidOptimizedBorder(
+    shape: Shape,
+    optimizedCornerRadius: Dp?,
+    color: () -> Color,
+): Modifier =
+    if (optimizedCornerRadius != null) {
+        drawAppSquircleBorder(width = 1.dp, cornerRadius = optimizedCornerRadius, color = color)
+    } else {
+        appLiquidOptimizedBorder(shape = shape, optimizedCornerRadius = optimizedCornerRadius, color = color())
+    }
+
+@Composable
 fun LiquidRoundedCard(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
@@ -454,7 +499,7 @@ fun LiquidRoundedCard(
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     LiquidSurface(
         backdrop = backdrop,
@@ -466,11 +511,11 @@ fun LiquidRoundedCard(
         lensRadius = lensRadius,
         chromaticAberration = chromaticAberration,
         depthEffect = depthEffect,
-        shadow = shadow
+        shadow = shadow,
     ) {
         Box(
             modifier = Modifier.padding(contentPadding),
-            content = content
+            content = content,
         )
     }
 }

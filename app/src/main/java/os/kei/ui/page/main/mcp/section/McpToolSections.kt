@@ -5,7 +5,10 @@ package os.kei.ui.page.main.mcp.section
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
@@ -30,6 +33,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private const val MCP_TOOL_INLINE_LIMIT = 10
 
 @Composable
 internal fun McpToolEntrypointsSection(
@@ -300,37 +305,60 @@ private fun McpToolGroupRows(
             key = title,
             value = stringResource(R.string.mcp_tools_empty_group),
         )
-    } else {
-        tools.forEach { tool ->
-            key(tool.name) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Text(
-                        text = tool.name,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp,
-                    )
-                    Text(
-                        text = tool.description,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = 15.sp,
-                        lineHeight = 21.sp,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    Text(
-                        text = "${tool.group} · ${tool.executionProfile.name} · ${tool.outputContract.wireName}",
-                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.82f),
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                    )
+    } else if (tools.size <= MCP_TOOL_INLINE_LIMIT) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            tools.forEach { tool ->
+                key(tool.name) {
+                    McpToolRow(tool = tool)
                 }
             }
         }
+    } else {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(
+                items = tools,
+                key = { tool -> tool.name },
+                contentType = { "mcp_tool_row" },
+            ) { tool ->
+                McpToolRow(tool = tool)
+            }
+        }
+    }
+}
+
+@Composable
+private fun McpToolRow(tool: McpToolMeta) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = tool.name,
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = 14.sp,
+            lineHeight = 18.sp,
+        )
+        Text(
+            text = tool.description,
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = 15.sp,
+            lineHeight = 21.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = "${tool.group} · ${tool.executionProfile.name} · ${tool.outputContract.wireName}",
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.82f),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+        )
     }
 }

@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -17,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.mcp.server.McpLogEntry
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
@@ -34,6 +39,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+private const val MCP_LOG_INLINE_LIMIT = 12
 
 @Composable
 internal fun McpServiceControlSection(
@@ -201,19 +208,14 @@ internal fun McpLogsSection(
             )
         },
     ) {
-        if (uiState.logs.isEmpty()) {
+        val logs = uiState.logs
+        if (logs.isEmpty()) {
             MiuixInfoItem(
                 key = stringResource(R.string.mcp_log_label),
                 value = stringResource(R.string.mcp_log_empty),
             )
         } else {
-            uiState.logs.asReversed().forEach { log ->
-                val logTitle = "${log.time} [${log.level}]"
-                MiuixInfoItem(
-                    key = logTitle,
-                    value = log.message,
-                )
-            }
+            McpLogRows(logs = logs)
         }
         Spacer(modifier = Modifier.height(8.dp))
         AppLiquidTextButton(
@@ -223,4 +225,50 @@ internal fun McpLogsSection(
             onClick = onClearLogs,
         )
     }
+}
+
+@Composable
+private fun McpLogRows(logs: List<McpLogEntry>) {
+    val displayLogs =
+        remember(logs) {
+            logs.mapIndexed { index, log -> IndexedMcpLog(index, log) }.asReversed()
+        }
+    if (displayLogs.size <= MCP_LOG_INLINE_LIMIT) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            displayLogs.forEach { item ->
+                McpLogRow(log = item.log)
+            }
+        }
+        return
+    }
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 420.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(
+            items = displayLogs,
+            key = { item -> item.stableKey },
+            contentType = { "mcp_log_entry" },
+        ) { item ->
+            McpLogRow(log = item.log)
+        }
+    }
+}
+
+@Composable
+private fun McpLogRow(log: McpLogEntry) {
+    MiuixInfoItem(
+        key = "${log.time} [${log.level}]",
+        value = log.message,
+    )
+}
+
+private data class IndexedMcpLog(
+    val sourceIndex: Int,
+    val log: McpLogEntry,
+) {
+    val stableKey: String = "$sourceIndex:${log.time}:${log.level}:${log.message.hashCode()}:${log.message.length}"
 }

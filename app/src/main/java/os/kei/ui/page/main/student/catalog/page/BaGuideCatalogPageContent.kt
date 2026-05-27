@@ -11,13 +11,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -35,7 +38,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedSt
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
-import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -80,12 +83,12 @@ internal fun BaGuideCatalogPageContent(
     onRequestNotificationPermission: () -> Unit,
 ) {
     val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val keyboardLift =
-        rememberAppFloatingKeyboardLift(
+    val keyboardLiftState =
+        rememberAppFloatingKeyboardLiftState(
             focusedLift = 18.dp,
             restingBottomGap = navigationBottom,
         )
-    val bottomChromeTargetPadding = navigationBottom + if (pageState.searchInputActive) keyboardLift else 0.dp
+    val keyboardLiftProvider = remember(keyboardLiftState) { { keyboardLiftState.value } }
     val catalogSortMode = filterSortState.sortMode
     val catalogSelectedFilterOptions = filterSortState.selectedFilterOptions
 
@@ -227,8 +230,11 @@ internal fun BaGuideCatalogPageContent(
                     .padding(
                         start = 12.dp,
                         end = 12.dp,
-                        bottom = bottomChromeTargetPadding + 12.dp,
-                    ),
+                        bottom = navigationBottom + 12.dp,
+                    ).offset {
+                        val lift = if (pageState.searchInputActive) keyboardLiftProvider() else 0.dp
+                        IntOffset(x = 0, y = -lift.roundToPx())
+                    },
         )
     }
 }

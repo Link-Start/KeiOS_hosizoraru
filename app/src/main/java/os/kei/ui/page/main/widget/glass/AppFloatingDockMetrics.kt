@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -22,7 +21,19 @@ fun rememberAppFloatingKeyboardLift(
     focusedLift: Dp = 18.dp,
     restingBottomGap: Dp = 0.dp,
     label: String = "app_floating_keyboard_lift",
-): Dp {
+): Dp =
+    rememberAppFloatingKeyboardLiftState(
+        focusedLift = focusedLift,
+        restingBottomGap = restingBottomGap,
+        label = label,
+    ).value
+
+@Composable
+fun rememberAppFloatingKeyboardLiftState(
+    focusedLift: Dp = 18.dp,
+    restingBottomGap: Dp = 0.dp,
+    label: String = "app_floating_keyboard_lift",
+): State<Dp> {
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val targetLift =
@@ -32,12 +43,11 @@ fun rememberAppFloatingKeyboardLift(
             focusedLift = focusedLift,
             restingBottomGap = restingBottomGap,
         )
-    val lift by animateDpAsState(
+    return animateDpAsState(
         targetValue = targetLift,
         animationSpec = tween(durationMillis = AppFloatingKeyboardLiftMotionMs),
         label = label,
     )
-    return lift
 }
 
 internal fun appFloatingKeyboardLiftTarget(

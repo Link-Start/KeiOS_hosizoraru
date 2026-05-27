@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,7 +53,7 @@ import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
-import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -153,11 +154,12 @@ internal fun OsPageMainList(
             bottomBarVisible = bottomBarVisible,
             label = "os_floating_search_bottom",
         )
-    val floatingKeyboardLift =
-        rememberAppFloatingKeyboardLift(
+    val floatingKeyboardLiftState =
+        rememberAppFloatingKeyboardLiftState(
             restingBottomGap = searchDockBottomTarget,
             label = "os_floating_keyboard_lift",
         )
+    val floatingKeyboardLiftProvider = remember(floatingKeyboardLiftState) { { floatingKeyboardLiftState.value } }
     val dockAlignment =
         if (floatingDockSide == AppFloatingDockSide.Start) {
             Alignment.BottomStart
@@ -484,7 +486,7 @@ internal fun OsPageMainList(
             refreshEnabled = !refreshing,
             refreshStatus = refreshStatus,
             dockSide = floatingDockSide,
-            keyboardLift = floatingKeyboardLift,
+            keyboardLiftProvider = floatingKeyboardLiftProvider,
             modifier =
                 Modifier
                     .align(dockAlignment)

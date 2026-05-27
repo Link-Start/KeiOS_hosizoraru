@@ -30,7 +30,7 @@ import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
-import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.testing.KeiOsTestTags
 
 @Suppress("FunctionName")
@@ -57,11 +57,12 @@ internal fun GitHubMainContent(
             bottomBarVisible = layout.bottomBarVisible,
             label = "github_floating_search_bottom",
         )
-    val floatingKeyboardLift =
-        rememberAppFloatingKeyboardLift(
+    val floatingKeyboardLiftState =
+        rememberAppFloatingKeyboardLiftState(
             restingBottomGap = searchDockBottomTarget,
             label = "github_floating_keyboard_lift",
         )
+    val floatingKeyboardLiftProvider = remember(floatingKeyboardLiftState) { { floatingKeyboardLiftState.value } }
     val dockAlignment =
         if (layout.floatingDockSide == AppFloatingDockSide.Start) {
             androidx.compose.ui.Alignment.BottomStart
@@ -269,7 +270,7 @@ internal fun GitHubMainContent(
                     refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,
                     dockSide = layout.floatingDockSide,
-                    keyboardLift = floatingKeyboardLift,
+                    keyboardLiftProvider = floatingKeyboardLiftProvider,
                     modifier =
                         Modifier
                             .align(dockAlignment)

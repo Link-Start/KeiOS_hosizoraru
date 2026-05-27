@@ -41,7 +41,7 @@ import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabStrip
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
 import os.kei.ui.page.main.widget.chrome.miuixFloatingBottomBarLayout
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
-import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLift
+import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
@@ -75,12 +75,13 @@ internal fun SettingsBottomChrome(
     val gap = SettingsBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
-    val keyboardLift =
-        rememberAppFloatingKeyboardLift(
+    val keyboardLiftState =
+        rememberAppFloatingKeyboardLiftState(
             focusedLift = 18.dp,
             restingBottomGap = navigationBarBottom + 12.dp,
             label = "settings_bottom_chrome_keyboard_lift",
         )
+    val keyboardLiftProvider = remember(keyboardLiftState) { { keyboardLiftState.value } }
     val transition =
         updateTransition(
             targetState = searchExpanded,
@@ -129,7 +130,7 @@ internal fun SettingsBottomChrome(
             Modifier
                 .fillMaxWidth()
                 .offset {
-                    IntOffset(x = 0, y = -keyboardLift.roundToPx())
+                    IntOffset(x = 0, y = -keyboardLiftProvider().roundToPx())
                 }.padding(
                     start = outerPadding,
                     end = outerPadding,

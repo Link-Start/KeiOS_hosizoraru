@@ -54,8 +54,8 @@ import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -86,11 +86,13 @@ fun AppLiquidInputField(
     val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
     var focused by remember { mutableStateOf(false) }
     val usesSearchMaterial = variant == GlassVariant.SearchField
-    val focusProgress by appMotionFloatState(
-        targetValue = if (focused) 1f else 0f,
-        durationMillis = 140,
-        label = "app_liquid_search_field_focus",
-    )
+    val focusProgressState =
+        appMotionFloatState(
+            targetValue = if (focused) 1f else 0f,
+            durationMillis = 140,
+            label = "app_liquid_search_field_focus",
+        )
+    val focusProgressProvider = remember(focusProgressState) { { focusProgressState.value } }
     val sheetInputAccent = resolveGlassAccentColor(textColor, isDark)
     val placeholderColor =
         if (variant == GlassVariant.SheetInput) {
@@ -139,14 +141,15 @@ fun AppLiquidInputField(
         if (!glass.showBorder) {
             Modifier
         } else {
-            Modifier.appSquircleBorder(
+            Modifier.drawAppSquircleBorder(
                 width = glass.borderWidth,
-                color =
-                    glass.borderColor.copy(
-                        alpha = (glass.borderColor.alpha + 0.14f * focusProgress).coerceAtMost(1f),
-                    ),
                 cornerRadius = 999.dp,
-            )
+            ) {
+                val focusProgress = focusProgressProvider()
+                glass.borderColor.copy(
+                    alpha = (glass.borderColor.alpha + 0.14f * focusProgress).coerceAtMost(1f),
+                )
+            }
         }
 
     val contentAlignment =
@@ -173,12 +176,14 @@ fun AppLiquidInputField(
                             backdrop = activeBackdrop,
                             shape = { ContinuousCapsule },
                             layerBlock = {
+                                val focusProgress = focusProgressProvider()
                                 val focusScale =
                                     1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * focusProgress
                                 scaleX = focusScale
                                 scaleY = focusScale
                             },
                             effects = {
+                                val focusProgress = focusProgressProvider()
                                 vibrancy()
                                 blur((if (usesSearchMaterial) glass.blur + 1.dp * focusProgress else glass.blur).toPx())
                                 lens(
@@ -191,6 +196,7 @@ fun AppLiquidInputField(
                                 )
                             },
                             highlight = {
+                                val focusProgress = focusProgressProvider()
                                 Highlight.Default.copy(
                                     alpha =
                                         appLiquidSearchHighlightAlpha(
@@ -201,17 +207,20 @@ fun AppLiquidInputField(
                                 )
                             },
                             shadow = {
+                                val focusProgress = focusProgressProvider()
                                 Shadow.Default.copy(
                                     color = Color.Black.copy(alpha = glass.shadowAlpha + 0.04f * focusProgress),
                                 )
                             },
                             innerShadow = {
+                                val focusProgress = focusProgressProvider()
                                 InnerShadow(
                                     radius = 6.dp * focusProgress,
                                     alpha = 0.22f * focusProgress,
                                 )
                             },
                             onDrawSurface = {
+                                val focusProgress = focusProgressProvider()
                                 if (variant == GlassVariant.Bar || usesSearchMaterial) {
                                     drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
                                 } else {
@@ -242,13 +251,14 @@ fun AppLiquidInputField(
                         appLiquidSearchMaterialOverlayModifier(
                             cornerRadius = 999.dp,
                             colors = searchColors,
-                            focusProgress = focusProgress,
-                            pressProgress = 0f,
+                            focusProgress = focusProgressProvider,
+                            pressProgress = { 0f },
                         )
                     } else {
                         Modifier
                     },
                 ).graphicsLayer {
+                    val focusProgress = focusProgressProvider()
                     shadowElevation = 2.dp.toPx() * focusProgress
                     ambientShadowColor = Color.Black.copy(alpha = 0.06f * focusProgress)
                     spotShadowColor = Color.Black.copy(alpha = 0.08f * focusProgress)
@@ -387,17 +397,24 @@ fun AppLiquidSearchSurface(
     val isDark = isSystemInDarkTheme()
     val activeBackdrop = backdrop.takeIf { LocalLiquidControlsEnabled.current }
     val density = LocalDensity.current
-    val focusProgress by appMotionFloatState(
-        targetValue = if (focused) 1f else 0f,
-        durationMillis = 140,
-        label = "app_liquid_search_surface_focus",
-    )
-    val pressProgress by appMotionFloatState(
-        targetValue = if (pressed) 1f else 0f,
-        durationMillis = pressDurationMillis,
-        label = pressLabel,
-    )
-    val materialProgress = maxOf(focusProgress, pressProgress)
+    val focusProgressState =
+        appMotionFloatState(
+            targetValue = if (focused) 1f else 0f,
+            durationMillis = 140,
+            label = "app_liquid_search_surface_focus",
+        )
+    val pressProgressState =
+        appMotionFloatState(
+            targetValue = if (pressed) 1f else 0f,
+            durationMillis = pressDurationMillis,
+            label = pressLabel,
+        )
+    val focusProgressProvider = remember(focusProgressState) { { focusProgressState.value } }
+    val pressProgressProvider = remember(pressProgressState) { { pressProgressState.value } }
+    val materialProgressProvider =
+        remember(focusProgressProvider, pressProgressProvider) {
+            { maxOf(focusProgressProvider(), pressProgressProvider()) }
+        }
     val glass =
         glassStyle(
             isDark = isDark,
@@ -411,6 +428,7 @@ fun AppLiquidSearchSurface(
         modifier =
             modifier
                 .graphicsLayer {
+                    val pressProgress = pressProgressProvider()
                     translationY = -with(density) { 1.dp.toPx() } * pressProgress
                     scaleX = lerp(1f, 1.010f, pressProgress)
                     scaleY = lerp(1f, 0.992f, pressProgress)
@@ -421,6 +439,7 @@ fun AppLiquidSearchSurface(
                             backdrop = activeBackdrop,
                             shape = { shape },
                             effects = {
+                                val materialProgress = materialProgressProvider()
                                 vibrancy()
                                 blur((glass.blur + 1.dp * materialProgress).toPx())
                                 lens(
@@ -431,6 +450,7 @@ fun AppLiquidSearchSurface(
                                 )
                             },
                             highlight = {
+                                val materialProgress = materialProgressProvider()
                                 Highlight.Default.copy(
                                     alpha =
                                         appLiquidSearchHighlightAlpha(
@@ -442,6 +462,8 @@ fun AppLiquidSearchSurface(
                                 )
                             },
                             shadow = {
+                                val focusProgress = focusProgressProvider()
+                                val pressProgress = pressProgressProvider()
                                 Shadow.Default.copy(
                                     color =
                                         Color.Black.copy(
@@ -450,6 +472,7 @@ fun AppLiquidSearchSurface(
                                 )
                             },
                             innerShadow = {
+                                val materialProgress = materialProgressProvider()
                                 InnerShadow(
                                     radius = 6.dp * materialProgress,
                                     alpha = 0.18f * materialProgress,
@@ -466,17 +489,18 @@ fun AppLiquidSearchSurface(
                     appLiquidSearchMaterialOverlayModifier(
                         cornerRadius = 999.dp,
                         colors = searchColors,
-                        focusProgress = focusProgress,
-                        pressProgress = pressProgress,
+                        focusProgress = focusProgressProvider,
+                        pressProgress = pressProgressProvider,
                     ),
-                ).appSquircleBorder(
+                ).drawAppSquircleBorder(
                     width = glass.borderWidth,
-                    color =
-                        glass.borderColor.copy(
-                            alpha = (glass.borderColor.alpha + 0.10f * materialProgress).coerceAtMost(1f),
-                        ),
                     cornerRadius = 999.dp,
-                ),
+                ) {
+                    val materialProgress = materialProgressProvider()
+                    glass.borderColor.copy(
+                        alpha = (glass.borderColor.alpha + 0.10f * materialProgress).coerceAtMost(1f),
+                    )
+                },
         contentAlignment = contentAlignment,
         content = content,
     )

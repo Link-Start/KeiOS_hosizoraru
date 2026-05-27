@@ -1,12 +1,12 @@
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 
 internal data class AppLiquidSearchMaterialColors(
     val overlayTop: Color,
@@ -78,62 +78,76 @@ internal fun appLiquidSearchMaterialOverlayModifier(
     colors: AppLiquidSearchMaterialColors,
     focusProgress: Float,
     pressProgress: Float,
-): Modifier {
-    val materialProgress = maxOf(focusProgress, pressProgress)
-    return Modifier
-        .background(
-            Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom)),
-        ).background(
-            Brush.horizontalGradient(
-                colors =
-                    listOf(
-                        colors.sideRim,
-                        Color.Transparent,
-                        Color.Transparent,
-                        colors.sideRim,
-                    ),
-            ),
-        ).background(
-            Brush.radialGradient(
-                colors =
-                    listOf(
-                        colors.centerGlow.copy(
-                            alpha =
-                                (colors.centerGlow.alpha + 0.055f * materialProgress).coerceAtMost(
-                                    1f,
-                                ),
+): Modifier =
+    appLiquidSearchMaterialOverlayModifier(
+        cornerRadius = cornerRadius,
+        colors = colors,
+        focusProgress = { focusProgress },
+        pressProgress = { pressProgress },
+    )
+
+internal fun appLiquidSearchMaterialOverlayModifier(
+    cornerRadius: Dp,
+    colors: AppLiquidSearchMaterialColors,
+    focusProgress: () -> Float,
+    pressProgress: () -> Float,
+): Modifier =
+    Modifier
+        .drawWithCache {
+            val overlayBrush = Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom))
+            val sideBrush =
+                Brush.horizontalGradient(
+                    colors =
+                        listOf(
+                            colors.sideRim,
+                            Color.Transparent,
+                            Color.Transparent,
+                            colors.sideRim,
                         ),
-                        Color.Transparent,
+                )
+            onDrawBehind {
+                val materialProgress = maxOf(focusProgress(), pressProgress())
+                drawRect(overlayBrush)
+                drawRect(sideBrush)
+                drawRect(
+                    Brush.radialGradient(
+                        colors =
+                            listOf(
+                                colors.centerGlow.copy(
+                                    alpha = (colors.centerGlow.alpha + 0.055f * materialProgress).coerceAtMost(1f),
+                                ),
+                                Color.Transparent,
+                            ),
                     ),
-            ),
-        ).background(
-            Brush.verticalGradient(
-                colorStops =
-                    arrayOf(
-                        0.00f to Color.Transparent,
-                        0.62f to Color.Transparent,
-                        1.00f to
-                            colors.bottomGlow.copy(
-                                alpha =
-                                    (colors.bottomGlow.alpha + 0.035f * materialProgress).coerceAtMost(
-                                        1f,
+                )
+                drawRect(
+                    Brush.verticalGradient(
+                        colorStops =
+                            arrayOf(
+                                0.00f to Color.Transparent,
+                                0.62f to Color.Transparent,
+                                1.00f to
+                                    colors.bottomGlow.copy(
+                                        alpha = (colors.bottomGlow.alpha + 0.035f * materialProgress).coerceAtMost(1f),
                                     ),
                             ),
                     ),
-            ),
-        ).appSquircleBorder(
+                )
+            }
+        }.drawAppSquircleBorder(
             width = 1.1.dp,
-            color =
-                colors.edge.copy(
-                    alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f),
-                ),
             cornerRadius = cornerRadius,
-        ).appSquircleBorder(
+        ) {
+            val materialProgress = maxOf(focusProgress(), pressProgress())
+            colors.edge.copy(
+                alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f),
+            )
+        }.drawAppSquircleBorder(
             width = 1.dp,
-            color =
-                colors.innerRim.copy(
-                    alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f),
-                ),
             cornerRadius = cornerRadius,
-        )
-}
+        ) {
+            val materialProgress = maxOf(focusProgress(), pressProgress())
+            colors.innerRim.copy(
+                alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f),
+            )
+        }

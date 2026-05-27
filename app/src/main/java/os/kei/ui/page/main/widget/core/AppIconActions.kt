@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.foundation.clickable
@@ -28,35 +30,38 @@ fun AppCompactIconAction(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     tint: Color = MiuixTheme.colorScheme.primary,
-    minSize: Dp = 30.dp
+    minSize: Dp = 30.dp,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by appMotionFloatState(
-        targetValue = if (enabled && isPressed) AppInteractiveTokens.pressedScale else 1f,
-        durationMillis = 110,
-        label = "app_compact_icon_action_scale"
-    )
+    val scaleState =
+        appMotionFloatState(
+            targetValue = if (enabled && isPressed) AppInteractiveTokens.pressedScale else 1f,
+            durationMillis = 110,
+            label = "app_compact_icon_action_scale",
+        )
+    val scaleProvider = remember(scaleState) { { scaleState.value } }
     Box(
-        modifier = modifier
-            .defaultMinSize(minWidth = minSize, minHeight = minSize)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-            }
-            .clickable(
-                enabled = enabled,
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .defaultMinSize(minWidth = minSize, minHeight = minSize)
+                .graphicsLayer {
+                    val scale = scaleProvider()
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                }.clickable(
+                    enabled = enabled,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = tint
+            tint = tint,
         )
     }
 }

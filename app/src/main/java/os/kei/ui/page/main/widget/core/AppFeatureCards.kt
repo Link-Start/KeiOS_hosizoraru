@@ -70,16 +70,18 @@ fun AppSurfaceCard(
             Modifier
         }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val pressedScale by appMotionFloatState(
-        targetValue =
-            if (showIndication && clickable && !useLiquidClick && isPressed) {
-                0.992f
-            } else {
-                1f
-            },
-        durationMillis = 120,
-        label = "app_surface_card_press_scale",
-    )
+    val pressedScaleState =
+        appMotionFloatState(
+            targetValue =
+                if (showIndication && clickable && !useLiquidClick && isPressed) {
+                    0.992f
+                } else {
+                    1f
+                },
+            durationMillis = 120,
+            label = "app_surface_card_press_scale",
+        )
+    val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
     val resolvedPressSafePadding =
@@ -99,7 +101,7 @@ fun AppSurfaceCard(
             captureBackdrop = null,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
-            pressedScale = pressedScale,
+            pressedScale = pressedScaleProvider,
             resolvedPressSafePadding = resolvedPressSafePadding,
             containerColor = containerColor,
             showIndication = showIndication,
@@ -119,7 +121,7 @@ fun AppSurfaceCard(
             captureBackdrop = if (captureLocalBackdrop) localBackdrop else null,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
-            pressedScale = pressedScale,
+            pressedScale = pressedScaleProvider,
             resolvedPressSafePadding = resolvedPressSafePadding,
             containerColor = containerColor,
             showIndication = showIndication,
@@ -141,7 +143,7 @@ private fun AppSurfaceCardFrame(
     captureBackdrop: LayerBackdrop?,
     clickModifier: Modifier,
     interactionSource: MutableInteractionSource,
-    pressedScale: Float,
+    pressedScale: () -> Float,
     resolvedPressSafePadding: Dp,
     containerColor: Color,
     showIndication: Boolean,
@@ -159,8 +161,9 @@ private fun AppSurfaceCardFrame(
                 .fillMaxWidth()
                 .padding(resolvedPressSafePadding)
                 .graphicsLayer {
-                    scaleX = pressedScale
-                    scaleY = pressedScale
+                    val scale = pressedScale()
+                    scaleX = scale
+                    scaleY = scale
                     clip = false
                 },
     ) {

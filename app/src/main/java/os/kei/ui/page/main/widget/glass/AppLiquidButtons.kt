@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.clickable
@@ -49,6 +51,8 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
+import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -76,7 +80,7 @@ fun AppLiquidIconButton(
     iconModifier: Modifier = Modifier,
     containerColor: Color? = null,
     enabled: Boolean = true,
-    onPressedChange: ((Boolean) -> Unit)? = null
+    onPressedChange: ((Boolean) -> Unit)? = null,
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -95,13 +99,13 @@ fun AppLiquidIconButton(
         containerColor = containerColor,
         contentTint = iconTint,
         enabled = enabled,
-        onPressedChange = onPressedChange
+        onPressedChange = onPressedChange,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             modifier = iconModifier,
-            tint = iconTint
+            tint = iconTint,
         )
     }
 }
@@ -123,7 +127,7 @@ fun AppLiquidIconButton(
     iconModifier: Modifier = Modifier,
     containerColor: Color? = null,
     enabled: Boolean = true,
-    onPressedChange: ((Boolean) -> Unit)? = null
+    onPressedChange: ((Boolean) -> Unit)? = null,
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -142,13 +146,13 @@ fun AppLiquidIconButton(
         containerColor = containerColor,
         contentTint = iconTint,
         enabled = enabled,
-        onPressedChange = onPressedChange
+        onPressedChange = onPressedChange,
     ) {
         Icon(
             painter = painter,
             contentDescription = contentDescription,
             modifier = iconModifier,
-            tint = iconTint
+            tint = iconTint,
         )
     }
 }
@@ -169,66 +173,79 @@ private fun AppLiquidIconButtonContainer(
     contentTint: Color,
     enabled: Boolean,
     onPressedChange: ((Boolean) -> Unit)?,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
-    val glass = glassStyle(
-        isDark = isDark,
-        variant = variant,
-        blurRadius = blurRadius
-    ).let { baseStyle ->
-        val accentSource = containerColor ?: contentTint
-        baseStyle.tintWithAccent(
-            accentColor = resolveGlassAccentColor(accentSource, isDark),
-            isDark = isDark
+    val glass =
+        glassStyle(
+            isDark = isDark,
+            variant = variant,
+            blurRadius = blurRadius,
+        ).let { baseStyle ->
+            val accentSource = containerColor ?: contentTint
+            baseStyle.tintWithAccent(
+                accentColor = resolveGlassAccentColor(accentSource, isDark),
+                isDark = isDark,
+            )
+        }
+    val surfaceOverlayColor =
+        resolveDarkCapsuleOverlayColor(
+            defaultOverlayColor = glass.overlayColor,
+            isDark = isDark,
         )
-    }
-    val surfaceOverlayColor = resolveDarkCapsuleOverlayColor(
-        defaultOverlayColor = glass.overlayColor,
-        isDark = isDark
-    )
-    val surfaceHighlightAlpha = resolveDarkCapsuleHighlightAlpha(
-        defaultAlpha = glass.highlightAlpha,
-        isDark = isDark,
-        variant = variant
-    )
-    val resolvedContainerColor = sanitizeCapsuleContainerColor(
-        containerColor = containerColor,
-        isDark = isDark
-    )
+    val surfaceHighlightAlpha =
+        resolveDarkCapsuleHighlightAlpha(
+            defaultAlpha = glass.highlightAlpha,
+            isDark = isDark,
+            variant = variant,
+        )
+    val resolvedContainerColor =
+        sanitizeCapsuleContainerColor(
+            containerColor = containerColor,
+            isDark = isDark,
+        )
     val transparentContainer = containerColor?.alpha == 0f
     val showBorder = glass.showBorder && !transparentContainer && containerColor == null
-    val containerOverlay = resolvedContainerColor
-        ?.takeUnless { transparentContainer }
-        ?.copy(alpha = glassContainerOverlayAlpha(variant, isDark))
-    val pressedOverlayColor = appControlPressedOverlayColor(
-        isDark = isDark,
-        variant = variant,
-        accentColor = resolvedContainerColor ?: Color.Unspecified
-    )
+    val containerOverlay =
+        resolvedContainerColor
+            ?.takeUnless { transparentContainer }
+            ?.copy(alpha = glassContainerOverlayAlpha(variant, isDark))
+    val pressedOverlayColor =
+        appControlPressedOverlayColor(
+            isDark = isDark,
+            variant = variant,
+            accentColor = resolvedContainerColor ?: Color.Unspecified,
+        )
     val animationScope = rememberCoroutineScope()
-    val interactiveHighlight = remember(animationScope) {
-        InteractiveHighlight(animationScope = animationScope)
-    }
+    val interactiveHighlight =
+        remember(animationScope) {
+            InteractiveHighlight(animationScope = animationScope)
+        }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val animatedScale by appMotionFloatState(
-        targetValue = if (isPressed) AppInteractiveTokens.pressedScale else 1f,
-        durationMillis = 110,
-        label = "glass_icon_button_scale"
-    )
-    val pressedOverlayAlpha by appMotionFloatState(
-        targetValue = appControlPressedOverlayAlpha(isPressed = isPressed, isDark = isDark),
-        durationMillis = 110,
-        label = "glass_icon_button_overlay"
-    )
-    val borderAlpha by appMotionFloatState(
-        targetValue = if (isPressed) 0f else 1f,
-        durationMillis = 110,
-        label = "glass_icon_button_border_alpha"
-    )
+    val animatedScaleState =
+        appMotionFloatState(
+            targetValue = if (isPressed) AppInteractiveTokens.pressedScale else 1f,
+            durationMillis = 110,
+            label = "glass_icon_button_scale",
+        )
+    val pressedOverlayAlphaState =
+        appMotionFloatState(
+            targetValue = appControlPressedOverlayAlpha(isPressed = isPressed, isDark = isDark),
+            durationMillis = 110,
+            label = "glass_icon_button_overlay",
+        )
+    val borderAlphaState =
+        appMotionFloatState(
+            targetValue = if (isPressed) 0f else 1f,
+            durationMillis = 110,
+            label = "glass_icon_button_border_alpha",
+        )
+    val animatedScaleProvider = remember(animatedScaleState) { { animatedScaleState.value } }
+    val pressedOverlayAlphaProvider = remember(pressedOverlayAlphaState) { { pressedOverlayAlphaState.value } }
+    val borderAlphaProvider = remember(borderAlphaState) { { borderAlphaState.value } }
     LaunchedEffect(isPressed, onPressedChange) {
         onPressedChange?.invoke(isPressed)
     }
@@ -236,124 +253,129 @@ private fun AppLiquidIconButtonContainer(
         onDispose { onPressedChange?.invoke(false) }
     }
     Box(
-        modifier = modifier
-            .width(width)
-            .height(height)
-            .graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
-                clip = false
-            }
-            .then(
-                if (onLongClick != null) {
-                    Modifier.combinedClickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        enabled = enabled,
-                        onClick = onClick,
-                        onLongClick = onLongClick
-                    )
-                } else {
-                    Modifier.clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        enabled = enabled,
-                        onClick = onClick
-                    )
-                }
-            )
-            .then(
-                if (activeBackdrop != null) {
-                    Modifier.drawBackdrop(
-                        backdrop = activeBackdrop,
-                        shape = { shape },
-                        layerBlock = if (enabled) {
-                            { applyLiquidButtonLayer(interactiveHighlight) }
-                        } else {
-                            null
-                        },
-                        effects = {
-                            vibrancy()
-                            blur(4.dp.toPx())
-                            lens(
-                                16.dp.toPx(),
-                                28.dp.toPx(),
-                                chromaticAberration = variant != GlassVariant.Compact,
-                                depthEffect = true
-                            )
-                        },
-                        highlight = {
-                            Highlight.Default.copy(alpha = surfaceHighlightAlpha)
-                        },
-                        shadow = {
-                            Shadow.Default.copy(
-                                color = Color.Black.copy(
-                                    alpha = appLiquidButtonShadowAlpha(
-                                        baseAlpha = glass.shadowAlpha,
-                                        variant = variant,
-                                        isPressed = isPressed
-                                    )
+        modifier =
+            modifier
+                .width(width)
+                .height(height)
+                .graphicsLayer {
+                    val scale = animatedScaleProvider()
+                    scaleX = scale
+                    scaleY = scale
+                    clip = false
+                }.then(
+                    if (onLongClick != null) {
+                        Modifier.combinedClickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            enabled = enabled,
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                        )
+                    } else {
+                        Modifier.clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            enabled = enabled,
+                            onClick = onClick,
+                        )
+                    },
+                ).then(
+                    if (activeBackdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = activeBackdrop,
+                            shape = { shape },
+                            layerBlock =
+                                if (enabled) {
+                                    { applyLiquidButtonLayer(interactiveHighlight) }
+                                } else {
+                                    null
+                                },
+                            effects = {
+                                vibrancy()
+                                blur(4.dp.toPx())
+                                lens(
+                                    16.dp.toPx(),
+                                    28.dp.toPx(),
+                                    chromaticAberration = variant != GlassVariant.Compact,
+                                    depthEffect = true,
                                 )
-                            )
-                        },
-                        innerShadow = {
-                            val progress = if (enabled) interactiveHighlight.pressProgress else 0f
-                            InnerShadow(radius = 6.dp * progress, alpha = progress)
-                        },
-                        onDrawSurface = {
-                            if (variant == GlassVariant.Bar) {
-                                drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
-                            } else {
-                                drawRect(glass.baseColor)
-                                if (surfaceOverlayColor != Color.Transparent) {
-                                    drawRect(surfaceOverlayColor)
+                            },
+                            highlight = {
+                                Highlight.Default.copy(alpha = surfaceHighlightAlpha)
+                            },
+                            shadow = {
+                                Shadow.Default.copy(
+                                    color =
+                                        Color.Black.copy(
+                                            alpha =
+                                                appLiquidButtonShadowAlpha(
+                                                    baseAlpha = glass.shadowAlpha,
+                                                    variant = variant,
+                                                    isPressed = isPressed,
+                                                ),
+                                        ),
+                                )
+                            },
+                            innerShadow = {
+                                val progress = if (enabled) interactiveHighlight.pressProgress else 0f
+                                InnerShadow(radius = 6.dp * progress, alpha = progress)
+                            },
+                            onDrawSurface = {
+                                if (variant == GlassVariant.Bar) {
+                                    drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                } else {
+                                    drawRect(glass.baseColor)
+                                    if (surfaceOverlayColor != Color.Transparent) {
+                                        drawRect(surfaceOverlayColor)
+                                    }
                                 }
+                                containerOverlay?.let { drawRect(it) }
+                            },
+                        )
+                    } else {
+                        val fallbackColor =
+                            when {
+                                transparentContainer -> Color.Transparent
+                                containerOverlay != null -> containerOverlay
+                                else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
                             }
-                            containerOverlay?.let { drawRect(it) }
-                        }
-                    )
-                } else {
-                    val fallbackColor = when {
-                        transparentContainer -> Color.Transparent
-                        containerOverlay != null -> containerOverlay
-                        else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
-                    }
-                    Modifier
-                        .appSquircleBackground(fallbackColor, 999.dp)
-                }
-            )
-            .then(
-                if (enabled) {
-                    Modifier
-                        .then(interactiveHighlight.modifier)
-                        .then(interactiveHighlight.gestureModifier)
-                } else {
-                    Modifier
-                }
-            )
-            .graphicsLayer {
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-            },
-        contentAlignment = Alignment.Center
+                        Modifier
+                            .appSquircleBackground(fallbackColor, 999.dp)
+                    },
+                ).then(
+                    if (enabled) {
+                        Modifier
+                            .then(interactiveHighlight.modifier)
+                            .then(interactiveHighlight.gestureModifier)
+                    } else {
+                        Modifier
+                    },
+                ).graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                },
+        contentAlignment = Alignment.Center,
     ) {
         if (showBorder) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .appSquircleBorder(
-                        width = glass.borderWidth,
-                        color = glass.borderColor.copy(alpha = glass.borderColor.alpha * borderAlpha),
-                        cornerRadius = 999.dp,
-                    )
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .drawAppSquircleBorder(
+                            width = glass.borderWidth,
+                            cornerRadius = 999.dp,
+                        ) {
+                            glass.borderColor.copy(alpha = glass.borderColor.alpha * borderAlphaProvider())
+                        },
             )
         }
-        if (pressedOverlayAlpha > 0f) {
-            Box(
-                modifier = Modifier
+        Box(
+            modifier =
+                Modifier
                     .matchParentSize()
-                    .appSquircleBackground(pressedOverlayColor.copy(alpha = pressedOverlayAlpha), 999.dp)
-            )
-        }
+                    .drawAppSquircleBackground(999.dp) {
+                        pressedOverlayColor.copy(alpha = pressedOverlayAlphaProvider())
+                    },
+        )
         content()
     }
 }
@@ -384,87 +406,104 @@ fun AppLiquidTextButton(
     textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
     pressScaleEnabled: Boolean = true,
     pressOverlayEnabled: Boolean = true,
-    consumeDragChangesForInteraction: Boolean = false
+    consumeDragChangesForInteraction: Boolean = false,
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = backdrop.takeIf { liquidControlsEnabled }
     val isDark = isSystemInDarkTheme()
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val longClick = onLongClick
-    val glass = glassStyle(
-        isDark = isDark,
-        variant = variant,
-        blurRadius = blurRadius
-    ).let { baseStyle ->
-        val accentSource = containerColor ?: textColor
-        baseStyle.tintWithAccent(
-            accentColor = resolveGlassAccentColor(accentSource, isDark),
-            isDark = isDark
+    val glass =
+        glassStyle(
+            isDark = isDark,
+            variant = variant,
+            blurRadius = blurRadius,
+        ).let { baseStyle ->
+            val accentSource = containerColor ?: textColor
+            baseStyle.tintWithAccent(
+                accentColor = resolveGlassAccentColor(accentSource, isDark),
+                isDark = isDark,
+            )
+        }
+    val surfaceOverlayColor =
+        resolveDarkCapsuleOverlayColor(
+            defaultOverlayColor = glass.overlayColor,
+            isDark = isDark,
         )
-    }
-    val surfaceOverlayColor = resolveDarkCapsuleOverlayColor(
-        defaultOverlayColor = glass.overlayColor,
-        isDark = isDark
-    )
-    val surfaceHighlightAlpha = resolveDarkCapsuleHighlightAlpha(
-        defaultAlpha = glass.highlightAlpha,
-        isDark = isDark,
-        variant = variant
-    )
-    val resolvedContainerColor = sanitizeCapsuleContainerColor(
-        containerColor = containerColor,
-        isDark = isDark
-    )
+    val surfaceHighlightAlpha =
+        resolveDarkCapsuleHighlightAlpha(
+            defaultAlpha = glass.highlightAlpha,
+            isDark = isDark,
+            variant = variant,
+        )
+    val resolvedContainerColor =
+        sanitizeCapsuleContainerColor(
+            containerColor = containerColor,
+            isDark = isDark,
+        )
     val transparentContainer = containerColor?.alpha == 0f
-    val containerOverlay = resolvedContainerColor
-        ?.takeUnless { transparentContainer }
-        ?.copy(alpha = glassContainerOverlayAlpha(variant, isDark))
-    val pressedOverlayColor = appControlPressedOverlayColor(
-        isDark = isDark,
-        variant = variant,
-        accentColor = resolvedContainerColor ?: textColor
-    )
+    val containerOverlay =
+        resolvedContainerColor
+            ?.takeUnless { transparentContainer }
+            ?.copy(alpha = glassContainerOverlayAlpha(variant, isDark))
+    val pressedOverlayColor =
+        appControlPressedOverlayColor(
+            isDark = isDark,
+            variant = variant,
+            accentColor = resolvedContainerColor ?: textColor,
+        )
     val liquidInteractionEnabled = enabled && liquidControlsEnabled && (pressScaleEnabled || pressOverlayEnabled)
     val animationScope = rememberCoroutineScope()
-    val interactiveHighlight = remember(animationScope, consumeDragChangesForInteraction) {
-        InteractiveHighlight(
-            animationScope = animationScope,
-            consumeDragChanges = consumeDragChangesForInteraction
-        )
-    }
+    val interactiveHighlight =
+        remember(animationScope, consumeDragChangesForInteraction) {
+            InteractiveHighlight(
+                animationScope = animationScope,
+                consumeDragChanges = consumeDragChangesForInteraction,
+            )
+        }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val animatedScale by appMotionFloatState(
-        targetValue = if (enabled && isPressed && pressScaleEnabled) {
-            AppInteractiveTokens.pressedScale
-        } else {
-            1f
-        },
-        durationMillis = 110,
-        label = "app_liquid_text_button_scale"
-    )
-    val pressedOverlayAlpha by appMotionFloatState(
-        targetValue = appControlPressedOverlayAlpha(
-            isPressed = enabled && isPressed && pressOverlayEnabled,
-            isDark = isDark
-        ),
-        durationMillis = 110,
-        label = "app_liquid_text_button_overlay"
-    )
-    val borderAlpha by appMotionFloatState(
-        targetValue = if (enabled && isPressed) 0f else 1f,
-        durationMillis = 110,
-        label = "app_liquid_text_button_border_alpha"
-    )
-    val borderModifier = if (glass.showBorder && containerColor == null && borderAlpha > 0.01f) {
-        Modifier.appSquircleBorder(
-            width = glass.borderWidth,
-            color = glass.borderColor.copy(alpha = glass.borderColor.alpha * borderAlpha),
-            cornerRadius = 999.dp,
+    val animatedScaleState =
+        appMotionFloatState(
+            targetValue =
+                if (enabled && isPressed && pressScaleEnabled) {
+                    AppInteractiveTokens.pressedScale
+                } else {
+                    1f
+                },
+            durationMillis = 110,
+            label = "app_liquid_text_button_scale",
         )
-    } else {
-        Modifier
-    }
+    val pressedOverlayAlphaState =
+        appMotionFloatState(
+            targetValue =
+                appControlPressedOverlayAlpha(
+                    isPressed = enabled && isPressed && pressOverlayEnabled,
+                    isDark = isDark,
+                ),
+            durationMillis = 110,
+            label = "app_liquid_text_button_overlay",
+        )
+    val borderAlphaState =
+        appMotionFloatState(
+            targetValue = if (enabled && isPressed) 0f else 1f,
+            durationMillis = 110,
+            label = "app_liquid_text_button_border_alpha",
+        )
+    val animatedScaleProvider = remember(animatedScaleState) { { animatedScaleState.value } }
+    val pressedOverlayAlphaProvider = remember(pressedOverlayAlphaState) { { pressedOverlayAlphaState.value } }
+    val borderAlphaProvider = remember(borderAlphaState) { { borderAlphaState.value } }
+    val borderModifier =
+        if (glass.showBorder && containerColor == null) {
+            Modifier.drawAppSquircleBorder(
+                width = glass.borderWidth,
+                cornerRadius = 999.dp,
+            ) {
+                glass.borderColor.copy(alpha = glass.borderColor.alpha * borderAlphaProvider())
+            }
+        } else {
+            Modifier
+        }
 
     LaunchedEffect(isPressed, onPressedChange) {
         onPressedChange?.invoke(isPressed)
@@ -474,122 +513,125 @@ fun AppLiquidTextButton(
     }
 
     Box(
-        modifier = modifier
-            .defaultMinSize(minHeight = minHeight)
-            .graphicsLayer {
-                scaleX = animatedScale
-                scaleY = animatedScale
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                clip = false
-            }
-            .then(
-                if (longClick != null) {
-                    Modifier.combinedClickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        enabled = enabled,
-                        onClick = { if (enabled) onClick() },
-                        onLongClick = longClick
-                    )
-                } else {
-                    Modifier.clickable(
-                        enabled = enabled,
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onClick
-                    )
-                }
-            )
-            .then(
-                if (activeBackdrop != null) {
-                    Modifier.drawBackdrop(
-                        backdrop = activeBackdrop,
-                        shape = { ContinuousCapsule },
-                        layerBlock = if (liquidInteractionEnabled) {
-                            { applyLiquidButtonLayer(interactiveHighlight) }
-                        } else {
-                            null
-                        },
-                        effects = {
-                            vibrancy()
-                            blur(4.dp.toPx())
-                            lens(
-                                16.dp.toPx(),
-                                28.dp.toPx(),
-                                chromaticAberration = variant != GlassVariant.Compact,
-                                depthEffect = true
-                            )
-                        },
-                        highlight = {
-                            Highlight.Default.copy(alpha = surfaceHighlightAlpha)
-                        },
-                        shadow = {
-                            Shadow.Default.copy(
-                                color = Color.Black.copy(
-                                    alpha = appLiquidButtonShadowAlpha(
-                                        baseAlpha = glass.shadowAlpha,
-                                        variant = variant,
-                                        isPressed = isPressed
-                                    )
+        modifier =
+            modifier
+                .defaultMinSize(minHeight = minHeight)
+                .graphicsLayer {
+                    val scale = animatedScaleProvider()
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                    clip = false
+                }.then(
+                    if (longClick != null) {
+                        Modifier.combinedClickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            enabled = enabled,
+                            onClick = { if (enabled) onClick() },
+                            onLongClick = longClick,
+                        )
+                    } else {
+                        Modifier.clickable(
+                            enabled = enabled,
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = onClick,
+                        )
+                    },
+                ).then(
+                    if (activeBackdrop != null) {
+                        Modifier.drawBackdrop(
+                            backdrop = activeBackdrop,
+                            shape = { ContinuousCapsule },
+                            layerBlock =
+                                if (liquidInteractionEnabled) {
+                                    { applyLiquidButtonLayer(interactiveHighlight) }
+                                } else {
+                                    null
+                                },
+                            effects = {
+                                vibrancy()
+                                blur(4.dp.toPx())
+                                lens(
+                                    16.dp.toPx(),
+                                    28.dp.toPx(),
+                                    chromaticAberration = variant != GlassVariant.Compact,
+                                    depthEffect = true,
                                 )
-                            )
-                        },
-                        innerShadow = {
-                            val progress =
-                                if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
-                            InnerShadow(radius = 6.dp * progress, alpha = progress)
-                        },
-                        onDrawSurface = {
-                            if (variant == GlassVariant.Bar) {
-                                drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
-                            } else {
-                                drawRect(glass.baseColor)
-                                if (surfaceOverlayColor != Color.Transparent) {
-                                    drawRect(surfaceOverlayColor)
+                            },
+                            highlight = {
+                                Highlight.Default.copy(alpha = surfaceHighlightAlpha)
+                            },
+                            shadow = {
+                                Shadow.Default.copy(
+                                    color =
+                                        Color.Black.copy(
+                                            alpha =
+                                                appLiquidButtonShadowAlpha(
+                                                    baseAlpha = glass.shadowAlpha,
+                                                    variant = variant,
+                                                    isPressed = isPressed,
+                                                ),
+                                        ),
+                                )
+                            },
+                            innerShadow = {
+                                val progress =
+                                    if (liquidInteractionEnabled) interactiveHighlight.pressProgress else 0f
+                                InnerShadow(radius = 6.dp * progress, alpha = progress)
+                            },
+                            onDrawSurface = {
+                                if (variant == GlassVariant.Bar) {
+                                    drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                } else {
+                                    drawRect(glass.baseColor)
+                                    if (surfaceOverlayColor != Color.Transparent) {
+                                        drawRect(surfaceOverlayColor)
+                                    }
                                 }
+                                containerOverlay?.let { drawRect(it) }
+                            },
+                        )
+                    } else {
+                        val fallbackColor =
+                            when {
+                                transparentContainer -> Color.Transparent
+                                containerOverlay != null -> containerOverlay
+                                else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
                             }
-                            containerOverlay?.let { drawRect(it) }
-                        }
-                    )
-                } else {
-                    val fallbackColor = when {
-                        transparentContainer -> Color.Transparent
-                        containerOverlay != null -> containerOverlay
-                        else -> fallbackSurface.copy(alpha = glass.fallbackAlpha)
-                    }
-                    Modifier.appSquircleBackground(fallbackColor, 999.dp)
-                }
-            )
-            .then(
-                if (liquidInteractionEnabled) {
-                    Modifier
-                        .then(interactiveHighlight.modifier)
-                        .then(interactiveHighlight.gestureModifier)
-                } else {
-                    Modifier
-                }
-            )
-            .then(borderModifier),
-        contentAlignment = Alignment.Center
+                        Modifier.appSquircleBackground(fallbackColor, 999.dp)
+                    },
+                ).then(
+                    if (liquidInteractionEnabled) {
+                        Modifier
+                            .then(interactiveHighlight.modifier)
+                            .then(interactiveHighlight.gestureModifier)
+                    } else {
+                        Modifier
+                    },
+                ).then(borderModifier),
+        contentAlignment = Alignment.Center,
     ) {
-        if (pressedOverlayAlpha > 0f) {
-            Box(
-                modifier = Modifier
+        Box(
+            modifier =
+                Modifier
                     .matchParentSize()
-                    .appSquircleBackground(pressedOverlayColor.copy(alpha = pressedOverlayAlpha), 999.dp)
-            )
-        }
+                    .drawAppSquircleBackground(999.dp) {
+                        pressedOverlayColor.copy(alpha = pressedOverlayAlphaProvider())
+                    },
+        )
         DisableSelection {
             Row(
                 modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
                 horizontalArrangement = Arrangement.spacedBy(AppInteractiveTokens.controlContentGap),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 leadingIcon?.let { icon ->
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = iconTint
+                        tint = iconTint,
                     )
                 }
                 if (text.isNotBlank()) {
@@ -601,7 +643,7 @@ fun AppLiquidTextButton(
                         fontWeight = textFontWeight,
                         maxLines = textMaxLines,
                         overflow = textOverflow,
-                        softWrap = textSoftWrap
+                        softWrap = textSoftWrap,
                     )
                 }
             }
@@ -611,9 +653,9 @@ fun AppLiquidTextButton(
 
 private fun glassContainerOverlayAlpha(
     variant: GlassVariant,
-    isDark: Boolean
-): Float {
-    return when (variant) {
+    isDark: Boolean,
+): Float =
+    when (variant) {
         GlassVariant.Bar -> 0.34f
         GlassVariant.SheetInput -> 0.20f
         GlassVariant.SheetAction -> if (isDark) 0.24f else 0.34f
@@ -624,31 +666,36 @@ private fun glassContainerOverlayAlpha(
         GlassVariant.SearchField -> if (isDark) 0.18f else 0.22f
         GlassVariant.Content -> if (isDark) 0.26f else 0.32f
     }
-}
 
 private fun appLiquidButtonShadowAlpha(
     baseAlpha: Float,
     variant: GlassVariant,
-    isPressed: Boolean
+    isPressed: Boolean,
 ): Float {
-    val variantScale = when (variant) {
-        GlassVariant.Floating -> 0.42f
-        GlassVariant.Compact -> 0.58f
-        GlassVariant.SearchField,
-        GlassVariant.SheetAction,
-        GlassVariant.SheetPrimaryAction,
-        GlassVariant.SheetDangerAction,
-        GlassVariant.SheetInput -> 0.64f
-        GlassVariant.Content -> 0.72f
-        GlassVariant.Bar -> 0.84f
-    }
+    val variantScale =
+        when (variant) {
+            GlassVariant.Floating -> 0.42f
+
+            GlassVariant.Compact -> 0.58f
+
+            GlassVariant.SearchField,
+            GlassVariant.SheetAction,
+            GlassVariant.SheetPrimaryAction,
+            GlassVariant.SheetDangerAction,
+            GlassVariant.SheetInput,
+            -> 0.64f
+
+            GlassVariant.Content -> 0.72f
+
+            GlassVariant.Bar -> 0.84f
+        }
     val pressScale = if (isPressed) 0.45f else 1f
     return baseAlpha * variantScale * pressScale
 }
 
 private fun resolveDarkCapsuleOverlayColor(
     defaultOverlayColor: Color,
-    isDark: Boolean
+    isDark: Boolean,
 ): Color {
     if (!isDark) return defaultOverlayColor
     if (defaultOverlayColor == Color.Transparent) return Color.Transparent
@@ -658,26 +705,25 @@ private fun resolveDarkCapsuleOverlayColor(
 private fun resolveDarkCapsuleHighlightAlpha(
     defaultAlpha: Float,
     isDark: Boolean,
-    variant: GlassVariant
+    variant: GlassVariant,
 ): Float {
     if (!isDark) return defaultAlpha
-    val maxAlpha = when (variant) {
-        GlassVariant.Bar -> 0.40f
-        GlassVariant.SheetInput -> 0.42f
-        GlassVariant.SheetAction -> 0.44f
-        GlassVariant.SheetPrimaryAction -> 0.44f
-        GlassVariant.SheetDangerAction -> 0.44f
-        GlassVariant.Floating -> 0.46f
-        GlassVariant.SearchField -> 0.48f
-        GlassVariant.Compact -> 0.36f
-        GlassVariant.Content -> 0.44f
-    }
+    val maxAlpha =
+        when (variant) {
+            GlassVariant.Bar -> 0.40f
+            GlassVariant.SheetInput -> 0.42f
+            GlassVariant.SheetAction -> 0.44f
+            GlassVariant.SheetPrimaryAction -> 0.44f
+            GlassVariant.SheetDangerAction -> 0.44f
+            GlassVariant.Floating -> 0.46f
+            GlassVariant.SearchField -> 0.48f
+            GlassVariant.Compact -> 0.36f
+            GlassVariant.Content -> 0.44f
+        }
     return min(defaultAlpha, maxAlpha)
 }
 
-private fun GraphicsLayerScope.applyLiquidButtonLayer(
-    interactiveHighlight: InteractiveHighlight
-) {
+private fun GraphicsLayerScope.applyLiquidButtonLayer(interactiveHighlight: InteractiveHighlight) {
     val progress = interactiveHighlight.pressProgress
     if (progress <= 0f) {
         translationX = 0f
@@ -705,7 +751,7 @@ private fun GraphicsLayerScope.applyLiquidButtonLayer(
 
 private fun sanitizeCapsuleContainerColor(
     containerColor: Color?,
-    isDark: Boolean
+    isDark: Boolean,
 ): Color? {
     if (containerColor == null) return null
     if (!isDark) return containerColor

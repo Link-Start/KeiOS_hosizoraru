@@ -83,11 +83,13 @@ fun AppOverviewCard(
             Modifier
         }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val pressedScale by appMotionFloatState(
-        targetValue = if (showIndication && clickable && isPressed) 0.992f else 1f,
-        durationMillis = 120,
-        label = "app_overview_card_press_scale",
-    )
+    val pressedScaleState =
+        appMotionFloatState(
+            targetValue = if (showIndication && clickable && isPressed) 0.992f else 1f,
+            durationMillis = 120,
+            label = "app_overview_card_press_scale",
+        )
+    val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
     if (backdrop != null) {
@@ -97,7 +99,7 @@ fun AppOverviewCard(
             captureBackdrop = null,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
-            pressedScale = pressedScale,
+            pressedScale = pressedScaleProvider,
             title = title,
             subtitle = subtitle,
             titleColor = titleColor,
@@ -120,7 +122,7 @@ fun AppOverviewCard(
             captureBackdrop = localBackdrop,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
-            pressedScale = pressedScale,
+            pressedScale = pressedScaleProvider,
             title = title,
             subtitle = subtitle,
             titleColor = titleColor,
@@ -145,7 +147,7 @@ private fun AppOverviewCardSurface(
     captureBackdrop: LayerBackdrop?,
     clickModifier: Modifier,
     interactionSource: MutableInteractionSource,
-    pressedScale: Float,
+    pressedScale: () -> Float,
     title: String,
     subtitle: String,
     titleColor: Color,
@@ -165,8 +167,9 @@ private fun AppOverviewCardSurface(
             modifier
                 .fillMaxWidth()
                 .graphicsLayer {
-                    scaleX = pressedScale
-                    scaleY = pressedScale
+                    val scale = pressedScale()
+                    scaleX = scale
+                    scaleY = scale
                 },
     ) {
         if (captureBackdrop != null) {

@@ -166,7 +166,7 @@ fun Modifier.appSquircleBorder(
         }
         val stroke = Stroke(width = widthPx)
         onDrawBehind {
-            if (drawable) {
+            if (drawable && color.alpha > 0f) {
                 translate(halfStroke, halfStroke) {
                     drawPath(path = path, color = color, style = stroke)
                 }
@@ -200,9 +200,10 @@ fun Modifier.drawAppSquircleBorder(
         }
         val stroke = Stroke(width = widthPx)
         onDrawBehind {
-            if (drawable) {
+            val drawColor = color()
+            if (drawable && drawColor.alpha > 0f) {
                 translate(halfStroke, halfStroke) {
-                    drawPath(path = path, color = color(), style = stroke)
+                    drawPath(path = path, color = drawColor, style = stroke)
                 }
             }
         }
@@ -224,7 +225,10 @@ fun Modifier.drawAppSquircleBackground(
             control = control,
         )
         onDrawBehind {
-            drawPath(path = path, color = color())
+            val drawColor = color()
+            if (drawColor.alpha > 0f) {
+                drawPath(path = path, color = drawColor)
+            }
         }
     }
 

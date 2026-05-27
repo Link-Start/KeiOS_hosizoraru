@@ -228,6 +228,7 @@ fun AppLiquidFloatingSurface(
     modifier: Modifier,
     shape: Shape = ContinuousCapsule,
     backdrop: Backdrop? = null,
+    exportedBackdrop: LayerBackdrop? = null,
     onClick: (() -> Unit)? = null,
     interactionSource: MutableInteractionSource? = null,
     clipContent: Boolean = true,
@@ -323,6 +324,7 @@ fun AppLiquidFloatingSurface(
                                         color = Color.Black.copy(alpha = shadowAlpha),
                                     )
                                 },
+                                exportedBackdrop = exportedBackdrop,
                                 onDrawSurface = { drawRect(surfaceColor) },
                             )
                         } else {

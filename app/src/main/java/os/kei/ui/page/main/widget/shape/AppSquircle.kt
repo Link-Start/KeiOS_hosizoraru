@@ -13,7 +13,9 @@ import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
@@ -23,7 +25,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
@@ -39,9 +40,16 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import os.kei.ui.page.main.widget.shape.internal.BakedAppSquircleSdf
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
+
+val LocalAppSquircleEnabled = staticCompositionLocalOf { true }
+
+@Composable
+@ReadOnlyComposable
+fun isAppSquircleEnabled(): Boolean = LocalAppSquircleEnabled.current && isAppRuntimeShaderSupported()
 
 @Composable
 fun Modifier.appSquircleBackground(
@@ -359,7 +367,7 @@ private fun rememberAppSquircleBrush(
     extension: Float,
     control: Float,
 ): AppSquircleShaderBrush? {
-    if (!isAppRuntimeShaderSupported()) return null
+    if (!isAppSquircleEnabled()) return null
     val density = LocalDensity.current
     val extClamped = extension.coerceIn(AppSquircleDefaults.ExtensionMin, AppSquircleDefaults.ExtensionMax)
     val ctrlClamped = control.coerceIn(AppSquircleDefaults.ControlMin, AppSquircleDefaults.ControlMax)
@@ -556,7 +564,15 @@ private fun getOrCreateSdfShader(
     synchronized(sdfCacheLock) {
         sdfShaderCache.getOrPut(key) {
             ImageShader(
-                makeAlphaImageBitmap(SDF_BITMAP_SIZE, generateSdfBytes(SDF_BITMAP_SIZE, control)),
+                makeAlphaImageBitmap(
+                    size = SDF_BITMAP_SIZE,
+                    alphaBytes =
+                        if (key == BAKED_CONTROL_KEY) {
+                            BakedAppSquircleSdf.bytes
+                        } else {
+                            generateSdfBytes(SDF_BITMAP_SIZE, control)
+                        },
+                ),
                 TileMode.Clamp,
                 TileMode.Clamp,
             )
@@ -566,7 +582,7 @@ private fun getOrCreateSdfShader(
 private fun makeAlphaImageBitmap(
     size: Int,
     alphaBytes: ByteArray,
-): ImageBitmap {
+): androidx.compose.ui.graphics.ImageBitmap {
     val pixels = IntArray(size * size)
     for (index in alphaBytes.indices) {
         val alpha = alphaBytes[index].toInt() and 0xFF
@@ -638,6 +654,7 @@ private const val SDF_HALF_RANGE = 0.125f
 private const val BEZIER_SAMPLES = 64
 private const val BLEND_THRESHOLD_RATIO = 0.7853982f
 private const val CONTROL_KEY_PRECISION = 100f
+private const val BAKED_CONTROL_KEY = 63
 
 private const val SQUIRCLE_SHADER = """
 uniform shader cornerSdf;

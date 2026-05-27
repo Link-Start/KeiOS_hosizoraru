@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -308,6 +310,9 @@ internal fun BaGuideBgmFloatingBottomChrome(
                 }
             }
 
+        val miniPlayerSurfaceBackdrop = rememberLayerBackdrop()
+        val miniPlayerChildBackdrop = rememberCombinedBackdrop(backdrop, miniPlayerSurfaceBackdrop)
+
         AppLiquidFloatingSurface(
             modifier =
                 Modifier
@@ -319,6 +324,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
                     ).graphicsLayer { alpha = miniPlayerAlphaState.value },
             shape = ContinuousCapsule,
             backdrop = backdrop,
+            exportedBackdrop = miniPlayerSurfaceBackdrop,
             interactionSource = miniPlayerInteractionSource,
             consumeTouches = true,
             pressDurationMillis = BaGuideBgmBottomPressMotionMs,
@@ -339,7 +345,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
                 controlInteractionSource = miniPlayerInteractionSource,
-                backdrop = backdrop,
+                backdrop = miniPlayerChildBackdrop,
                 modifier = Modifier.fillMaxSize(),
             )
         }

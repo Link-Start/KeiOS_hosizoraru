@@ -175,6 +175,8 @@ fun SnapshotWindowListPopup(
     val popupShowAbove = !opensDownward
     val fractionProgress = remember { Animatable(0f) }
     val alphaProgress = remember { Animatable(0f) }
+    val fractionProgressProvider = remember(fractionProgress) { { fractionProgress.value.coerceIn(0f, 1f) } }
+    val alphaProgressProvider = remember(alphaProgress) { { alphaProgress.value.coerceIn(0f, 1f) } }
     var wasVisible by remember { mutableStateOf(false) }
     var popupRender by remember { mutableStateOf(false) }
     val composePopupPositionProvider =
@@ -284,21 +286,7 @@ fun SnapshotWindowListPopup(
                     clippingEnabled = false,
                 ),
         ) {
-            val fraction = fractionProgress.value.coerceIn(0f, 1f)
-            // Smooth, non-linear easing on scale + translation: starts at 0.88 (subtle) and grows
-            // to 1.0 with the spring. Linear interpolation here would feel mechanical against the
-            // spring-based fraction curve.
-            val scale = SnapshotPopupInitialScale + (1f - SnapshotPopupInitialScale) * fraction
-            // Directional translation: slides from above when opening downward, from below when
-            // opening upward. The pivot Y already provides the visual anchor; this adds spatial
-            // continuity from the trigger button.
             val translationOffsetPx = with(density) { SnapshotPopupTranslationDp.dp.toPx() }
-            val translationY =
-                if (popupShowBelow) {
-                    -translationOffsetPx * (1f - fraction)
-                } else {
-                    translationOffsetPx * (1f - fraction)
-                }
             Box(
                 modifier =
                     popupModifier
@@ -306,13 +294,23 @@ fun SnapshotWindowListPopup(
                         .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
                         .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier)
                         .graphicsLayer {
+                            val fraction = fractionProgressProvider()
+                            // Smooth scale + directional translation stays in the layer phase so
+                            // popup animation frames do not recompose the popup content.
+                            val scale = SnapshotPopupInitialScale + (1f - SnapshotPopupInitialScale) * fraction
+                            val translationY =
+                                if (popupShowBelow) {
+                                    -translationOffsetPx * (1f - fraction)
+                                } else {
+                                    translationOffsetPx * (1f - fraction)
+                                }
                             scaleX = scale
                             scaleY = scale
                             this.translationY = translationY
-                            alpha = alphaProgress.value.coerceIn(0f, 1f)
+                            alpha = alphaProgressProvider()
                             transformOrigin = popupTransformOrigin
                         }.drawWithContent {
-                            val progress = fractionProgress.value.coerceIn(0f, 1f)
+                            val progress = fractionProgressProvider()
                             val showMiddle = !popupShowBelow && !popupShowAbove
                             val clipStart =
                                 when {

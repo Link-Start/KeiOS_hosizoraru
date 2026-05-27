@@ -153,25 +153,50 @@ fun Modifier.appSquircleBorder(
     drawWithCache {
         val widthPx = width.toPx()
         val cornerRadiusPx = cornerRadius.toPx()
-        val halfStroke = widthPx / 2f
-        val innerWidth = size.width - widthPx
-        val innerHeight = size.height - widthPx
-        val path = Path()
-        val drawable = widthPx > 0f && innerWidth > 0f && innerHeight > 0f
-        if (drawable) {
-            path.addAppSquircleRect(
-                width = innerWidth,
-                height = innerHeight,
-                cornerRadius = (cornerRadiusPx - halfStroke).coerceAtLeast(0f),
+        val shaderRenderer =
+            createAppSquircleDynamicBorderRenderer(
+                size = size,
+                strokeWidthPx = widthPx,
+                cornerRadiusPx = cornerRadiusPx,
                 extension = extension,
                 control = control,
             )
-        }
-        val stroke = Stroke(width = widthPx)
-        onDrawBehind {
-            if (drawable && color.alpha > 0f) {
-                translate(halfStroke, halfStroke) {
-                    drawPath(path = path, color = color, style = stroke)
+        if (shaderRenderer != null) {
+            onDrawBehind {
+                if (color.alpha > 0f) {
+                    shaderRenderer.color = color
+                    drawIntoCanvas { canvas ->
+                        canvas.nativeCanvas.drawRect(
+                            0f,
+                            0f,
+                            size.width,
+                            size.height,
+                            shaderRenderer.paint,
+                        )
+                    }
+                }
+            }
+        } else {
+            val halfStroke = widthPx / 2f
+            val innerWidth = size.width - widthPx
+            val innerHeight = size.height - widthPx
+            val path = Path()
+            val drawable = widthPx > 0f && innerWidth > 0f && innerHeight > 0f
+            if (drawable) {
+                path.addAppSquircleRect(
+                    width = innerWidth,
+                    height = innerHeight,
+                    cornerRadius = (cornerRadiusPx - halfStroke).coerceAtLeast(0f),
+                    extension = extension,
+                    control = control,
+                )
+            }
+            val stroke = Stroke(width = widthPx)
+            onDrawBehind {
+                if (drawable && color.alpha > 0f) {
+                    translate(halfStroke, halfStroke) {
+                        drawPath(path = path, color = color, style = stroke)
+                    }
                 }
             }
         }
@@ -187,26 +212,52 @@ fun Modifier.drawAppSquircleBorder(
     drawWithCache {
         val widthPx = width.toPx()
         val cornerRadiusPx = cornerRadius.toPx()
-        val halfStroke = widthPx / 2f
-        val innerWidth = size.width - widthPx
-        val innerHeight = size.height - widthPx
-        val path = Path()
-        val drawable = widthPx > 0f && innerWidth > 0f && innerHeight > 0f
-        if (drawable) {
-            path.addAppSquircleRect(
-                width = innerWidth,
-                height = innerHeight,
-                cornerRadius = (cornerRadiusPx - halfStroke).coerceAtLeast(0f),
+        val shaderRenderer =
+            createAppSquircleDynamicBorderRenderer(
+                size = size,
+                strokeWidthPx = widthPx,
+                cornerRadiusPx = cornerRadiusPx,
                 extension = extension,
                 control = control,
             )
-        }
-        val stroke = Stroke(width = widthPx)
-        onDrawBehind {
-            val drawColor = color()
-            if (drawable && drawColor.alpha > 0f) {
-                translate(halfStroke, halfStroke) {
-                    drawPath(path = path, color = drawColor, style = stroke)
+        if (shaderRenderer != null) {
+            onDrawBehind {
+                val drawColor = color()
+                if (drawColor.alpha > 0f) {
+                    shaderRenderer.color = drawColor
+                    drawIntoCanvas { canvas ->
+                        canvas.nativeCanvas.drawRect(
+                            0f,
+                            0f,
+                            size.width,
+                            size.height,
+                            shaderRenderer.paint,
+                        )
+                    }
+                }
+            }
+        } else {
+            val halfStroke = widthPx / 2f
+            val innerWidth = size.width - widthPx
+            val innerHeight = size.height - widthPx
+            val path = Path()
+            val drawable = widthPx > 0f && innerWidth > 0f && innerHeight > 0f
+            if (drawable) {
+                path.addAppSquircleRect(
+                    width = innerWidth,
+                    height = innerHeight,
+                    cornerRadius = (cornerRadiusPx - halfStroke).coerceAtLeast(0f),
+                    extension = extension,
+                    control = control,
+                )
+            }
+            val stroke = Stroke(width = widthPx)
+            onDrawBehind {
+                val drawColor = color()
+                if (drawable && drawColor.alpha > 0f) {
+                    translate(halfStroke, halfStroke) {
+                        drawPath(path = path, color = drawColor, style = stroke)
+                    }
                 }
             }
         }
@@ -405,6 +456,47 @@ private class AppSquircleDynamicBackgroundRenderer(
     }
 }
 
+private class AppSquircleDynamicBorderRenderer(
+    private val runtimeShader: RuntimeShader,
+    private val cornerTilesPx: FloatArray,
+    private val strokeWidthPx: Float,
+) {
+    val paint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = runtimeShader }
+    private val effectiveSizes = FloatArray(4)
+    private val halfRanges = FloatArray(4)
+    private val weights = FloatArray(4)
+    private var lastColorArgb: Int = 0
+
+    var color: Color = Color.Transparent
+        set(value) {
+            field = value
+            val argb = value.toArgb()
+            if (lastColorArgb != argb) {
+                runtimeShader.setColorUniform("color", argb)
+                lastColorArgb = argb
+            }
+        }
+
+    fun updateSize(size: Size) {
+        val halfMin = minOf(size.width, size.height) * 0.5f
+        val threshold = halfMin * BLEND_THRESHOLD_RATIO
+        val range = halfMin - threshold
+        for (index in 0..3) {
+            val tile = cornerTilesPx[index]
+            val effective = tile.coerceIn(0f, halfMin)
+            effectiveSizes[index] = effective
+            halfRanges[index] = SDF_HALF_RANGE * effective
+            weights[index] = if (range <= 0f) 1f else ((tile - threshold) / range).coerceIn(0f, 1f)
+        }
+        runtimeShader.setFloatUniform("size", size.width, size.height)
+        runtimeShader.setFloatUniform("cornerSizes", effectiveSizes)
+        runtimeShader.setFloatUniform("halfRangesPx", halfRanges)
+        runtimeShader.setFloatUniform("blendWeights", weights)
+        runtimeShader.setFloatUniform("strokeWidth", strokeWidthPx)
+        runtimeShader.setFloatUniform("bitmapSize", SDF_BITMAP_SIZE.toFloat())
+    }
+}
+
 private fun createAppSquircleDynamicBackgroundRenderer(
     size: Size,
     cornerRadiusPx: Float,
@@ -422,6 +514,30 @@ private fun createAppSquircleDynamicBackgroundRenderer(
     return AppSquircleDynamicBackgroundRenderer(
         runtimeShader = runtimeShader,
         cornerTilesPx = floatArrayOf(tile, tile, tile, tile),
+    ).also { renderer ->
+        renderer.updateSize(size)
+    }
+}
+
+private fun createAppSquircleDynamicBorderRenderer(
+    size: Size,
+    strokeWidthPx: Float,
+    cornerRadiusPx: Float,
+    extension: Float,
+    control: Float,
+): AppSquircleDynamicBorderRenderer? {
+    if (!isAppRuntimeShaderSupported()) return null
+    if (size.width <= 0f || size.height <= 0f || strokeWidthPx <= 0f) return null
+    val extClamped = extension.coerceIn(AppSquircleDefaults.ExtensionMin, AppSquircleDefaults.ExtensionMax)
+    val ctrlClamped = control.coerceIn(AppSquircleDefaults.ControlMin, AppSquircleDefaults.ControlMax)
+    val tile = cornerRadiusPx.coerceAtLeast(0f) * extClamped
+    val ctrlKey = (ctrlClamped * CONTROL_KEY_PRECISION).toInt()
+    val runtimeShader = RuntimeShader(SQUIRCLE_BORDER_SHADER)
+    runtimeShader.setInputShader("cornerSdf", getOrCreateSdfShader(ctrlClamped, ctrlKey))
+    return AppSquircleDynamicBorderRenderer(
+        runtimeShader = runtimeShader,
+        cornerTilesPx = floatArrayOf(tile, tile, tile, tile),
+        strokeWidthPx = strokeWidthPx,
     ).also { renderer ->
         renderer.updateSize(size)
     }
@@ -574,5 +690,63 @@ half4 main(float2 coord) {
     float circleSdf = sqrt(qx * qx + qy * qy) - cornerSize;
     float dist = mix(squircleSdf, circleSdf, blendWeight);
     return color * half(smoothstep(0.5, -0.5, dist));
+}
+"""
+
+private const val SQUIRCLE_BORDER_SHADER = """
+uniform shader cornerSdf;
+uniform float2 size;
+uniform float4 cornerSizes;
+uniform float4 halfRangesPx;
+uniform float4 blendWeights;
+uniform float strokeWidth;
+uniform float bitmapSize;
+layout(color) uniform half4 color;
+
+half sampleSdfBilinear(float2 uv) {
+    float2 px = uv * bitmapSize - 0.5;
+    float2 i = floor(px);
+    float2 f = px - i;
+    half a00 = cornerSdf.eval(i + float2(0.5, 0.5)).a;
+    half a10 = cornerSdf.eval(i + float2(1.5, 0.5)).a;
+    half a01 = cornerSdf.eval(i + float2(0.5, 1.5)).a;
+    half a11 = cornerSdf.eval(i + float2(1.5, 1.5)).a;
+    half a0 = mix(a00, a10, half(f.x));
+    half a1 = mix(a01, a11, half(f.x));
+    return mix(a0, a1, half(f.y));
+}
+
+half4 main(float2 coord) {
+    float dxL = coord.x;
+    float dxR = size.x - coord.x;
+    float dyT = coord.y;
+    float dyB = size.y - coord.y;
+    bool left = dxL < dxR;
+    bool top = dyT < dyB;
+    float dx = left ? dxL : dxR;
+    float dy = top ? dyT : dyB;
+    float edgeDistance = min(min(dxL, dxR), min(dyT, dyB));
+    float cornerSize = top
+        ? (left ? cornerSizes.x : cornerSizes.y)
+        : (left ? cornerSizes.w : cornerSizes.z);
+    float halfRangePx = top
+        ? (left ? halfRangesPx.x : halfRangesPx.y)
+        : (left ? halfRangesPx.w : halfRangesPx.z);
+    float blendWeight = top
+        ? (left ? blendWeights.x : blendWeights.y)
+        : (left ? blendWeights.w : blendWeights.z);
+    float dist = -edgeDistance;
+    if (dx < cornerSize && dy < cornerSize) {
+        float2 uv = float2(dx, dy) / cornerSize;
+        half sdfSample = sampleSdfBilinear(uv);
+        float squircleSdf = (1.0 - 2.0 * float(sdfSample)) * halfRangePx;
+        float qx = cornerSize - dx;
+        float qy = cornerSize - dy;
+        float circleSdf = sqrt(qx * qx + qy * qy) - cornerSize;
+        dist = mix(squircleSdf, circleSdf, blendWeight);
+    }
+    half outerAlpha = half(smoothstep(0.5, -0.5, dist));
+    half innerAlpha = half(smoothstep(0.5, -0.5, dist + strokeWidth));
+    return color * outerAlpha * (half(1.0) - innerAlpha);
 }
 """

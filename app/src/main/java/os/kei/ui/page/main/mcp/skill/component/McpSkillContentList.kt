@@ -5,7 +5,7 @@ package os.kei.ui.page.main.mcp.skill.component
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +24,7 @@ import os.kei.mcp.server.SKILL_DOMAIN_TEMPLATE_URI
 import os.kei.mcp.server.SKILL_RESOURCE_URI
 import os.kei.mcp.server.SKILL_TOOL_TEMPLATE_URI
 import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
+import os.kei.ui.page.main.mcp.skill.model.SkillSection
 import os.kei.ui.page.main.mcp.skill.state.McpSkillPageContentState
 import os.kei.ui.page.main.mcp.skill.state.McpSkillPageTextBundle
 import os.kei.ui.page.main.mcp.util.copyToClipboard
@@ -101,6 +102,10 @@ internal fun McpSkillContentList(
                 domainTemplateUri = SKILL_DOMAIN_TEMPLATE_URI,
                 toolTemplateUri = SKILL_TOOL_TEMPLATE_URI,
             )
+        }
+    val referenceSectionRows =
+        remember(contentState.sections) {
+            contentState.sections.toStableMcpSkillSectionRows()
         }
     AppPageLazyColumn(
         innerPadding = innerPadding,
@@ -181,13 +186,13 @@ internal fun McpSkillContentList(
             )
         }
         if (referenceExpanded) {
-            itemsIndexed(
-                items = contentState.sections,
-                key = { index, section -> "${section.level}:${section.title}:$index" },
-                contentType = { _, _ -> "mcp_skill_section" },
-            ) { _, section ->
+            items(
+                items = referenceSectionRows,
+                key = { row -> row.stableKey },
+                contentType = { "mcp_skill_section" },
+            ) { row ->
                 SkillSectionCard(
-                    section = section,
+                    section = row.section,
                     titleColor = titleColor,
                     subtitleColor = subtitleColor,
                     accentColor = accentColor,
@@ -198,3 +203,33 @@ internal fun McpSkillContentList(
         }
     }
 }
+
+internal data class StableMcpSkillSectionRow(
+    val section: SkillSection,
+    val stableKey: String,
+)
+
+internal fun List<SkillSection>.toStableMcpSkillSectionRows(): List<StableMcpSkillSectionRow> {
+    if (isEmpty()) return emptyList()
+    val occurrenceCounts = HashMap<String, Int>(size)
+    return map { section ->
+        val baseKey = section.stableMcpSkillSectionBaseKey()
+        val occurrence = occurrenceCounts.getOrDefault(baseKey, 0)
+        occurrenceCounts[baseKey] = occurrence + 1
+        StableMcpSkillSectionRow(
+            section = section,
+            stableKey = "$baseKey#$occurrence",
+        )
+    }
+}
+
+private fun SkillSection.stableMcpSkillSectionBaseKey(): String =
+    buildString {
+        append(level)
+        append(':')
+        append(title.hashCode())
+        append(':')
+        append(items.size)
+        append(':')
+        append(items.hashCode())
+    }

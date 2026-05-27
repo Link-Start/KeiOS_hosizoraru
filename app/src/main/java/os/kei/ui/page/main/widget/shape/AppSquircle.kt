@@ -6,6 +6,7 @@
 package os.kei.ui.page.main.widget.shape
 
 import android.graphics.Bitmap
+import android.graphics.Paint
 import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
@@ -31,8 +32,10 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -216,18 +219,43 @@ fun Modifier.drawAppSquircleBackground(
     color: () -> Color,
 ): Modifier =
     drawWithCache {
-        val path = Path()
-        path.addAppSquircleRect(
-            width = size.width,
-            height = size.height,
-            cornerRadius = cornerRadius.toPx(),
-            extension = extension,
-            control = control,
-        )
-        onDrawBehind {
-            val drawColor = color()
-            if (drawColor.alpha > 0f) {
-                drawPath(path = path, color = drawColor)
+        val shaderRenderer =
+            createAppSquircleDynamicBackgroundRenderer(
+                size = size,
+                cornerRadiusPx = cornerRadius.toPx(),
+                extension = extension,
+                control = control,
+            )
+        if (shaderRenderer != null) {
+            onDrawBehind {
+                val drawColor = color()
+                if (drawColor.alpha > 0f) {
+                    shaderRenderer.color = drawColor
+                    drawIntoCanvas { canvas ->
+                        canvas.nativeCanvas.drawRect(
+                            0f,
+                            0f,
+                            size.width,
+                            size.height,
+                            shaderRenderer.paint,
+                        )
+                    }
+                }
+            }
+        } else {
+            val path = Path()
+            path.addAppSquircleRect(
+                width = size.width,
+                height = size.height,
+                cornerRadius = cornerRadius.toPx(),
+                extension = extension,
+                control = control,
+            )
+            onDrawBehind {
+                val drawColor = color()
+                if (drawColor.alpha > 0f) {
+                    drawPath(path = path, color = drawColor)
+                }
             }
         }
     }
@@ -335,6 +363,67 @@ private class AppSquircleShaderBrush(
         runtimeShader.setFloatUniform("bitmapSize", SDF_BITMAP_SIZE.toFloat())
         runtimeShader.setInputShader("cornerSdf", sdfShader)
         return runtimeShader
+    }
+}
+
+private class AppSquircleDynamicBackgroundRenderer(
+    private val runtimeShader: RuntimeShader,
+    private val cornerTilesPx: FloatArray,
+) {
+    val paint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = runtimeShader }
+    private val effectiveSizes = FloatArray(4)
+    private val halfRanges = FloatArray(4)
+    private val weights = FloatArray(4)
+    private var lastColorArgb: Int = 0
+
+    var color: Color = Color.Transparent
+        set(value) {
+            field = value
+            val argb = value.toArgb()
+            if (lastColorArgb != argb) {
+                runtimeShader.setColorUniform("color", argb)
+                lastColorArgb = argb
+            }
+        }
+
+    fun updateSize(size: Size) {
+        val halfMin = minOf(size.width, size.height) * 0.5f
+        val threshold = halfMin * BLEND_THRESHOLD_RATIO
+        val range = halfMin - threshold
+        for (index in 0..3) {
+            val tile = cornerTilesPx[index]
+            val effective = tile.coerceIn(0f, halfMin)
+            effectiveSizes[index] = effective
+            halfRanges[index] = SDF_HALF_RANGE * effective
+            weights[index] = if (range <= 0f) 1f else ((tile - threshold) / range).coerceIn(0f, 1f)
+        }
+        runtimeShader.setFloatUniform("size", size.width, size.height)
+        runtimeShader.setFloatUniform("cornerSizes", effectiveSizes)
+        runtimeShader.setFloatUniform("halfRangesPx", halfRanges)
+        runtimeShader.setFloatUniform("blendWeights", weights)
+        runtimeShader.setFloatUniform("bitmapSize", SDF_BITMAP_SIZE.toFloat())
+    }
+}
+
+private fun createAppSquircleDynamicBackgroundRenderer(
+    size: Size,
+    cornerRadiusPx: Float,
+    extension: Float,
+    control: Float,
+): AppSquircleDynamicBackgroundRenderer? {
+    if (!isAppRuntimeShaderSupported()) return null
+    if (size.width <= 0f || size.height <= 0f) return null
+    val extClamped = extension.coerceIn(AppSquircleDefaults.ExtensionMin, AppSquircleDefaults.ExtensionMax)
+    val ctrlClamped = control.coerceIn(AppSquircleDefaults.ControlMin, AppSquircleDefaults.ControlMax)
+    val tile = cornerRadiusPx.coerceAtLeast(0f) * extClamped
+    val ctrlKey = (ctrlClamped * CONTROL_KEY_PRECISION).toInt()
+    val runtimeShader = RuntimeShader(SQUIRCLE_SHADER)
+    runtimeShader.setInputShader("cornerSdf", getOrCreateSdfShader(ctrlClamped, ctrlKey))
+    return AppSquircleDynamicBackgroundRenderer(
+        runtimeShader = runtimeShader,
+        cornerTilesPx = floatArrayOf(tile, tile, tile, tile),
+    ).also { renderer ->
+        renderer.updateSize(size)
     }
 }
 

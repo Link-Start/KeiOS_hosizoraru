@@ -134,8 +134,11 @@ internal class GitHubPageSheetDerivationController(
             scope.launch {
                 snapshotFlowManager
                     .snapshotFlow {
+                        if (!state.showActionsSheet) {
+                            return@snapshotFlow GitHubActionsSheetInput(visible = false)
+                        }
                         GitHubActionsSheetInput(
-                            visible = state.showActionsSheet,
+                            visible = true,
                             loading = state.actionsLoading,
                             runsLoading = state.actionsRunsLoading,
                             workflows = state.actionsWorkflows,

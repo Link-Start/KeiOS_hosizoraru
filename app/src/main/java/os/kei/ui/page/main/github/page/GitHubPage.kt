@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -21,10 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
@@ -104,10 +105,23 @@ fun GitHubPage(
     DisposableEffect(githubPageViewModel) {
         onDispose { githubPageViewModel.setPageDataActive(false) }
     }
-    LaunchedEffect(isListScrolling) {
-        if (!isListScrolling) {
-            state.settleScrollChromeVisibility()
-        }
+    LaunchedEffect(listState, state) {
+        snapshotFlow {
+            GitHubListScrollSnapshot(
+                scrolling = listState.isScrollInProgress,
+                canScrollBackward = listState.canScrollBackward,
+                canScrollForward = listState.canScrollForward,
+            )
+        }.distinctUntilChanged()
+            .collect { snapshot ->
+                if (!snapshot.scrolling) {
+                    state.settleScrollChromeVisibility()
+                }
+                state.updateScrollBounds(
+                    canScrollBackward = snapshot.canScrollBackward,
+                    canScrollForward = snapshot.canScrollForward,
+                )
+            }
     }
     LaunchedEffect(context, state, isGitHubSettledDataActive) {
         if (isGitHubSettledDataActive) {
@@ -115,12 +129,6 @@ fun GitHubPage(
         } else {
             githubPageViewModel.unbindContextObservers()
         }
-    }
-    SideEffect {
-        state.updateScrollBounds(
-            canScrollBackward = listState.canScrollBackward,
-            canScrollForward = listState.canScrollForward,
-        )
     }
     val actions =
         remember(
@@ -455,6 +463,12 @@ fun GitHubPage(
         )
     }
 }
+
+private data class GitHubListScrollSnapshot(
+    val scrolling: Boolean,
+    val canScrollBackward: Boolean,
+    val canScrollForward: Boolean,
+)
 
 @Composable
 private fun BindGitHubTrackCardFocusCoordinator(

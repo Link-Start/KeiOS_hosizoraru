@@ -14,7 +14,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-private const val BG_EFFECT_TARGET_FPS = 60L
+private const val BG_EFFECT_HIGH_FPS = 60L
+private const val BG_EFFECT_LOW_FPS = 30L
+private const val BG_EFFECT_LOW_ALPHA_THRESHOLD = 0.5f
 private const val BG_EFFECT_TIME_WRAP_SECONDS = 62.831852f
 private const val BG_EFFECT_VISIBLE_ALPHA_THRESHOLD = 0.001f
 
@@ -147,11 +149,13 @@ private class BgEffectNode(
         animationJob?.cancel()
         startOffset = animTime
         animationJob = coroutineScope.launch {
-            val minDeltaNanos = 1_000_000_000L / BG_EFFECT_TARGET_FPS
             val origin = withFrameNanos { it }
             var lastEmit = origin
             while (isActive) {
                 val now = withFrameNanos { it }
+                val currentAlpha = alpha()
+                val targetFps = if (currentAlpha < BG_EFFECT_LOW_ALPHA_THRESHOLD) BG_EFFECT_LOW_FPS else BG_EFFECT_HIGH_FPS
+                val minDeltaNanos = 1_000_000_000L / targetFps
                 if (now - lastEmit < minDeltaNanos) continue
                 lastEmit = now
                 animTime = (startOffset + (now - origin) / 1_000_000_000f) % BG_EFFECT_TIME_WRAP_SECONDS

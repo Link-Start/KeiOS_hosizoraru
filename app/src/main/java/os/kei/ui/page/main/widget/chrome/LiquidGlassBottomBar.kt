@@ -5,9 +5,7 @@ package os.kei.ui.page.main.widget.chrome
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,10 +39,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -103,16 +101,14 @@ fun RowScope.LiquidGlassBottomBarItem(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
     val selectedScale = LocalLiquidGlassBottomBarTabScale.current
     val selectionProgress = liquidGlassBottomBarItemSelectionProgress(tabIndex)
     val interactive = LocalLiquidGlassBottomBarItemInteractive.current
     val onItemPressed = LocalLiquidGlassBottomBarItemPressHandler.current
+    val currentOnClick by rememberUpdatedState(onClick)
 
     val targetScale =
         when {
-            pressed -> lerp(0.92f, 0.96f, selectionProgress)
             selected || selectionProgress > 0f -> lerp(1f, selectedScale(), selectionProgress)
             else -> 1f
         }
@@ -123,11 +119,6 @@ fun RowScope.LiquidGlassBottomBarItem(
             label = "liquid_bottom_bar_item_scale",
         )
     val scaleProvider = remember(scaleState) { { scaleState.value } }
-    LaunchedEffect(interactive, pressed, tabIndex) {
-        if (interactive) {
-            onItemPressed(tabIndex, pressed)
-        }
-    }
     DisposableEffect(interactive, tabIndex) {
         onDispose {
             if (interactive) {
@@ -142,12 +133,16 @@ fun RowScope.LiquidGlassBottomBarItem(
                 .appSquircleClip(999.dp)
                 .then(
                     if (interactive) {
-                        Modifier.clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            role = Role.Tab,
-                            onClick = onClick,
-                        )
+                        Modifier.pointerInput(tabIndex) {
+                            detectTapGestures(
+                                onPress = {
+                                    onItemPressed(tabIndex, true)
+                                    tryAwaitRelease()
+                                    onItemPressed(tabIndex, false)
+                                },
+                                onTap = { currentOnClick() },
+                            )
+                        }
                     } else {
                         Modifier
                     },

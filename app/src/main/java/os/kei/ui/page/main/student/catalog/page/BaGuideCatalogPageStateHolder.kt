@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student.catalog.page
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -30,6 +31,13 @@ internal class BaGuideCatalogPageStateHolder(
     private val chromeState: () -> BaGuideCatalogPageChromeState,
     private val actions: () -> BaGuideCatalogPageChromeActions,
 ) {
+    var scrollToTopSignal by mutableIntStateOf(0)
+        private set
+
+    fun emitScrollToTop() {
+        scrollToTopSignal++
+    }
+
     val selectedTabIndex: Int
         get() = chromeState().selectedTabIndex
 

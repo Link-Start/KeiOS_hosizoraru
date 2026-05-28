@@ -263,6 +263,13 @@ internal class BaStudentGuideViewModel(
         )
     }
 
+    suspend fun reloadIfStoredUrlChanged() {
+        val storedSourceUrl = repository.loadCurrentUrlAsync()
+        if (storedSourceUrl.isBlank()) return
+        if (storedSourceUrl == _dataState.value.sourceUrl) return
+        openGuide(storedSourceUrl)
+    }
+
     fun requestInitialBottomTabHandled() {
         _requestedInitialBottomTab.value = null
     }

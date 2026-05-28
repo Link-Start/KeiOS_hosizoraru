@@ -123,6 +123,9 @@ fun BaGuideCatalogPage(
             initialPage = pageState.selectedTabIndex.coerceIn(0, tabs.lastIndex.coerceAtLeast(0)),
             pageCount = tabs.size,
         )
+    LaunchedEffect(Unit) {
+        pageState.emitScrollToTop()
+    }
     val filterSortState =
         rememberBaGuideCatalogFilterSortState(
             snapshot = filterSortSnapshot,

@@ -36,6 +36,7 @@ internal fun BaGuideCatalogV2ListContent(
     innerPadding: PaddingValues,
     nestedScrollConnection: NestedScrollConnection,
     isPageActive: Boolean,
+    scrollToTopSignal: Int,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
@@ -58,6 +59,11 @@ internal fun BaGuideCatalogV2ListContent(
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
         )
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0 && isPageActive) {
+            tabListState.listState.animateScrollToItem(0)
+        }
+    }
     LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager

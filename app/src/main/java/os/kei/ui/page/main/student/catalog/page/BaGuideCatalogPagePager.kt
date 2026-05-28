@@ -132,6 +132,7 @@ private fun BaGuideCatalogPageTabContent(
                     ),
                 nestedScrollConnection = chromeScrollState,
                 isPageActive = pageIndex == pagerState.settledPage,
+                scrollToTopSignal = pageState.scrollToTopSignal,
                 onScrollBoundsChange = chromeScrollState::expandForStaticContent,
                 onOpenGuide = onOpenGuide,
                 onToggleFavorite = pageActions.onToggleCatalogFavorite,

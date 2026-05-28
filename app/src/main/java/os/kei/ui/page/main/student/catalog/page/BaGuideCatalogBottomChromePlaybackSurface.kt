@@ -95,19 +95,23 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
                 .indexOfFirst { it.name == keyName }
                 .takeIf { it >= 0 }
                 ?.let { index ->
-                    pageState.updateSelectedTabIndex(index)
-                    pageScope.launch {
-                        if (transitionAnimationsEnabled) {
-                            pagerState.animateToPage(
-                                target = index,
-                                animationsEnabled = true,
-                                durationMillis =
-                                    catalogPagerSwitchDurationMillis(
-                                        abs(index - pagerState.settledPage),
-                                    ),
-                            )
-                        } else {
-                            pagerState.scrollToPage(index)
+                    if (index == pagerState.settledPage) {
+                        pageState.emitScrollToTop()
+                    } else {
+                        pageState.updateSelectedTabIndex(index)
+                        pageScope.launch {
+                            if (transitionAnimationsEnabled) {
+                                pagerState.animateToPage(
+                                    target = index,
+                                    animationsEnabled = true,
+                                    durationMillis =
+                                        catalogPagerSwitchDurationMillis(
+                                            abs(index - pagerState.settledPage),
+                                        ),
+                                )
+                            } else {
+                                pagerState.scrollToPage(index)
+                            }
                         }
                     }
                 }

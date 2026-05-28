@@ -30,7 +30,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
@@ -134,6 +137,12 @@ fun BaStudentGuidePage(
     val pageChromeState by guideViewModel.pageChromeState.collectAsStateWithLifecycle()
     val voiceUiState by guideViewModel.voiceUiState.collectAsStateWithLifecycle()
     val contentPresentationState by guideViewModel.contentPresentationState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(guideViewModel, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            guideViewModel.reloadIfStoredUrlChanged()
+        }
+    }
     LaunchedEffect(
         guideViewModel,
         transitionAnimationsEnabled,

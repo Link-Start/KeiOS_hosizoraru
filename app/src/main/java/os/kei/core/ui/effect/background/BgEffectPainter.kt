@@ -15,7 +15,7 @@ internal class BgEffectPainter {
         RuntimeShader(OS3_BG_FRAG).also { initStaticUniforms(it) }
     }
 
-    val brush: Brush get() = runtimeShader.asBrush()
+    val brush: Brush by lazy { runtimeShader.asBrush() }
 
     private val resolution = FloatArray(2)
     private val bound = FloatArray(4)

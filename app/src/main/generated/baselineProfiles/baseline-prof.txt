@@ -11037,12 +11037,6 @@ SPLzz3;-><init>(I)V
 SPLzz3;->b()Ljava/lang/Object;
 Lzz4;
 # --- KeiOS dynamic background effect (BgEffect) AOT rules ---
-# These classes implement the home page dynamic background shader rendering.
-# Marked HSPL to ensure AOT compilation on first install for smooth 60fps animation.
-HSPLos/kei/core/ui/effect/background/BgEffectNode;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectPainter;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectModifierKt**->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectConfig;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectConfig$Config;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectBackgroundKt**->**(**)**
-HSPLos/kei/core/ui/effect/background/OS3BgFragKt**->**(**)**
+# Home page dynamic background shader rendering path.
+# Wildcard format matches MIUIX miuix-blur baseline profile convention.
+HSPLos/kei/core/ui/effect/background/**->**(**)**

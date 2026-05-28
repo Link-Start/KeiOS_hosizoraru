@@ -9646,9 +9646,4 @@ SPLzz3;-><init>(I)V
 SPLzz3;->b()Ljava/lang/Object;
 Lzz4;
 # --- KeiOS dynamic background effect (BgEffect) startup AOT rules ---
-HSPLos/kei/core/ui/effect/background/BgEffectNode;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectPainter;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectModifierKt**->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectConfig;->**(**)**
-HSPLos/kei/core/ui/effect/background/BgEffectBackgroundKt**->**(**)**
-HSPLos/kei/core/ui/effect/background/OS3BgFragKt**->**(**)**
+HSPLos/kei/core/ui/effect/background/**->**(**)**

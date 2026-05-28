@@ -8,11 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -64,13 +61,6 @@ internal fun BaGuideCatalogV2ListContent(
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
         )
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    var hasInitiallyScrolled by remember(tab) { mutableStateOf(false) }
-    LaunchedEffect(tabListState.displayedEntries.isNotEmpty(), isPageActive) {
-        if (!hasInitiallyScrolled && tabListState.displayedEntries.isNotEmpty() && isPageActive) {
-            hasInitiallyScrolled = true
-            tabListState.listState.scrollToItem(0)
-        }
-    }
     val consumedScrollToTopSignal = remember(tab) { mutableIntStateOf(0) }
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > consumedScrollToTopSignal.intValue && isPageActive) {

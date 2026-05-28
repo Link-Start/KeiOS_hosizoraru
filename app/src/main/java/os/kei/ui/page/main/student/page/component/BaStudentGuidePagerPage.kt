@@ -78,6 +78,7 @@ internal fun BaStudentGuidePagerPage(
     onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
     onRequestProfileLinkTitles: (List<String>) -> Unit,
     onToggleVoicePlayback: (String) -> Unit,
+    scrollToTopSignal: Int,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit,
@@ -117,6 +118,11 @@ internal fun BaStudentGuidePagerPage(
             }
         }
     val isActivePage = pageIndex == pagerState.currentPage
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0 && isActivePage) {
+            pageListState.animateScrollToItem(0)
+        }
+    }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(pageListState, isActivePage, snapshotFlowManager) {
         if (!isActivePage) return@LaunchedEffect

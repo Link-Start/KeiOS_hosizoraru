@@ -205,6 +205,7 @@ fun BaStudentGuidePage(
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomBarChromeState = rememberBaStudentGuideBottomBarChromeState()
     val farJumpAlpha = remember { Animatable(1f) }
+    var scrollToTopSignal by remember { mutableIntStateOf(0) }
     val selectBottomTabAction =
         rememberBaStudentGuideTabSelectCoordinator(
             bottomTabs = bottomTabsList,
@@ -219,6 +220,7 @@ fun BaStudentGuidePage(
                         ?: GuideBottomTab.Archive
                 guideViewModel.updateSelectedBottomTab(selectedTab)
             },
+            onScrollToTop = { scrollToTopSignal++ },
         )
     LaunchedEffect(guideUiState.requestedInitialBottomTab, bottomTabsList, selectBottomTabAction) {
         val targetTab = guideUiState.requestedInitialBottomTab ?: return@LaunchedEffect
@@ -444,6 +446,7 @@ fun BaStudentGuidePage(
                     onToggleBgmFavorite = guideViewModel::requestToggleBgmFavorite,
                     onRequestProfileLinkTitles = guideViewModel::requestProfileLinkTitles,
                     onToggleVoicePlayback = pageActions.toggleVoicePlayback,
+                    scrollToTopSignal = scrollToTopSignal,
                     onScrollBoundsChange = { canScrollBackward, canScrollForward ->
                         bottomBarChromeState.updateScrollBounds(canScrollBackward, canScrollForward)
                     },

@@ -55,6 +55,7 @@ internal fun rememberBaStudentGuideTabSelectCoordinator(
     farJumpAlpha: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>,
     onShowBottomBarChange: (Boolean) -> Unit,
     onSelectedBottomTabIndexChange: (Int) -> Unit,
+    onScrollToTop: () -> Unit = {},
 ): (Int) -> Unit {
     val pageScope = rememberCoroutineScope()
     val tabJumpJobHolder = remember { BaStudentGuideTabJumpJobHolder() }
@@ -66,6 +67,7 @@ internal fun rememberBaStudentGuideTabSelectCoordinator(
         farJumpAlpha,
         onShowBottomBarChange,
         onSelectedBottomTabIndexChange,
+        onScrollToTop,
         pageScope,
     ) {
         { index: Int ->
@@ -77,7 +79,11 @@ internal fun rememberBaStudentGuideTabSelectCoordinator(
                 } else {
                     pagerState.settledPage
                 }
-            if (safeIndex == fromIndex && !pagerState.isScrollInProgress) return@remember
+            if (safeIndex == fromIndex && !pagerState.isScrollInProgress) {
+                onShowBottomBarChange(true)
+                onScrollToTop()
+                return@remember
+            }
             onShowBottomBarChange(true)
             onSelectedBottomTabIndexChange(safeIndex)
             tabJumpJobHolder.job?.cancel()

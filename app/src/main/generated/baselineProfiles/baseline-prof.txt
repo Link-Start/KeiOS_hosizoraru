@@ -21485,7 +21485,6 @@ SPLos/kei/core/prefs/UiPrefsSnapshot;->getHomeIconHdrEnabled()Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getLiquidActionBarLayeredStyleEnabled()Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getLiquidBottomBarEnabled()Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getLiquidSwitchEnabled()Z
-SPLos/kei/core/prefs/UiPrefsSnapshot;->getMiuixMainNavigationEnabled()Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getNonHomeBackgroundEnabled()Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getNonHomeBackgroundOpacity()F
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getNonHomeBackgroundUri()Ljava/lang/String;
@@ -27022,7 +27021,6 @@ SPLos/kei/ui/page/main/host/main/MainScreenNavHostKt$MainScreenNavHost$$inlined$
 SPLos/kei/ui/page/main/host/main/MainScreenNavHostKt$MainScreenNavHost$$inlined$entryProvider$default$1;-><init>()V
 Los/kei/ui/page/main/host/main/MainScreenPagerCoordinator;
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;-><clinit>()V
-SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;-><init>(IZZZZZZZZLjava/lang/String;FLjava/util/Set;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Los/kei/core/shizuku/ShizukuApiUtils;Los/kei/mcp/server/McpServerManager;Lkotlin/jvm/functions/Function1;Ljava/lang/String;IILjava/lang/String;ILkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;)V
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->equals(Ljava/lang/Object;)Z
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getGripAwareFloatingDockEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getHomeDynamicFullEffectEnabled()Z
@@ -27030,7 +27028,6 @@ SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getHomeIconHdrEnab
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getLiquidActionBarLayeredStyleEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getLiquidBottomBarEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getMcpServerManager()Los/kei/mcp/server/McpServerManager;
-SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getMiuixMainNavigationEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getNonHomeBackgroundEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getNonHomeBackgroundOpacity()F
 SPLos/kei/ui/page/main/host/main/MainScreenPagerCoordinator;->getNonHomeBackgroundUri()Ljava/lang/String;
@@ -27091,7 +27088,6 @@ SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getHomeIconHdrEnabled(
 SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getLiquidActionBarLayeredStyleEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getLiquidBottomBarEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getLiquidSwitchEnabled()Z
-SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getMiuixMainNavigationEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getNonHomeBackgroundEnabled()Z
 SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getNonHomeBackgroundOpacity()F
 SPLos/kei/ui/page/main/host/main/MainScreenUiPrefsState;->getNonHomeBackgroundUri()Ljava/lang/String;
@@ -27252,7 +27248,6 @@ SPLos/kei/ui/page/main/host/pager/MainPagerCoordinatorEffectsKt$BindMainPagerCoo
 SPLos/kei/ui/page/main/host/pager/MainPagerCoordinatorEffectsKt$BindMainPagerCoordinatorEffects$1$1;->create(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
 SPLos/kei/ui/page/main/host/pager/MainPagerCoordinatorEffectsKt$BindMainPagerCoordinatorEffects$1$1;->invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
 Los/kei/ui/page/main/host/pager/MainPagerCoordinatorKt;
-SPLos/kei/ui/page/main/host/pager/MainPagerCoordinatorKt;->rememberMainPagerCoordinator(IZZZZLjava/lang/String;Ljava/util/Set;Lkotlin/jvm/functions/Function1;Los/kei/mcp/server/McpServerManager;Ljava/lang/String;ILkotlin/jvm/functions/Function0;Landroidx/compose/runtime/Composer;II)Los/kei/ui/page/main/host/pager/MainPagerCoordinatorState;
 SPLos/kei/ui/page/main/host/pager/MainPagerCoordinatorKt;->rememberMainPagerInsets(Landroidx/compose/runtime/Composer;I)Los/kei/ui/page/main/host/pager/MainPagerInsets;
 Los/kei/ui/page/main/host/pager/MainPagerCoordinatorState;
 SPLos/kei/ui/page/main/host/pager/MainPagerCoordinatorState;-><clinit>()V
@@ -27403,7 +27398,6 @@ SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->HomeHdrWindowModeEffect(ZL
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout$lambda$10(Los/kei/ui/page/main/host/pager/MainPagerCoordinatorState;ZLos/kei/ui/page/main/host/pager/MainPagerInsets;ZLandroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout$lambda$11(Los/kei/ui/page/main/host/pager/MainPagerCoordinatorState;ZFLos/kei/ui/page/main/host/pager/MainPagerInsets;Los/kei/ui/page/main/back/BackNavigationRuntimeState;ZLos/kei/ui/page/main/widget/glass/AppFloatingDockSide;Ljava/lang/String;ZZLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Los/kei/core/shizuku/ShizukuApiUtils;ZLkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;Los/kei/mcp/server/McpServerManager;Lkotlin/jvm/functions/Function0;ILjava/lang/String;IZLandroidx/compose/foundation/layout/PaddingValues;Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout$lambda$12(ZLos/kei/ui/navigation/Navigator;IZZZZZZZZLjava/lang/String;FLjava/util/Set;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Los/kei/core/shizuku/ShizukuApiUtils;Los/kei/mcp/server/McpServerManager;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;Ljava/lang/String;IILjava/lang/String;IZLkotlin/jvm/functions/Function0;IIILandroidx/compose/runtime/Composer;I)Lkotlin/Unit;
-SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout(ZLos/kei/ui/navigation/Navigator;IZZZZZZZZLjava/lang/String;FLjava/util/Set;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Los/kei/core/shizuku/ShizukuApiUtils;Los/kei/mcp/server/McpServerManager;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;Ljava/lang/String;IILjava/lang/String;IZLkotlin/jvm/functions/Function0;Landroidx/compose/runtime/Composer;III)V
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->findActivity(Landroid/content/Context;)Landroid/app/Activity;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->shouldActivateHomeHdrEffect(ZZZIIZZ)Z
 Los/kei/ui/page/main/host/pager/MainPagerLayoutKt$HomeHdrWindowModeEffect$1$1;

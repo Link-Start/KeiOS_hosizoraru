@@ -101,6 +101,7 @@ internal class GitHubPageTrackRepository(
     ) {
         withContext(ioDispatcher) {
             GitHubTrackStore.saveCheckCache(states, refreshTimestamp)
+            GitHubTrackStoreSignals.notifyChanged(refreshTimestamp)
         }
     }
 

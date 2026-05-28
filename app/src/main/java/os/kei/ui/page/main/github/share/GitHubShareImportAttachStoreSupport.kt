@@ -93,6 +93,7 @@ private suspend fun prefetchAttachedTrackLatestCheck(
                 put(trackedItem.id, refreshedUi.toCacheEntry())
             }
         GitHubTrackStore.saveCheckCache(updatedCache, nowMs)
+        GitHubTrackStoreSignals.notifyChanged(nowMs)
     }
 }
 

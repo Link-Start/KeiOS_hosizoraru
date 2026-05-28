@@ -117,18 +117,9 @@ private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
 private const val GITHUB_IMPORT_STARS = "github_import_stars"
 
 private fun targetAppId(): String {
-    val configuredAppId =
-        InstrumentationRegistry.getArguments().getString("targetAppId")
-            ?: error("targetAppId not passed as instrumentation runner arg")
-    return if (configuredAppId == RELEASE_APP_ID) {
-        BENCHMARK_APP_ID
-    } else {
-        configuredAppId
-    }
+    return InstrumentationRegistry.getArguments().getString("targetAppId")
+        ?: error("targetAppId not passed as instrumentation runner arg")
 }
-
-private const val RELEASE_APP_ID = "os.kei"
-private const val BENCHMARK_APP_ID = "os.kei.benchmark"
 
 private fun MacrobenchmarkScope.launchHomeFromColdStart() {
     pressHome()

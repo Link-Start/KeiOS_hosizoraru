@@ -28,6 +28,7 @@ import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.DampedDragAnimation
@@ -140,38 +141,38 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                         clip = false
                     }.then(if (isBlurEnabled && interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
                     .then(dampedDragAnimation.modifier)
-                    .drawBackdrop(
-                        backdrop = combinedBackdrop,
-                        shape = { ContinuousCapsule },
-                        effects = {
-                            if (isBlurEnabled && dampedDragAnimation.pressProgress > 0f) {
-                                val progress = dampedDragAnimation.pressProgress
-                                lens(
-                                    9f.dp.toPx() * progress * interactionLensScale,
-                                    12f.dp.toPx() * progress * interactionLensScale,
-                                    true,
-                                )
-                            }
-                        },
-                        highlight = {
-                            Highlight.Default.copy(alpha = if (isBlurEnabled) dampedDragAnimation.pressProgress else 0f)
-                        },
-                        shadow = { Shadow(alpha = if (isBlurEnabled) dampedDragAnimation.pressProgress else 0f) },
-                        innerShadow = {
-                            InnerShadow(
-                                radius = 7f.dp * dampedDragAnimation.pressProgress,
-                                alpha = if (isBlurEnabled) dampedDragAnimation.pressProgress else 0f,
-                            )
-                        },
-                        layerBlock = {
-                            if (isBlurEnabled) {
-                                scaleX = dampedDragAnimation.scaleX * breakoutScaleX
-                                scaleY = dampedDragAnimation.scaleY * breakoutScaleY
-                                val velocity = dampedDragAnimation.velocity / 10f
-                                scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
-                                scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
-                            }
-                        },
+                    .then(
+                        if (isBlurEnabled) {
+                            Modifier.drawBackdrop(
+                                backdrop = combinedBackdrop,
+                                shape = { ContinuousCapsule },
+                                effects = {
+                                    val progress = dampedDragAnimation.pressProgress
+                                    if (progress > 0f) {
+                                        lens(
+                                            9f.dp.toPx() * progress * interactionLensScale,
+                                            12f.dp.toPx() * progress * interactionLensScale,
+                                            true,
+                                        )
+                                    }
+                                },
+                                highlight = {
+                                    Highlight.Default.copy(alpha = dampedDragAnimation.pressProgress)
+                                },
+                                shadow = { Shadow(alpha = dampedDragAnimation.pressProgress) },
+                                innerShadow = {
+                                    InnerShadow(
+                                        radius = 7f.dp * dampedDragAnimation.pressProgress,
+                                        alpha = dampedDragAnimation.pressProgress,
+                                    )
+                                },
+                                layerBlock = {
+                                    scaleX = dampedDragAnimation.scaleX * breakoutScaleX
+                                    scaleY = dampedDragAnimation.scaleY * breakoutScaleY
+                                    val velocity = dampedDragAnimation.velocity / 10f
+                                    scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
+                                    scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
+                                },
                         onDrawSurface = {
                             val progress = dampedDragAnimation.pressProgress
                             drawRect(
@@ -184,6 +185,13 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                                 alpha = progress * (1f - progress),
                             )
                             drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                        },
+                            )
+                        } else {
+                            Modifier.appSquircleBackground(
+                                color = if (isInLightTheme) Color.Black.copy(0.10f) else Color.White.copy(0.10f),
+                                cornerRadius = 999.dp,
+                            )
                         },
                     ).height(AppChromeTokens.liquidActionBarInnerHeight + singleBreakoutPadding * 2)
                     .width(

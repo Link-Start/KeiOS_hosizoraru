@@ -463,12 +463,14 @@ android {
         }
 
         // Non-minified variants for baseline profile generation (reference: InstallerX).
-        // These must NOT inherit optimization.enable from release, so the profile
-        // generator produces original class names that R8 can always map correctly.
+        // optimization.enable = false must be set explicitly because matchingFallbacks
+        // causes these variants to inherit optimization.enable = true from release.
         create("nonMinifiedRelease") {
+            optimization.enable = false
             matchingFallbacks += listOf("release")
         }
         create("benchmarkRelease") {
+            optimization.enable = false
             isDebuggable = true
             matchingFallbacks += listOf("release")
         }

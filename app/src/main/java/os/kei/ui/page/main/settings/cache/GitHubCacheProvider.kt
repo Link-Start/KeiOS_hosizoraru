@@ -31,9 +31,7 @@ internal fun appIconCacheEntryProvider(): CacheEntryProvider =
 
 private fun githubSummary(context: Context): CacheEntrySummary {
     val snapshot = GitHubTrackStore.loadSnapshot()
-    val updatedAtMs =
-        snapshot.lastRefreshMs.takeIf { it > 0L }
-            ?: mmkvLastModified(context, "github_track_store")
+    val updatedAtMs = snapshot.lastRefreshMs
     val clearedAtMs = CacheEventStore.loadClearedAt("github")
     val iconMemory = AppIconCache.estimatedMemoryBytes()
     val assetCacheCount = GitHubReleaseAssetCacheStore.cachedEntryCount()

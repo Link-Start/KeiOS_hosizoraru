@@ -5,6 +5,7 @@ import os.kei.R
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 
 internal fun githubCacheEntryProvider(): CacheEntryProvider =
@@ -14,6 +15,7 @@ internal fun githubCacheEntryProvider(): CacheEntryProvider =
         clear = {
             GitHubReleaseStrategyRegistry.clearAllCaches()
             GitHubTrackStore.clearCheckCache()
+            GitHubTrackStoreSignals.notifyChanged()
             GitHubReleaseAssetCacheStore.clearAll()
             AppIconCache.clear()
             CacheEventStore.markCleared("app_icon")

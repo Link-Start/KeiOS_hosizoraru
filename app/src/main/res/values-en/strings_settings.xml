@@ -57,10 +57,6 @@
     <string name="settings_bottom_bar_summary_disabled">KeiOS main navigation uses a lightweight solid bottom bar to reduce bottom glass rendering cost.</string>
     <string name="settings_bottom_bar_summary_miuix_active">MIUIX main navigation currently owns the main bottom bar; this setting applies after switching back to KeiOS navigation.</string>
     <string name="settings_bottom_bar_scope">Affects the KeiOS main tab bottom-bar visual style. MIUIX main navigation uses the MIUIX floating bottom bar.</string>
-    <string name="settings_miuix_main_navigation_title">MIUIX main navigation mode</string>
-    <string name="settings_miuix_main_navigation_summary_enabled">Main tabs use the MIUIX demo-style HorizontalPager state chain and MIUIX floating bottom bar.</string>
-    <string name="settings_miuix_main_navigation_summary_disabled">Main tabs use the current KeiOS Liquid Glass bottom bar and pager chain.</string>
-    <string name="settings_miuix_main_navigation_scope">Affects the Home / OS / MCP / GitHub / BA main tab bar and horizontal switching, and also syncs the bottom category bars on Settings, About, Guide, and other secondary pages.</string>
     <string name="settings_actionbar_style_header">Action bar</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus action bar</string>
     <string name="settings_actionbar_style_summary_enabled">Use the layered liquid style: capsule base, sliding highlight, and selected-state motion.</string>

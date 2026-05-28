@@ -57,10 +57,6 @@
     <string name="settings_bottom_bar_summary_disabled">KeiOS 主导航使用轻量实体底栏，降低底部玻璃渲染负载。</string>
     <string name="settings_bottom_bar_summary_miuix_active">当前 MIUIX 主导航接管主底栏；本设置会在切回 KeiOS 主导航时生效。</string>
     <string name="settings_bottom_bar_scope">影响 KeiOS 主分页底栏视觉；MIUIX 主导航模式会使用 MIUIX 浮动底栏。</string>
-    <string name="settings_miuix_main_navigation_title">MIUIX 主导航模式</string>
-    <string name="settings_miuix_main_navigation_summary_enabled">主页面使用 MIUIX demo 同款 HorizontalPager 状态链路与 MIUIX 浮动底栏。</string>
-    <string name="settings_miuix_main_navigation_summary_disabled">主页面使用 KeiOS 当前液态玻璃底栏与切页链路。</string>
-    <string name="settings_miuix_main_navigation_scope">影响 Home / OS / MCP / GitHub / BA 主分页底栏与左右切换，并同步设置、关于、图鉴等二级页面底部分类栏。</string>
     <string name="settings_actionbar_style_header">控件栏</string>
     <string name="settings_actionbar_style_title">液态玻璃Plus 控件栏</string>
     <string name="settings_actionbar_style_summary_enabled">启用多层液态样式：胶囊基底 + 滑动高光 + 选中层动效。</string>

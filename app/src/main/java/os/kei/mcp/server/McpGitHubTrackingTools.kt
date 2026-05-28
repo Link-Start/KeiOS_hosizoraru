@@ -5,6 +5,7 @@ import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
@@ -146,6 +147,7 @@ internal class McpGitHubTrackingTools(
 
         server.addMcpTextTool(environment, name = "keios.github.cache.clear") { _ ->
             GitHubTrackStore.clearCheckCache()
+            GitHubTrackStoreSignals.notifyChanged()
             GitHubReleaseAssetCacheStore.clearAll()
             GitHubStarImportApkVerificationCacheStore.clearAll()
             "cleared=github_check_cache,github_release_asset_cache,github_star_import_apk_verification_cache"

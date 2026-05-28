@@ -29,12 +29,6 @@ class UiPrefsRepository(
         }
     }
 
-    suspend fun setMiuixMainNavigationEnabled(value: Boolean) {
-        updateAndPersist({ copy(miuixMainNavigationEnabled = value) }) {
-            UiPrefs.setMiuixMainNavigationEnabled(value)
-        }
-    }
-
     suspend fun setLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         updateAndPersist({ copy(liquidActionBarLayeredStyleEnabled = value) }) {
             UiPrefs.setLiquidActionBarLayeredStyleEnabled(value)

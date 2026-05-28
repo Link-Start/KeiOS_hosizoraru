@@ -454,6 +454,7 @@ android {
 
         create("benchmark") {
             initWith(getByName("release"))
+            isMinifyEnabled = false
             applicationIdSuffix = ".benchmark"
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false

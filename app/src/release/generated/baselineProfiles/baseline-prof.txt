@@ -21477,7 +21477,6 @@ SPLos/kei/core/prefs/UiPrefsRuntimeDefaults$Snapshot;-><init>(Ljava/lang/String;
 SPLos/kei/core/prefs/UiPrefsRuntimeDefaults$Snapshot;->getBuildType()Ljava/lang/String;
 SPLos/kei/core/prefs/UiPrefsRuntimeDefaults$Snapshot;->getDefaultLogLevel()Los/kei/core/log/AppLogLevel;
 Los/kei/core/prefs/UiPrefsSnapshot;
-SPLos/kei/core/prefs/UiPrefsSnapshot;-><init>(ZZZZZZZZZZZLos/kei/core/prefs/LauncherIconDesign;ZLjava/lang/String;FZZILos/kei/core/log/AppLogLevel;ZZZZZZLos/kei/core/prefs/AppThemeMode;Ljava/util/Set;)V
 SPLos/kei/core/prefs/UiPrefsSnapshot;->equals(Ljava/lang/Object;)Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getGripAwareFloatingDockEnabled()Z
 SPLos/kei/core/prefs/UiPrefsSnapshot;->getHomeDynamicFullEffectEnabled()Z

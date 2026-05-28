@@ -452,9 +452,9 @@ android {
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 
+        // Optimized build for local performance testing (Compose debug is too slow).
         create("benchmark") {
             initWith(getByName("release"))
-            isMinifyEnabled = false
             applicationIdSuffix = ".benchmark"
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
@@ -462,17 +462,15 @@ android {
             matchingFallbacks += listOf("release")
         }
 
-        // The androidx.baselineprofile plugin auto-creates `nonMinifiedRelease` and
-        // `benchmarkRelease` build types on `:app`. They have no counterpart in our
-        // library modules (`:core-io`, `:core-log`, which only define debug/release),
-        // which makes Gradle fail to resolve a matching variant — Android Studio
-        // surfaces this as "No build type in module ':core-io' matches build type
-        // 'benchmarkRelease'". Add `matchingFallbacks = release` so library
-        // resolution falls back to the release variant for those generated types.
-        configureEach {
-            if (name == "nonMinifiedRelease" || name == "benchmarkRelease") {
-                matchingFallbacks += listOf("release")
-            }
+        // Non-minified variants for baseline profile generation (reference: InstallerX).
+        // These must NOT inherit optimization.enable from release, so the profile
+        // generator produces original class names that R8 can always map correctly.
+        create("nonMinifiedRelease") {
+            matchingFallbacks += listOf("release")
+        }
+        create("benchmarkRelease") {
+            isDebuggable = true
+            matchingFallbacks += listOf("release")
         }
     }
 
@@ -511,10 +509,11 @@ androidComponents {
             bakeAppSquircleSdf,
             BakeAppSquircleSdfTask::outputDir
         )
-        // Keep Baseline Profiles packaged, while skipping R8's experimental dex startup layout.
-        // The checked-in startup profiles are generated from minified variants; feeding those
-        // obfuscated entries back into R8 produces thousands of missing startup class warnings
-        // during release/benchmarkRelease minification.
+        // dex-startup-optimization uses baseline profiles for dex layout optimization.
+        // Currently disabled because the checked-in profiles contain R8-obfuscated class
+        // names from a previous minified benchmark build. After regenerating profiles
+        // from the now-unminified benchmarkRelease variant (which produces original class
+        // names), this can be safely enabled. Reference: MIUIX example enables this.
         variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
     }
     onVariants(selector().withBuildType("release")) { variant ->
@@ -530,6 +529,12 @@ androidComponents {
         }
     }
     onVariants(selector().withBuildType("benchmark")) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionName.set(nonReleaseVersionName)
+            output.versionCode.set(nonReleaseVersionCode)
+        }
+    }
+    onVariants(selector().withBuildType("benchmarkRelease")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(nonReleaseVersionName)
             output.versionCode.set(nonReleaseVersionCode)

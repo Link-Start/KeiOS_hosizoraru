@@ -16,6 +16,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -118,9 +119,13 @@ internal fun BaStudentGuidePagerPage(
             }
         }
     val isActivePage = pageIndex == pagerState.currentPage
+    val consumedScrollToTopSignal = remember { mutableIntStateOf(0) }
     LaunchedEffect(scrollToTopSignal) {
-        if (scrollToTopSignal > 0 && isActivePage) {
+        if (scrollToTopSignal > consumedScrollToTopSignal.intValue && isActivePage) {
+            consumedScrollToTopSignal.intValue = scrollToTopSignal
             pageListState.animateScrollToItem(0)
+        } else {
+            consumedScrollToTopSignal.intValue = scrollToTopSignal
         }
     }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()

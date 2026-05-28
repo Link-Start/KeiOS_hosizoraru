@@ -86,7 +86,6 @@ internal fun MainScreenNavHost(
                     navigator = navigator,
                     settingsReturnToken = pagerCoordinator.settingsReturnToken,
                     liquidBottomBarEnabled = pagerCoordinator.liquidBottomBarEnabled,
-                    miuixMainNavigationEnabled = pagerCoordinator.miuixMainNavigationEnabled,
                     liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
                     gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
                     homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
@@ -117,8 +116,6 @@ internal fun MainScreenNavHost(
                     onRequestNotificationPermission = onRequestNotificationPermission,
                     liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                     onLiquidBottomBarChanged = prefsState::updateLiquidBottomBarEnabled,
-                    miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
-                    onMiuixMainNavigationChanged = prefsState::updateMiuixMainNavigationEnabled,
                     liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                     onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
                     liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
@@ -186,14 +183,12 @@ internal fun MainScreenNavHost(
                     shizukuStatus = pagerCoordinator.shizukuStatus,
                     shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
                     onCheckShizuku = onCheckOrRequestShizuku,
-                    miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
                     onBack = onRouteBack,
                 )
             }
             entry<KeiosRoute.BaStudentGuide> {
                 BaStudentGuidePage(
                     liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                    miuixMainNavigationEnabled = prefsState.miuixMainNavigationEnabled,
                     liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                     preloadingEnabled = prefsState.preloadingEnabled,
                     onBack = onRouteBack,

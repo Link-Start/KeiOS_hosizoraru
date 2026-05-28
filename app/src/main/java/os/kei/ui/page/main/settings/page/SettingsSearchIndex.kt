@@ -58,7 +58,6 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
 
     val componentEffectsGroupLabel = resolveString(R.string.settings_group_component_effects_title)
     val bottomBarLabel = resolveString(R.string.settings_bottom_bar_title)
-    val miuixMainNavigationLabel = resolveString(R.string.settings_miuix_main_navigation_title)
     val actionbarStyleLabel = resolveString(R.string.settings_actionbar_style_title)
     val liquidSwitchLabel = resolveString(R.string.settings_liquid_switch_title)
     val liquidToastLabel = resolveString(R.string.settings_liquid_toast_title)
@@ -146,7 +145,6 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     effectsCategoryLabel,
                     componentEffectsGroupLabel,
                     bottomBarLabel,
-                    miuixMainNavigationLabel,
                     actionbarStyleLabel,
                     liquidSwitchLabel,
                     liquidToastLabel,

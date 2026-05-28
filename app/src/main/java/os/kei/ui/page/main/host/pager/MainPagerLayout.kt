@@ -51,7 +51,6 @@ internal fun MainPagerLayout(
     navigator: Navigator,
     settingsReturnToken: Int,
     liquidBottomBarEnabled: Boolean,
-    miuixMainNavigationEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
@@ -105,7 +104,6 @@ internal fun MainPagerLayout(
         rememberMainPagerCoordinator(
             settingsReturnToken = settingsReturnToken,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
-            miuixMainNavigationEnabled = miuixMainNavigationEnabled,
             preloadingEnabled = preloadingEnabled,
             nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,
             nonHomeBackgroundUri = nonHomeBackgroundUri,
@@ -190,29 +188,17 @@ internal fun MainPagerLayout(
                         )
                     }
                 }
-            if (miuixMainNavigationEnabled) {
-                MainMiuixBottomBar(
-                    visible = coordinator.showBottomBar,
-                    navigationBarBottom = insets.navigationBarBottom,
-                    tabs = coordinator.tabs,
-                    selectedPageIndex = safeSelectedPageIndex,
-                    selectedPagePositionProvider = selectedPagePositionProvider,
-                    backdrop = coordinator.backdrop,
-                    onPageSelected = coordinator.onPageSelected,
-                )
-            } else {
-                MainPagerBottomBar(
-                    visible = coordinator.showBottomBar,
-                    navigationBarBottom = insets.navigationBarBottom,
-                    tabs = coordinator.tabs,
-                    selectedPageIndex = safeSelectedPageIndex,
-                    selectedPagePosition = null,
-                    selectedPagePositionProvider = selectedPagePositionProvider,
-                    backdrop = coordinator.backdrop,
-                    liquidBottomBarEnabled = liquidBottomBarEnabled,
-                    onPageSelected = coordinator.onPageSelected,
-                )
-            }
+            MainPagerBottomBar(
+                visible = coordinator.showBottomBar,
+                navigationBarBottom = insets.navigationBarBottom,
+                tabs = coordinator.tabs,
+                selectedPageIndex = safeSelectedPageIndex,
+                selectedPagePosition = null,
+                selectedPagePositionProvider = selectedPagePositionProvider,
+                backdrop = coordinator.backdrop,
+                liquidBottomBarEnabled = liquidBottomBarEnabled,
+                onPageSelected = coordinator.onPageSelected,
+            )
         },
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {

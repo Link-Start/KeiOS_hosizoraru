@@ -53,7 +53,6 @@ internal fun deriveComponentEffectsPresentation(state: SettingsComponentEffectsS
                 state.liquidSheetEnabled ||
                 state.liquidDialogEnabled ||
                 state.liquidBottomBarEnabled ||
-                state.miuixMainNavigationEnabled ||
                 state.searchAutoFocusEnabled ||
                 state.gripAwareFloatingDockEnabled,
     )

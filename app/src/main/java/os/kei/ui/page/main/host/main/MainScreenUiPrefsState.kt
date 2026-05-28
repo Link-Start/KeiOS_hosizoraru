@@ -20,7 +20,6 @@ internal class MainScreenUiPrefsState(
     private val viewModel: MainScreenPrefsViewModel,
 ) {
     val liquidBottomBarEnabled: Boolean get() = snapshot.liquidBottomBarEnabled
-    val miuixMainNavigationEnabled: Boolean get() = snapshot.miuixMainNavigationEnabled
     val liquidActionBarLayeredStyleEnabled: Boolean get() = snapshot.liquidActionBarLayeredStyleEnabled
     val liquidSwitchEnabled: Boolean get() = snapshot.liquidSwitchEnabled
     val liquidToastEnabled: Boolean get() = snapshot.liquidToastEnabled
@@ -48,10 +47,6 @@ internal class MainScreenUiPrefsState(
 
     fun updateLiquidBottomBarEnabled(value: Boolean) {
         viewModel.updateLiquidBottomBarEnabled(value)
-    }
-
-    fun updateMiuixMainNavigationEnabled(value: Boolean) {
-        viewModel.updateMiuixMainNavigationEnabled(value)
     }
 
     fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {

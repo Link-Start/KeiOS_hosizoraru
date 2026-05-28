@@ -86,7 +86,6 @@ internal fun rememberMainPagerInsets(): MainPagerInsets {
 internal fun rememberMainPagerCoordinator(
     settingsReturnToken: Int,
     transitionAnimationsEnabled: Boolean,
-    miuixMainNavigationEnabled: Boolean,
     preloadingEnabled: Boolean,
     nonHomeBackgroundEnabled: Boolean,
     nonHomeBackgroundUri: String,
@@ -116,19 +115,11 @@ internal fun rememberMainPagerCoordinator(
     val visibleTabsSnapshot = tabsState.visibleTabsSnapshot
     val pageKeys = remember(tabs) { tabs.map { page -> page.name } }
     val pagerState: MainPagerStateContract =
-        if (miuixMainNavigationEnabled) {
-            rememberMainMiuixPagerState(
-                initialPage = tabsState.initialPageIndex,
-                pageCount = tabs.size,
-                pageKeys = pageKeys,
-            )
-        } else {
-            rememberMainLoadedPagerState(
-                initialPage = tabsState.initialPageIndex,
-                pageCount = tabs.size,
-                pageKeys = pageKeys,
-            )
-        }
+        rememberMainLoadedPagerState(
+            initialPage = tabsState.initialPageIndex,
+            pageCount = tabs.size,
+            pageKeys = pageKeys,
+        )
     val backdrop = rememberMainPagerBackdropLifecycle()
     val targetWarmDataActive = rememberPagerTargetWarmDataActive(pagerState).value
 

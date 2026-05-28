@@ -69,7 +69,6 @@ fun AboutPage(
     shizukuStatus: String,
     shizukuApiUtils: ShizukuApiUtils,
     onCheckShizuku: () -> Unit,
-    miuixMainNavigationEnabled: Boolean = false,
     contentBottomPadding: Dp = 72.dp,
     scrollToTopSignal: Int = 0,
     onBack: (() -> Unit)? = null,
@@ -375,7 +374,6 @@ fun AboutPage(
                 searchPlaceholder = aboutSearchPlaceholder,
                 backdrop = bottomBarBackdrop,
                 isLiquidEffectEnabled = true,
-                miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                 onSelectCategory = selectAboutCategory,
             )
         },

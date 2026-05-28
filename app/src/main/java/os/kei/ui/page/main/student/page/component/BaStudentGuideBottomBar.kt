@@ -24,9 +24,6 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
-import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomBarHost
-import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabItem
-import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabStrip
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
@@ -44,7 +41,6 @@ internal fun BaStudentGuideBottomBar(
     selectedPageProvider: () -> Int,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
-    miuixMainNavigationEnabled: Boolean,
     onSelectTab: (Int) -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -54,34 +50,7 @@ internal fun BaStudentGuideBottomBar(
             exit = appFloatingExit(),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
-            if (miuixMainNavigationEnabled) {
-                MiuixFloatingBottomBarHost(navigationBarBottom = navigationBarBottom) {
-                    MiuixFloatingBottomTabStrip(
-                        itemCount = bottomTabs.size,
-                        selectedIndex = selectedPage,
-                        onSelected = { index ->
-                            if (index != selectedPageProvider()) {
-                                onSelectTab(index)
-                            }
-                        },
-                        backdrop = backdrop,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { index, selected, contentColor ->
-                        bottomTabs.getOrNull(index)?.let { tab ->
-                            BaStudentGuideMiuixBottomBarItem(
-                                tab = tab,
-                                selected = selected,
-                                contentColor = contentColor,
-                                onClick = {
-                                    if (index != selectedPageProvider()) {
-                                        onSelectTab(index)
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
-            } else {
+            run {
                 val bottomBarModifier =
                     Modifier
                         .padding(
@@ -162,38 +131,3 @@ internal fun BaStudentGuideBottomBar(
     }
 }
 
-@Composable
-private fun RowScope.BaStudentGuideMiuixBottomBarItem(
-    tab: GuideBottomTab,
-    selected: Boolean,
-    contentColor: Color,
-    onClick: () -> Unit,
-) {
-    val tabLabel = stringResource(tab.labelRes)
-    MiuixFloatingBottomTabItem(
-        selected = selected,
-        label = tabLabel,
-        color = contentColor,
-        onClick = onClick,
-    ) { contentColor, iconModifier ->
-        if (tab.localLogoRes != null) {
-            val useThemeTintForLocalLogo =
-                tab == GuideBottomTab.Skills ||
-                    tab == GuideBottomTab.Profile ||
-                    tab == GuideBottomTab.Simulate
-            Icon(
-                painter = painterResource(id = tab.localLogoRes),
-                contentDescription = tabLabel,
-                tint = if (useThemeTintForLocalLogo) contentColor else Color.Unspecified,
-                modifier = iconModifier,
-            )
-        } else {
-            Icon(
-                imageVector = tab.icon,
-                contentDescription = tabLabel,
-                tint = contentColor,
-                modifier = iconModifier,
-            )
-        }
-    }
-}

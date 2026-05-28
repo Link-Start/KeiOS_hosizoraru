@@ -38,12 +38,6 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
-    fun updateMiuixMainNavigationEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setMiuixMainNavigationEnabled(value)
-        }
-    }
-
     fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setLiquidActionBarLayeredStyleEnabled(value)

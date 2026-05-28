@@ -36,10 +36,7 @@ import os.kei.ui.page.main.widget.chrome.AppBottomSearchDock
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
-import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabItem
-import os.kei.ui.page.main.widget.chrome.MiuixFloatingBottomTabStrip
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
-import os.kei.ui.page.main.widget.chrome.miuixFloatingBottomBarLayout
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -66,7 +63,6 @@ internal fun SettingsBottomChrome(
     searchPlaceholder: String,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
-    miuixMainNavigationEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
 ) {
     if (!visible && !searchExpanded) return
@@ -150,21 +146,7 @@ internal fun SettingsBottomChrome(
                 searchDockWidth = size,
                 gap = gap,
             )
-        val miuixDockLayout =
-            miuixFloatingBottomBarLayout(
-                availableWidth = collapsedDockWidth,
-                itemCount = categories.size,
-                horizontalMargin = 0.dp,
-                preferredItemWidth = 52.dp,
-                maxItemWidth = 56.dp,
-                maxBarWidth = collapsedDockWidth,
-            )
-        val visibleDockWidth =
-            if (miuixMainNavigationEnabled) {
-                miuixDockLayout.barWidth
-            } else {
-                collapsedDockWidth
-            }
+        val visibleDockWidth = collapsedDockWidth
         val searchXState =
             transition.animateDp(
                 transitionSpec = { sizeAnimationSpec },
@@ -182,26 +164,7 @@ internal fun SettingsBottomChrome(
         val searchXProvider = remember(searchXState) { { searchXState.value } }
         val searchWidthProvider = remember(searchWidthState) { { searchWidthState.value } }
 
-        if (miuixMainNavigationEnabled) {
-            SettingsMiuixCategoryBar(
-                categories = categories,
-                selectedPage = safeSelectedPage,
-                backdrop = backdrop,
-                onSelectCategory = onSelectCategory,
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .requiredWidth(miuixDockLayout.barWidth)
-                        .zIndex(if (searchExpanded) 0f else 1f)
-                        .graphicsLayer {
-                            val alpha = fullDockAlphaProvider()
-                            val scale = fullDockScaleProvider()
-                            this.alpha = alpha
-                            scaleX = scale
-                            scaleY = scale
-                        },
-            )
-        } else {
+        run {
             val bottomBarTabs: @Composable RowScope.() -> Unit = {
                 categories.forEachIndexed { index, category ->
                     val tabColor = liquidGlassBottomBarItemContentColor(index)
@@ -302,38 +265,6 @@ internal fun SettingsBottomChrome(
             expandedWidth = expandedSearchWidth,
             expandedWidthProvider = searchWidthProvider,
         )
-    }
-}
-
-@Composable
-private fun SettingsMiuixCategoryBar(
-    categories: List<SettingsCategory>,
-    selectedPage: Int,
-    backdrop: LayerBackdrop,
-    onSelectCategory: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    MiuixFloatingBottomTabStrip(
-        itemCount = categories.size,
-        selectedIndex = selectedPage,
-        onSelected = onSelectCategory,
-        backdrop = backdrop,
-        modifier = modifier,
-    ) { index, selected, contentColor ->
-        val category = categories[index]
-        MiuixFloatingBottomTabItem(
-            selected = selected,
-            label = category.label(),
-            color = contentColor,
-            onClick = { onSelectCategory(index) },
-        ) { contentColor, iconModifier ->
-            Icon(
-                imageVector = category.icon(),
-                contentDescription = category.label(),
-                tint = contentColor,
-                modifier = iconModifier,
-            )
-        }
     }
 }
 

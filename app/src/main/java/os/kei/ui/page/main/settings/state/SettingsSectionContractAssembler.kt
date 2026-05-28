@@ -56,7 +56,6 @@ internal fun rememberSettingsSectionContractBundle(
     liquidSheetEnabled: Boolean,
     liquidDialogEnabled: Boolean,
     liquidBottomBarEnabled: Boolean,
-    miuixMainNavigationEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
@@ -91,7 +90,6 @@ internal fun rememberSettingsSectionContractBundle(
     onLiquidSheetChanged: (Boolean) -> Unit,
     onLiquidDialogChanged: (Boolean) -> Unit,
     onLiquidBottomBarChanged: (Boolean) -> Unit,
-    onMiuixMainNavigationChanged: (Boolean) -> Unit,
     onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
@@ -234,7 +232,6 @@ internal fun rememberSettingsSectionContractBundle(
             liquidSheetEnabled,
             liquidDialogEnabled,
             liquidBottomBarEnabled,
-            miuixMainNavigationEnabled,
             searchAutoFocusEnabled,
             gripAwareFloatingDockEnabled,
         ) {
@@ -246,7 +243,6 @@ internal fun rememberSettingsSectionContractBundle(
                 liquidSheetEnabled = liquidSheetEnabled,
                 liquidDialogEnabled = liquidDialogEnabled,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
-                miuixMainNavigationEnabled = miuixMainNavigationEnabled,
                 searchAutoFocusEnabled = searchAutoFocusEnabled,
                 gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
             )
@@ -260,7 +256,6 @@ internal fun rememberSettingsSectionContractBundle(
             onLiquidSheetChanged,
             onLiquidDialogChanged,
             onLiquidBottomBarChanged,
-            onMiuixMainNavigationChanged,
             onSearchAutoFocusChanged,
             onGripAwareFloatingDockChanged,
         ) {
@@ -272,7 +267,6 @@ internal fun rememberSettingsSectionContractBundle(
                 onLiquidSheetChanged = onLiquidSheetChanged,
                 onLiquidDialogChanged = onLiquidDialogChanged,
                 onLiquidBottomBarChanged = onLiquidBottomBarChanged,
-                onMiuixMainNavigationChanged = onMiuixMainNavigationChanged,
                 onSearchAutoFocusChanged = onSearchAutoFocusChanged,
                 onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
             )

@@ -14,58 +14,65 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-private const val BG_EFFECT_TARGET_FPS = 30L
+private const val BG_EFFECT_TARGET_FPS = 60L
 private const val BG_EFFECT_TIME_WRAP_SECONDS = 62.831852f
 private const val BG_EFFECT_VISIBLE_ALPHA_THRESHOLD = 0.001f
 
 internal fun Modifier.bgEffectDraw(
     painter: BgEffectPainter,
+    preset: BgEffectConfig.Config,
     isDark: Boolean,
     surface: Color,
     effectBackground: Boolean,
     isFullSize: Boolean,
     playing: Boolean,
+    colorStage: () -> Float,
     alpha: () -> Float,
-): Modifier =
-    this then
-        BgEffectElement(
-            painter = painter,
-            isDark = isDark,
-            surface = surface,
-            effectBackground = effectBackground,
-            isFullSize = isFullSize,
-            playing = playing,
-            alpha = alpha,
-        )
+): Modifier = this then BgEffectElement(
+    painter = painter,
+    preset = preset,
+    isDark = isDark,
+    surface = surface,
+    effectBackground = effectBackground,
+    isFullSize = isFullSize,
+    playing = playing,
+    colorStage = colorStage,
+    alpha = alpha,
+)
 
 private data class BgEffectElement(
     val painter: BgEffectPainter,
+    val preset: BgEffectConfig.Config,
     val isDark: Boolean,
     val surface: Color,
     val effectBackground: Boolean,
     val isFullSize: Boolean,
     val playing: Boolean,
+    val colorStage: () -> Float,
     val alpha: () -> Float,
 ) : ModifierNodeElement<BgEffectNode>() {
-    override fun create(): BgEffectNode =
-        BgEffectNode(
-            painter = painter,
-            isDark = isDark,
-            surface = surface,
-            effectBackground = effectBackground,
-            isFullSize = isFullSize,
-            playing = playing,
-            alpha = alpha,
-        )
+    override fun create(): BgEffectNode = BgEffectNode(
+        painter = painter,
+        preset = preset,
+        isDark = isDark,
+        surface = surface,
+        effectBackground = effectBackground,
+        isFullSize = isFullSize,
+        playing = playing,
+        colorStage = colorStage,
+        alpha = alpha,
+    )
 
     override fun update(node: BgEffectNode) {
         node.update(
             painter = painter,
+            preset = preset,
             isDark = isDark,
             surface = surface,
             effectBackground = effectBackground,
             isFullSize = isFullSize,
             playing = playing,
+            colorStage = colorStage,
             alpha = alpha,
         )
     }
@@ -73,14 +80,17 @@ private data class BgEffectElement(
 
 private class BgEffectNode(
     private var painter: BgEffectPainter,
+    private var preset: BgEffectConfig.Config,
     private var isDark: Boolean,
     private var surface: Color,
     private var effectBackground: Boolean,
     private var isFullSize: Boolean,
     private var playing: Boolean,
+    private var colorStage: () -> Float,
     private var alpha: () -> Float,
 ) : Modifier.Node(),
     DrawModifierNode {
+
     private var animationJob: Job? = null
     private var animTime: Float = 0f
     private var startOffset: Float = 0f
@@ -97,15 +107,18 @@ private class BgEffectNode(
 
     fun update(
         painter: BgEffectPainter,
+        preset: BgEffectConfig.Config,
         isDark: Boolean,
         surface: Color,
         effectBackground: Boolean,
         isFullSize: Boolean,
         playing: Boolean,
+        colorStage: () -> Float,
         alpha: () -> Float,
     ) {
         val visualChanged =
             this.painter !== painter ||
+                this.preset !== preset ||
                 this.isDark != isDark ||
                 this.surface != surface ||
                 this.effectBackground != effectBackground ||
@@ -113,10 +126,12 @@ private class BgEffectNode(
                 this.alpha !== alpha
         val playbackChanged = this.playing != playing || this.effectBackground != effectBackground
         this.painter = painter
+        this.preset = preset
         this.isDark = isDark
         this.surface = surface
         this.effectBackground = effectBackground
         this.isFullSize = isFullSize
+        this.colorStage = colorStage
         this.alpha = alpha
         if (playbackChanged) {
             this.playing = playing
@@ -131,19 +146,18 @@ private class BgEffectNode(
         if (animationJob != null) return
         animationJob?.cancel()
         startOffset = animTime
-        animationJob =
-            coroutineScope.launch {
-                val minDeltaNanos = 1_000_000_000L / BG_EFFECT_TARGET_FPS
-                val origin = withFrameNanos { it }
-                var lastEmit = origin
-                while (isActive) {
-                    val now = withFrameNanos { it }
-                    if (now - lastEmit < minDeltaNanos) continue
-                    lastEmit = now
-                    animTime = (startOffset + (now - origin) / 1_000_000_000f) % BG_EFFECT_TIME_WRAP_SECONDS
-                    invalidateDraw()
-                }
+        animationJob = coroutineScope.launch {
+            val minDeltaNanos = 1_000_000_000L / BG_EFFECT_TARGET_FPS
+            val origin = withFrameNanos { it }
+            var lastEmit = origin
+            while (isActive) {
+                val now = withFrameNanos { it }
+                if (now - lastEmit < minDeltaNanos) continue
+                lastEmit = now
+                animTime = (startOffset + (now - origin) / 1_000_000_000f) % BG_EFFECT_TIME_WRAP_SECONDS
+                invalidateDraw()
             }
+        }
     }
 
     private fun stopAnimation() {
@@ -169,12 +183,15 @@ private class BgEffectNode(
                 syncAnimation()
             }
             if (nextAlphaActive) {
-                val drawHeight = if (isFullSize) size.height else size.height * 0.5f
+                val drawHeight = if (isFullSize) size.height * 0.8f else size.height * 0.5f
+
                 painter.updateResolution(size.width, size.height)
                 painter.updateBoundIfNeeded(drawHeight, size.height, size.width)
-                painter.updateModeIfNeeded(isDark)
+                painter.updatePresetIfNeeded(isDark)
+                painter.updateColors(preset, colorStage())
                 painter.updateAnimTime(animTime)
-                painter.updatePointsAnim(animTime)
+                painter.updatePointsAnim(animTime, preset)
+
                 drawRect(painter.brush, alpha = alphaValue)
             }
         }

@@ -9,13 +9,17 @@ import top.yukonga.miuix.kmp.blur.asBrush
 import kotlin.math.cos
 import kotlin.math.sin
 
-class BgEffectPainter {
-    val shaderCode by lazy { OS3_BG_FRAG }
-    val runtimeShader by lazy { RuntimeShader(shaderCode) }
-    val brush: Brush by lazy { runtimeShader.asBrush() }
+internal class BgEffectPainter {
+
+    val runtimeShader by lazy {
+        RuntimeShader(OS3_BG_FRAG).also { initStaticUniforms(it) }
+    }
+
+    val brush: Brush get() = runtimeShader.asBrush()
 
     private val resolution = FloatArray(2)
-    private val bound = floatArrayOf(0.0f, 0.4489f, 1.0f, 0.5511f)
+    private val bound = FloatArray(4)
+    private val colorsBuffer = FloatArray(16)
     private val pointsAnimBuffer = FloatArray(8)
 
     private var animTime = Float.NaN
@@ -23,222 +27,32 @@ class BgEffectPainter {
     private var cachedLogoHeight = Float.NaN
     private var cachedTotalHeight = Float.NaN
     private var cachedTotalWidth = Float.NaN
+
+    private var cachedColorStage = Float.NaN
+    private var cachedColorsPreset: BgEffectConfig.Config? = null
+
     private var cachedPointsAnimTime = Float.NaN
-    private var cachedPointsSource: FloatArray? = null
+    private var cachedPointsAnimPreset: BgEffectConfig.Config? = null
 
-    // 配置常量
     companion object {
-        private const val U_TRANSLATE_Y = 0.0f
-        private const val U_ALPHA_MULTI = 1.0f
+        private const val U_TRANSLATE_Y = 0f
+        private const val U_ALPHA_MULTI = 1f
         private const val U_NOISE_SCALE = 1.5f
-        private const val U_POINT_OFFSET = 0.1f
-        private const val U_POINT_RADIUS_MULTI = 1.0f
-
-        // 预设配置
-        private val PHONE_LIGHT_POINTS =
-            floatArrayOf(
-                0.67f,
-                0.42f,
-                1.0f,
-                0.69f,
-                0.75f,
-                1.0f,
-                0.14f,
-                0.71f,
-                0.95f,
-                0.14f,
-                0.27f,
-                0.8f,
-            )
-
-        private val PHONE_LIGHT_COLORS =
-            floatArrayOf(
-                0.57f,
-                0.76f,
-                0.98f,
-                1.0f,
-                0.98f,
-                0.85f,
-                0.68f,
-                1.0f,
-                0.98f,
-                0.75f,
-                0.93f,
-                1.0f,
-                0.73f,
-                0.7f,
-                0.98f,
-                1.0f,
-            )
-
-        private val PHONE_DARK_POINTS =
-            floatArrayOf(
-                0.63f,
-                0.5f,
-                0.88f,
-                0.69f,
-                0.75f,
-                0.8f,
-                0.17f,
-                0.66f,
-                0.81f,
-                0.14f,
-                0.24f,
-                0.72f,
-            )
-
-        private val PHONE_DARK_COLORS =
-            floatArrayOf(
-                0.0f,
-                0.31f,
-                0.58f,
-                1.0f,
-                0.53f,
-                0.29f,
-                0.15f,
-                1.0f,
-                0.46f,
-                0.06f,
-                0.27f,
-                1.0f,
-                0.16f,
-                0.12f,
-                0.45f,
-                1.0f,
-            )
-
-        private val PAD_LIGHT_POINTS =
-            floatArrayOf(
-                0.67f,
-                0.37f,
-                0.88f,
-                0.54f,
-                0.66f,
-                1.0f,
-                0.37f,
-                0.71f,
-                0.68f,
-                0.28f,
-                0.26f,
-                0.62f,
-            )
-
-        private val PAD_LIGHT_COLORS =
-            floatArrayOf(
-                0.57f,
-                0.76f,
-                0.98f,
-                1.0f,
-                0.98f,
-                0.85f,
-                0.68f,
-                1.0f,
-                0.98f,
-                0.75f,
-                0.93f,
-                0.95f,
-                0.73f,
-                0.7f,
-                0.98f,
-                0.9f,
-            )
-
-        private val PAD_DARK_POINTS =
-            floatArrayOf(
-                0.55f,
-                0.42f,
-                1.0f,
-                0.56f,
-                0.75f,
-                1.0f,
-                0.4f,
-                0.59f,
-                0.71f,
-                0.43f,
-                0.09f,
-                0.75f,
-            )
-
-        private val PAD_DARK_COLORS =
-            floatArrayOf(
-                0.0f,
-                0.31f,
-                0.58f,
-                1.0f,
-                0.53f,
-                0.29f,
-                0.15f,
-                1.0f,
-                0.46f,
-                0.06f,
-                0.27f,
-                1.0f,
-                0.16f,
-                0.12f,
-                0.45f,
-                1.0f,
-            )
+        private const val U_POINT_RADIUS_MULTI = 1f
     }
 
-    // 当前配置
-    private var uPoints = PHONE_LIGHT_POINTS
-    private var uColors = PHONE_LIGHT_COLORS
-    private var uSaturateOffset = 0.2f
-    private var uLightOffset = 0.1f
-
-    init {
-        initializeShader()
+    private fun initStaticUniforms(shader: RuntimeShader) {
+        shader.setFloatUniform("uTranslateY", U_TRANSLATE_Y)
+        shader.setFloatUniform("uNoiseScale", U_NOISE_SCALE)
+        shader.setFloatUniform("uPointRadiusMulti", U_POINT_RADIUS_MULTI)
+        shader.setFloatUniform("uAlphaMulti", U_ALPHA_MULTI)
     }
 
-    private fun initializeShader() {
-        runtimeShader.apply {
-            setFloatUniform("uTranslateY", U_TRANSLATE_Y)
-            setFloatUniform("uNoiseScale", U_NOISE_SCALE)
-            setFloatUniform("uPointRadiusMulti", U_POINT_RADIUS_MULTI)
-            setFloatUniform("uSaturateOffset", uSaturateOffset)
-            setFloatUniform("uBound", bound)
-            setFloatUniform("uAlphaMulti", U_ALPHA_MULTI)
-            setFloatUniform("uLightOffset", uLightOffset)
-
-            setFloatUniform("uPoints", uPoints)
-            updatePointsAnim(0f)
-            setFloatUniform("uColors", uColors)
-        }
-    }
-
-    fun updateResolution(
-        width: Float,
-        height: Float,
-    ) {
+    fun updateResolution(width: Float, height: Float) {
         if (resolution[0] == width && resolution[1] == height) return
         resolution[0] = width
         resolution[1] = height
         runtimeShader.setFloatUniform("uResolution", resolution)
-    }
-
-    private fun setColors(fArr: FloatArray) {
-        uColors = fArr.copyOf()
-        runtimeShader.setFloatUniform("uColors", fArr)
-    }
-
-    private fun setPoints(fArr: FloatArray) {
-        uPoints = fArr.copyOf()
-        runtimeShader.setFloatUniform("uPoints", fArr)
-    }
-
-    private fun setBound(fArr: FloatArray) {
-        fArr.copyInto(bound)
-        this.runtimeShader.setFloatUniform("uBound", bound)
-    }
-
-    private fun setLightOffset(f: Float) {
-        this.uLightOffset = f
-        this.runtimeShader.setFloatUniform("uLightOffset", f)
-    }
-
-    private fun setSaturateOffset(f: Float) {
-        this.uSaturateOffset = f
-        this.runtimeShader.setFloatUniform("uSaturateOffset", f)
     }
 
     fun updateAnimTime(time: Float) {
@@ -247,68 +61,58 @@ class BgEffectPainter {
         runtimeShader.setFloatUniform("uAnimTime", animTime)
     }
 
-    fun updatePointsAnim(time: Float) {
-        if (cachedPointsAnimTime == time && cachedPointsSource === uPoints) return
-        val offset = U_POINT_OFFSET
-        var index = 0
-        while (index < 4) {
-            val srcX = uPoints[index * 3]
-            val srcY = uPoints[index * 3 + 1]
+    fun updatePointsAnim(time: Float, preset: BgEffectConfig.Config) {
+        if (cachedPointsAnimTime == time && cachedPointsAnimPreset === preset) return
+
+        val offset = preset.pointOffset
+        var i = 0
+        while (i < 4) {
+            val srcX = preset.points[i * 3]
+            val srcY = preset.points[i * 3 + 1]
             val animX = srcX + sin(time + srcY) * offset
             val animY = srcY + cos(time + animX) * offset
-            pointsAnimBuffer[index * 2] = animX
-            pointsAnimBuffer[index * 2 + 1] = animY
-            index++
+            pointsAnimBuffer[i * 2] = animX
+            pointsAnimBuffer[i * 2 + 1] = animY
+            i++
         }
         runtimeShader.setFloatUniform("uPointsAnim", pointsAnimBuffer)
+
         cachedPointsAnimTime = time
-        cachedPointsSource = uPoints
+        cachedPointsAnimPreset = preset
     }
 
-    fun updateModeIfNeeded(isDarkMode: Boolean) {
-        if (isDarkCached == isDarkMode) return
-        updateMode(isDarkMode)
-        isDarkCached = isDarkMode
+    fun updateColors(preset: BgEffectConfig.Config, stage: Float) {
+        if (cachedColorsPreset === preset && cachedColorStage == stage) return
+
+        val base = stage.toInt()
+        val fraction = stage - base
+        val start = colorsForCycleIndex(preset, base)
+        val end = colorsForCycleIndex(preset, base + 1)
+        for (i in 0 until 16) {
+            colorsBuffer[i] = start[i] + (end[i] - start[i]) * fraction
+        }
+        runtimeShader.setFloatUniform("uColors", colorsBuffer)
+
+        cachedColorsPreset = preset
+        cachedColorStage = stage
     }
 
-    private fun updateMode(isDarkMode: Boolean) {
-        if (isDarkMode) setPhoneDark() else setPhoneLight()
+    private fun colorsForCycleIndex(preset: BgEffectConfig.Config, index: Int): FloatArray = when (index.mod(4)) {
+        1 -> preset.colors1
+        3 -> preset.colors3
+        else -> preset.colors2
     }
 
-    private fun setPhoneLight() {
-        setLightOffset(0.1f)
-        setSaturateOffset(0.2f)
-        setPoints(PHONE_LIGHT_POINTS)
-        setColors(PHONE_LIGHT_COLORS)
-        setBound(bound)
-        cachedPointsSource = null
-    }
+    fun updatePresetIfNeeded(isDark: Boolean) {
+        if (isDarkCached == isDark) return
 
-    private fun setPhoneDark() {
-        setLightOffset(-0.1f)
-        setSaturateOffset(0.2f)
-        setPoints(PHONE_DARK_POINTS)
-        setColors(PHONE_DARK_COLORS)
-        setBound(bound)
-        cachedPointsSource = null
-    }
+        val preset = BgEffectConfig.get(isDark)
+        runtimeShader.setFloatUniform("uPoints", preset.points)
+        runtimeShader.setFloatUniform("uLightOffset", preset.lightOffset)
+        runtimeShader.setFloatUniform("uSaturateOffset", preset.saturateOffset)
 
-    private fun setPadLight() {
-        setLightOffset(0.1f)
-        setSaturateOffset(0.0f)
-        setPoints(PAD_LIGHT_POINTS)
-        setColors(PAD_LIGHT_COLORS)
-        setBound(bound)
-        cachedPointsSource = null
-    }
-
-    private fun setPadDark() {
-        setLightOffset(-0.1f)
-        setSaturateOffset(0.2f)
-        setPoints(PAD_DARK_POINTS)
-        setColors(PAD_DARK_COLORS)
-        setBound(bound)
-        cachedPointsSource = null
+        isDarkCached = isDark
+        cachedPointsAnimPreset = null
     }
 
     fun updateBoundIfNeeded(
@@ -322,32 +126,33 @@ class BgEffectPainter {
         ) {
             return
         }
-        calcAnimationBound(logoHeight, totalHeight, totalWidth)
+
+        updateBound(logoHeight, totalHeight, totalWidth)
         runtimeShader.setFloatUniform("uBound", bound)
+
         cachedLogoHeight = logoHeight
         cachedTotalHeight = totalHeight
         cachedTotalWidth = totalWidth
     }
 
-    private fun calcAnimationBound(
+    private fun updateBound(
         logoHeight: Float,
         totalHeight: Float,
         totalWidth: Float,
     ) {
         val heightRatio = logoHeight / totalHeight
-
         if (totalWidth <= totalHeight) {
-            bound[0] = 0.0f
-            bound[1] = 1.0f - heightRatio
-            bound[2] = 1.0f
+            bound[0] = 0f
+            bound[1] = 1f - heightRatio
+            bound[2] = 1f
             bound[3] = heightRatio
         } else {
-            val widthRatio = logoHeight / totalWidth
-            val xOffset = (totalWidth - logoHeight) / 2.0f / totalWidth
-            bound[0] = xOffset
-            bound[1] = 1.0f - heightRatio
-            bound[2] = widthRatio
-            bound[3] = heightRatio
+            val aspectRatio = totalWidth / totalHeight
+            val contentCenterY = 1f - heightRatio / 2f
+            bound[0] = 0f
+            bound[1] = contentCenterY - aspectRatio / 2f
+            bound[2] = 1f
+            bound[3] = aspectRatio
         }
     }
 }

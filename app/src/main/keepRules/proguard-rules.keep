@@ -111,6 +111,18 @@
 -dontwarn java.lang.management.ManagementFactory
 -dontwarn java.lang.management.RuntimeMXBean
 
+# Keep dynamic background effect classes stable for baseline profile AOT rules.
+# The shader code path (AGSL RuntimeShader + DrawModifierNode) must not be
+# obfuscated so that baseline-prof.txt entries resolve correctly at install time.
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectBackgroundKt { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectPainter { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectConfig { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectConfig$Config { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectModifierKt { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectElement { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.BgEffectNode { *; }
+-keep,allowoptimization class os.kei.core.ui.effect.background.OS3BgFragKt { *; }
+
 # R8 diagnostics:
 # - Compare app/build/outputs/mapping/{release,benchmark}/configuration.txt, mapping.txt, and usage.txt.
 # - Use temporary -whyareyoukeeping rules only during local diagnosis; do not commit them.

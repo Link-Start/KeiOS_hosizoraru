@@ -428,11 +428,9 @@ fun LiquidGlassBottomBar(
                                 tabWidthPx = measuredTabWidthPx
                             }
                         }.graphicsLayer {
-                            val combinedPressProgress = combinedPressProgressProvider()
                             translationX = panelOffsetProvider()
+                            val combinedPressProgress = combinedPressProgressProvider()
                             translationY = -with(density) { 1.25.dp.toPx() } * combinedPressProgress
-                            scaleX = lerp(1f, 1.006f, combinedPressProgress)
-                            scaleY = lerp(1f, 0.996f, combinedPressProgress)
                         }.then(
                             if (useLightweightBackdrop) {
                                 Modifier
@@ -455,6 +453,11 @@ fun LiquidGlassBottomBar(
                                         Shadow.Default.copy(
                                             color = Color.Black.copy(if (isInLightTheme) 0.10f else 0.20f),
                                         )
+                                    },
+                                    layerBlock = {
+                                        val combinedPressProgress = combinedPressProgressProvider()
+                                        scaleX = lerp(1f, 1.006f, combinedPressProgress)
+                                        scaleY = lerp(1f, 0.996f, combinedPressProgress)
                                     },
                                     onDrawSurface = { drawRect(palette.baseFillColor) },
                                 )

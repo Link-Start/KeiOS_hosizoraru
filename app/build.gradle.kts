@@ -323,6 +323,20 @@ val projectJavaVersion = JavaVersion.VERSION_21
 val projectJvmTarget = JvmTarget.JVM_21
 val r8DexStartupOptimizationProperty = "android.experimental.r8.dex-startup-optimization"
 
+fun countGeneratedProfileRules(fileName: String): Int {
+    val profileFile = layout.projectDirectory.file("src/main/generated/baselineProfiles/$fileName").asFile
+    if (!profileFile.isFile) return 0
+    return profileFile.useLines { lines ->
+        lines.count { line ->
+            val trimmed = line.trim()
+            trimmed.isNotEmpty() && !trimmed.startsWith("#")
+        }
+    }
+}
+
+val baselineProfileRuleCount = countGeneratedProfileRules("baseline-prof.txt")
+val startupProfileRuleCount = countGeneratedProfileRules("startup-prof.txt")
+
 plugins {
     id("com.android.application")
     id("io.github.takahirom.roborazzi")
@@ -396,6 +410,7 @@ android {
         buildConfigField("String", "UCROP_VERSION", "\"$uCropVersion\"")
         buildConfigField("String", "LIFECYCLE_VIEWMODEL_COMPOSE_VERSION", "\"$lifecycleViewModelComposeVersion\"")
         buildConfigField("String", "METRICS_PERFORMANCE_VERSION", "\"$metricsPerformanceVersion\"")
+        buildConfigField("String", "PROFILE_INSTALLER_VERSION", "\"$profileInstallerVersion\"")
         buildConfigField("String", "DOCUMENTFILE_VERSION", "\"$documentFileVersion\"")
         buildConfigField("String", "SHIZUKU_VERSION", "\"$shizukuVersion\"")
         buildConfigField("String", "FOCUS_API_VERSION", "\"$focusApiVersion\"")
@@ -414,6 +429,8 @@ android {
         buildConfigField("int", "COMPILE_SDK_VERSION", projectCompileSdk.toString())
         buildConfigField("int", "MIN_SDK_VERSION", projectMinSdk.toString())
         buildConfigField("int", "TARGET_SDK_VERSION", projectTargetSdk.toString())
+        buildConfigField("int", "BASELINE_PROFILE_RULE_COUNT", baselineProfileRuleCount.toString())
+        buildConfigField("int", "STARTUP_PROFILE_RULE_COUNT", startupProfileRuleCount.toString())
         buildConfigField("String", "JAVA_VERSION", "\"${projectJavaVersion.majorVersion}\"")
         buildConfigField("String", "JVM_TARGET_VERSION", "\"${projectJvmTarget.target}\"")
         buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")

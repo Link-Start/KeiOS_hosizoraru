@@ -77,6 +77,7 @@ fun AboutLicenseCardSection(
                         BuildConfig.DOCUMENTFILE_VERSION,
                         BuildConfig.METRICS_PERFORMANCE_VERSION,
                         BuildConfig.CONSTRAINT_LAYOUT_COMPOSE_VERSION,
+                        BuildConfig.PROFILE_INSTALLER_VERSION,
                     ),
                 sourceUrl = stringResource(R.string.about_license_url_androidx_stack),
                 icon = appLucideAppWindowIcon(),

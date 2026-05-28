@@ -8,6 +8,9 @@ import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.core.security.AdvancedProtectionCompat
 import os.kei.core.shizuku.ShizukuApiUtils
 
+private const val BASELINE_PROFILE_ASSET = "dexopt/baseline.prof"
+private const val BASELINE_PROFILE_METADATA_ASSET = "dexopt/baseline.profm"
+
 internal fun buildAboutTechDetails(context: Context): AboutTechDetails {
     val projectUrl = context.getString(R.string.about_project_url)
     val dirtySuffix = if (BuildConfig.GIT_WORKTREE_DIRTY) "-dirty" else ""
@@ -55,30 +58,77 @@ internal fun buildAboutTechDetails(context: Context): AboutTechDetails {
 }
 
 private fun buildAboutBuildRows(context: Context): List<AboutInfoRowModel> =
-    listOf(
-        AboutInfoRowModel(R.string.about_row_kotlin, KotlinVersion.CURRENT.toString(), AboutInfoIcon.Config),
-        AboutInfoRowModel(R.string.about_row_gradle, BuildConfig.GRADLE_VERSION, AboutInfoIcon.Config),
-        AboutInfoRowModel(R.string.about_row_java, BuildConfig.JAVA_VERSION, AboutInfoIcon.Config),
-        AboutInfoRowModel(R.string.about_row_jvm_target, BuildConfig.JVM_TARGET_VERSION, AboutInfoIcon.Config),
-        AboutInfoRowModel(R.string.about_row_compile_sdk, BuildConfig.COMPILE_SDK_VERSION.toString(), AboutInfoIcon.Filter),
-        AboutInfoRowModel(R.string.about_row_min_sdk, BuildConfig.MIN_SDK_VERSION.toString(), AboutInfoIcon.Filter),
-        AboutInfoRowModel(R.string.about_row_target_sdk, BuildConfig.TARGET_SDK_VERSION.toString(), AboutInfoIcon.Filter),
-        AboutInfoRowModel(R.string.about_row_runtime_api, Build.VERSION.SDK_INT.toString(), AboutInfoIcon.Filter),
+    buildList {
+        add(AboutInfoRowModel(R.string.about_row_kotlin, KotlinVersion.CURRENT.toString(), AboutInfoIcon.Config))
+        add(AboutInfoRowModel(R.string.about_row_gradle, BuildConfig.GRADLE_VERSION, AboutInfoIcon.Config))
+        add(AboutInfoRowModel(R.string.about_row_java, BuildConfig.JAVA_VERSION, AboutInfoIcon.Config))
+        add(AboutInfoRowModel(R.string.about_row_jvm_target, BuildConfig.JVM_TARGET_VERSION, AboutInfoIcon.Config))
+        add(AboutInfoRowModel(R.string.about_row_compile_sdk, BuildConfig.COMPILE_SDK_VERSION.toString(), AboutInfoIcon.Filter))
+        add(AboutInfoRowModel(R.string.about_row_min_sdk, BuildConfig.MIN_SDK_VERSION.toString(), AboutInfoIcon.Filter))
+        add(AboutInfoRowModel(R.string.about_row_target_sdk, BuildConfig.TARGET_SDK_VERSION.toString(), AboutInfoIcon.Filter))
+        add(AboutInfoRowModel(R.string.about_row_runtime_api, Build.VERSION.SDK_INT.toString(), AboutInfoIcon.Filter))
+        add(
+            AboutInfoRowModel(
+                R.string.about_row_runtime_api_full,
+                AndroidPlatformVersions.sdkIntFull.toString(),
+                AboutInfoIcon.Filter,
+            ),
+        )
+        add(
+            AboutInfoRowModel(
+                R.string.about_row_advanced_protection,
+                when (AdvancedProtectionCompat.isEnabled(context)) {
+                    true -> context.getString(R.string.about_value_advanced_protection_enabled)
+                    false -> context.getString(R.string.about_value_advanced_protection_disabled)
+                    null -> context.getString(R.string.common_na)
+                },
+                AboutInfoIcon.Lock,
+            ),
+        )
+        addAll(buildAboutBaselineProfileRows(context))
+    }
+
+private fun buildAboutBaselineProfileRows(context: Context): List<AboutInfoRowModel> {
+    val profilePackaged =
+        context.hasAsset(BASELINE_PROFILE_ASSET) && context.hasAsset(BASELINE_PROFILE_METADATA_ASSET)
+    return listOf(
         AboutInfoRowModel(
-            R.string.about_row_runtime_api_full,
-            AndroidPlatformVersions.sdkIntFull.toString(),
-            AboutInfoIcon.Filter,
+            R.string.about_row_profile_installer,
+            BuildConfig.PROFILE_INSTALLER_VERSION,
+            AboutInfoIcon.Config,
         ),
         AboutInfoRowModel(
-            R.string.about_row_advanced_protection,
-            when (AdvancedProtectionCompat.isEnabled(context)) {
-                true -> context.getString(R.string.about_value_advanced_protection_enabled)
-                false -> context.getString(R.string.about_value_advanced_protection_disabled)
-                null -> context.getString(R.string.common_na)
-            },
+            R.string.about_row_baseline_profile_status,
+            context.getString(
+                if (profilePackaged) {
+                    R.string.about_value_baseline_profile_packaged
+                } else {
+                    R.string.about_value_baseline_profile_variant_missing
+                },
+            ),
             AboutInfoIcon.Lock,
         ),
+        AboutInfoRowModel(
+            R.string.about_row_baseline_profile_artifacts,
+            context.getString(R.string.about_value_baseline_profile_artifacts),
+            AboutInfoIcon.List,
+        ),
+        AboutInfoRowModel(
+            R.string.about_row_baseline_profile_rules,
+            context.getString(
+                R.string.about_value_baseline_profile_rules,
+                BuildConfig.BASELINE_PROFILE_RULE_COUNT,
+                BuildConfig.STARTUP_PROFILE_RULE_COUNT,
+            ),
+            AboutInfoIcon.List,
+        ),
+        AboutInfoRowModel(
+            R.string.about_row_baseline_profile_journeys,
+            context.getString(R.string.about_value_baseline_profile_journeys),
+            AboutInfoIcon.Refresh,
+        ),
     )
+}
 
 private fun buildAboutUiRows(context: Context): List<AboutInfoRowModel> =
     listOf(
@@ -211,6 +261,11 @@ private fun buildAboutGitHubRows(
             AboutInfoIcon.Lock,
         ),
     )
+
+private fun Context.hasAsset(path: String): Boolean =
+    runCatching {
+        assets.open(path).use { }
+    }.isSuccess
 
 private fun parseGitHubRepoId(projectUrl: String): String {
     val trimmed = projectUrl.trim().removeSuffix("/")

@@ -86,6 +86,11 @@ fun AboutReleaseCardSection(
                 icon = appLucideConfirmIcon(),
             )
             AboutReleaseHighlightBlock(
+                title = stringResource(R.string.about_release_row_performance),
+                value = stringResource(R.string.about_release_value_performance),
+                icon = appLucideLayersIcon(),
+            )
+            AboutReleaseHighlightBlock(
                 title = stringResource(R.string.about_release_row_next),
                 value = stringResource(R.string.about_release_value_next),
                 icon = appLucideLayersIcon(),

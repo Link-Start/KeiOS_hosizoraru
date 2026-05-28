@@ -27,7 +27,7 @@
     <string name="about_card_component_title">サービスとコンポーネント</string>
     <string name="about_card_component_subtitle">Service / Receiver / Provider と用途</string>
     <string name="about_card_build_title">ビルドと SDK</string>
-    <string name="about_card_build_subtitle">Kotlin / Gradle / Java とビルドターゲット</string>
+    <string name="about_card_build_subtitle">Kotlin / Gradle / SDK と Baseline Profile</string>
     <string name="about_card_ui_title">UI とフレームワーク</string>
     <string name="about_card_ui_subtitle">ページ描画、ナビゲーション、マテリアル機能</string>
     <string name="about_card_github_title">GitHub</string>
@@ -210,6 +210,8 @@
     <string name="about_release_value_icon">アイコン切替、設定分区、依存関係、リリース検証を整理</string>
     <string name="about_release_row_release_gate">リリースゲート</string>
     <string name="about_release_value_release_gate">Debug compile、Release build、署名検証、GitHub Release 公開を確認済み</string>
+    <string name="about_release_row_performance">パフォーマンス基準</string>
+    <string name="about_release_value_performance">R8 full mode、リソース圧縮、Baseline Profile、Pixel_10_Pro AVD smoke の段階検証を完了</string>
     <string name="about_release_row_next">アップグレード推奨</string>
     <string name="about_release_value_next">v1.7.1 以前のユーザーは v1.8.0 への更新推奨。GitHub Actions artifacts をよく使う場合は優先更新</string>
     <string name="about_row_kotlin">Kotlin</string>
@@ -222,6 +224,16 @@
     <string name="about_row_runtime_api">実行時 API</string>
     <string name="about_row_runtime_api_full">実行時 API Full</string>
     <string name="about_row_advanced_protection">高度な保護モード</string>
+    <string name="about_row_profile_installer">ProfileInstaller</string>
+    <string name="about_row_baseline_profile_status">Baseline Profile</string>
+    <string name="about_row_baseline_profile_artifacts">Profile artifacts</string>
+    <string name="about_row_baseline_profile_rules">Profile ルール</string>
+    <string name="about_row_baseline_profile_journeys">計測経路</string>
+    <string name="about_value_baseline_profile_packaged">現在の APK は dexopt/baseline.prof + baseline.profm を同梱</string>
+    <string name="about_value_baseline_profile_variant_missing">ソース profile は生成済み。Release / Benchmark 変体が APK に同梱します</string>
+    <string name="about_value_baseline_profile_artifacts">baseline-prof.txt / startup-prof.txt -&gt; dexopt/baseline.prof + baseline.profm</string>
+    <string name="about_value_baseline_profile_rules">baseline-prof %1$,d 件 · startup-prof %2$,d 件</string>
+    <string name="about_value_baseline_profile_journeys">起動、Home、GitHub、OS、MCP、BA の初期画面とスクロール経路</string>
     <string name="about_row_ui_framework">UI フレームワーク</string>
     <string name="about_row_declarative_ui">宣言的 UI</string>
     <string name="about_row_navigation">ナビゲーション</string>
@@ -286,7 +298,7 @@
     <string name="about_license_row_material_components">Material Components</string>
     <string name="about_license_value_material_components">Material %1$s · Apache-2.0</string>
     <string name="about_license_row_androidx_stack">AndroidX / Compose</string>
-    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · Apache-2.0</string>
+    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · ProfileInstaller %8$s · Apache-2.0</string>
     <string name="about_license_row_lucide">Lucide Icons</string>
     <string name="about_license_value_lucide">v%1$s · MIT</string>
     <string name="about_license_row_blue_archive_logos">Blue Archive Logos</string>

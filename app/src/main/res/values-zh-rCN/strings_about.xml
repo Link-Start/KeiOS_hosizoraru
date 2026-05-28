@@ -28,7 +28,7 @@
     <string name="about_card_component_title">服务与组件</string>
     <string name="about_card_component_subtitle">Service / Receiver / Provider 与用途</string>
     <string name="about_card_build_title">构建与SDK</string>
-    <string name="about_card_build_subtitle">Kotlin / Gradle / Java 与构建目标</string>
+    <string name="about_card_build_subtitle">Kotlin / Gradle / SDK 与 Baseline Profile</string>
     <string name="about_card_ui_title">UI与框架</string>
     <string name="about_card_ui_subtitle">页面渲染、导航与材质能力</string>
     <string name="about_card_github_title">GitHub</string>
@@ -201,6 +201,8 @@
     <string name="about_release_value_icon">图标切换、设置分区、依赖版本与发布检测同步整理</string>
     <string name="about_release_row_release_gate">发布门禁</string>
     <string name="about_release_value_release_gate">Debug 编译、Release 构建、签名校验与 GitHub Release 发布链路完成验证</string>
+    <string name="about_release_row_performance">性能基线</string>
+    <string name="about_release_value_performance">R8 full mode、资源压缩、Baseline Profile 与 Pixel_10_Pro AVD smoke 已完成阶段验收</string>
     <string name="about_release_row_next">升级建议</string>
     <string name="about_release_value_next">建议 v1.7.1 及更早版本升级到 v1.8.0，常用 GitHub Actions artifacts 的用户优先升级</string>
 
@@ -214,6 +216,16 @@
     <string name="about_row_runtime_api">Runtime API</string>
     <string name="about_row_runtime_api_full">Runtime API Full</string>
     <string name="about_row_advanced_protection">高级保护模式</string>
+    <string name="about_row_profile_installer">ProfileInstaller</string>
+    <string name="about_row_baseline_profile_status">Baseline Profile</string>
+    <string name="about_row_baseline_profile_artifacts">Profile artifacts</string>
+    <string name="about_row_baseline_profile_rules">Profile 规则</string>
+    <string name="about_row_baseline_profile_journeys">采样路径</string>
+    <string name="about_value_baseline_profile_packaged">当前 APK 已合入 dexopt/baseline.prof + baseline.profm</string>
+    <string name="about_value_baseline_profile_variant_missing">源 profile 已生成，Release / Benchmark 变体合入 APK</string>
+    <string name="about_value_baseline_profile_artifacts">baseline-prof.txt / startup-prof.txt -&gt; dexopt/baseline.prof + baseline.profm</string>
+    <string name="about_value_baseline_profile_rules">baseline-prof %1$,d 条 · startup-prof %2$,d 条</string>
+    <string name="about_value_baseline_profile_journeys">启动、Home、GitHub、OS、MCP、BA 首屏与滚动路径</string>
     <string name="about_row_ui_framework">UI 框架</string>
     <string name="about_row_declarative_ui">声明式界面</string>
     <string name="about_row_navigation">页面导航</string>
@@ -279,7 +291,7 @@
     <string name="about_license_row_material_components">Material Components</string>
     <string name="about_license_value_material_components">Material %1$s · Apache-2.0</string>
     <string name="about_license_row_androidx_stack">AndroidX / Compose</string>
-    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · Apache-2.0</string>
+    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · ProfileInstaller %8$s · Apache-2.0</string>
     <string name="about_license_row_lucide">Lucide Icons</string>
     <string name="about_license_value_lucide">v%1$s · MIT</string>
     <string name="about_license_row_blue_archive_logos">Blue Archive Logos</string>

@@ -28,7 +28,7 @@
     <string name="about_card_component_title">Services &amp; components</string>
     <string name="about_card_component_subtitle">Service / Receiver / Provider entries and their purposes</string>
     <string name="about_card_build_title">Build &amp; SDK</string>
-    <string name="about_card_build_subtitle">Kotlin / Gradle / Java and build targets</string>
+    <string name="about_card_build_subtitle">Kotlin / Gradle / SDK and Baseline Profile</string>
     <string name="about_card_ui_title">UI &amp; frameworks</string>
     <string name="about_card_ui_subtitle">Page rendering, navigation, and material capabilities</string>
     <string name="about_card_github_title">GitHub</string>
@@ -213,6 +213,8 @@
     <string name="about_release_value_icon">Icon switching, Settings grouping, dependency versions, and release checks were cleaned up</string>
     <string name="about_release_row_release_gate">Release gates</string>
     <string name="about_release_value_release_gate">Debug compile, release build, signing verification, and GitHub Release publishing were verified</string>
+    <string name="about_release_row_performance">Performance baseline</string>
+    <string name="about_release_value_performance">R8 full mode, resource shrinking, Baseline Profile, and Pixel_10_Pro AVD smoke passed stage validation</string>
     <string name="about_release_row_next">Upgrade advice</string>
     <string name="about_release_value_next">Users on v1.7.1 and earlier should upgrade to v1.8.0, especially when using GitHub Actions artifacts often</string>
 
@@ -226,6 +228,16 @@
     <string name="about_row_runtime_api">Runtime API</string>
     <string name="about_row_runtime_api_full">Runtime API Full</string>
     <string name="about_row_advanced_protection">Advanced Protection Mode</string>
+    <string name="about_row_profile_installer">ProfileInstaller</string>
+    <string name="about_row_baseline_profile_status">Baseline Profile</string>
+    <string name="about_row_baseline_profile_artifacts">Profile artifacts</string>
+    <string name="about_row_baseline_profile_rules">Profile rules</string>
+    <string name="about_row_baseline_profile_journeys">Profiled journeys</string>
+    <string name="about_value_baseline_profile_packaged">Current APK includes dexopt/baseline.prof + baseline.profm</string>
+    <string name="about_value_baseline_profile_variant_missing">Source profiles are generated; release / benchmark variants package them into the APK</string>
+    <string name="about_value_baseline_profile_artifacts">baseline-prof.txt / startup-prof.txt -&gt; dexopt/baseline.prof + baseline.profm</string>
+    <string name="about_value_baseline_profile_rules">baseline-prof %1$,d · startup-prof %2$,d rules</string>
+    <string name="about_value_baseline_profile_journeys">Startup, Home, GitHub, OS, MCP, and BA first-screen plus scroll paths</string>
     <string name="about_row_ui_framework">UI framework</string>
     <string name="about_row_declarative_ui">Declarative UI</string>
     <string name="about_row_navigation">Navigation</string>
@@ -291,7 +303,7 @@
     <string name="about_license_row_material_components">Material Components</string>
     <string name="about_license_value_material_components">Material %1$s · Apache-2.0</string>
     <string name="about_license_row_androidx_stack">AndroidX / Compose</string>
-    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · Apache-2.0</string>
+    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · ProfileInstaller %8$s · Apache-2.0</string>
     <string name="about_license_row_lucide">Lucide Icons</string>
     <string name="about_license_value_lucide">v%1$s · MIT</string>
     <string name="about_license_row_blue_archive_logos">Blue Archive Logos</string>

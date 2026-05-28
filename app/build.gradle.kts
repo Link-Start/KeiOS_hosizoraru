@@ -512,11 +512,9 @@ androidComponents {
             BakeAppSquircleSdfTask::outputDir
         )
         // dex-startup-optimization uses baseline profiles for dex layout optimization.
-        // Currently disabled because the checked-in profiles contain R8-obfuscated class
-        // names from a previous minified benchmark build. After regenerating profiles
-        // from the now-unminified benchmarkRelease variant (which produces original class
-        // names), this can be safely enabled. Reference: MIUIX example enables this.
-        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
+        // Profiles use original class names (generated from nonMinifiedRelease variant),
+        // so R8 can always map them correctly without warnings. Reference: MIUIX example.
+        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, true)
     }
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->

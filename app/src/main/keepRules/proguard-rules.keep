@@ -29,12 +29,11 @@
 -keepnames class os.kei.** extends android.content.BroadcastReceiver
 -keepnames class os.kei.** extends android.content.ContentProvider
 
-# Keep Navigation3 route keys stable across release save/restore boundaries.
-# The route surface is tiny; keeping members preserves Kotlin object instances and serializer entry points.
--keep class os.kei.ui.navigation.KeiosRoute { *; }
--keep class os.kei.ui.navigation.KeiosRoute$* { *; }
--keep class os.kei.ui.navigation.KeiosRoute$*$$serializer { *; }
--keepclassmembers class os.kei.ui.navigation.KeiosRoute$* {
+# Keep Navigation3 route key type and Kotlin serialization entry points.
+# Route classes are referenced directly by entry<T>; keep only restore/serializer anchors.
+-keep,allowoptimization,allowobfuscation interface os.kei.ui.navigation.KeiosRoute
+-keep,allowoptimization,allowobfuscation class os.kei.ui.navigation.KeiosRoute$*$$serializer { *; }
+-keepclassmembers,allowoptimization,allowobfuscation class os.kei.ui.navigation.KeiosRoute$* {
     public static ** Companion;
     public static ** INSTANCE;
     public static *** serializer(...);

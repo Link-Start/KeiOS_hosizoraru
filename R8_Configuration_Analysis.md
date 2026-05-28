@@ -22,12 +22,7 @@ The app uses the Compose compiler plugin and has no app-level `androidx.compose.
 | Shizuku provider | Removed local `moe.shizuku.api.BinderContainer` and `rikka.shizuku.ShizukuProvider` rules | `dev.rikka.shizuku:provider:13.1.5` contributes the needed `BinderContainer` rules in the merged release configuration. | Rely on dependency consumer rules. |
 | GitHub install package readability | Replaced `-keepnames class os.kei.feature.github.install.**` with five class-level keepnames rules | GitHub install seeds dropped from 75 to 10 after the enum rule was narrowed. The remaining install seeds are the five diagnostic entry classes and required constructors/companions. | Keep receiver, commit registry, confirm registry, installer, and bridge names readable. |
 | Enum member names | Replaced `-keepclassmembernames enum os.kei.** { *; }` with explicit enum keep rules | Enum member seeds dropped from 402 to 155. The retained set covers persisted/wire-name enums for app theme, visible pages/cards, OS cards, GitHub profile/star-import/share-import state, BA catalog cache, BGM queue mode, and MCP execution profile. | Keep the explicit enum list and add future enum-name persistence to this list deliberately. |
-
-## Remaining Suggested Rule Changes
-
-| Area | Current Rule | Finding | Recommended Action |
-| --- | --- | --- | --- |
-| Navigation route keys | `-keep class os.kei.ui.navigation.KeiosRoute { *; }` and nested route rules | Route surface is small: six route types and 109 release seeds. The rule protects Navigation 3 save/restore and serializers, but keeps all route members. | Keep for safety during the current perf phase. Later narrow to route names, object instances, companions, serializers, and serializer classes. |
+| Navigation route keys | Replaced broad route class/member keeps with interface, serializer, `Companion`, `INSTANCE`, and `serializer(...)` anchors using `allowoptimization,allowobfuscation` | Main navigation owns an in-memory `remember` back stack, and `entry<T>` references route classes directly. Route seeds dropped from 109 to 37; route classes are now obfuscated in `mapping.txt` while serializer anchors remain available. | Keep the narrowed route rule. Add explicit `@SerialName` values before introducing persisted route snapshots across app updates. |
 
 ## Rules To Keep
 
@@ -43,7 +38,8 @@ The app uses the Compose compiler plugin and has no app-level `androidx.compose.
 - `./gradlew :app:testDebugUnitTest`
 - `./gradlew :feature-github:testDebugUnitTest`
 - `./gradlew :app:assembleBenchmark`
+- `./gradlew :app:assembleRelease` after narrowing Navigation route rules
 - Pixel_10_Pro AVD smoke test: installed `app/build/outputs/apk/benchmark/app-benchmark.apk`, launched package `os.kei.benchmark`, confirmed `os.kei.benchmark/os.kei.LauncherAndroidDesigns` in the foreground, and confirmed the Home screen UI dump exposes Home, OS, MCP, GitHub, and BA tabs.
 - Benchmark process logcat showed no startup `FATAL EXCEPTION`, `ClassNotFoundException`, `NoSuchMethodError`, `NoSuchFieldError`, or `VerifyError` entries after the R8 rule changes.
 - Startup logcat still shows first-frame Davey/Skipped-frame entries while existing MMKV-backed page stores load; this is runtime page-loading pressure and remains part of the broader Compose/page-load performance track.
-- Compare `app/build/outputs/mapping/release/seeds.txt` before and after edits, focusing on `os.kei.feature.github.install`, `os.kei.ui.navigation.KeiosRoute`, and enum seeds.
+- Compared `app/build/outputs/mapping/release/seeds.txt` after edits: GitHub install seeds remain 10, and Navigation route seeds are 37.

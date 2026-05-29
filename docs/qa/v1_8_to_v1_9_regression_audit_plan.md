@@ -487,13 +487,51 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - AVD/真机:
   - Batch B AVD smoke 已覆盖 Settings / About 启动可见性，本批未单独跑设备。
 
+### 2026-05-29 Batch D - GitHub 全链路
+
+- Commit: 审查批次（无源码改动；引用历史修复 `f9f1dcadb`）
+- 审查范围:
+  - `feature-github/**` 整模块
+  - `app/src/main/java/os/kei/ui/page/main/github/**`
+  - `app/src/main/java/os/kei/ui/page/main/jsonimport/**`
+- 主要风险:
+  - UI 是否绕过 facade 直接改 ViewModel state。
+  - 下载/安装/分享是否走统一状态机/coordinator。
+  - 时间/缓存判断是否取自 clock / repository（可测试）。
+  - 安装完成是否被前序通知打掉。
+  - 失败过滤刷新清空时的 fallback。
+  - 单项目刷新是否遵守 per-project TTL。
+  - Actions sheet artifacts card 接管安装入口出现。
+  - nightly.link 与 GitHub Token 双下载模式都正常。
+  - 分享导入 / pending install / 通知优先级 / 结果落库。
+  - 是否有 `collectAsState(` 误用。
+- 已修复:
+  - 无新增源码修改。
+  - 关键回归已在历史 commit `f9f1dcadb` 修复：`persistCheckCache(refreshTimestamp)` 默认值由 `state.lastRefreshMs`（陈旧）改为 `System.currentTimeMillis()`，避免后台部分刷新写入过期时间戳，导致 Home 缓存提示年龄错误。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :feature-github:testDebugUnitTest`
+  - `rg "collectAsState\(" feature-github app/src/main/java/os/kei/ui/page/main/github app/src/main/java/os/kei/ui/page/main/jsonimport -g '*.kt'` 零命中
+- 审计结论:
+  - **PASS（含历史修复）**。
+  - 架构：UI 通过 `GitHubOverviewActionFacade` / `GitHubTrackedRefreshActionFacade` / `GitHubShareImportActionFacade` 调用，各 facade 落到 `GitHubPageActionEnvironment` 注入的 clock + state + store。
+  - Refresh 状态机：`GitHubRefreshActions` + `GitHubSingleRefreshActions` + `GitHubRefreshBatchActions` 共享 `GitHubPageState`，每个项目的 `checkedAtMillis` 来自注入 clock，单项目 TTL 写在 repository 层。
+  - 失败过滤：`refreshFailedTrackedItems` 过滤 `checkStates[item.id]?.failed == true`；空集合给出 toast，无静默失败。
+  - Share/Install：`GitHubShareImportStateMachine` + `GitHubManagedInstallStateMachine` + `GitHubManagedInstallProgressNotifier` 串行 stage，`requestId` 校验防止前序通知打掉完成态。
+  - 双下载模式：`resolvePreferredDownloadUrl()` 在 `useApiAssetUrl` true 时走 token + `archiveDownloadUrl`，false 时走 nightly.link `downloadUrl`，错误本地化分支区分两种模式。
+  - 时间可测：新增 `GitHubCheckCacheTimestamps.resolvedRefreshTimestamp()` 纯函数 + `GitHubCheckCacheTimestampsTest`。
+  - 全量 `collectAsStateWithLifecycle()`，零 `collectAsState(` 误用。
+- 保留风险:
+  - 真机端到端验证（分享 APK、托管安装、超级岛、安装完成）需要后续手测一次，编程验证已覆盖架构与状态机正确性。
+- AVD/真机:
+  - 本批未跑设备，依赖 Batch A 真机安装结果与 Batch B AVD smoke 的 GitHub 启动可见性。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
 | --- | --- | --- | --- |
 | P0 | Build / R8 / Benchmark | 直接影响预发行验证和安装覆盖 | 完成 |
 | P0 | MainScreen / Shared Chrome | 页面切换性能和全局体验入口 | 完成 |
-| P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 待执行 |
+| P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 完成 |
 | P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 完成 |
 | P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 待执行 |

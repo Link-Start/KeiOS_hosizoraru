@@ -66,6 +66,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
     modifier: Modifier = Modifier,
 ) {
     val expanded = expandedProgress().coerceIn(0f, 1f)
+    val expandedProvider = { expandedProgress().coerceIn(0f, 1f) }
     val compact = compactProgress().coerceIn(0f, 1f)
     val artworkSize = debugBgmLerpDp(38.dp, 42.dp, expanded)
     val artworkCornerRadius = debugBgmLerpDp(10.dp, 11.dp, expanded)
@@ -172,7 +173,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
         }
         BaGuideBgmChromeMiniPlayerSideControl(
             width = sideControlSlotWidth,
-            progress = expanded,
+            progress = expandedProvider,
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideSkipBackIcon(),
@@ -211,7 +212,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
         }
         BaGuideBgmChromeMiniPlayerSideControl(
             width = sideControlSlotWidth,
-            progress = expanded,
+            progress = expandedProvider,
         ) {
             BaGuideBgmInlineIcon(
                 icon = appLucideSkipForwardIcon(),
@@ -229,7 +230,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
 @Composable
 private fun BaGuideBgmChromeMiniPlayerSideControl(
     width: androidx.compose.ui.unit.Dp,
-    progress: Float,
+    progress: () -> Float,
     content: @Composable () -> Unit,
 ) {
     Box(
@@ -238,7 +239,7 @@ private fun BaGuideBgmChromeMiniPlayerSideControl(
                 .width(width)
                 .clipToBounds()
                 .graphicsLayer {
-                    alpha = progress.coerceIn(0f, 1f)
+                    alpha = progress().coerceIn(0f, 1f)
                 },
         contentAlignment = Alignment.Center,
     ) {

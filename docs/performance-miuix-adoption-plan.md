@@ -145,8 +145,8 @@ For install/smoke validation, target emulator packages:
 | M0 | First pass landed | Removed `effectBackground` from `syncAnimation()` condition so the animation coroutine stays alive while `playing && alphaActive`, matching MIUIX OS3 behavior. The `draw()` method's `effectBackground` gate still suppresses the actual shader draw when the effect is off — no visual leak — but when the effect comes back on the animation is already ticking instead of needing a coroutine restart, eliminating the visible startup stutter. The 30/60 FPS throttle and 0.25x render scale are retained for power savings. Pager-scroll gate retained (MIUIX doesn't gate but KeiOS's power-saving trade-off is reasonable). Further tuning possible on AVD with HWUI bars. |
 | M1 | Audited (no scroll/pager gap) | Scroll/pager/far-jump threshold reads are all already deferred (snapshotFlow + distinctUntilChanged, derivedStateOf, or provider lambdas invoked only from effects/callbacks). No composition-phase per-frame read to convert. TopAppBar collapse + search-expansion thresholds remain for a later targeted pass. |
 | M2 | First pass landed | Full inventory of `appSquircleClip`/`appSquircleSurface` sites (31 active). Two safe wins landed: `BaGuideCatalogEntryAvatarFallback` surface→background (centered Icon at 50% size, no content reaches corners) and `LiquidActionBar` clip-only Box removal (centered Icon, no riple, no background — clip masks nothing). 15 mask-needed sites kept. 10+ uncertain sites require visual inspection on AVD before conversion. |
-| M3 | Planned | Backdrop count is high; topology drift can affect page switching. |
-| M4 | Planned | Bottom chrome already strong; audit residuals after BGM changes. |
+| M3 | Audited (no code change) | 60 `rememberLayerBackdrop()` calls. No nested capture-on-capture chains found. All 9 `rememberCombinedBackdrop` calls merge exactly 2 sources (no excessive fan-in). High-churn list items (`GuideLiquidCard` 15+ instances, `AppFeatureCards`/`AppOverviewCards` in HomePage LazyColumn) use `remember` so capture surfaces are per-slot and recycled by LazyList. Pager backdrops are correctly `key()`-wrapped. |
+| M4 | First pass landed | Audited 7 bottom chrome / BGM files. 5/7 clean (provider lambdas throughout). Landed: converted `BaGuideBgmChromeMiniPlayerSideControl`'s `progress: Float` parameter to `progress: () -> Float` — the resolved `expanded` value was passed by value into a composable that only reads it inside `graphicsLayer { alpha = progress }`, forcing recomposition every frame during the expand/collapse transition. Now the read is deferred to the draw phase. |
 | M5 | Planned | Search expansion should keep continuity and mounted content. |
 | M6 | First target landed | Swept draw lambdas for size-stable per-frame allocations. Landed: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame; hoisted to a stable member field (fixed-shader wrapper is size-independent, uniforms still mutate in place). Other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. Continue on Home HDR / BA BGM hero if new draw allocations appear. |
 | M7 | Planned | QA-only tool to supplement HWUI bars and benchmark numbers. |
@@ -214,6 +214,22 @@ For install/smoke validation, target emulator packages:
     instead of needing a coroutine restart, removing the visible startup stutter.
   - Retained 30/60 FPS throttle and 0.25x render scale (power savings).
   - Retained pager-scroll gate (reasonable KeiOS trade-off vs MIUIX).
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-30 M3 / M4 first pass:
+  - M3: audited Backdrop capture topology. 60 `rememberLayerBackdrop()` calls,
+    no nested capture-on-capture. All 9 `rememberCombinedBackdrop` calls merge
+    exactly 2 sources. High-churn list items use `remember` so capture surfaces
+    are per-slot, recycled by LazyList. Pager backdrops correctly `key()`-wrapped.
+    No code change needed.
+  - M4: audited 7 bottom chrome / BGM files. 5/7 clean. Landed:
+    `BaGuideBgmChromeMiniPlayerSideControl` `progress: Float` →
+    `progress: () -> Float` — resolved `expanded` was passed by value into a
+    composable that only reads it inside `graphicsLayer { alpha = progress }`,
+    forcing recomposition every frame during expand/collapse transition.
+    Now the read is deferred to the draw phase.
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

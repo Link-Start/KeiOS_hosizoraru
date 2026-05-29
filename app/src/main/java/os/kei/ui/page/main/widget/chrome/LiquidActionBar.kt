@@ -56,7 +56,6 @@ import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
-import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -160,7 +159,6 @@ internal fun RowScope.LiquidActionItemSlot(
     Box(
         modifier =
             Modifier
-                .appSquircleClip(999.dp)
                 .then(item.testTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier)
                 .then(clickModifier)
                 .fillMaxHeight()

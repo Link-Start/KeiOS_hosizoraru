@@ -144,7 +144,7 @@ For install/smoke validation, target emulator packages:
 | --- | --- | --- |
 | M0 | Planned | Highest value remaining MIUIX Sample idea for Home perceived smoothness. |
 | M1 | Audited (no scroll/pager gap) | Scroll/pager/far-jump threshold reads are all already deferred (snapshotFlow + distinctUntilChanged, derivedStateOf, or provider lambdas invoked only from effects/callbacks). No composition-phase per-frame read to convert. TopAppBar collapse + search-expansion thresholds remain for a later targeted pass. |
-| M2 | Planned | High HWUI value because rounded surfaces are dense across KeiOS. |
+| M2 | First pass landed | Full inventory of `appSquircleClip`/`appSquircleSurface` sites (31 active). Two safe wins landed: `BaGuideCatalogEntryAvatarFallback` surface→background (centered Icon at 50% size, no content reaches corners) and `LiquidActionBar` clip-only Box removal (centered Icon, no riple, no background — clip masks nothing). 15 mask-needed sites kept. 10+ uncertain sites require visual inspection on AVD before conversion. |
 | M3 | Planned | Backdrop count is high; topology drift can affect page switching. |
 | M4 | Planned | Bottom chrome already strong; audit residuals after BGM changes. |
 | M5 | Planned | Search expansion should keep continuity and mounted content. |
@@ -180,6 +180,22 @@ For install/smoke validation, target emulator packages:
   - M9: verified `miuix-blur` internals (cascade downsampling, separable Gaussian,
     shader pooling, GraphicsLayer pooling, noise dithering layer, zero-alloc
     scratch) and confirmed KeiOS gates short-circuit correctly. No code change.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-30 M2 Squircle cost first pass:
+  - Full inventory of `appSquircleClip` / `appSquircleSurface` sites across
+    KeiOS: 31 active call sites (28 clip, 3 surface).
+  - Classification: 15 mask-needed (images, gradients, video, search fields),
+    2 safe-to-convert, 10+ uncertain (need AVD visual inspection).
+  - Landed (safe wins):
+    - `BaGuideCatalogEntryAvatarFallback`: `appSquircleSurface` →
+      `appSquircleBackground` (centered Icon at 50% size, no content reaches
+      corners; eliminates one offscreen layer).
+    - `LiquidActionBar`: removed `appSquircleClip(999.dp)` from icon-only Box
+      (centered Icon, no riple indication, no background; clip masks nothing
+      visible; eliminates one offscreen layer).
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

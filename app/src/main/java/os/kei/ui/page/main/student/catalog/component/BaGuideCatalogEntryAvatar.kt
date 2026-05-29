@@ -15,7 +15,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.widget.shape.appSquircleClip
-import os.kei.ui.page.main.widget.shape.appSquircleSurface
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -71,7 +71,7 @@ private fun BaGuideCatalogEntryAvatarFallback(
         modifier =
             Modifier
                 .size(size)
-                .appSquircleSurface(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.42f), 12.dp),
+                .appSquircleBackground(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.42f), 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         Icon(

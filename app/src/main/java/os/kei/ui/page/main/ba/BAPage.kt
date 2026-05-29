@@ -49,6 +49,7 @@ fun BAPage(
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    val saveFailedFormat = stringResource(R.string.common_save_failed_with_reason)
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
@@ -216,10 +217,7 @@ fun BAPage(
 
                 is BaOfficeEvent.OperationFailed -> {
                     context.showToast(
-                        context.getString(
-                            R.string.common_save_failed_with_reason,
-                            event.error.message ?: event.error.javaClass.simpleName,
-                        ),
+                        saveFailedFormat.format(event.error.message ?: event.error.javaClass.simpleName),
                     )
                 }
             }

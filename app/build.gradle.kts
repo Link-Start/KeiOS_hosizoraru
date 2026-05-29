@@ -486,6 +486,11 @@ android {
         compose = true
     }
 
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+    }
+
     packaging {
         jniLibs {
             excludes += "lib/*/libandroidx.graphics.path.so"

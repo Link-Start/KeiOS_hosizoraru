@@ -25,8 +25,9 @@ internal fun GuideGalleryImageProgressBadge(
                 emptyFlow()
             }
         }
+    val initialProgress = remember { imageProgressState.progress.value }
     val imageProgress by progressFlow.collectAsStateWithLifecycle(
-        initialValue = imageProgressState.progress.value,
+        initialValue = initialProgress,
     )
     val imageProgressValue = if (imageLoading) imageProgress.coerceIn(0f, 1f) else 1f
     val progressForegroundColor =

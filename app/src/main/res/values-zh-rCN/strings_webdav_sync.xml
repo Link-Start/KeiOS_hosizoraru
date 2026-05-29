@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_sync_title">WebDAV 同步</string>
+    <string name="webdav_sync_provider_label">服务商</string>
+    <string name="webdav_sync_connection">连接设置</string>
+    <string name="webdav_sync_jianguoyun_hint">请使用坚果云账号邮箱和第三方应用密码（非账号密码）。在坚果云网页端：账户设置 → 安全选项 → 第三方应用管理 中生成。</string>
+    <string name="webdav_sync_server_url">服务器地址</string>
+    <string name="webdav_sync_username">用户名（邮箱）</string>
+    <string name="webdav_sync_username_placeholder">your@email.com</string>
+    <string name="webdav_sync_app_password">应用密码</string>
+    <string name="webdav_sync_password_placeholder">第三方应用密码</string>
+    <string name="webdav_sync_remote_dir">远程目录</string>
+    <string name="webdav_sync_test_connection">测试连接</string>
+    <string name="webdav_sync_testing">测试中…</string>
+    <string name="webdav_sync_test_success">连接成功</string>
+    <string name="webdav_sync_test_failed">连接失败：%1$s</string>
+    <string name="webdav_sync_save">保存</string>
+    <string name="webdav_sync_items_title">同步项目</string>
+    <string name="webdav_sync_upload">上传</string>
+    <string name="webdav_sync_download">下载</string>
+    <string name="webdav_sync_last_sync">上次同步：%1$s</string>
+
+    <string name="webdav_sync_item_github_tracked">GitHub 追踪</string>
+    <string name="webdav_sync_item_github_tracked_desc">追踪仓库和设置</string>
+    <string name="webdav_sync_item_ba_catalog_fav">BA 图鉴收藏</string>
+    <string name="webdav_sync_item_ba_catalog_fav_desc">学生图鉴收藏</string>
+    <string name="webdav_sync_item_ba_bgm_fav">BA BGM 收藏</string>
+    <string name="webdav_sync_item_ba_bgm_fav_desc">背景音乐收藏</string>
+    <string name="webdav_sync_item_os_activity">OS Activity 卡片</string>
+    <string name="webdav_sync_item_os_activity_desc">Activity 快捷方式卡片</string>
+    <string name="webdav_sync_item_os_shell">OS Shell 卡片</string>
+    <string name="webdav_sync_item_os_shell_desc">Shell 命令卡片</string>
+</resources>

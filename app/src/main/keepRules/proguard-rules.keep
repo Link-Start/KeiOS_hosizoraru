@@ -21,6 +21,9 @@
 -keepclassmembernames enum os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode { *; }
 -keepclassmembernames enum os.kei.mcp.server.McpToolExecutionProfile { *; }
 
+-keepclassmembernames enum os.kei.ui.page.main.sync.WebDavSyncItem { *; }
+-keepclassmembernames enum os.kei.ui.page.main.sync.WebDavProvider { *; }
+
 # Keep internal component class names stable for manifest lookups and About-page introspection.
 # This covers future KeiOS activities/services/receivers/providers without needing manual updates.
 -keepnames class os.kei.** extends android.app.Application

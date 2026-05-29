@@ -604,6 +604,7 @@ dependencies {
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
     implementation(project(":feature-github"))
+    implementation(project(":feature-webdav"))
     implementation("androidx.core:core-ktx:$coreKtxVersion")
     implementation("androidx.activity:activity-compose:$activityComposeVersion")
     implementation("androidx.profileinstaller:profileinstaller:$profileInstallerVersion")

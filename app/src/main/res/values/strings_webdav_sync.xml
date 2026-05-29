@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webdav_sync_title">WebDAV Sync</string>
+    <string name="webdav_sync_provider_label">Service Provider</string>
+    <string name="webdav_sync_connection">Connection</string>
+    <string name="webdav_sync_jianguoyun_hint">Use your Jianguoyun account email and an app-specific password (not your account password). Generate one at Account Settings → Security → Third-party App Management.</string>
+    <string name="webdav_sync_server_url">Server URL</string>
+    <string name="webdav_sync_username">Username (Email)</string>
+    <string name="webdav_sync_username_placeholder">your@email.com</string>
+    <string name="webdav_sync_app_password">App Password</string>
+    <string name="webdav_sync_password_placeholder">App-specific password</string>
+    <string name="webdav_sync_remote_dir">Remote Directory</string>
+    <string name="webdav_sync_test_connection">Test</string>
+    <string name="webdav_sync_testing">Testing…</string>
+    <string name="webdav_sync_test_success">Connection successful</string>
+    <string name="webdav_sync_test_failed">Connection failed: %1$s</string>
+    <string name="webdav_sync_save">Save</string>
+    <string name="webdav_sync_items_title">Sync Items</string>
+    <string name="webdav_sync_upload">Upload</string>
+    <string name="webdav_sync_download">Download</string>
+    <string name="webdav_sync_last_sync">Last sync: %1$s</string>
+
+    <string name="webdav_sync_item_github_tracked">GitHub Tracked</string>
+    <string name="webdav_sync_item_github_tracked_desc">Tracked repositories and settings</string>
+    <string name="webdav_sync_item_ba_catalog_fav">BA Catalog Favorites</string>
+    <string name="webdav_sync_item_ba_catalog_fav_desc">Student catalog favorites</string>
+    <string name="webdav_sync_item_ba_bgm_fav">BA BGM Favorites</string>
+    <string name="webdav_sync_item_ba_bgm_fav_desc">Background music favorites</string>
+    <string name="webdav_sync_item_os_activity">OS Activity Cards</string>
+    <string name="webdav_sync_item_os_activity_desc">Activity shortcut cards</string>
+    <string name="webdav_sync_item_os_shell">OS Shell Cards</string>
+    <string name="webdav_sync_item_os_shell_desc">Shell command cards</string>
+</resources>

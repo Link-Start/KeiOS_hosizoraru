@@ -116,7 +116,7 @@ fun BgEffectBackground(
                         surface = surface,
                         effectBackground = effectBackground,
                         isFullSize = isFullSize,
-                        playing = dynamicBackground && effectBackground,
+                        playing = dynamicBackground,
                         colorStage = { colorStage.value },
                         alpha = alpha,
                     ),

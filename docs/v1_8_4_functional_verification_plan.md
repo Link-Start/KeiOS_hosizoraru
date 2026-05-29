@@ -134,7 +134,7 @@
 | Batch | Scope | Status | Issues |
 | --- | --- | --- | --- |
 | A | Global chrome | ✅ 6/6 PASS | NavHost routes (6), pager (5 pages), bottom bar, toast, glass runtime, predictive back — all intact. |
-| B | Home | Not started | |
+| B | Home | ✅ 7/7 PASS + 1 fix | BgEffect activation found CONCERN: `playing` baked in `effectBackground`, negating M0. Fixed: `playing = dynamicBackground` only. Draw gate still suppresses rendering. Color cycling, hero parallax, action bar, control sheet, overview cards, blur gate — all intact. |
 | C | Settings | Not started | |
 | D | GitHub | Not started | |
 | E | MCP | Not started | |

@@ -5,10 +5,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
@@ -34,12 +34,26 @@ internal fun rememberBaGuideCatalogTabListState(
     filteredEntries: List<BaGuideCatalogEntry>,
     loading: Boolean,
     isPageActive: Boolean,
+    resetSignal: Int = 0,
 ): BaGuideCatalogTabListState {
+    // rememberLazyListState() uses rememberSaveable internally, which naturally
+    // preserves scroll position across tab switches (same Activity session).
+    // On Activity recreate, rememberSaveable restores the saved position, but
+    // the resetSignal LaunchedEffect below scrolls back to top.
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    var visibleCount by rememberSaveable(tab) { mutableIntStateOf(0) }
-    LaunchedEffect(filteredEntries) {
+    // Use remember (not rememberSaveable) so visibleCount resets on Activity
+    // recreate instead of persisting a stale value. The derivedStateOf below
+    // ensures displayedEntries always stays in sync with filteredEntries.
+    var visibleCount by remember(tab) { mutableIntStateOf(CATALOG_BATCH_SIZE) }
+    LaunchedEffect(filteredEntries.size) {
         visibleCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
+    }
+    // Scroll to top when resetSignal changes (Activity recreate).
+    LaunchedEffect(resetSignal) {
+        if (resetSignal > 0) {
+            listState.scrollToItem(0)
+        }
     }
     LaunchedEffect(isPageActive, listState, filteredEntries.size, loading, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
@@ -67,16 +81,20 @@ internal fun rememberBaGuideCatalogTabListState(
             }
     }
 
-    val displayedEntries =
-        remember(filteredEntries, visibleCount) {
-            if (visibleCount >= filteredEntries.size) {
+    // derivedStateOf auto-caps at filteredEntries.size, so displayedEntries
+    // never exceeds available data even if visibleCount is stale.
+    val displayedEntries by remember(filteredEntries, visibleCount) {
+        derivedStateOf {
+            val count = minOf(visibleCount, filteredEntries.size)
+            if (count >= filteredEntries.size) {
                 filteredEntries
             } else {
-                filteredEntries.subList(0, visibleCount)
+                filteredEntries.subList(0, count)
             }
         }
+    }
 
-    return remember(listState, filteredEntries, displayedEntries, visibleCount) {
+    return remember(listState, filteredEntries, displayedEntries) {
         BaGuideCatalogTabListState(
             listState = listState,
             filteredEntries = filteredEntries,

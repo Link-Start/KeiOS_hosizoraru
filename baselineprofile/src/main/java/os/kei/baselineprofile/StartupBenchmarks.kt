@@ -25,7 +25,6 @@ class StartupBenchmarks {
             InstrumentationRegistry
                 .getArguments()
                 .getString("targetAppId")
-                ?.let { appId -> if (appId == RELEASE_APP_ID) BENCHMARK_APP_ID else appId }
                 ?: error("targetAppId not passed as instrumentation runner arg")
 
     @Test
@@ -56,6 +55,4 @@ class StartupBenchmarks {
     }
 }
 
-private const val RELEASE_APP_ID = "os.kei"
-private const val BENCHMARK_APP_ID = "os.kei.benchmark"
 private const val HOME_PAGE_ROOT = "home_page_root"

@@ -597,6 +597,44 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - AVD/真机:
   - 未单独跑设备。
 
+### 2026-05-29 Batch G Round 2 - BGM / 媒体 / 超级岛通知
+
+- Commit: 审查批次（无新源码改动）
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/**`（19 文件）
+  - `app/src/main/java/os/kei/ui/page/main/student/BaGuideTempMediaCache*.kt`（4 文件）
+  - `app/src/main/java/os/kei/ui/page/main/student/BaGuideBgm*.kt`
+  - `app/src/main/java/os/kei/core/notification/focus/MiFocusNotification*.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/media/BaGuideBgmMediaNotificationProviderFactory.kt`
+- 主要风险:
+  - BGM 播放协调器跨重组稳定性。
+  - 收藏与媒体写操作是否进入 Repository / Store。
+  - 临时缓存 TTL / prune / download / validation 边界。
+  - BGM 热值是否通过 provider/draw/layout 路径读取。
+  - 超级岛按钮与通知取消是否有对称关闭路径。
+  - BGM 收藏的搜索/导入/导出。
+  - 是否存在 `collectAsState(` 误用。
+- 已修复:
+  - 无新增源码修改。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest`
+  - `rg "collectAsState\(" app/src/main/java/os/kei/ui/page/main/student app/src/main/java/os/kei/core/notification -g '*.kt'` 零命中
+- 审计结论:
+  - **PASS WITH OBSERVATIONS**。
+  - Playback Coordinator：`BaGuideBgmPlaybackCoordinator` 通过 `remember(context)` 持有，`SupervisorJob()` 保护后端切换，`_uiState`（收藏/队列/选择）与 `_runtimeState`（位置/时长/播放）拆分；写操作全部走 `BaGuideBgmPlaybackRepository`。
+  - Temp Media Cache：分三层 `BaGuideTempMediaCache`（facade）+ `Resolver`（校验）+ `Prefetcher`（下载）；TTL 72h、prune 30min 抽到 `BaGuideTempMediaCacheConfig` 命名常量；MMKV index 带版本。
+  - BGM Bottom Chrome：`playbackProgress: () -> Float` 改为 lambda，draw 阶段读取；`BaGuideBgmChromePresentationDeriver.derive()` 纯派生；动画值（`containerHeight` / `tabGroupY` / `searchY`）以 lambda 传给子组件。
+  - Mi Focus 通知：`MiFocusNotificationTemplate` 通过 `FocusNotification.buildV3` 构造岛与展开组件，`dismissIsland` 控制关闭；`BaGuideBgmMediaNotificationProviderFactory.cancelNotification()` 在 session 停止时对称调用 `NotificationManagerCompat.cancel()`。
+  - 全量 `collectAsStateWithLifecycle()`，零 `collectAsState(`。
+- 保留风险:
+  - Playback coordinator 后端切换（`updateNativeMediaNotificationEnabled`）在 `remember(context)` 单 key 下，依赖 `LaunchedEffect` 更新；当前 `force=true` + `SupervisorJob` 已能保护，但极端时序仍有可能。
+  - `clearGuideCache()` 先 `deleteRecursively()` 再 `removeSessionIndex()`；如 prune 在两步之间触发，index 指向已删目录；`runCatching` 包住，下次 `resolveCachedUrl()` 自然回退到原始 URL。
+  - Mi Focus 用户主动滑掉岛后没有显式 callback；当前依赖 `notifyId` 唯一性 + `dismissIsland`，未观察到实际复用问题。
+  - BGM 收藏 import/export 走的是 catalog 页路径，本批未单独跑；架构与 `BaGuideCatalogStore` 路径一致，已在 Batch G round 1 间接覆盖。
+  - 真机端到端验收（播放、跨进程通知岛、媒体保存）需要后续单独跑一次。
+- AVD/真机:
+  - 未单独跑设备。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
@@ -607,7 +645,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 | P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 完成 |
 | P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 完成 |
-| P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 进行中（catalog 已完成，BGM/通知待补） |
+| P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 完成 |
 | P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 完成 |
 
 ## 9. 发布前最终门禁

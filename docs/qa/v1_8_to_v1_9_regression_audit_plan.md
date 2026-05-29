@@ -453,6 +453,40 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - `rg "collectAsState\(" app/src/main/java/os/kei -g '*.kt'` 零命中
 - `git diff --check` 干净
 
+### 2026-05-29 Batch C - Settings / About / Release Notes
+
+- Commit: 审查批次（无源码改动）
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/settings/SettingsPage.kt`、`SettingsPageContent.kt`
+  - `app/src/main/java/os/kei/ui/page/main/settings/section/**`（Visual / Animation / Cache / Log / Notify / Copy / Background / ComponentEffects / PermissionKeepAlive）
+  - `app/src/main/java/os/kei/ui/page/main/settings/section/SettingsSectionPresentationDeriver.kt`
+  - `app/src/main/java/os/kei/ui/page/main/about/AboutPage.kt`、`AboutPageViewModel.kt`、`about/section/**`、`about/model/**`
+  - `app/src/main/java/os/kei/ui/page/main/widget/markdown/AppMarkdownContent.kt`、`AppMarkdownBlockCache.kt`、`AppMarkdownParser.kt`、`AppMarkdownModels.kt`
+- 主要风险:
+  - 设置项 summary/value 是否在 composition 内反复重算。
+  - 远 jump 动画是否在 composition 阶段读取高频值。
+  - About / Release Notes 版本元数据是否来自稳定 provider。
+  - Markdown 解析是否在后台线程，是否带缓存避免每次切换重算。
+  - 文案是否进入资源文件。
+  - 是否有遗留 `collectAsState(` 未升级到 `collectAsStateWithLifecycle()`。
+- 已修复:
+  - 无源码修改。本批以审计为主。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest` BUILD SUCCESSFUL
+  - `rg "collectAsState\(" app/src/main/java/os/kei -g '*.kt'` 零命中
+- 审计结论:
+  - **PASS**。
+  - Settings: `SettingsSectionPresentationDeriver` 通过纯 deriver 函数计算每个 section 的 summary/value，传入 section 组件的状态对象为 immutable data class。
+  - Settings 远 jump 动画：`farJumpAlpha` 由 `Animatable(1f)` + `remember` 持有，通过 `farJumpAlphaProvider: () -> Float` lambda 传入 `SettingsCategoryPagerContent`，在 `graphicsLayer { alpha = farJumpAlphaProvider() }` draw 阶段读取，未引发 composition 失效。
+  - About: `AboutAppDetails` / `AboutTechDetails` 由 repository 在后台构建一次，通过 `StateFlow<AboutPageDetailsState>` + `collectAsStateWithLifecycle()` 提供给 UI。
+  - Release Notes / Markdown：`AppMarkdownContent` 用 `produceState` 调度 `parseCachedAppMarkdownBlocks`，后台 dispatcher 为 `AppDispatchers.uiDerivation`；`AppMarkdownBlockCache` 为 LRU(24) `LinkedHashMap`，命中即返回，避免重复解析。
+  - 文案：所有用户可见文案使用 `stringResource(R.string.*)`，未发现硬编码。
+  - State 收集：全量使用 `collectAsStateWithLifecycle()`。
+- 保留风险:
+  - Markdown 缓存上限 24，长会话切换大量不同源（如多个 Release Notes 版本快速切）可能 thrashing；当前实际场景不会触发，归档观察。
+- AVD/真机:
+  - Batch B AVD smoke 已覆盖 Settings / About 启动可见性，本批未单独跑设备。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
@@ -461,7 +495,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 | P0 | MainScreen / Shared Chrome | 页面切换性能和全局体验入口 | 完成 |
 | P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 待执行 |
 | P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
-| P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 待执行 |
+| P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 完成 |
 | P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 待执行 |
 | P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 进行中（catalog 已完成，BGM/通知待补） |
 | P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 待执行 |

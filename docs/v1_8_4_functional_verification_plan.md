@@ -136,8 +136,8 @@
 | A | Global chrome | ✅ 6/6 PASS | NavHost routes (6), pager (5 pages), bottom bar, toast, glass runtime, predictive back — all intact. |
 | B | Home | ✅ 7/7 PASS + 1 fix | BgEffect activation found CONCERN: `playing` baked in `effectBackground`, negating M0. Fixed: `playing = dynamicBackground` only. Draw gate still suppresses rendering. Color cycling, hero parallax, action bar, control sheet, overview cards, blur gate — all intact. |
 | C | Settings | ✅ 10/10 PASS | Pager, bottom chrome (M8c), search expansion (M5), query filtering, dismissal, scroll chrome, far-jump alpha, popups, background picker, log export — all intact. |
-| D | GitHub | Not started | |
-| E | MCP | Not started | |
+| D | GitHub | ✅ 10/10 PASS | Lifecycle, scroll-to-top (M8a), search, track cards, APK panel, overview, glass effects, sheet host, star import, background refresh — all intact. |
+| E | MCP | ✅ 8/8 PASS | Server toggle, scroll-to-top (M8a), tool search, edit config, reset dialogs, skill nav, log export, glass effects — all intact. |
 | F | OS | Not started | |
 | G | BA Office | Not started | |
 | H | BA Guide Catalog | Not started | |

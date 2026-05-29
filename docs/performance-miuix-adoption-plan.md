@@ -1,103 +1,185 @@
 # MIUIX Sample Performance Adoption Plan
 
-## Context
+## Scope
 
-- Reference check date: 2026-05-30.
-- MIUIX reference: `.tmp/miuix` at `9b86e77` (sample under `example/`, library under `miuix/`).
-- This plan tracks **newly identified** performance gaps from a fresh MIUIX sample scan.
-  It deliberately does **not** duplicate items already landed in
-  `docs/performance-reference-priorities.md` (Squircle SDF pre-bake, nested Backdrop
-  safety, MainScreen back coordination, backdrop/blur gates, dynamic background
-  `Modifier.Node`, install/share state machines, color producers, popup reveal,
-  settings rows). Those remain landed; this doc only covers what is still open.
-- Compiler baseline: project is on **Kotlin / Compose compiler 2.3.21**, so
-  **strong skipping is ON by default**. This materially lowers the urgency of
-  list-stability work (e.g. `ImmutableList`) because unstable lambda/`List` params
-  no longer force recomposition the way they did pre-2.x. Priorities below reflect
-  that reality.
-- Clean-room rule: use MIUIX public behavior and architectural ideas as prompts,
-  then write KeiOS-native code against existing project contracts. MIUIX is
-  Apache-2.0 (no copyleft contamination), but we still write our own code rather
-  than copy structure, names, or implementation details. Do not import InstallerX
-  (GPL-3.0) source.
+- Reference date: 2026-05-30.
+- MIUIX reference: `.tmp/miuix` at `9b86e77`.
+- Scan scope: MIUIX Sample under `example/shared`, plus directly used library
+  implementation under `miuix-ui`, `miuix-blur`, `miuix-squircle`, and
+  `miuix-navigation3-ui`.
+- Goal: absorb reusable performance architecture ideas into KeiOS while
+  preserving Liquid Glass visuals, animation richness, page content continuity,
+  install/share semantics, notification behavior, Super Island behavior, and HDR
+  user-facing behavior.
+- Clean-room rule: use MIUIX public behavior and architecture as reference
+  material, then write KeiOS-native code against current project contracts.
+  MIUIX is Apache-2.0; KeiOS should still keep its own file layout, names, and
+  implementation details.
 
-## Baseline scan (KeiOS current state, 2026-05-30)
+## KeiOS Current Baseline
 
-| Pattern | KeiOS usage today | Verdict |
-| --- | --- | --- |
-| `@Immutable` / `@Stable` | ~210 / ~62 | Widely adopted, no action |
-| `rememberUpdatedState` | ~139 | Widely adopted, no action |
-| `snapshotFlow` | ~84 | Widely adopted, no action |
-| `graphicsLayer` | ~86 | Widely adopted, no action |
-| `contentType` (lazy lists) | ~152 | Widely adopted, no action |
-| `WhileSubscribed` / `stateIn` | ~32 | Widely adopted, no action |
-| `RuntimeShader` | ~21 | Widely adopted, no action |
-| `withContext` (off-main) | ~858 | Widely adopted, no action |
-| LRU / bounded caches | ~71 | Widely adopted, no action |
-| `() -> Float` deferred-read params | ~106 | Adopted; expand opportunistically (A3) |
-| `derivedStateOf` | 4 uses, 2 files | **Gap (A1)** |
-| `drawWithCache` | 8 uses, 3 files | **Gap (A2)** |
-| `DrawModifierNode` | 1 file (`BgEffectModifier`) | **Gap (A4)** |
-| `movableContentOf` | 0 uses | **Gap (A5)** |
-| kotlinx persistent / `ImmutableList` | 0 (lone hit is Guava Media3 type) | **Low — strong skipping (A6)** |
-| miuix-blur shader internals | consumed via library | **Verify-only (A7)** |
+Static scan from `app/src/main/java/os/kei` and `feature-github/src/main/java/os/kei`
+on 2026-05-30:
 
-## P1
+| Pattern | Current count | Current state |
+| --- | ---: | --- |
+| `derivedStateOf` | 4 | Used only on a few threshold surfaces. Expand after hotspot evidence. |
+| `drawWithCache` | 8 | Present in Home HDR, AppSquircle, and search material. Expand on draw-heavy surfaces. |
+| `DrawModifierNode` | 2 | Dynamic background owns the main continuous draw loop. |
+| `Modifier.Node` | 1 | Custom node coverage is still narrow. |
+| `rememberGraphicsLayer` | 0 | KeiOS uses Kyant Backdrop / layer APIs rather than MIUIX blur internals. |
+| `RuntimeShader` | 21 | Dynamic background, interactive highlight, and AppSquircle are shader-backed. |
+| `graphicsLayer` | 130 | Phase-deferral is broadly adopted in chrome, sheets, and BGM controls. |
+| `snapshotFlow` | 84 | Scroll / pager effects are mostly effect-driven. |
+| `contentType` | 161 | Lazy list row typing is broadly adopted. |
+| `rememberCombinedBackdrop` | 16 | Nested glass paths already use combined backdrop in major chrome surfaces. |
+| `layerBackdrop` | 103 | Backdrop capture topology needs continued audit as new glass surfaces appear. |
+| `drawBackdrop` | 36 | Glass drawing is centralized across bottom bar, action bar, sheets, BGM, and cards. |
+| `appSquircle*` | 163 | Shader-backed rounded surfaces are widely used. |
+| `movableContentOf` | 0 | Adopt only for proven stateful subtree move cases. |
 
-| ID | Area | MIUIX source idea | KeiOS landing direction | Status |
+Current strong points:
+
+- `BgEffectBackground` already uses `DrawModifierNode`, `withFrameNanos`,
+  active-page gating, alpha gating, 30/60 FPS throttling, render-size downscale,
+  and cached shader uniforms.
+- `AppSquircle` already has shader-backed fill/clip/surface APIs, baked SDF
+  data, path/shader borders, and runtime fallback gates.
+- `LiquidGlassBottomBar`, `LiquidActionBar`, and BA BGM dock already follow the
+  MIUIX pattern of provider lambdas plus `graphicsLayer` / Backdrop draw-time
+  reads.
+- Prior reference work in `docs/performance-reference-priorities.md` landed the
+  first wave: Squircle pre-bake, nested Backdrop safety, MainScreen back
+  coordination, glass gates, dynamic background node ticking, install/share state
+  machines, color producers, popup reveal, and settings row specialization.
+
+## Adoptable Patterns
+
+| Pattern | MIUIX reference | Why it matters | KeiOS current fit | Decision |
 | --- | --- | --- | --- | --- |
-| A1 | `derivedStateOf` for threshold-driven UI | Sample scroll/overscroll chrome derives boolean flags (collapsed, at-top, at-end) from scroll state so a spring/animation fires **once per crossing**, not once per frame | Audit high-frequency reads of `scrollState`/`LazyListState`/pager offset that currently recompute a boolean every frame; wrap each in `derivedStateOf` so recomposition only fires on the flip. Candidate sites: top-bar collapse, bottom-bar elevation/visibility, scroll-to-top button visibility, pager edge state. | **No genuine gap (2026-05-30).** Audited all scroll/pager reads. Every high-frequency read already defers correctly: `snapshotFlow + distinctUntilChanged` (BaPageEffects, HomePageDerivedState, BaStudentGuidePagerPage, AboutPage, GitHubTrackAppPickerContent), `derivedStateOf` (GitHubPage `isListScrolling`), or `remember { { ... } }` provider lambdas invoked only from `NestedScrollConnection`/`LaunchedEffect`, never the composition body (SettingsPage/AboutPage `activeCategoryProvider`). No composition-phase per-frame read to wrap. |
-| A2 | `drawWithCache` expansion | Sample draws brushes, gradients, and shader builders inside `drawWithCache` so allocation happens once per size change, not per draw frame | Sweep animated/draw-heavy composables that still build `Brush`/`Path`/`Shader`/`RuntimeShader` setup inline in `draw{}`. Move size-stable allocation into `onDrawBehind`/`onDrawWithContent` via `drawWithCache`. Current usage is only 3 files; target the glass surfaces, progress bars, and HDR highlight paths. | **Landed (2026-05-30).** Full sweep of draw lambdas found one genuine per-frame allocation: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame. Hoisted to a stable member field (fixed-shader wrapper is size-independent; uniforms still mutate in place). All other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. |
+| RuntimeShader dynamic background in `DrawModifierNode` | `example/shared/.../effect/BgEffectModifier.kt`, `BgEffectPainter.kt` | Continuous animation stays in Draw; shader uniforms update only when inputs change. | KeiOS has this core path. Home still feels visually static in some states because page-active/data-active/pager-scroll gates can suppress motion aggressively. | P0: tune Home activation, visual energy, and verification evidence. |
+| Scroll threshold derivers | `miuix-ui/.../basic/TopAppBar.kt`, `PullToRefresh.kt`, `SearchBar.kt` | Boolean transitions fire once per threshold crossing while alpha/offset reads stay in layout/draw. | KeiOS has `snapshotFlow` on many pages and a few `derivedStateOf` uses. Some chrome/search/far-jump decisions still need a targeted audit after recent refactors. | P0: audit MainScreen children and high-frequency chrome thresholds. |
+| Search overlay layout-phase reads | `example/shared/.../component/SuperSearchBar.kt` | Search expansion keeps page content mounted and moves top padding reads into layout. | KeiOS search docks already use `graphicsLayer` on some fields. Page-level search routes need a continuity audit to prevent blank-page style load shedding. | P1: unify search overlay rules for Settings, GitHub, MCP, OS, and BA. |
+| Liquid navigation provider chain | `example/shared/.../liquid/LiquidGlassNavigationBar.kt` | Drag, press, selection, highlight, and backdrop layer transforms read hot values in draw/layout phases. | Bottom bar and action bar already mirror this. Residual risk lives in new BGM chrome and action surfaces added after the first pass. | P1: residual `Animatable.value` / resolved progress scan. |
+| Shader-backed Squircle fill/clip split | `miuix-squircle/.../SquircleBackground.kt`, `SquircleBorder.kt` | Fill-only background avoids offscreen layers; clip/surface are reserved for real clipping. | KeiOS has equivalent APIs. Widespread `appSquircle*` use needs surface-by-surface cost classification. | P0: audit high-density cards and list rows. |
+| Backdrop capture node and stable callbacks | `miuix-blur/.../LayerBackdropModifier.kt`, `RuntimeShaderCache.kt` | Capture work lives in a node; callbacks stay current without rebuilding capture topology. | KeiOS uses Kyant Backdrop and combined backdrop. Count is high enough that topology drift can hurt HWUI during page switching. | P1: Backdrop topology audit with Backdrop MCP guidance. |
+| Debug FPS / 1 percent low overlay | `example/shared/.../utils/FPSMonitor.kt` | HWUI bars show pressure; rolling FPS plus 1 percent low exposes stutter spikes during interactive QA. | KeiOS currently relies on adb/HWUI/gfxinfo and benchmark runs. | P2: optional debug/benchmark-only overlay. |
+| Navigation subtree preservation | `miuix-navigation3-ui/.../SceneSetupNavEntryDecorator.kt` | `movableContentOf` keeps stateful entries alive when scene layout moves. | KeiOS already uses Navigation 3 and custom MainScreen host. A concrete move-state bug is needed before adoption. | P3: observe. |
 
-## P2
+## Priority Backlog
 
-| ID | Area | MIUIX source idea | KeiOS landing direction | Status |
-| --- | --- | --- | --- | --- |
-| A3 | Deferred-read lambda params (`() -> Float`) | Sample passes animated scalars as lambdas so the read happens in layout/draw, skipping recomposition of the caller | Already ~106 uses. Extend to remaining composables that take a resolved animated value as a parameter and recompose on every tick (look for `animateFloatAsState`/`Animatable.value` read at call site then passed down by value). | Not started |
-| A4 | `DrawModifierNode` for per-frame effects | Sample routes continuous draw effects through `Modifier.Node` + `invalidateDraw()` instead of recomposition | Only `BgEffectModifier` uses this today. Identify other continuously-animating draw effects (glass shimmer, progress shimmer, focus glow) that currently drive frames through recomposition/`graphicsLayer` state and evaluate moving them to a draw node. Opportunistic — only where a measurable per-frame recomposition cost exists. | Not started |
-| A5 | `movableContentOf` for state-preserving moves | Sample preserves subtree state when a node moves between layout slots (orientation / pager rearrange) | Zero uses today. Low-frequency need in KeiOS; adopt only if a concrete case appears where a stateful subtree is currently torn down and rebuilt on a layout move. Document the candidate when found rather than forcing adoption. | Deferred (no concrete site yet) |
+### P0
 
-## P3 / Verify-only
+| ID | Area | KeiOS target | Work |
+| --- | --- | --- | --- |
+| M0 | Home dynamic background parity | `core/ui/effect/background/*`, `ui/page/main/home/*` | Compare KeiOS `BgEffect*` against MIUIX OS3 sample and tune activation rules so Home remains alive during static viewing without producing excessive HWUI bars. Keep render downscale and shader uniform caches. Measure with AVD HWUI bars and benchmark/gfxinfo. |
+| M1 | Chrome threshold state | `MainScreen`, Home, Settings, GitHub, OS, MCP, BA page chrome | Audit scroll/pager/topbar/search/far-jump threshold reads. Use `derivedStateOf` for threshold booleans, `snapshotFlow + distinctUntilChanged` for effects, and provider lambdas for layout/draw values. |
+| M2 | Squircle/offscreen cost classification | `widget/shape/AppSquircle.kt`, `widget/core`, GitHub rows/cards, BA rows/cards, Settings rows | Replace clip/surface usage with fill-only background where descendants never need clipping. Keep `appSquircleClip` and `appSquircleSurface` for content that truly needs masking. Record each touched surface in this file. |
 
-| ID | Area | MIUIX source idea | KeiOS landing direction | Status |
-| --- | --- | --- | --- | --- |
-| A6 | Immutable list params | Sample uses immutable collections to keep list params stable across recomposition | **Low priority under Kotlin 2.3.21 strong skipping** — unstable `List`/lambda params no longer force recomposition by default. The single `ImmutableList` reference in KeiOS is Guava's (a Media3 `CommandButton` type), unrelated to Compose stability. No kotlinx persistent-collections dependency is declared. Action: do **not** add the dependency speculatively; revisit only if profiling shows a specific list param defeating strong skipping. | Closed (no action under strong skipping) |
-| A7 | miuix-blur shader internals (cascade downsampling, noise dithering, GraphicsLayer pooling) | Library-internal RuntimeShader optimizations in `miuix-blur` | KeiOS consumes the blur via the library, not reimplemented. Action is **verify**, not reimplement: confirm the consumed library version performs cascade downsampling / dithering / layer pooling, and that KeiOS's capability gates (`appGlassRuntimeEffectsEnabled()`, `activeGlassBackdrop()`) correctly short-circuit when unsupported. | Not started (verify) |
+### P1
 
-## Adoption order
+| ID | Area | KeiOS target | Work |
+| --- | --- | --- | --- |
+| M3 | Backdrop capture topology | Bottom bar, action bar, sheets, BA BGM, Home cards, GitHub cards | Audit nested `layerBackdrop` / `drawBackdrop` chains with Backdrop MCP guidance. Prefer one parent capture plus combined/exported backdrop for nested glass. Keep callbacks stable and avoid capture surface churn during scroll. |
+| M4 | Bottom chrome hot-value residuals | `LiquidGlassBottomBar`, `LiquidActionBar`, BA BGM dock/chrome | Scan for resolved animated values passed through composition. Keep drag/press/selection/highlight values as providers read from `graphicsLayer`, `drawBackdrop` layer blocks, or gesture callbacks. |
+| M5 | Search overlay continuity | Settings, GitHub, MCP, OS, BA Catalog | Keep page content mounted during search expansion. Move top padding, alpha, dim, and blocker reads into layout/draw. Keep search query/data filtering in ViewModel/repository derivers. |
+| M6 | Draw allocation cache pass | `widget/glass`, Home HDR, BA BGM hero, progress/status components | Expand `drawWithCache` only where brushes, paths, masks, shader wrappers, or repeated size-stable objects are still created in draw lambdas. |
 
-1. A1 (`derivedStateOf` thresholds) — highest signal-to-effort, directly cuts per-frame recomposition on scroll.
-2. A2 (`drawWithCache` expansion) — cuts per-frame allocation; pairs naturally with A1 on the same chrome surfaces.
-3. A3 (deferred lambda reads) — incremental, low-risk extension of an existing pattern.
-4. A7 (verify blur internals) — confirmation pass, no code unless a gap is found.
-5. A4 (`DrawModifierNode`) — only where profiling justifies it.
-6. A5 (`movableContentOf`) — deferred until a concrete site appears.
-7. A6 — closed; revisit only on profiling evidence.
+### P2
+
+| ID | Area | KeiOS target | Work |
+| --- | --- | --- | --- |
+| M7 | Internal frame overlay | Debug / benchmark builds | Add a gated overlay inspired by MIUIX FPSMonitor: average FPS, 1 percent low FPS, draggable position, low refresh overhead. Keep release builds free of overlay work. |
+| M8 | Page utility convergence | Shared page scaffold/chrome helpers | Align page padding, scroll haptic, overscroll, nested scroll, and blur gates through shared helpers where pages still duplicate logic. |
+| M9 | Backdrop / blur dependency verification | Gradle dependency graph, Backdrop MCP docs, MIUIX blur docs | Verify consumed library versions keep runtime shader caches and capture-node behavior. Update rules only when current dependency behavior diverges from the expected topology. |
+
+### P3
+
+| ID | Area | KeiOS target | Work |
+| --- | --- | --- | --- |
+| M10 | `movableContentOf` adoption | Navigation 3 host / movable page subtrees | Adopt for a proven stateful subtree relocation bug or transition case. Keep it out of ordinary static layouts. |
+| M11 | Immutable collections | ViewModel UI models crossing very hot composables | Kotlin/Compose strong skipping reduces urgency. Add persistent collections only when compiler reports or runtime traces identify a specific list parameter as a blocker. |
 
 ## Guardrails
 
-- Preserve current Liquid Glass visuals, animation timing, and all page behavior. This is a
-  performance pass: move work to draw/layout, cache size-stable inputs, and reduce per-frame
-  recomposition — never trade away UI richness.
-- MIUIX is Apache-2.0; still write KeiOS-native code rather than copy structure/names.
-- Prefer release/benchmark evidence for final performance claims; debug HWUI bars are triage only.
-- Each landed item must pass: `:app:compileDebugKotlin`, `:app:testDebugUnitTest`,
-  `git diff --check`, and the `collectAsState(` misuse scan, then update the Status column here.
+- Preserve visual richness, glass depth, rounded-corner quality, animations, and
+  mounted page content. Performance work should move reads to draw/layout,
+  cache stable inputs, and reduce repeated capture work.
+- Keep data loading asynchronous. Repository/ViewModel work can precompute
+  display snapshots; Composables should render immutable UI state and emit
+  callbacks.
+- Treat debug HWUI bars as triage evidence. Use benchmark/release builds,
+  `dumpsys gfxinfo`, Macrobenchmark, Perfetto, or Compose compiler reports for
+  final claims.
+- Keep Backdrop changes aligned with Backdrop MCP documentation, especially
+  nested glass and exported/combined backdrop paths.
+- Use AVD for mutable install/smoke tests unless a real-device run is explicitly
+  approved. Protect `os.kei` release package operations.
+- Update the status table and verification log whenever an item lands.
+
+## Verification Commands
+
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+git diff --check
+rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'
+```
+
+Recommended performance evidence per landed item:
+
+```bash
+adb -s <emulator-serial> shell dumpsys gfxinfo os.kei.benchmark framestats
+adb -s <emulator-serial> shell setprop debug.hwui.profile visual_bars
+```
+
+For install/smoke validation, target emulator packages:
+
+- Debug: `os.kei.debug`
+- Benchmark: `os.kei.benchmark`
+
+## Status Table
+
+| ID | Status | Notes |
+| --- | --- | --- |
+| M0 | Planned | Highest value remaining MIUIX Sample idea for Home perceived smoothness. |
+| M1 | Audited (no scroll/pager gap) | Scroll/pager/far-jump threshold reads are all already deferred (snapshotFlow + distinctUntilChanged, derivedStateOf, or provider lambdas invoked only from effects/callbacks). No composition-phase per-frame read to convert. TopAppBar collapse + search-expansion thresholds remain for a later targeted pass. |
+| M2 | Planned | High HWUI value because rounded surfaces are dense across KeiOS. |
+| M3 | Planned | Backdrop count is high; topology drift can affect page switching. |
+| M4 | Planned | Bottom chrome already strong; audit residuals after BGM changes. |
+| M5 | Planned | Search expansion should keep continuity and mounted content. |
+| M6 | First target landed | Swept draw lambdas for size-stable per-frame allocations. Landed: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame; hoisted to a stable member field (fixed-shader wrapper is size-independent, uniforms still mutate in place). Other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. Continue on Home HDR / BA BGM hero if new draw allocations appear. |
+| M7 | Planned | QA-only tool to supplement HWUI bars and benchmark numbers. |
+| M8 | Planned | Shared page helper convergence after hotspot fixes. |
+| M9 | Verified | Inspected consumed `miuix-blur` (`0.9.1-f7c90d71-SNAPSHOT`): adaptive cascade downsampling (1/2/4/8/16 via `computeDownScaleParams`) + separable H/V Gaussian (`BlurEffect.kt`); compile-once shader pooling (`RuntimeShaderCacheImpl.obtainRuntimeShader` getOrPut, GC'd on dispose); GraphicsLayer pooling (`createGraphicsLayer`/`releaseGraphicsLayer` on detach, separate `noiseLayer` for dithering in `DrawBackdropModifier.kt`); zero-alloc scratch buffers. KeiOS gate `appGlassRuntimeEffectsEnabled()` delegates to `isRuntimeShaderSupported()`; `activeGlassBackdrop()` nulls the backdrop when unsupported. No KeiOS change needed; re-verify on dependency bumps. |
+| M10 | Observe | Requires a concrete stateful subtree relocation case. |
+| M11 | Observe | Requires compiler/runtime evidence under strong skipping. |
 
 ## Verification Log
 
-- 2026-05-30 plan authored:
-  - Re-scanned MIUIX sample at `9b86e77` (`example/`, `miuix/`).
-  - Verified KeiOS gap counts: `derivedStateOf` 4/2 files, `drawWithCache` 8/3 files,
-    `DrawModifierNode` 1 file, `movableContentOf` 0, kotlinx immutable collections 0
-    (lone `ImmutableList` is Guava Media3).
-  - Confirmed Kotlin/Compose compiler 2.3.21 (strong skipping ON) from `build.gradle.kts`.
-  - Confirmed widely-adopted patterns require no action.
-- 2026-05-30 A1 + A2 implementation pass:
-  - A1: audited every scroll/pager read; all already deferred (snapshotFlow /
-    derivedStateOf / provider lambdas invoked only from effects/callbacks). No code change.
-  - A2: hoisted the per-frame `ShaderBrush(shader)` wrapper in `InteractiveHighlight`
-    to a stable member field; no other draw lambda re-allocates a size-stable object.
+- 2026-05-30 refresh:
+  - Confirmed `.tmp/miuix` at `9b86e77`.
+  - Scanned MIUIX Sample dynamic background, liquid navigation bar, search bar,
+    FPS monitor, page utilities, TopAppBar, blur capture node, Squircle
+    background/border, and Navigation 3 scene decorator.
+  - Re-scanned KeiOS counts for derived state, draw caches, modifier nodes,
+    shader paths, graphics layers, snapshot flows, lazy content types, Backdrop
+    usage, Squircle usage, and movable content.
+  - Reconciled this plan with `docs/performance-reference-priorities.md` so
+    already-landed work remains historical reference and this file tracks the
+    next actionable backlog.
+- 2026-05-30 M1 / M6 / M9 first implementation pass:
+  - M1: audited scroll/pager/far-jump threshold reads across MainScreen children,
+    Home, Settings, GitHub, OS, MCP, BA. All already deferred via
+    `snapshotFlow + distinctUntilChanged`, `derivedStateOf`, or provider lambdas
+    invoked only from effects/callbacks. No composition-phase per-frame read to
+    convert. No code change.
+  - M6: hoisted the per-frame `ShaderBrush(shader)` wrapper in
+    `InteractiveHighlight` to a stable member field; no other draw lambda
+    re-allocates a size-stable object.
+  - M9: verified `miuix-blur` internals (cascade downsampling, separable Gaussian,
+    shader pooling, GraphicsLayer pooling, noise dithering layer, zero-alloc
+    scratch) and confirmed KeiOS gates short-circuit correctly. No code change.
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

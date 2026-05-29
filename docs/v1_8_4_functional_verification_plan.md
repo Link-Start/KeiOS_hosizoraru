@@ -140,8 +140,8 @@
 | E | MCP | ✅ 8/8 PASS | Server toggle, scroll-to-top (M8a), tool search, edit config, reset dialogs, skill nav, log export, glass effects — all intact. |
 | F | OS | ✅ 8/8 PASS | Card expansion, scroll-to-top (M8a), search, activity shortcuts, shell commands, card manager, import/export, glass effects — all intact. |
 | G | BA Office | ✅ 7/7 + 1 CONCERN | Server popup, calendar/pool sync, friend code, floating dock, notifications, sheets, glass effects — all intact. CONCERN: BaOfficeClock countdown pauses during active scroll (ticker gated on scroll idle). Minor UX gap, not a regression. |
-| H | BA Guide Catalog | Not started | |
-| I | BA Student Guide | Not started | |
+| H | BA Guide Catalog | ✅ 11/11 PASS | Pager, bottom chrome, per-tab search, student→detail, BGM controls, mini-player (M4), volume, favorites, filter/sort, import/export, avatar fallback (M2) — all intact. |
+| I | BA Student Guide | ✅ 6/6 + 1 fix | Pager, scroll-to-top, bottom bar, sections, gallery, BGM tab — all intact. Fixed: removed 3 dead `appSquircleClip` imports left from M2 second pass. |
 | J | About | Not started | |
 
 ## Verification commands

@@ -41,12 +41,28 @@ internal fun rememberBaGuideCatalogTabListState(
     // position is naturally preserved across tab switches.
     val listState = remember(tab) { LazyListState() }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    // Use remember (not rememberSaveable) so visibleCount resets on Activity
-    // recreate instead of persisting a stale value. The derivedStateOf below
-    // ensures displayedEntries always stays in sync with filteredEntries.
-    var visibleCount by remember(tab) { mutableIntStateOf(CATALOG_BATCH_SIZE) }
+    // Use remember (not rememberSaveable) so it resets on Activity recreate.
+    var loadedCount by remember(tab) { mutableIntStateOf(0) }
+    // derivedStateOf computes the effective visible count synchronously during
+    // composition — no LaunchedEffect delay. On first entry when filteredEntries
+    // is empty, this returns 0. When data arrives, it immediately returns
+    // minOf(loadedCount, filteredEntries.size), which starts at CATALOG_BATCH_SIZE
+    // (since loadedCount starts at 0 and the load-more effect sets it on data arrival).
+    val visibleCount by remember(filteredEntries, loadedCount) {
+        derivedStateOf {
+            if (loadedCount <= 0) {
+                minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
+            } else {
+                minOf(loadedCount, filteredEntries.size)
+            }
+        }
+    }
+    // Set loadedCount when data first arrives so subsequent recompositions
+    // don't re-derive from loadedCount=0.
     LaunchedEffect(filteredEntries.size) {
-        visibleCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
+        if (filteredEntries.isNotEmpty() && loadedCount <= 0) {
+            loadedCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
+        }
     }
     LaunchedEffect(isPageActive, listState, filteredEntries.size, loading, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
@@ -62,7 +78,7 @@ internal fun rememberBaGuideCatalogTabListState(
             }.distinctUntilChanged()
             .collect { (lastVisible, totalCount, viewportItems) ->
                 if (loading) return@collect
-                if (visibleCount >= filteredEntries.size) return@collect
+                if (loadedCount >= filteredEntries.size) return@collect
                 if (totalCount <= 0) return@collect
                 val triggerIndex = (totalCount - 1 - CATALOG_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
                 if (lastVisible < triggerIndex) return@collect
@@ -70,7 +86,7 @@ internal fun rememberBaGuideCatalogTabListState(
                 val appendBatch =
                     max(CATALOG_BATCH_SIZE, viewportItems * 3)
                         .coerceAtMost(CATALOG_BATCH_SIZE * 3)
-                visibleCount = minOf(visibleCount + appendBatch, filteredEntries.size)
+                loadedCount = minOf(loadedCount + appendBatch, filteredEntries.size)
             }
     }
 

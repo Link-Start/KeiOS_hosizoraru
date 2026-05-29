@@ -525,6 +525,41 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - AVD/真机:
   - 本批未跑设备，依赖 Batch A 真机安装结果与 Batch B AVD smoke 的 GitHub 启动可见性。
 
+### 2026-05-29 Batch E - OS Page / Shell
+
+- Commit: 审查批次（无新源码改动；引用历史修复 `9fe5b96a1`）
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/os/OsPage.kt`、`OsPageViewModel.kt`、`OsPageUiState.kt`
+  - `OsActivityShortcutCardStore.kt`、`OsActivityShortcutCardCodec.kt`、`OsActivityShortcutCardPersistence.kt`、`OsActivityShortcutCardImportExport.kt`、`OsActivityShortcutCardMigration.kt`
+  - `OsActivityShortcutEditorHost.kt`、`OsShortcutActivitySectionCards.kt`、`OsPageOverlayState.kt`、`OsPageOverlaySheets.kt`、`OsPageOverlayCoordinator.kt`
+  - `OsShellCommandCardStore.kt`、`OsShellCommandCardCodec.kt`、`OsShellCommandCardPersistence.kt`、`OsShellCommandCardImportExport.kt`、`OsShellCommandCardBuiltInMerge.kt`、`OsShellCommandCardSheets.kt`、`OsShellRunnerViewModel.kt`
+  - `OsPageMainList.kt`、`OsKeyValueSectionCards.kt`、`OsTopInfoSectionCards.kt`
+- 主要风险:
+  - 活动卡新增/编辑/保存/返回手势：sheet close 状态与返回栈一致性。
+  - 全面屏设置活动卡 extras 的数据流。
+  - shell card 运行/复制/历史/导入导出路径。
+  - Store codec / migration / import-export / defaults 边界。
+  - LazyList 是否使用稳定 key/contentType。
+  - 是否存在 `collectAsState(` 误用。
+  - 文案是否进入资源文件。
+- 已修复:
+  - 无新增源码修改。Shell 输出行 identity 在历史 commit `9fe5b96a1` 已稳定。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest`
+  - `rg "collectAsState\(" app/src/main/java/os/kei/ui/page/main/os -g '*.kt'` 零命中
+- 审计结论:
+  - **PASS**。
+  - Store/Codec/Persistence 三层边界清晰：`OsActivityShortcutCardStore` 与 `OsShellCommandCardStore` 是无状态 facade；codec 负责 JSON 序列化、空命令拒绝、时间戳规范化；migration 通过 `appendMissingBuiltIns` 处理内置卡升级。
+  - Sheet 状态：`OsPageOverlayState` 已重构为父级（`OsPageViewModel`）控制，通过 `onDismissRequest` + `onDismissFinished` 对齐返回栈。
+  - LazyList 全部带稳定 key（`os-activity-${card.id}` / `os-shell-command-${card.id}` / `osInfoRowStableKey()`）和 contentType（`os_shortcut_activity_card` / `os_shell_command_card` / `os_info_row` / `os_top_info_entry`）。
+  - State 收集：全量 `collectAsStateWithLifecycle()`，零 `collectAsState(`。
+  - 文案：100% `stringResource(R.string.os_*)`。
+- 保留风险:
+  - 活动卡 extras 解析 `normalizeShortcutIntentExtras()` 在 composition 内执行；当前 payload 较小未观察到 jank，若未来 extras 显著增大需要移到 deriver。
+  - 实机端到端验收（活动启动、shell 运行、导入导出、活动卡编辑保存）依赖 Batch A 真机已安装结果，本批未单独跑。
+- AVD/真机:
+  - 未单独跑设备。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
@@ -534,7 +569,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 | P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 完成 |
 | P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 完成 |
-| P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 待执行 |
+| P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 完成 |
 | P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 进行中（catalog 已完成，BGM/通知待补） |
 | P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 待执行 |
 

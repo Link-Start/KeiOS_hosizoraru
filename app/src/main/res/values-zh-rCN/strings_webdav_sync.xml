@@ -18,7 +18,9 @@
     <string name="webdav_sync_test_connection">测试连接</string>
     <string name="webdav_sync_testing">测试中…</string>
     <string name="webdav_sync_test_success">连接成功</string>
+    <string name="webdav_sync_test_success_dir_created">连接成功（已自动创建目录）</string>
     <string name="webdav_sync_test_failed">连接失败：%1$s</string>
+    <string name="webdav_sync_dir_created">已自动创建远程目录</string>
     <string name="webdav_sync_save">保存</string>
     <string name="webdav_sync_items_title">同步项目</string>
     <string name="webdav_sync_upload">上传</string>

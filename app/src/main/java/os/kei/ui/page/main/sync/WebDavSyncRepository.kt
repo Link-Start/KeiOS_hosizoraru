@@ -171,7 +171,7 @@ internal class WebDavSyncRepository {
                         if (result.code == 404 || result.code == 409) {
                             AppLogger.i(TAG, "Remote dir not found during test, creating...")
                             when (val mkResult = c.mkdir()) {
-                                is WebDavResult.Success -> WebDavTestResult(true, "OK (directory created)")
+                                is WebDavResult.Success -> WebDavTestResult(true, "OK", dirCreated = true)
                                 is WebDavResult.Failure -> {
                                     // 405 = already exists
                                     if (mkResult.code == 405) {
@@ -204,4 +204,8 @@ internal sealed interface WebDavSyncItemResult {
     data class Error(val message: String) : WebDavSyncItemResult
 }
 
-internal data class WebDavTestResult(val success: Boolean, val message: String)
+internal data class WebDavTestResult(
+    val success: Boolean,
+    val message: String,
+    val dirCreated: Boolean = false,
+)

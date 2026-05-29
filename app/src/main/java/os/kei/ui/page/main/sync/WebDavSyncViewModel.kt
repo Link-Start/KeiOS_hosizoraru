@@ -80,7 +80,11 @@ internal class WebDavSyncViewModel : ViewModel() {
             val result = repository.testConnection()
             uiState = uiState.copy(
                 testing = false,
-                testResult = if (result.success) WebDavTestUiResult.Success else WebDavTestUiResult.Failure(result.message),
+                testResult = when {
+                    result.success && result.dirCreated -> WebDavTestUiResult.SuccessDirCreated
+                    result.success -> WebDavTestUiResult.Success
+                    else -> WebDavTestUiResult.Failure(result.message)
+                },
             )
         }
     }
@@ -229,6 +233,7 @@ internal data class WebDavSyncItemUiState(
 
 internal sealed interface WebDavTestUiResult {
     data object Success : WebDavTestUiResult
+    data object SuccessDirCreated : WebDavTestUiResult
     data class Failure(val message: String) : WebDavTestUiResult
 }
 

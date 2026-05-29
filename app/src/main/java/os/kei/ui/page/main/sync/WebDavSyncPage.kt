@@ -185,11 +185,12 @@ internal fun WebDavSyncPage(
                     val testResult = state.testResult
                     if (testResult != null) {
                         val color = when (testResult) {
-                            is WebDavTestUiResult.Success -> Color(0xFF22C55E)
+                            is WebDavTestUiResult.Success, is WebDavTestUiResult.SuccessDirCreated -> Color(0xFF22C55E)
                             is WebDavTestUiResult.Failure -> MiuixTheme.colorScheme.error
                         }
                         val text = when (testResult) {
                             is WebDavTestUiResult.Success -> stringResource(R.string.webdav_sync_test_success)
+                            is WebDavTestUiResult.SuccessDirCreated -> stringResource(R.string.webdav_sync_test_success_dir_created)
                             is WebDavTestUiResult.Failure -> stringResource(R.string.webdav_sync_test_failed, testResult.message)
                         }
                         Text(

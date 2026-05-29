@@ -18,7 +18,9 @@
     <string name="webdav_sync_test_connection">Test</string>
     <string name="webdav_sync_testing">Testing…</string>
     <string name="webdav_sync_test_success">Connection successful</string>
+    <string name="webdav_sync_test_success_dir_created">Connection successful (directory created)</string>
     <string name="webdav_sync_test_failed">Connection failed: %1$s</string>
+    <string name="webdav_sync_dir_created">Remote directory created automatically</string>
     <string name="webdav_sync_save">Save</string>
     <string name="webdav_sync_items_title">Sync Items</string>
     <string name="webdav_sync_upload">Upload</string>

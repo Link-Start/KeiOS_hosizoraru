@@ -133,7 +133,7 @@
 
 | Batch | Scope | Status | Issues |
 | --- | --- | --- | --- |
-| A | Global chrome | Not started | |
+| A | Global chrome | ✅ 6/6 PASS | NavHost routes (6), pager (5 pages), bottom bar, toast, glass runtime, predictive back — all intact. |
 | B | Home | Not started | |
 | C | Settings | Not started | |
 | D | GitHub | Not started | |

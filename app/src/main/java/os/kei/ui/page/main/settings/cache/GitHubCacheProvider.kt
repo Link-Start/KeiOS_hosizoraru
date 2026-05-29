@@ -77,7 +77,7 @@ private fun githubSummary(context: Context): CacheEntrySummary {
         freshness =
             cacheFreshness(
                 updatedAtMs = updatedAtMs,
-                bytes = cacheBytes + configBytes,
+                bytes = cacheBytes,
                 rebuildable = true,
                 ttlMs = snapshot.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L,
             ),

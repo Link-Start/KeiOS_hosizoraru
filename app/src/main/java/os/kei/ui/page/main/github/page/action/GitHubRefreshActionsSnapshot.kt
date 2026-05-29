@@ -12,6 +12,7 @@ import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isValidForTrackedItem
+import os.kei.feature.github.model.resolvedRefreshTimestamp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.share.toShareImportAttachCandidate
 import os.kei.ui.page.main.github.share.toShareImportPreview
@@ -33,8 +34,12 @@ internal fun GitHubRefreshActions.consumeDeferredTrackStoreSyncAfterRefresh(): B
     return pending
 }
 
-internal suspend fun GitHubRefreshActions.persistCheckCacheNow(refreshTimestamp: Long = System.currentTimeMillis()) {
-    repository.saveCheckCache(buildCheckCacheEntries(), refreshTimestamp)
+internal suspend fun GitHubRefreshActions.persistCheckCacheNow(refreshTimestamp: Long? = null) {
+    val entries = buildCheckCacheEntries()
+    val resolvedRefreshTimestamp =
+        entries.resolvedRefreshTimestamp(refreshTimestamp ?: state.lastRefreshMs)
+    state.lastRefreshMs = resolvedRefreshTimestamp
+    repository.saveCheckCache(entries, resolvedRefreshTimestamp)
 }
 
 internal fun GitHubRefreshActions.buildCheckCacheEntries(): Map<String, GitHubCheckCacheEntry> =

@@ -21,6 +21,7 @@ import os.kei.feature.github.model.githubProfileSourceSignature
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.requiredCapabilities
+import os.kei.feature.github.model.resolvedRefreshTimestamp
 import os.kei.feature.github.model.withSourceModeConstraints
 
 data class GitHubTrackSnapshot(
@@ -439,7 +440,7 @@ object GitHubTrackStore {
         val raw = kv().decodeString(KEY_CHECK_CACHE).orEmpty()
         val ts = kv().decodeLong(KEY_LAST_REFRESH_MS, 0L)
         val profileCache = loadProfileCache()
-        if (raw.isBlank()) return emptyMap<String, GitHubCheckCacheEntry>() to ts
+        if (raw.isBlank()) return emptyMap<String, GitHubCheckCacheEntry>() to 0L
         val map = runCatching {
             val obj = JSONObject(raw)
             buildMap {
@@ -515,13 +516,18 @@ object GitHubTrackStore {
                                 "directApkRemoteCheckedAtMillis",
                                 -1L
                             ),
-                            checkedAtMillis = item.optLong("checkedAtMillis", ts)
+                            checkedAtMillis =
+                                if (item.has("checkedAtMillis")) {
+                                    item.optLong("checkedAtMillis", -1L)
+                                } else {
+                                    ts
+                                }
                         )
                     )
                 }
             }
         }.getOrDefault(emptyMap())
-        return map to ts
+        return map to map.resolvedRefreshTimestamp(ts)
     }
 
     fun loadProfileCache(): Map<String, GitHubRepositoryProfileSnapshot> {
@@ -583,8 +589,16 @@ object GitHubTrackStore {
     }
 
     fun saveCheckCache(states: Map<String, GitHubCheckCacheEntry>, lastRefreshMs: Long) {
+        if (states.isEmpty()) {
+            val store = kv()
+            store.removeValueForKey(KEY_CHECK_CACHE)
+            store.removeValueForKey(KEY_PROFILE_CACHE)
+            store.removeValueForKey(KEY_LAST_REFRESH_MS)
+            return
+        }
         val obj = JSONObject()
         val profileObj = JSONObject()
+        val resolvedLastRefreshMs = states.resolvedRefreshTimestamp(lastRefreshMs)
         states.forEach { (id, state) ->
             obj.put(
                 id,
@@ -649,7 +663,7 @@ object GitHubTrackStore {
         } else {
             kv().removeValueForKey(KEY_PROFILE_CACHE)
         }
-        kv().encode(KEY_LAST_REFRESH_MS, lastRefreshMs)
+        kv().encode(KEY_LAST_REFRESH_MS, resolvedLastRefreshMs)
     }
 
     fun clearCheckCache() {
@@ -668,6 +682,7 @@ object GitHubTrackStore {
 
     fun cacheBytesEstimated(): Long {
         val snapshot = loadSnapshot()
+        if (snapshot.checkCache.isEmpty() && snapshot.profileCache.isEmpty()) return 0L
         val cacheJsonBytes = snapshot.checkCache.values.sumOf { state ->
             listOf(
                 state.localVersion,

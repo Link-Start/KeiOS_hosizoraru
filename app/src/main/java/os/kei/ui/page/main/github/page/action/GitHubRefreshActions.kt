@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.resolvedRefreshTimestamp
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 
@@ -56,10 +57,13 @@ internal class GitHubRefreshActions(
             actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
         )
 
-    fun persistCheckCache(refreshTimestamp: Long = System.currentTimeMillis()) {
+    fun persistCheckCache(refreshTimestamp: Long? = null) {
         val states = buildCheckCacheEntries()
+        val resolvedRefreshTimestamp =
+            states.resolvedRefreshTimestamp(refreshTimestamp ?: state.lastRefreshMs)
+        state.lastRefreshMs = resolvedRefreshTimestamp
         scope.launch {
-            repository.saveCheckCache(states, refreshTimestamp)
+            repository.saveCheckCache(states, resolvedRefreshTimestamp)
         }
     }
 

@@ -229,7 +229,7 @@ internal class GitHubRefreshBatchActions(
                     state.lastRefreshMs = clock.nowMs()
                 }
                 state.refreshProgress = 1f
-                owner.persistCheckCacheNow(state.lastRefreshMs)
+                owner.persistCheckCacheNow()
                 onFinished?.invoke()
                 repository.notifyRefreshCompleted(
                     context = context,

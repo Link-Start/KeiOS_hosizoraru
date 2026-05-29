@@ -23357,12 +23357,6 @@ Los/kei/ui/page/main/ba/BAPageKt$BAPage$5$1;
 SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$5$1;-><init>(Los/kei/ui/page/main/ba/BaOfficeViewModel;Landroidx/compose/foundation/lazy/LazyListState;Lkotlin/coroutines/Continuation;)V
 SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$5$1;->create(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
 SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$5$1;->invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
-Los/kei/ui/page/main/ba/BAPageKt$BAPage$6$1;
-SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$6$1;-><init>(Los/kei/ui/page/main/ba/BaOfficeViewModel;Los/kei/ui/page/main/ba/BaRuntimePersistenceCoordinator;Landroid/content/Context;Lkotlin/coroutines/Continuation;)V
-SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$6$1;->create(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
-SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$6$1;->invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
-Los/kei/ui/page/main/ba/BAPageKt$BAPage$6$1$1;
-SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$6$1$1;-><init>(Los/kei/ui/page/main/ba/BaRuntimePersistenceCoordinator;Los/kei/ui/page/main/ba/BaOfficeViewModel;Landroid/content/Context;)V
 Los/kei/ui/page/main/ba/BAPageKt$BAPage$8$1;
 SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$8$1;-><init>(Ljava/lang/Object;)V
 SPLos/kei/ui/page/main/ba/BAPageKt$BAPage$8$1;->invoke(I)V
@@ -27394,9 +27388,7 @@ SPLos/kei/ui/page/main/host/pager/MainPagerInsets;->getHomeTopInset-D9Ej5fM()F
 SPLos/kei/ui/page/main/host/pager/MainPagerInsets;->getNavigationBarBottom-D9Ej5fM()F
 Los/kei/ui/page/main/host/pager/MainPagerLayoutKt;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->HomeHdrWindowModeEffect(ZLandroidx/compose/runtime/Composer;I)V
-SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout$lambda$10(Los/kei/ui/page/main/host/pager/MainPagerCoordinatorState;ZLos/kei/ui/page/main/host/pager/MainPagerInsets;ZLandroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout$lambda$11(Los/kei/ui/page/main/host/pager/MainPagerCoordinatorState;ZFLos/kei/ui/page/main/host/pager/MainPagerInsets;Los/kei/ui/page/main/back/BackNavigationRuntimeState;ZLos/kei/ui/page/main/widget/glass/AppFloatingDockSide;Ljava/lang/String;ZZLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function0;Los/kei/core/shizuku/ShizukuApiUtils;ZLkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;Los/kei/mcp/server/McpServerManager;Lkotlin/jvm/functions/Function0;ILjava/lang/String;IZLandroidx/compose/foundation/layout/PaddingValues;Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;
-SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->MainPagerLayout$lambda$12(ZLos/kei/ui/navigation/Navigator;IZZZZZZZZLjava/lang/String;FLjava/util/Set;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Los/kei/core/shizuku/ShizukuApiUtils;Los/kei/mcp/server/McpServerManager;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;Ljava/lang/String;IILjava/lang/String;IZLkotlin/jvm/functions/Function0;IIILandroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->findActivity(Landroid/content/Context;)Landroid/app/Activity;
 SPLos/kei/ui/page/main/host/pager/MainPagerLayoutKt;->shouldActivateHomeHdrEffect(ZZZIIZZ)Z
 Los/kei/ui/page/main/host/pager/MainPagerLayoutKt$HomeHdrWindowModeEffect$1$1;
@@ -29667,12 +29659,10 @@ SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomB
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomBar$lambda$5(Landroidx/compose/runtime/MutableFloatState;F)V
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomBar$lambda$9(Landroidx/compose/runtime/MutableIntState;)I
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomBar(Landroidx/compose/ui/Modifier;ILjava/lang/Float;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Lcom/kyant/backdrop/Backdrop;IZZLkotlin/jvm/functions/Function3;Landroidx/compose/runtime/Composer;II)V
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomBarItem$lambda$1(Landroidx/compose/runtime/State;)Z
 PLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomBarItem$lambda$6(Landroidx/compose/foundation/layout/RowScope;ZILkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function3;IILandroidx/compose/runtime/Composer;I)Lkotlin/Unit;
 HSPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->LiquidGlassBottomBarItem(Landroidx/compose/foundation/layout/RowScope;ZILkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function3;Landroidx/compose/runtime/Composer;II)V
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->access$LiquidGlassBottomBar$lambda$10(Landroidx/compose/runtime/MutableIntState;I)V
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->access$LiquidGlassBottomBar$lambda$9(Landroidx/compose/runtime/MutableIntState;)I
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->access$LiquidGlassBottomBarItem$lambda$1(Landroidx/compose/runtime/State;)Z
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->liquidBottomBarPanelOffset(FFLandroidx/compose/ui/unit/Density;)F
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->liquidGlassBottomBarItemContentColor(ILandroidx/compose/runtime/Composer;I)J
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt;->liquidGlassBottomBarItemSelectionProgress(ILandroidx/compose/runtime/Composer;I)F
@@ -29700,10 +29690,6 @@ Los/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$5
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$5$1;-><init>(Los/kei/ui/page/main/widget/chrome/LiquidBottomBarPalette;)V
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$5$1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$5$1;->invoke-vNxB06k(I)J
-Los/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$7$1$8$1;
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$7$1$8$1;-><init>(Los/kei/ui/page/main/widget/chrome/LiquidBottomBarPalette;)V
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$7$1$8$1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$7$1$8$1;->invoke-vNxB06k(I)J
 Los/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$DampedDragAnimationHolder;
 SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$DampedDragAnimationHolder;-><init>()V
 PLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$DampedDragAnimationHolder;->getInstance()Los/kei/ui/animation/DampedDragAnimation;
@@ -29714,10 +29700,6 @@ PLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$
 PLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$dampedDragAnimation$1$4$1;-><init>(Landroidx/compose/animation/core/Animatable;Landroidx/compose/ui/geometry/Offset;Lkotlin/coroutines/Continuation;)V
 PLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$dampedDragAnimation$1$4$1;->create(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
 PLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBar$dampedDragAnimation$1$4$1;->invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
-Los/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBarItem$1$1;
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBarItem$1$1;-><init>(ZLkotlin/jvm/functions/Function2;ILandroidx/compose/runtime/State;Lkotlin/coroutines/Continuation;)V
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBarItem$1$1;->create(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
-SPLos/kei/ui/page/main/widget/chrome/LiquidGlassBottomBarKt$LiquidGlassBottomBarItem$1$1;->invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
 Los/kei/ui/page/main/widget/chrome/ScrollChromeVisibilityController;
 SPLos/kei/ui/page/main/widget/chrome/ScrollChromeVisibilityController;-><clinit>()V
 SPLos/kei/ui/page/main/widget/chrome/ScrollChromeVisibilityController;-><init>(FF)V

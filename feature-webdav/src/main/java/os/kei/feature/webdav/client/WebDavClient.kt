@@ -102,11 +102,14 @@ class WebDavClient(
         try {
             client.newCall(request).execute().use { response ->
                 if (response.code !in 200..299) return@withContext emptyList()
-                val body = response.body.string()
+                val body = response.body?.string().orEmpty()
                 parsePropfindResponse(body)
             }
         } catch (e: IOException) {
             AppLogger.w(TAG, "PROPFIND failed", e)
+            emptyList()
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "PROPFIND unexpected exception", e)
             emptyList()
         }
     }
@@ -132,7 +135,7 @@ class WebDavClient(
     private fun executeString(request: Request, label: String): WebDavResult {
         return try {
             client.newCall(request).execute().use { response ->
-                val body = response.body.string()
+                val body = response.body?.string().orEmpty()
                 val etag = response.header("ETag")
                 if (response.code in 200..299) {
                     WebDavResult.Success(etag = etag, body = body)
@@ -144,6 +147,9 @@ class WebDavClient(
         } catch (e: IOException) {
             AppLogger.w(TAG, "$label exception", e)
             WebDavResult.Failure(0, e.message ?: "IOException")
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "$label unexpected exception", e)
+            WebDavResult.Failure(0, e.message ?: "Unknown error")
         }
     }
 

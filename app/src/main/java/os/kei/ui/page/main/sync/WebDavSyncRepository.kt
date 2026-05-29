@@ -21,6 +21,45 @@ internal class WebDavSyncRepository {
 
     fun isConfigured(): Boolean = client != null
 
+    // ── Ensure remote directory exists ──────────────────────────────
+
+    /**
+     * Ensure the remote directory exists. Creates it if missing.
+     * Returns true if the directory is ready, false on failure.
+     */
+    private suspend fun ensureRemoteDir(): Boolean {
+        val c = client ?: return false
+        // First try PROPFIND to check if directory exists
+        when (val result = c.testConnection()) {
+            is WebDavResult.Success -> return true
+            is WebDavResult.Failure -> {
+                // 404 or 409 means directory doesn't exist, try to create it
+                if (result.code == 404 || result.code == 409) {
+                    AppLogger.i(TAG, "Remote dir not found, creating...")
+                    return when (val mkResult = c.mkdir()) {
+                        is WebDavResult.Success -> {
+                            AppLogger.i(TAG, "Remote dir created successfully")
+                            true
+                        }
+                        is WebDavResult.Failure -> {
+                            // 405 = already exists (Method Not Allowed on MKCOL)
+                            if (mkResult.code == 405) {
+                                AppLogger.i(TAG, "Remote dir already exists (405)")
+                                true
+                            } else {
+                                AppLogger.w(TAG, "Failed to create remote dir: ${mkResult.code} ${mkResult.message}")
+                                false
+                            }
+                        }
+                    }
+                }
+                // Other errors (auth, network, etc.)
+                AppLogger.w(TAG, "PROPFIND failed: ${result.code} ${result.message}")
+                return false
+            }
+        }
+    }
+
     // ── Single item sync ───────────────────────────────────────────
 
     suspend fun syncItem(
@@ -31,6 +70,10 @@ internal class WebDavSyncRepository {
         val c = client ?: return WebDavSyncItemResult.Error("Not configured")
         return withContext(Dispatchers.IO) {
             try {
+                // Ensure directory exists before syncing
+                if (!ensureRemoteDir()) {
+                    return@withContext WebDavSyncItemResult.Error("Cannot access remote directory")
+                }
                 // Upload: export local → PUT
                 val localJson = exportJson()
                 when (val putResult = c.put(item.fileName, localJson)) {
@@ -62,6 +105,10 @@ internal class WebDavSyncRepository {
         val c = client ?: return WebDavSyncItemResult.Error("Not configured")
         return withContext(Dispatchers.IO) {
             try {
+                // Ensure directory exists before uploading
+                if (!ensureRemoteDir()) {
+                    return@withContext WebDavSyncItemResult.Error("Cannot access remote directory")
+                }
                 val json = exportJson()
                 when (val result = c.put(item.fileName, json)) {
                     is WebDavResult.Success -> WebDavSyncItemResult.Synced(true, false, result.etag)
@@ -82,6 +129,10 @@ internal class WebDavSyncRepository {
         val c = client ?: return WebDavSyncItemResult.Error("Not configured")
         return withContext(Dispatchers.IO) {
             try {
+                // Ensure directory exists before downloading
+                if (!ensureRemoteDir()) {
+                    return@withContext WebDavSyncItemResult.Error("Cannot access remote directory")
+                }
                 when (val result = c.get(item.fileName)) {
                     is WebDavResult.Success -> {
                         val body = result.body
@@ -110,9 +161,35 @@ internal class WebDavSyncRepository {
 
     suspend fun testConnection(): WebDavTestResult {
         val c = client ?: return WebDavTestResult(false, "Not configured")
-        return when (val result = c.testConnection()) {
-            is WebDavResult.Success -> WebDavTestResult(true, "OK")
-            is WebDavResult.Failure -> WebDavTestResult(false, result.message)
+        return withContext(Dispatchers.IO) {
+            try {
+                // Try to access the remote directory
+                when (val result = c.testConnection()) {
+                    is WebDavResult.Success -> WebDavTestResult(true, "OK")
+                    is WebDavResult.Failure -> {
+                        // 404 or 409 = directory doesn't exist, try to create it
+                        if (result.code == 404 || result.code == 409) {
+                            AppLogger.i(TAG, "Remote dir not found during test, creating...")
+                            when (val mkResult = c.mkdir()) {
+                                is WebDavResult.Success -> WebDavTestResult(true, "OK (directory created)")
+                                is WebDavResult.Failure -> {
+                                    // 405 = already exists
+                                    if (mkResult.code == 405) {
+                                        WebDavTestResult(true, "OK")
+                                    } else {
+                                        WebDavTestResult(false, "Cannot create directory: ${mkResult.message}")
+                                    }
+                                }
+                            }
+                        } else {
+                            WebDavTestResult(false, result.message)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                AppLogger.w(TAG, "Test connection exception", e)
+                WebDavTestResult(false, e.message ?: "Unknown error")
+            }
         }
     }
 

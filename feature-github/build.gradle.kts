@@ -11,10 +11,6 @@ android {
     }
 
     buildTypes {
-        create("benchmark") {
-            initWith(getByName("release"))
-            matchingFallbacks += listOf("release")
-        }
         create("benchmarkRelease") {
             initWith(getByName("release"))
             matchingFallbacks += listOf("release")

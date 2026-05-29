@@ -150,7 +150,7 @@ For install/smoke validation, target emulator packages:
 | M5 | First pass landed | SettingsPage was the only page that unmounted main content during search (`if/else` swap). Restructured to keep `SettingsCategoryPagerContent` mounted and layered `SettingsSearchContent` on top when `searchActive`, matching the pattern used by GitHub, MCP, OS, and BA Catalog. Pager is hidden via `Modifier.alpha(0f)` and its backdrop capture + transition animations are gated off when search is active. GitHub, MCP, OS, BA Catalog already follow the ideal pattern (no code change needed). |
 | M6 | First target landed | Swept draw lambdas for size-stable per-frame allocations. Landed: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame; hoisted to a stable member field (fixed-shader wrapper is size-independent, uniforms still mutate in place). Other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. Continue on Home HDR / BA BGM hero if new draw allocations appear. |
 | M7 | Landed | Debug-only FPS overlay (`DebugFpsOverlay`) gated by `BuildConfig.DEBUG`. Shows rolling average FPS and 1% low FPS in a draggable pill. Uses `withFrameNanos` loop with 5-second rolling window, 2 Hz stat refresh, idle-gap discarding, and health-graded colors (green/yellow/red). Release builds are free of overlay work. |
-| M8 | First pass landed | Extracted shared `BindScrollToTopEffect` composable in `widget/chrome/`. Adopted by MCP, GitHub (via `isPageDataActive`), and OS (wraps existing `BindOsScrollToTopEffect`). About keeps manual multi-list dispatch; BA Student Guide keeps dedup pattern. Settings/Home don't handle scroll-to-top. Backdrop activation and bottom bar chrome convergence remain for later passes. |
+| M8 | First pass landed | Two sub-items landed: (a) extracted shared `BindScrollToTopEffect` in `widget/chrome/`, adopted by MCP, GitHub, OS; (b) extracted generic `TabbedPageBottomChrome<C : TabbedPageCategory>` in `widget/chrome/` — Settings/About bottom chrome were near-clones (313 vs 319 lines, 100% structurally identical). Both enums now implement `TabbedPageCategory` interface; both `SettingsBottomChrome` and `AboutBottomChrome` are thin wrappers. Shared constants and utility functions unified. Test updated. Backdrop activation convergence remains for a later pass. |
 | M9 | Verified | Inspected consumed `miuix-blur` (`0.9.1-f7c90d71-SNAPSHOT`): adaptive cascade downsampling (1/2/4/8/16 via `computeDownScaleParams`) + separable H/V Gaussian (`BlurEffect.kt`); compile-once shader pooling (`RuntimeShaderCacheImpl.obtainRuntimeShader` getOrPut, GC'd on dispose); GraphicsLayer pooling (`createGraphicsLayer`/`releaseGraphicsLayer` on detach, separate `noiseLayer` for dithering in `DrawBackdropModifier.kt`); zero-alloc scratch buffers. KeiOS gate `appGlassRuntimeEffectsEnabled()` delegates to `isRuntimeShaderSupported()`; `activeGlassBackdrop()` nulls the backdrop when unsupported. No KeiOS change needed; re-verify on dependency bumps. |
 | M10 | Observe | Requires a concrete stateful subtree relocation case. |
 | M11 | Observe | Requires compiler/runtime evidence under strong skipping. |
@@ -272,6 +272,22 @@ For install/smoke validation, target emulator packages:
   - About keeps manual multi-list dispatch (per-category list selection).
     BA Student Guide keeps dedup pattern (`consumedScrollToTopSignal`).
     Settings/Home don't handle scroll-to-top.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-30 M8c bottom bar chrome convergence:
+  - Audited Settings vs About bottom chrome: 313 vs 319 lines, 100%
+    structurally identical (only category type and label prefixes differ).
+  - Created `TabbedPageCategory` interface (`iconRes`, `labelRes`) in
+    `widget/chrome/TabbedPageBottomChrome.kt`.
+  - Made `SettingsCategory` and `AboutCategory` implement the interface.
+  - Extracted generic `TabbedPageBottomChrome<C : TabbedPageCategory>` with
+    shared constants (`TabbedPageBottomChromeSearchGap` etc.) and utility
+    functions (`tabbedPageExpandedSearchWidth`, `tabbedPageCollapsedDockWidth`).
+  - Replaced `SettingsBottomChrome` and `AboutBottomChrome` with thin wrappers
+    (45 lines each, down from 313/319).
+  - Updated `AboutBottomChromeLayoutTest` to use shared function names.
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

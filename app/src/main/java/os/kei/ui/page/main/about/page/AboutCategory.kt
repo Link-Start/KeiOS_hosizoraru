@@ -5,13 +5,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import os.kei.R
+import os.kei.ui.page.main.widget.chrome.TabbedPageCategory
 import com.composables.icons.lucide.R as LucideR
 
-internal enum class AboutCategory {
-    Overview,
-    System,
-    Tech,
-    Lab
+internal enum class AboutCategory(
+    override val iconRes: Int,
+    override val labelRes: Int,
+) : TabbedPageCategory {
+    Overview(LucideR.drawable.lucide_ic_info, R.string.about_category_overview),
+    System(LucideR.drawable.lucide_ic_shield_check, R.string.about_category_system),
+    Tech(LucideR.drawable.lucide_ic_layers_2, R.string.about_category_tech),
+    Lab(LucideR.drawable.lucide_ic_flask_conical, R.string.about_category_lab),
 }
 
 @Composable

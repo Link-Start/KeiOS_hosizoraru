@@ -150,7 +150,7 @@ For install/smoke validation, target emulator packages:
 | M5 | First pass landed | SettingsPage was the only page that unmounted main content during search (`if/else` swap). Restructured to keep `SettingsCategoryPagerContent` mounted and layered `SettingsSearchContent` on top when `searchActive`, matching the pattern used by GitHub, MCP, OS, and BA Catalog. Pager is hidden via `Modifier.alpha(0f)` and its backdrop capture + transition animations are gated off when search is active. GitHub, MCP, OS, BA Catalog already follow the ideal pattern (no code change needed). |
 | M6 | First target landed | Swept draw lambdas for size-stable per-frame allocations. Landed: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame; hoisted to a stable member field (fixed-shader wrapper is size-independent, uniforms still mutate in place). Other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. Continue on Home HDR / BA BGM hero if new draw allocations appear. |
 | M7 | Landed | Debug-only FPS overlay (`DebugFpsOverlay`) gated by `BuildConfig.DEBUG`. Shows rolling average FPS and 1% low FPS in a draggable pill. Uses `withFrameNanos` loop with 5-second rolling window, 2 Hz stat refresh, idle-gap discarding, and health-graded colors (green/yellow/red). Release builds are free of overlay work. |
-| M8 | Planned | Shared page helper convergence after hotspot fixes. |
+| M8 | First pass landed | Extracted shared `BindScrollToTopEffect` composable in `widget/chrome/`. Adopted by MCP, GitHub (via `isPageDataActive`), and OS (wraps existing `BindOsScrollToTopEffect`). About keeps manual multi-list dispatch; BA Student Guide keeps dedup pattern. Settings/Home don't handle scroll-to-top. Backdrop activation and bottom bar chrome convergence remain for later passes. |
 | M9 | Verified | Inspected consumed `miuix-blur` (`0.9.1-f7c90d71-SNAPSHOT`): adaptive cascade downsampling (1/2/4/8/16 via `computeDownScaleParams`) + separable H/V Gaussian (`BlurEffect.kt`); compile-once shader pooling (`RuntimeShaderCacheImpl.obtainRuntimeShader` getOrPut, GC'd on dispose); GraphicsLayer pooling (`createGraphicsLayer`/`releaseGraphicsLayer` on detach, separate `noiseLayer` for dithering in `DrawBackdropModifier.kt`); zero-alloc scratch buffers. KeiOS gate `appGlassRuntimeEffectsEnabled()` delegates to `isRuntimeShaderSupported()`; `activeGlassBackdrop()` nulls the backdrop when unsupported. No KeiOS change needed; re-verify on dependency bumps. |
 | M10 | Observe | Requires a concrete stateful subtree relocation case. |
 | M11 | Observe | Requires compiler/runtime evidence under strong skipping. |
@@ -257,6 +257,21 @@ For install/smoke validation, target emulator packages:
     Health-graded colors: green (≥92% ref), yellow (≥67%), red (<67%).
   - Wired into `MainActivity.kt` inside `MiuixTheme`, gated by
     `BuildConfig.DEBUG`. Release builds are free of overlay work.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-30 M8 page utility convergence first pass (scroll-to-top):
+  - Audited 8 pages for duplicated page scaffold/chrome patterns.
+  - Extracted shared `BindScrollToTopEffect` composable in
+    `widget/chrome/AppScrollToTopEffect.kt`. Accepts `scrollToTopSignal`,
+    `listState`, and `isActive`; fires `animateScrollToItem(0)` when signal
+    increases while active.
+  - Adopted by MCP (`runtime.isPageActive`), GitHub (`isPageDataActive`),
+    and OS (wraps existing `BindOsScrollToTopEffect`, `isActive = true`).
+  - About keeps manual multi-list dispatch (per-category list selection).
+    BA Student Guide keeps dedup pattern (`consumedScrollToTopSignal`).
+    Settings/Home don't handle scroll-to-top.
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import os.kei.mcp.server.McpServerManager
+import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
@@ -44,9 +45,9 @@ internal fun BindMcpPageEffects(
     DisposableEffect(Unit) {
         onDispose { onActionBarInteractingChanged(false) }
     }
-    LaunchedEffect(runtime.scrollToTopSignal, runtime.isPageActive) {
-        if (runtime.isPageActive && runtime.scrollToTopSignal > 0) {
-            listState.animateScrollToItem(0)
-        }
-    }
+    BindScrollToTopEffect(
+        scrollToTopSignal = runtime.scrollToTopSignal,
+        listState = listState,
+        isActive = runtime.isPageActive,
+    )
 }

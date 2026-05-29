@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.FlowPreview
+import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -211,9 +212,11 @@ internal fun BindOsScrollToTopEffect(
     scrollToTopSignal: Int,
     listState: LazyListState,
 ) {
-    LaunchedEffect(scrollToTopSignal) {
-        if (scrollToTopSignal > 0) listState.animateScrollToItem(0)
-    }
+    BindScrollToTopEffect(
+        scrollToTopSignal = scrollToTopSignal,
+        listState = listState,
+        isActive = true,
+    )
 }
 
 @Composable

@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val GITHUB_PAGE_ACTIVE_SYNC_DELAY_MS = 120L
@@ -103,11 +104,11 @@ internal fun BindGitHubPageLifecycleCoordinator(
         }
     }
 
-    LaunchedEffect(scrollToTopSignal, isPageDataActive) {
-        if (isPageDataActive && scrollToTopSignal > 0) {
-            listState.animateScrollToItem(0)
-        }
-    }
+    BindScrollToTopEffect(
+        scrollToTopSignal = scrollToTopSignal,
+        listState = listState,
+        isActive = isPageDataActive,
+    )
 
     LaunchedEffect(state.appListLoaded, state.appList) {
         if (state.appListLoaded && state.appList.isEmpty() && !state.hasAutoRequestedPermission) {

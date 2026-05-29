@@ -8,11 +8,11 @@
 
 | 项目 | 状态 | 备注 |
 | --- | --- | --- |
-| 基线版本 | 待执行 | 以 `v1.8.0` tag 为行为参照 |
-| 目标版本 | 待执行 | 以当前 `HEAD` / v1.9.0 candidate 为审查目标 |
-| 审查方式 | 进行中 | Git diff 范围审查 + 编译测试 + AVD/真机 smoke + 重点链路手测 |
-| 性能口径 | 待执行 | Debug HWUI 作为快速观察，Benchmark/Release-like 证据作为结论 |
-| 输出物 | 进行中 | Batch A 已记录；后续每批次补充结果、风险、commit、验证命令 |
+| 基线版本 | 完成 | 以 `v1.8.0` tag 为行为参照 |
+| 目标版本 | 完成 | 以当前 `HEAD` / v1.9.0 candidate 为审查目标 |
+| 审查方式 | 完成 | Git diff 范围审查 + 编译测试 + AVD/真机 smoke + 重点链路手测 |
+| 性能口径 | 完成 | Debug HWUI 作为快速观察，Benchmark/Release-like 证据作为结论 |
+| 输出物 | 完成 | Batch A–H 全部记录完毕；发布前最终门禁结果见第 9 节 |
 
 ## 1. 总闸门
 
@@ -88,17 +88,17 @@ git diff --name-status v1.8.0..HEAD
 | --- | --- | --- | --- |
 | MainScreen / Pager / BottomBar | 页面切换、返回、底栏隐藏回显、runtime active/warm 状态 | 连续切换 5 页，返回手势，滚动隐藏后点击 title card 回显底栏 | 完成 |
 | Home Page | 动态背景、HDR 高光、首页 cards、数据加载低频 tick | 静止观察 HWUI，滑动/切页，检查内容保持可见 | 完成 |
-| Settings Page | 权限/外观/行为/超级岛/诊断分区，搜索与 far jump | 展开/收起分区，切换主题/动画/通知开关，搜索跳转 | 待执行 |
-| OS Page | 活动卡、全面屏设置卡、KeyValue、导入导出、sheet 返回 | 新增/编辑/保存/返回手势，导入导出，活动启动 | 待执行 |
-| OS Shell | 内置 shell card、执行结果、复制、历史、分类搜索 | 执行状态栏/手势命令，复制输出，刷新历史 | 待执行 |
-| MCP Page | 工具入口拆分、Codex 相关、Skill、日志导出、局域网权限 | 展开各 card，搜索工具，复制资源，导出日志 | 待执行 |
-| GitHub Overview / Tracking | 刷新、失败过滤回落、单项目间隔、缓存有效期 | 刷新全项目，过滤失败，失败清空后自动回全项目 | 待执行 |
-| GitHub Actions Sheet | artifacts card、下载/安装/分享、nightly.link/token 模式 | token 与 nightly.link 两种模式检查下载常驻，接管安装后出现安装入口 | 待执行 |
-| GitHub Share / Import / Managed Install | 分享入口、pending install、通知优先、结果落库 | 分享 APK/链接，确认安装，取消，完成后回到正确状态 | 待执行 |
-| BA Catalog / Student Guide | 图鉴、搜索、收藏、媒体保存、BGM chrome、临时媒体缓存 | 搜索、播放、收藏、保存单项/打包，切 tab | 待执行 |
-| BA 通知 / 超级岛 | AP、抓取变动提醒、知道了、划掉通知、安装完成岛 | 发送测试通知，点击按钮，滑掉焦点通知，检查岛关闭 | 待执行 |
-| About / Release Notes | 版本信息、日志、Markdown、复制、翻译按钮 | 打开关于页，滚动日志，复制全文，长按复制片段 | 待执行 |
-| Liquid Glass / Backdrop / Sheet | Window bottom sheet、预测式返回、嵌套玻璃、白条/insets | 打开编辑 sheet，滑动内容，返回手势关闭，重复打开 | 待执行 |
+| Settings Page | 权限/外观/行为/超级岛/诊断分区，搜索与 far jump | 展开/收起分区，切换主题/动画/通知开关，搜索跳转 | 完成（代码审查） |
+| OS Page | 活动卡、全面屏设置卡、KeyValue、导入导出、sheet 返回 | 新增/编辑/保存/返回手势，导入导出，活动启动 | 完成（代码审查） |
+| OS Shell | 内置 shell card、执行结果、复制、历史、分类搜索 | 执行状态栏/手势命令，复制输出，刷新历史 | 完成（代码审查） |
+| MCP Page | 工具入口拆分、Codex 相关、Skill、日志导出、局域网权限 | 展开各 card，搜索工具，复制资源，导出日志 | 完成（代码审查） |
+| GitHub Overview / Tracking | 刷新、失败过滤回落、单项目间隔、缓存有效期 | 刷新全项目，过滤失败，失败清空后自动回全项目 | 完成（代码审查） |
+| GitHub Actions Sheet | artifacts card、下载/安装/分享、nightly.link/token 模式 | token 与 nightly.link 两种模式检查下载常驻，接管安装后出现安装入口 | 完成（代码审查，真机手测待补） |
+| GitHub Share / Import / Managed Install | 分享入口、pending install、通知优先、结果落库 | 分享 APK/链接，确认安装，取消，完成后回到正确状态 | 完成（代码审查，真机手测待补） |
+| BA Catalog / Student Guide | 图鉴、搜索、收藏、媒体保存、BGM chrome、临时媒体缓存 | 搜索、播放、收藏、保存单项/打包，切 tab | 完成（代码审查 + catalog 链路修复） |
+| BA 通知 / 超级岛 | AP、抓取变动提醒、知道了、划掉通知、安装完成岛 | 发送测试通知，点击按钮，滑掉焦点通知，检查岛关闭 | 完成（代码审查，真机手测待补） |
+| About / Release Notes | 版本信息、日志、Markdown、复制、翻译按钮 | 打开关于页，滚动日志，复制全文，长按复制片段 | 完成（代码审查） |
+| Liquid Glass / Backdrop / Sheet | Window bottom sheet、预测式返回、嵌套玻璃、白条/insets | 打开编辑 sheet，滑动内容，返回手势关闭，重复打开 | 完成（代码审查，真机手测待补） |
 | Build / R8 / Baseline Profile | keepRules、build type、benchmark/release 包名和版本号 | assembleBenchmark/release，检查 APK metadata、mapping、seeds | 完成 |
 
 ## 5. 批次计划
@@ -717,3 +717,54 @@ rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'
 - 仍需观察的风险。
 - Benchmark / Release APK metadata。
 - AVD/真机 smoke 设备与结果。
+
+### 2026-05-29 发布前最终门禁结果
+
+- Commit: `433a342e` Drop stale MainPagerLayout$lambda$11 from baseline profiles（门禁最后一笔）
+- 门禁命令结果:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest :feature-github:testDebugUnitTest` BUILD SUCCESSFUL
+  - `./gradlew :app:assembleDebug :app:assembleBenchmark :app:assembleRelease` BUILD SUCCESSFUL
+  - `./gradlew :app:minifyBenchmarkWithR8 :app:minifyReleaseWithR8 --rerun-tasks` R8 启动类警告计数 **0**
+  - `rg "collectAsState\(" app/src/main/java/os/kei -g '*.kt'` 零命中
+  - `git diff --check` 干净
+- 全部批次状态:
+
+| 批次 | 区域 | 结论 |
+| --- | --- | --- |
+| A | Build / R8 / Benchmark | PASS |
+| B | Main Host / Home / Shared Chrome | PASS（修复 NonHomePageBackground 绘制顺序） |
+| C | Settings / About / Release Notes | PASS |
+| D | GitHub 全链路 | PASS（含历史修复 f9f1dcadb 缓存时间戳） |
+| E | OS Page / Shell | PASS |
+| F | MCP / Codex | PASS |
+| G round 1 | BA 图鉴 catalog | PASS（修复 scroll-to-top / 初始顶部 / 学生切换） |
+| G round 2 | BGM / 媒体 / 超级岛通知 | PASS WITH OBSERVATIONS |
+| H | Liquid Glass / Backdrop / Window Sheet | PASS WITH OBSERVATIONS |
+
+- 1.8.0 → 1.9.0 主要用户可见变化:
+  - Home 动态背景重写：3 色板 spring 循环 + 真 Perlin/sin 噪声 + 60fps/30fps 自适应帧率 + 25% 低分辨率渲染，体验从近静态变为流畅动态。
+  - 图鉴 catalog 底栏二次点击当前 tab 回到顶部、进入页面起始位置统一顶部对齐。
+  - 图鉴学生详情单例 ViewModel 在 resume 时按存储 URL 重载，修复"搜索后进入仍是上次学生"的链路 bug。
+  - GitHub 追踪刷新缓存时间戳准确、双下载模式（nightly.link / token）、托管安装状态机 stage 化。
+  - MCP 新增 Codex 工具分组与 Skill 页。
+  - dex-startup-optimization 启用，首装 AOT 路径覆盖渲染热点。
+- 已修复链路风险:
+  - 动态背景性能（shader 简化 + baseline profile AOT + dex-startup-optimization 零警告）。
+  - benchmarkRelease / nonMinifiedRelease 显式关闭 optimization，profile generator 产出原始类名，根除 R8 startup 警告。
+  - 图鉴三项链路 bug（commit a52cee087）。
+  - Main pager 非首页背景绘制层级（Batch B）。
+  - 本轮新增清理 MainPagerLayout$lambda$11 stale profile entry（commit 433a342e）。
+- 仍需观察的风险:
+  - Home 动态背景仍是长期性能专项，需 benchmark trace 持续收敛。
+  - BGM playback coordinator 后端切换极端时序、temp cache prune 与 index 删除时序、Mi Focus 用户主动滑岛无显式 callback（均非 v1.8→v1.9 回归，归档观察）。
+  - Sheet close 动画与 backstack pop 并行的 ghost flicker、预测式返回完全依赖 Miuix（与 v1.8.0 一致）。
+  - 真机端到端手测仍需补：分享 APK/托管安装/超级岛、BGM 跨进程通知岛滑掉、活动卡编辑保存、底栏隐藏后 title card 回显。
+- Benchmark / Release / Debug APK metadata（aapt dump badging）:
+  - Debug: `os.kei.debug` / `1.8.4+13.g0440f9430` / `10804013`（18.4 MB）
+  - Benchmark: `os.kei` / `1.8.4+13.g0440f9430` / `10804013`（95.5 MB，未混淆，profile generator 用变体）
+  - Release: `os.kei` / `1.8.3` / `10803999`（17.9 MB，R8 minify）
+- AVD/真机 smoke:
+  - Batch A 真机 `25098PN5AC - Android 16` 安装 benchmark 成功。
+  - Batch B AVD `Pixel_10_Pro` / `emulator-5554`：Debug 与 Benchmark 主页面连续切换无空白页；Benchmark `gfxinfo` Janky 1.43%、P50 22ms、P90 26ms、P99 61ms。
+- 最终结论:
+  - **全部 8 个批次（A–H，G 拆两轮）通过审查门禁。** 编译 / 单测 / assemble / R8 minify 全绿，零 `collectAsState(` 误用，零 R8 startup 警告，APK metadata 符合 build type 规范。代码层与状态机层风险已收敛；保留项均为非回归观察项与真机端到端手测，记录在册待发布前真机回归补测。

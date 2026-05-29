@@ -14,6 +14,7 @@ internal enum class SettingsSearchCard {
     Copy,
     Cache,
     Log,
+    WebDavSync,
 }
 
 @Immutable
@@ -93,6 +94,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val logGroupLabel = resolveString(R.string.settings_group_log_title)
     val logLevelLabel = resolveString(R.string.settings_log_level_title)
     val logFeedbackActionLabel = resolveString(R.string.settings_log_feedback_action)
+
+    val webdavSyncLabel = resolveString(R.string.webdav_sync_title)
 
     return listOf(
         SettingsSearchTarget(
@@ -211,6 +214,15 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     logGroupLabel,
                     logLevelLabel,
                     logFeedbackActionLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.WebDavSync,
+            category = SettingsCategory.Data,
+            tokens =
+                settingsTokens(
+                    dataCategoryLabel,
+                    webdavSyncLabel,
                 ),
         ),
     )

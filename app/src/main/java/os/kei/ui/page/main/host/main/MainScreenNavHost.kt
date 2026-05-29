@@ -42,6 +42,8 @@ import os.kei.ui.page.main.host.pager.MainPagerLayout
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
+import os.kei.ui.page.main.sync.WebDavSyncPage
+import os.kei.ui.page.main.sync.buildWebDavSyncDataPorts
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.AppToastBridge
@@ -168,6 +170,7 @@ internal fun MainScreenNavHost(
                     appThemeMode = appThemeMode,
                     onAppThemeModeChanged = onAppThemeModeChanged,
                     onBack = onRouteBack,
+                    onOpenWebDavSync = { navigator.pushSingleTop(KeiosRoute.WebDavSync) },
                 )
             }
             entry<KeiosRoute.McpSkill> {
@@ -204,6 +207,12 @@ internal fun MainScreenNavHost(
                     openBgmPlaybackToken = route.openBgmPlaybackToken,
                     onBack = onRouteBack,
                     onOpenGuide = pagerCoordinator.onOpenGuideDetail,
+                )
+            }
+            entry<KeiosRoute.WebDavSync> {
+                WebDavSyncPage(
+                    onBack = onRouteBack,
+                    dataPorts = buildWebDavSyncDataPorts(),
                 )
             }
         }

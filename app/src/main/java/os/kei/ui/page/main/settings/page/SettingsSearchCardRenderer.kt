@@ -12,6 +12,7 @@ import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSection
 import os.kei.ui.page.main.settings.section.SettingsCopySection
 import os.kei.ui.page.main.settings.section.SettingsLogSection
 import os.kei.ui.page.main.settings.section.SettingsNotifySection
+import os.kei.ui.page.main.settings.section.SettingsWebDavSyncSection
 import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSection
 import os.kei.ui.page.main.settings.section.SettingsVisualSection
 import os.kei.ui.page.main.settings.state.SettingsBackgroundController
@@ -133,6 +134,14 @@ internal fun LazyListScope.settingsCardItem(
                     disabledCardColor = input.disabledCardColor,
                 )
             }
+
+            SettingsSearchCard.WebDavSync -> {
+                SettingsWebDavSyncSection(
+                    onClick = input::openWebDavSync,
+                    enabledCardColor = input.enabledCardColor,
+                    disabledCardColor = input.disabledCardColor,
+                )
+            }
         }
     }
 }
@@ -174,6 +183,7 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
                 SettingsSearchCard.Copy,
                 SettingsSearchCard.Cache,
                 SettingsSearchCard.Log,
+                SettingsSearchCard.WebDavSync,
             )
         }
     }
@@ -198,6 +208,7 @@ internal data class SettingsSearchCardRenderInput(
     val enabledCardColor: Color,
     val disabledCardColor: Color,
     val onSliderInteractionChanged: (Boolean) -> Unit,
+    val onNavigateToWebDavSync: () -> Unit = {},
 ) {
     fun clearAllCaches() {
         settingsPageViewModel.requestClearAllCaches(context)
@@ -213,5 +224,9 @@ internal data class SettingsSearchCardRenderInput(
 
     fun openFeedbackIssue() {
         FeedbackIssueActivity.launch(context)
+    }
+
+    fun openWebDavSync() {
+        onNavigateToWebDavSync()
     }
 }

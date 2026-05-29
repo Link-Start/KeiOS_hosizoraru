@@ -119,6 +119,7 @@ fun SettingsPage(
     appThemeMode: AppThemeMode,
     onAppThemeModeChanged: (AppThemeMode) -> Unit,
     onBack: () -> Unit,
+    onOpenWebDavSync: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -453,6 +454,7 @@ fun SettingsPage(
             enabledCardColor = enabledCardColor,
             disabledCardColor = disabledCardColor,
             onSliderInteractionChanged = settingsPageViewModel::updateSliderInteractionActive,
+            onNavigateToWebDavSync = onOpenWebDavSync,
         )
 
     AppPageScaffold(

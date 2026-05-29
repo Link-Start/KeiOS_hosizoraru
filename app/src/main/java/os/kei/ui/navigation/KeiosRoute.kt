@@ -28,4 +28,7 @@ sealed interface KeiosRoute : NavKey {
     data class BaGuideCatalog(
         val openBgmPlaybackToken: Long = 0L
     ) : KeiosRoute
+
+    @Serializable
+    data object WebDavSync : KeiosRoute
 }

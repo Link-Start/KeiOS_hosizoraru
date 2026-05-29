@@ -33,7 +33,7 @@ internal fun GitHubRefreshActions.consumeDeferredTrackStoreSyncAfterRefresh(): B
     return pending
 }
 
-internal suspend fun GitHubRefreshActions.persistCheckCacheNow(refreshTimestamp: Long = state.lastRefreshMs) {
+internal suspend fun GitHubRefreshActions.persistCheckCacheNow(refreshTimestamp: Long = System.currentTimeMillis()) {
     repository.saveCheckCache(buildCheckCacheEntries(), refreshTimestamp)
 }
 

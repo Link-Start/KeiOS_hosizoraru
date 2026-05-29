@@ -56,7 +56,7 @@ internal class GitHubRefreshActions(
             actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
         )
 
-    fun persistCheckCache(refreshTimestamp: Long = state.lastRefreshMs) {
+    fun persistCheckCache(refreshTimestamp: Long = System.currentTimeMillis()) {
         val states = buildCheckCacheEntries()
         scope.launch {
             repository.saveCheckCache(states, refreshTimestamp)

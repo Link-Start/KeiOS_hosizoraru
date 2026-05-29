@@ -181,9 +181,9 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
         SettingsCategory.Data -> {
             listOf(
                 SettingsSearchCard.Copy,
+                SettingsSearchCard.WebDavSync,
                 SettingsSearchCard.Cache,
                 SettingsSearchCard.Log,
-                SettingsSearchCard.WebDavSync,
             )
         }
     }

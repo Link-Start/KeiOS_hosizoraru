@@ -30,4 +30,9 @@
     <string name="webdav_sync_item_os_activity_desc">Activity 快捷方式卡片</string>
     <string name="webdav_sync_item_os_shell">OS Shell 卡片</string>
     <string name="webdav_sync_item_os_shell_desc">Shell 命令卡片</string>
+
+    <string name="webdav_sync_configured_summary">已配置同步</string>
+    <string name="webdav_sync_not_configured_summary">点击配置 WebDAV 同步</string>
+    <string name="webdav_sync_status_label">状态</string>
+    <string name="webdav_sync_status_active">已启用</string>
 </resources>

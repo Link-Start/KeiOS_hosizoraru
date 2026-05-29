@@ -35,4 +35,5 @@
     <string name="webdav_sync_not_configured_summary">Tap to configure WebDAV sync</string>
     <string name="webdav_sync_status_label">Status</string>
     <string name="webdav_sync_status_active">Active</string>
+    <string name="webdav_sync_last_sync_label">Last full sync</string>
 </resources>

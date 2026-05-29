@@ -35,4 +35,5 @@
     <string name="webdav_sync_not_configured_summary">点击配置 WebDAV 同步</string>
     <string name="webdav_sync_status_label">状态</string>
     <string name="webdav_sync_status_active">已启用</string>
+    <string name="webdav_sync_last_sync_label">上次全量同步</string>
 </resources>

@@ -85,3 +85,6 @@ internal fun deriveLogPresentation(
     SettingsSectionPresentationState(
         active = logLevel != AppLogLevel.Off || logStats.fileCount > 0,
     )
+
+internal fun deriveWebDavSyncPresentation(configured: Boolean): SettingsSectionPresentationState =
+    SettingsSectionPresentationState(active = configured)

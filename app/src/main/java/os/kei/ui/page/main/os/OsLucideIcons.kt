@@ -103,6 +103,9 @@ internal fun appLucideVolume2Icon(): ImageVector = osLucideVector(LucideR.drawab
 internal fun appLucideVolumeOffIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_volume_off)
 
 @Composable
+internal fun appLucideDatabaseIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_database)
+
+@Composable
 internal fun appLucideFullscreenIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_fullscreen)
 
 @Composable

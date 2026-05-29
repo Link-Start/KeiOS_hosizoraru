@@ -142,7 +142,7 @@
 | G | BA Office | ✅ 7/7 + 1 CONCERN | Server popup, calendar/pool sync, friend code, floating dock, notifications, sheets, glass effects — all intact. CONCERN: BaOfficeClock countdown pauses during active scroll (ticker gated on scroll idle). Minor UX gap, not a regression. |
 | H | BA Guide Catalog | ✅ 11/11 PASS | Pager, bottom chrome, per-tab search, student→detail, BGM controls, mini-player (M4), volume, favorites, filter/sort, import/export, avatar fallback (M2) — all intact. |
 | I | BA Student Guide | ✅ 6/6 + 1 fix | Pager, scroll-to-top, bottom bar, sections, gallery, BGM tab — all intact. Fixed: removed 3 dead `appSquircleClip` imports left from M2 second pass. |
-| J | About | Not started | |
+| J | About | ✅ 9/9 PASS | Pager, bottom chrome (M8c), search, farJumpAlpha, section expand, Shizuku check, URL opening, Component Lab, scroll chrome — all intact. |
 
 ## Verification commands
 

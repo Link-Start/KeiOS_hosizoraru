@@ -138,8 +138,8 @@
 | C | Settings | ✅ 10/10 PASS | Pager, bottom chrome (M8c), search expansion (M5), query filtering, dismissal, scroll chrome, far-jump alpha, popups, background picker, log export — all intact. |
 | D | GitHub | ✅ 10/10 PASS | Lifecycle, scroll-to-top (M8a), search, track cards, APK panel, overview, glass effects, sheet host, star import, background refresh — all intact. |
 | E | MCP | ✅ 8/8 PASS | Server toggle, scroll-to-top (M8a), tool search, edit config, reset dialogs, skill nav, log export, glass effects — all intact. |
-| F | OS | Not started | |
-| G | BA Office | Not started | |
+| F | OS | ✅ 8/8 PASS | Card expansion, scroll-to-top (M8a), search, activity shortcuts, shell commands, card manager, import/export, glass effects — all intact. |
+| G | BA Office | ✅ 7/7 + 1 CONCERN | Server popup, calendar/pool sync, friend code, floating dock, notifications, sheets, glass effects — all intact. CONCERN: BaOfficeClock countdown pauses during active scroll (ticker gated on scroll idle). Minor UX gap, not a regression. |
 | H | BA Guide Catalog | Not started | |
 | I | BA Student Guide | Not started | |
 | J | About | Not started | |

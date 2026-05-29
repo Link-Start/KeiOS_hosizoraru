@@ -46,8 +46,8 @@
 
 | ID | Area | MIUIX source idea | KeiOS landing direction | Status |
 | --- | --- | --- | --- | --- |
-| A1 | `derivedStateOf` for threshold-driven UI | Sample scroll/overscroll chrome derives boolean flags (collapsed, at-top, at-end) from scroll state so a spring/animation fires **once per crossing**, not once per frame | Audit high-frequency reads of `scrollState`/`LazyListState`/pager offset that currently recompute a boolean every frame; wrap each in `derivedStateOf` so recomposition only fires on the flip. Candidate sites: top-bar collapse, bottom-bar elevation/visibility, scroll-to-top button visibility, pager edge state. | Not started |
-| A2 | `drawWithCache` expansion | Sample draws brushes, gradients, and shader builders inside `drawWithCache` so allocation happens once per size change, not per draw frame | Sweep animated/draw-heavy composables that still build `Brush`/`Path`/`Shader`/`RuntimeShader` setup inline in `draw{}`. Move size-stable allocation into `onDrawBehind`/`onDrawWithContent` via `drawWithCache`. Current usage is only 3 files; target the glass surfaces, progress bars, and HDR highlight paths. | Not started |
+| A1 | `derivedStateOf` for threshold-driven UI | Sample scroll/overscroll chrome derives boolean flags (collapsed, at-top, at-end) from scroll state so a spring/animation fires **once per crossing**, not once per frame | Audit high-frequency reads of `scrollState`/`LazyListState`/pager offset that currently recompute a boolean every frame; wrap each in `derivedStateOf` so recomposition only fires on the flip. Candidate sites: top-bar collapse, bottom-bar elevation/visibility, scroll-to-top button visibility, pager edge state. | **No genuine gap (2026-05-30).** Audited all scroll/pager reads. Every high-frequency read already defers correctly: `snapshotFlow + distinctUntilChanged` (BaPageEffects, HomePageDerivedState, BaStudentGuidePagerPage, AboutPage, GitHubTrackAppPickerContent), `derivedStateOf` (GitHubPage `isListScrolling`), or `remember { { ... } }` provider lambdas invoked only from `NestedScrollConnection`/`LaunchedEffect`, never the composition body (SettingsPage/AboutPage `activeCategoryProvider`). No composition-phase per-frame read to wrap. |
+| A2 | `drawWithCache` expansion | Sample draws brushes, gradients, and shader builders inside `drawWithCache` so allocation happens once per size change, not per draw frame | Sweep animated/draw-heavy composables that still build `Brush`/`Path`/`Shader`/`RuntimeShader` setup inline in `draw{}`. Move size-stable allocation into `onDrawBehind`/`onDrawWithContent` via `drawWithCache`. Current usage is only 3 files; target the glass surfaces, progress bars, and HDR highlight paths. | **Landed (2026-05-30).** Full sweep of draw lambdas found one genuine per-frame allocation: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame. Hoisted to a stable member field (fixed-shader wrapper is size-independent; uniforms still mutate in place). All other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. |
 
 ## P2
 
@@ -93,3 +93,12 @@
     (lone `ImmutableList` is Guava Media3).
   - Confirmed Kotlin/Compose compiler 2.3.21 (strong skipping ON) from `build.gradle.kts`.
   - Confirmed widely-adopted patterns require no action.
+- 2026-05-30 A1 + A2 implementation pass:
+  - A1: audited every scroll/pager read; all already deferred (snapshotFlow /
+    derivedStateOf / provider lambdas invoked only from effects/callbacks). No code change.
+  - A2: hoisted the per-frame `ShaderBrush(shader)` wrapper in `InteractiveHighlight`
+    to a stable member field; no other draw lambda re-allocates a size-stable object.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`

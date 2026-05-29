@@ -59,6 +59,11 @@ class InteractiveHighlight(
     }"""
     )
 
+    // The shader object is stable and its uniforms are mutated in place each
+    // frame, so the ShaderBrush wrapper (fixed-shader, size-independent) can be
+    // allocated once instead of re-wrapped on every draw frame.
+    private val shaderBrush = ShaderBrush(shader)
+
     val modifier: Modifier = Modifier.drawWithContent {
         val progress = pressProgressAnimation.value
         if (progress > 0f) {
@@ -80,7 +85,7 @@ class InteractiveHighlight(
                 )
             }
             drawRect(
-                ShaderBrush(shader),
+                shaderBrush,
                 blendMode = BlendMode.Plus
             )
         }

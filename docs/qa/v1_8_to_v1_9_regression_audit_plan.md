@@ -560,6 +560,43 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - AVD/真机:
   - 未单独跑设备。
 
+### 2026-05-29 Batch F - MCP / Codex
+
+- Commit: 审查批次（无新源码改动）
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/mcp/McpPage.kt`、`McpPageViewModel.kt`、`McpPageContent.kt`、`McpPageActions.kt`、`McpPageEffects.kt`、`McpPageSheets.kt`、`McpPageFloatingActions.kt`、`McpPageRepository.kt`、`McpRuntimeTicker.kt`、`McpToolBucketLoader.kt`
+  - `McpToolSections.kt`、`McpSectionBlocks.kt`、`state/McpToolBuckets.kt`
+  - `mcp/skill/McpSkillPage.kt`、`McpSkillPageViewModel.kt`、`McpSkillPageRepository.kt`、`skill/component/**`
+  - `app/src/main/java/os/kei/mcp/server/**`
+  - `app/src/main/assets/mcp/SKILL.md` 及 zh/ja 翻译
+- 主要风险:
+  - 工具入口是否按 8 组（entrypoint / runtime / system / github / ba / codex / workflow / advanced）正确拆 card。
+  - Codex tool / Skill / docs / log export 是否走稳定 state flow。
+  - 工具搜索分组与折叠是否进入 deriver 层。
+  - 副作用（log 导出、通知）是否集中在 effects 层。
+  - 卡片展开折叠是否跨重组稳定。
+  - 是否存在 `collectAsState(` 误用。
+  - 文案是否进入资源文件。
+- 已修复:
+  - 无新增源码修改。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest`
+  - `rg "collectAsState\(" app/src/main/java/os/kei/ui/page/main/mcp app/src/main/java/os/kei/mcp -g '*.kt'` 零命中
+- 审计结论:
+  - **PASS**。
+  - 8 个工具 group 各自一个 LazyColumn `item`，带 `mcp-tool-*` 稳定 key 与 `mcp_tool_*_section` contentType；Advanced section 在 `advancedTools.isNotEmpty()` 时条件渲染。
+  - `deriveMcpToolBuckets()` 为纯函数 deriver，按 `McpToolDomains` + `McpToolVisibility` 分类并合并搜索查询；折叠 flag 留在 `McpPageUiState`，与 deriver 解耦。
+  - `McpPageViewModel.routeState = combine(uiState, toolBuckets).stateIn(WhileSubscribed(5_000))`，所有 mutation 通过 `_uiState.update {}` immutable 快照。
+  - `BindMcpPageEffects()` 集中 service draft sync、tool bucket 派生、scroll-to-top 三个 `LaunchedEffect`，并通过 `DisposableEffect` 在 unmount 时清理 action bar 交互 flag。
+  - Codex 集成新增 `codexTools` bucket（来自 `McpToolCatalog.devToolNames`）；Skill page 为独立路由 + 独立 ViewModel，不与 MCP 主页状态交叉。
+  - State 收集全量 `collectAsStateWithLifecycle()`，runtime ticker 在页面非活跃时降级为 `emptyFlow()` 避免无效 tick。
+  - 文案 100% `stringResource(R.string.mcp_*)`。
+- 保留风险:
+  - Skill 页 markdown 渲染走 Batch C 已审计的 `AppMarkdownContent` + `parseCachedAppMarkdownBlocks` LRU(24)，缓存上限同样适用，正常使用不触发。
+  - 真机端到端（启动 service、复制 skill resource、导出 log）依赖 Batch A 真机已安装结果。
+- AVD/真机:
+  - 未单独跑设备。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
@@ -571,7 +608,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 完成 |
 | P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 完成 |
 | P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 进行中（catalog 已完成，BGM/通知待补） |
-| P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 待执行 |
+| P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 完成 |
 
 ## 9. 发布前最终门禁
 

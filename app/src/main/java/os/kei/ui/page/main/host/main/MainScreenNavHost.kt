@@ -43,7 +43,7 @@ import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.sync.WebDavSyncPage
-import os.kei.ui.page.main.sync.buildWebDavSyncDataPorts
+import os.kei.ui.page.main.sync.rememberWebDavSyncDataPorts
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.AppToastBridge
@@ -210,9 +210,10 @@ internal fun MainScreenNavHost(
                 )
             }
             entry<KeiosRoute.WebDavSync> {
+                val dataPorts = rememberWebDavSyncDataPorts()
                 WebDavSyncPage(
                     onBack = onRouteBack,
-                    dataPorts = buildWebDavSyncDataPorts(),
+                    dataPorts = dataPorts,
                 )
             }
         }

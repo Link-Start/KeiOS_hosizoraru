@@ -452,25 +452,13 @@ android {
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 
-        // Optimized build for local performance testing (Compose debug is too slow).
-        create("benchmark") {
-            initWith(getByName("release"))
-            applicationIdSuffix = ".benchmark"
-            signingConfig = signingConfigs.getByName("debug")
-            isDebuggable = false
-            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
-            matchingFallbacks += listOf("release")
-        }
-
-        // Non-minified variants for baseline profile generation (reference: InstallerX).
-        // optimization.enable = false must be set explicitly because matchingFallbacks
-        // causes these variants to inherit optimization.enable = true from release.
+        // Non-minified variants for baseline profile generation and local perf testing.
+        // Reference: MIUIX Sample and InstallerX — no manual benchmark build type.
+        // benchmarkRelease also serves as the local perf testing build (installBenchmarkRelease).
         create("nonMinifiedRelease") {
-            optimization.enable = false
             matchingFallbacks += listOf("release")
         }
         create("benchmarkRelease") {
-            optimization.enable = false
             isDebuggable = true
             matchingFallbacks += listOf("release")
         }
@@ -487,8 +475,8 @@ android {
     }
 
     lint {
-        baseline = file("lint-baseline.xml")
         abortOnError = true
+        checkDependencies = false
     }
 
     packaging {
@@ -528,12 +516,6 @@ androidComponents {
         }
     }
     onVariants(selector().withBuildType("debug")) { variant ->
-        variant.outputs.forEach { output ->
-            output.versionName.set(nonReleaseVersionName)
-            output.versionCode.set(nonReleaseVersionCode)
-        }
-    }
-    onVariants(selector().withBuildType("benchmark")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(nonReleaseVersionName)
             output.versionCode.set(nonReleaseVersionCode)

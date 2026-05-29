@@ -635,6 +635,49 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - AVD/真机:
   - 未单独跑设备。
 
+### 2026-05-29 Batch H - Liquid Glass / Backdrop / Window Sheet
+
+- Commit: 审查批次（无新源码改动）
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassBottomSheet.kt`
+  - `app/src/main/java/os/kei/ui/page/main/widget/glass/MiuixSnapshotAdapters.kt`
+  - `app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidSurfaces.kt`
+  - `app/src/main/java/os/kei/ui/page/main/widget/glass/AppLiquidButtons.kt`
+  - `app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassDropdown.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainPageBackdropSet.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainPagerBackdropLifecycle.kt`
+  - `app/src/main/java/os/kei/ui/page/main/github/page/sheet/GitHubPageSheetHost.kt`
+  - `app/src/main/java/os/kei/ui/page/main/os/OsPageOverlayHost.kt`
+  - `app/src/main/java/os/kei/ui/page/main/ba/BaPageSheetHost.kt`
+- 主要风险:
+  - Sheet 关闭动画是否与真实返回栈状态同步，避免幽灵 sheet。
+  - Android 14+ 预测式返回与 OEM 半残废返回兼容性。
+  - 嵌套玻璃是否出现灰黑卡 / 白底 / 小白条破坏。
+  - 编辑流是否优先使用 Window bottom sheet。
+  - Backdrop 嵌套是否使用 exported backdrop。
+  - Sheet 关闭动画完成是否在 backstack pop 前。
+  - 是否存在 `collectAsState(` 误用。
+- 已修复:
+  - 无新增源码修改。本批以审计为主。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest`
+  - `rg "collectAsState\(" app/src/main/java/os/kei/ui/page/main/widget/glass app/src/main/java/os/kei/ui/page/main/host -g '*.kt'` 零命中
+- 审计结论:
+  - **PASS WITH OBSERVATIONS**。
+  - Sheet 生命周期：`MiuixSnapshotAdapters.kt:236-276` 用 `fractionProgress` + `alphaProgress` 双动画 `join()` 确保 `onDismissFinished` 在动画完成后触发；sheet host 串联 `onDismissRequest → action facade → ViewModel → backstack pop`。
+  - Backdrop 分层：`MainPageBackdropSet` 维护 topBar / content / sheet 三个独立 `LayerBackdrop`，全部带稳定 key；所有 sheet 复用 `backdrops.sheet`；`MainPagerBackdropLifecycle` 在应用 `ON_START` 重新生成 backdrop 清理陈旧 blur 状态。
+  - 预测式返回：`WindowBottomSheet` 走 Miuix 原生支持；阻断 dismiss 手势走 `BackHandler` + 自定义阈值（顶部 72dp、42dp 触发距离、1.35x 角度比）。
+  - 嵌套玻璃：v1.9 重构改为 `appSquircleBackground` / `appSquircleBorder`，避免 white-bg 破坏；动画值通过 deferred lambda 读取，未观察到灰黑卡。
+  - State 收集：全量 `collectAsStateWithLifecycle()`，零 `collectAsState(`。
+- 保留风险:
+  - Sheet close 动画与 backstack pop 之间在某些极端时序下可能并行，存在 ghost flicker 可能（`MiuixSnapshotAdapters.kt:236-276`，未实测）；当前依靠双 `join()` 已经收敛大部分场景。
+  - `MainPagerBackdropLifecycle.kt:25-42` 的 `backdropGeneration++` 在应用 `ON_START` 触发，如 sheet 已打开，blur 可能瞬时重置；当前未观察到。
+  - `blockedDismissPromptToken` 累加（`MiuixSnapshotAdapters.kt:400-406`），快速划动可能排队多次回调；当前未观察到 UX 问题。
+  - 预测式返回完全依赖 Miuix 原生路径，未提供自定义 `PredictiveBackHandler`；与 v1.8.0 行为一致，不算回归。
+  - 上述四项均**不属于 v1.8 → v1.9 的回归**，归档为后续观察项。
+- AVD/真机:
+  - Batch B AVD smoke 已覆盖各页面 sheet 启动可见性，本批未单独跑设备。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
@@ -642,7 +685,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 | P0 | Build / R8 / Benchmark | 直接影响预发行验证和安装覆盖 | 完成 |
 | P0 | MainScreen / Shared Chrome | 页面切换性能和全局体验入口 | 完成 |
 | P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 完成 |
-| P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
+| P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 完成 |
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 完成 |
 | P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 完成 |
 | P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 完成 |

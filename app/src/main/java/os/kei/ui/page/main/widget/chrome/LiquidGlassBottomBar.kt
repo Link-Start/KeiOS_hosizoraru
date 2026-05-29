@@ -130,7 +130,6 @@ fun RowScope.LiquidGlassBottomBarItem(
     Column(
         modifier =
             modifier
-                .appSquircleClip(999.dp)
                 .then(
                     if (interactive) {
                         Modifier.pointerInput(tabIndex) {

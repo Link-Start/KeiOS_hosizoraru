@@ -451,7 +451,6 @@ private fun BaGuideBgmBottomSearchField(
     Row(
         modifier =
             modifier
-                .appSquircleClip(999.dp)
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,

@@ -175,7 +175,6 @@ internal fun BaGuideBgmExpandedDockTab(
     Box(
         modifier =
             modifier
-                .appSquircleClip(999.dp)
                 .then(
                     if (enabled) {
                         Modifier.clickable(

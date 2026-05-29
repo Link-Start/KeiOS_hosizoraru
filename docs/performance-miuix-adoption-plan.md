@@ -144,7 +144,7 @@ For install/smoke validation, target emulator packages:
 | --- | --- | --- |
 | M0 | First pass landed | Removed `effectBackground` from `syncAnimation()` condition so the animation coroutine stays alive while `playing && alphaActive`, matching MIUIX OS3 behavior. The `draw()` method's `effectBackground` gate still suppresses the actual shader draw when the effect is off — no visual leak — but when the effect comes back on the animation is already ticking instead of needing a coroutine restart, eliminating the visible startup stutter. The 30/60 FPS throttle and 0.25x render scale are retained for power savings. Pager-scroll gate retained (MIUIX doesn't gate but KeiOS's power-saving trade-off is reasonable). Further tuning possible on AVD with HWUI bars. |
 | M1 | Audited (no scroll/pager gap) | Scroll/pager/far-jump threshold reads are all already deferred (snapshotFlow + distinctUntilChanged, derivedStateOf, or provider lambdas invoked only from effects/callbacks). No composition-phase per-frame read to convert. TopAppBar collapse + search-expansion thresholds remain for a later targeted pass. |
-| M2 | First pass landed | Full inventory of `appSquircleClip`/`appSquircleSurface` sites (31 active). Two safe wins landed: `BaGuideCatalogEntryAvatarFallback` surface→background (centered Icon at 50% size, no content reaches corners) and `LiquidActionBar` clip-only Box removal (centered Icon, no riple, no background — clip masks nothing). 15 mask-needed sites kept. 10+ uncertain sites require visual inspection on AVD before conversion. |
+| M2 | Second pass landed | Full inventory of `appSquircleClip`/`appSquircleSurface` sites (31 active). First pass: 2 wins (avatar fallback surface→background, action bar clip removal). Second pass: deep-analyzed 10 uncertain sites — 4 more clips removed (BaGuideBgmBottomChrome, BaGuideBgmDockVisuals, LiquidGlassBottomBar, AppLiquidSearchField) where `indication = null` / shape-aware backdrop means the clip masks nothing visible. 6 mask-needed sites kept (backdrop layers, gradient fills, progress fills, glass surfaces). Total: 6 offscreen layers eliminated across both passes. |
 | M3 | Audited (no code change) | 60 `rememberLayerBackdrop()` calls. No nested capture-on-capture chains found. All 9 `rememberCombinedBackdrop` calls merge exactly 2 sources (no excessive fan-in). High-churn list items (`GuideLiquidCard` 15+ instances, `AppFeatureCards`/`AppOverviewCards` in HomePage LazyColumn) use `remember` so capture surfaces are per-slot and recycled by LazyList. Pager backdrops are correctly `key()`-wrapped. |
 | M4 | First pass landed | Audited 7 bottom chrome / BGM files. 5/7 clean (provider lambdas throughout). Landed: converted `BaGuideBgmChromeMiniPlayerSideControl`'s `progress: Float` parameter to `progress: () -> Float` — the resolved `expanded` value was passed by value into a composable that only reads it inside `graphicsLayer { alpha = progress }`, forcing recomposition every frame during the expand/collapse transition. Now the read is deferred to the draw phase. |
 | M5 | First pass landed | SettingsPage was the only page that unmounted main content during search (`if/else` swap). Restructured to keep `SettingsCategoryPagerContent` mounted and layered `SettingsSearchContent` on top when `searchActive`, matching the pattern used by GitHub, MCP, OS, and BA Catalog. Pager is hidden via `Modifier.alpha(0f)` and its backdrop capture + transition animations are gated off when search is active. GitHub, MCP, OS, BA Catalog already follow the ideal pattern (no code change needed). |
@@ -300,3 +300,26 @@ For install/smoke validation, target emulator packages:
     with different semantics — no "content" backdrop. BA Student Guide uses
     custom draw blocks. Forced migration would be overengineering.
   - No code change needed. Marked as audited.
+- 2026-05-30 M2 Squircle cost second pass:
+  - Deep-analyzed 10 uncertain `appSquircleClip` sites.
+  - 4 sites safe to remove (all use `indication = null` or
+    `detectTapGestures` with no visual ripple, no filled children reaching
+    corners):
+    - `BaGuideBgmBottomChrome.kt:454` — Row with text input, padded inward.
+    - `BaGuideBgmDockVisuals.kt:178` — Box with centered icon+text, no fill.
+    - `LiquidGlassBottomBar.kt:133` — Column with tab items via
+      `detectTapGestures`, no visual indication.
+    - `AppLiquidSearchField.kt:435` — Box where backdrop already uses
+      shape-aware rendering; content is just text.
+  - 6 sites mask-needed (kept):
+    - `BaGuideBgmBottomDock.kt:344` — backdrop layer must be bounded.
+    - `GuideProfileUi.kt:329` — glass effect must be shaped.
+    - `AppFloatingLiquidDockSurface.kt:145` — gradient fills box.
+    - `LiquidGlassDropdown.kt:188` — scroll container + row backgrounds.
+    - `LiquidProgressBars.kt:144` — progress fill rectangle needs capsule.
+    - `GuideSectionWeaponSupport.kt:54` — press overlay fills box.
+  - Total across both passes: 6 offscreen layers eliminated.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`

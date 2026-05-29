@@ -432,7 +432,7 @@ fun AppLiquidSearchSurface(
                     translationY = -with(density) { 1.dp.toPx() } * pressProgress
                     scaleX = lerp(1f, 1.010f, pressProgress)
                     scaleY = lerp(1f, 0.992f, pressProgress)
-                }.appSquircleClip(999.dp)
+                }
                 .then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(

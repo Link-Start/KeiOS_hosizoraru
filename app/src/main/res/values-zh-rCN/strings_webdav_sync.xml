@@ -4,11 +4,16 @@
     <string name="webdav_sync_provider_label">服务商</string>
     <string name="webdav_sync_connection">连接设置</string>
     <string name="webdav_sync_jianguoyun_hint">请使用坚果云账号邮箱和第三方应用密码（非账号密码）。在坚果云网页端：账户设置 → 安全选项 → 第三方应用管理 中生成。</string>
+    <string name="webdav_sync_jianguoyun_password_hint">自动生成的英文字母与数字混合字符串</string>
+    <string name="webdav_sync_jianguoyun_server_label">推荐服务器</string>
     <string name="webdav_sync_server_url">服务器地址</string>
+    <string name="webdav_sync_server_url_placeholder">https://dav.example.com/dav/</string>
     <string name="webdav_sync_username">用户名（邮箱）</string>
     <string name="webdav_sync_username_placeholder">your@email.com</string>
     <string name="webdav_sync_app_password">应用密码</string>
     <string name="webdav_sync_password_placeholder">第三方应用密码</string>
+    <string name="webdav_sync_provider_jianguoyun_desc">国内最常用的个人云盘，支持 WebDAV</string>
+    <string name="webdav_sync_provider_custom_desc">自建或其他 WebDAV 服务器</string>
     <string name="webdav_sync_remote_dir">远程目录</string>
     <string name="webdav_sync_test_connection">测试连接</string>
     <string name="webdav_sync_testing">测试中…</string>

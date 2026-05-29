@@ -2,24 +2,37 @@
 
 package os.kei.ui.page.main.sync
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.feature.webdav.jianguoyun.JianguoyunPreset
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
@@ -34,9 +47,10 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,7 +68,6 @@ internal fun WebDavSyncPage(
     val pageBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
     val cardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
-    val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
 
     AppPageScaffold(
         title = stringResource(R.string.webdav_sync_title),
@@ -87,10 +100,14 @@ internal fun WebDavSyncPage(
                     sectionIcon = appLucideDatabaseIcon(),
                     containerColor = cardColor,
                 ) {
-                    // Provider selector
+                    // Provider selector — cycles through providers
+                    val providerSummary = when (state.selectedProvider) {
+                        WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun_desc)
+                        WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom_desc)
+                    }
                     SettingsNavigationItem(
                         title = stringResource(R.string.webdav_sync_provider_label),
-                        summary = state.selectedProvider.displayName,
+                        summary = "${state.selectedProvider.displayName} · $providerSummary",
                         onClick = {
                             val next = WebDavProvider.entries.let { entries ->
                                 val idx = (entries.indexOf(state.selectedProvider) + 1) % entries.size
@@ -100,46 +117,71 @@ internal fun WebDavSyncPage(
                         },
                     )
 
-                    // Server URL (custom only)
+                    // Jianguoyun: show recommended server URL as read-only info
+                    if (state.selectedProvider == WebDavProvider.Jianguoyun) {
+                        SettingsInfoItem(
+                            key = stringResource(R.string.webdav_sync_jianguoyun_server_label),
+                            value = JianguoyunPreset.SERVER_URL,
+                        )
+                    }
+
+                    // Server URL — only editable for Custom provider
                     if (state.selectedProvider == WebDavProvider.Custom) {
-                        WebDavTextField(
-                            label = stringResource(R.string.webdav_sync_server_url),
+                        WebDavFieldLabel(text = stringResource(R.string.webdav_sync_server_url))
+                        WebDavLiquidTextField(
                             value = state.serverUrl,
                             onValueChange = viewModel::updateServerUrl,
-                            placeholder = "https://dav.example.com/",
+                            placeholder = stringResource(R.string.webdav_sync_server_url_placeholder),
+                            minHeight = 44.dp,
+                            singleLine = true,
                         )
                     }
 
                     // Username
-                    WebDavTextField(
-                        label = stringResource(R.string.webdav_sync_username),
+                    WebDavFieldLabel(text = stringResource(R.string.webdav_sync_username))
+                    WebDavLiquidTextField(
                         value = state.username,
                         onValueChange = viewModel::updateUsername,
                         placeholder = stringResource(R.string.webdav_sync_username_placeholder),
+                        minHeight = 44.dp,
+                        singleLine = true,
                     )
 
                     // App password
-                    WebDavTextField(
-                        label = stringResource(R.string.webdav_sync_app_password),
+                    WebDavFieldLabel(text = stringResource(R.string.webdav_sync_app_password))
+                    WebDavLiquidTextField(
                         value = state.appPassword,
                         onValueChange = viewModel::updateAppPassword,
                         placeholder = stringResource(R.string.webdav_sync_password_placeholder),
-                        isPassword = true,
+                        minHeight = 44.dp,
+                        singleLine = true,
                     )
+                    // Jianguoyun password format hint
+                    if (state.selectedProvider == WebDavProvider.Jianguoyun) {
+                        Text(
+                            text = stringResource(R.string.webdav_sync_jianguoyun_password_hint),
+                            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+                            fontSize = AppTypographyTokens.Caption.fontSize,
+                            lineHeight = AppTypographyTokens.Caption.lineHeight,
+                        )
+                    }
 
                     // Remote directory
-                    WebDavTextField(
-                        label = stringResource(R.string.webdav_sync_remote_dir),
+                    WebDavFieldLabel(text = stringResource(R.string.webdav_sync_remote_dir))
+                    WebDavLiquidTextField(
                         value = state.remoteDir,
                         onValueChange = viewModel::updateRemoteDir,
                         placeholder = "KeiOS/",
+                        minHeight = 44.dp,
+                        singleLine = true,
                     )
 
-                    // Jianguoyun hint
+                    // Jianguoyun full setup hint
                     if (state.selectedProvider == WebDavProvider.Jianguoyun) {
+                        Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
                         Text(
                             text = stringResource(R.string.webdav_sync_jianguoyun_hint),
-                            color = subtitleColor,
+                            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
                             fontSize = AppTypographyTokens.Supporting.fontSize,
                             lineHeight = AppTypographyTokens.Supporting.lineHeight,
                         )
@@ -284,34 +326,100 @@ internal fun WebDavSyncPage(
     }
 }
 
+// ── Text field components (matching project's FeedbackLiquidTextField pattern) ──
+
 @Composable
-private fun WebDavTextField(
-    label: String,
+private fun WebDavFieldLabel(text: String) {
+    Text(
+        text = text,
+        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+        fontSize = AppTypographyTokens.Caption.fontSize,
+        lineHeight = AppTypographyTokens.Caption.lineHeight,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(top = 2.dp),
+    )
+}
+
+@Composable
+private fun WebDavLiquidTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String = "",
-    isPassword: Boolean = false,
+    placeholder: String,
+    minHeight: Dp,
+    singleLine: Boolean = false,
 ) {
-    Text(
-        text = label,
-        fontSize = AppTypographyTokens.Supporting.fontSize,
-        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        color = MiuixTheme.colorScheme.onBackgroundVariant,
+    val textStyle = TextStyle(
+        color = MiuixTheme.colorScheme.onBackground,
+        fontSize = AppTypographyTokens.Body.fontSize,
+        lineHeight = AppTypographyTokens.Body.lineHeight,
+        textAlign = TextAlign.Start,
+        platformStyle = PlatformTextStyle(includeFontPadding = false),
     )
-    Spacer(Modifier.height(4.dp))
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = placeholder,
-        useLabelAsPlaceholder = true,
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
-        ),
-        singleLine = true,
+    val placeholderStyle = textStyle.copy(color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.50f))
+    WebDavLiquidPanel(minHeight = minHeight) {
+        val fieldHeight = minHeight - 24.dp
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = true,
+            singleLine = singleLine,
+            textStyle = textStyle,
+            cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = fieldHeight),
+            decorationBox = { innerTextField ->
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopStart,
+                ) {
+                    if (value.isBlank()) {
+                        BasicText(
+                            text = placeholder,
+                            style = placeholderStyle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.TopStart,
+                    ) {
+                        innerTextField()
+                    }
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun WebDavLiquidPanel(
+    minHeight: Dp,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val isDark = isSystemInDarkTheme()
+    val borderColor = if (isDark) {
+        Color(0xFF8ABEFF).copy(alpha = 0.24f)
+    } else {
+        Color(0xFFB5D7FF).copy(alpha = 0.82f)
+    }
+    val panelColor = if (isDark) {
+        Color(0xFF121A24).copy(alpha = 0.78f)
+    } else {
+        Color.White.copy(alpha = 0.88f)
+    }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            .appSquircleBackground(panelColor, 18.dp)
+            .appSquircleBorder(width = 1.dp, color = borderColor, cornerRadius = 18.dp)
+            .padding(contentPadding),
+        content = content,
     )
-    Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
 }
 
 private fun formatTime(timeMs: Long): String {

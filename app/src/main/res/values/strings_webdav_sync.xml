@@ -4,11 +4,16 @@
     <string name="webdav_sync_provider_label">Service Provider</string>
     <string name="webdav_sync_connection">Connection</string>
     <string name="webdav_sync_jianguoyun_hint">Use your Jianguoyun account email and an app-specific password (not your account password). Generate one at Account Settings → Security → Third-party App Management.</string>
+    <string name="webdav_sync_jianguoyun_password_hint">Auto-generated alphanumeric string (letters + numbers)</string>
+    <string name="webdav_sync_jianguoyun_server_label">Recommended Server</string>
     <string name="webdav_sync_server_url">Server URL</string>
+    <string name="webdav_sync_server_url_placeholder">https://dav.example.com/dav/</string>
     <string name="webdav_sync_username">Username (Email)</string>
     <string name="webdav_sync_username_placeholder">your@email.com</string>
     <string name="webdav_sync_app_password">App Password</string>
     <string name="webdav_sync_password_placeholder">App-specific password</string>
+    <string name="webdav_sync_provider_jianguoyun_desc">China\'s most popular personal cloud with WebDAV support</string>
+    <string name="webdav_sync_provider_custom_desc">Self-hosted or other WebDAV servers</string>
     <string name="webdav_sync_remote_dir">Remote Directory</string>
     <string name="webdav_sync_test_connection">Test</string>
     <string name="webdav_sync_testing">Testing…</string>

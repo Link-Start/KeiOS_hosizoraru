@@ -1,0 +1,415 @@
+# v1.8.0 -> v1.9.0 链路回归审查计划
+
+适用范围：从 `v1.8.0` 之后到 `v1.9.0` 发布前的所有拆分、性能优化、build type 调整、R8/Benchmark、页面数据流和安装/通知链路变更。
+
+目标：逐页审查业务链路、数据链路、UI 状态、性能路径和发布配置，保证 1.9.0 相比 1.8.0 的体验与功能稳定提升。
+
+## 0. 当前状态
+
+| 项目 | 状态 | 备注 |
+| --- | --- | --- |
+| 基线版本 | 待执行 | 以 `v1.8.0` tag 为行为参照 |
+| 目标版本 | 待执行 | 以当前 `HEAD` / v1.9.0 candidate 为审查目标 |
+| 审查方式 | 进行中 | Git diff 范围审查 + 编译测试 + AVD/真机 smoke + 重点链路手测 |
+| 性能口径 | 待执行 | Debug HWUI 作为快速观察，Benchmark/Release-like 证据作为结论 |
+| 输出物 | 进行中 | Batch A 已记录；后续每批次补充结果、风险、commit、验证命令 |
+
+## 1. 总闸门
+
+每个批次完成后执行：
+
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+git diff --check
+rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'
+```
+
+涉及 GitHub module 时追加：
+
+```bash
+./gradlew :feature-github:testDebugUnitTest
+```
+
+涉及 benchmark / R8 / 发布配置时追加：
+
+```bash
+./gradlew :app:assembleBenchmark
+./gradlew :app:assembleRelease
+./gradlew :app:tasks --all | rg 'benchmarkRelease|nonMinifiedRelease|assemble(Benchmark|Release|Debug)|installBenchmark'
+```
+
+涉及运行时页面链路时追加：
+
+```bash
+./gradlew :app:installDebug
+./gradlew :app:installBenchmark
+adb shell am start -n os.kei.debug/os.kei.LauncherAndroidDesigns
+adb shell am start -n os.kei/os.kei.LauncherAndroidDesigns
+```
+
+## 2. 变更范围定位
+
+先生成审查索引：
+
+```bash
+git log --oneline --decorate v1.8.0..HEAD
+git diff --stat v1.8.0..HEAD
+git diff --name-status v1.8.0..HEAD
+```
+
+重点分类：
+
+| 分类 | 命令 | 目标 |
+| --- | --- | --- |
+| 页面入口 | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main` | 找到所有页面级变更 |
+| GitHub 后端 | `git diff --name-only v1.8.0..HEAD -- feature-github app/src/main/java/os/kei/ui/page/main/github` | 检查 tracking、actions、install、share/import |
+| OS / Shell | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main/os` | 检查活动卡、shell、导入导出 |
+| BA | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main/ba` | 检查图鉴、BGM、媒体缓存、通知 |
+| MCP | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main/mcp app/src/main/java/os/kei/mcp` | 检查页面、工具入口、Codex 接入 |
+| Build / R8 | `git diff --name-only v1.8.0..HEAD -- '*.gradle.kts' gradle.properties app/keepRules R8_Configuration_Analysis.md` | 检查 build type、keepRules、版本号、baseline profile |
+| 字符串资源 | `git diff --name-only v1.8.0..HEAD -- app/src/main/res/values*` | 检查新增文案和多语言覆盖 |
+
+## 3. 审查原则
+
+1. 页面只负责渲染稳定 state snapshot 和发出用户事件。
+2. 数据加载进入 Repository / Store / Coordinator，ViewModel 观察并合成 UI state。
+3. 大型派生逻辑进入纯 deriver，时间、缓存、过滤、排序和安装状态判断保留可测试入口。
+4. 高频状态读取进入 Layout / Draw / `graphicsLayer` / provider lambda。
+5. 列表补齐稳定 `key`、`contentType` 和窄参数。
+6. 页面切换保持内容可见，加载态保持完整骨架和原有视觉节奏。
+7. 通知框架、超级岛模板、安装框架调用契约保持稳定。
+8. R8 keepRules 保持精确，新增反射、序列化、持久化 enum、manifest component 时同步登记。
+9. Benchmark 保持 release-like 性能路径，包名与 versionName/versionCode 规范保持可追踪。
+
+## 4. 页面与链路矩阵
+
+| 区域 | 审查点 | 验收动作 | 状态 |
+| --- | --- | --- | --- |
+| MainScreen / Pager / BottomBar | 页面切换、返回、底栏隐藏回显、runtime active/warm 状态 | 连续切换 5 页，返回手势，滚动隐藏后点击 title card 回显底栏 | 待执行 |
+| Home Page | 动态背景、HDR 高光、首页 cards、数据加载低频 tick | 静止观察 HWUI，滑动/切页，检查内容保持可见 | 待执行 |
+| Settings Page | 权限/外观/行为/超级岛/诊断分区，搜索与 far jump | 展开/收起分区，切换主题/动画/通知开关，搜索跳转 | 待执行 |
+| OS Page | 活动卡、全面屏设置卡、KeyValue、导入导出、sheet 返回 | 新增/编辑/保存/返回手势，导入导出，活动启动 | 待执行 |
+| OS Shell | 内置 shell card、执行结果、复制、历史、分类搜索 | 执行状态栏/手势命令，复制输出，刷新历史 | 待执行 |
+| MCP Page | 工具入口拆分、Codex 相关、Skill、日志导出、局域网权限 | 展开各 card，搜索工具，复制资源，导出日志 | 待执行 |
+| GitHub Overview / Tracking | 刷新、失败过滤回落、单项目间隔、缓存有效期 | 刷新全项目，过滤失败，失败清空后自动回全项目 | 待执行 |
+| GitHub Actions Sheet | artifacts card、下载/安装/分享、nightly.link/token 模式 | token 与 nightly.link 两种模式检查下载常驻，接管安装后出现安装入口 | 待执行 |
+| GitHub Share / Import / Managed Install | 分享入口、pending install、通知优先、结果落库 | 分享 APK/链接，确认安装，取消，完成后回到正确状态 | 待执行 |
+| BA Catalog / Student Guide | 图鉴、搜索、收藏、媒体保存、BGM chrome、临时媒体缓存 | 搜索、播放、收藏、保存单项/打包，切 tab | 待执行 |
+| BA 通知 / 超级岛 | AP、抓取变动提醒、知道了、划掉通知、安装完成岛 | 发送测试通知，点击按钮，滑掉焦点通知，检查岛关闭 | 待执行 |
+| About / Release Notes | 版本信息、日志、Markdown、复制、翻译按钮 | 打开关于页，滚动日志，复制全文，长按复制片段 | 待执行 |
+| Liquid Glass / Backdrop / Sheet | Window bottom sheet、预测式返回、嵌套玻璃、白条/insets | 打开编辑 sheet，滑动内容，返回手势关闭，重复打开 | 待执行 |
+| Build / R8 / Baseline Profile | keepRules、build type、benchmark/release 包名和版本号 | assembleBenchmark/release，检查 APK metadata、mapping、seeds | 完成 |
+
+## 5. 批次计划
+
+### Batch A - Build / R8 / Benchmark
+
+审查文件：
+
+- `app/build.gradle.kts`
+- 根目录和模块 `build.gradle.kts`
+- `app/keepRules/**`
+- `R8_Configuration_Analysis.md`
+- `.github/actions/setup-android-gradle-build/action.yml`
+- `.github/workflows/ci-benchmark-apk.yml`
+
+验收：
+
+```bash
+./gradlew :app:assembleDebug :app:assembleBenchmark :app:assembleRelease
+./gradlew :app:testDebugUnitTest :feature-github:testDebugUnitTest
+./gradlew :app:installBenchmark
+adb shell dumpsys package os.kei | rg "versionCode|versionName"
+```
+
+完成标准：
+
+- Debug 包名为 `os.kei.debug`。
+- Benchmark / Release 包名为 `os.kei`。
+- Benchmark 使用 release-like R8 / resource shrink / baseline profile 路径。
+- versionName 与 versionCode 同步使用 commit-count 规则。
+- keepRules 新增项有对应风险说明。
+
+### Batch B - Main Host / Home / Shared Chrome
+
+审查文件：
+
+- `MainScreen*`
+- `host/**`
+- `HomePage*`
+- `LiquidGlassBottomBar*`
+- `AppTopBar*`
+- `ScrollChromeVisibilityController*`
+
+验收：
+
+- Debug 下打开 HWUI 柱状图观察切页高度。
+- Benchmark 下重复切换 Home / OS / MCP / GitHub / BA。
+- 静止 20 秒观察 Home 动态背景与 CPU/HWUI 变化。
+- 底栏隐藏后点击 topbar title card，底栏回显。
+
+完成标准：
+
+- 页面切换时内容持续可见。
+- 底栏状态与页面 runtime active 状态一致。
+- 动态背景只在页面可见且效果开启时 tick。
+- 主路径没有 Composition 阶段读取高频动画值。
+
+### Batch C - Settings / About / Release Notes
+
+审查文件：
+
+- `SettingsPage*`
+- `settings/section/**`
+- `About*`
+- `ReleaseNotes*`
+- `AppMarkdownContent*`
+
+验收：
+
+- 设置分区展开、搜索、跳转、开关操作。
+- 关于页打开、版本信息、Release Notes 长按复制、全文复制、翻译按钮。
+- 多语言资源检查。
+
+完成标准：
+
+- 设置项 summary/value 来自 deriver 或稳定 model。
+- Release Notes 解析在后台执行并有缓存。
+- 文案进入资源文件。
+
+### Batch D - GitHub 全链路
+
+审查文件：
+
+- `feature-github/**`
+- `app/src/main/java/os/kei/ui/page/main/github/**`
+- `app/src/main/java/os/kei/ui/page/main/jsonimport/**`
+
+验收：
+
+- 追踪列表刷新、失败过滤回落、单项目刷新间隔。
+- Actions sheet artifacts card：下载、安装、分享、文件大小、sha256 隐藏策略。
+- token 与 nightly.link 两种 artifact 下载模式。
+- 分享导入、托管安装、确认安装、安装完成通知/超级岛。
+
+完成标准：
+
+- UI 操作只调用 action facade。
+- 下载/安装/分享路径有统一状态机或 coordinator。
+- 时间/缓存判断从 clock 或 repository 输入。
+- 安装完成状态不会被前序通知强制打掉。
+
+### Batch E - OS Page / Shell
+
+审查文件：
+
+- `OsPage*`
+- `OsShellRunner*`
+- `OsActivityShortcutCardStore*`
+- `OsPageOverlay*`
+
+验收：
+
+- 活动卡新增、编辑、保存、返回手势关闭。
+- 全面屏设置活动卡 extras。
+- shell card 运行、复制、历史、导入导出。
+
+完成标准：
+
+- Store codec/migration/import/export/defaults 边界清晰。
+- Sheet 关闭状态与返回栈一致。
+- Lazy list 使用稳定 key/contentType。
+
+### Batch F - MCP Page / MCP Server / Codex
+
+审查文件：
+
+- `McpPage*`
+- `mcp/**`
+- `app/src/main/assets/mcp/**`
+
+验收：
+
+- MCP 工具入口分 card 展示。
+- Codex 相关工具、Skill、说明、导出日志。
+- 搜索工具分组与折叠状态。
+
+完成标准：
+
+- 工具分组在 ViewModel/deriver 层派生。
+- 副作用集中在 effects 层。
+- 页面 card 拆分后交互状态稳定。
+
+### Batch G - BA 图鉴 / BGM / 媒体 / 通知
+
+审查文件：
+
+- `ba/**`
+- `BaGuideCatalog*`
+- `BaStudentGuide*`
+- `BaGuideTempMediaCache*`
+- `BaGuideBgm*`
+- `MiFocusNotification*`
+
+验收：
+
+- 图鉴搜索、详情、收藏、媒体保存、媒体缓存。
+- BGM 播放、收藏、导入导出、底部 chrome。
+- AP / cafe AP / 抓取变动提醒 / 超级岛按钮与关闭。
+
+完成标准：
+
+- 收藏与媒体写操作进入 Repository/Store。
+- 临时缓存 TTL、prune、download、validation 有清晰边界。
+- BGM 热值通过 provider/draw/layout 路径读取。
+- 超级岛按钮与通知取消有对称关闭路径。
+
+### Batch H - Liquid Glass / Backdrop / Window Sheet
+
+审查文件：
+
+- `liquidglass/**`
+- `backdrop/**`
+- `*BottomSheet*`
+- `*WindowSheet*`
+- `*FloatingSurface*`
+
+验收：
+
+- 各页面编辑 sheet 的打开、滑动、保存、取消、返回手势。
+- 嵌套 glass 组件不出现灰黑卡、白底遮挡、小白条破坏。
+- 预测式返回和 OEM 半残废返回兼容路径。
+
+完成标准：
+
+- Window bottom sheet 为优先路径。
+- Backdrop 嵌套使用 exported backdrop。
+- Sheet close animation 与真实关闭状态同步。
+
+## 6. 性能验收
+
+### 快速观察
+
+```bash
+adb shell settings put global debug.hwui.profile visual_bars
+adb shell am force-stop os.kei.debug
+adb shell am start -n os.kei.debug/os.kei.LauncherAndroidDesigns
+```
+
+观察范围：
+
+- MainScreen 切页柱状图高度。
+- Settings / OS / MCP / GitHub / BA 首次进入与二次进入。
+- Home 静止动态背景。
+
+### Benchmark 证据
+
+```bash
+./gradlew :app:assembleBenchmark
+./gradlew :app:installBenchmark
+adb shell am force-stop os.kei
+adb shell am start -n os.kei/os.kei.LauncherAndroidDesigns
+adb shell dumpsys gfxinfo os.kei framestats
+```
+
+必要时补 Perfetto：
+
+```bash
+adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data/misc/perfetto-traces/keios.perfetto-trace
+```
+
+## 7. 审查记录模板
+
+每完成一个批次，追加记录：
+
+```markdown
+### 2026-xx-xx Batch X - <区域>
+
+- Commit:
+- 审查范围:
+- 主要风险:
+- 已修复:
+- 保留风险:
+- 验证命令:
+- AVD/真机:
+- 结论:
+```
+
+### 2026-05-29 Batch A - Build / R8 / Benchmark
+
+- Commit: 本批提交（见 `git log -1`）
+- 审查范围:
+  - `app/build.gradle.kts`
+  - 根目录和模块 `build.gradle.kts`
+  - `app/src/main/keepRules/proguard-rules.keep`
+  - `R8_Configuration_Analysis.md`
+  - `.github/actions/setup-android-gradle-build/action.yml`
+  - `.github/workflows/ci-benchmark-apk.yml`
+- 主要风险:
+  - Benchmark CI 的 `paths` 只覆盖 `app/**`、`core-log/**`、`core-io/**` 等部分路径，`core-concurrency/**`、`core-prefs/**`、`core-system/**`、`feature-github/**` 变更可能不会触发预发行包构建。
+  - 本地 Gradle 读取 git metadata 会在 git 输出变化时使 configuration cache 重新计算；这是保持本地 versionName/versionCode 命名规范的可接受代价。
+- 已修复:
+  - `.github/workflows/ci-benchmark-apk.yml` 补齐 `core-concurrency/**`、`core-prefs/**`、`core-system/**`、`feature-github/**` 触发路径。
+- 验证命令:
+  - `./gradlew :app:assembleDebug :app:assembleBenchmark :app:assembleRelease :app:testDebugUnitTest :feature-github:testDebugUnitTest`
+  - `./gradlew :app:tasks --all | rg 'benchmarkRelease|nonMinifiedRelease|assemble(Benchmark|Release|Debug)|installBenchmark'`
+  - `/Users/voyager/Library/Android/sdk/build-tools/37.0.0/aapt dump badging app/build/outputs/apk/debug/app-debug.apk | sed -n '1p'`
+  - `/Users/voyager/Library/Android/sdk/build-tools/37.0.0/aapt dump badging app/build/outputs/apk/benchmark/app-benchmark.apk | sed -n '1p'`
+  - `/Users/voyager/Library/Android/sdk/build-tools/37.0.0/aapt dump badging app/build/outputs/apk/release/app-release.apk | sed -n '1p'`
+  - `ls -la app/build/outputs/mapping/benchmark app/build/outputs/mapping/release`
+  - `./gradlew :app:installBenchmark`
+  - `adb shell dumpsys package os.kei | rg "versionCode|versionName"`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+  - `git diff --check`
+- AVD/真机:
+  - 真机 `25098PN5AC - Android 16` 安装 benchmark 成功。
+  - 安装后 `os.kei` 为 `versionName=1.8.4+4.ge85cb0cce`、`versionCode=10804004`。
+- 产物 metadata:
+  - Debug: `os.kei.debug` / `1.8.4+4.ge85cb0cce` / `10804004`
+  - Benchmark: `os.kei` / `1.8.4+4.ge85cb0cce` / `10804004`
+  - Release: `os.kei` / `1.8.3` / `10803999`
+- 保留风险:
+  - 后续稳定后需要重新跑一次 baseline profile，以清理当前变更期的 profile 风险。
+- 结论:
+  - Batch A 通过。Build type、R8 输出、Benchmark/Release metadata、安装覆盖和 CI 触发范围已完成本轮审查。
+
+## 8. 当前优先级
+
+| 优先级 | 区域 | 原因 | 状态 |
+| --- | --- | --- | --- |
+| P0 | Build / R8 / Benchmark | 直接影响预发行验证和安装覆盖 | 完成 |
+| P0 | MainScreen / Shared Chrome | 页面切换性能和全局体验入口 | 待执行 |
+| P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 待执行 |
+| P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
+| P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 待执行 |
+| P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 待执行 |
+| P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 待执行 |
+| P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 待执行 |
+
+## 9. 发布前最终门禁
+
+```bash
+./gradlew :app:compileDebugKotlin
+./gradlew :app:testDebugUnitTest
+./gradlew :feature-github:testDebugUnitTest
+./gradlew :app:assembleBenchmark
+./gradlew :app:assembleRelease
+git diff --check
+rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'
+```
+
+发布候选 APK 检查：
+
+```bash
+/Users/voyager/Library/Android/sdk/build-tools/37.0.0/aapt dump badging app/build/outputs/apk/benchmark/app-benchmark.apk | sed -n '1p'
+/Users/voyager/Library/Android/sdk/build-tools/37.0.0/aapt dump badging app/build/outputs/apk/release/app-release.apk | sed -n '1p'
+```
+
+最终结论需要包含：
+
+- 1.8.0 到 1.9.0 的主要用户可见变化。
+- 已修复的链路风险。
+- 仍需观察的风险。
+- Benchmark / Release APK metadata。
+- AVD/真机 smoke 设备与结果。

@@ -91,17 +91,18 @@ internal fun SettingsCategoryPagerContent(
     sliderInteractionActive: Boolean,
     transitionAnimationsEnabled: Boolean,
     farJumpAlphaProvider: () -> Float,
+    backdropEnabled: Boolean = true,
+    modifier: Modifier = Modifier,
 ) {
     MainLoadedPager(
         state = pagerState,
         userScrollEnabled = !sliderInteractionActive,
         animationsEnabled = transitionAnimationsEnabled,
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = farJumpAlphaProvider() }
-                .layerBackdrop(topBarBackdrop)
-                .layerBackdrop(bottomBarBackdrop),
+                .then(if (backdropEnabled) Modifier.layerBackdrop(topBarBackdrop).layerBackdrop(bottomBarBackdrop) else Modifier),
     ) { pageIndex ->
         val category = categories[pageIndex]
         val pageListState = listStates.forCategory(category)

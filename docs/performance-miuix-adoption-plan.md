@@ -147,7 +147,7 @@ For install/smoke validation, target emulator packages:
 | M2 | First pass landed | Full inventory of `appSquircleClip`/`appSquircleSurface` sites (31 active). Two safe wins landed: `BaGuideCatalogEntryAvatarFallback` surface→background (centered Icon at 50% size, no content reaches corners) and `LiquidActionBar` clip-only Box removal (centered Icon, no riple, no background — clip masks nothing). 15 mask-needed sites kept. 10+ uncertain sites require visual inspection on AVD before conversion. |
 | M3 | Audited (no code change) | 60 `rememberLayerBackdrop()` calls. No nested capture-on-capture chains found. All 9 `rememberCombinedBackdrop` calls merge exactly 2 sources (no excessive fan-in). High-churn list items (`GuideLiquidCard` 15+ instances, `AppFeatureCards`/`AppOverviewCards` in HomePage LazyColumn) use `remember` so capture surfaces are per-slot and recycled by LazyList. Pager backdrops are correctly `key()`-wrapped. |
 | M4 | First pass landed | Audited 7 bottom chrome / BGM files. 5/7 clean (provider lambdas throughout). Landed: converted `BaGuideBgmChromeMiniPlayerSideControl`'s `progress: Float` parameter to `progress: () -> Float` — the resolved `expanded` value was passed by value into a composable that only reads it inside `graphicsLayer { alpha = progress }`, forcing recomposition every frame during the expand/collapse transition. Now the read is deferred to the draw phase. |
-| M5 | Planned | Search expansion should keep continuity and mounted content. |
+| M5 | First pass landed | SettingsPage was the only page that unmounted main content during search (`if/else` swap). Restructured to keep `SettingsCategoryPagerContent` mounted and layered `SettingsSearchContent` on top when `searchActive`, matching the pattern used by GitHub, MCP, OS, and BA Catalog. Pager is hidden via `Modifier.alpha(0f)` and its backdrop capture + transition animations are gated off when search is active. GitHub, MCP, OS, BA Catalog already follow the ideal pattern (no code change needed). |
 | M6 | First target landed | Swept draw lambdas for size-stable per-frame allocations. Landed: `InteractiveHighlight` re-wrapped `ShaderBrush(shader)` every press-animation frame; hoisted to a stable member field (fixed-shader wrapper is size-independent, uniforms still mutate in place). Other draw-heavy sites already memoize brushes via `remember` / `.background()` / top-level helpers. Continue on Home HDR / BA BGM hero if new draw allocations appear. |
 | M7 | Planned | QA-only tool to supplement HWUI bars and benchmark numbers. |
 | M8 | Planned | Shared page helper convergence after hotspot fixes. |
@@ -230,6 +230,19 @@ For install/smoke validation, target emulator packages:
     composable that only reads it inside `graphicsLayer { alpha = progress }`,
     forcing recomposition every frame during expand/collapse transition.
     Now the read is deferred to the draw phase.
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-30 M5 search overlay first pass:
+  - Audited search expansion across 5 pages (Settings, GitHub, MCP, OS, BA
+    Catalog). Only SettingsPage unmounted main content during search (hard
+    `if (searchActive) ... else ...` swap). The other 4 pages already keep
+    content mounted with search as an overlay.
+  - Restructured SettingsPage: always render `SettingsCategoryPagerContent`,
+    layer `SettingsSearchContent` on top when `searchActive`. Pager is hidden
+    via `Modifier.alpha(0f)` and its backdrop capture + transition animations
+    are gated off when search is active. No blank flash on search toggle.
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

@@ -5,6 +5,7 @@ package os.kei.ui.page.main.settings.page
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -507,18 +509,10 @@ fun SettingsPage(
             )
         },
     ) { innerPadding ->
-        if (searchActive) {
-            SettingsSearchContent(
-                innerPadding = innerPadding,
-                searchListState = searchListState,
-                matchingSearchTargets = matchingSearchTargets,
-                settingsSearchCardInput = settingsSearchCardInput,
-                scrollNestedConnection = scrollBehavior.nestedScrollConnection,
-                topBarBackdrop = topBarBackdrop,
-                bottomBarBackdrop = bottomBarBackdrop,
-                sliderInteractionActive = sliderInteractionActive,
-            )
-        } else {
+        // Keep both pager and search content mounted to avoid blank flash on
+        // search toggle, matching the pattern used by GitHub, MCP, OS, and BA
+        // Catalog pages. Control visibility and backdrop capture instead.
+        Box(Modifier.fillMaxSize()) {
             SettingsCategoryPagerContent(
                 innerPadding = innerPadding,
                 pagerState = pagerState,
@@ -529,9 +523,23 @@ fun SettingsPage(
                 topBarBackdrop = topBarBackdrop,
                 bottomBarBackdrop = bottomBarBackdrop,
                 sliderInteractionActive = sliderInteractionActive || searchExpanded,
-                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                transitionAnimationsEnabled = transitionAnimationsEnabled && !searchActive,
                 farJumpAlphaProvider = { farJumpAlpha.value },
+                backdropEnabled = !searchActive,
+                modifier = Modifier.alpha(if (searchActive) 0f else 1f),
             )
+            if (searchActive) {
+                SettingsSearchContent(
+                    innerPadding = innerPadding,
+                    searchListState = searchListState,
+                    matchingSearchTargets = matchingSearchTargets,
+                    settingsSearchCardInput = settingsSearchCardInput,
+                    scrollNestedConnection = scrollBehavior.nestedScrollConnection,
+                    topBarBackdrop = topBarBackdrop,
+                    bottomBarBackdrop = bottomBarBackdrop,
+                    sliderInteractionActive = sliderInteractionActive,
+                )
+            }
         }
     }
 }

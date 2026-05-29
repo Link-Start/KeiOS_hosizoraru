@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
@@ -60,9 +60,8 @@ import java.util.Locale
 internal fun WebDavSyncPage(
     onBack: () -> Unit,
     dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    viewModel: WebDavSyncViewModel = viewModel(),
 ) {
-    val scope = rememberCoroutineScope()
-    val viewModel = WebDavSyncViewModel(scope)
     val state = viewModel.uiState
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
@@ -100,7 +99,7 @@ internal fun WebDavSyncPage(
                     sectionIcon = appLucideDatabaseIcon(),
                     containerColor = cardColor,
                 ) {
-                    // Provider selector — cycles through providers
+                    // Provider selector
                     val providerSummary = when (state.selectedProvider) {
                         WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun_desc)
                         WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom_desc)
@@ -127,36 +126,32 @@ internal fun WebDavSyncPage(
 
                     // Server URL — only editable for Custom provider
                     if (state.selectedProvider == WebDavProvider.Custom) {
-                        WebDavFieldLabel(text = stringResource(R.string.webdav_sync_server_url))
-                        WebDavLiquidTextField(
+                        WebDavSyncFieldLabel(text = stringResource(R.string.webdav_sync_server_url))
+                        WebDavSyncTextField(
                             value = state.serverUrl,
                             onValueChange = viewModel::updateServerUrl,
                             placeholder = stringResource(R.string.webdav_sync_server_url_placeholder),
-                            minHeight = 44.dp,
                             singleLine = true,
                         )
                     }
 
                     // Username
-                    WebDavFieldLabel(text = stringResource(R.string.webdav_sync_username))
-                    WebDavLiquidTextField(
+                    WebDavSyncFieldLabel(text = stringResource(R.string.webdav_sync_username))
+                    WebDavSyncTextField(
                         value = state.username,
                         onValueChange = viewModel::updateUsername,
                         placeholder = stringResource(R.string.webdav_sync_username_placeholder),
-                        minHeight = 44.dp,
                         singleLine = true,
                     )
 
                     // App password
-                    WebDavFieldLabel(text = stringResource(R.string.webdav_sync_app_password))
-                    WebDavLiquidTextField(
+                    WebDavSyncFieldLabel(text = stringResource(R.string.webdav_sync_app_password))
+                    WebDavSyncTextField(
                         value = state.appPassword,
                         onValueChange = viewModel::updateAppPassword,
                         placeholder = stringResource(R.string.webdav_sync_password_placeholder),
-                        minHeight = 44.dp,
                         singleLine = true,
                     )
-                    // Jianguoyun password format hint
                     if (state.selectedProvider == WebDavProvider.Jianguoyun) {
                         Text(
                             text = stringResource(R.string.webdav_sync_jianguoyun_password_hint),
@@ -167,12 +162,11 @@ internal fun WebDavSyncPage(
                     }
 
                     // Remote directory
-                    WebDavFieldLabel(text = stringResource(R.string.webdav_sync_remote_dir))
-                    WebDavLiquidTextField(
+                    WebDavSyncFieldLabel(text = stringResource(R.string.webdav_sync_remote_dir))
+                    WebDavSyncTextField(
                         value = state.remoteDir,
                         onValueChange = viewModel::updateRemoteDir,
                         placeholder = "KeiOS/",
-                        minHeight = 44.dp,
                         singleLine = true,
                     )
 
@@ -326,10 +320,10 @@ internal fun WebDavSyncPage(
     }
 }
 
-// ── Text field components (matching project's FeedbackLiquidTextField pattern) ──
+// ── Text field components (matching FeedbackLiquidTextField pattern) ──
 
 @Composable
-private fun WebDavFieldLabel(text: String) {
+private fun WebDavSyncFieldLabel(text: String) {
     Text(
         text = text,
         color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
@@ -341,13 +335,13 @@ private fun WebDavFieldLabel(text: String) {
 }
 
 @Composable
-private fun WebDavLiquidTextField(
+private fun WebDavSyncTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-    minHeight: Dp,
     singleLine: Boolean = false,
 ) {
+    val minHeight = 48.dp
     val textStyle = TextStyle(
         color = MiuixTheme.colorScheme.onBackground,
         fontSize = AppTypographyTokens.Body.fontSize,
@@ -356,7 +350,7 @@ private fun WebDavLiquidTextField(
         platformStyle = PlatformTextStyle(includeFontPadding = false),
     )
     val placeholderStyle = textStyle.copy(color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.50f))
-    WebDavLiquidPanel(minHeight = minHeight) {
+    WebDavSyncPanel(minHeight = minHeight) {
         val fieldHeight = minHeight - 24.dp
         BasicTextField(
             value = value,
@@ -394,7 +388,7 @@ private fun WebDavLiquidTextField(
 }
 
 @Composable
-private fun WebDavLiquidPanel(
+private fun WebDavSyncPanel(
     minHeight: Dp,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),

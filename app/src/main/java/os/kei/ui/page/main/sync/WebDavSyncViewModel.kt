@@ -4,16 +4,15 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import os.kei.core.log.AppLogger
 import os.kei.feature.webdav.jianguoyun.JianguoyunPreset
 import os.kei.feature.webdav.model.WebDavConfig
 
 @Stable
-internal class WebDavSyncViewModel(
-    private val scope: CoroutineScope,
-) {
+internal class WebDavSyncViewModel : ViewModel() {
     private val repository = WebDavSyncRepository()
 
     var uiState by mutableStateOf(buildInitialUiState())
@@ -76,7 +75,7 @@ internal class WebDavSyncViewModel(
                 remoteDir = s.remoteDir,
             ),
         )
-        scope.launch {
+        viewModelScope.launch {
             uiState = uiState.copy(testing = true, testResult = null)
             val result = repository.testConnection()
             uiState = uiState.copy(
@@ -98,7 +97,7 @@ internal class WebDavSyncViewModel(
      * Upload all enabled items. [dataPorts] provides export/import lambdas per item.
      */
     fun uploadAll(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort> = emptyMap()) {
-        scope.launch {
+        viewModelScope.launch {
             uiState = uiState.copy(syncing = true, syncProgress = "Syncing…", lastSyncError = null)
             val config = WebDavSyncStore.loadConfig() ?: run {
                 uiState = uiState.copy(syncing = false, lastSyncError = "Not configured")
@@ -135,7 +134,7 @@ internal class WebDavSyncViewModel(
      * Download all enabled items. [dataPorts] provides export/import lambdas per item.
      */
     fun downloadAll(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort> = emptyMap()) {
-        scope.launch {
+        viewModelScope.launch {
             uiState = uiState.copy(syncing = true, syncProgress = "Downloading…", lastSyncError = null)
             val config = WebDavSyncStore.loadConfig() ?: run {
                 uiState = uiState.copy(syncing = false, lastSyncError = "Not configured")

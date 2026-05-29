@@ -170,7 +170,13 @@ private class BgEffectNode(
     }
 
     private fun syncAnimation() {
-        if (playing && effectBackground && alphaActive) {
+        // Match MIUIX OS3 behavior: keep the coroutine alive while the node is
+        // playing and visible. The draw() method's effectBackground gate still
+        // suppresses the actual shader draw when the effect is off, so there is
+        // no visual leak — but when the effect comes back on the animation is
+        // already ticking instead of needing a coroutine restart, removing the
+        // visible startup stutter.
+        if (playing && alphaActive) {
             startAnimation()
         } else {
             stopAnimation()

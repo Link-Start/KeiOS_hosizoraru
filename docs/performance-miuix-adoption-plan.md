@@ -142,7 +142,7 @@ For install/smoke validation, target emulator packages:
 
 | ID | Status | Notes |
 | --- | --- | --- |
-| M0 | Planned | Highest value remaining MIUIX Sample idea for Home perceived smoothness. |
+| M0 | First pass landed | Removed `effectBackground` from `syncAnimation()` condition so the animation coroutine stays alive while `playing && alphaActive`, matching MIUIX OS3 behavior. The `draw()` method's `effectBackground` gate still suppresses the actual shader draw when the effect is off — no visual leak — but when the effect comes back on the animation is already ticking instead of needing a coroutine restart, eliminating the visible startup stutter. The 30/60 FPS throttle and 0.25x render scale are retained for power savings. Pager-scroll gate retained (MIUIX doesn't gate but KeiOS's power-saving trade-off is reasonable). Further tuning possible on AVD with HWUI bars. |
 | M1 | Audited (no scroll/pager gap) | Scroll/pager/far-jump threshold reads are all already deferred (snapshotFlow + distinctUntilChanged, derivedStateOf, or provider lambdas invoked only from effects/callbacks). No composition-phase per-frame read to convert. TopAppBar collapse + search-expansion thresholds remain for a later targeted pass. |
 | M2 | First pass landed | Full inventory of `appSquircleClip`/`appSquircleSurface` sites (31 active). Two safe wins landed: `BaGuideCatalogEntryAvatarFallback` surface→background (centered Icon at 50% size, no content reaches corners) and `LiquidActionBar` clip-only Box removal (centered Icon, no riple, no background — clip masks nothing). 15 mask-needed sites kept. 10+ uncertain sites require visual inspection on AVD before conversion. |
 | M3 | Planned | Backdrop count is high; topology drift can affect page switching. |
@@ -196,6 +196,24 @@ For install/smoke validation, target emulator packages:
     - `LiquidActionBar`: removed `appSquircleClip(999.dp)` from icon-only Box
       (centered Icon, no riple indication, no background; clip masks nothing
       visible; eliminates one offscreen layer).
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest`
+  - `git diff --check`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+- 2026-05-30 M0 Home dynamic background first pass:
+  - Compared KeiOS `BgEffectModifier` activation against MIUIX OS3 sample.
+  - MIUIX: single gate (`playing`), alpha gate only suppresses draw (coroutine
+    keeps ticking), no page-visibility or pager-scroll gate.
+  - KeiOS had triple gate (`playing && effectBackground && alphaActive`); alpha
+    below 0.001 killed the coroutine; `effectBackground` depended on
+    `runtime.isPageActive` (kills animation when user scrolls to another tab).
+  - Fix: removed `effectBackground` from `syncAnimation()` so the coroutine
+    stays alive while `playing && alphaActive`. The `draw()` method's
+    `effectBackground` gate still suppresses the actual shader draw — no visual
+    leak — but when the effect comes back on the animation is already ticking
+    instead of needing a coroutine restart, removing the visible startup stutter.
+  - Retained 30/60 FPS throttle and 0.25x render scale (power savings).
+  - Retained pager-scroll gate (reasonable KeiOS trade-off vs MIUIX).
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`

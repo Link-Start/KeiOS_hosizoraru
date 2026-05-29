@@ -416,6 +416,43 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - 结论:
   - Batch B 通过。Main pager 绘制层级风险已修复，Debug 与 Benchmark 在 AVD 上完成主页面连续切换 smoke，未发现空白页式降载或启动/切页崩溃。
 
+### 2026-05-29 Batch G - BA 图鉴 / BGM / 媒体 / 通知
+
+- Commit: `a52cee087` Fix catalog scroll-to-top, initial position, and wrong student bug
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/student/page/BaStudentGuidePage.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/page/state/BaStudentGuideViewModel.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPage.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPageStateHolder.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPagePager.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogBottomChromePlaybackSurface.kt`
+  - `app/src/main/java/os/kei/ui/page/main/student/catalog/component/BaGuideCatalogV2ListContent.kt`
+- 主要风险:
+  - 图鉴 catalog 底栏点击当前 tab 时，仅 `pagerState.animateToPage` 重定位 pager，列表不会回到顶部，与主 pager 的 scroll-to-top 行为不一致。
+  - 图鉴 catalog 进入时未保证滚动到顶部，长 LazyList 在状态恢复后留在历史位置。
+  - `BaStudentGuideViewModel` 是 Application 级单例（`applicationViewModel`），`init { loadStoredCurrentGuide() }` 仅执行一次。返回后通过搜索打开不同学生时，MMKV 中的 currentUrl 已更新，但 ViewModel 状态保留旧 URL，导致重新进入时显示上次学生。
+- 已修复:
+  - `BaGuideCatalogPageStateHolder` 新增 `scrollToTopSignal` 计数器与 `emitScrollToTop()` 入口；`BaGuideCatalogBottomChromePlaybackSurface` 在 `index == pagerState.settledPage` 时改为发射 scroll-to-top 信号；`BaGuideCatalogV2ListContent` 通过 `scrollToTopSignal` 参数与 `LaunchedEffect` 触发 `animateScrollToItem(0)`。
+  - `BaGuideCatalogPage` 首次组合时 `LaunchedEffect(Unit)` 调用 `pageState.emitScrollToTop()`，保证进入图鉴时所有 tab 列表起始位置一致。
+  - `BaStudentGuideViewModel` 新增 `suspend fun reloadIfStoredUrlChanged()`：从 store 重新读取 currentUrl，与当前 `_dataState.value.sourceUrl` 不一致时调用 `openGuide()` 重置状态并加载新学生；`BaStudentGuidePage` 通过 `LocalLifecycleOwner` + `repeatOnLifecycle(Lifecycle.State.RESUMED)` 在每次页面 resume 时调用，确保单例 ViewModel 与最新存储 URL 对齐。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+  - `git diff --check`
+- AVD/真机:
+  - 待手测确认底栏二次点击 scroll-to-top、进入图鉴顶部对齐、搜索切换学生流程。
+- 保留风险:
+  - 图鉴详情内 `BaStudentGuidePagerPage` 各 tab 的 `LazyListState` 通过 `rememberSaveable(sourceUrl, tabRenderState.activeBottomTab.name, saver = LazyListState.Saver)` 隔离，已与 sourceUrl 切换对齐；后续若新增分页类型仍需保持此 keying 习惯。
+  - BGM/媒体/超级岛通知链路未在本批触及，归入下一轮 Batch G 增补（必要时拆分 Batch G-2）。
+- 结论:
+  - Batch G 第一轮通过。catalog scroll-to-top、初始顶部对齐、Student Guide 单例 ViewModel 学生切换三项链路问题已修复。BGM 播放、媒体保存、临时缓存、AP/超级岛通知验收延后至 BGM 专项批次。
+
+### 2026-05-29 Gate Recheck
+
+- `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest` BUILD SUCCESSFUL
+- `rg "collectAsState\(" app/src/main/java/os/kei -g '*.kt'` 零命中
+- `git diff --check` 干净
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
@@ -426,7 +463,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 | P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 待执行 |
 | P1 | OS Page / Shell | 活动卡和 shell card 新增多 | 待执行 |
-| P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 待执行 |
+| P1 | BA 图鉴 / BGM / 超级岛 | 媒体、通知、缓存和 BGM chrome 链路复杂 | 进行中（catalog 已完成，BGM/通知待补） |
 | P2 | MCP Page / Codex | 新增 Codex 接入后需要完整验收 | 待执行 |
 
 ## 9. 发布前最终门禁

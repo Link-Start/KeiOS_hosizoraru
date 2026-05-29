@@ -91,14 +91,14 @@ jobs:
           cache-read-only: "true"
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 
-      - name: Build benchmark APK
+      - name: Build benchmarkRelease APK
         env:
           RUN_LINT_VITAL: ${{ github.event.inputs.run-lint-vital || 'false' }}
         run: |
           set -euo pipefail
-          GRADLE_ARGS=(":app:assembleBenchmark" "--stacktrace")
+          GRADLE_ARGS=(":app:assembleBenchmarkRelease" "--stacktrace")
           if [[ "${RUN_LINT_VITAL}" != "true" ]]; then
-            GRADLE_ARGS+=("-x" "lintVitalBenchmark")
+            GRADLE_ARGS+=("-x" "lintVitalBenchmarkRelease")
           fi
           ./gradlew "${GRADLE_ARGS[@]}"
 
@@ -106,10 +106,10 @@ jobs:
         id: meta
         uses: ./.github/actions/prepare-android-apk-artifact
         with:
-          variant: benchmark
-          metadata-path: app/build/outputs/apk/benchmark/output-metadata.json
+          variant: benchmarkRelease
+          metadata-path: app/build/outputs/apk/benchmarkRelease/output-metadata.json
 
-      - name: Verify benchmark APK signing certificate
+      - name: Verify benchmarkRelease APK signing certificate
         run: |
           set -euo pipefail
           APK_PATH="${{ steps.meta.outputs.apk-path }}"

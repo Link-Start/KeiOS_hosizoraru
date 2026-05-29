@@ -86,8 +86,8 @@ git diff --name-status v1.8.0..HEAD
 
 | 区域 | 审查点 | 验收动作 | 状态 |
 | --- | --- | --- | --- |
-| MainScreen / Pager / BottomBar | 页面切换、返回、底栏隐藏回显、runtime active/warm 状态 | 连续切换 5 页，返回手势，滚动隐藏后点击 title card 回显底栏 | 待执行 |
-| Home Page | 动态背景、HDR 高光、首页 cards、数据加载低频 tick | 静止观察 HWUI，滑动/切页，检查内容保持可见 | 待执行 |
+| MainScreen / Pager / BottomBar | 页面切换、返回、底栏隐藏回显、runtime active/warm 状态 | 连续切换 5 页，返回手势，滚动隐藏后点击 title card 回显底栏 | 完成 |
+| Home Page | 动态背景、HDR 高光、首页 cards、数据加载低频 tick | 静止观察 HWUI，滑动/切页，检查内容保持可见 | 完成 |
 | Settings Page | 权限/外观/行为/超级岛/诊断分区，搜索与 far jump | 展开/收起分区，切换主题/动画/通知开关，搜索跳转 | 待执行 |
 | OS Page | 活动卡、全面屏设置卡、KeyValue、导入导出、sheet 返回 | 新增/编辑/保存/返回手势，导入导出，活动启动 | 待执行 |
 | OS Shell | 内置 shell card、执行结果、复制、历史、分类搜索 | 执行状态栏/手势命令，复制输出，刷新历史 | 待执行 |
@@ -374,12 +374,54 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
 - 结论:
   - Batch A 通过。Build type、R8 输出、Benchmark/Release metadata、安装覆盖和 CI 触发范围已完成本轮审查。
 
+### 2026-05-29 Batch B - Main Host / Home / Shared Chrome
+
+- Commit: 本批提交（见 `git log -1`）
+- 审查范围:
+  - `app/src/main/java/os/kei/ui/page/main/host/main/MainScreen.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainPagerCoordinator.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainPagerLayout.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainPagerPageHost.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainLoadedPager.kt`
+  - `app/src/main/java/os/kei/ui/page/main/host/pager/MainPageActivationState.kt`
+  - `app/src/main/java/os/kei/ui/page/main/home/state/HomePageDerivedState.kt`
+  - `app/src/main/java/os/kei/ui/page/main/home/HomePageChrome.kt`
+  - `app/src/main/java/os/kei/ui/page/main/home/HomePageSections.kt`
+  - `app/src/main/java/os/kei/ui/page/main/widget/chrome/LiquidGlassBottomBar.kt`
+  - `app/src/main/java/os/kei/ui/page/main/widget/chrome/SearchBarHost.kt`
+- 主要风险:
+  - `NonHomePageBackground` 在 pager 页面内容之后绘制，命名语义是背景，实际层级可能覆盖非首页内容，属于 1.8.0 后 shared chrome / background 拆分带来的绘制顺序风险。
+  - Debug 首次验收遇到实体机外部图片选择器残留流程，已切换为 AVD 专用验收，实体机 `debug.hwui.profile` 已恢复为 `null`。
+- 已修复:
+  - `MainPagerLayout` 将 `NonHomePageBackground` 移到 pager 内容之前绘制，保持非首页背景仍在 root `Box` 内，由内容层覆盖，避免背景层遮挡页面内容。
+- 验证命令:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest`
+  - `./gradlew :app:assembleBenchmark`
+  - `adb -s emulator-5554 install -r -d app/build/outputs/apk/debug/app-debug.apk`
+  - `adb -s emulator-5554 install-multiple -r -d app/build/outputs/apk/benchmark/app-benchmark.apk app/build/outputs/apk/benchmark/baselineProfiles/0/app-benchmark.dm`
+  - `adb -s emulator-5554 shell am start -n os.kei.debug/os.kei.LauncherAndroidDesigns`
+  - `adb -s emulator-5554 shell am start -n os.kei/os.kei.LauncherAndroidDesigns`
+  - `adb -s emulator-5554 shell settings put global debug.hwui.profile visual_bars`
+  - `adb -s emulator-5554 shell dumpsys gfxinfo os.kei`
+  - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
+  - `git diff --check`
+- AVD:
+  - `Pixel_10_Pro` / `emulator-5554` / `sdk_gphone16k_arm64`
+  - Debug `os.kei.debug` 启动成功，Home / OS / MCP / GitHub / BA 连续切换截图均有内容，未出现空白页。
+  - Benchmark `os.kei` 启动成功，Home / OS / MCP / GitHub / BA 连续切换截图均有内容，未出现空白页。
+  - Benchmark `dumpsys gfxinfo os.kei`：Total frames `3986`，Janky frames `57 (1.43%)`，P50 `22ms`，P90 `26ms`，P95 `27ms`，P99 `61ms`。
+- 保留风险:
+  - Home 动态背景仍是长期性能专项，高动态效果与 HWUI 柱状图之间需要后续用 benchmark trace 继续收敛。
+  - 底栏隐藏后点击 topbar title card 回显底栏需要在后续手测批次补一次更细的滚动场景验证。
+- 结论:
+  - Batch B 通过。Main pager 绘制层级风险已修复，Debug 与 Benchmark 在 AVD 上完成主页面连续切换 smoke，未发现空白页式降载或启动/切页崩溃。
+
 ## 8. 当前优先级
 
 | 优先级 | 区域 | 原因 | 状态 |
 | --- | --- | --- | --- |
 | P0 | Build / R8 / Benchmark | 直接影响预发行验证和安装覆盖 | 完成 |
-| P0 | MainScreen / Shared Chrome | 页面切换性能和全局体验入口 | 待执行 |
+| P0 | MainScreen / Shared Chrome | 页面切换性能和全局体验入口 | 完成 |
 | P0 | GitHub 安装 / Actions / Share Import | 用户高频链路且近期改动大 | 待执行 |
 | P0 | Liquid Glass / Window Sheet | 返回、保存、编辑、预测式返回风险集中 | 待执行 |
 | P1 | Settings / About / Release Notes | 近期分区、日志、复制能力改动集中 | 待执行 |

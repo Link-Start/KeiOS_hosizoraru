@@ -202,6 +202,14 @@ internal fun MainPagerLayout(
         },
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
+            if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
+                NonHomePageBackground(
+                    enabled = coordinator.hasNonHomeBackground,
+                    imageUri = coordinator.effectiveNonHomeBackgroundUri,
+                    opacity = nonHomeBackgroundOpacity,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             val pagerModifier =
                 Modifier
                     .fillMaxSize()
@@ -425,15 +433,6 @@ internal fun MainPagerLayout(
                 else -> {
                     error("Unsupported main pager state: ${pagerState::class.java.name}")
                 }
-            }
-
-            if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
-                NonHomePageBackground(
-                    enabled = coordinator.hasNonHomeBackground,
-                    imageUri = coordinator.effectiveNonHomeBackgroundUri,
-                    opacity = nonHomeBackgroundOpacity,
-                    modifier = Modifier.fillMaxSize(),
-                )
             }
         }
     }

@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.student.catalog.state
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -34,13 +33,13 @@ internal fun rememberBaGuideCatalogTabListState(
     filteredEntries: List<BaGuideCatalogEntry>,
     loading: Boolean,
     isPageActive: Boolean,
-    resetSignal: Int = 0,
 ): BaGuideCatalogTabListState {
-    // rememberLazyListState() uses rememberSaveable internally, which naturally
-    // preserves scroll position across tab switches (same Activity session).
-    // On Activity recreate, rememberSaveable restores the saved position, but
-    // the resetSignal LaunchedEffect below scrolls back to top.
-    val listState = rememberLazyListState()
+    // Use remember (not rememberLazyListState / rememberSaveable) to avoid
+    // restoring a stale scroll position on Activity recreate. MainLoadedPager
+    // composes ALL pages simultaneously via repeat(), so each tab's
+    // LazyListState instance lives for the entire Activity session — scroll
+    // position is naturally preserved across tab switches.
+    val listState = remember(tab) { LazyListState() }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     // Use remember (not rememberSaveable) so visibleCount resets on Activity
     // recreate instead of persisting a stale value. The derivedStateOf below
@@ -48,12 +47,6 @@ internal fun rememberBaGuideCatalogTabListState(
     var visibleCount by remember(tab) { mutableIntStateOf(CATALOG_BATCH_SIZE) }
     LaunchedEffect(filteredEntries.size) {
         visibleCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
-    }
-    // Scroll to top when resetSignal changes (Activity recreate).
-    LaunchedEffect(resetSignal) {
-        if (resetSignal > 0) {
-            listState.scrollToItem(0)
-        }
     }
     LaunchedEffect(isPageActive, listState, filteredEntries.size, loading, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect

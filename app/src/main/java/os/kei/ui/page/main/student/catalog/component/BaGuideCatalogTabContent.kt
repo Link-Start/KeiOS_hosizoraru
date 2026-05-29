@@ -10,7 +10,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
-import os.kei.ui.page.main.student.catalog.page.LocalCatalogActivationCount
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
@@ -36,14 +35,12 @@ internal fun BaGuideCatalogTabContent(
     onToggleFavorite: (Long) -> Unit,
 ) {
     val effectiveLoading = loading || (derivedState.deriving && derivedState.filteredEntries.isEmpty())
-    val activationCount = LocalCatalogActivationCount.current
     val tabListState =
         rememberBaGuideCatalogTabListState(
             tab = tab,
             filteredEntries = derivedState.filteredEntries,
             loading = effectiveLoading,
             isPageActive = isPageActive,
-            resetSignal = activationCount,
         )
     val tabContentUiState =
         rememberBaGuideCatalogTabContentUiState(

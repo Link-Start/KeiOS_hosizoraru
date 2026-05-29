@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -15,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,15 +34,6 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-/**
- * Tracks Activity recreation count. Incremented each time the composable enters
- * composition (via DisposableEffect). Used as a reset signal for scroll position
- * so that LazyColumn lists start at the top after Activity recreate, while
- * preserving scroll position during normal tab switches within the same session.
- */
-internal val LocalCatalogActivationCount: ProvidableCompositionLocal<Int> =
-    staticCompositionLocalOf { 0 }
 
 @Composable
 fun BaGuideCatalogPage(
@@ -230,10 +219,7 @@ fun BaGuideCatalogPage(
 
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
 
-    CompositionLocalProvider(
-        LocalBaGuideCatalogImageBitmaps provides imageState.bitmaps,
-        LocalCatalogActivationCount provides activationCount,
-    ) {
+    CompositionLocalProvider(LocalBaGuideCatalogImageBitmaps provides imageState.bitmaps) {
         BaGuideCatalogPageContent(
             pageTitle = pageTitle,
             accent = accent,

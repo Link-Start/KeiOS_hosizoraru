@@ -40,7 +40,7 @@ class BaselineProfileGenerator {
             flingVisibleScrollable(times = 2)
 
             clickTestTag(MAIN_BOTTOM_TAB_GITHUB)
-            waitForTestTag(GITHUB_PAGE_ROOT)
+            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
 
             clickTestTag(GITHUB_IMPORT_MENU_BUTTON)
             waitForTestTag(GITHUB_IMPORT_TRACKS)
@@ -61,7 +61,7 @@ class BaselineProfileGenerator {
             launchHomeFromColdStart()
 
             clickTestTag(MAIN_BOTTOM_TAB_OS)
-            waitForTestTag(OS_PAGE_ROOT)
+            waitForTestTag(OS_PAGE_ROOT, timeoutMs = 15_000)
             flingVisibleScrollable(times = 3)
         }
     }
@@ -75,7 +75,7 @@ class BaselineProfileGenerator {
             launchHomeFromColdStart()
 
             clickTestTag(MAIN_BOTTOM_TAB_MCP)
-            waitForTestTag(MCP_PAGE_ROOT)
+            waitForTestTag(MCP_PAGE_ROOT, timeoutMs = 15_000)
             flingVisibleScrollable(times = 3)
         }
     }
@@ -89,7 +89,7 @@ class BaselineProfileGenerator {
             launchHomeFromColdStart()
 
             clickTestTag(MAIN_BOTTOM_TAB_BA)
-            waitForTestTag(BA_PAGE_ROOT)
+            waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
             flingVisibleScrollable(times = 3)
         }
     }

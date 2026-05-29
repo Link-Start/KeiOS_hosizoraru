@@ -1,39 +1,26 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Base64
 import java.util.Properties
 import kotlin.math.sqrt
 
-fun runGitCommandOrNull(vararg args: String): String? {
-    return try {
-        val output = providers.exec {
-            commandLine("git", *args)
-            workingDir = rootDir
-            isIgnoreExitValue = true
-        }
-        val exitCode = output.result.get().exitValue
-        val stdout = output.standardOutput.asText.get().trim()
-        if (exitCode == 0 && stdout.isNotEmpty()) stdout else null
-    } catch (_: Exception) {
-        null
-    }
-}
-
 data class AppSemVer(
     val major: Int,
     val minor: Int,
-    val patch: Int
+    val patch: Int,
 ) {
     val name: String = "$major.$minor.$patch"
 
-    fun toVersionCode(commitCount: Int): Int {
-        return (major * 10_000_000) + (minor * 100_000) + (patch * 1_000) + commitCount
-    }
+    fun toVersionCode(commitCount: Int): Int =
+        (major * 10_000_000) +
+            (minor * 100_000) +
+            (patch * 1_000) +
+            commitCount.coerceIn(0, 999)
 }
 
 fun parseSemVerTagOrNull(raw: String?): AppSemVer? {
@@ -43,15 +30,8 @@ fun parseSemVerTagOrNull(raw: String?): AppSemVer? {
     return AppSemVer(
         major = major.toInt(),
         minor = minor.toInt(),
-        patch = patch.toInt()
+        patch = patch.toInt(),
     )
-}
-
-fun latestMergedSemVerTagOrNull(): String? {
-    return runGitCommandOrNull("tag", "--merged", "HEAD", "--sort=-v:refname")
-        ?.lineSequence()
-        ?.map { it.trim() }
-        ?.firstOrNull { parseSemVerTagOrNull(it) != null }
 }
 
 data class GitVersionSnapshot(
@@ -60,8 +40,33 @@ data class GitVersionSnapshot(
     val shortHash: String,
     val branchName: String,
     val worktreeDirty: Boolean,
-    val gitAvailable: Boolean
+    val gitAvailable: Boolean,
 )
+
+fun runGitCommandOrNull(vararg args: String): String? =
+    runCatching {
+        val output =
+            providers.exec {
+                commandLine("git", *args)
+                workingDir = rootDir
+                isIgnoreExitValue = true
+            }
+        val exitCode = output.result.get().exitValue
+        val stdout = output.standardOutput.asText.get().trim()
+        stdout.takeIf { exitCode == 0 && it.isNotEmpty() }
+    }.getOrNull()
+
+fun latestMergedSemVerTagOrNull(): String? =
+    runGitCommandOrNull("tag", "--merged", "HEAD", "--sort=-v:refname")
+        ?.lineSequence()
+        ?.map { it.trim() }
+        ?.firstOrNull { parseSemVerTagOrNull(it) != null }
+
+fun gitRelativeCommitCountOrNull(anchorTag: String): Int? =
+    runGitCommandOrNull("rev-list", "--count", "$anchorTag..HEAD")?.toIntOrNull()
+
+fun gitTotalCommitCountOrNull(): Int? =
+    runGitCommandOrNull("rev-list", "--count", "HEAD")?.toIntOrNull()
 
 fun readLocalPropertyOrNull(key: String): String? {
     val localPropsFile = rootProject.file("local.properties")
@@ -73,23 +78,49 @@ fun readLocalPropertyOrNull(key: String): String? {
     }.getOrNull()
 }
 
-fun readGradleOrLocalPropertyOrNull(key: String): String? {
-    return providers.gradleProperty(key).orNull
+fun readGradleOrLocalPropertyOrNull(key: String): String? =
+    providers.gradleProperty(key).orNull
         ?: readLocalPropertyOrNull(key)
-}
 
-fun gitRelativeCommitCountOrNull(anchorTag: String): Int? {
-    return runGitCommandOrNull("rev-list", "--count", "$anchorTag..HEAD")?.toIntOrNull()
-}
+fun readGradleEnvOrLocalPropertyOrNull(
+    key: String,
+    envKey: String,
+): String? =
+    providers.gradleProperty(key).orNull
+        ?: providers.environmentVariable(envKey).orNull
+        ?: readLocalPropertyOrNull(key)
 
-fun gitTotalCommitCountOrNull(): Int? {
-    return runGitCommandOrNull("rev-list", "--count", "HEAD")?.toIntOrNull()
-}
-
-fun readBooleanPropertyOrNull(key: String): Boolean? {
-    return providers.gradleProperty(key).orNull?.toBooleanStrictOrNull()
+fun readBooleanPropertyOrNull(key: String): Boolean? =
+    providers.gradleProperty(key).orNull?.toBooleanStrictOrNull()
         ?: readLocalPropertyOrNull(key)?.toBooleanStrictOrNull()
-}
+
+fun readBooleanBuildPropertyOrNull(
+    key: String,
+    envKey: String,
+): Boolean? =
+    providers.gradleProperty(key).orNull?.toBooleanStrictOrNull()
+        ?: providers.environmentVariable(envKey).orNull?.toBooleanStrictOrNull()
+        ?: readLocalPropertyOrNull(key)?.toBooleanStrictOrNull()
+
+fun readIntBuildPropertyOrNull(
+    key: String,
+    envKey: String,
+): Int? =
+    readGradleEnvOrLocalPropertyOrNull(key, envKey)
+        ?.trim()
+        ?.toIntOrNull()
+
+fun normalizeGitLabel(
+    value: String?,
+    fallback: String,
+): String =
+    value
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.replace(Regex("""[^A-Za-z0-9._-]"""), "-")
+        ?: fallback
+
+fun normalizeGitHash(value: String?): String = normalizeGitLabel(value, fallback = "local").take(12)
 
 abstract class BakeAppSquircleSdfTask : DefaultTask() {
     @get:Input
@@ -122,7 +153,7 @@ abstract class BakeAppSquircleSdfTask : DefaultTask() {
                 size = resolvedSize,
                 control = resolvedControl,
                 halfRange = resolvedHalfRange,
-                bezierSamples = resolvedBezierSamples
+                bezierSamples = resolvedBezierSamples,
             )
         val chunks = Base64.getEncoder().encodeToString(bytes).chunked(60_000)
         val packageDir = outputDir.get().asFile.resolve(resolvedPackage.replace('.', '/'))
@@ -149,7 +180,7 @@ abstract class BakeAppSquircleSdfTask : DefaultTask() {
                 appendLine("        Base64.getDecoder().decode(CHUNKS.joinToString(\"\"))")
                 appendLine("    }")
                 appendLine("}")
-            }
+            },
         )
     }
 
@@ -157,7 +188,7 @@ abstract class BakeAppSquircleSdfTask : DefaultTask() {
         size: Int,
         control: Float,
         halfRange: Float,
-        bezierSamples: Int
+        bezierSamples: Int,
     ): ByteArray {
         val handle = 1f - control
         val bx = FloatArray(bezierSamples + 1)
@@ -210,50 +241,64 @@ abstract class BakeAppSquircleSdfTask : DefaultTask() {
     }
 }
 
-val fallbackReleaseVersion = AppSemVer(major = 1, minor = 0, patch = 0)
-val versionAnchorTag = latestMergedSemVerTagOrNull() ?: "v${fallbackReleaseVersion.name}"
-val releaseVersion = parseSemVerTagOrNull(versionAnchorTag) ?: fallbackReleaseVersion
-val nonReleaseVersion = releaseVersion.copy(patch = releaseVersion.patch + 1)
-val gitShortHashValue = runGitCommandOrNull("rev-parse", "--short", "HEAD")
-val gitBranchNameValue = runGitCommandOrNull("rev-parse", "--abbrev-ref", "HEAD")
-val gitDirtyValue = readBooleanPropertyOrNull("keios.git.worktreeDirty") ?: false
-val gitRelativeCommitCount = gitRelativeCommitCountOrNull(versionAnchorTag)
-val gitTotalCommitCount = gitTotalCommitCountOrNull()
-val gitVersionSnapshot = if (
-    gitShortHashValue != null &&
-    gitBranchNameValue != null &&
-    gitRelativeCommitCount != null &&
-    gitTotalCommitCount != null
-) {
+val fallbackReleaseVersion = AppSemVer(major = 1, minor = 8, patch = 3)
+val configuredReleaseVersion =
+    parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.version.name", "KEIOS_VERSION_NAME"))
+val configuredVersionAnchorTag =
+    readGradleEnvOrLocalPropertyOrNull("keios.version.anchorTag", "KEIOS_VERSION_ANCHOR_TAG")
+val discoveredVersionAnchorTag = configuredVersionAnchorTag ?: latestMergedSemVerTagOrNull()
+val releaseVersion =
+    configuredReleaseVersion
+        ?: parseSemVerTagOrNull(discoveredVersionAnchorTag)
+        ?: fallbackReleaseVersion
+val benchmarkVersion =
+    parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.nextVersion.name", "KEIOS_NEXT_VERSION_NAME"))
+        ?: releaseVersion.copy(patch = releaseVersion.patch + 1)
+val versionAnchorTag = discoveredVersionAnchorTag ?: "v${releaseVersion.name}"
+val gitShortHashValue =
+    normalizeGitHash(
+        readGradleEnvOrLocalPropertyOrNull("keios.git.shortHash", "KEIOS_GIT_SHORT_HASH")
+            ?: runGitCommandOrNull("rev-parse", "--short", "HEAD"),
+    )
+val gitBranchNameValue =
+    normalizeGitLabel(
+        readGradleEnvOrLocalPropertyOrNull("keios.git.branchName", "KEIOS_GIT_BRANCH_NAME")
+            ?: runGitCommandOrNull("rev-parse", "--abbrev-ref", "HEAD"),
+        fallback = "local",
+    )
+val gitDirtyValue = readBooleanBuildPropertyOrNull("keios.git.worktreeDirty", "KEIOS_GIT_WORKTREE_DIRTY") ?: false
+val gitRelativeCommitCount =
+    readIntBuildPropertyOrNull("keios.git.relativeCommitCount", "KEIOS_GIT_RELATIVE_COMMIT_COUNT")
+        ?: gitRelativeCommitCountOrNull(versionAnchorTag)
+        ?: 0
+val gitTotalCommitCount =
+    readIntBuildPropertyOrNull("keios.git.totalCommitCount", "KEIOS_GIT_TOTAL_COMMIT_COUNT")
+        ?: gitTotalCommitCountOrNull()
+        ?: 0
+val gitVersionSnapshot =
     GitVersionSnapshot(
         relativeCommitCount = gitRelativeCommitCount,
         totalCommitCount = gitTotalCommitCount,
         shortHash = gitShortHashValue,
         branchName = gitBranchNameValue,
         worktreeDirty = gitDirtyValue,
-        gitAvailable = true
+        gitAvailable =
+            readBooleanBuildPropertyOrNull("keios.git.available", "KEIOS_GIT_AVAILABLE")
+                ?: (gitTotalCommitCount > 0 || gitShortHashValue != "local"),
     )
-} else {
-    GitVersionSnapshot(
-        relativeCommitCount = 0,
-        totalCommitCount = 0,
-        shortHash = "unknown",
-        branchName = "unknown",
-        worktreeDirty = false,
-        gitAvailable = false
-    )
-}
-val buildTimestampMillis = System.currentTimeMillis()
+val buildTimestampMillis =
+    readGradleEnvOrLocalPropertyOrNull("keios.build.timestampMillis", "KEIOS_BUILD_TIMESTAMP_MILLIS")
+        ?.trim()
+        ?.toLongOrNull()
+        ?: 0L
 val releaseVersionName = releaseVersion.name
-val releaseVersionCode = releaseVersion.toVersionCode(commitCount = 0)
-val nonReleaseVersionName = if (gitVersionSnapshot.gitAvailable) {
-    "${nonReleaseVersion.name}+${gitVersionSnapshot.relativeCommitCount}.g${gitVersionSnapshot.shortHash}"
-} else {
-    "${nonReleaseVersion.name}+0.unknown"
-}
-val nonReleaseVersionCode = nonReleaseVersion.toVersionCode(
-    commitCount = gitVersionSnapshot.relativeCommitCount
-)
+val releaseVersionCode = releaseVersion.toVersionCode(commitCount = 999)
+val nonReleaseVersionName =
+    "${benchmarkVersion.name}+${gitVersionSnapshot.relativeCommitCount}.g${gitVersionSnapshot.shortHash}"
+val preReleaseVersionCode =
+    benchmarkVersion.toVersionCode(
+        commitCount = gitVersionSnapshot.relativeCommitCount.coerceIn(0, 998),
+    )
 // Machine-local overrides should live in ~/.gradle/gradle.properties (preferred) or local.properties.
 // JDK resolution itself is intentionally not hardcoded here: the project already tracks a cross-platform
 // Gradle daemon JVM (JetBrains Java 21) for macOS/Windows/Linux. Use org.gradle.java.home only as a
@@ -324,7 +369,7 @@ val projectJvmTarget = JvmTarget.JVM_21
 val r8DexStartupOptimizationProperty = "android.experimental.r8.dex-startup-optimization"
 
 fun countGeneratedProfileRules(fileName: String): Int {
-    val profileFile = layout.projectDirectory.file("src/main/generated/baselineProfiles/$fileName").asFile
+    val profileFile = layout.projectDirectory.file("src/release/generated/baselineProfiles/$fileName").asFile
     if (!profileFile.isFile) return 0
     return profileFile.useLines { lines ->
         lines.count { line ->
@@ -342,7 +387,6 @@ plugins {
     id("io.github.takahirom.roborazzi")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
-    id("androidx.baselineprofile")
 }
 
 val bakeAppSquircleSdf by tasks.registering(BakeAppSquircleSdfTask::class) {
@@ -416,7 +460,7 @@ android {
         buildConfigField("String", "FOCUS_API_VERSION", "\"$focusApiVersion\"")
         buildConfigField("String", "GRADLE_VERSION", "\"$projectGradleVersion\"")
         buildConfigField("String", "BASE_VERSION_NAME", "\"${releaseVersion.name}\"")
-        buildConfigField("String", "NEXT_VERSION_NAME", "\"${nonReleaseVersion.name}\"")
+        buildConfigField("String", "NEXT_VERSION_NAME", "\"${benchmarkVersion.name}\"")
         buildConfigField("String", "VERSION_ANCHOR_TAG", "\"$versionAnchorTag\"")
         buildConfigField("String", "MANIFEST_COMPONENT_PACKAGE", "\"$namespace\"")
         buildConfigField("long", "BUILD_TIME_MILLIS", "${buildTimestampMillis}L")
@@ -452,15 +496,16 @@ android {
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 
-        // Non-minified variants for baseline profile generation and local perf testing.
-        // Reference: MIUIX Sample and InstallerX — no manual benchmark build type.
-        // benchmarkRelease also serves as the local perf testing build (installBenchmarkRelease).
-        create("nonMinifiedRelease") {
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig =
+                if (releaseSigningConfigured) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
             matchingFallbacks += listOf("release")
-        }
-        create("benchmarkRelease") {
-            isDebuggable = true
-            matchingFallbacks += listOf("release")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
     }
 
@@ -502,12 +547,14 @@ androidComponents {
     onVariants { variant ->
         variant.sources.java?.addGeneratedSourceDirectory(
             bakeAppSquircleSdf,
-            BakeAppSquircleSdfTask::outputDir
+            BakeAppSquircleSdfTask::outputDir,
         )
         // dex-startup-optimization uses baseline profiles for dex layout optimization.
-        // Profiles use original class names (generated from nonMinifiedRelease variant),
-        // so R8 can always map them correctly without warnings. Reference: MIUIX example.
+        // Keep the property explicit for release-like builds so benchmark checks the same path.
         variant.experimentalProperties.put(r8DexStartupOptimizationProperty, true)
+    }
+    onVariants(selector().withBuildType("benchmark")) { variant ->
+        variant.sources.baselineProfiles?.addStaticSourceDirectory("src/release/generated/baselineProfiles")
     }
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
@@ -518,13 +565,13 @@ androidComponents {
     onVariants(selector().withBuildType("debug")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(nonReleaseVersionName)
-            output.versionCode.set(nonReleaseVersionCode)
+            output.versionCode.set(preReleaseVersionCode)
         }
     }
-    onVariants(selector().withBuildType("benchmarkRelease")) { variant ->
+    onVariants(selector().withBuildType("benchmark")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(nonReleaseVersionName)
-            output.versionCode.set(nonReleaseVersionCode)
+            output.versionCode.set(preReleaseVersionCode)
         }
     }
 }
@@ -570,7 +617,6 @@ dependencies {
     implementation("androidx.navigationevent:navigationevent:$navigationEventVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventVersion")
     implementation("androidx.navigation:navigation-common-ktx:$navigationCommonVersion")
-    "baselineProfile"(project(":baselineprofile"))
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
 
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")

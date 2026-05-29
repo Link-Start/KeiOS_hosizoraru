@@ -10,17 +10,6 @@ android {
         minSdk = 35
     }
 
-    buildTypes {
-        create("benchmarkRelease") {
-            initWith(getByName("release"))
-            matchingFallbacks += listOf("release")
-        }
-        create("nonMinifiedRelease") {
-            initWith(getByName("release"))
-            matchingFallbacks += listOf("release")
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21

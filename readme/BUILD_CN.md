@@ -5,11 +5,11 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.8.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.0)。
-- `master` 当前作为 v1.8.0 发布基线，覆盖 GitHub Actions artifact 精简、nightly.link/API
+- 当前公开标签基线为 [KeiOS v1.8.3](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.3)。
+- `master` 当前作为 v1.8.x 发布基线，覆盖 GitHub Actions artifact 精简、nightly.link/API
   下载入口、托管安装修复、单项目检查间隔和设置分区整理。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
-- 使用 `常用本地命令` 中的命令即可产出用于开发或预览验证的 Debug APK。
+- 使用 `常用本地命令` 中的命令即可产出 Debug、Benchmark 与 Release APK。
 
 ## 本地构建说明（Local Build Notes）
 
@@ -21,14 +21,21 @@
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。
 - Gradle Wrapper：`9.5.1`；Kotlin 插件：`2.3.21`；Android Gradle Plugin：`9.2.1`；
-  Compose 运行库：`1.11.1`；Ktor：`3.5.0`。
-- Release 与 Benchmark APK 会合入 `app/src/main/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
+  Compose 运行库：`1.11.2`；Ktor：`3.5.0`。
+- Release APK 读取 `app/src/release/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
+  Benchmark 构建会接入同一份 profile 目录，用于预发行性能验证。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
 
 ### 版本号规则
 
-- Release 构建使用当前 HEAD 已合入的最新 semver tag 作为基础版本。
-- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.2.5+12.gabcdef0`。
+- CI 会在 Gradle 外根据当前 HEAD 已合入的最新 semver tag 注入版本元数据。
+- 本地构建可在 `~/.gradle/gradle.properties` 或 `local.properties` 覆盖
+  `keios.version.name`、`keios.nextVersion.name`、`keios.version.anchorTag` 与 `keios.git.*`。
+- Release 构建使用 semver 基础版本，例如 `1.8.3`。
+- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.8.4+12.gabcdef0`。
+- 缺少 CI 注入 metadata 的本地构建会直接读取 git metadata，让 versionName 和 versionCode
+  保持同一套 commit 数后缀规则。
+- 包名链路保持精简：Debug 安装为 `os.kei.debug`；Benchmark 与 Release 安装为 `os.kei`。
 - 当前 CI artifact 名称保持简洁：`KeiOS_<versionName>`，APK 文件名为 `KeiOS_<versionName>.apk`。
 - workflow run name 会用 `D#<run_number>` 表示 Debug、`B#<run_number>` 表示 Benchmark；job summary
   会输出完整 commit SHA、run number、versionName、versionCode、application ID 与 artifact digest。
@@ -139,8 +146,8 @@ git diff --check
 - 默认行为：`commit` 为空时构建所选分支的最新提交。
 - 构建任务：`./gradlew :app:assembleBenchmark --stacktrace`。
 - 构建产物：自动上传 Benchmark APK 到 GitHub Actions Artifact。
-- 使用场景：稳定版通道之外的基准验证与尝鲜预览。
-- 签名：仅 Debug / Benchmark artifact 使用 `app/signing/` 内的共享 CI debug keystore。
+- 使用场景：以接近 Release 的 R8、资源收缩和 Baseline Profile 链路做预发行性能验证。
+- 签名：CI Benchmark artifact 使用 `app/signing/` 内的共享 debug keystore；本地签名构建可复用 release 签名。
 - 保留期：14 天。
 - nightly.link：`https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master`
 - APK 文件名格式：`KeiOS_<versionName>.apk`。

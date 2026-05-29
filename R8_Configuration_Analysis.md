@@ -4,6 +4,10 @@
 
 - Android Gradle Plugin: `9.2.1`
 - Release optimization: `optimization.enable = true`
+- Benchmark optimization: `benchmark` uses the same release-like optimization path and package name
+  for pre-release R8 / Baseline Profile verification.
+- VersionCode slots: release uses semver slot `999`; benchmark/debug use the same commit-count
+  suffix for versionName and versionCode, with local git metadata fallback when CI metadata is absent.
 - R8 Gradle property: `android.r8.gradual.support=true`
 - Release build result: `./gradlew :app:assembleRelease` passed
 - Unit test result: `./gradlew :app:testDebugUnitTest` passed
@@ -39,7 +43,9 @@ The app uses the Compose compiler plugin and has no app-level `androidx.compose.
 - `./gradlew :feature-github:testDebugUnitTest`
 - `./gradlew :app:assembleBenchmark`
 - `./gradlew :app:assembleRelease` after narrowing Navigation route rules
-- Pixel_10_Pro AVD smoke test: installed `app/build/outputs/apk/benchmark/app-benchmark.apk`, launched package `os.kei.benchmark`, confirmed `os.kei.benchmark/os.kei.LauncherAndroidDesigns` in the foreground, and confirmed the Home screen UI dump exposes Home, OS, MCP, GitHub, and BA tabs.
+- Pixel_10_Pro AVD smoke test target for the current build matrix: install
+  `app/build/outputs/apk/benchmark/app-benchmark.apk`, launch package `os.kei`, and confirm the
+  Home screen UI dump exposes Home, OS, MCP, GitHub, and BA tabs.
 - Benchmark process logcat showed no startup `FATAL EXCEPTION`, `ClassNotFoundException`, `NoSuchMethodError`, `NoSuchFieldError`, or `VerifyError` entries after the R8 rule changes.
 - Startup logcat still shows first-frame Davey/Skipped-frame entries while existing MMKV-backed page stores load; this is runtime page-loading pressure and remains part of the broader Compose/page-load performance track.
 - Compared `app/build/outputs/mapping/release/seeds.txt` after edits: GitHub install seeds remain 10, and Navigation route seeds are 37.

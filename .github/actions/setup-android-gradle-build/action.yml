@@ -96,3 +96,44 @@ runs:
           echo "gpr.user=${GPR_USER}"
           echo "gpr.key=${GPR_KEY}"
         } >> "${HOME}/.gradle/gradle.properties"
+
+    - name: Prepare KeiOS version metadata
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        latest_tag="$(git tag --merged HEAD --sort=-v:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+        if [[ -z "${latest_tag}" ]]; then
+          latest_tag="v1.8.3"
+        fi
+        release_version="${latest_tag#v}"
+
+        IFS='.' read -r major minor patch <<< "${release_version}"
+        next_patch="$((patch + 1))"
+        next_version="${major}.${minor}.${next_patch}"
+
+        relative_count="$(git rev-list --count "${latest_tag}..HEAD" 2>/dev/null || echo 0)"
+        total_count="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
+        short_hash="$(git rev-parse --short=12 HEAD)"
+        branch_name="$(git rev-parse --abbrev-ref HEAD | tr -c 'A-Za-z0-9._-' '-')"
+        dirty="false"
+        if [[ -n "$(git status --porcelain)" ]]; then
+          dirty="true"
+        fi
+        timestamp_millis="$(($(date +%s) * 1000))"
+
+        {
+          echo "keios.version.name=${release_version}"
+          echo "keios.nextVersion.name=${next_version}"
+          echo "keios.version.anchorTag=${latest_tag}"
+          echo "keios.git.available=true"
+          echo "keios.git.relativeCommitCount=${relative_count}"
+          echo "keios.git.totalCommitCount=${total_count}"
+          echo "keios.git.shortHash=${short_hash}"
+          echo "keios.git.branchName=${branch_name}"
+          echo "keios.git.worktreeDirty=${dirty}"
+          echo "keios.build.timestampMillis=${timestamp_millis}"
+        } >> "${HOME}/.gradle/gradle.properties"
+
+        echo "KeiOS release version: ${release_version}"
+        echo "KeiOS benchmark/debug version: ${next_version}+${relative_count}.g${short_hash}"

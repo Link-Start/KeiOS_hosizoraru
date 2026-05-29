@@ -6,11 +6,11 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.8.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.0).
-- `master` is the v1.8.0 release baseline for GitHub Actions artifact cleanup, nightly.link/API
+  is [KeiOS v1.8.3](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.3).
+- `master` is the v1.8.x release baseline for GitHub Actions artifact cleanup, nightly.link/API
   download access, managed install fixes, per-track update intervals, and Settings regrouping.
 - This build guide covers local source builds, debug packages, and contributor workflows.
-- Use the commands in `Common Local Commands` to generate a debug APK for development or preview validation.
+- Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 
 ## Local Build Notes
 
@@ -22,15 +22,22 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
 - Gradle Wrapper: `9.5.1`; Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.1`;
-  Compose runtime: `1.11.1`; Ktor: `3.5.0`.
-- Release and benchmark APKs include generated Baseline Profiles from
-  `app/src/main/generated/baselineProfiles/`.
+  Compose runtime: `1.11.2`; Ktor: `3.5.0`.
+- Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
+  The benchmark build wires the same profile directory so pre-release performance checks exercise
+  the release profile path.
 - Keep local JDK paths and tokens in untracked local config files.
 
 ### Versioning
 
-- Release builds use the latest merged semver tag as the base version.
-- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.2.5+12.gabcdef0`.
+- CI injects version metadata through Gradle properties generated from the latest merged semver tag.
+- Local builds can override `keios.version.name`, `keios.nextVersion.name`,
+  `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
+- Release builds use the semver base, for example `1.8.3`.
+- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.8.4+12.gabcdef0`.
+- Local builds resolve git metadata directly when CI metadata is absent, keeping versionName and
+  versionCode aligned with the same commit-count suffix.
+- Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
 - Current CI artifact names are intentionally compact: `KeiOS_<versionName>` with an APK file named
   `KeiOS_<versionName>.apk`.
 - Workflow run names include `D#<run_number>` for debug and `B#<run_number>` for benchmark, and job
@@ -145,8 +152,8 @@ Workflow: `.github/workflows/ci-benchmark-apk.yml`
 - Default behavior: build latest commit on selected branch when `commit` is empty.
 - Build task: `./gradlew :app:assembleBenchmark --stacktrace`.
 - Job output: benchmark APK artifact uploaded to GitHub Actions.
-- Intended use: benchmark / preview verification outside the stable release channel.
-- Signing: the shared CI debug keystore in `app/signing/` is used only for debug/benchmark artifacts.
+- Intended use: release-like preview verification for R8, resource shrinking, and Baseline Profile performance.
+- Signing: CI uses the shared debug keystore for benchmark artifacts; local signed builds can reuse release signing.
 - Retention: 14 days.
 - nightly.link: `https://nightly.link/hosizoraru/KeiOS/workflows/ci-benchmark-apk/master`
 - APK file name format: `KeiOS_<versionName>.apk`.

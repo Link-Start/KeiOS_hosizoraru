@@ -46,9 +46,7 @@ import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
@@ -84,15 +82,12 @@ fun HomePage(
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
 
-    val blurEnabled = isRenderEffectSupported()
-    val shaderSupported = isRuntimeShaderSupported()
-    val effectBackgroundEnabled = shaderSupported && runtime.isPageActive
+    val effectBackgroundEnabled = runtime.isPageActive
     val homeDynamicActive =
         runtime.isDataActive ||
             (homeDynamicFullEffectEnabled && runtime.isPageActive)
     val dynamicBackgroundEnabled =
-        shaderSupported &&
-            homeDynamicActive &&
+        homeDynamicActive &&
             (homeDynamicFullEffectEnabled || !runtime.isPagerScrollInProgress)
     val fullBackdropEffectsEnabled =
         runtime.isPageActive &&
@@ -100,10 +95,7 @@ fun HomePage(
                 homeDynamicFullEffectEnabled ||
                     !runtime.isPagerScrollInProgress
             )
-    val foregroundBlurActive =
-        blurEnabled &&
-            shaderSupported &&
-            fullBackdropEffectsEnabled
+    val foregroundBlurActive = fullBackdropEffectsEnabled
     val surfaceColor = MiuixTheme.colorScheme.surface
     val actionBarBackdrop =
         rememberActionBarBackdrop {
@@ -359,7 +351,7 @@ fun HomePage(
                             HomePageOverviewCards(
                                 visibleOverviewCards = visibleOverviewCards,
                                 homeCardBackdrop = homeCardBackdrop,
-                                blurEnabled = blurEnabled && fullBackdropEffectsEnabled,
+                                blurEnabled = fullBackdropEffectsEnabled,
                                 homeNa = contentState.homeNa,
                                 homeCardMcp = contentState.homeCardMcp,
                                 mcpStats = overviewCardState.mcpOverviewStats,

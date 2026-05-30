@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -44,12 +43,6 @@ fun BgEffectBackground(
     alpha: () -> Float = { 1f },
     content: @Composable (BoxScope.() -> Unit),
 ) {
-    val shaderSupported = remember { isRuntimeShaderSupported() }
-    if (!shaderSupported) {
-        Box(modifier = modifier, content = content)
-        return
-    }
-
     val isDark = isSystemInDarkTheme()
     val surface = MiuixTheme.colorScheme.surface
     val painter = remember { BgEffectPainter() }
@@ -76,7 +69,7 @@ fun BgEffectBackground(
     var targetSize by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
     val renderScale =
-        if (dynamicBackground && shaderSupported) {
+        if (dynamicBackground) {
             DYNAMIC_BACKGROUND_RENDER_SCALE
         } else {
             1f

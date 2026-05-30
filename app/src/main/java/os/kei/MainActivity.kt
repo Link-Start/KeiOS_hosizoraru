@@ -46,6 +46,7 @@ import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
 import os.kei.ui.page.main.host.main.MainHostCallbacks
 import os.kei.ui.page.main.host.main.MainHostUiState
 import os.kei.ui.page.main.host.main.MainScreen
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -186,16 +187,22 @@ class MainActivity : ComponentActivity() {
             MiuixTheme(controller = controller) {
                 CompositionLocalProvider(LocalOverscrollFactory provides null) {
                     SystemBarAutoStyle(state.appThemeMode)
-                    Box(Modifier.fillMaxSize()) {
-                        MainScreen(
-                            appLabel = appLabel,
-                            hostState = state,
-                            hostCallbacks = hostCallbacks,
-                            shizukuApiUtils = shizukuApiUtils,
-                            mcpServerManager = mcpServerManager,
-                        )
-                        if (BuildConfig.DEBUG) {
-                            DebugFpsOverlay()
+                    // Wrap MainScreen in SceneBackdropHost so any glass-on-content surface
+                    // (LiquidGlassBottomSheet etc.) has a real LayerBackdrop to sample.
+                    // Without this the bottom sheet's drawBackdrop has nothing behind it and
+                    // falls back to a flat translucent rectangle.
+                    SceneBackdropHost(backgroundColor = MiuixTheme.colorScheme.background) {
+                        Box(Modifier.fillMaxSize()) {
+                            MainScreen(
+                                appLabel = appLabel,
+                                hostState = state,
+                                hostCallbacks = hostCallbacks,
+                                shizukuApiUtils = shizukuApiUtils,
+                                mcpServerManager = mcpServerManager,
+                            )
+                            if (BuildConfig.DEBUG) {
+                                DebugFpsOverlay()
+                            }
                         }
                     }
                 }

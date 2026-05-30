@@ -286,11 +286,25 @@ val gitVersionSnapshot =
             readBooleanBuildPropertyOrNull("keios.git.available", "KEIOS_GIT_AVAILABLE")
                 ?: (gitTotalCommitCount > 0 || gitShortHashValue != "local"),
     )
-val buildTimestampMillis =
-    readGradleEnvOrLocalPropertyOrNull("keios.build.timestampMillis", "KEIOS_BUILD_TIMESTAMP_MILLIS")
-        ?.trim()
-        ?.toLongOrNull()
-        ?: 0L
+val buildTimestampMillis: Long = run {
+    // 1. Explicit override (CI sets this via gradle.properties / env). Highest priority so CI
+    //    builds carry the workflow run's real wall-clock time.
+    val overrideMillis =
+        readGradleEnvOrLocalPropertyOrNull("keios.build.timestampMillis", "KEIOS_BUILD_TIMESTAMP_MILLIS")
+            ?.trim()
+            ?.toLongOrNull()
+    if (overrideMillis != null && overrideMillis > 0L) return@run overrideMillis
+
+    // 2. HEAD commit timestamp. Stable across rebuilds of the same source tree, so the About
+    //    page shows when the *code* was authored rather than the moment Gradle happened to run.
+    //    Kept inside the snapshot we already collect so we don't fork another git invocation.
+    val commitMillisSec = runGitCommandOrNull("log", "-1", "--format=%ct")?.trim()?.toLongOrNull()
+    if (commitMillisSec != null && commitMillisSec > 0L) return@run commitMillisSec * 1000L
+
+    // 3. Last resort: configuration-time wall clock. Never 0L — that collapsed to formatTime("")
+    //    → "unknown" on every fresh checkout.
+    System.currentTimeMillis()
+}
 val releaseVersionName = releaseVersion.name
 val releaseVersionCode = releaseVersion.toVersionCode(commitCount = 999)
 val nonReleaseVersionName =

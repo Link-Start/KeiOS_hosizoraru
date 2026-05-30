@@ -163,7 +163,7 @@ class WebDavSyncClient(
             var etag: String? = null
 
             resource.get("*/*", null) { response ->
-                content = response.body?.string()
+                content = response.body.string()
                 etag = response.header("ETag")?.removeSurrounding("\"")
             }
 
@@ -206,7 +206,7 @@ class WebDavSyncClient(
                         files.add(
                             WebDavRemoteFile(
                                 href = response.href.toString(),
-                                displayName = response.hrefName() ?: "",
+                                displayName = response.hrefName(),
                                 lastModified = null,
                                 contentLength = 0,
                                 etag = getETag?.eTag,

@@ -26,5 +26,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
     // WebDAV client (used by DAVx⁵, production-grade)
-    implementation("com.github.bitfireAT:dav4jvm:main-SNAPSHOT")
+    // Exclude xpp3 — Android has built-in XmlPullParser
+    implementation("com.github.bitfireAT:dav4jvm:main-SNAPSHOT") {
+        exclude(group = "org.ogce", module = "xpp3")
+    }
 }

@@ -10,12 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +33,7 @@ import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.SettingsNavigationItem
+import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
@@ -36,6 +42,7 @@ import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidInputField
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -85,9 +92,17 @@ internal fun WebDavSyncPage(
         ) {
             // ── Provider & connection ────────────────────────────
             item(key = "webdav-connection", contentType = "webdav_card") {
+                // Dropdown anchor + expand state lives at the page level so it survives
+                // recomposition of the connection card.
+                var providerExpanded by remember { mutableStateOf(false) }
+                var providerAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
                 WebDavConnectionCard(
                     state = state,
                     cardColor = cardColor,
+                    providerExpanded = providerExpanded,
+                    providerAnchorBounds = providerAnchorBounds,
+                    onProviderExpandedChange = { providerExpanded = it },
+                    onProviderAnchorBoundsChange = { providerAnchorBounds = it },
                     onSelectProvider = viewModel::selectProvider,
                     onUpdateServerUrl = viewModel::updateServerUrl,
                     onUpdateUsername = viewModel::updateUsername,
@@ -139,6 +154,10 @@ internal fun WebDavSyncPage(
 private fun WebDavConnectionCard(
     state: WebDavSyncUiState,
     cardColor: Color,
+    providerExpanded: Boolean,
+    providerAnchorBounds: IntRect?,
+    onProviderExpandedChange: (Boolean) -> Unit,
+    onProviderAnchorBoundsChange: (IntRect?) -> Unit,
     onSelectProvider: (WebDavProvider) -> Unit,
     onUpdateServerUrl: (String) -> Unit,
     onUpdateUsername: (String) -> Unit,
@@ -149,13 +168,17 @@ private fun WebDavConnectionCard(
     onSave: () -> Unit,
     onOpenJianguoyunHelp: () -> Unit,
 ) {
+    val providerEntries = remember { WebDavProvider.entries.toList() }
+    val providerLabels = providerEntries.map { provider ->
+        when (provider) {
+            WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun)
+            WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom)
+        }
+    }
+    val selectedProviderIndex = providerEntries.indexOf(state.provider).coerceAtLeast(0)
     val providerSummary = when (state.provider) {
         WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun_desc)
         WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom_desc)
-    }
-    val providerName = when (state.provider) {
-        WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun)
-        WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom)
     }
 
     SettingsGroupCard(
@@ -164,14 +187,27 @@ private fun WebDavConnectionCard(
         sectionIcon = appLucideDatabaseIcon(),
         containerColor = cardColor,
     ) {
-        // Provider selector — tap to cycle through providers
-        SettingsNavigationItem(
+        // Provider selector — real dropdown so the available choices are discoverable.
+        SettingsPickerItem(
             title = stringResource(R.string.webdav_sync_provider_label),
-            summary = "$providerName · $providerSummary",
-            onClick = {
-                val entries = WebDavProvider.entries
-                val next = entries[(entries.indexOf(state.provider) + 1) % entries.size]
-                onSelectProvider(next)
+            summary = providerSummary,
+            onClick = { onProviderExpandedChange(true) },
+            trailing = {
+                AppDropdownSelector(
+                    selectedText = providerLabels.getOrElse(selectedProviderIndex) { state.provider.name },
+                    options = providerLabels,
+                    selectedIndex = selectedProviderIndex,
+                    expanded = providerExpanded,
+                    anchorBounds = providerAnchorBounds,
+                    onExpandedChange = onProviderExpandedChange,
+                    onSelectedIndexChange = { index ->
+                        providerEntries.getOrNull(index)?.let(onSelectProvider)
+                        onProviderExpandedChange(false)
+                    },
+                    onAnchorBoundsChange = onProviderAnchorBoundsChange,
+                    popupMaxWidth = 220.dp,
+                    popupMatchAnchorWidth = true,
+                )
             },
         )
 

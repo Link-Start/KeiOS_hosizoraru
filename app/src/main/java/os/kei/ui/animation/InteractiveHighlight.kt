@@ -44,6 +44,12 @@ class InteractiveHighlight(
     val pressProgress: Float get() = pressProgressAnimation.value
     val offset: Offset get() = positionAnimation.value - startPosition
 
+    /**
+     * Current touch position in the composable's coordinate system.
+     * Useful for positioning shader effects (e.g., radialRefraction, pulseRipple).
+     */
+    val touchPosition: Offset get() = positionAnimation.value
+
     @Language("AGSL")
     private val shader = RuntimeShader(
         """

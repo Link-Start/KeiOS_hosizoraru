@@ -138,6 +138,15 @@ fun LiquidSurface(
                         chromaticAberration = chromaticAberration,
                         depthEffect = depthEffect,
                     )
+                    // Radial refraction from touch point for interactive surfaces
+                    if (isInteractive && enabled && interactiveHighlight.pressProgress > 0f) {
+                        radialRefraction(
+                            centerX = interactiveHighlight.touchPosition.x,
+                            centerY = interactiveHighlight.touchPosition.y,
+                            radius = lensRadius.toPx() * 2f,
+                            strength = 8f * interactiveHighlight.pressProgress,
+                        )
+                    }
                 },
                 highlight = {
                     Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)

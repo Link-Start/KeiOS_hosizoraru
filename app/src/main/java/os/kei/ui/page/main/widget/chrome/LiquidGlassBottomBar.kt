@@ -68,6 +68,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.radialRefraction
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
@@ -572,6 +573,13 @@ fun LiquidGlassBottomBar(
                                                 10f.dp.toPx() * progress * interactionLensScale,
                                                 14f.dp.toPx() * progress * interactionLensScale,
                                                 true,
+                                            )
+                                            // Radial refraction from center of indicator
+                                            radialRefraction(
+                                                centerX = size.width / 2f,
+                                                centerY = size.height / 2f,
+                                                radius = 14f.dp.toPx() * progress * interactionLensScale,
+                                                strength = 6f * progress,
                                             )
                                         }
                                     },

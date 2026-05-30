@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +66,13 @@ internal fun WebDavSyncPage(
     val pageBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
     val cardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
+
+    // Populate local item counts on first composition so the per-item rows show "Local: N items"
+    // immediately instead of "not measured yet". Only re-runs when the data ports identity changes
+    // (which happens on locale change via the Compose factory).
+    LaunchedEffect(dataPorts) {
+        viewModel.refreshLocalCounts(dataPorts)
+    }
 
     AppPageScaffold(
         title = stringResource(R.string.webdav_sync_title),
@@ -133,6 +141,7 @@ internal fun WebDavSyncPage(
                         onSyncAll = { viewModel.syncAll(dataPorts) },
                         onUploadAll = { viewModel.uploadAll(dataPorts) },
                         onDownloadAll = { viewModel.downloadAll(dataPorts) },
+                        onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
                     )
                 }
 
@@ -362,6 +371,7 @@ private fun WebDavSyncItemsCard(
     onSyncAll: () -> Unit,
     onUploadAll: () -> Unit,
     onDownloadAll: () -> Unit,
+    onRefreshRemote: () -> Unit,
 ) {
     SettingsGroupCard(
         header = stringResource(R.string.webdav_sync_title),
@@ -376,6 +386,41 @@ private fun WebDavSyncItemsCard(
             checked = state.autoSyncEnabled,
             onCheckedChange = onToggleAutoSync,
         )
+
+        // Refresh-remote — read-only probe so other devices can see what's on the server
+        // before deciding which sync action to take.
+        Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+        AppStandaloneLiquidTextButton(
+            variant = GlassVariant.SheetAction,
+            text = if (state.refreshingRemote) {
+                stringResource(R.string.webdav_sync_refreshing_remote)
+            } else {
+                stringResource(R.string.webdav_sync_refresh_remote)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            buttonModifier = Modifier.fillMaxWidth(),
+            textColor = MiuixTheme.colorScheme.primary,
+            enabled = !state.busy && !state.refreshingRemote,
+            onClick = onRefreshRemote,
+        )
+        if (state.lastRemoteProbeTimeMs > 0L) {
+            Text(
+                text = stringResource(
+                    R.string.webdav_sync_last_remote_probe,
+                    formatTime(state.lastRemoteProbeTimeMs),
+                ),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.webdav_sync_remote_never_probed),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+            )
+        }
 
         // Sync All / Upload All / Download All
         Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
@@ -445,6 +490,13 @@ private fun WebDavSyncItemsCard(
                 outcome != null -> MiuixTheme.colorScheme.error
                 else -> MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
             }
+            val localCount = itemState?.localCount ?: -1
+            val localLine = if (localCount >= 0) {
+                stringResource(R.string.webdav_sync_local_summary_format, localCount)
+            } else {
+                stringResource(R.string.webdav_sync_local_summary_unknown)
+            }
+            val remoteLine = remoteSummaryLine(itemState?.remoteSummary)
 
             Spacer(Modifier.height(CardLayoutRhythm.denseSectionGap))
             AppControlRow(
@@ -478,6 +530,20 @@ private fun WebDavSyncItemsCard(
                 color = statusColor,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+            // Local + remote summary lines so the user sees the size delta before deciding what
+            // to sync. Painted in a muted variant so the status line above stays the focal point.
+            Text(
+                text = localLine,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+            )
+            Text(
+                text = remoteLine,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
             )
             outcome?.detail?.takeIf { it.isNotBlank() }?.let { detail ->
                 Text(
@@ -582,4 +648,26 @@ private fun urlErrorText(error: WebDavUrlError?): String? = when (error) {
 private fun formatTime(timeMs: Long): String {
     val sdf = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
     return sdf.format(Date(timeMs))
+}
+
+@Composable
+private fun remoteSummaryLine(summary: WebDavRemoteSummary?): String {
+    if (summary == null) return stringResource(R.string.webdav_sync_remote_summary_unknown)
+    if (summary.empty) return stringResource(R.string.webdav_sync_remote_summary_empty)
+    return stringResource(
+        R.string.webdav_sync_remote_summary_format,
+        summary.itemCount.coerceAtLeast(0),
+        formatBytes(summary.byteSize),
+        formatTime(summary.probedAtMs),
+    )
+}
+
+@Composable
+private fun formatBytes(bytes: Long): String {
+    val safe = bytes.coerceAtLeast(0L)
+    return when {
+        safe >= 1024L * 1024L -> stringResource(R.string.webdav_sync_size_mb, safe / 1024.0 / 1024.0)
+        safe >= 1024L -> stringResource(R.string.webdav_sync_size_kb, safe / 1024.0)
+        else -> stringResource(R.string.webdav_sync_size_bytes, safe)
+    }
 }

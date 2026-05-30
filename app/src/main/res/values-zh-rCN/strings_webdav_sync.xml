@@ -86,4 +86,18 @@
     <string name="webdav_sync_clear_label">清除配置</string>
     <string name="webdav_sync_clear_summary">移除已保存的服务器地址、凭据与各项同步元数据。不会删除本地数据。</string>
     <string name="webdav_sync_clear_button">清除全部</string>
+
+    <!-- 远端概览 -->
+    <string name="webdav_sync_refresh_remote">刷新远端</string>
+    <string name="webdav_sync_refreshing_remote">刷新中…</string>
+    <string name="webdav_sync_remote_never_probed">点击"刷新远端"载入服务端快照。</string>
+    <string name="webdav_sync_last_remote_probe">远端快照：%1$s</string>
+    <string name="webdav_sync_remote_summary_empty">远端：暂无数据</string>
+    <string name="webdav_sync_remote_summary_unknown">远端：尚未加载</string>
+    <string name="webdav_sync_remote_summary_format">远端：%1$d 项 · %2$s · %3$s</string>
+    <string name="webdav_sync_local_summary_format">本地：%1$d 项</string>
+    <string name="webdav_sync_local_summary_unknown">本地：尚未统计</string>
+    <string name="webdav_sync_size_bytes">%1$d B</string>
+    <string name="webdav_sync_size_kb">%1$.1f KB</string>
+    <string name="webdav_sync_size_mb">%1$.2f MB</string>
 </resources>

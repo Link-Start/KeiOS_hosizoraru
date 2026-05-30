@@ -86,4 +86,18 @@
     <string name="webdav_sync_clear_label">Clear configuration</string>
     <string name="webdav_sync_clear_summary">Remove the saved server URL, credentials and per-item sync metadata. Local data is not deleted.</string>
     <string name="webdav_sync_clear_button">Clear all</string>
+
+    <!-- Remote summary -->
+    <string name="webdav_sync_refresh_remote">Refresh remote</string>
+    <string name="webdav_sync_refreshing_remote">Refreshing…</string>
+    <string name="webdav_sync_remote_never_probed">Tap "Refresh remote" to load the server snapshot.</string>
+    <string name="webdav_sync_last_remote_probe">Remote snapshot: %1$s</string>
+    <string name="webdav_sync_remote_summary_empty">Remote: empty</string>
+    <string name="webdav_sync_remote_summary_unknown">Remote: not yet loaded</string>
+    <string name="webdav_sync_remote_summary_format">Remote: %1$d items · %2$s · %3$s</string>
+    <string name="webdav_sync_local_summary_format">Local: %1$d items</string>
+    <string name="webdav_sync_local_summary_unknown">Local: not measured yet</string>
+    <string name="webdav_sync_size_bytes">%1$d B</string>
+    <string name="webdav_sync_size_kb">%1$.1f KB</string>
+    <string name="webdav_sync_size_mb">%1$.2f MB</string>
 </resources>

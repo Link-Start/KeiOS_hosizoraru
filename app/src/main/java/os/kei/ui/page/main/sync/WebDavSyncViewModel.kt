@@ -83,6 +83,40 @@ internal class WebDavSyncViewModel : ViewModel() {
         uiState = uiState.copy(autoSyncEnabled = enabled)
     }
 
+    // ── Refresh remote summary (read-only) ─────────────────────────────
+
+    /**
+     * Probe the server for every enabled item and update the per-item remote summary cards.
+     * Read-only: never touches local state. Surfaces auth / network failures through the same
+     * status vocabulary as sync so the UI can localise them. The user invokes this manually
+     * from the page so other devices can see what's on the server before deciding whether to
+     * Sync, Upload, or Download.
+     */
+    fun refreshRemoteSummary(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+        if (uiState.busy || uiState.refreshingRemote) return
+        val config = WebDavSyncStore.loadConfig() ?: run {
+            uiState = uiState.copy(missingConfig = true)
+            return
+        }
+        viewModelScope.launch {
+            uiState = uiState.copy(refreshingRemote = true, missingConfig = false)
+            val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+            for (item in targets) {
+                val port = dataPorts[item] ?: continue
+                engine.probeRemote(config, item, port)
+            }
+            // Per-item probe timestamps are written by the engine; record the wall-clock for the
+            // batch so the UI can render "remote refreshed: <relative time>" without scanning all
+            // five entries.
+            WebDavSyncStore.setLastRemoteProbeTime(System.currentTimeMillis())
+            uiState = uiState.copy(
+                refreshingRemote = false,
+                lastRemoteProbeTimeMs = WebDavSyncStore.getLastRemoteProbeTime(),
+                itemStates = buildItemStates(uiState.itemStates),
+            )
+        }
+    }
+
     // ── Connection test ────────────────────────────────────────────────
 
     fun testConnection() {
@@ -130,6 +164,9 @@ internal class WebDavSyncViewModel : ViewModel() {
             val outcome = invoke(kind, config, item, port)
             applyItemOutcome(item, outcome)
             uiState = uiState.copy(runningKind = null, itemStates = buildItemStates(uiState.itemStates))
+            // Local count may have changed after merge / download; refresh it so the UI shows
+            // the post-action delta against the remote summary.
+            refreshLocalCounts(dataPorts)
         }
     }
 
@@ -157,6 +194,7 @@ internal class WebDavSyncViewModel : ViewModel() {
                 lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
                 itemStates = buildItemStates(),
             )
+            refreshLocalCounts(dataPorts)
         }
     }
 
@@ -223,6 +261,7 @@ internal class WebDavSyncViewModel : ViewModel() {
             isConfigured = config != null,
             autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
             lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
+            lastRemoteProbeTimeMs = WebDavSyncStore.getLastRemoteProbeTime(),
             itemStates = buildItemStates(),
         )
     }
@@ -231,6 +270,10 @@ internal class WebDavSyncViewModel : ViewModel() {
      * Rebuild item states from the store, preserving the transient [WebDavSyncItemUiState.lastOutcome]
      * from the current UI state (the store doesn't persist the last action result). Safe to call from
      * [buildInitialState] before [uiState] is assigned because it reads [previous] from the parameter.
+     *
+     * Note: [WebDavSyncItemUiState.localCount] is intentionally left at -1 here — populating it
+     * requires a domain-store read that may be expensive and isn't needed by the store layer.
+     * The page populates it from the data ports passed at the call site.
      */
     private fun buildItemStates(
         previous: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
@@ -241,12 +284,31 @@ internal class WebDavSyncViewModel : ViewModel() {
                 running = false,
                 lastSyncTimeMs = WebDavSyncStore.getLastSyncTime(item),
                 lastOutcome = previous[item]?.lastOutcome,
+                remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
+                localCount = previous[item]?.localCount ?: -1,
             )
         }
+
+    /**
+     * Cheap-to-call refresh of [WebDavSyncItemUiState.localCount] for every item. Domain-store
+     * reads happen on-demand here rather than in [buildItemStates] so the store layer doesn't
+     * need to know about data ports. The page invokes this on first composition + after every
+     * mutation that could change a count (sync / upload / download / clearConfig).
+     */
+    fun refreshLocalCounts(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+        val updated = uiState.itemStates.toMutableMap()
+        for ((item, port) in dataPorts) {
+            val current = updated[item] ?: defaultItemState(item)
+            val count = runCatching { port.localCount() }.getOrDefault(-1)
+            updated[item] = current.copy(localCount = count)
+        }
+        uiState = uiState.copy(itemStates = updated)
+    }
 
     private fun defaultItemState(item: WebDavSyncItem) = WebDavSyncItemUiState(
         enabled = WebDavSyncStore.isItemEnabled(item),
         lastSyncTimeMs = WebDavSyncStore.getLastSyncTime(item),
+        remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
     )
 }
 
@@ -264,11 +326,13 @@ internal data class WebDavSyncUiState(
     val isConfigured: Boolean = false,
     val autoSyncEnabled: Boolean = false,
     val testing: Boolean = false,
+    val refreshingRemote: Boolean = false,
     val connectionResult: WebDavConnectionOutcome? = null,
     val urlError: WebDavUrlError? = null,
     val missingConfig: Boolean = false,
     val runningKind: WebDavBatchKind? = null,
     val lastFullSyncTimeMs: Long = 0L,
+    val lastRemoteProbeTimeMs: Long = 0L,
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
 ) {
     val busy: Boolean get() = runningKind != null
@@ -282,4 +346,7 @@ internal data class WebDavSyncItemUiState(
     val running: Boolean = false,
     val lastSyncTimeMs: Long = 0L,
     val lastOutcome: WebDavItemOutcome? = null,
+    val remoteSummary: WebDavRemoteSummary? = null,
+    /** Local item count; -1 means "not yet measured". Populated by [WebDavSyncViewModel.refreshLocalCounts]. */
+    val localCount: Int = -1,
 )

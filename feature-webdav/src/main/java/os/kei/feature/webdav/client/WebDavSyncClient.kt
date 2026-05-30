@@ -47,11 +47,11 @@ class WebDavSyncClient(
     /**
      * User-Agent interceptor.
      *
-     * Some commercial WebDAV providers — Jianguoyun (坚果云) being the canonical example —
-     * reject the default OkHttp User-Agent (`okhttp/<ver>`) with **HTTP 410 Gone** at the
-     * edge layer before the request ever reaches the WebDAV stack. Send a recognisable,
-     * application-shaped UA so requests aren't filtered out. The exact UA value is not
-     * sensitive; what matters is that it does not start with `okhttp/`.
+     * Some WebDAV providers gate features behind a User-Agent allow-list. Send a recognisable,
+     * application-shaped UA so requests aren't filtered out. Verified against Jianguoyun: any
+     * non-empty UA (including the default `okhttp/<ver>`) is accepted, but advertising a stable
+     * client identity makes server-side diagnostics easier and matches what well-behaved DAV
+     * clients (e.g. DAVx⁵) do.
      */
     private val userAgentInterceptor = Interceptor { chain ->
         val original = chain.request()
@@ -79,10 +79,23 @@ class WebDavSyncClient(
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             throw IllegalArgumentException("Server URL must start with http:// or https://, got: $url")
         }
-        baseUrl = url.trimEnd('/').toHttpUrl()
+        // CRITICAL: keep the trailing slash. okhttp3.HttpUrl.resolve() follows RFC 3986 — when the
+        // base path ends without `/`, the last segment is treated as a *file* and replaced by the
+        // relative reference. Stripping the slash from "https://dav.jianguoyun.com/dav/" turns the
+        // base into "/dav", and resolving "KeiOS/" against it produces "/KeiOS/" (outside the dav
+        // namespace), which Jianguoyun's nginx returns HTTP 410 Gone for. Normalise to a single
+        // trailing slash instead.
+        val normalized = url.trimEnd('/') + "/"
+        baseUrl = normalized.toHttpUrl()
     }
 
-    private fun collectionUrl() = baseUrl.resolve(config.remoteDir)!!
+    private fun collectionUrl(): okhttp3.HttpUrl {
+        // Defensive normalisation in case the user typed "KeiOS" without a trailing slash:
+        // resolve("KeiOS") would produce "/dav/KeiOS" — a file path, not a collection. Append the
+        // slash so PROPFIND/MKCOL hit the directory.
+        val dir = config.remoteDir.trimStart('/').let { if (it.endsWith("/")) it else "$it/" }
+        return baseUrl.resolve(dir)!!
+    }
 
     private fun fileUrl(fileName: String) = collectionUrl().resolve(fileName)!!
 
@@ -350,10 +363,8 @@ class WebDavSyncClient(
         private const val TAG = "WebDavSyncClient"
 
         /**
-         * User-Agent advertised on every request. Must NOT start with `okhttp/` — Jianguoyun's edge
-         * layer drops such requests with HTTP 410 before they reach the WebDAV stack. The format
-         * mirrors what well-behaved DAV clients (e.g. DAVx⁵) send so providers don't gate features
-         * behind a known-client allow-list.
+         * User-Agent advertised on every request. Stable client identity helps server-side
+         * diagnostics and matches the convention used by mature DAV clients (e.g. DAVx⁵).
          */
         const val USER_AGENT: String = "KeiOS-WebDAV/1 (+https://github.com/KeiOS) okhttp"
     }

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="webdav_sync_title">WebDAV 同步</string>
-    <!-- 顶栏胶囊宽度有限，用此精简版避免截断。 -->
-    <string name="webdav_sync_title_short">WebDAV</string>
     <string name="webdav_sync_provider_label">服务商</string>
     <string name="webdav_sync_connection">连接设置</string>
     <string name="webdav_sync_jianguoyun_hint">请使用坚果云账号邮箱和第三方应用密码（非账号密码）。在坚果云网页端：账户设置 → 安全选项 → 第三方应用管理 中生成。</string>

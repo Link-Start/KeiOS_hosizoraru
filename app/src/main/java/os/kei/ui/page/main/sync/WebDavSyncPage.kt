@@ -67,8 +67,7 @@ internal fun WebDavSyncPage(
     val cardColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
 
     AppPageScaffold(
-        title = stringResource(R.string.webdav_sync_title_short),
-        largeTitle = stringResource(R.string.webdav_sync_title),
+        title = stringResource(R.string.webdav_sync_title),
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = Color.Transparent,

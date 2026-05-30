@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="webdav_sync_title">WebDAV Sync</string>
-    <!-- Compact form for the collapsed top-bar title pill, which has limited width. -->
-    <string name="webdav_sync_title_short">WebDAV</string>
     <string name="webdav_sync_provider_label">Service Provider</string>
     <string name="webdav_sync_connection">Connection</string>
     <string name="webdav_sync_jianguoyun_hint">Use your Jianguoyun account email and an app-specific password (not your account password). Generate one at Account Settings → Security → Third-party App Management.</string>

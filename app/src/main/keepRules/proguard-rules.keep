@@ -21,14 +21,24 @@
 -keepclassmembernames enum os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode { *; }
 -keepclassmembernames enum os.kei.mcp.server.McpToolExecutionProfile { *; }
 
+# WebDavSyncItem and WebDavProvider enum constant names are persisted as MMKV key
+# suffixes (`enabled_<name>`, `last_sync_<name>`, etc.) and as the saved provider id
+# (`WebDavSyncStore.saveConfig` writes `provider.name`). Renaming would orphan user data
+# on every release. Keep the names, allow class-name obfuscation and member optimization.
 -keepclassmembernames enum os.kei.ui.page.main.sync.WebDavSyncItem { *; }
 -keepclassmembernames enum os.kei.ui.page.main.sync.WebDavProvider { *; }
 
-# dav4jvm WebDAV library — keep property factories registered via PropertyRegistry
--keep class at.bitfire.dav4jvm.Property { *; }
--keep class at.bitfire.dav4jvm.PropertyFactory { *; }
--keep class at.bitfire.dav4jvm.** extends at.bitfire.dav4jvm.PropertyFactory { *; }
--keep class at.bitfire.dav4jvm.property.** { *; }
+# dav4jvm WebDAV library
+#
+# Confirmed via bytecode scan of dav4jvm-main-SNAPSHOT.jar (no Class.forName, no
+# ServiceLoader, no getDeclared*): the property pipeline is fully statically traceable.
+# `PropertyRegistry.<clinit>` references every `<Property>$Factory.INSTANCE` via
+# `getstatic`, and the XML parser invokes `Factory.create()` via the `PropertyFactory`
+# interface — both paths R8 follows on its own. The previous broad keep rules
+# (`Property`, `PropertyFactory`, `extends PropertyFactory`, and `property.**`) were
+# redundant and the `extends` rule matched zero classes (factories implement, not
+# extend, the interface). They were dropped after a release build verified the
+# property graph is still reached transitively.
 
 # Keep internal component class names stable for manifest lookups and About-page introspection.
 # This covers future KeiOS activities/services/receivers/providers without needing manual updates.

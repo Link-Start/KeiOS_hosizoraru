@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,9 +46,9 @@ import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
-import top.yukonga.miuix.kmp.blur.isRenderEffectSupported
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop

@@ -22,6 +22,7 @@ internal object WebDavSyncStore {
     private const val KEY_REMOTE_DIR = "remote_dir"
     private const val KEY_AUTO_SYNC = "auto_sync"
     private const val KEY_LAST_FULL_SYNC = "last_full_sync"
+    private const val KEY_LAST_REMOTE_PROBE = "last_remote_probe"
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
 
@@ -65,6 +66,11 @@ internal object WebDavSyncStore {
                 lastSyncKey(item),
                 etagKey(item),
                 hashKey(item),
+                remoteCountKey(item),
+                remoteByteSizeKey(item),
+                remoteEtagKey(item),
+                remoteProbedAtKey(item),
+                remoteEmptyKey(item),
             )
         }
         mmkv.removeValuesForKeys(
@@ -76,6 +82,7 @@ internal object WebDavSyncStore {
                 KEY_REMOTE_DIR,
                 KEY_AUTO_SYNC,
                 KEY_LAST_FULL_SYNC,
+                KEY_LAST_REMOTE_PROBE,
             ) + itemKeys).toTypedArray(),
         )
     }
@@ -136,8 +143,77 @@ internal object WebDavSyncStore {
         mmkv.encode(KEY_LAST_FULL_SYNC, timeMs)
     }
 
+    // ── Remote summary (read-only probe results) ───────────────────────
+    //
+    // Captured by [WebDavSyncEngine.probeRemote] without touching local state. Lets the page
+    // show "remote: <count> items, <size>, modified <time>" so other devices can decide how to
+    // reconcile before pressing Sync / Upload / Download.
+
+    fun getLastRemoteProbeTime(): Long = mmkv.decodeLong(KEY_LAST_REMOTE_PROBE, 0L)
+
+    fun setLastRemoteProbeTime(timeMs: Long) {
+        mmkv.encode(KEY_LAST_REMOTE_PROBE, timeMs)
+    }
+
+    fun loadRemoteSummary(item: WebDavSyncItem): WebDavRemoteSummary? {
+        val probedAtMs = mmkv.decodeLong(remoteProbedAtKey(item), 0L)
+        if (probedAtMs <= 0L) return null
+        return WebDavRemoteSummary(
+            empty = mmkv.decodeBool(remoteEmptyKey(item), false),
+            itemCount = mmkv.decodeInt(remoteCountKey(item), -1),
+            byteSize = mmkv.decodeLong(remoteByteSizeKey(item), -1L),
+            etag = mmkv.decodeString(remoteEtagKey(item), null)?.takeIf { it.isNotBlank() },
+            probedAtMs = probedAtMs,
+        )
+    }
+
+    fun saveRemoteSummaryFound(
+        item: WebDavSyncItem,
+        itemCount: Int,
+        byteSize: Long,
+        etag: String?,
+        probedAtMs: Long,
+    ) {
+        mmkv.encode(remoteEmptyKey(item), false)
+        mmkv.encode(remoteCountKey(item), itemCount)
+        mmkv.encode(remoteByteSizeKey(item), byteSize)
+        if (etag.isNullOrBlank()) {
+            mmkv.removeValueForKey(remoteEtagKey(item))
+        } else {
+            mmkv.encode(remoteEtagKey(item), etag)
+        }
+        mmkv.encode(remoteProbedAtKey(item), probedAtMs)
+    }
+
+    fun saveRemoteSummaryEmpty(item: WebDavSyncItem, probedAtMs: Long) {
+        mmkv.encode(remoteEmptyKey(item), true)
+        mmkv.encode(remoteCountKey(item), 0)
+        mmkv.encode(remoteByteSizeKey(item), 0L)
+        mmkv.removeValueForKey(remoteEtagKey(item))
+        mmkv.encode(remoteProbedAtKey(item), probedAtMs)
+    }
+
     private fun enabledKey(item: WebDavSyncItem) = "enabled_${item.name}"
     private fun lastSyncKey(item: WebDavSyncItem) = "last_sync_${item.name}"
     private fun etagKey(item: WebDavSyncItem) = "etag_${item.name}"
     private fun hashKey(item: WebDavSyncItem) = "hash_${item.name}"
+    private fun remoteCountKey(item: WebDavSyncItem) = "remote_count_${item.name}"
+    private fun remoteByteSizeKey(item: WebDavSyncItem) = "remote_size_${item.name}"
+    private fun remoteEtagKey(item: WebDavSyncItem) = "remote_etag_${item.name}"
+    private fun remoteProbedAtKey(item: WebDavSyncItem) = "remote_probed_at_${item.name}"
+    private fun remoteEmptyKey(item: WebDavSyncItem) = "remote_empty_${item.name}"
 }
+
+/**
+ * Read-only snapshot of what's on the remote for a single item, captured by
+ * [WebDavSyncEngine.probeRemote] and persisted by the store. [empty] means the file isn't on
+ * the server yet (so [itemCount] / [byteSize] are 0); otherwise the values reflect the most
+ * recent successful probe.
+ */
+internal data class WebDavRemoteSummary(
+    val empty: Boolean,
+    val itemCount: Int,
+    val byteSize: Long,
+    val etag: String?,
+    val probedAtMs: Long,
+)

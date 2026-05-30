@@ -173,6 +173,60 @@ internal class WebDavSyncEngine {
         }
     }
 
+    // ── Refresh remote summary (read-only) ─────────────────────────────
+
+    /**
+     * Fetch the remote payload for a single item and report what's on the server *without*
+     * mutating local state. Used by the manual refresh action so other devices can see whether
+     * the remote has data, how many items it holds, and how stale it is before choosing
+     * Sync / Upload / Download.
+     */
+    suspend fun probeRemote(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavRemoteProbeOutcome {
+        val c = client(config)
+        return try {
+            val nowMs = System.currentTimeMillis()
+            when (val download = c.download(item.fileName)) {
+                is WebDavDownloadResult.Success -> {
+                    val itemCount = runCatching { port.countRemoteItems(download.content) }
+                        .getOrElse { -1 }
+                    val byteSize = download.content.toByteArray(Charsets.UTF_8).size.toLong()
+                    WebDavSyncStore.saveRemoteSummaryFound(
+                        item = item,
+                        itemCount = itemCount,
+                        byteSize = byteSize,
+                        etag = download.etag,
+                        probedAtMs = nowMs,
+                    )
+                    WebDavRemoteProbeOutcome.Found(
+                        itemCount = itemCount,
+                        byteSize = byteSize,
+                        etag = download.etag,
+                    )
+                }
+                WebDavDownloadResult.Empty -> {
+                    WebDavSyncStore.saveRemoteSummaryEmpty(item, nowMs)
+                    WebDavRemoteProbeOutcome.Empty
+                }
+                is WebDavDownloadResult.Error -> WebDavRemoteProbeOutcome.Error(
+                    when (download.error) {
+                        WebDavError.AuthFailed -> WebDavItemStatus.AuthFailed
+                        WebDavError.PermissionDenied -> WebDavItemStatus.PermissionDenied
+                        WebDavError.NetworkUnreachable -> WebDavItemStatus.NetworkError
+                        is WebDavError.Unknown -> WebDavItemStatus.Error
+                    },
+                    detail = (download.error as? WebDavError.Unknown)?.message,
+                )
+            }
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "probeRemote ${item.name} failed", e)
+            WebDavRemoteProbeOutcome.Error(WebDavItemStatus.Error, e.message)
+        }
+    }
+
     private fun recordSynced(item: WebDavSyncItem, etag: String?, content: String) {
         WebDavSyncStore.setItemEtag(item, etag)
         WebDavSyncStore.setItemContentHash(item, contentHash(content))
@@ -247,13 +301,36 @@ internal data class WebDavItemOutcome(
 }
 
 /**
+ * Outcome of probing a single item's remote payload (read-only). [Found] carries the parsed
+ * item count + byte size so the UI can render a remote summary; [Empty] means the file isn't
+ * on the server yet; [Error] surfaces auth / permission / network failures so the UI can
+ * localise them through the same enum vocabulary as sync outcomes.
+ */
+internal sealed interface WebDavRemoteProbeOutcome {
+    data class Found(
+        val itemCount: Int,
+        val byteSize: Long,
+        val etag: String?,
+    ) : WebDavRemoteProbeOutcome
+    data object Empty : WebDavRemoteProbeOutcome
+    data class Error(val status: WebDavItemStatus, val detail: String?) : WebDavRemoteProbeOutcome
+}
+
+/**
  * Bridge between a sync item and its domain store.
  *
  * - [exportJson] serialises the current local state.
  * - [merge] folds a remote JSON payload into local state (union-merge, never a destructive
  *   replace) so two-way sync can never silently drop local-only data.
+ * - [localCount] returns the current item count in local state. Used by the UI to render
+ *   "<local> / <remote>" diffs and by the upload-safety guard.
+ * - [countRemoteItems] parses a downloaded JSON payload and returns its item count *without*
+ *   touching local state. Used by the refresh-remote-summary flow so other devices can see
+ *   what's on the server before deciding to sync.
  */
 internal data class WebDavSyncDataPort(
     val exportJson: () -> String,
     val merge: (remoteJson: String) -> Unit,
+    val localCount: () -> Int,
+    val countRemoteItems: (raw: String) -> Int,
 )

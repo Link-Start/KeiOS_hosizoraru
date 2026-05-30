@@ -14,6 +14,7 @@ import os.kei.ui.page.main.os.shell.rememberBuiltInShellCommandCards
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.shortcut.rememberBuiltInActivityShortcutCards
+import os.kei.ui.page.main.os.transfer.parseOsCardImportRoot
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJson
@@ -86,6 +87,11 @@ private fun buildWebDavSyncDataPorts(
                 val merged = existing + imported.filter { it.id !in existingIds }
                 GitHubTrackStore.save(merged)
             },
+            localCount = { GitHubTrackStore.load().size },
+            countRemoteItems = { raw ->
+                runCatching { GitHubTrackStore.parseTrackedItemsImport(raw).items.size }
+                    .getOrDefault(0)
+            },
         ),
         WebDavSyncItem.BaCatalogFavorites to WebDavSyncDataPort(
             exportJson = {
@@ -106,10 +112,19 @@ private fun buildWebDavSyncDataPorts(
                 }
                 BaGuideCatalogStore.saveFavorites(merged)
             },
+            localCount = { BaGuideCatalogStore.loadFavorites().size },
+            countRemoteItems = { raw ->
+                runCatching { parseCatalogFavoritesExport(raw).size }.getOrDefault(0)
+            },
         ),
         WebDavSyncItem.BaBgmFavorites to WebDavSyncDataPort(
             exportJson = { GuideBgmFavoriteStore.buildFavoritesExportJson() },
             merge = { raw -> GuideBgmFavoriteStore.importFavoritesJsonMerged(raw) },
+            localCount = { GuideBgmFavoriteStore.favoritesSnapshot().size },
+            countRemoteItems = { raw ->
+                runCatching { GuideBgmFavoriteStore.previewFavoritesJsonImport(raw).importedCount }
+                    .getOrDefault(0)
+            },
         ),
         WebDavSyncItem.OsActivityCards to WebDavSyncDataPort(
             exportJson = {
@@ -128,6 +143,23 @@ private fun buildWebDavSyncDataPorts(
                     builtInActivityShortcutCards = builtInActivityShortcutCards,
                 )
             },
+            localCount = {
+                OsActivityShortcutCardStore.loadCards(
+                    defaults = googleSystemServiceDefaults,
+                    builtInSampleDefaults = googleSystemServiceDefaults,
+                    builtInActivityShortcutCards = builtInActivityShortcutCards,
+                ).size
+            },
+            countRemoteItems = { raw ->
+                runCatching {
+                    OsActivityShortcutCardStore.parseCardsImport(
+                        root = parseOsCardImportRoot(raw),
+                        defaults = googleSystemServiceDefaults,
+                        builtInSampleDefaults = googleSystemServiceDefaults,
+                        builtInActivityShortcutCards = builtInActivityShortcutCards,
+                    ).cards.size
+                }.getOrDefault(0)
+            },
         ),
         WebDavSyncItem.OsShellCards to WebDavSyncDataPort(
             exportJson = {
@@ -138,6 +170,18 @@ private fun buildWebDavSyncDataPorts(
             },
             merge = { raw ->
                 OsShellCommandCardStore.importCardsFromJsonMerged(raw)
+            },
+            localCount = {
+                OsShellCommandCardStore.loadCards(
+                    builtInShellCommandCards = builtInShellCommandCards,
+                ).size
+            },
+            countRemoteItems = { raw ->
+                runCatching {
+                    OsShellCommandCardStore.parseCardsImport(
+                        root = parseOsCardImportRoot(raw),
+                    ).cards.size
+                }.getOrDefault(0)
             },
         ),
     )

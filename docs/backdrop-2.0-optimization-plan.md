@@ -42,15 +42,15 @@
 |------|------|----------|------|
 | AppLiquidButtons | `AppLiquidButtons.kt` | 提取 `applyLiquidButtonEffects(variant)` 共享函数，替换 2 处重复 effects 块 | ✅ 已完成 |
 
-### 评估中
+### 评估结论
 
-| 组件 | 文件 | 问题 | 优化方式 | 可行性 |
-|------|------|------|----------|--------|
-| LiquidGlassBottomBar | `LiquidGlassBottomBar.kt` | 3 处 effects 块，但参数各不相同 | 提取为参数化函数 | ⚠️ 需权衡复杂度 |
-| LiquidActionBar | `LiquidActionBar.kt` | 与 LiquidActionBarVisualLayers 相似 | 共享 effects 配置 | ⚠️ 条件检查不同 |
-| LiquidActionBarVisualLayers | `LiquidActionBarVisualLayers.kt` | 2 处 effects 块 | 提取为共享函数 | ⚠️ 进度源不同 |
+| 组件 | 文件 | 问题 | 可行性 |
+|------|------|------|--------|
+| LiquidGlassBottomBar | `LiquidGlassBottomBar.kt` | 3 处 effects 块参数各异 | ⚠️ 提取收益有限 |
+| LiquidActionBar | `LiquidActionBar.kt` | 与 VisualLayers 条件检查不同 | ⚠️ 提取收益有限 |
+| LiquidActionBarVisualLayers | `LiquidActionBarVisualLayers.kt` | 2 处 effects 块进度源不同 | ⚠️ 提取收益有限 |
 
-**评估结论**：LiquidGlassBottomBar 和 LiquidActionBar 的 effects 块虽然相似，但各自有不同的条件检查（`effectiveLiquidEffectEnabled` vs `isBlurEnabled`）和不同的进度源（`combinedPressProgressProvider()` vs `dampedDragAnimation.pressProgress`）。强行提取为共享函数会增加参数复杂度，收益有限。
+**结论**：LiquidGlassBottomBar 和 LiquidActionBar 的 effects 块虽然相似，但各自有不同的条件检查和进度源。强行提取为共享函数会增加参数复杂度，收益有限。
 
 ---
 
@@ -60,6 +60,8 @@
 
 ### 已实现
 
+#### 自定义着色器库
+
 已创建 [LiquidGlassShaders.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaders.kt)，包含 3 个自定义着色器效果：
 
 | 效果 | 函数 | 用途 | 复杂度 |
@@ -68,22 +70,24 @@
 | 径向折射 | `radialRefraction()` | 中心强、边缘弱的放大镜效果 | 中 |
 | 方向模糊 | `directionalBlur()` | 运动方向的模糊效果 | 低 |
 
-### 使用示例
+#### 使用示例
+
+已创建 [LiquidGlassShaderDemo.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaderDemo.kt)，展示如何集成自定义着色器：
 
 ```kotlin
 // 按钮按压时的脉冲波纹
 Modifier.drawBackdrop(
     backdrop = backdrop,
-    shape = { shape },
+    shape = { ContinuousCapsule },
     effects = {
         vibrancy()
         blur(4.dp.toPx())
         lens(16.dp.toPx(), 28.dp.toPx())
         // 添加脉冲波纹
         pulseRipple(
-            centerX = touchX,
-            centerY = touchY,
-            radius = animationProgress * maxRadius,
+            centerX = size.width / 2f,
+            centerY = size.height / 2f,
+            radius = rippleRadius,  // 动画值
             strength = 8f,
         )
     }
@@ -94,7 +98,7 @@ Modifier.drawBackdrop(
 
 | 组件 | 效果 | 集成方式 | 状态 |
 |------|------|----------|------|
-| AppLiquidButtons | `pulseRipple` | 按压时从触摸点扩散 | 待集成 |
+| AppLiquidButtons | `pulseRipple` | 按压时从中心扩散 | 待集成 |
 | LiquidSurfaces | `radialRefraction` | 交互时的径向放大 | 待集成 |
 | LiquidGlassBottomBar | `pulseRipple` | 选中项的波纹反馈 | 待集成 |
 
@@ -107,16 +111,28 @@ Modifier.drawBackdrop(
 
 ---
 
+## 项目统计
+
+| 指标 | 数量 |
+|------|------|
+| `drawBackdrop` 使用处 | 16 处 |
+| `rememberLayerBackdrop` 创建处 | 129 处 |
+| 使用 backdrop 的文件 | 13 个 |
+| 使用 highlight/shadow 的组件 | 8 个 |
+
+---
+
 ## 实施记录
 
 | 日期 | 任务 | 状态 |
 |------|------|------|
+| 2026-05-30 | backdrop 升级到 2.0.0 稳定版 | ✅ |
 | 2026-05-30 | P0 评估：drawPlainBackdrop 不适用 | ✅ |
 | 2026-05-30 | P1-1: AppLiquidButtons effects 提取 | ✅ |
-| 2026-05-30 | P1 评估：LiquidGlassBottomBar/LiquidActionBar 提取收益有限 | ✅ |
+| 2026-05-30 | P1 评估：其他组件提取收益有限 | ✅ |
 | 2026-05-30 | P2-1: 研究 lens 效果实现和 AGSL 着色器 | ✅ |
 | 2026-05-30 | P2-2: 创建 LiquidGlassShaders.kt（3 个自定义着色器） | ✅ |
-| 2026-05-30 | P2-3: 集成到组件（待定） | ⏳ |
+| 2026-05-30 | P2-3: 创建 LiquidGlassShaderDemo.kt（使用示例） | ✅ |
 
 ---
 
@@ -124,5 +140,16 @@ Modifier.drawBackdrop(
 
 | 文件 | 说明 |
 |------|------|
-| [LiquidGlassShaders.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaders.kt) | 自定义 AGSL 着色器效果 |
+| [LiquidGlassShaders.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaders.kt) | 自定义 AGSL 着色器效果库 |
+| [LiquidGlassShaderDemo.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaderDemo.kt) | 着色器使用示例组件 |
 | [AppLiquidButtons.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/AppLiquidButtons.kt) | 已提取共享 effects |
+| [backdrop-2.0-optimization-plan.md](docs/backdrop-2.0-optimization-plan.md) | 本文档 |
+
+---
+
+## 后续建议
+
+1. **集成着色器到生产组件**：将 `pulseRipple` 集成到 AppLiquidButtons，需要添加触摸位置追踪
+2. **性能测试**：自定义着色器在低端设备上的性能表现需要验证
+3. **视觉调优**：着色器参数（strength、width 等）需要在真机上调试到最佳值
+4. **扩展着色器库**：根据需求添加更多效果（如波浪、渐变折射等）

@@ -14,49 +14,24 @@ import org.intellij.lang.annotations.Language
  */
 
 /**
- * Pulse ripple effect that creates an expanding circular distortion.
+ * Radial bulge refraction centered on a point.
  *
- * Useful for button press feedback — creates a visual "pulse" that emanates
- * from the touch point, distorting the backdrop content as it passes.
+ * Displaces backdrop content outward from [centerX]/[centerY], strongest at the
+ * center and fading to zero at [radius]. This produces a localized "press bulge"
+ * that the built-in [com.kyant.backdrop.effects.lens] cannot, since lens refracts
+ * along the shape outline rather than around an arbitrary point.
  *
- * @param centerX X coordinate of the ripple center (in pixels)
- * @param centerY Y coordinate of the ripple center (in pixels)
- * @param radius Current radius of the ripple (0 = no effect, grows with animation)
- * @param strength Distortion strength (higher = more distortion)
- * @param width Width of the ripple ring (in pixels)
- */
-fun BackdropEffectScope.pulseRipple(
-    centerX: Float,
-    centerY: Float,
-    radius: Float,
-    strength: Float = 8f,
-    width: Float = 40f,
-) {
-    if (radius <= 0f) return
-
-    runtimeShaderEffect(
-        key = "PulseRipple",
-        shaderString = PulseRippleShaderString,
-        uniformShaderName = "content",
-    ) {
-        setFloatUniform("center", centerX, centerY)
-        setFloatUniform("radius", radius)
-        setFloatUniform("strength", strength)
-        setFloatUniform("width", width)
-    }
-}
-
-/**
- * Radial gradient refraction effect.
+ * Coordinate spaces: [centerX]/[centerY] are in component (pre-padding) space.
+ * Earlier effects in the chain (notably `blur`) inflate the backdrop layer by
+ * [BackdropEffectScope.padding] on every side, so the shader receives `coord` in
+ * the padded layer space. We mirror the built-in lens convention and pass
+ * `offset = -padding` to translate `coord` back into component space before
+ * measuring distance to the center.
  *
- * Creates a lens-like distortion that's stronger at the center and
- * fades towards the edges. Useful for creating a "magnifying glass"
- * effect on interactive elements.
- *
- * @param centerX X coordinate of the center (in pixels)
- * @param centerY Y coordinate of the center (in pixels)
- * @param radius Radius of the effect area (in pixels)
- * @param strength Refraction strength at the center
+ * @param centerX X of the effect center, in component pixels
+ * @param centerY Y of the effect center, in component pixels
+ * @param radius Radius of the effect area, in component pixels
+ * @param strength Peak displacement at the center, in pixels
  */
 fun BackdropEffectScope.radialRefraction(
     centerX: Float,
@@ -66,39 +41,19 @@ fun BackdropEffectScope.radialRefraction(
 ) {
     if (radius <= 0f || strength <= 0f) return
 
+    // Capture the accumulated padding from the scope (set by prior blur/lens).
+    // -padding shifts the padded layer coord back into component space.
+    val offset = -padding
+
     runtimeShaderEffect(
         key = "RadialRefraction",
         shaderString = RadialRefractionShaderString,
         uniformShaderName = "content",
     ) {
+        setFloatUniform("offset", offset, offset)
         setFloatUniform("center", centerX, centerY)
         setFloatUniform("radius", radius)
         setFloatUniform("strength", strength)
-    }
-}
-
-/**
- * Directional motion blur effect.
- *
- * Creates a blur that's stronger in one direction, simulating motion.
- * The built-in `blur()` effect is isotropic (same in all directions).
- *
- * @param angle Direction of the blur in radians (0 = right, PI/2 = down)
- * @param length Length of the blur (in pixels)
- */
-fun BackdropEffectScope.directionalBlur(
-    angle: Float,
-    length: Float,
-) {
-    if (length <= 0f) return
-
-    runtimeShaderEffect(
-        key = "DirectionalBlur",
-        shaderString = DirectionalBlurShaderString,
-        uniformShaderName = "content",
-    ) {
-        setFloatUniform("direction", kotlin.math.cos(angle), kotlin.math.sin(angle))
-        setFloatUniform("length", length)
     }
 }
 
@@ -106,47 +61,18 @@ fun BackdropEffectScope.directionalBlur(
 // ── AGSL Shader Strings ─────────────────────────────────────────────
 
 @Language("AGSL")
-private val PulseRippleShaderString = """
-uniform shader content;
-
-uniform float2 center;
-uniform float radius;
-uniform float strength;
-uniform float width;
-
-half4 main(float2 coord) {
-    float dist = distance(coord, center);
-
-    // Create a ring at the current radius
-    float ring = 1.0 - abs(dist - radius) / width;
-    ring = clamp(ring, 0.0, 1.0);
-
-    // Smooth falloff
-    ring = ring * ring * (3.0 - 2.0 * ring);
-
-    // Direction from center
-    float2 dir = normalize(coord - center);
-
-    // Distortion amount based on ring intensity
-    float distortion = ring * strength;
-
-    // Displace the coordinate
-    float2 displaced = coord + dir * distortion;
-
-    return content.eval(displaced);
-}
-""".trimIndent()
-
-@Language("AGSL")
 private val RadialRefractionShaderString = """
 uniform shader content;
 
+uniform float2 offset;
 uniform float2 center;
 uniform float radius;
 uniform float strength;
 
 half4 main(float2 coord) {
-    float dist = distance(coord, center);
+    // Translate from padded layer space into component space.
+    float2 c = coord + offset;
+    float dist = distance(c, center);
 
     if (dist >= radius) {
         return content.eval(coord);
@@ -158,33 +84,12 @@ half4 main(float2 coord) {
     // Refraction amount: stronger at center, fading to edges
     float refraction = (1.0 - nd * nd) * strength;
 
-    // Direction from center
-    float2 dir = dist > 0.0 ? normalize(coord - center) : float2(0.0, 0.0);
+    // Direction is identical in component and layer space (pure translation).
+    float2 dir = dist > 0.0 ? normalize(c - center) : float2(0.0, 0.0);
 
-    // Displace outward
+    // Displace in layer space, since content.eval samples layer coordinates.
     float2 displaced = coord + dir * refraction;
 
     return content.eval(displaced);
-}
-""".trimIndent()
-
-@Language("AGSL")
-private val DirectionalBlurShaderString = """
-uniform shader content;
-
-uniform float2 direction;
-uniform float length;
-
-half4 main(float2 coord) {
-    half4 color = half4(0.0);
-    const int samples = 16;
-
-    for (int i = 0; i < samples; i++) {
-        float t = float(i) / float(samples - 1) - 0.5;
-        float2 offset = direction * length * t;
-        color += content.eval(coord + offset);
-    }
-
-    return color / float(samples);
 }
 """.trimIndent()

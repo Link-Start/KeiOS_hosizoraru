@@ -46,7 +46,7 @@ class InteractiveHighlight(
 
     /**
      * Current touch position in the composable's coordinate system.
-     * Useful for positioning shader effects (e.g., radialRefraction, pulseRipple).
+     * Useful for positioning shader effects (e.g., radialRefraction).
      */
     val touchPosition: Offset get() = positionAnimation.value
 

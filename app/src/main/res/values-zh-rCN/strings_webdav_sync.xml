@@ -43,4 +43,47 @@
     <string name="webdav_sync_status_label">状态</string>
     <string name="webdav_sync_status_active">已启用</string>
     <string name="webdav_sync_last_sync_label">上次全量同步</string>
+
+    <!-- 新版页面：服务商、密码、批量、单项、自动同步 -->
+    <string name="webdav_sync_provider_jianguoyun">坚果云</string>
+    <string name="webdav_sync_provider_custom">自定义</string>
+    <string name="webdav_sync_password_show">显示密码</string>
+    <string name="webdav_sync_password_hide">隐藏密码</string>
+    <string name="webdav_sync_jianguoyun_help_label">坚果云配置指南</string>
+    <string name="webdav_sync_jianguoyun_help_summary">在浏览器中打开官方帮助页</string>
+
+    <string name="webdav_sync_url_error_empty">请填写服务器地址</string>
+    <string name="webdav_sync_url_error_scheme">地址需以 http:// 或 https:// 开头</string>
+
+    <string name="webdav_sync_auto_sync_label">自动同步</string>
+    <string name="webdav_sync_auto_sync_summary">应用启动时及本地数据变化后自动同步</string>
+
+    <string name="webdav_sync_sync_all">全部同步</string>
+    <string name="webdav_sync_upload_all">全部上传</string>
+    <string name="webdav_sync_download_all">全部下载</string>
+    <string name="webdav_sync_syncing">同步中…</string>
+    <string name="webdav_sync_uploading">上传中…</string>
+    <string name="webdav_sync_downloading">下载中…</string>
+
+    <string name="webdav_sync_item_running">运行中…</string>
+    <string name="webdav_sync_item_sync_action">同步</string>
+    <string name="webdav_sync_item_enable">启用</string>
+    <string name="webdav_sync_item_disable">停用</string>
+
+    <string name="webdav_sync_status_uploaded">已上传</string>
+    <string name="webdav_sync_status_downloaded">已下载</string>
+    <string name="webdav_sync_status_merged">已与远端合并</string>
+    <string name="webdav_sync_status_up_to_date">已是最新</string>
+    <string name="webdav_sync_status_remote_empty">远端暂无数据</string>
+    <string name="webdav_sync_status_auth_failed">认证失败 — 请检查用户名与密码</string>
+    <string name="webdav_sync_status_permission_denied">远端目录无访问权限</string>
+    <string name="webdav_sync_status_network_error">网络异常</string>
+    <string name="webdav_sync_status_invalid_url">服务器地址无效</string>
+    <string name="webdav_sync_status_conflict">同步过程中远端有变动 — 请重试</string>
+    <string name="webdav_sync_status_error">同步出错</string>
+    <string name="webdav_sync_status_unknown">未知错误</string>
+
+    <string name="webdav_sync_clear_label">清除配置</string>
+    <string name="webdav_sync_clear_summary">移除已保存的服务器地址、凭据与各项同步元数据。不会删除本地数据。</string>
+    <string name="webdav_sync_clear_button">清除全部</string>
 </resources>

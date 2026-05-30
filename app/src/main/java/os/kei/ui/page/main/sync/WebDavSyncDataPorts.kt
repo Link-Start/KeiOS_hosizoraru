@@ -1,7 +1,9 @@
 package os.kei.ui.page.main.sync
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -18,12 +20,19 @@ import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJson
 import os.kei.ui.page.main.student.catalog.page.parseCatalogFavoritesExport
 
 /**
- * Remembers [WebDavSyncDataPort] for each syncable data domain.
- * Must be called from a @Composable context to access string resources
- * for built-in OS card defaults.
+ * Builds the [WebDavSyncDataPort] for every [WebDavSyncItem].
+ *
+ * Two entry points share the same port-building logic:
+ *  - [rememberWebDavSyncDataPorts] for the Compose UI (resolves string resources + built-in cards
+ *    via [androidx.compose.runtime.Composable] helpers).
+ *  - [buildWebDavSyncDataPorts] (Context overload) for background callers such as the auto-sync
+ *    coordinator, which cannot enter composition.
+ *
+ * Every port's `merge` performs a union merge so two-way sync can never drop local-only data.
  */
 @Composable
 internal fun rememberWebDavSyncDataPorts(): Map<WebDavSyncItem, WebDavSyncDataPort> {
+    val context = LocalContext.current
     val defaultIntentFlags = stringResource(R.string.os_google_system_service_default_intent_flags)
     val defaults = remember(defaultIntentFlags) {
         OsGoogleSystemServiceConfig(intentFlags = defaultIntentFlags).normalized()
@@ -33,61 +42,89 @@ internal fun rememberWebDavSyncDataPorts(): Map<WebDavSyncItem, WebDavSyncDataPo
         defaultIntentFlags = defaultIntentFlags,
     )
     val builtInShellCards = rememberBuiltInShellCommandCards()
-    return remember(builtInActivityCards, builtInShellCards, defaults) {
+    return remember(context, builtInActivityCards, builtInShellCards, defaults) {
         buildWebDavSyncDataPorts(
             googleSystemServiceDefaults = defaults,
-            builtInSampleDefaults = defaults,
             builtInActivityShortcutCards = builtInActivityCards,
             builtInShellCommandCards = builtInShellCards,
         )
     }
 }
 
+/**
+ * Non-Compose factory: resolve built-in defaults from string resources via [context] so auto-sync
+ * can build ports from application scope.
+ */
+internal fun buildWebDavSyncDataPorts(context: Context): Map<WebDavSyncItem, WebDavSyncDataPort> {
+    val defaults = OsGoogleSystemServiceConfig(
+        intentFlags = context.getString(R.string.os_google_system_service_default_intent_flags),
+    ).normalized()
+    return buildWebDavSyncDataPorts(
+        googleSystemServiceDefaults = defaults,
+        // Built-in cards default to the single Google-settings sample; export includes whatever the
+        // user actually has, and import merges by identity, so this is sufficient off the UI thread.
+        builtInActivityShortcutCards = emptyList(),
+        builtInShellCommandCards = emptyList(),
+    )
+}
+
 private fun buildWebDavSyncDataPorts(
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-    builtInSampleDefaults: OsGoogleSystemServiceConfig,
     builtInActivityShortcutCards: List<OsActivityShortcutCard>,
     builtInShellCommandCards: List<OsShellCommandCard>,
 ): Map<WebDavSyncItem, WebDavSyncDataPort> =
     mapOf(
         WebDavSyncItem.GitHubTracked to WebDavSyncDataPort(
             exportJson = {
-                val items = GitHubTrackStore.load()
-                GitHubTrackStore.buildTrackedItemsExportJson(items)
+                GitHubTrackStore.buildTrackedItemsExportJson(GitHubTrackStore.load())
             },
-            importJson = { raw ->
-                val payload = GitHubTrackStore.parseTrackedItemsImport(raw)
-                GitHubTrackStore.save(payload.items)
+            merge = { raw ->
+                val imported = GitHubTrackStore.parseTrackedItemsImport(raw).items
+                val existing = GitHubTrackStore.load()
+                // Union by tracked-item id; local config wins on conflict.
+                val existingIds = existing.mapTo(HashSet()) { it.id }
+                val merged = existing + imported.filter { it.id !in existingIds }
+                GitHubTrackStore.save(merged)
             },
         ),
         WebDavSyncItem.BaCatalogFavorites to WebDavSyncDataPort(
             exportJson = {
-                val favorites = BaGuideCatalogStore.loadFavorites()
-                buildCatalogFavoritesExportJson(favorites)
+                buildCatalogFavoritesExportJson(BaGuideCatalogStore.loadFavorites())
             },
-            importJson = { raw ->
+            merge = { raw ->
                 val imported = parseCatalogFavoritesExport(raw)
-                BaGuideCatalogStore.saveFavorites(imported)
+                val existing = BaGuideCatalogStore.loadFavorites()
+                // Union of favorited content; keep the earliest favorited timestamp on conflict.
+                val merged = HashMap(existing)
+                imported.forEach { (contentId, favoritedAtMs) ->
+                    val current = merged[contentId]
+                    merged[contentId] = when {
+                        current == null -> favoritedAtMs
+                        favoritedAtMs <= 0L -> current
+                        else -> minOf(current, favoritedAtMs)
+                    }
+                }
+                BaGuideCatalogStore.saveFavorites(merged)
             },
         ),
         WebDavSyncItem.BaBgmFavorites to WebDavSyncDataPort(
             exportJson = { GuideBgmFavoriteStore.buildFavoritesExportJson() },
-            importJson = { raw -> GuideBgmFavoriteStore.importFavoritesJsonMerged(raw) },
+            merge = { raw -> GuideBgmFavoriteStore.importFavoritesJsonMerged(raw) },
         ),
         WebDavSyncItem.OsActivityCards to WebDavSyncDataPort(
             exportJson = {
                 val cards = OsActivityShortcutCardStore.loadCards(
                     defaults = googleSystemServiceDefaults,
-                    builtInSampleDefaults = builtInSampleDefaults,
+                    builtInSampleDefaults = googleSystemServiceDefaults,
                     builtInActivityShortcutCards = builtInActivityShortcutCards,
                 )
-                OsActivityShortcutCardStore.buildCardsExportJson(cards)
+                OsActivityShortcutCardStore.buildCardsExportJson(cards, googleSystemServiceDefaults)
             },
-            importJson = { raw ->
+            merge = { raw ->
                 OsActivityShortcutCardStore.importCardsFromJsonMerged(
                     raw = raw,
                     defaults = googleSystemServiceDefaults,
-                    builtInSampleDefaults = builtInSampleDefaults,
+                    builtInSampleDefaults = googleSystemServiceDefaults,
                     builtInActivityShortcutCards = builtInActivityShortcutCards,
                 )
             },
@@ -99,7 +136,7 @@ private fun buildWebDavSyncDataPorts(
                 )
                 OsShellCommandCardStore.buildCardsExportJson(cards)
             },
-            importJson = { raw ->
+            merge = { raw ->
                 OsShellCommandCardStore.importCardsFromJsonMerged(raw)
             },
         ),

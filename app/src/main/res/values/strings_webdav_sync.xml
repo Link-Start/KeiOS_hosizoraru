@@ -43,4 +43,47 @@
     <string name="webdav_sync_status_label">Status</string>
     <string name="webdav_sync_status_active">Active</string>
     <string name="webdav_sync_last_sync_label">Last full sync</string>
+
+    <!-- New page (rewrite) — provider, password, batch, per-item, auto-sync -->
+    <string name="webdav_sync_provider_jianguoyun">Jianguoyun</string>
+    <string name="webdav_sync_provider_custom">Custom</string>
+    <string name="webdav_sync_password_show">Show password</string>
+    <string name="webdav_sync_password_hide">Hide password</string>
+    <string name="webdav_sync_jianguoyun_help_label">Jianguoyun setup guide</string>
+    <string name="webdav_sync_jianguoyun_help_summary">Open the official help page in your browser</string>
+
+    <string name="webdav_sync_url_error_empty">Server URL is required</string>
+    <string name="webdav_sync_url_error_scheme">URL must start with http:// or https://</string>
+
+    <string name="webdav_sync_auto_sync_label">Auto sync</string>
+    <string name="webdav_sync_auto_sync_summary">Sync on app launch and when local data changes</string>
+
+    <string name="webdav_sync_sync_all">Sync all</string>
+    <string name="webdav_sync_upload_all">Upload all</string>
+    <string name="webdav_sync_download_all">Download all</string>
+    <string name="webdav_sync_syncing">Syncing…</string>
+    <string name="webdav_sync_uploading">Uploading…</string>
+    <string name="webdav_sync_downloading">Downloading…</string>
+
+    <string name="webdav_sync_item_running">Running…</string>
+    <string name="webdav_sync_item_sync_action">Sync</string>
+    <string name="webdav_sync_item_enable">Enable</string>
+    <string name="webdav_sync_item_disable">Disable</string>
+
+    <string name="webdav_sync_status_uploaded">Uploaded</string>
+    <string name="webdav_sync_status_downloaded">Downloaded</string>
+    <string name="webdav_sync_status_merged">Merged with remote</string>
+    <string name="webdav_sync_status_up_to_date">Up to date</string>
+    <string name="webdav_sync_status_remote_empty">Remote is empty</string>
+    <string name="webdav_sync_status_auth_failed">Auth failed — check username and password</string>
+    <string name="webdav_sync_status_permission_denied">Permission denied on the remote directory</string>
+    <string name="webdav_sync_status_network_error">Network error</string>
+    <string name="webdav_sync_status_invalid_url">Invalid server URL</string>
+    <string name="webdav_sync_status_conflict">Remote changed during sync — try again</string>
+    <string name="webdav_sync_status_error">Sync error</string>
+    <string name="webdav_sync_status_unknown">Unknown error</string>
+
+    <string name="webdav_sync_clear_label">Clear configuration</string>
+    <string name="webdav_sync_clear_summary">Remove the saved server URL, credentials and per-item sync metadata. Local data is not deleted.</string>
+    <string name="webdav_sync_clear_button">Clear all</string>
 </resources>

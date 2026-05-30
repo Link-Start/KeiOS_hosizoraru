@@ -29,6 +29,7 @@ import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
+import os.kei.ui.page.main.sync.WebDavAutoSync
 
 private const val COIL_MEMORY_CACHE_PERCENT = 0.25
 private const val COIL_DISK_CACHE_DEFAULT_BYTES = 96L * 1024L * 1024L
@@ -121,6 +122,7 @@ class KeiOSApp : Application() {
         }
         Android17AnomalyProfiler.install(this)
         registerPackageChangedReceiver()
+        WebDavAutoSync.init(this)
         scheduleDeferredStartupWork()
     }
 

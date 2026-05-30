@@ -4,6 +4,8 @@ package os.kei.ui.page.main.sync
 
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -47,6 +51,7 @@ import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidInputField
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
@@ -138,7 +143,17 @@ internal fun WebDavSyncPage(
                         cardColor = cardColor,
                         onToggleAutoSync = viewModel::setAutoSyncEnabled,
                         onToggleItem = viewModel::toggleItem,
-                        onRunItem = { item, kind -> viewModel.runItem(item, kind, dataPorts) },
+                        onRunItem = { item, kind ->
+                            // Per-item Upload is the only destructive single-item action
+                            // (overwrites remote). Sync and Download both merge, so they run
+                            // directly. Routing Upload through the confirmation flow keeps the
+                            // safety story consistent with batch Upload All.
+                            if (kind == WebDavBatchKind.Upload) {
+                                viewModel.requestItemConfirmation(item, kind)
+                            } else {
+                                viewModel.runItem(item, kind, dataPorts)
+                            }
+                        },
                         onSyncAll = { viewModel.syncAll(dataPorts) },
                         onUploadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Upload) },
                         onDownloadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Download) },
@@ -169,6 +184,24 @@ internal fun WebDavSyncPage(
                 shrinkWarning = pendingKind == WebDavBatchKind.Upload && viewModel.uploadShrinksRemote(),
                 onDismiss = viewModel::dismissBatchConfirmation,
                 onConfirm = { viewModel.confirmBatchAction(dataPorts) },
+            )
+        }
+    }
+
+    // Per-item Upload uses the same dialog with item-specific copy so the user knows exactly
+    // which dataset is about to be overwritten. Download/Sync don't go through this gate.
+    val pendingItem = state.pendingItemConfirmation
+    AppWindowDialogHost(
+        show = pendingItem != null,
+        onDismissRequest = viewModel::dismissItemConfirmation,
+    ) {
+        if (pendingItem != null) {
+            val (item, _) = pendingItem
+            WebDavItemConfirmationDialog(
+                item = item,
+                shrinkWarning = viewModel.itemUploadShrinksRemote(item),
+                onDismiss = viewModel::dismissItemConfirmation,
+                onConfirm = { viewModel.confirmItemAction(dataPorts) },
             )
         }
     }
@@ -397,6 +430,10 @@ private fun WebDavSyncItemsCard(
         sectionIcon = appLucideDatabaseIcon(),
         containerColor = cardColor,
     ) {
+        // Aggregate header — gives an at-a-glance "what's local vs what's on the server" so the
+        // user can decide a strategy before drilling into individual items.
+        WebDavSyncTotalsHeader(state = state)
+
         // Auto-sync toggle
         SettingsToggleItem(
             title = stringResource(R.string.webdav_sync_auto_sync_label),
@@ -489,88 +526,17 @@ private fun WebDavSyncItemsCard(
             onClick = onDownloadAll,
         )
 
-        // Per-item rows — enable toggle + per-item Sync action
+        // Per-item rows — enable switch + per-item Sync / Upload / Download actions.
+        // Each row is its own column block so the action buttons can sit on a dedicated line
+        // beneath the title without competing for trailing space.
         WebDavSyncItem.entries.forEach { item ->
-            val itemState = state.itemStates[item]
-            val enabled = itemState?.enabled ?: true
-            val running = itemState?.running == true
-            val lastSync = itemState?.lastSyncTimeMs?.takeIf { it > 0 }
-            val outcome = itemState?.lastOutcome
-            val statusText = when {
-                running -> stringResource(R.string.webdav_sync_item_running)
-                outcome != null -> itemStatusText(outcome)
-                lastSync != null -> stringResource(R.string.webdav_sync_last_sync, formatTime(lastSync))
-                else -> stringResource(item.descriptionRes)
-            }
-            val statusColor = when {
-                running -> MiuixTheme.colorScheme.primary
-                outcome?.isSuccess == true -> Color(0xFF22C55E)
-                outcome != null -> MiuixTheme.colorScheme.error
-                else -> MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
-            }
-            val localCount = itemState?.localCount ?: -1
-            val localLine = if (localCount >= 0) {
-                stringResource(R.string.webdav_sync_local_summary_format, localCount)
-            } else {
-                stringResource(R.string.webdav_sync_local_summary_unknown)
-            }
-            val remoteLine = remoteSummaryLine(itemState?.remoteSummary)
-
-            Spacer(Modifier.height(CardLayoutRhythm.denseSectionGap))
-            AppControlRow(
-                title = stringResource(item.labelRes),
-                summary = null,
-                trailing = {
-                    AppStandaloneLiquidTextButton(
-                        variant = GlassVariant.Compact,
-                        text = stringResource(R.string.webdav_sync_item_sync_action),
-                        textColor = MiuixTheme.colorScheme.primary,
-                        enabled = enabled && !state.busy,
-                        onClick = { onRunItem(item, WebDavBatchKind.Sync) },
-                    )
-                    AppStandaloneLiquidTextButton(
-                        variant = GlassVariant.Compact,
-                        text = stringResource(
-                            if (enabled) R.string.webdav_sync_item_disable else R.string.webdav_sync_item_enable,
-                        ),
-                        textColor = if (enabled) {
-                            MiuixTheme.colorScheme.onBackgroundVariant
-                        } else {
-                            MiuixTheme.colorScheme.primary
-                        },
-                        enabled = !state.busy,
-                        onClick = { onToggleItem(item) },
-                    )
-                },
+            Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+            WebDavSyncItemRow(
+                item = item,
+                state = state,
+                onToggleItem = onToggleItem,
+                onRunItem = onRunItem,
             )
-            Text(
-                text = statusText,
-                color = statusColor,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-            // Local + remote summary lines so the user sees the size delta before deciding what
-            // to sync. Painted in a muted variant so the status line above stays the focal point.
-            Text(
-                text = localLine,
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-            )
-            Text(
-                text = remoteLine,
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-            )
-            outcome?.detail?.takeIf { it.isNotBlank() }?.let { detail ->
-                Text(
-                    text = detail,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
-                    fontSize = AppTypographyTokens.Caption.fontSize,
-                    lineHeight = AppTypographyTokens.Caption.lineHeight,
-                )
-            }
         }
 
         // Last full-sync info
@@ -614,7 +580,7 @@ private fun WebDavClearCard(
     }
 }
 
-// ── Confirmation dialog ────────────────────────────────────────────────
+// ── Confirmation dialogs ───────────────────────────────────────────────
 
 @Composable
 private fun WebDavBatchConfirmationDialog(
@@ -637,10 +603,47 @@ private fun WebDavBatchConfirmationDialog(
             WebDavBatchKind.Sync -> R.string.webdav_sync_confirm_upload_summary // unreachable
         },
     )
-    androidx.compose.foundation.layout.Column(
+    WebDavConfirmationDialogContent(
+        title = title,
+        summary = summary,
+        warning = if (shrinkWarning) stringResource(R.string.webdav_sync_confirm_upload_shrink_warning) else null,
+        confirmIsDestructive = kind == WebDavBatchKind.Upload,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+    )
+}
+
+@Composable
+private fun WebDavItemConfirmationDialog(
+    item: WebDavSyncItem,
+    shrinkWarning: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val itemLabel = stringResource(item.labelRes)
+    WebDavConfirmationDialogContent(
+        title = stringResource(R.string.webdav_sync_confirm_item_upload_title, itemLabel),
+        summary = stringResource(R.string.webdav_sync_confirm_item_upload_summary, itemLabel),
+        warning = if (shrinkWarning) stringResource(R.string.webdav_sync_confirm_upload_shrink_warning) else null,
+        confirmIsDestructive = true,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+    )
+}
+
+@Composable
+private fun WebDavConfirmationDialogContent(
+    title: String,
+    summary: String,
+    warning: String?,
+    confirmIsDestructive: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.compactSectionGap),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = title,
@@ -655,9 +658,9 @@ private fun WebDavBatchConfirmationDialog(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
         )
-        if (shrinkWarning) {
+        warning?.let {
             Text(
-                text = stringResource(R.string.webdav_sync_confirm_upload_shrink_warning),
+                text = it,
                 color = MiuixTheme.colorScheme.error,
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
@@ -676,26 +679,207 @@ private fun WebDavBatchConfirmationDialog(
                 )
             },
             second = { modifier ->
-                val variant = if (kind == WebDavBatchKind.Upload) {
-                    GlassVariant.SheetDangerAction
-                } else {
-                    GlassVariant.SheetPrimaryAction
-                }
-                val color = if (kind == WebDavBatchKind.Upload) {
-                    MiuixTheme.colorScheme.error
-                } else {
-                    MiuixTheme.colorScheme.primary
-                }
                 AppStandaloneLiquidTextButton(
-                    variant = variant,
+                    variant = if (confirmIsDestructive) {
+                        GlassVariant.SheetDangerAction
+                    } else {
+                        GlassVariant.SheetPrimaryAction
+                    },
                     text = stringResource(R.string.webdav_sync_confirm_continue),
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = color,
+                    textColor = if (confirmIsDestructive) {
+                        MiuixTheme.colorScheme.error
+                    } else {
+                        MiuixTheme.colorScheme.primary
+                    },
                     onClick = onConfirm,
                 )
             },
         )
+    }
+}
+
+// ── Per-item row ───────────────────────────────────────────────────────
+
+@Composable
+private fun WebDavSyncTotalsHeader(state: WebDavSyncUiState) {
+    // Aggregate by summing the per-item caches captured in the UI state. We only count enabled
+    // items so the header reflects what would actually move during a Sync All / Upload All.
+    var localItems = 0
+    var enabledTypes = 0
+    var remoteItems = 0
+    var remoteBytes = 0L
+    var anyRemoteKnown = false
+    state.itemStates.forEach { (_, itemState) ->
+        if (!itemState.enabled) return@forEach
+        enabledTypes += 1
+        if (itemState.localCount >= 0) localItems += itemState.localCount
+        val remote = itemState.remoteSummary ?: return@forEach
+        if (remote.empty) {
+            anyRemoteKnown = true
+            return@forEach
+        }
+        if (remote.itemCount >= 0) {
+            anyRemoteKnown = true
+            remoteItems += remote.itemCount
+        }
+        if (remote.byteSize >= 0) remoteBytes += remote.byteSize
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
+    ) {
+        Text(
+            text = stringResource(R.string.webdav_sync_totals_header),
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.CompactTitle.fontSize,
+            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+        )
+        Text(
+            text = stringResource(R.string.webdav_sync_totals_local_format, localItems, enabledTypes),
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        if (anyRemoteKnown) {
+            Text(
+                text = stringResource(
+                    R.string.webdav_sync_totals_remote_format,
+                    remoteItems,
+                    formatBytes(remoteBytes),
+                ),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.webdav_sync_totals_remote_unknown),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WebDavSyncItemRow(
+    item: WebDavSyncItem,
+    state: WebDavSyncUiState,
+    onToggleItem: (WebDavSyncItem) -> Unit,
+    onRunItem: (WebDavSyncItem, WebDavBatchKind) -> Unit,
+) {
+    val itemState = state.itemStates[item]
+    val enabled = itemState?.enabled ?: true
+    val running = itemState?.running == true
+    val outcome = itemState?.lastOutcome
+    val lastSync = itemState?.lastSyncTimeMs?.takeIf { it > 0 }
+    val statusText = when {
+        running -> stringResource(R.string.webdav_sync_item_running)
+        outcome != null -> itemStatusText(outcome)
+        lastSync != null -> stringResource(R.string.webdav_sync_last_sync, formatTime(lastSync))
+        else -> stringResource(item.descriptionRes)
+    }
+    val statusColor = when {
+        running -> MiuixTheme.colorScheme.primary
+        outcome?.isSuccess == true -> Color(0xFF22C55E)
+        outcome != null -> MiuixTheme.colorScheme.error
+        else -> MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
+    }
+    val localCount = itemState?.localCount ?: -1
+    val localLine = if (localCount >= 0) {
+        stringResource(R.string.webdav_sync_local_summary_format, localCount)
+    } else {
+        stringResource(R.string.webdav_sync_local_summary_unknown)
+    }
+    val remoteLine = remoteSummaryLine(itemState?.remoteSummary)
+    // Disabled rows fade everything but the switch so the user sees they're skipped without
+    // losing the data they already have.
+    val rowAlpha = if (enabled) 1f else 0.55f
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(rowAlpha),
+        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
+    ) {
+        AppControlRow(
+            title = stringResource(item.labelRes),
+            summary = null,
+            trailing = {
+                AppSwitch(
+                    checked = enabled,
+                    onCheckedChange = { onToggleItem(item) },
+                    enabled = !state.busy,
+                )
+            },
+        )
+        Text(
+            text = statusText,
+            color = statusColor,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        Text(
+            text = localLine,
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
+            fontSize = AppTypographyTokens.Caption.fontSize,
+            lineHeight = AppTypographyTokens.Caption.lineHeight,
+        )
+        Text(
+            text = remoteLine,
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
+            fontSize = AppTypographyTokens.Caption.fontSize,
+            lineHeight = AppTypographyTokens.Caption.lineHeight,
+        )
+        outcome?.detail?.takeIf { it.isNotBlank() }?.let { detail ->
+            Text(
+                text = detail,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+            )
+        }
+        // Three-up action row: Sync (merge, primary), Upload (local→remote, danger), Download
+        // (remote→local, secondary). All three respect the global busy flag and the per-item
+        // enable switch.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.compactSectionGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppStandaloneLiquidTextButton(
+                variant = GlassVariant.SheetPrimaryAction,
+                text = stringResource(R.string.webdav_sync_item_sync_action),
+                modifier = Modifier.weight(1f),
+                buttonModifier = Modifier.fillMaxWidth(),
+                textColor = MiuixTheme.colorScheme.primary,
+                enabled = enabled && !state.busy,
+                onClick = { onRunItem(item, WebDavBatchKind.Sync) },
+            )
+            AppStandaloneLiquidTextButton(
+                variant = GlassVariant.SheetDangerAction,
+                text = stringResource(R.string.webdav_sync_item_upload_action),
+                modifier = Modifier.weight(1f),
+                buttonModifier = Modifier.fillMaxWidth(),
+                textColor = MiuixTheme.colorScheme.error,
+                enabled = enabled && !state.busy,
+                onClick = { onRunItem(item, WebDavBatchKind.Upload) },
+            )
+            AppStandaloneLiquidTextButton(
+                variant = GlassVariant.SheetAction,
+                text = stringResource(R.string.webdav_sync_item_download_action),
+                modifier = Modifier.weight(1f),
+                buttonModifier = Modifier.fillMaxWidth(),
+                textColor = MiuixTheme.colorScheme.primary,
+                enabled = enabled && !state.busy,
+                onClick = { onRunItem(item, WebDavBatchKind.Download) },
+            )
+        }
     }
 }
 

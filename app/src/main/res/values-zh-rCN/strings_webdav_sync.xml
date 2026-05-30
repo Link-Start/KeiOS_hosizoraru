@@ -109,4 +109,18 @@
     <string name="webdav_sync_confirm_download_summary">远端数据将合并到本地的每个启用项。本地独有项目会保留，远端独有项目会被添加。</string>
     <string name="webdav_sync_confirm_continue">继续</string>
     <string name="webdav_sync_confirm_cancel">取消</string>
+
+    <!-- 单项上传确认 -->
+    <string name="webdav_sync_confirm_item_upload_title">上传 %1$s 到远端？</string>
+    <string name="webdav_sync_confirm_item_upload_summary">本地的「%1$s」数据将覆盖远端副本。除非你确实想以本地为权威，否则建议优先使用「同步」（合并）。</string>
+
+    <!-- 单项操作按钮 -->
+    <string name="webdav_sync_item_upload_action">上传</string>
+    <string name="webdav_sync_item_download_action">下载</string>
+
+    <!-- 概览标题 -->
+    <string name="webdav_sync_totals_header">同步总览</string>
+    <string name="webdav_sync_totals_local_format">本地：%1$d 项，跨 %2$d 类</string>
+    <string name="webdav_sync_totals_remote_format">远端：%1$d 项 · %2$s</string>
+    <string name="webdav_sync_totals_remote_unknown">远端：点击"刷新远端"载入。</string>
 </resources>

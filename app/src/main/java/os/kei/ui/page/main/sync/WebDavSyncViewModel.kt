@@ -158,7 +158,7 @@ internal class WebDavSyncViewModel : ViewModel() {
      * blindly wipe data on either side.
      */
     fun requestBatchConfirmation(kind: WebDavBatchKind) {
-        if (uiState.busy || uiState.pendingBatchConfirmation != null) return
+        if (uiState.busy || uiState.pendingBatchConfirmation != null || uiState.pendingItemConfirmation != null) return
         if (kind == WebDavBatchKind.Sync) {
             // Sync is union-merge end-to-end, no confirmation needed.
             return
@@ -174,6 +174,28 @@ internal class WebDavSyncViewModel : ViewModel() {
         val kind = uiState.pendingBatchConfirmation ?: return
         uiState = uiState.copy(pendingBatchConfirmation = null)
         runBatch(dataPorts, kind)
+    }
+
+    /**
+     * Per-item destructive action gate. Upload overwrites the remote copy of a single item
+     * unconditionally, so a fresh device tapping this on its first run could replace populated
+     * server data with the empty local set. Download is union-merge and Sync is two-way merge,
+     * so both bypass this gate and run directly via [runItem].
+     */
+    fun requestItemConfirmation(item: WebDavSyncItem, kind: WebDavBatchKind) {
+        if (uiState.busy || uiState.pendingBatchConfirmation != null || uiState.pendingItemConfirmation != null) return
+        if (kind != WebDavBatchKind.Upload) return
+        uiState = uiState.copy(pendingItemConfirmation = item to kind)
+    }
+
+    fun dismissItemConfirmation() {
+        uiState = uiState.copy(pendingItemConfirmation = null)
+    }
+
+    fun confirmItemAction(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+        val (item, kind) = uiState.pendingItemConfirmation ?: return
+        uiState = uiState.copy(pendingItemConfirmation = null)
+        runItem(item, kind, dataPorts)
     }
 
     /**
@@ -194,6 +216,18 @@ internal class WebDavSyncViewModel : ViewModel() {
             if (local >= remote.itemCount) return false
         }
         return anyKnownDelta
+    }
+
+    /**
+     * Same shrink check, for the per-item Upload confirmation. Returns true only when both
+     * counts are known and local < remote.
+     */
+    fun itemUploadShrinksRemote(item: WebDavSyncItem): Boolean {
+        val state = uiState.itemStates[item] ?: return false
+        val local = state.localCount
+        val remote = state.remoteSummary
+        if (local < 0 || remote == null || remote.empty || remote.itemCount <= 0) return false
+        return local < remote.itemCount
     }
 
     /** Sync / upload / download a single item on demand. */
@@ -379,6 +413,7 @@ internal data class WebDavSyncUiState(
     val missingConfig: Boolean = false,
     val runningKind: WebDavBatchKind? = null,
     val pendingBatchConfirmation: WebDavBatchKind? = null,
+    val pendingItemConfirmation: Pair<WebDavSyncItem, WebDavBatchKind>? = null,
     val lastFullSyncTimeMs: Long = 0L,
     val lastRemoteProbeTimeMs: Long = 0L,
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),

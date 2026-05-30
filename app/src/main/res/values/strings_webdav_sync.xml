@@ -109,4 +109,18 @@
     <string name="webdav_sync_confirm_download_summary">Remote data will be merged into local for every enabled item. Local-only items are kept; remote-only items are added.</string>
     <string name="webdav_sync_confirm_continue">Continue</string>
     <string name="webdav_sync_confirm_cancel">Cancel</string>
+
+    <!-- Per-item Upload confirmation -->
+    <string name="webdav_sync_confirm_item_upload_title">Upload %1$s to remote?</string>
+    <string name="webdav_sync_confirm_item_upload_summary">The local %1$s data will overwrite the remote copy. Sync (merge) is the safer default unless you want to push local as authoritative.</string>
+
+    <!-- Per-item action labels -->
+    <string name="webdav_sync_item_upload_action">Upload</string>
+    <string name="webdav_sync_item_download_action">Download</string>
+
+    <!-- Aggregate totals header -->
+    <string name="webdav_sync_totals_header">Sync overview</string>
+    <string name="webdav_sync_totals_local_format">Local: %1$d items across %2$d types</string>
+    <string name="webdav_sync_totals_remote_format">Remote: %1$d items · %2$s</string>
+    <string name="webdav_sync_totals_remote_unknown">Remote: tap "Refresh remote" to load.</string>
 </resources>

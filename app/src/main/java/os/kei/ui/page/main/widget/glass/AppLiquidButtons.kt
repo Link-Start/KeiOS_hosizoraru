@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.BackdropEffectScope
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -62,6 +63,23 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.tanh
+
+/**
+ * Shared effects configuration for liquid buttons.
+ * Extracted to avoid duplication and ensure consistent visual behavior.
+ */
+private fun BackdropEffectScope.applyLiquidButtonEffects(
+    variant: GlassVariant,
+) {
+    vibrancy()
+    blur(4.dp.toPx())
+    lens(
+        16.dp.toPx(),
+        28.dp.toPx(),
+        chromaticAberration = variant != GlassVariant.Compact,
+        depthEffect = true,
+    )
+}
 
 @Composable
 fun AppLiquidIconButton(
@@ -289,16 +307,7 @@ private fun AppLiquidIconButtonContainer(
                                 } else {
                                     null
                                 },
-                            effects = {
-                                vibrancy()
-                                blur(4.dp.toPx())
-                                lens(
-                                    16.dp.toPx(),
-                                    28.dp.toPx(),
-                                    chromaticAberration = variant != GlassVariant.Compact,
-                                    depthEffect = true,
-                                )
-                            },
+                            effects = { applyLiquidButtonEffects(variant) },
                             highlight = {
                                 Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                             },
@@ -549,16 +558,7 @@ fun AppLiquidTextButton(
                                 } else {
                                     null
                                 },
-                            effects = {
-                                vibrancy()
-                                blur(4.dp.toPx())
-                                lens(
-                                    16.dp.toPx(),
-                                    28.dp.toPx(),
-                                    chromaticAberration = variant != GlassVariant.Compact,
-                                    depthEffect = true,
-                                )
-                            },
+                            effects = { applyLiquidButtonEffects(variant) },
                             highlight = {
                                 Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                             },

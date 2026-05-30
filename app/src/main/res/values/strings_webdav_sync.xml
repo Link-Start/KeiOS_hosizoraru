@@ -100,4 +100,13 @@
     <string name="webdav_sync_size_bytes">%1$d B</string>
     <string name="webdav_sync_size_kb">%1$.1f KB</string>
     <string name="webdav_sync_size_mb">%1$.2f MB</string>
+
+    <!-- Confirmation dialog for destructive batch actions -->
+    <string name="webdav_sync_confirm_upload_title">Upload all to remote?</string>
+    <string name="webdav_sync_confirm_upload_summary">Local data will overwrite the remote copy for every enabled item. Sync (merge) is the safer default unless you specifically want to push local as authoritative.</string>
+    <string name="webdav_sync_confirm_upload_shrink_warning">The remote currently holds more items than local. Uploading now will shrink the remote dataset — consider running Sync first to merge instead.</string>
+    <string name="webdav_sync_confirm_download_title">Download all from remote?</string>
+    <string name="webdav_sync_confirm_download_summary">Remote data will be merged into local for every enabled item. Local-only items are kept; remote-only items are added.</string>
+    <string name="webdav_sync_confirm_continue">Continue</string>
+    <string name="webdav_sync_confirm_cancel">Cancel</string>
 </resources>

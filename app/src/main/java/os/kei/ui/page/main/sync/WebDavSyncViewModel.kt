@@ -149,6 +149,53 @@ internal class WebDavSyncViewModel : ViewModel() {
     fun downloadAll(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) =
         runBatch(dataPorts, WebDavBatchKind.Download)
 
+    // ── Confirmation flow for destructive batch actions ────────────────
+
+    /**
+     * Open the confirmation dialog for a batch action. Sync is safe (merge-only) and runs
+     * immediately; Upload All overwrites the remote and Download All merges into local — both
+     * are gated through [WebDavSyncUiState.pendingBatchConfirmation] so a fresh device can't
+     * blindly wipe data on either side.
+     */
+    fun requestBatchConfirmation(kind: WebDavBatchKind) {
+        if (uiState.busy || uiState.pendingBatchConfirmation != null) return
+        if (kind == WebDavBatchKind.Sync) {
+            // Sync is union-merge end-to-end, no confirmation needed.
+            return
+        }
+        uiState = uiState.copy(pendingBatchConfirmation = kind)
+    }
+
+    fun dismissBatchConfirmation() {
+        uiState = uiState.copy(pendingBatchConfirmation = null)
+    }
+
+    fun confirmBatchAction(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+        val kind = uiState.pendingBatchConfirmation ?: return
+        uiState = uiState.copy(pendingBatchConfirmation = null)
+        runBatch(dataPorts, kind)
+    }
+
+    /**
+     * Returns true when an Upload All would visibly shrink the remote — every enabled item that
+     * has a known remote count exceeds the local count. Used by the page to switch the dialog to
+     * a stronger warning so users on a fresh device don't accidentally wipe remote data.
+     */
+    fun uploadShrinksRemote(): Boolean {
+        val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+        if (targets.isEmpty()) return false
+        var anyKnownDelta = false
+        for (item in targets) {
+            val state = uiState.itemStates[item] ?: continue
+            val local = state.localCount
+            val remote = state.remoteSummary
+            if (local < 0 || remote == null || remote.empty || remote.itemCount < 0) continue
+            anyKnownDelta = true
+            if (local >= remote.itemCount) return false
+        }
+        return anyKnownDelta
+    }
+
     /** Sync / upload / download a single item on demand. */
     fun runItem(
         item: WebDavSyncItem,
@@ -331,6 +378,7 @@ internal data class WebDavSyncUiState(
     val urlError: WebDavUrlError? = null,
     val missingConfig: Boolean = false,
     val runningKind: WebDavBatchKind? = null,
+    val pendingBatchConfirmation: WebDavBatchKind? = null,
     val lastFullSyncTimeMs: Long = 0L,
     val lastRemoteProbeTimeMs: Long = 0L,
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),

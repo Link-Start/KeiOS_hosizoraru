@@ -43,6 +43,7 @@ import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidInputField
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
@@ -139,8 +140,8 @@ internal fun WebDavSyncPage(
                         onToggleItem = viewModel::toggleItem,
                         onRunItem = { item, kind -> viewModel.runItem(item, kind, dataPorts) },
                         onSyncAll = { viewModel.syncAll(dataPorts) },
-                        onUploadAll = { viewModel.uploadAll(dataPorts) },
-                        onDownloadAll = { viewModel.downloadAll(dataPorts) },
+                        onUploadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Upload) },
+                        onDownloadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Download) },
                         onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
                     )
                 }
@@ -152,6 +153,23 @@ internal fun WebDavSyncPage(
                     )
                 }
             }
+        }
+    }
+
+    // Destructive batch actions (Upload All / Download All) require explicit confirmation so a
+    // fresh device can't blindly wipe one side. Sync is merge-only so it skips this gate.
+    val pendingKind = state.pendingBatchConfirmation
+    AppWindowDialogHost(
+        show = pendingKind != null,
+        onDismissRequest = viewModel::dismissBatchConfirmation,
+    ) {
+        if (pendingKind != null) {
+            WebDavBatchConfirmationDialog(
+                kind = pendingKind,
+                shrinkWarning = pendingKind == WebDavBatchKind.Upload && viewModel.uploadShrinksRemote(),
+                onDismiss = viewModel::dismissBatchConfirmation,
+                onConfirm = { viewModel.confirmBatchAction(dataPorts) },
+            )
         }
     }
 }
@@ -592,6 +610,91 @@ private fun WebDavClearCard(
             buttonModifier = Modifier.fillMaxWidth(),
             textColor = MiuixTheme.colorScheme.error,
             onClick = onClear,
+        )
+    }
+}
+
+// ── Confirmation dialog ────────────────────────────────────────────────
+
+@Composable
+private fun WebDavBatchConfirmationDialog(
+    kind: WebDavBatchKind,
+    shrinkWarning: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val title = stringResource(
+        when (kind) {
+            WebDavBatchKind.Upload -> R.string.webdav_sync_confirm_upload_title
+            WebDavBatchKind.Download -> R.string.webdav_sync_confirm_download_title
+            WebDavBatchKind.Sync -> R.string.webdav_sync_confirm_upload_title // unreachable; sync is gated out
+        },
+    )
+    val summary = stringResource(
+        when (kind) {
+            WebDavBatchKind.Upload -> R.string.webdav_sync_confirm_upload_summary
+            WebDavBatchKind.Download -> R.string.webdav_sync_confirm_download_summary
+            WebDavBatchKind.Sync -> R.string.webdav_sync_confirm_upload_summary // unreachable
+        },
+    )
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.compactSectionGap),
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = title,
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.CompactTitle.fontSize,
+            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+        )
+        Text(
+            text = summary,
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        if (shrinkWarning) {
+            Text(
+                text = stringResource(R.string.webdav_sync_confirm_upload_shrink_warning),
+                color = MiuixTheme.colorScheme.error,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        }
+        Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+        AppDualActionRow(
+            first = { modifier ->
+                AppStandaloneLiquidTextButton(
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.webdav_sync_confirm_cancel),
+                    modifier = modifier,
+                    buttonModifier = Modifier.fillMaxWidth(),
+                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    onClick = onDismiss,
+                )
+            },
+            second = { modifier ->
+                val variant = if (kind == WebDavBatchKind.Upload) {
+                    GlassVariant.SheetDangerAction
+                } else {
+                    GlassVariant.SheetPrimaryAction
+                }
+                val color = if (kind == WebDavBatchKind.Upload) {
+                    MiuixTheme.colorScheme.error
+                } else {
+                    MiuixTheme.colorScheme.primary
+                }
+                AppStandaloneLiquidTextButton(
+                    variant = variant,
+                    text = stringResource(R.string.webdav_sync_confirm_continue),
+                    modifier = modifier,
+                    buttonModifier = Modifier.fillMaxWidth(),
+                    textColor = color,
+                    onClick = onConfirm,
+                )
+            },
         )
     }
 }

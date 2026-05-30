@@ -100,4 +100,13 @@
     <string name="webdav_sync_size_bytes">%1$d B</string>
     <string name="webdav_sync_size_kb">%1$.1f KB</string>
     <string name="webdav_sync_size_mb">%1$.2f MB</string>
+
+    <!-- 危险批量操作的确认弹窗 -->
+    <string name="webdav_sync_confirm_upload_title">全部上传到远端？</string>
+    <string name="webdav_sync_confirm_upload_summary">本地数据将以本地为准覆盖每个启用项的远端副本。除非你确实想以本地为权威，否则建议优先使用「同步」（合并）。</string>
+    <string name="webdav_sync_confirm_upload_shrink_warning">远端目前条目数多于本地。现在上传会让远端数据变少 — 建议先执行「同步」进行合并。</string>
+    <string name="webdav_sync_confirm_download_title">全部从远端下载？</string>
+    <string name="webdav_sync_confirm_download_summary">远端数据将合并到本地的每个启用项。本地独有项目会保留，远端独有项目会被添加。</string>
+    <string name="webdav_sync_confirm_continue">继续</string>
+    <string name="webdav_sync_confirm_cancel">取消</string>
 </resources>

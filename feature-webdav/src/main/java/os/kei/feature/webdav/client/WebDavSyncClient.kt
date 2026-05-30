@@ -18,6 +18,7 @@ import at.bitfire.dav4jvm.property.webdav.WebDAV
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -43,9 +44,28 @@ class WebDavSyncClient(
         password = config.appPassword.toCharArray(),
     )
 
+    /**
+     * User-Agent interceptor.
+     *
+     * Some commercial WebDAV providers — Jianguoyun (坚果云) being the canonical example —
+     * reject the default OkHttp User-Agent (`okhttp/<ver>`) with **HTTP 410 Gone** at the
+     * edge layer before the request ever reaches the WebDAV stack. Send a recognisable,
+     * application-shaped UA so requests aren't filtered out. The exact UA value is not
+     * sensitive; what matters is that it does not start with `okhttp/`.
+     */
+    private val userAgentInterceptor = Interceptor { chain ->
+        val original = chain.request()
+        if (original.header("User-Agent") != null) {
+            chain.proceed(original)
+        } else {
+            chain.proceed(original.newBuilder().header("User-Agent", USER_AGENT).build())
+        }
+    }
+
     private val httpClient = OkHttpClient.Builder()
         .followRedirects(false)
         .authenticator(authHandler)
+        .addInterceptor(userAgentInterceptor)
         .addNetworkInterceptor(authHandler)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
@@ -88,6 +108,11 @@ class WebDavSyncClient(
             WebDavTestConnectionResult.AuthFailed
         } catch (e: ForbiddenException) {
             WebDavTestConnectionResult.PermissionDenied
+        } catch (e: HttpException) {
+            // Surface the actual HTTP status (e.g. 410 Gone from Jianguoyun's edge filter).
+            // Without this, DavException's catch swallows the code into "WebDAV error" with no
+            // hint about why the server refused the request.
+            WebDavTestConnectionResult.Error("HTTP ${e.statusCode}: ${e.message ?: "request rejected"}")
         } catch (e: DavException) {
             WebDavTestConnectionResult.Error(e.message ?: "WebDAV error")
         } catch (e: IOException) {
@@ -315,6 +340,7 @@ class WebDavSyncClient(
         is UnauthorizedException -> WebDavError.AuthFailed
         is ForbiddenException -> WebDavError.PermissionDenied
         is ConflictException -> WebDavError.Unknown(409, "Directory conflict")
+        is HttpException -> WebDavError.Unknown(e.statusCode, e.message ?: "HTTP ${e.statusCode}")
         is IOException -> WebDavError.NetworkUnreachable
         is DavException -> WebDavError.Unknown(0, e.message ?: "WebDAV error")
         else -> WebDavError.Unknown(0, e.message ?: "Unknown error")
@@ -322,6 +348,14 @@ class WebDavSyncClient(
 
     companion object {
         private const val TAG = "WebDavSyncClient"
+
+        /**
+         * User-Agent advertised on every request. Must NOT start with `okhttp/` — Jianguoyun's edge
+         * layer drops such requests with HTTP 410 before they reach the WebDAV stack. The format
+         * mirrors what well-behaved DAV clients (e.g. DAVx⁵) send so providers don't gate features
+         * behind a known-client allow-list.
+         */
+        const val USER_AGENT: String = "KeiOS-WebDAV/1 (+https://github.com/KeiOS) okhttp"
     }
 }
 

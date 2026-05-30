@@ -64,6 +64,15 @@ internal object WebDavSyncStore {
         mmkv.encode("last_sync_${item.name}", timeMs)
     }
 
+    // ── Per-item ETag (for conditional writes) ─────────────────────
+
+    fun getItemEtag(item: WebDavSyncItem): String? =
+        mmkv.decodeString("etag_${item.name}", null)
+
+    fun setItemEtag(item: WebDavSyncItem, etag: String) {
+        mmkv.encode("etag_${item.name}", etag)
+    }
+
     // ── Last full sync time ────────────────────────────────────────
 
     fun getLastFullSyncTime(): Long = mmkv.decodeLong("last_full_sync", 0L)

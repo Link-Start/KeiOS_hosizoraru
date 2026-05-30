@@ -21,7 +21,7 @@ internal class WebDavSyncViewModel : ViewModel() {
     // ── Config actions ─────────────────────────────────────────────
 
     fun updateServerUrl(value: String) {
-        uiState = uiState.copy(serverUrl = value)
+        uiState = uiState.copy(serverUrl = value, urlError = null)
     }
 
     fun updateUsername(value: String) {
@@ -41,10 +41,16 @@ internal class WebDavSyncViewModel : ViewModel() {
             selectedProvider = provider,
             serverUrl = provider.presetServerUrl ?: uiState.serverUrl,
             remoteDir = provider.defaultRemoteDir,
+            urlError = null,
         )
     }
 
     fun saveConfig() {
+        val urlError = validateUrl(uiState.serverUrl)
+        if (urlError != null) {
+            uiState = uiState.copy(urlError = urlError)
+            return
+        }
         val s = uiState
         WebDavSyncStore.saveConfig(s.serverUrl, s.username, s.appPassword, s.remoteDir)
         repository.configure(
@@ -55,7 +61,7 @@ internal class WebDavSyncViewModel : ViewModel() {
                 remoteDir = s.remoteDir,
             ),
         )
-        uiState = uiState.copy(isConfigured = true)
+        uiState = uiState.copy(isConfigured = true, urlError = null)
     }
 
     fun clearConfig() {
@@ -66,6 +72,11 @@ internal class WebDavSyncViewModel : ViewModel() {
     // ── Connection test ────────────────────────────────────────────
 
     fun testConnection() {
+        val urlError = validateUrl(uiState.serverUrl)
+        if (urlError != null) {
+            uiState = uiState.copy(urlError = urlError)
+            return
+        }
         val s = uiState
         repository.configure(
             WebDavConfig(
@@ -113,13 +124,42 @@ internal class WebDavSyncViewModel : ViewModel() {
                 if (!WebDavSyncStore.isItemEnabled(item)) continue
                 val port = dataPorts[item] ?: continue
                 uiState = uiState.copy(syncProgress = "Uploading ${item.name}…")
-                when (val result = repository.upload(item, port.exportJson)) {
+                val storedEtag = WebDavSyncStore.getItemEtag(item)
+                when (val result = repository.upload(item, port.exportJson, storedEtag)) {
                     is WebDavSyncItemResult.Synced -> {
                         WebDavSyncStore.setLastSyncTime(item, System.currentTimeMillis())
+                        if (result.etag != null) {
+                            WebDavSyncStore.setItemEtag(item, result.etag)
+                        }
+                    }
+                    is WebDavSyncItemResult.Conflict -> {
+                        // Remote was modified — download and merge first, then re-upload
+                        AppLogger.i(TAG, "${item.name}: conflict detected, downloading to merge...")
+                        when (val dlResult = repository.download(item, port.importJson)) {
+                            is WebDavSyncItemResult.Synced -> {
+                                // Merge done, re-upload
+                                when (val reUpload = repository.upload(item, port.exportJson, dlResult.etag)) {
+                                    is WebDavSyncItemResult.Synced -> {
+                                        WebDavSyncStore.setLastSyncTime(item, System.currentTimeMillis())
+                                        if (reUpload.etag != null) {
+                                            WebDavSyncStore.setItemEtag(item, reUpload.etag)
+                                        }
+                                    }
+                                    else -> {
+                                        errors++
+                                        AppLogger.w(TAG, "${item.name}: re-upload after merge failed")
+                                    }
+                                }
+                            }
+                            else -> {
+                                errors++
+                                AppLogger.w(TAG, "${item.name}: download for merge failed")
+                            }
+                        }
                     }
                     is WebDavSyncItemResult.Error -> {
                         errors++
-                        AppLogger.w("WebDavSync", "${item.name}: ${result.message}")
+                        AppLogger.w(TAG, "${item.name}: ${result.message}")
                     }
                     is WebDavSyncItemResult.RemoteEmpty -> { /* ok */ }
                 }
@@ -153,11 +193,15 @@ internal class WebDavSyncViewModel : ViewModel() {
                 when (val result = repository.download(item, port.importJson)) {
                     is WebDavSyncItemResult.Synced -> {
                         WebDavSyncStore.setLastSyncTime(item, System.currentTimeMillis())
+                        if (result.etag != null) {
+                            WebDavSyncStore.setItemEtag(item, result.etag)
+                        }
                     }
                     is WebDavSyncItemResult.RemoteEmpty -> { /* no remote file, skip */ }
+                    is WebDavSyncItemResult.Conflict -> { /* not expected on download */ }
                     is WebDavSyncItemResult.Error -> {
                         errors++
-                        AppLogger.w("WebDavSync", "${item.name}: ${result.message}")
+                        AppLogger.w(TAG, "${item.name}: ${result.message}")
                     }
                 }
             }
@@ -182,6 +226,14 @@ internal class WebDavSyncViewModel : ViewModel() {
 
     // ── Helpers ────────────────────────────────────────────────────
 
+    private fun validateUrl(url: String): String? {
+        if (url.isBlank()) return "Server URL is required"
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            return "URL must start with http:// or https://"
+        }
+        return null
+    }
+
     private fun buildInitialUiState(): WebDavSyncUiState {
         val config = WebDavSyncStore.loadConfig()
         return WebDavSyncUiState(
@@ -201,6 +253,10 @@ internal class WebDavSyncViewModel : ViewModel() {
                 lastSyncTimeMs = WebDavSyncStore.getLastSyncTime(item),
             )
         }
+    }
+
+    companion object {
+        private const val TAG = "WebDavSyncVM"
     }
 }
 
@@ -223,6 +279,7 @@ internal data class WebDavSyncUiState(
     val syncing: Boolean = false,
     val syncProgress: String? = null,
     val lastSyncError: String? = null,
+    val urlError: String? = null,
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
 )
 

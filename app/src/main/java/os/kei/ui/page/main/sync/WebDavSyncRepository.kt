@@ -1,97 +1,55 @@
 package os.kei.ui.page.main.sync
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
-import os.kei.feature.webdav.client.WebDavClient
+import os.kei.feature.webdav.client.WebDavDownloadResult
+import os.kei.feature.webdav.client.WebDavError
+import os.kei.feature.webdav.client.WebDavSyncClient
+import os.kei.feature.webdav.client.WebDavTestConnectionResult
+import os.kei.feature.webdav.client.WebDavUploadResult
 import os.kei.feature.webdav.model.WebDavConfig
-import os.kei.feature.webdav.model.WebDavResult
 
 /**
- * Coordinates upload/download for each sync item.
- * Export/import logic is injected via [DataPort] lambdas so this class
- * has no direct dependency on domain stores.
+ * Coordinates upload/download for each sync item using [WebDavSyncClient].
+ *
+ * Export/import logic is injected via [WebDavSyncDataPort] lambdas so this class
+ * has no direct dependency on domain stores. The existing importJson lambdas
+ * already handle smart merging (e.g. [GuideBgmFavoriteStore.importFavoritesJsonMerged]).
  */
 internal class WebDavSyncRepository {
-    private var client: WebDavClient? = null
+    private var client: WebDavSyncClient? = null
 
     fun configure(config: WebDavConfig) {
-        client = WebDavClient(config)
+        client = WebDavSyncClient(config)
     }
 
     fun isConfigured(): Boolean = client != null
 
-    // ── Ensure remote directory exists ──────────────────────────────
+    // ── Test connection ────────────────────────────────────────────
 
-    /**
-     * Ensure the remote directory exists. Creates it if missing.
-     * Returns true if the directory is ready, false on failure.
-     */
-    private suspend fun ensureRemoteDir(): Boolean {
-        val c = client ?: return false
-        // First try PROPFIND to check if directory exists
-        when (val result = c.testConnection()) {
-            is WebDavResult.Success -> return true
-            is WebDavResult.Failure -> {
-                // 404 or 409 means directory doesn't exist, try to create it
-                if (result.code == 404 || result.code == 409) {
-                    AppLogger.i(TAG, "Remote dir not found, creating...")
-                    return when (val mkResult = c.mkdir()) {
-                        is WebDavResult.Success -> {
-                            AppLogger.i(TAG, "Remote dir created successfully")
-                            true
-                        }
-                        is WebDavResult.Failure -> {
-                            // 405 = already exists (Method Not Allowed on MKCOL)
-                            if (mkResult.code == 405) {
-                                AppLogger.i(TAG, "Remote dir already exists (405)")
-                                true
-                            } else {
-                                AppLogger.w(TAG, "Failed to create remote dir: ${mkResult.code} ${mkResult.message}")
-                                false
-                            }
-                        }
-                    }
-                }
-                // Other errors (auth, network, etc.)
-                AppLogger.w(TAG, "PROPFIND failed: ${result.code} ${result.message}")
-                return false
+    suspend fun testConnection(): WebDavTestResult {
+        val c = client ?: return WebDavTestResult(false, "Not configured", dirCreated = false)
+        return when (val result = c.testConnection()) {
+            is WebDavTestConnectionResult.Success -> {
+                WebDavTestResult(
+                    success = true,
+                    message = if (result.dirCreated) "OK (directory created)" else "OK",
+                    dirCreated = result.dirCreated,
+                )
             }
-        }
-    }
-
-    // ── Single item sync ───────────────────────────────────────────
-
-    suspend fun syncItem(
-        item: WebDavSyncItem,
-        exportJson: () -> String,
-        importJson: (String) -> Unit,
-    ): WebDavSyncItemResult {
-        val c = client ?: return WebDavSyncItemResult.Error("Not configured")
-        return withContext(Dispatchers.IO) {
-            try {
-                // Ensure directory exists before syncing
-                if (!ensureRemoteDir()) {
-                    return@withContext WebDavSyncItemResult.Error("Cannot access remote directory")
-                }
-                // Upload: export local → PUT
-                val localJson = exportJson()
-                when (val putResult = c.put(item.fileName, localJson)) {
-                    is WebDavResult.Success -> {
-                        WebDavSyncItemResult.Synced(
-                            uploaded = true,
-                            downloaded = false,
-                            etag = putResult.etag,
-                        )
-                    }
-                    is WebDavResult.Failure -> {
-                        AppLogger.w(TAG, "Upload ${item.fileName} failed: ${putResult.code}")
-                        WebDavSyncItemResult.Error("Upload failed: ${putResult.message}")
-                    }
-                }
-            } catch (e: Exception) {
-                AppLogger.w(TAG, "Sync ${item.fileName} exception", e)
-                WebDavSyncItemResult.Error(e.message ?: "Unknown error")
+            is WebDavTestConnectionResult.AuthFailed -> {
+                WebDavTestResult(false, "Authentication failed — check username and password", dirCreated = false)
+            }
+            is WebDavTestConnectionResult.PermissionDenied -> {
+                WebDavTestResult(false, "Permission denied — check account permissions", dirCreated = false)
+            }
+            is WebDavTestConnectionResult.NetworkError -> {
+                WebDavTestResult(false, "Network error: ${result.message}", dirCreated = false)
+            }
+            is WebDavTestConnectionResult.InvalidUrl -> {
+                WebDavTestResult(false, "Invalid URL: ${result.message}", dirCreated = false)
+            }
+            is WebDavTestConnectionResult.Error -> {
+                WebDavTestResult(false, result.message, dirCreated = false)
             }
         }
     }
@@ -101,21 +59,24 @@ internal class WebDavSyncRepository {
     suspend fun upload(
         item: WebDavSyncItem,
         exportJson: () -> String,
+        storedEtag: String? = null,
     ): WebDavSyncItemResult {
         val c = client ?: return WebDavSyncItemResult.Error("Not configured")
-        return withContext(Dispatchers.IO) {
-            try {
-                // Ensure directory exists before uploading
-                if (!ensureRemoteDir()) {
-                    return@withContext WebDavSyncItemResult.Error("Cannot access remote directory")
-                }
-                val json = exportJson()
-                when (val result = c.put(item.fileName, json)) {
-                    is WebDavResult.Success -> WebDavSyncItemResult.Synced(true, false, result.etag)
-                    is WebDavResult.Failure -> WebDavSyncItemResult.Error("Upload failed: ${result.message}")
-                }
-            } catch (e: Exception) {
-                WebDavSyncItemResult.Error(e.message ?: "Unknown error")
+        val json = exportJson()
+        return when (val result = c.upload(item.fileName, json, storedEtag)) {
+            is WebDavUploadResult.Success -> {
+                WebDavSyncItemResult.Synced(
+                    uploaded = true,
+                    downloaded = false,
+                    etag = result.etag,
+                )
+            }
+            is WebDavUploadResult.Conflict -> {
+                AppLogger.w(TAG, "Upload ${item.fileName} conflict — file was modified remotely")
+                WebDavSyncItemResult.Conflict
+            }
+            is WebDavUploadResult.Error -> {
+                WebDavSyncItemResult.Error(formatError(result.error))
             }
         }
     }
@@ -127,70 +88,31 @@ internal class WebDavSyncRepository {
         importJson: (String) -> Unit,
     ): WebDavSyncItemResult {
         val c = client ?: return WebDavSyncItemResult.Error("Not configured")
-        return withContext(Dispatchers.IO) {
-            try {
-                // Ensure directory exists before downloading
-                if (!ensureRemoteDir()) {
-                    return@withContext WebDavSyncItemResult.Error("Cannot access remote directory")
-                }
-                when (val result = c.get(item.fileName)) {
-                    is WebDavResult.Success -> {
-                        val body = result.body
-                        if (body.isNullOrBlank()) {
-                            WebDavSyncItemResult.RemoteEmpty
-                        } else {
-                            importJson(body)
-                            WebDavSyncItemResult.Synced(false, true, result.etag)
-                        }
-                    }
-                    is WebDavResult.Failure -> {
-                        if (result.code == 404) {
-                            WebDavSyncItemResult.RemoteEmpty
-                        } else {
-                            WebDavSyncItemResult.Error("Download failed: ${result.message}")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                WebDavSyncItemResult.Error(e.message ?: "Unknown error")
+        return when (val result = c.download(item.fileName)) {
+            is WebDavDownloadResult.Success -> {
+                importJson(result.content)
+                WebDavSyncItemResult.Synced(
+                    uploaded = false,
+                    downloaded = true,
+                    etag = result.etag,
+                )
+            }
+            is WebDavDownloadResult.Empty -> {
+                WebDavSyncItemResult.RemoteEmpty
+            }
+            is WebDavDownloadResult.Error -> {
+                WebDavSyncItemResult.Error(formatError(result.error))
             }
         }
     }
 
-    // ── Test connection ────────────────────────────────────────────
+    // ── Helpers ────────────────────────────────────────────────────
 
-    suspend fun testConnection(): WebDavTestResult {
-        val c = client ?: return WebDavTestResult(false, "Not configured")
-        return withContext(Dispatchers.IO) {
-            try {
-                // Try to access the remote directory
-                when (val result = c.testConnection()) {
-                    is WebDavResult.Success -> WebDavTestResult(true, "OK")
-                    is WebDavResult.Failure -> {
-                        // 404 or 409 = directory doesn't exist, try to create it
-                        if (result.code == 404 || result.code == 409) {
-                            AppLogger.i(TAG, "Remote dir not found during test, creating...")
-                            when (val mkResult = c.mkdir()) {
-                                is WebDavResult.Success -> WebDavTestResult(true, "OK", dirCreated = true)
-                                is WebDavResult.Failure -> {
-                                    // 405 = already exists
-                                    if (mkResult.code == 405) {
-                                        WebDavTestResult(true, "OK")
-                                    } else {
-                                        WebDavTestResult(false, "Cannot create directory: ${mkResult.message}")
-                                    }
-                                }
-                            }
-                        } else {
-                            WebDavTestResult(false, result.message)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                AppLogger.w(TAG, "Test connection exception", e)
-                WebDavTestResult(false, e.message ?: "Unknown error")
-            }
-        }
+    private fun formatError(error: WebDavError): String = when (error) {
+        is WebDavError.NetworkUnreachable -> "Network unreachable"
+        is WebDavError.AuthFailed -> "Authentication failed"
+        is WebDavError.PermissionDenied -> "Permission denied"
+        is WebDavError.Unknown -> "Error ${error.code}: ${error.message}"
     }
 
     companion object {
@@ -201,6 +123,7 @@ internal class WebDavSyncRepository {
 internal sealed interface WebDavSyncItemResult {
     data class Synced(val uploaded: Boolean, val downloaded: Boolean, val etag: String?) : WebDavSyncItemResult
     data object RemoteEmpty : WebDavSyncItemResult
+    data object Conflict : WebDavSyncItemResult
     data class Error(val message: String) : WebDavSyncItemResult
 }
 

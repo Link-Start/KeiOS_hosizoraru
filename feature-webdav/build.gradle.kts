@@ -24,4 +24,7 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+
+    // WebDAV client (used by DAVx⁵, production-grade)
+    implementation("com.github.bitfireAT:dav4jvm:main-SNAPSHOT")
 }

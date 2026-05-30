@@ -24,6 +24,12 @@
 -keepclassmembernames enum os.kei.ui.page.main.sync.WebDavSyncItem { *; }
 -keepclassmembernames enum os.kei.ui.page.main.sync.WebDavProvider { *; }
 
+# dav4jvm WebDAV library — keep property factories registered via PropertyRegistry
+-keep class at.bitfire.dav4jvm.Property { *; }
+-keep class at.bitfire.dav4jvm.PropertyFactory { *; }
+-keep class at.bitfire.dav4jvm.** extends at.bitfire.dav4jvm.PropertyFactory { *; }
+-keep class at.bitfire.dav4jvm.property.** { *; }
+
 # Keep internal component class names stable for manifest lookups and About-page introspection.
 # This covers future KeiOS activities/services/receivers/providers without needing manual updates.
 -keepnames class os.kei.** extends android.app.Application

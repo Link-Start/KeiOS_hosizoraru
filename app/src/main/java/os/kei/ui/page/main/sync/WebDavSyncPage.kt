@@ -133,6 +133,16 @@ internal fun WebDavSyncPage(
                             placeholder = stringResource(R.string.webdav_sync_server_url_placeholder),
                             singleLine = true,
                         )
+                        // URL validation error
+                        val urlError = state.urlError
+                        if (urlError != null) {
+                            Text(
+                                text = urlError,
+                                color = MiuixTheme.colorScheme.error,
+                                fontSize = AppTypographyTokens.Caption.fontSize,
+                                lineHeight = AppTypographyTokens.Caption.lineHeight,
+                            )
+                        }
                     }
 
                     // Username

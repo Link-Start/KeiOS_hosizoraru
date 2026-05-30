@@ -11,14 +11,6 @@ data class WebDavConfig(
 )
 
 /**
- * Result of a single WebDAV operation.
- */
-sealed interface WebDavResult {
-    data class Success(val etag: String? = null, val body: String? = null) : WebDavResult
-    data class Failure(val code: Int, val message: String) : WebDavResult
-}
-
-/**
  * Metadata for a remote file discovered via PROPFIND.
  */
 data class WebDavRemoteFile(

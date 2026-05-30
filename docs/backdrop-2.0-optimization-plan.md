@@ -17,39 +17,40 @@
 
 ## P0：使用 `drawPlainBackdrop` 简化无高光/阴影场景
 
-**原理**：`drawPlainBackdrop` 不包含 `highlight`、`shadow`、`innerShadow` 参数，适用于不需要这些效果的场景，减少不必要的计算和代码量。
+**结论：不适用。** 经过详细扫描，项目中所有使用 `drawBackdrop` 的组件都实际使用了 `highlight`/`shadow`/`innerShadow` 效果。`drawPlainBackdrop` 在当前项目中没有直接适用场景。
 
-| 组件 | 文件 | 当前状态 | 优化方式 |
-|------|------|----------|----------|
-| LiquidGlassBottomBar (lightweight) | `widget/chrome/LiquidGlassBottomBar.kt` | `drawBackdrop` 传入 `highlight=null, shadow=null` | 改用 `drawPlainBackdrop` |
-| AppFloatingLiquidDockSurface | `widget/glass/AppFloatingLiquidDockSurface.kt` | `drawBackdrop` 无 highlight/shadow 需求 | 改用 `drawPlainBackdrop` |
-| LiquidSurfaces (无交互模式) | `widget/glass/LiquidSurfaces.kt` | `isInteractive=false` 时 highlight alpha 固定 | 改用 `drawPlainBackdrop` |
-| LiquidProgressBars | `widget/glass/LiquidProgressBars.kt` | 进度条无高光/阴影需求 | 改用 `drawPlainBackdrop` |
-
-**操作步骤**：
-1. 检查组件是否使用 `highlight = null` 或固定值
-2. 检查组件是否使用 `shadow = null` 或 `Shadow(alpha = 0f)`
-3. 检查组件是否使用 `innerShadow = null`
-4. 若三项均满足，替换为 `drawPlainBackdrop`
+| 组件 | 文件 | 原因 |
+|------|------|------|
+| LiquidGlassBottomBar | `LiquidGlassBottomBar.kt` | 使用 highlight + shadow |
+| AppFloatingLiquidDockSurface | `AppFloatingLiquidDockSurface.kt` | 使用 highlight + shadow + innerShadow |
+| LiquidSurfaces | `LiquidSurfaces.kt` | 使用 highlight + shadow + innerShadow |
+| LiquidProgressBars | `LiquidProgressBars.kt` | 使用 highlight + shadow + innerShadow |
+| AppLiquidButtons | `AppLiquidButtons.kt` | 使用 highlight + shadow + innerShadow |
+| LiquidActionBar | `LiquidActionBar.kt` | 使用 highlight + shadow |
+| LiquidActionBarVisualLayers | `LiquidActionBarVisualLayers.kt` | 使用 highlight + shadow |
+| BaGuideBgmDockVisuals | `BaGuideBgmDockVisuals.kt` | 使用 highlight + shadow + innerShadow |
 
 ---
 
-## P1：优化重复 backdrop 创建
+## P1：提取共享 effects 配置
 
-**原理**：多个组件可能创建相似的 backdrop 配置，可提取为共享常量或工厂函数。
+**目标**：减少重复的 effects 代码块，确保视觉行为一致性。
 
-| 组件 | 文件 | 当前状态 | 优化方式 |
-|------|------|----------|----------|
-| AppLiquidButtons | `widget/glass/AppLiquidButtons.kt` | 每个按钮实例独立创建 backdrop 效果 | 提取为共享 `effects` lambda |
-| LiquidGlassDropdown | `widget/glass/LiquidGlassDropdown.kt` | 与 LiquidSurfaces 效果相同 | 复用 LiquidSurfaces 效果配置 |
-| LiquidGlassBottomBar items | `widget/chrome/LiquidGlassBottomBar.kt` | 多个 item 重复相同 effects | 提取为 `remember` 的 effects 块 |
-| AppLiquidSearchField | `widget/glass/AppLiquidSearchField.kt` | 两处 drawBackdrop 配置相似 | 合并为共享配置 |
+### 已完成
 
-**操作步骤**：
-1. 扫描各组件的 `effects` lambda 内容
-2. 识别重复的 `vibrancy() + blur() + lens()` 组合
-3. 提取为 `remember` 的共享 lambda 或常量
-4. 多处引用同一配置
+| 组件 | 文件 | 优化内容 | 状态 |
+|------|------|----------|------|
+| AppLiquidButtons | `AppLiquidButtons.kt` | 提取 `applyLiquidButtonEffects(variant)` 共享函数，替换 2 处重复 effects 块 | ✅ 已完成 |
+
+### 评估中
+
+| 组件 | 文件 | 问题 | 优化方式 | 可行性 |
+|------|------|------|----------|--------|
+| LiquidGlassBottomBar | `LiquidGlassBottomBar.kt` | 3 处 effects 块，但参数各不相同 | 提取为参数化函数 | ⚠️ 需权衡复杂度 |
+| LiquidActionBar | `LiquidActionBar.kt` | 与 LiquidActionBarVisualLayers 相似 | 共享 effects 配置 | ⚠️ 条件检查不同 |
+| LiquidActionBarVisualLayers | `LiquidActionBarVisualLayers.kt` | 2 处 effects 块 | 提取为共享函数 | ⚠️ 进度源不同 |
+
+**评估结论**：LiquidGlassBottomBar 和 LiquidActionBar 的 effects 块虽然相似，但各自有不同的条件检查（`effectiveLiquidEffectEnabled` vs `isBlurEnabled`）和不同的进度源（`combinedPressProgressProvider()` vs `dampedDragAnimation.pressProgress`）。强行提取为共享函数会增加参数复杂度，收益有限。
 
 ---
 
@@ -78,22 +79,13 @@
 
 ---
 
-## 实施顺序
+## 实施记录
 
-```
-P0-1: LiquidGlassBottomBar lightweight → drawPlainBackdrop
-P0-2: AppFloatingLiquidDockSurface → drawPlainBackdrop
-P0-3: LiquidSurfaces 无交互模式 → drawPlainBackdrop
-P0-4: LiquidProgressBars → drawPlainBackdrop
-  ↓
-P1-1: AppLiquidButtons effects 提取
-P1-2: LiquidGlassDropdown effects 复用
-P1-3: LiquidGlassBottomBar items effects 提取
-P1-4: AppLiquidSearchField effects 合并
-  ↓
-P2-1: 评估 runtimeShaderEffect 使用场景
-P2-2: 实现第一个自定义着色器（如有需求）
-```
+| 日期 | 任务 | 状态 |
+|------|------|------|
+| 2026-05-30 | P0 评估：drawPlainBackdrop 不适用 | ✅ |
+| 2026-05-30 | P1-1: AppLiquidButtons effects 提取 | ✅ |
+| 2026-05-30 | P1 评估：LiquidGlassBottomBar/LiquidActionBar 提取收益有限 | ✅ |
 
 ---
 
@@ -101,7 +93,7 @@ P2-2: 实现第一个自定义着色器（如有需求）
 
 | API | 最低 API | 项目 minSdk | 备注 |
 |-----|----------|-------------|------|
-| `drawPlainBackdrop` | API 31 | API 35 | ✅ 完全兼容 |
+| `drawPlainBackdrop` | API 31 | API 35 | ✅ 完全兼容（但不适用） |
 | `drawBackdrop` | API 31 | API 35 | ✅ 完全兼容 |
 | `runtimeShaderEffect` | API 33 | API 35 | ✅ 完全兼容 |
 | `RuntimeShader` | API 33 | API 35 | ✅ 完全兼容 |

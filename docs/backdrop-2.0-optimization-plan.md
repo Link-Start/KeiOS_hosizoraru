@@ -54,28 +54,56 @@
 
 ---
 
-## P2：探索 `runtimeShaderEffect` 自定义着色器
+## P2：自定义着色器效果（`runtimeShaderEffect`）
 
 **原理**：`runtimeShaderEffect` 允许编写 AGSL 着色器实现自定义视觉效果，是 `lens` 等内置效果的扩展点。
 
-| 场景 | 当前实现 | 自定义着色器潜力 | 复杂度 |
-|------|----------|------------------|--------|
-| 动态折射 | `lens(refractionHeight, refractionAmount)` 固定参数 | 基于动画参数的动态折射曲线 | 高 |
-| 方向模糊 | `blur(radius)` 各向同性 | 运动模糊、径向模糊 | 高 |
-| 色彩分离 | `chromaticAberration` 固定色散 | 可控色散强度和方向 | 中 |
-| 波纹效果 | 无 | 水波纹、脉冲波纹 | 高 |
-| 渐变折射 | 无 | 基于位置的渐变折射率 | 中 |
+### 已实现
 
-**适用组件**：
-- `LiquidSurfaces` — 可添加动态视觉效果
-- `AppLiquidButtons` — 按压时的波纹反馈
-- `LiquidGlassBottomBar` — 选中项的动态高亮
+已创建 [LiquidGlassShaders.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaders.kt)，包含 3 个自定义着色器效果：
 
-**操作步骤**：
-1. 确定需要自定义效果的场景
-2. 编写 AGSL 着色器代码
-3. 使用 `runtimeShaderEffect` 集成
-4. 测试 API 33+ 设备兼容性
+| 效果 | 函数 | 用途 | 复杂度 |
+|------|------|------|--------|
+| 脉冲波纹 | `pulseRipple()` | 按钮按压时的扩散波纹反馈 | 中 |
+| 径向折射 | `radialRefraction()` | 中心强、边缘弱的放大镜效果 | 中 |
+| 方向模糊 | `directionalBlur()` | 运动方向的模糊效果 | 低 |
+
+### 使用示例
+
+```kotlin
+// 按钮按压时的脉冲波纹
+Modifier.drawBackdrop(
+    backdrop = backdrop,
+    shape = { shape },
+    effects = {
+        vibrancy()
+        blur(4.dp.toPx())
+        lens(16.dp.toPx(), 28.dp.toPx())
+        // 添加脉冲波纹
+        pulseRipple(
+            centerX = touchX,
+            centerY = touchY,
+            radius = animationProgress * maxRadius,
+            strength = 8f,
+        )
+    }
+)
+```
+
+### 待集成
+
+| 组件 | 效果 | 集成方式 | 状态 |
+|------|------|----------|------|
+| AppLiquidButtons | `pulseRipple` | 按压时从触摸点扩散 | 待集成 |
+| LiquidSurfaces | `radialRefraction` | 交互时的径向放大 | 待集成 |
+| LiquidGlassBottomBar | `pulseRipple` | 选中项的波纹反馈 | 待集成 |
+
+### 兼容性
+
+| API | 最低 API | 项目 minSdk | 备注 |
+|-----|----------|-------------|------|
+| `runtimeShaderEffect` | API 33 | API 35 | ✅ 完全兼容 |
+| `RuntimeShader` | API 33 | API 35 | ✅ 完全兼容 |
 
 ---
 
@@ -86,14 +114,15 @@
 | 2026-05-30 | P0 评估：drawPlainBackdrop 不适用 | ✅ |
 | 2026-05-30 | P1-1: AppLiquidButtons effects 提取 | ✅ |
 | 2026-05-30 | P1 评估：LiquidGlassBottomBar/LiquidActionBar 提取收益有限 | ✅ |
+| 2026-05-30 | P2-1: 研究 lens 效果实现和 AGSL 着色器 | ✅ |
+| 2026-05-30 | P2-2: 创建 LiquidGlassShaders.kt（3 个自定义着色器） | ✅ |
+| 2026-05-30 | P2-3: 集成到组件（待定） | ⏳ |
 
 ---
 
-## 兼容性说明
+## 文件索引
 
-| API | 最低 API | 项目 minSdk | 备注 |
-|-----|----------|-------------|------|
-| `drawPlainBackdrop` | API 31 | API 35 | ✅ 完全兼容（但不适用） |
-| `drawBackdrop` | API 31 | API 35 | ✅ 完全兼容 |
-| `runtimeShaderEffect` | API 33 | API 35 | ✅ 完全兼容 |
-| `RuntimeShader` | API 33 | API 35 | ✅ 完全兼容 |
+| 文件 | 说明 |
+|------|------|
+| [LiquidGlassShaders.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/LiquidGlassShaders.kt) | 自定义 AGSL 着色器效果 |
+| [AppLiquidButtons.kt](app/src/main/java/os/kei/ui/page/main/widget/glass/AppLiquidButtons.kt) | 已提取共享 effects |

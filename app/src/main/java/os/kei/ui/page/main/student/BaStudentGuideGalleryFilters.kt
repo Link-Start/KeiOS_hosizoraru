@@ -218,9 +218,23 @@ internal fun isInteractiveFurnitureAnimatedGalleryItem(item: BaGuideGalleryItem)
     return false
 }
 
+private val liveVideoCategoryRegex = Regex("""^live\d*$""", RegexOption.IGNORE_CASE)
+
+/**
+ * GameKee tags the Live MV rows with the literal key "Live" (optionally numbered, e.g. "Live 2").
+ * Matches those while deliberately avoiding "Live2D" still-image entries so we never strip a
+ * legitimate illustration out of the gallery grid.
+ */
+internal fun isLiveVideoCategoryTitle(rawTitle: String): Boolean {
+    return liveVideoCategoryRegex.matches(normalizeGalleryTitle(rawTitle))
+}
+
 internal fun isPreviewVideoCategoryTitle(rawTitle: String): Boolean {
     val title = normalizeGalleryTitle(rawTitle)
-    return title.startsWith("回忆大厅视频") || title.startsWith("PV") || title.startsWith("角色演示")
+    return title.startsWith("回忆大厅视频") ||
+            title.startsWith("PV") ||
+            title.startsWith("角色演示") ||
+            isLiveVideoCategoryTitle(title)
 }
 
 internal fun isPreviewVideoCategoryGalleryItem(item: BaGuideGalleryItem): Boolean {

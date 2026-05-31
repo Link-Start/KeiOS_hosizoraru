@@ -8,6 +8,7 @@ import os.kei.ui.page.main.student.hasRenderableGalleryMedia
 import os.kei.ui.page.main.student.isChocolateGalleryItem
 import os.kei.ui.page.main.student.isExpressionGalleryItem
 import os.kei.ui.page.main.student.isInteractiveFurnitureGalleryItem
+import os.kei.ui.page.main.student.isLiveVideoCategoryTitle
 import os.kei.ui.page.main.student.isMemoryHallFileGalleryItem
 import os.kei.ui.page.main.student.isMemoryHallGalleryItem
 import os.kei.ui.page.main.student.isOfficialIntroGalleryItem
@@ -19,7 +20,6 @@ import os.kei.ui.page.main.student.normalizeGalleryTitle
 import os.kei.ui.page.main.student.profileRowsForDisplay
 import os.kei.ui.page.main.student.tabcontent.profile.isGalleryRelatedProfileLinkRow
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
-import java.util.LinkedHashMap
 
 private const val GUIDE_GALLERY_TAB_STATE_CACHE_MAX_SIZE = 96
 
@@ -36,6 +36,7 @@ private val guideGalleryTabStateCache = object : LinkedHashMap<String, GuideGall
 internal data class GuideGalleryTabResolvedState(
     val previewVideoGroups: List<Pair<String, List<BaGuideGalleryItem>>>,
     val memoryHallVideoGroup: Pair<String, List<BaGuideGalleryItem>>?,
+    val liveVideoGroup: Pair<String, List<BaGuideGalleryItem>>?,
     val pvAndRoleVideoGroups: List<Pair<String, List<BaGuideGalleryItem>>>,
     val otherTrailingVideoGroups: List<Pair<String, List<BaGuideGalleryItem>>>,
     val displayGalleryItems: List<BaGuideGalleryItem>,
@@ -100,6 +101,7 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
                     normalized.startsWith("回忆大厅视频") -> "回忆大厅视频"
                     normalized.startsWith("PV") -> "PV"
                     normalized.startsWith("角色演示") -> "角色演示"
+                    isLiveVideoCategoryTitle(normalized) -> "Live"
                     else -> null
                 }
             }
@@ -122,19 +124,21 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
                         "回忆大厅视频" -> normalized.startsWith("回忆大厅视频")
                         "PV" -> normalized.startsWith("PV")
                         "角色演示" -> normalized.startsWith("角色演示")
+                        "Live" -> isLiveVideoCategoryTitle(normalized)
                         else -> false
                     }
                 }
-                .mapNotNull { item ->
+                .map { item ->
+                    // Preview-video cards play from mediaUrl; the preview image is only a collapsed
+                    // thumbnail. Many entries (e.g. band students' Live/PV/角色演示) ship no preview,
+                    // so keep the item with its best-available preview instead of dropping it.
                     val currentPreview = item.imageUrl
                     val preview = when {
                         isRenderableGalleryImageUrl(currentPreview) -> currentPreview
                         categoryFallbackPreview.isNotBlank() -> categoryFallbackPreview
                         else -> ""
                     }
-                    if (preview.isBlank()) {
-                        null
-                    } else if (preview == currentPreview) {
+                    if (preview == currentPreview) {
                         item
                     } else {
                         item.copy(imageUrl = preview)
@@ -146,7 +150,10 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
     }
 
     val memoryHallVideoGroup = previewVideoGroups.firstOrNull { it.first == "回忆大厅视频" }
-    val trailingVideoGroups = previewVideoGroups.filterNot { it.first == "回忆大厅视频" }
+    val liveVideoGroup = previewVideoGroups.firstOrNull { it.first == "Live" }
+    val trailingVideoGroups = previewVideoGroups.filterNot {
+        it.first == "回忆大厅视频" || it.first == "Live"
+    }
     val pvAndRoleVideoGroups = trailingVideoGroups.filter { (title, _) ->
         title == "PV" || title == "角色演示"
     }
@@ -189,6 +196,7 @@ internal fun resolveGuideGalleryTabState(guide: BaStudentGuideInfo): GuideGaller
     val computed = GuideGalleryTabResolvedState(
         previewVideoGroups = previewVideoGroups,
         memoryHallVideoGroup = memoryHallVideoGroup,
+        liveVideoGroup = liveVideoGroup,
         pvAndRoleVideoGroups = pvAndRoleVideoGroups,
         otherTrailingVideoGroups = otherTrailingVideoGroups,
         displayGalleryItems = displayGalleryItems,

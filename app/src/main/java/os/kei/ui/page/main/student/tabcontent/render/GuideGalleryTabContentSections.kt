@@ -88,6 +88,7 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
     var renderedCount = 0
     var insertedUnlockLevel = false
     var insertedMemoryHallVideoNearGallery = false
+    var insertedLiveVideoGroup = false
     var insertedPvRoleAfterOfficial = false
     var insertedGalleryRelatedLinks = false
 
@@ -96,6 +97,47 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
         if (isExpression && index != state.firstExpressionIndex) {
             return@forEachIndexed
         }
+
+        // Live MV plays like the PV / 角色演示 / 回忆大厅 video cards. The user wants it docked
+        // directly above the 角色表情 (expression) card, so emit it just before that entry.
+        if (!insertedLiveVideoGroup &&
+            state.liveVideoGroup != null &&
+            isExpression &&
+            index == state.firstExpressionIndex
+        ) {
+            if (renderedCount > 0) {
+                item(
+                    key = guideGalleryListKey("spacer", "live", "before-expression", renderedCount),
+                    contentType = GuideGalleryContentType.SPACER,
+                ) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+            item(
+                key =
+                    guideGalleryVideoGroupStableKey(
+                        "live",
+                        renderedCount,
+                        state.liveVideoGroup.first,
+                        state.liveVideoGroup.second,
+                    ),
+                contentType = GuideGalleryContentType.VIDEO_GROUP,
+            ) {
+                GuideGalleryVideoGroupCardItem(
+                    title = state.liveVideoGroup.first,
+                    items = state.liveVideoGroup.second,
+                    previewFallbackUrl = "",
+                    backdrop = backdrop,
+                    onOpenMedia = onOpenExternal,
+                    onSaveMedia = onSaveMedia,
+                    mediaUrlResolver = mediaUrlResolver,
+                    mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
+                )
+            }
+            renderedCount += 1
+            insertedLiveVideoGroup = true
+        }
+
         if (renderedCount > 0) {
             item(
                 key = guideGalleryListKey("spacer", "display", renderedCount, index),
@@ -324,6 +366,40 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             )
         }
         renderedCount += 1
+    }
+
+    if (!insertedLiveVideoGroup && state.liveVideoGroup != null) {
+        if (renderedCount > 0) {
+            item(
+                key = guideGalleryListKey("spacer", "live-fallback", renderedCount),
+                contentType = GuideGalleryContentType.SPACER,
+            ) {
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+        }
+        item(
+            key =
+                guideGalleryVideoGroupStableKey(
+                    "live-fallback",
+                    renderedCount,
+                    state.liveVideoGroup.first,
+                    state.liveVideoGroup.second,
+                ),
+            contentType = GuideGalleryContentType.VIDEO_GROUP,
+        ) {
+            GuideGalleryVideoGroupCardItem(
+                title = state.liveVideoGroup.first,
+                items = state.liveVideoGroup.second,
+                previewFallbackUrl = "",
+                backdrop = backdrop,
+                onOpenMedia = onOpenExternal,
+                onSaveMedia = onSaveMedia,
+                mediaUrlResolver = mediaUrlResolver,
+                mediaUrlResolverCacheKey = mediaUrlResolverCacheKey,
+            )
+        }
+        renderedCount += 1
+        insertedLiveVideoGroup = true
     }
 
     if (!insertedPvRoleAfterOfficial) {

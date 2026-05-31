@@ -69,13 +69,21 @@ import kotlin.math.tanh
  * Extracted to avoid duplication and ensure consistent visual behavior.
  */
 private fun BackdropEffectScope.applyLiquidButtonEffects(
+    glass: GlassStyle,
     variant: GlassVariant,
+    pressProgress: Float,
 ) {
     vibrancy()
-    blur(4.dp.toPx())
+    blur(
+        lerp(
+            glass.blur.toPx(),
+            (glass.blur * 0.68f).toPx(),
+            pressProgress,
+        ),
+    )
     lens(
-        16.dp.toPx(),
-        28.dp.toPx(),
+        glass.lensStart.toPx() + 3.dp.toPx() * pressProgress,
+        glass.lensEnd.toPx() + 5.dp.toPx() * pressProgress,
         chromaticAberration = variant != GlassVariant.Compact,
         depthEffect = true,
     )
@@ -307,7 +315,13 @@ private fun AppLiquidIconButtonContainer(
                                 } else {
                                     null
                                 },
-                            effects = { applyLiquidButtonEffects(variant) },
+                            effects = {
+                                applyLiquidButtonEffects(
+                                    glass = glass,
+                                    variant = variant,
+                                    pressProgress = if (enabled) interactiveHighlight.pressProgress else 0f,
+                                )
+                            },
                             highlight = {
                                 Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                             },
@@ -558,7 +572,18 @@ fun AppLiquidTextButton(
                                 } else {
                                     null
                                 },
-                            effects = { applyLiquidButtonEffects(variant) },
+                            effects = {
+                                applyLiquidButtonEffects(
+                                    glass = glass,
+                                    variant = variant,
+                                    pressProgress =
+                                        if (liquidInteractionEnabled) {
+                                            interactiveHighlight.pressProgress
+                                        } else {
+                                            0f
+                                        },
+                                )
+                            },
                             highlight = {
                                 Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                             },

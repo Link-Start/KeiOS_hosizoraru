@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +44,8 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * v2 Liquid Glass Toast — iOS-style HUD toast positioned at the upper-third of the screen.
@@ -58,16 +61,26 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - Supports an optional leading icon for visual context.
  */
 
+/** Animation durations (millis) — kept as Int because Compose's tween() takes Int millis. */
 private const val TOAST_ENTER_DURATION_MS = 380
 private const val TOAST_EXIT_DURATION_MS = 240
-private const val TOAST_DEFAULT_DISPLAY_MS = 2800L
-private const val TOAST_LONG_DISPLAY_MS = 4500L
+
+/** Default on-screen time for a Short / Long toast. */
+private val TOAST_DEFAULT_DISPLAY = 2800.milliseconds
+private val TOAST_LONG_DISPLAY = 4500.milliseconds
 
 /** Shortened on-screen time used while a backlog is waiting, so newer toasts surface sooner. */
-private const val TOAST_BACKLOG_DISPLAY_MS = 1400L
+private val TOAST_BACKLOG_DISPLAY = 1400.milliseconds
+
+/**
+ * Hard floor for the expedited display time. Backlog acceleration must never drop a toast below
+ * the time it physically takes to animate in, settle, and animate out — otherwise a burst would
+ * flash unreadable blips. enter(380) + exit(240) + a ~480ms settle/read margin.
+ */
+private val TOAST_MIN_VISIBLE = 1100.milliseconds
 
 /** Timer poll interval so a backlog appearing mid-display can still expedite the current toast. */
-private const val TOAST_TIMER_TICK_MS = 250L
+private val TOAST_TIMER_TICK = 250.milliseconds
 
 /** At most this many toasts are shown stacked at once; the rest are queued. */
 private const val MAX_VISIBLE_TOASTS = 2
@@ -82,10 +95,10 @@ private const val TOAST_TOP_FRACTION = 0.28f
  * Toast display duration presets.
  */
 enum class LiquidToastDuration(
-    internal val durationMs: Long,
+    internal val duration: Duration,
 ) {
-    Short(TOAST_DEFAULT_DISPLAY_MS),
-    Long(TOAST_LONG_DISPLAY_MS),
+    Short(TOAST_DEFAULT_DISPLAY),
+    Long(TOAST_LONG_DISPLAY),
 }
 
 /**
@@ -272,23 +285,53 @@ private fun LiquidToastStackItem(
     val visibleState = remember { MutableTransitionState(false) }
     visibleState.targetState = true
 
+    // Accessibility-aware base duration. Mirrors what Compose's own Snackbar does: when a screen
+    // reader / accessibility service is active, calculateRecommendedTimeoutMillis EXTENDS the time
+    // so low-vision and TalkBack users can finish reading.
+    val accessibilityManager = LocalAccessibilityManager.current
+    val baseDisplay =
+        remember(slot.token, accessibilityManager) {
+            val original = slot.data.duration.duration
+            val recommendedMs =
+                accessibilityManager?.calculateRecommendedTimeoutMillis(
+                    originalTimeoutMillis = original.inWholeMilliseconds,
+                    containsIcons = slot.data.icon != null,
+                    containsText = true,
+                    containsControls = false,
+                )
+            recommendedMs?.milliseconds ?: original
+        }
+    // Only accelerate a backlog when no accessibility service is driving the timeout — never rush a
+    // toast away from a user who relies on assistive tech.
+    val accelerationAllowed =
+        remember(accessibilityManager) {
+            accessibilityManager?.calculateRecommendedTimeoutMillis(
+                originalTimeoutMillis = TOAST_DEFAULT_DISPLAY.inWholeMilliseconds,
+                containsIcons = true,
+                containsText = true,
+                containsControls = true,
+            ) == TOAST_DEFAULT_DISPLAY.inWholeMilliseconds
+        }
+
     // Auto-dismiss timer. Keyed only on the unique token (always distinct), so a repeated identical
     // message can never collide here — this is what fixes the "stuck toast" bug. The backlog check
     // happens inside via elapsed time so a late-arriving backlog can shorten, but never extend, the
-    // remaining on-screen time (re-keying on `expedite` would restart delay() and prolong it).
-    val shownAtMs = remember(slot.token) { System.currentTimeMillis() }
+    // remaining on-screen time (re-keying would restart the timer and prolong it).
+    val shownAt = remember(slot.token) { System.currentTimeMillis().milliseconds }
     LaunchedEffect(slot.token) {
-        val fullMs = slot.data.duration.durationMs
         while (visibleState.targetState) {
-            val elapsed = System.currentTimeMillis() - shownAtMs
-            val limit = if (hasBacklog()) minOf(fullMs, TOAST_BACKLOG_DISPLAY_MS) else fullMs
+            val elapsed = System.currentTimeMillis().milliseconds - shownAt
+            val limit = resolveToastDisplayLimit(
+                base = baseDisplay,
+                expedited = accelerationAllowed && hasBacklog(),
+            )
             val remaining = limit - elapsed
-            if (remaining <= 0L) {
+            if (remaining <= Duration.ZERO) {
                 visibleState.targetState = false
                 break
             }
             // Wake periodically so a backlog that appears mid-display can still expedite this toast.
-            delay(minOf(remaining, TOAST_TIMER_TICK_MS))
+            delay(minOf(remaining, TOAST_TIMER_TICK))
         }
     }
 
@@ -323,6 +366,24 @@ private fun LiquidToastStackItem(
             data = slot.data,
         )
     }
+}
+
+/**
+ * Resolve how long a toast should stay on screen.
+ *
+ * - Not expedited (no backlog, or accessibility-driven): use [base] verbatim.
+ * - Expedited: shorten toward [TOAST_BACKLOG_DISPLAY] so newer toasts surface sooner, but clamp to
+ *   [TOAST_MIN_VISIBLE] so a burst can never flash a toast away before it can be read. If [base] is
+ *   itself shorter than the backlog target (unusual), it is respected — acceleration only shortens.
+ *
+ * Pure function (no Compose/Android deps) so the burst-vs-readability tradeoff is unit-testable.
+ */
+internal fun resolveToastDisplayLimit(
+    base: Duration,
+    expedited: Boolean,
+): Duration {
+    if (!expedited) return base
+    return minOf(base, TOAST_BACKLOG_DISPLAY).coerceAtLeast(TOAST_MIN_VISIBLE)
 }
 
 /**

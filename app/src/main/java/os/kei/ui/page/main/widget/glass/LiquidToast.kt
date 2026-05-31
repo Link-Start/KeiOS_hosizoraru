@@ -417,6 +417,7 @@ private fun LiquidToastContent(
         surfaceColor = Color.White.copy(alpha = 0.5f),
         blurRadius = 4.dp,
         lensRadius = 32.dp,
+        effectVariant = GlassVariant.Floating,
         chromaticAberration = true,
         depthEffect = true,
         shadow = true,

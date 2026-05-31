@@ -70,6 +70,7 @@ fun LiquidSurface(
     surfaceColor: Color = Color.Unspecified,
     blurRadius: Dp = UiPerformanceBudget.backdropBlur,
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
+    effectVariant: GlassVariant? = null,
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
@@ -110,6 +111,10 @@ fun LiquidSurface(
             null
         }
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val effectiveBlurRadius =
+        effectVariant?.let { resolvedGlassBlurDp(blurRadius, it) } ?: blurRadius
+    val effectiveLensRadius =
+        effectVariant?.let { resolvedGlassLensDp(lensRadius, it) } ?: lensRadius
     val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
     val fallbackSurfaceColor =
         when {
@@ -131,10 +136,10 @@ fun LiquidSurface(
                 shape = { shape },
                 effects = {
                     vibrancy()
-                    blur(blurRadius.toPx())
+                    blur(effectiveBlurRadius.toPx())
                     lens(
-                        lensRadius.toPx(),
-                        lensRadius.toPx(),
+                        effectiveLensRadius.toPx(),
+                        effectiveLensRadius.toPx(),
                         chromaticAberration = chromaticAberration,
                         depthEffect = depthEffect,
                     )
@@ -143,7 +148,7 @@ fun LiquidSurface(
                         radialRefraction(
                             centerX = interactiveHighlight.touchPosition.x,
                             centerY = interactiveHighlight.touchPosition.y,
-                            radius = lensRadius.toPx() * 2f,
+                            radius = effectiveLensRadius.toPx() * 2f,
                             strength = 8f * interactiveHighlight.pressProgress,
                         )
                     }
@@ -297,6 +302,8 @@ fun AppLiquidFloatingSurface(
             pressSafePadding
         }
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    val effectBlurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Floating)
+    val effectLensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Floating)
     val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
 
     Box(
@@ -323,15 +330,15 @@ fun AppLiquidFloatingSurface(
                                 shape = { shape },
                                 effects = {
                                     vibrancy()
-                                    blur(UiPerformanceBudget.backdropBlur.toPx())
+                                    blur(effectBlurRadius.toPx())
                                     val pressProgress = pressProgressProvider()
                                     lens(
                                         (
-                                            UiPerformanceBudget.backdropLens *
+                                            effectLensRadius *
                                                 (0.90f + 0.08f * pressProgress)
                                         ).toPx(),
                                         (
-                                            UiPerformanceBudget.backdropLens *
+                                            effectLensRadius *
                                                 (0.90f + 0.10f * pressProgress)
                                         ).toPx(),
                                     )
@@ -523,6 +530,7 @@ fun LiquidRoundedCard(
     surfaceColor: Color = Color.Unspecified,
     blurRadius: Dp = UiPerformanceBudget.backdropBlur,
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
+    effectVariant: GlassVariant? = GlassVariant.Content,
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
@@ -536,6 +544,7 @@ fun LiquidRoundedCard(
         surfaceColor = surfaceColor,
         blurRadius = blurRadius,
         lensRadius = lensRadius,
+        effectVariant = effectVariant,
         chromaticAberration = chromaticAberration,
         depthEffect = depthEffect,
         shadow = shadow,

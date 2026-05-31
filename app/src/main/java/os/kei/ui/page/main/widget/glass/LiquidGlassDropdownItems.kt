@@ -171,6 +171,7 @@ fun LiquidGlassDropdownItem(
             surfaceColor = selectedSurface,
             blurRadius = 3.dp,
             lensRadius = 14.dp,
+            effectVariant = GlassVariant.Compact,
             chromaticAberration = highlighted,
             depthEffect = true,
             shadow = true,

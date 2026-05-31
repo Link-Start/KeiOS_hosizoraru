@@ -14,6 +14,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 
@@ -27,6 +28,7 @@ internal fun GuideLiquidCard(
     isInteractive: Boolean = true,
     blurRadius: Dp = UiPerformanceBudget.backdropBlur,
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
+    effectVariant: GlassVariant? = GlassVariant.Content,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
     onClick: (() -> Unit)? = null,
@@ -59,6 +61,7 @@ internal fun GuideLiquidCard(
             surfaceColor = surfaceColor,
             blurRadius = blurRadius,
             lensRadius = lensRadius,
+            effectVariant = effectVariant,
             depthEffect = depthEffect,
             shadow = shadow,
             onClick = onClick,

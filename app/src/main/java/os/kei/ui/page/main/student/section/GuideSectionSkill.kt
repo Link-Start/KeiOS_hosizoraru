@@ -355,6 +355,7 @@ internal fun GuideSkillVariantBadge(
             surfaceColor = Color(0x223B82F6),
             blurRadius = 2.dp,
             lensRadius = 10.dp,
+            effectVariant = GlassVariant.Compact,
             shadow = false,
             contentAlignment = Alignment.Center
         ) {

@@ -118,6 +118,7 @@ private fun LiquidInfoBlockSurface(
                             surfaceColor = accent.copy(alpha = 0.18f),
                             blurRadius = 4.dp,
                             lensRadius = 18.dp,
+                            effectVariant = GlassVariant.Compact,
                             shadow = false,
                         ) {
                             Text(

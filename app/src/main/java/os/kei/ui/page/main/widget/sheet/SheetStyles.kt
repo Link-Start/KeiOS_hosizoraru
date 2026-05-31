@@ -47,6 +47,7 @@ import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
@@ -460,6 +461,7 @@ fun SheetLiquidChoiceIndicator(
             surfaceColor = surfaceColor,
             blurRadius = if (selected) 6.dp else 4.dp,
             lensRadius = if (selected) 16.dp else 12.dp,
+            effectVariant = GlassVariant.Compact,
             chromaticAberration = selected,
             depthEffect = selected,
             shadow = selected,

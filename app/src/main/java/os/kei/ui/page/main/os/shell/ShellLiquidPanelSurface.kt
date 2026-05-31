@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -67,6 +68,7 @@ internal fun ShellLiquidPanelSurface(
             surfaceColor = baseColor,
             blurRadius = 8.dp,
             lensRadius = 24.dp,
+            effectVariant = GlassVariant.Content,
             chromaticAberration = true,
             depthEffect = true,
             shadow = false,

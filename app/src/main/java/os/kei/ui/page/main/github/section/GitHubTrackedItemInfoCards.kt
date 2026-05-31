@@ -29,6 +29,7 @@ import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import top.yukonga.miuix.kmp.basic.Icon
@@ -189,6 +190,7 @@ internal fun GitHubInlineLiquidSurface(
             surfaceColor = surfaceColor,
             blurRadius = UiPerformanceBudget.backdropBlur,
             lensRadius = UiPerformanceBudget.backdropLens,
+            effectVariant = GlassVariant.Content,
             onClick = onClick,
             content = content,
         )

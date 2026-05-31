@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,6 +24,7 @@ import org.robolectric.annotation.GraphicsMode
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 private const val SHEET_TAG = "liquid-sheet"
@@ -234,6 +237,85 @@ class LiquidGlassBottomSheetTest {
 
         val width = sheetWidth()
         assertTrue(width <= 322.dp, "Expected custom max width to be respected, got $width")
+    }
+
+    @Test
+    fun topChromeUpwardDragExpandsHalfDetentToThreeQuarter() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Half,
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp)
+                                    .background(Color.Gray),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        assertTrue(sheetHeight() in 420.dp..520.dp, "Expected half detent before drag, got ${sheetHeight()}")
+
+        composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = 24.dp.toPx())
+            down(start)
+            moveBy(Offset(x = 0f, y = -96.dp.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        val height = sheetHeight()
+        assertTrue(height in 600.dp..720.dp, "Expected upward drag to expand to 3/4 detent, got $height")
+    }
+
+    @Test
+    fun detentLadderMovesOneStepAtATime() {
+        assertEquals(
+            LiquidSheetInitialDetent.ThreeQuarter,
+            LiquidSheetInitialDetent.Full.collapsedDetentOrNull(),
+        )
+        assertEquals(
+            LiquidSheetInitialDetent.Half,
+            LiquidSheetInitialDetent.ThreeQuarter.collapsedDetentOrNull(),
+        )
+        assertEquals(
+            LiquidSheetInitialDetent.ThreeQuarter,
+            LiquidSheetInitialDetent.Half.expandedDetentOrNull(),
+        )
+        assertEquals(
+            LiquidSheetInitialDetent.Full,
+            LiquidSheetInitialDetent.ThreeQuarter.expandedDetentOrNull(),
+        )
+    }
+
+    @Test
+    fun adaptiveInitialDetentPromotesOnlyThreeQuarterOverflow() {
+        assertEquals(
+            LiquidSheetInitialDetent.Full,
+            liquidSheetAdaptedInitialDetent(
+                initialDetent = LiquidSheetInitialDetent.ThreeQuarter,
+                contentOverflowsOpeningDetent = true,
+            ),
+        )
+        assertEquals(
+            LiquidSheetInitialDetent.Half,
+            liquidSheetAdaptedInitialDetent(
+                initialDetent = LiquidSheetInitialDetent.Half,
+                contentOverflowsOpeningDetent = true,
+            ),
+        )
     }
 
     private fun sheetHeight(): Dp {

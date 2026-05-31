@@ -281,9 +281,12 @@ private fun LiquidToastStackItem(
     hasBacklog: () -> Boolean,
     onDismiss: () -> Unit,
 ) {
-    // Starts false so the first composition animates the enter transition in.
-    val visibleState = remember { MutableTransitionState(false) }
-    visibleState.targetState = true
+    // Trigger the enter transition exactly once. CRITICAL: targetState must be set inside remember,
+    // NOT in the composable body. Writing `visibleState.targetState = true` on every recomposition
+    // fights the dismiss timer — when the timer sets targetState=false to start the exit, the next
+    // recomposition (driven by the animation changing currentState/isIdle) would immediately reset
+    // it back to true, reversing the exit, so the toast could never dismiss.
+    val visibleState = remember { MutableTransitionState(false).apply { targetState = true } }
 
     // Accessibility-aware base duration. Mirrors what Compose's own Snackbar does: when a screen
     // reader / accessibility service is active, calculateRecommendedTimeoutMillis EXTENDS the time
@@ -314,25 +317,25 @@ private fun LiquidToastStackItem(
         }
 
     // Auto-dismiss timer. Keyed only on the unique token (always distinct), so a repeated identical
-    // message can never collide here — this is what fixes the "stuck toast" bug. The backlog check
-    // happens inside via elapsed time so a late-arriving backlog can shorten, but never extend, the
-    // remaining on-screen time (re-keying would restart the timer and prolong it).
-    val shownAt = remember(slot.token) { System.currentTimeMillis().milliseconds }
+    // message can never collide here — this is what fixes the "stuck toast" bug. Elapsed time is
+    // accumulated from the delay() ticks themselves (the coroutine clock), NOT System.currentTimeMillis():
+    // mixing wall-clock elapsed with coroutine-clock delays desyncs under background suspension / doze
+    // and is untestable. Re-checking the backlog each tick lets a late backlog shorten — but never
+    // extend — the remaining time, because resolveToastDisplayLimit only ever returns a smaller limit.
     LaunchedEffect(slot.token) {
-        while (visibleState.targetState) {
-            val elapsed = System.currentTimeMillis().milliseconds - shownAt
+        var elapsed = Duration.ZERO
+        while (true) {
             val limit = resolveToastDisplayLimit(
                 base = baseDisplay,
                 expedited = accelerationAllowed && hasBacklog(),
             )
             val remaining = limit - elapsed
-            if (remaining <= Duration.ZERO) {
-                visibleState.targetState = false
-                break
-            }
-            // Wake periodically so a backlog that appears mid-display can still expedite this toast.
-            delay(minOf(remaining, TOAST_TIMER_TICK))
+            if (remaining <= Duration.ZERO) break
+            val tick = minOf(remaining, TOAST_TIMER_TICK)
+            delay(tick)
+            elapsed += tick
         }
+        visibleState.targetState = false
     }
 
     // Once the exit animation has fully played out, release the slot.

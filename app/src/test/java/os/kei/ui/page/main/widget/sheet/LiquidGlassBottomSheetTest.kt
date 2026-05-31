@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -42,7 +44,7 @@ class LiquidGlassBottomSheetTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun opensAtThreeQuarterDetentForShortContent() {
+    fun opensAtAdaptiveHeightForShortSheetContent() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 LiquidGlassBottomSheet(
@@ -67,11 +69,18 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         val height = sheetHeight()
-        assertTrue(height in 600.dp..720.dp, "Expected 3/4 detent height, got $height")
+        assertTrue(
+            height < oneThirdRootHeight(),
+            "Expected adaptive short sheet below minimum floating height, got $height"
+        )
+        assertTrue(
+            height > 96.dp,
+            "Expected adaptive short sheet to include content and chrome, got $height"
+        )
     }
 
     @Test
-    fun opensAtThreeQuarterDetentForPlainShortContent() {
+    fun opensAtAdaptiveHeightForPlainShortContent() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 LiquidGlassBottomSheet(
@@ -96,7 +105,14 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         val height = sheetHeight()
-        assertTrue(height in 600.dp..720.dp, "Expected plain short content to keep 3/4 detent, got $height")
+        assertTrue(
+            height < oneThirdRootHeight(),
+            "Expected adaptive plain short sheet below minimum floating height, got $height"
+        )
+        assertTrue(
+            height > 96.dp,
+            "Expected adaptive plain short sheet to include content and chrome, got $height"
+        )
     }
 
     @Test
@@ -127,7 +143,7 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         val height = sheetHeight()
-        assertTrue(height >= 820.dp, "Expected full detent height, got $height")
+        assertTrue(height >= rootHeight() * 0.90f, "Expected full detent height, got $height")
     }
 
     @Test
@@ -158,7 +174,10 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         val height = sheetHeight()
-        assertTrue(height >= 820.dp, "Expected plain content to expand to full detent, got $height")
+        assertTrue(
+            height >= rootHeight() * 0.90f,
+            "Expected plain content to expand to full detent, got $height"
+        )
     }
 
     @Test
@@ -240,23 +259,27 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
-    fun topChromeUpwardDragExpandsHalfDetentToThreeQuarter() {
+    fun topChromeDownwardDragKeepsFreeFloatingPositionWithoutDismiss() {
+        var dismissRequests = 0
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
                     title = "Sheet",
-                    initialDetent = LiquidSheetInitialDetent.Half,
+                    initialDetent = LiquidSheetInitialDetent.Full,
+                    onDismissRequest = { dismissRequests++ },
                 ) {
                     SheetContentColumn(verticalSpacing = 0.dp) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(96.dp)
-                                    .background(Color.Gray),
-                        )
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
                     }
                 }
             }
@@ -264,39 +287,236 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        assertTrue(sheetHeight() in 420.dp..520.dp, "Expected half detent before drag, got ${sheetHeight()}")
+        val offsetBefore = sheetFloatingOffset()
+        val heightBefore = sheetHeight()
+        assertTrue(
+            heightBefore >= rootHeight() * 0.90f,
+            "Expected tall sheet before drag, got $heightBefore"
+        )
+        val dragDistance = rootHeight() * 0.25f
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
-            val start = Offset(x = width / 2f, y = 24.dp.toPx())
+            val start = Offset(x = width / 2f, y = 12.dp.toPx())
             down(start)
-            moveBy(Offset(x = 0f, y = -96.dp.toPx()))
+            moveBy(Offset(x = 0f, y = dragDistance.toPx()))
             up()
         }
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
 
-        val height = sheetHeight()
-        assertTrue(height in 600.dp..720.dp, "Expected upward drag to expand to 3/4 detent, got $height")
+        assertEquals(0, dismissRequests)
+        val offsetAfter = sheetFloatingOffset()
+        assertTrue(
+            offsetAfter > offsetBefore + dragDistance * 0.40f,
+            "Expected free floating offset to move down, before=$offsetBefore after=$offsetAfter",
+        )
+        assertTrue(
+            sheetHeight() >= heightBefore - 2.dp,
+            "Expected floating sheet to retain content height, got ${sheetHeight()}"
+        )
     }
 
     @Test
-    fun detentLadderMovesOneStepAtATime() {
-        assertEquals(
-            LiquidSheetInitialDetent.ThreeQuarter,
-            LiquidSheetInitialDetent.Full.collapsedDetentOrNull(),
+    fun topChromeUpwardDragRestoresFreeFloatingPosition() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Full,
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val downwardDrag = rootHeight() * 0.30f
+        val upwardDrag = rootHeight() * 0.18f
+
+        composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = 12.dp.toPx())
+            down(start)
+            moveBy(Offset(x = 0f, y = downwardDrag.toPx()))
+            moveBy(Offset(x = 0f, y = -upwardDrag.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        val finalMovement = sheetFloatingOffset()
+        val downwardOnlyEquivalent = downwardDrag
+        assertTrue(
+            finalMovement < downwardOnlyEquivalent - upwardDrag * 0.30f,
+            "Expected upward drag to restore floating position, movement=$finalMovement",
         )
-        assertEquals(
-            LiquidSheetInitialDetent.Half,
-            LiquidSheetInitialDetent.ThreeQuarter.collapsedDetentOrNull(),
+        assertTrue(
+            finalMovement > 0.dp,
+            "Expected mixed drag to keep a floating offset, movement=$finalMovement"
         )
-        assertEquals(
-            LiquidSheetInitialDetent.ThreeQuarter,
-            LiquidSheetInitialDetent.Half.expandedDetentOrNull(),
+    }
+
+    @Test
+    fun topChromeDownwardDragClampsAtMinimumFloatingHeightBeforeDismiss() {
+        var dismissRequests = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Full,
+                    onDismissRequest = { dismissRequests++ },
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val dragDistance = rootHeight() * 0.72f
+
+        composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = 12.dp.toPx())
+            down(start)
+            moveBy(Offset(x = 0f, y = dragDistance.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        assertEquals(0, dismissRequests)
+        val visibleHeight = sheetHeight() - sheetFloatingOffset()
+        assertNearOneThirdRootHeight(
+            visibleHeight,
+            "Expected minimum floating height near 1/3, got $visibleHeight"
         )
-        assertEquals(
-            LiquidSheetInitialDetent.Full,
-            LiquidSheetInitialDetent.ThreeQuarter.expandedDetentOrNull(),
+    }
+
+    @Test
+    fun topChromeDownwardDragDismissesBeyondMinimumFloatingHeight() {
+        val show = mutableStateOf(true)
+        var dismissRequests = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = show.value,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Full,
+                    onDismissRequest = {
+                        dismissRequests++
+                        show.value = false
+                    },
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val dragDistance = rootHeight() * 1.02f
+
+        composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = 12.dp.toPx())
+            down(start)
+            moveBy(Offset(x = 0f, y = dragDistance.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        assertEquals(1, dismissRequests)
+    }
+
+    @Test
+    fun blockedDismissBeyondMinimumFloatingHeightCallsBlockedCallbackWithoutClosing() {
+        var dismissRequests = 0
+        var blockedDismissRequests = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Full,
+                    allowDismiss = false,
+                    onDismissRequest = { dismissRequests++ },
+                    onBlockedDismissRequest = { blockedDismissRequests++ },
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val dragDistance = rootHeight() * 1.02f
+
+        composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = 12.dp.toPx())
+            down(start)
+            moveBy(Offset(x = 0f, y = dragDistance.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        assertEquals(0, dismissRequests)
+        assertEquals(1, blockedDismissRequests)
+        val visibleHeight = sheetHeight() - sheetFloatingOffset()
+        assertNearOneThirdRootHeight(
+            visibleHeight,
+            "Expected blocked dismiss to keep minimum floating height, got $visibleHeight"
         )
     }
 
@@ -336,6 +556,47 @@ class LiquidGlassBottomSheetTest {
                 .boundsInRoot
                 .width
         return with(composeRule.density) { widthPx.toDp() }
+    }
+
+    private fun sheetTop(): Dp {
+        val topPx =
+            composeRule
+                .onNodeWithTag(SHEET_TAG)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .top
+        return with(composeRule.density) { topPx.toDp() }
+    }
+
+    private fun sheetFloatingOffset(): Dp {
+        val offsetPx =
+            composeRule
+                .onNodeWithTag(SHEET_TAG)
+                .fetchSemanticsNode()
+                .config[LiquidSheetFloatingOffsetYKey]
+        return with(composeRule.density) { offsetPx.toDp() }
+    }
+
+    private fun rootHeight(): Dp {
+        val heightPx =
+            composeRule
+                .onAllNodes(isRoot())
+                .fetchSemanticsNodes()
+                .maxOf { it.boundsInRoot.height }
+        return with(composeRule.density) { heightPx.toDp() }
+    }
+
+    private fun oneThirdRootHeight(): Dp = rootHeight() / 3f
+
+    private fun assertNearOneThirdRootHeight(
+        actual: Dp,
+        message: String,
+    ) {
+        val expected = oneThirdRootHeight()
+        assertTrue(
+            actual in (expected * 0.86f)..(expected * 1.14f),
+            message,
+        )
     }
 }
 

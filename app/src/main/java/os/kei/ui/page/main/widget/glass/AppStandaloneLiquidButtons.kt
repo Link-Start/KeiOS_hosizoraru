@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,12 +18,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+val LocalLiquidParentBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 @Composable
 fun AppStandaloneLiquidTextButton(
@@ -191,7 +194,7 @@ fun AppStandaloneLiquidIconButton(
 internal fun AppStandaloneBackdropHost(
     modifier: Modifier,
     pressSafePadding: Dp = Dp.Unspecified,
-    content: @Composable BoxScope.(LayerBackdrop?) -> Unit,
+    content: @Composable BoxScope.(Backdrop?) -> Unit,
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -199,11 +202,14 @@ internal fun AppStandaloneBackdropHost(
         } else {
             pressSafePadding
         }
+    val parentBackdrop = LocalLiquidParentBackdrop.current
     Box(
         modifier = modifier.padding(resolvedPressSafePadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (appGlassRuntimeEffectsEnabled()) {
+        if (parentBackdrop != null && appGlassRuntimeEffectsEnabled()) {
+            content(parentBackdrop)
+        } else if (appGlassRuntimeEffectsEnabled()) {
             val backdrop = rememberLayerBackdrop()
             Box(
                 modifier =

@@ -35,6 +35,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
+import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
@@ -98,6 +112,13 @@ fun LiquidGlassBottomSheet(
     content: @Composable () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
+    val sceneBackdrop = LocalSceneBackdrop.current
+    val sheetBackdrop = rememberLayerBackdrop()
+    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
+    val useLiquidBackdropSurface = liquidControlsEnabled && backgroundColor == null
+    val glassRuntime = LocalGlassEffectRuntime.current
+    val sheetBlurRadius = UiPerformanceBudget.backdropBlur * glassRuntime.blurScaleFor(GlassVariant.Floating)
+    val sheetLensRadius = UiPerformanceBudget.backdropLens * glassRuntime.lensScaleFor(GlassVariant.Floating)
 
     var contentOverflowsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
     val adaptedInitialDetent =
@@ -142,10 +163,50 @@ fun LiquidGlassBottomSheet(
     // key() forces a clean remount when the detent drops, so miuix's internal dragOffsetY resets
     // and the sheet re-enters at the new height with its spring animation.
     key(sheetGeneration) {
+        val sheetShape = RoundedRectangle(cornerRadius)
+        val sheetSurfaceModifier =
+            if (useLiquidBackdropSurface) {
+                Modifier.drawBackdrop(
+                    backdrop = sceneBackdrop,
+                    shape = { sheetShape },
+                    effects = {
+                        vibrancy()
+                        blur(sheetBlurRadius.toPx())
+                        lens(
+                            sheetLensRadius.toPx(),
+                            (sheetLensRadius * 1.75f).toPx(),
+                            chromaticAberration = true,
+                            depthEffect = true,
+                        )
+                    },
+                    exportedBackdrop = sheetBackdrop,
+                    highlight = {
+                        Highlight.Default.copy(alpha = if (isDark) 0.72f else 0.86f)
+                    },
+                    shadow = {
+                        Shadow.Default.copy(color = Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f))
+                    },
+                    innerShadow = {
+                        InnerShadow(radius = 12.dp, alpha = if (isDark) 0.20f else 0.14f)
+                    },
+                    onDrawSurface = {
+                        drawRect(
+                            liquidSheetSurfaceColor(
+                                isDark = isDark,
+                                detentFraction = targetFraction,
+                            ),
+                        )
+                    },
+                )
+            } else {
+                Modifier
+            }
         WindowBottomSheet(
             show = show,
             modifier =
-                modifier.liquidSheetTopChromeExpandGesture(
+                modifier
+                    .then(sheetSurfaceModifier)
+                    .liquidSheetTopChromeExpandGesture(
                     enabled = show && activeDetent != LiquidSheetInitialDetent.Full,
                     chromeHeight = LiquidSheetEstimatedChromeHeight,
                     dragThreshold = LiquidSheetDetentDragThreshold,
@@ -158,10 +219,14 @@ fun LiquidGlassBottomSheet(
             endAction = endAction,
             backgroundColor =
                 backgroundColor
-                    ?: liquidSheetSurfaceColor(
-                        isDark = isDark,
-                        detentFraction = targetFraction,
-                    ),
+                    ?: if (useLiquidBackdropSurface) {
+                        Color.Transparent
+                    } else {
+                        liquidSheetSurfaceColor(
+                            isDark = isDark,
+                            detentFraction = targetFraction,
+                        )
+                    },
             enableWindowDim = enableWindowDim,
             cornerRadius = cornerRadius,
             sheetMaxWidth = resolvedSheetMaxWidth,
@@ -218,6 +283,7 @@ fun LiquidGlassBottomSheet(
                     LocalLiquidSheetContentOverflowReporter provides { overflows ->
                         if (overflows) contentOverflowsOpeningDetent = true
                     },
+                    LocalLiquidParentBackdrop provides if (useLiquidBackdropSurface) sheetBackdrop else null,
                 ) {
                     content()
                 }

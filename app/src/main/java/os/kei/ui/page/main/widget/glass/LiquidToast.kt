@@ -393,8 +393,8 @@ internal fun resolveToastDisplayLimit(
  * The actual toast pill content with strong liquid glass styling.
  *
  * Key visual differences from a plain surface:
- * - Higher blur radius (12dp vs default 8dp) for a more prominent frosted-glass look
- * - Larger lens radius (32dp vs default 24dp) for visible refraction distortion
+ * - Compact 4dp blur for readable transient text over busy content
+ * - Larger 32dp lens radius, scaled through the Floating glass runtime
  * - Semi-transparent tint color that shifts with dark/light mode
  * - Depth effect + shadow for floating elevation
  * - Slightly larger padding and bolder text for readability against the blurred background

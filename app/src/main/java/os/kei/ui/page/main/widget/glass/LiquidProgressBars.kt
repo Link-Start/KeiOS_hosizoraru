@@ -30,7 +30,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
@@ -52,6 +54,7 @@ fun LiquidLinearProgressBar(
     inactiveColor: Color = liquidProgressDefaultInactiveColor(),
     height: Dp = 4.dp,
     contentDescription: String? = null,
+    backdrop: Backdrop? = null,
 ) {
     LiquidLinearProgressBar(
         progress = progress,
@@ -61,6 +64,7 @@ fun LiquidLinearProgressBar(
         inactiveColor = { inactiveColor },
         height = height,
         contentDescription = contentDescription,
+        backdrop = backdrop,
     )
 }
 
@@ -73,8 +77,11 @@ fun LiquidLinearProgressBar(
     inactiveColor: () -> Color,
     height: Dp = 4.dp,
     contentDescription: String? = null,
+    backdrop: Backdrop? = null,
 ) {
     val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
+    val parentBackdrop = backdrop ?: LocalLiquidParentBackdrop.current
+    val glassRuntime = glassEffectRuntime()
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress
     val activeColorProvider = activeColor
@@ -95,24 +102,30 @@ fun LiquidLinearProgressBar(
                 },
         contentAlignment = Alignment.CenterStart,
     ) {
-        val progressBackdrop =
+        val trackBackdrop =
             if (liquidControlsEnabled) {
                 rememberLayerBackdrop()
             } else {
                 null
             }
-        if (progressBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(progressBackdrop),
-            )
-        }
+        val activeBackdrop =
+            when {
+                parentBackdrop != null && trackBackdrop != null ->
+                    rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
+                trackBackdrop != null -> trackBackdrop
+                else -> null
+            }
         Box(
             modifier =
                 Modifier
                     .matchParentSize()
+                    .then(
+                        if (trackBackdrop != null) {
+                            Modifier.layerBackdrop(trackBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    )
                     .drawAppSquircleBackground(999.dp) {
                         inactiveColorProvider()
                     },
@@ -143,16 +156,17 @@ fun LiquidLinearProgressBar(
                         }
                     }.appSquircleClip(999.dp)
                     .then(
-                        if (progressBackdrop != null) {
+                        if (activeBackdrop != null) {
                             Modifier.drawBackdrop(
-                                backdrop = progressBackdrop,
+                                backdrop = activeBackdrop,
                                 shape = { ContinuousCapsule },
                                 effects = {
                                     vibrancy()
-                                    blur(4.dp.toPx())
+                                    blur((4.dp * glassRuntime.blurScaleFor(GlassVariant.Compact)).toPx())
+                                    val lensScale = glassRuntime.lensScaleFor(GlassVariant.Compact)
                                     lens(
-                                        12.dp.toPx(),
-                                        20.dp.toPx(),
+                                        12.dp.toPx() * lensScale,
+                                        20.dp.toPx() * lensScale,
                                         depthEffect = true,
                                     )
                                 },
@@ -188,6 +202,7 @@ fun LiquidMusicProgressBar(
     activeColor: Color = liquidProgressDefaultActiveColor(),
     inactiveColor: Color = liquidProgressDefaultInactiveColor(),
     contentDescription: String? = null,
+    backdrop: Backdrop? = null,
 ) {
     LiquidLinearProgressBar(
         progress = progress,
@@ -197,6 +212,7 @@ fun LiquidMusicProgressBar(
         inactiveColor = inactiveColor,
         height = 3.dp,
         contentDescription = contentDescription,
+        backdrop = backdrop,
     )
 }
 
@@ -208,6 +224,7 @@ fun LiquidMusicProgressBar(
     activeColor: () -> Color,
     inactiveColor: () -> Color,
     contentDescription: String? = null,
+    backdrop: Backdrop? = null,
 ) {
     LiquidLinearProgressBar(
         progress = progress,
@@ -217,6 +234,7 @@ fun LiquidMusicProgressBar(
         inactiveColor = inactiveColor,
         height = 3.dp,
         contentDescription = contentDescription,
+        backdrop = backdrop,
     )
 }
 

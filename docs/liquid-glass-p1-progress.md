@@ -10,7 +10,7 @@
 | Dialog Backdrop | Use scene backdrop for the dialog surface and export a dialog backdrop for child actions. | Done | `LiquidGlassDialog.kt`, `AppLiquidDialogActions.kt`, `./gradlew :app:compileDebugKotlin` |
 | BottomSheet Backdrop | Render the sheet surface with Backdrop and export the sheet layer for nested glass content. | Done | `LiquidGlassBottomSheet.kt`, `AppStandaloneLiquidButtons.kt`, `./gradlew :app:compileDebugKotlin` |
 | Switch Static Thumb | Keep a visible static thumb lens and intensify it on press/drag. | Done | `AppSwitch.kt`, `./gradlew :app:compileDebugKotlin` |
-| ProgressBar Combined Backdrop | Let linear progress bars combine scene/card backdrop with the local track layer. | Planned | `LiquidProgressBars.kt` |
+| ProgressBar Combined Backdrop | Let linear progress bars combine scene/card backdrop with the local track layer. | Done | `LiquidProgressBars.kt`, `./gradlew :app:compileDebugKotlin`, `./gradlew :app:testDebugUnitTest` |
 
 ## Notes
 

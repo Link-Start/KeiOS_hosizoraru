@@ -6,21 +6,9 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class AppTopBarTitleCardLayoutTest {
-    @Test
-    fun titleWidthEstimateTreatsCjkAsFullWidth() {
-        assertEquals(
-            76.dp,
-            estimateTopBarTitleWidthAt18Sp("学生图鉴")
-        )
-    }
-
-    @Test
-    fun titleWidthEstimateAccountsForAsciiTitle() {
-        assertEquals(
-            62.dp,
-            estimateTopBarTitleWidthAt18Sp("GitHub")
-        )
-    }
+    // NOTE: the previous title-width estimate tests were removed because
+    // estimateTopBarTitleWidthAt18Sp() no longer exists — commit c3fadc070 replaced the manual
+    // width heuristic with a TextMeasurer-based auto-fit, so those cases tested a deleted API.
 
     @Test
     fun titleCardMatchesTopBarChromeBand() {

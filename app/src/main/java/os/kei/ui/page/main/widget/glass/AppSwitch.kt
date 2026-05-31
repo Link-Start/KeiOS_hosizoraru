@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
@@ -85,7 +86,9 @@ fun AppSwitch(
         modifier = touchModifier,
         contentAlignment = Alignment.Center,
     ) {
-        Box(modifier = Modifier.matchParentSize().layerBackdrop(switchBackdrop))
+        Box(modifier = Modifier
+            .matchParentSize()
+            .layerBackdrop(switchBackdrop))
         LiquidSwitchToggle(
             selected = { checked },
             onSelect = onCheckedChange,
@@ -113,7 +116,8 @@ private fun AppFallbackSwitchToggle(
     val accentColor = if (isLightTheme) AppLiquidSwitchLightBlue else AppLiquidSwitchDarkBlue
     val trackColor =
         if (isLightTheme) {
-            Color(0xFF787878).copy(alpha = 0.20f)
+            // Match the glass switch: 0.20 alpha was too faint over white cards. See LiquidSwitchToggle.
+            Color(0xFF787878).copy(alpha = 0.30f)
         } else {
             Color(0xFF787880).copy(alpha = 0.36f)
         }
@@ -138,9 +142,11 @@ private fun AppFallbackSwitchToggle(
                     interactionSource = interactionSource,
                     indication = null,
                     onValueChange = onCheckedChange,
-                ).graphicsLayer {
+                )
+                .graphicsLayer {
                     alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                }.semantics {
+                }
+                .semantics {
                     role = Role.Switch
                     toggleableState = ToggleableState(checked)
                 },
@@ -151,7 +157,8 @@ private fun AppFallbackSwitchToggle(
                 Modifier
                     .drawAppSquircleBackground(999.dp) {
                         lerpColor(trackColor, accentColor, progressProvider())
-                    }.size(52.dp, 28.dp),
+                    }
+                    .size(52.dp, 28.dp),
         )
         Box(
             modifier =
@@ -166,9 +173,11 @@ private fun AppFallbackSwitchToggle(
                             } else {
                                 lerp(travel / 2f - padding, -travel / 2f + padding, progress)
                             }
-                    }.drawAppSquircleBackground(999.dp) {
+                    }
+                    .drawAppSquircleBackground(999.dp) {
                         thumbColor
-                    }.size(24.dp),
+                    }
+                    .size(24.dp),
         )
     }
 }
@@ -193,7 +202,10 @@ private fun LiquidSwitchToggle(
         }
     val trackColor =
         if (isLightTheme) {
-            Color(0xFF787878).copy(alpha = 0.20f)
+            // OFF track in light mode. Bumped from 0.20 -> 0.30 alpha: at 0.20 the gray pill nearly
+            // vanished over white settings cards, making it hard to tell an OFF switch was there.
+            // 0.30 reads as a clear ~#D6D6D6 gray while staying subtle, matching the iOS off-track.
+            Color(0xFF787878).copy(alpha = 0.30f)
         } else {
             Color(0xFF787880).copy(alpha = 0.36f)
         }
@@ -290,9 +302,11 @@ private fun LiquidSwitchToggle(
                     interactionSource = toggleInteractionSource,
                     indication = null,
                     onValueChange = onSelect,
-                ).graphicsLayer {
+                )
+                .graphicsLayer {
                     alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                }.semantics {
+                }
+                .semantics {
                     role = Role.Switch
                     toggleableState = ToggleableState(externalSelected)
                 },
@@ -303,7 +317,8 @@ private fun LiquidSwitchToggle(
                 .layerBackdrop(trackBackdrop)
                 .drawAppSquircleBackground(999.dp) {
                     lerpColor(trackColor, accentColor, dampedDragAnimation.value)
-                }.size(64.dp, 28.dp),
+                }
+                .size(64.dp, 28.dp),
         )
 
         Box(
@@ -316,7 +331,8 @@ private fun LiquidSwitchToggle(
                         } else {
                             lerp(-padding, -(padding + dragWidth), dampedDragAnimation.value)
                         }
-                }.semantics { role = Role.Switch }
+                }
+                .semantics { role = Role.Switch }
                 .drawBackdrop(
                     backdrop = combinedBackdrop,
                     shape = { Capsule() },
@@ -339,9 +355,14 @@ private fun LiquidSwitchToggle(
                         )
                     },
                     shadow = {
+                        // The thumb's drop shadow is what separates a white thumb from a light track
+                        // on a white card — the prior 0.05 alpha was almost invisible, which is why
+                        // the OFF switch was hard to see in light mode. A stronger, slightly dropped
+                        // shadow gives the iOS-style floating thumb clear edge definition.
                         Shadow(
-                            radius = 4.dp,
-                            color = Color.Black.copy(alpha = 0.05f),
+                            radius = 5.dp,
+                            offset = DpOffset(0.dp, 1.dp),
+                            color = Color.Black.copy(alpha = 0.18f),
                         )
                     },
                     innerShadow = {
@@ -358,7 +379,8 @@ private fun LiquidSwitchToggle(
                     onDrawSurface = {
                         drawRect(Color.White.copy(alpha = 1f - dampedDragAnimation.pressProgress))
                     },
-                ).size(40.dp, 24.dp),
+                )
+                .size(40.dp, 24.dp),
         )
     }
 }

@@ -88,6 +88,12 @@ private fun liquidGlassDropdownMetrics(material: LiquidGlassDropdownMaterial): L
         LiquidGlassDropdownMaterial.ActionMenu -> LiquidGlassDropdownMetricsActionMenu
     }
 
+private fun liquidGlassDropdownVariant(material: LiquidGlassDropdownMaterial): GlassVariant =
+    when (material) {
+        LiquidGlassDropdownMaterial.Default -> GlassVariant.Floating
+        LiquidGlassDropdownMaterial.ActionMenu -> GlassVariant.SheetAction
+    }
+
 // Hoisted to top-level constants: the metrics are pure values (no composition state),
 // so allocating a fresh data class on every recomposition was pure overhead. Reusing
 // these instances also keeps structural equality intact for any downstream skip checks.
@@ -153,6 +159,10 @@ fun LiquidGlassDropdownColumn(
 ) {
     val isDark = isSystemInDarkTheme()
     val metrics = liquidGlassDropdownMetrics(material)
+    val effectVariant = liquidGlassDropdownVariant(material)
+    val effectBlurRadius = resolvedGlassBlurDp(metrics.blurRadius, effectVariant)
+    val effectLensStart = resolvedGlassLensDp(metrics.lensStart, effectVariant)
+    val effectLensEnd = resolvedGlassLensDp(metrics.lensEnd, effectVariant)
     val containerShape = RoundedRectangle(metrics.containerRadius)
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
@@ -199,10 +209,10 @@ fun LiquidGlassDropdownColumn(
                                 if (metrics.vibrancy) {
                                     vibrancy()
                                 }
-                                blur(metrics.blurRadius.toPx())
+                                blur(effectBlurRadius.toPx())
                                 lens(
-                                    metrics.lensStart.toPx(),
-                                    metrics.lensEnd.toPx(),
+                                    effectLensStart.toPx(),
+                                    effectLensEnd.toPx(),
                                     chromaticAberration = metrics.chromaticAberration,
                                     depthEffect = metrics.depthEffect,
                                 )

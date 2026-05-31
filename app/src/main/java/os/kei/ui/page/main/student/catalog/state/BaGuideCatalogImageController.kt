@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class BaGuideCatalogImageController(
     private val scope: CoroutineScope,
@@ -103,7 +104,7 @@ internal class BaGuideCatalogImageController(
             if (flushJob?.isActive == true) return
             flushJob =
                 scope.launch {
-                    delay(FLUSH_INTERVAL_MS)
+                    delay(FLUSH_INTERVAL_MS.milliseconds)
                     flushPending()
                 }
         }

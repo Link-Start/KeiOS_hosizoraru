@@ -30,6 +30,7 @@ import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DYNAMIC_BACKGROUND_RENDER_SCALE = 0.25f
 
@@ -57,7 +58,7 @@ fun BgEffectBackground(
 
         var targetStage = floor(colorStage.value) + 1f
         while (isActive) {
-            delay((preset.colorInterpPeriod * 500).toLong())
+            delay((preset.colorInterpPeriod * 500).toLong().milliseconds)
             colorStage.animateTo(
                 targetValue = targetStage,
                 animationSpec = spring(dampingRatio = 0.9f, stiffness = 35f),

@@ -2,12 +2,16 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+val LocalLiquidDialogBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 @Composable
 fun AppLiquidDialogActionButton(
@@ -26,22 +30,44 @@ fun AppLiquidDialogActionButton(
         GlassVariant.SheetAction
     }
 ) {
-    AppStandaloneLiquidTextButton(
-        text = text,
-        onClick = onClick,
-        modifier = modifier,
-        buttonModifier = buttonModifier,
-        textColor = textColor,
-        containerColor = containerColor,
-        leadingIcon = leadingIcon,
-        iconTint = iconTint,
-        enabled = enabled,
-        variant = variant,
-        minHeight = 40.dp,
-        horizontalPadding = 12.dp,
-        verticalPadding = 8.dp,
-        textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis,
-        textSoftWrap = false
-    )
+    val dialogBackdrop = LocalLiquidDialogBackdrop.current
+    if (dialogBackdrop != null) {
+        AppLiquidTextButton(
+            backdrop = dialogBackdrop,
+            text = text,
+            onClick = onClick,
+            modifier = modifier.then(buttonModifier),
+            textColor = textColor,
+            containerColor = containerColor,
+            leadingIcon = leadingIcon,
+            iconTint = iconTint,
+            enabled = enabled,
+            variant = variant,
+            minHeight = 40.dp,
+            horizontalPadding = 12.dp,
+            verticalPadding = 8.dp,
+            textMaxLines = 1,
+            textOverflow = TextOverflow.Ellipsis,
+            textSoftWrap = false
+        )
+    } else {
+        AppStandaloneLiquidTextButton(
+            text = text,
+            onClick = onClick,
+            modifier = modifier,
+            buttonModifier = buttonModifier,
+            textColor = textColor,
+            containerColor = containerColor,
+            leadingIcon = leadingIcon,
+            iconTint = iconTint,
+            enabled = enabled,
+            variant = variant,
+            minHeight = 40.dp,
+            horizontalPadding = 12.dp,
+            verticalPadding = 8.dp,
+            textMaxLines = 1,
+            textOverflow = TextOverflow.Ellipsis,
+            textSoftWrap = false
+        )
+    }
 }

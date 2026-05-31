@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,7 +26,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +37,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.shadow.InnerShadow
+import com.kyant.backdrop.shadow.Shadow
+import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
+import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
 import os.kei.ui.page.main.widget.shape.appSquircleSurface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -129,10 +147,52 @@ fun LiquidGlassDialog(
         // Remove system's default dim background — we draw our own scrim.
         RemovePlatformDialogDefaultEffects()
 
-        // Official Backdrop recommendation: simple semi-transparent white surface.
+        val sceneBackdrop = LocalSceneBackdrop.current
+        val dialogBackdrop = rememberLayerBackdrop()
+        val liquidControlsEnabled = LocalLiquidControlsEnabled.current
+        val dialogShape: Shape = RoundedRectangle(LiquidDialogCornerRadius)
         val surfaceColor = Color.White.copy(alpha = 0.5f)
         val titleColor = MiuixTheme.colorScheme.onBackground
         val summaryColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
+        val glassRuntime = LocalGlassEffectRuntime.current
+        val blurRadius = UiPerformanceBudget.backdropBlur * glassRuntime.blurScaleFor(GlassVariant.Floating)
+        val lensRadius = 30.dp * glassRuntime.lensScaleFor(GlassVariant.Floating)
+        val surfaceModifier =
+            if (liquidControlsEnabled) {
+                Modifier.drawBackdrop(
+                    backdrop = sceneBackdrop,
+                    shape = { dialogShape },
+                    effects = {
+                        vibrancy()
+                        blur(blurRadius.toPx())
+                        lens(
+                            lensRadius.toPx(),
+                            (lensRadius * 1.6f).toPx(),
+                            chromaticAberration = true,
+                            depthEffect = true,
+                        )
+                    },
+                    exportedBackdrop = dialogBackdrop,
+                    highlight = {
+                        Highlight.Default.copy(alpha = 0.88f)
+                    },
+                    shadow = {
+                        Shadow.Default.copy(color = Color.Black.copy(alpha = 0.18f))
+                    },
+                    innerShadow = {
+                        InnerShadow(radius = 10.dp, alpha = 0.14f)
+                    },
+                    onDrawSurface = {
+                        drawRect(surfaceColor)
+                        drawRect(Color.White.copy(alpha = 0.06f), blendMode = BlendMode.Screen)
+                    },
+                )
+            } else {
+                Modifier.appSquircleSurface(
+                    color = surfaceColor,
+                    cornerRadius = LiquidDialogCornerRadius,
+                )
+            }
 
         // Scrim
         Box(
@@ -160,10 +220,7 @@ fun LiquidGlassDialog(
                             scaleY = scale.value
                             this.alpha = alpha.value
                             transformOrigin = TransformOrigin.Center
-                        }.appSquircleSurface(
-                            color = surfaceColor,
-                            cornerRadius = LiquidDialogCornerRadius,
-                        )
+                        }.then(surfaceModifier)
                         // Block clicks from passing through to scrim
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -172,33 +229,35 @@ fun LiquidGlassDialog(
                         .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Title
-                if (!title.isNullOrBlank()) {
-                    Text(
-                        text = title,
-                        color = titleColor,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                CompositionLocalProvider(LocalLiquidDialogBackdrop provides if (liquidControlsEnabled) dialogBackdrop else null) {
+                    // Title
+                    if (!title.isNullOrBlank()) {
+                        Text(
+                            text = title,
+                            color = titleColor,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
-                // Summary
-                if (!summary.isNullOrBlank()) {
-                    Text(
-                        text = summary,
-                        color = summaryColor,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                    // Summary
+                    if (!summary.isNullOrBlank()) {
+                        Text(
+                            text = summary,
+                            color = summaryColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
 
-                // Custom content (typically action buttons)
-                content()
+                    // Custom content (typically action buttons)
+                    content()
+                }
             }
         }
     }

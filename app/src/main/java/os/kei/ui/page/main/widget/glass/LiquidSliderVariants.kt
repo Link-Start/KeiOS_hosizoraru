@@ -479,17 +479,34 @@ private fun LiquidTrackSlider(
                         Modifier.drawBackdrop(
                             backdrop = thumbBackdrop,
                             shape = { ContinuousCapsule },
-                            // Effect order per the Backdrop API: color filter -> blur -> lens.
-                            // vibrancy() boosts saturation of what's refracted (the colored track),
-                            // a light blur softens it, and an always-on lens gives the clear
-                            // magnifying-glass refraction seen in the tutorial screenshot.
+                            // Effect order per Backdrop API: color filter -> blur -> lens.
+                            // The tutorial's key visual: rest = frosted pill, press = clear magnifying
+                            // lens. So blur DECREASES on press (glass clears up, refraction shows
+                            // through) and lens INTENSIFIES (stronger magnification).
                             effects = {
                                 val progress = dampedDragAnimation.pressProgress
                                 vibrancy()
-                                blur(UiPerformanceBudget.backdropBlur.toPx() * (0.5f + 0.5f * progress))
+                                // Blur: high at rest (frosted), fades toward zero on press (clear glass).
+                                blur(
+                                    lerp(
+                                        UiPerformanceBudget.backdropBlur.toPx(),
+                                        0f,
+                                        progress
+                                    )
+                                )
+                                // Lens: moderate at rest for the signature glass look, intensifies on
+                                // press for the dramatic magnifying-glass refraction from the tutorial.
                                 lens(
-                                    style.lensRefractionHeight.toPx(),
-                                    style.lensRefractionAmount.toPx(),
+                                    lerp(
+                                        style.lensRefractionHeight.toPx(),
+                                        style.lensRefractionHeight.toPx() * 2f,
+                                        progress
+                                    ),
+                                    lerp(
+                                        style.lensRefractionAmount.toPx(),
+                                        style.lensRefractionAmount.toPx() * 2.5f,
+                                        progress
+                                    ),
                                     chromaticAberration = true,
                                     depthEffect = true
                                 )
@@ -501,25 +518,33 @@ private fun LiquidTrackSlider(
                                 )
                             },
                             shadow = {
+                                val progress = dampedDragAnimation.pressProgress
                                 Shadow(
-                                    radius = 4.dp,
-                                    color = Color.Black.copy(alpha = 0.08f)
+                                    radius = lerp(4f, 8f, progress).dp,
+                                    color = Color.Black.copy(alpha = lerp(0.08f, 0.14f, progress))
                                 )
                             },
                             innerShadow = {
                                 val progress = dampedDragAnimation.pressProgress
                                 InnerShadow(radius = 4.dp * progress, alpha = progress)
                             },
-                            // Press scale only (uniform). The previous velocity-driven squash-stretch
-                            // could over-skew the thumb on fast flings and read as a glitch.
+                            // Scale: dramatic expansion on press, matching the tutorial's
+                            // `(size.width + 16dp) / size.width` approach. The backdrop stays
+                            // correctly positioned because layerBlock transforms the content layer
+                            // only, not the backdrop sampling (per the Interactive Bottom Bar tutorial).
                             layerBlock = {
-                                scaleX = dampedDragAnimation.scaleX
-                                scaleY = dampedDragAnimation.scaleY
+                                val progress = dampedDragAnimation.pressProgress
+                                val maxScaleX = (size.width + 16.dp.toPx()) / size.width
+                                val maxScaleY = (size.height + 8.dp.toPx()) / size.height
+                                scaleX = lerp(1f, maxScaleX, progress)
+                                scaleY = lerp(1f, maxScaleY, progress)
                             },
-                            // A barely-there white tint so the glass stays clear (the tutorial thumb
-                            // has no opaque fill); just enough to lift contrast over busy backdrops.
+                            // Surface: fades from a light tint (rest) toward near-transparent (press)
+                            // so the intensified refraction shows through clearly.
                             onDrawSurface = {
-                                drawRect(Color.White.copy(alpha = style.thumbGlassSurfaceAlpha))
+                                val progress = dampedDragAnimation.pressProgress
+                                val alpha = lerp(style.thumbGlassSurfaceAlpha, 0.02f, progress)
+                                drawRect(Color.White.copy(alpha = alpha))
                             }
                         )
                     } else {

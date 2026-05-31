@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
@@ -101,8 +102,10 @@ fun LiquidMusicProgressSlider(
             trackHeight = 4.dp,
             thumbWidth = 30.dp,
             thumbHeight = 18.dp,
-            pressedScale = 1.28f,
+            pressedWidthScale = 1.46f,
+            pressedHeightScale = 1.30f,
             thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+            thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
             thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
         )
     )
@@ -151,8 +154,10 @@ fun LiquidVolumeSlider(
             trackHeight = 6.dp,
             thumbWidth = 40.dp,
             thumbHeight = 26.dp,
-            pressedScale = 1.36f,
+            pressedWidthScale = 1.35f,
+            pressedHeightScale = 1.22f,
             thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+            thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
             thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
         )
     )
@@ -209,8 +214,10 @@ fun LiquidKeyPointSlider(
             trackHeight = 7.dp,
             thumbWidth = 38.dp,
             thumbHeight = 22.dp,
-            pressedScale = 1.42f,
+            pressedWidthScale = 1.38f,
+            pressedHeightScale = 1.26f,
             thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+            thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
             thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
         )
     )
@@ -232,6 +239,7 @@ private fun LiquidTrackSlider(
     snapToKeyPoints: Boolean = false,
     snapThreshold: Float? = null
 ) {
+    val glassRuntime = glassEffectRuntime()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val trackBackdrop =
         if (activeBackdrop != null) {
@@ -283,7 +291,7 @@ private fun LiquidTrackSlider(
             enabled,
             trackWidth,
             isLtr,
-            style.pressedScale,
+            style.pressedWidthScale,
             keyPoints,
             snapToKeyPoints,
             snapThreshold
@@ -294,7 +302,7 @@ private fun LiquidTrackSlider(
                 valueRange = safeValueRange,
                 visibilityThreshold = visibilityThreshold,
                 initialScale = 1f,
-                pressedScale = style.pressedScale,
+                pressedScale = style.pressedWidthScale,
                 consumeDragChanges = true,
                 onDragStarted = { position ->
                     if (enabled) {
@@ -367,6 +375,14 @@ private fun LiquidTrackSlider(
                     }
                 }
         }
+        val visualProgress by remember(dampedDragAnimation, isLtr) {
+            derivedStateOf {
+                sliderVisualProgress(
+                    progress = dampedDragAnimation.progress.fastCoerceIn(0f, 1f),
+                    isLtr = isLtr
+                )
+            }
+        }
         val thumbBackdrop =
             if (activeBackdrop != null && trackBackdrop != null) {
                 // Per the Backdrop "Glass Slider" tutorial: the thumb must refract the background
@@ -378,12 +394,22 @@ private fun LiquidTrackSlider(
                 null
             }
 
+        val trackLayerHeight =
+            keyPoints
+                .maxOfOrNull { keyPoint -> keyPoint.size }
+                ?.let { keyPointSize -> maxOf(style.trackHeight, keyPointSize) }
+                ?: style.trackHeight
+
         Box(
-            if (trackBackdrop != null) {
-                Modifier.layerBackdrop(trackBackdrop)
-            } else {
-                Modifier
-            }
+            modifier =
+                if (trackBackdrop != null) {
+                    Modifier.layerBackdrop(trackBackdrop)
+                } else {
+                    Modifier
+                }
+                    .fillMaxWidth()
+                    .height(trackLayerHeight),
+            contentAlignment = Alignment.CenterStart
         ) {
             Box(
                 Modifier
@@ -396,15 +422,47 @@ private fun LiquidTrackSlider(
                     .appSquircleBackground(style.activeColor, 999.dp)
                     .height(style.trackHeight)
                     .layout { measurable, constraints ->
-                        val placeable = measurable.measure(constraints)
-                        val width = (constraints.maxWidth * dampedDragAnimation.progress)
+                        val width = (constraints.maxWidth * dampedDragAnimation.progress.fastCoerceIn(0f, 1f))
                             .fastRoundToInt()
                             .coerceIn(0, constraints.maxWidth)
+                        val placeable =
+                            measurable.measure(
+                                constraints.copy(
+                                    minWidth = width,
+                                    maxWidth = width
+                                )
+                            )
                         layout(width, placeable.height) {
                             placeable.place(0, 0)
                         }
                     }
+                    .graphicsLayer {
+                        translationX = if (isLtr) 0f else trackWidth - size.width
+                    }
             )
+
+            keyPoints.forEach { keyPoint ->
+                val progress = valueProgress(keyPoint.value, safeValueRange)
+                val visualKeyPointProgress = sliderVisualProgress(progress, isLtr)
+                // P1: derivedStateOf so a keypoint only recomposes when the thumb actually crosses it,
+                // instead of every frame the drag animation reads `progress`.
+                val isActive by remember(dampedDragAnimation, progress) {
+                    derivedStateOf { dampedDragAnimation.progress >= progress }
+                }
+                Box(
+                    Modifier
+                        .graphicsLayer {
+                            translationX = (
+                                -size.width / 2f + trackWidth * visualKeyPointProgress
+                            ).fastCoerceIn(
+                                -size.width / 4f,
+                                trackWidth - size.width * 3f / 4f
+                            )
+                        }
+                        .appSquircleBackground(resolveKeyPointColor(keyPoint, style, isActive), 999.dp)
+                        .size(keyPoint.size)
+                )
+            }
         }
         if (enabled) {
             Box(
@@ -442,37 +500,13 @@ private fun LiquidTrackSlider(
             )
         }
 
-        keyPoints.forEach { keyPoint ->
-            val progress = valueProgress(keyPoint.value, safeValueRange)
-            // P1: derivedStateOf so a keypoint only recomposes when the thumb actually crosses it,
-            // instead of every frame the drag animation reads `progress`.
-            val isActive by remember(dampedDragAnimation, progress) {
-                derivedStateOf { dampedDragAnimation.progress >= progress }
-            }
-            Box(
-                Modifier
-                    .graphicsLayer {
-                        translationX = (
-                                -size.width / 2f + trackWidth * progress
-                                ).fastCoerceIn(
-                                -size.width / 4f,
-                                trackWidth - size.width * 3f / 4f
-                            ) *
-                                if (isLtr) 1f else -1f
-                    }
-                    .appSquircleBackground(resolveKeyPointColor(keyPoint, style, isActive), 999.dp)
-                    .size(keyPoint.size)
-            )
-        }
-
         Box(
             Modifier
                 .graphicsLayer { clip = false }
                 .graphicsLayer {
                     translationX = (
-                            -size.width / 2f + trackWidth * dampedDragAnimation.progress
-                            ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f) *
-                            if (isLtr) 1f else -1f
+                            -size.width / 2f + trackWidth * visualProgress
+                            ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f)
                 }
                 .then(
                     if (thumbBackdrop != null) {
@@ -486,25 +520,32 @@ private fun LiquidTrackSlider(
                             effects = {
                                 val progress = dampedDragAnimation.pressProgress
                                 vibrancy()
-                                // Blur: high at rest (frosted), fades toward zero on press (clear glass).
+                                // Keep the static thumb close to the Backdrop tutorial: clear lens first,
+                                // light frosting second. Pressing removes most frosting.
                                 blur(
                                     lerp(
-                                        UiPerformanceBudget.backdropBlur.toPx(),
+                                        style.thumbRestingBlur.toPx() *
+                                            glassRuntime.blurScaleFor(GlassVariant.Compact),
                                         0f,
                                         progress
                                     )
                                 )
-                                // Lens: moderate at rest for the signature glass look, intensifies on
-                                // press for the dramatic magnifying-glass refraction from the tutorial.
+                                // Lens stays visible at rest and gains strength while pressed or dragged.
                                 lens(
                                     lerp(
-                                        style.lensRefractionHeight.toPx(),
-                                        style.lensRefractionHeight.toPx() * 2f,
+                                        style.lensRefractionHeight.toPx() *
+                                            glassRuntime.lensScaleFor(GlassVariant.Compact),
+                                        style.lensRefractionHeight.toPx() *
+                                            style.pressedLensHeightScale *
+                                            glassRuntime.interactionLensScale,
                                         progress
                                     ),
                                     lerp(
-                                        style.lensRefractionAmount.toPx(),
-                                        style.lensRefractionAmount.toPx() * 2.5f,
+                                        style.lensRefractionAmount.toPx() *
+                                            glassRuntime.lensScaleFor(GlassVariant.Compact),
+                                        style.lensRefractionAmount.toPx() *
+                                            style.pressedLensAmountScale *
+                                            glassRuntime.interactionLensScale,
                                         progress
                                     ),
                                     chromaticAberration = true,
@@ -520,30 +561,35 @@ private fun LiquidTrackSlider(
                             shadow = {
                                 val progress = dampedDragAnimation.pressProgress
                                 Shadow(
-                                    radius = lerp(4f, 8f, progress).dp,
-                                    color = Color.Black.copy(alpha = lerp(0.08f, 0.14f, progress))
+                                    radius = lerp(3.5f, 7f, progress).dp,
+                                    offset = DpOffset(0.dp, lerp(0.5f, 1.5f, progress).dp),
+                                    color = Color.Black.copy(alpha = lerp(0.10f, 0.16f, progress))
                                 )
                             },
                             innerShadow = {
                                 val progress = dampedDragAnimation.pressProgress
                                 InnerShadow(radius = 4.dp * progress, alpha = progress)
                             },
-                            // Scale: dramatic expansion on press, matching the tutorial's
-                            // `(size.width + 16dp) / size.width` approach. The backdrop stays
-                            // correctly positioned because layerBlock transforms the content layer
-                            // only, not the backdrop sampling (per the Interactive Bottom Bar tutorial).
+                            // Scale: use the shared drag animation for press expansion, then add a
+                            // small velocity stretch so dragging feels elastic while the backdrop
+                            // sampling stays anchored.
                             layerBlock = {
                                 val progress = dampedDragAnimation.pressProgress
-                                val maxScaleX = (size.width + 16.dp.toPx()) / size.width
-                                val maxScaleY = (size.height + 8.dp.toPx()) / size.height
-                                scaleX = lerp(1f, maxScaleX, progress)
-                                scaleY = lerp(1f, maxScaleY, progress)
+                                val velocity = dampedDragAnimation.velocity / 60f
+                                val velocityStretch = (velocity * 0.55f).fastCoerceIn(-0.16f, 0.16f)
+                                val velocitySquash = (velocity * 0.20f).fastCoerceIn(-0.10f, 0.10f)
+                                scaleX = dampedDragAnimation.scaleX / (1f - velocityStretch)
+                                scaleY = lerp(1f, style.pressedHeightScale, progress) * (1f - velocitySquash)
                             },
                             // Surface: fades from a light tint (rest) toward near-transparent (press)
                             // so the intensified refraction shows through clearly.
                             onDrawSurface = {
                                 val progress = dampedDragAnimation.pressProgress
-                                val alpha = lerp(style.thumbGlassSurfaceAlpha, 0.02f, progress)
+                                val alpha = lerp(
+                                    style.thumbGlassSurfaceAlpha,
+                                    style.thumbPressedSurfaceAlpha,
+                                    progress
+                                )
                                 drawRect(Color.White.copy(alpha = alpha))
                             }
                         )
@@ -602,6 +648,11 @@ private fun valueProgress(
     return ((value - valueRange.start) / span).fastCoerceIn(0f, 1f)
 }
 
+internal fun sliderVisualProgress(
+    progress: Float,
+    isLtr: Boolean
+): Float = if (isLtr) progress else 1f - progress
+
 @Composable
 private fun resolveKeyPointColor(
     keyPoint: LiquidSliderKeyPoint,
@@ -623,16 +674,21 @@ private data class LiquidTrackSliderStyle(
     val trackHeight: Dp,
     val thumbWidth: Dp,
     val thumbHeight: Dp,
-    val pressedScale: Float,
+    val pressedWidthScale: Float,
+    val pressedHeightScale: Float,
     // Lens refraction for the glass thumb. Mirrors the Backdrop "Glass Slider" tutorial's
     // proportions (height ~0.375x, amount ~0.5x of the thumb height), which keeps refractionHeight
     // safely under the capsule corner radius (thumbHeight / 2) and refractionAmount under the min
     // dimension (thumbHeight) — exceeding either produces corner discontinuities.
     val lensRefractionHeight: Dp = thumbHeight * 0.375f,
     val lensRefractionAmount: Dp = thumbHeight * 0.5f,
+    val pressedLensHeightScale: Float = 1.35f,
+    val pressedLensAmountScale: Float = 1.65f,
+    val thumbRestingBlur: Dp = thumbHeight * 0.10f,
     // Theme-aware thumb tuning. In dark mode the black shadow adds almost no definition, so the
     // clear thumb leans on the white surface + highlight; we lift both a touch to keep it crisp.
     val thumbGlassSurfaceAlpha: Float = SliderThumbGlassSurfaceAlpha,
+    val thumbPressedSurfaceAlpha: Float = SliderThumbPressedSurfaceAlpha,
     val thumbRestingHighlightAlpha: Float = SliderThumbRestingHighlightAlpha
 )
 
@@ -641,6 +697,8 @@ private data class LiquidTrackSliderStyle(
 // because the black drop shadow adds little contrast over dark backgrounds.
 private const val SliderThumbGlassSurfaceAlpha = 0.10f
 private const val SliderThumbGlassSurfaceAlphaDark = 0.18f
+private const val SliderThumbPressedSurfaceAlpha = 0.04f
+private const val SliderThumbPressedSurfaceAlphaDark = 0.08f
 private const val SliderThumbRestingHighlightAlpha = 0.5f
 private const val SliderThumbRestingHighlightAlphaDark = 0.7f
 
@@ -652,3 +710,6 @@ private fun thumbGlassSurfaceAlphaFor(isLightTheme: Boolean): Float =
 
 private fun thumbRestingHighlightAlphaFor(isLightTheme: Boolean): Float =
     if (isLightTheme) SliderThumbRestingHighlightAlpha else SliderThumbRestingHighlightAlphaDark
+
+private fun thumbPressedSurfaceAlphaFor(isLightTheme: Boolean): Float =
+    if (isLightTheme) SliderThumbPressedSurfaceAlpha else SliderThumbPressedSurfaceAlphaDark

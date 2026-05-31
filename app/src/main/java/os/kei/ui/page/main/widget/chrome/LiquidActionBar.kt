@@ -56,6 +56,7 @@ import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
+import os.kei.ui.page.main.widget.glass.glassEffectRuntime
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -385,7 +386,7 @@ fun LiquidActionBar(
                 }
             }
         }
-    val interactionLensScale = 1f
+    val interactionLensScale = glassEffectRuntime().interactionLensScale
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val effectLensDp = UiPerformanceBudget.backdropLens
     val interactiveHighlightEnabled = effectiveBlurEnabled && (layeredStyleEnabled || isInLightTheme)

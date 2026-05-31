@@ -70,6 +70,7 @@ import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.radialRefraction
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
+import os.kei.ui.page.main.widget.glass.glassEffectRuntime
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -340,7 +341,7 @@ fun LiquidGlassBottomBar(
         remember(pressProgressProvider, itemPressProgressProvider) {
             { max(pressProgressProvider(), itemPressProgressProvider()) }
         }
-    val interactionLensScale = 1f
+    val interactionLensScale = glassEffectRuntime().interactionLensScale
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val effectLensDp = UiPerformanceBudget.backdropLens
     val useLightweightBackdrop = !effectiveLiquidEffectEnabled

@@ -9,7 +9,7 @@
 |------|--------|--------|----------|
 | Dropdown Runtime Scaling | Clamp/scale dropdown blur and lens, especially ActionMenu. | Done | `LiquidGlassDropdown.kt`, `./gradlew :app:compileDebugKotlin` |
 | Button Effect Standardization | Route liquid button blur/lens through `GlassStyle` and runtime scaling. | Done | `AppLiquidButtons.kt`, `./gradlew :app:compileDebugKotlin` |
-| Chrome Interaction Runtime | Use `GlassEffectRuntime.interactionLensScale` in bottom/action bars. | Planned | `LiquidGlassBottomBar.kt`, `LiquidActionBar.kt` |
+| Chrome Interaction Runtime | Use `GlassEffectRuntime.interactionLensScale` in bottom/action bars. | Done | `LiquidGlassBottomBar.kt`, `LiquidActionBar.kt`, `./gradlew :app:compileDebugKotlin` |
 | LiquidSurface Runtime Entry | Provide a variant-aware runtime path while preserving raw-effect callers. | Planned | `LiquidSurfaces.kt` |
 
 ## Notes

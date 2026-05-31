@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -35,14 +36,21 @@ import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.core.AppSurfaceCard
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
+import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidRoundedCard
-import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
+import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.shape.appSquircleSurface
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -481,6 +489,128 @@ internal fun DebugLiquidClusterCardSample(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DebugLiquidParentBackdropSample(
+    backdrop: Backdrop,
+    accent: Color,
+    contentColor: Color,
+    secondaryColor: Color
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        DebugLiquidParentBackdropPane(
+            backdrop = backdrop,
+            accent = accent,
+            contentColor = contentColor,
+            secondaryColor = secondaryColor,
+            reducedProgress = 0f,
+            modifier = Modifier.fillMaxWidth()
+        )
+        DebugLiquidParentBackdropPane(
+            backdrop = backdrop,
+            accent = accent,
+            contentColor = contentColor,
+            secondaryColor = secondaryColor,
+            reducedProgress = 1f,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun DebugLiquidParentBackdropPane(
+    backdrop: Backdrop,
+    accent: Color,
+    contentColor: Color,
+    secondaryColor: Color,
+    reducedProgress: Float,
+    modifier: Modifier = Modifier
+) {
+    val paneBackdrop = rememberLayerBackdrop()
+    CompositionLocalProvider(
+        LocalGlassEffectRuntime provides GlassEffectRuntime(reducedProgress = reducedProgress)
+    ) {
+        LiquidSurface(
+            backdrop = backdrop,
+            exportedBackdrop = paneBackdrop,
+            shape = RoundedRectangle(24.dp),
+            surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.14f),
+            tint = accent.copy(alpha = 0.12f),
+            isInteractive = false,
+            modifier = modifier.height(176.dp)
+        ) {
+            CompositionLocalProvider(LocalLiquidParentBackdrop provides paneBackdrop) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${(reducedProgress * 100).toInt()}%",
+                            color = secondaryColor,
+                            fontSize = AppTypographyTokens.Supporting.fontSize,
+                            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                            maxLines = 1
+                        )
+                        StatusPill(
+                            label = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_metric_value),
+                            color = accent,
+                            size = AppStatusPillSize.Compact
+                        )
+                    }
+                    AppSurfaceCard(
+                        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.12f),
+                        borderColor = accent.copy(alpha = 0.22f),
+                        showIndication = false,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_title),
+                                color = contentColor,
+                                fontSize = AppTypographyTokens.Supporting.fontSize,
+                                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_body),
+                                color = secondaryColor,
+                                fontSize = AppTypographyTokens.Caption.fontSize,
+                                lineHeight = AppTypographyTokens.Caption.lineHeight,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    AppOverviewMetricTile(
+                        label = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_metric),
+                        value = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_metric_value),
+                        labelColor = secondaryColor,
+                        valueColor = contentColor,
+                        borderColor = accent.copy(alpha = 0.20f),
+                        valueMaxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

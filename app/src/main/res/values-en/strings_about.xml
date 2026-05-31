@@ -84,6 +84,10 @@
     <string name="debug_component_lab_liquid_vertical_capsule">Vertical oval capsule</string>
     <string name="debug_component_lab_liquid_cluster_card_title">Rounded card + dot buttons</string>
     <string name="debug_component_lab_liquid_cluster_card_body">Inner controls use their own backdrop instance</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_title">Parent backdrop nesting proof</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_body">Outer glass exports a backdrop; inner cards, status pills, and metric tiles reuse it</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_metric">Parent reuse</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_metric_value">Exported</string>
     <string name="debug_component_lab_liquid_parameter_panel_title">Parameter panel sample</string>
     <string name="debug_component_lab_liquid_parameter_corner">Corner radius</string>
     <string name="debug_component_lab_liquid_parameter_blur">Blur radius</string>

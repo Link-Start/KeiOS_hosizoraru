@@ -83,6 +83,10 @@
     <string name="debug_component_lab_liquid_vertical_capsule">縦型楕円カプセル</string>
     <string name="debug_component_lab_liquid_cluster_card_title">角丸カード + 小さな円形ボタン</string>
     <string name="debug_component_lab_liquid_cluster_card_body">内部コントロールは独立 backdrop を使用</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_title">親 backdrop ネスト試作</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_body">外側のガラスが backdrop をエクスポートし、内部カード、ステータスピル、メトリックタイルが同じ層を再利用します</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_metric">親層再利用</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_metric_value">エクスポート済み</string>
     <string name="debug_component_lab_liquid_parameter_panel_title">パラメータパネルサンプル</string>
     <string name="debug_component_lab_liquid_parameter_corner">Corner radius</string>
     <string name="debug_component_lab_liquid_parameter_blur">Blur radius</string>

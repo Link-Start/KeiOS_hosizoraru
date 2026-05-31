@@ -101,6 +101,12 @@ internal fun DebugLiquidCatalogPage(
                     )
                 }
                 item {
+                    DebugLiquidParentBackdropCard(
+                        accent = accent,
+                        backdrop = pageBackdrop
+                    )
+                }
+                item {
                     DebugLiquidParameterCard(
                         accent = accent,
                         backdrop = pageBackdrop

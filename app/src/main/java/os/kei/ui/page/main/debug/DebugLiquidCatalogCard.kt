@@ -433,6 +433,30 @@ internal fun DebugLiquidSurfaceCardsCard(
 }
 
 @Composable
+internal fun DebugLiquidParentBackdropCard(
+    accent: Color,
+    backdrop: Backdrop
+) {
+    val contentColor = MiuixTheme.colorScheme.onBackground
+    val secondaryColor = MiuixTheme.colorScheme.onBackgroundVariant
+    AppFeatureCard(
+        title = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_title),
+        subtitle = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_body),
+        sectionIcon = appLucideLayersIcon(),
+        titleColor = accent,
+        borderColor = accent.copy(alpha = 0.20f),
+        contentVerticalSpacing = CardLayoutRhythm.sectionGap
+    ) {
+        DebugLiquidParentBackdropSample(
+            backdrop = backdrop,
+            accent = accent,
+            contentColor = contentColor,
+            secondaryColor = secondaryColor
+        )
+    }
+}
+
+@Composable
 internal fun DebugLiquidParameterCard(
     accent: Color,
     backdrop: Backdrop

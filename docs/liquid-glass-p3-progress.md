@@ -9,7 +9,7 @@
 |------|--------|--------|----------|
 | Toast Consistency | Align toast liquid-glass comments and runtime-scaled effect values. | Done | `LiquidToast.kt`, `./gradlew :app:compileDebugKotlin` |
 | Parent Backdrop Reuse | Let local glass cards/pills reuse exported parent backdrop before creating local capture layers. | Done | Card, status, info, and GitHub inline liquid surfaces; `./gradlew :app:compileDebugKotlin` |
-| Debug Catalog Coverage | Add debug catalog samples for reduced-effect and parent-backdrop glass nesting coverage. | Planned | Debug Liquid Catalog files |
+| Debug Catalog Coverage | Add debug catalog samples for reduced-effect and parent-backdrop glass nesting coverage. | Done | Debug Liquid Catalog files; `./gradlew :app:compileDebugKotlin` |
 
 ## Notes
 

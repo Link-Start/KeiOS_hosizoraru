@@ -88,6 +88,10 @@
     <string name="debug_component_lab_liquid_vertical_capsule">竖向椭圆胶囊</string>
     <string name="debug_component_lab_liquid_cluster_card_title">圆角 Card + 小圆按钮</string>
     <string name="debug_component_lab_liquid_cluster_card_body">独立 backdrop 实例承载内部液态控件</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_title">父级 backdrop 嵌套样张</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_body">外层玻璃导出 backdrop，内部卡片、状态胶囊与指标块复用同一层</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_metric">父层复用</string>
+    <string name="debug_component_lab_liquid_parent_backdrop_metric_value">已导出</string>
     <string name="debug_component_lab_liquid_parameter_panel_title">参数面板样张</string>
     <string name="debug_component_lab_liquid_parameter_corner">Corner radius</string>
     <string name="debug_component_lab_liquid_parameter_blur">Blur radius</string>

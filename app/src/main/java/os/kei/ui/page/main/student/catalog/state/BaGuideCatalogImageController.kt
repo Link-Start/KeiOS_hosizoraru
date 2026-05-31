@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +19,15 @@ internal class BaGuideCatalogImageController(
 ) {
     private val mutableState = MutableStateFlow(BaGuideCatalogImageUiState())
     private var loadingUrls: Set<String> = emptySet()
+
+    // Coalescing buffer: streamed per-image results are batched into a single StateFlow emission
+    // every [FLUSH_INTERVAL_MS] so a 72-icon scroll paints progressively without triggering one
+    // full-grid recomposition per icon. Guarded by [bufferLock] because results are streamed in
+    // from concurrent loader coroutines.
+    private val bufferLock = Any()
+    private val pendingBitmaps = linkedMapOf<String, Bitmap>()
+    private val pendingMissing = linkedSetOf<String>()
+    private var flushJob: Job? = null
 
     val state: StateFlow<BaGuideCatalogImageUiState> = mutableState.asStateFlow()
 
@@ -52,33 +63,81 @@ internal class BaGuideCatalogImageController(
         }
         if (missingUrls.isEmpty()) return
 
-        loadingUrls += missingUrls
+        loadingUrls = loadingUrls + missingUrls
         scope.launch {
             try {
-                val result =
-                    repository.loadImages(
-                        context = appContext,
-                        imageUrls = missingUrls,
-                    )
-                mutableState.update { state ->
-                    state.copy(
-                        bitmaps = state.bitmaps + result.bitmaps,
-                        missingUrls = state.missingUrls + result.missingUrls,
-                    )
-                }
+                repository.loadImages(
+                    context = appContext,
+                    imageUrls = missingUrls,
+                    onResult = { imageUrl, bitmap ->
+                        enqueueResult(imageUrl, bitmap)
+                    },
+                )
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Throwable) {
-                mutableState.update { state ->
-                    state.copy(missingUrls = state.missingUrls + missingUrls)
-                }
+                missingUrls.forEach { enqueueResult(it, null) }
             } finally {
-                loadingUrls -= missingUrls
+                loadingUrls = loadingUrls - missingUrls.toSet()
+                flushPending()
             }
         }
     }
 
+    private fun enqueueResult(
+        imageUrl: String,
+        bitmap: Bitmap?,
+    ) {
+        synchronized(bufferLock) {
+            if (bitmap == null) {
+                pendingMissing.add(imageUrl)
+            } else {
+                pendingBitmaps[imageUrl] = bitmap
+            }
+        }
+        scheduleFlush()
+    }
+
+    private fun scheduleFlush() {
+        synchronized(bufferLock) {
+            if (flushJob?.isActive == true) return
+            flushJob =
+                scope.launch {
+                    delay(FLUSH_INTERVAL_MS)
+                    flushPending()
+                }
+        }
+    }
+
+    private fun flushPending() {
+        val bitmapsToApply: Map<String, Bitmap>
+        val missingToApply: Set<String>
+        synchronized(bufferLock) {
+            if (pendingBitmaps.isEmpty() && pendingMissing.isEmpty()) return
+            bitmapsToApply = LinkedHashMap(pendingBitmaps)
+            missingToApply = LinkedHashSet(pendingMissing)
+            pendingBitmaps.clear()
+            pendingMissing.clear()
+        }
+        mutableState.update { state ->
+            state.copy(
+                bitmaps = if (bitmapsToApply.isEmpty()) state.bitmaps else state.bitmaps + bitmapsToApply,
+                missingUrls = if (missingToApply.isEmpty()) state.missingUrls else state.missingUrls + missingToApply,
+            )
+        }
+    }
+
     fun clearLoadingState() {
+        synchronized(bufferLock) {
+            flushJob?.cancel()
+            flushJob = null
+            pendingBitmaps.clear()
+            pendingMissing.clear()
+        }
         loadingUrls = emptySet()
+    }
+
+    private companion object {
+        const val FLUSH_INTERVAL_MS = 80L
     }
 }

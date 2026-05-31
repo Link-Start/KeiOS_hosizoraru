@@ -22,6 +22,7 @@ import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
@@ -136,14 +137,22 @@ private fun AppSupportingBlockLiquid(
     textContent: @Composable () -> Unit,
 ) {
     val localBackdrop = rememberLayerBackdrop()
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val activeBackdrop = parentBackdrop ?: localBackdrop
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
-                .layerBackdrop(localBackdrop),
+                .then(
+                    if (parentBackdrop == null) {
+                        Modifier.layerBackdrop(localBackdrop)
+                    } else {
+                        Modifier
+                    },
+                ),
     )
     LiquidSurface(
-        backdrop = localBackdrop,
+        backdrop = activeBackdrop,
         shape = shape,
         isInteractive = false,
         surfaceColor = backgroundColor,

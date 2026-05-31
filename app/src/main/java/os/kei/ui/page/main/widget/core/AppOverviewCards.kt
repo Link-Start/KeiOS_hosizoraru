@@ -36,6 +36,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -92,10 +93,12 @@ fun AppOverviewCard(
     val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
-    if (backdrop != null) {
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val inheritedBackdrop = backdrop ?: parentBackdrop
+    if (inheritedBackdrop != null) {
         AppOverviewCardSurface(
             modifier = modifier,
-            backdrop = backdrop,
+            backdrop = inheritedBackdrop,
             captureBackdrop = null,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
@@ -262,10 +265,12 @@ fun AppOverviewMetricTile(
             Color.White.copy(alpha = 0.86f)
         }
     val cornerRadius = 12.dp
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val effectiveBackdrop = backdrop ?: parentBackdrop
     val tileModifier =
         modifier
             .then(
-                if (backdrop == null) {
+                if (effectiveBackdrop == null) {
                     Modifier
                         .appSquircleBackground(resolvedContainerColor, cornerRadius)
                         .appSquircleBackground(resolvedOverlayColor, cornerRadius)
@@ -303,9 +308,9 @@ fun AppOverviewMetricTile(
             )
         }
     }
-    if (backdrop != null) {
+    if (effectiveBackdrop != null) {
         LiquidSurface(
-            backdrop = backdrop,
+            backdrop = effectiveBackdrop,
             modifier = tileModifier,
             shape = RoundedRectangle(12.dp),
             isInteractive = false,
@@ -369,10 +374,12 @@ fun AppOverviewInlineMetricTile(
             Color.White.copy(alpha = 0.84f)
         }
     val cornerRadius = 12.dp
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val effectiveBackdrop = backdrop ?: parentBackdrop
     val tileModifier =
         modifier
             .then(
-                if (backdrop == null) {
+                if (effectiveBackdrop == null) {
                     Modifier
                         .appSquircleBackground(resolvedContainerColor, cornerRadius)
                         .appSquircleBackground(resolvedOverlayColor, cornerRadius)
@@ -416,9 +423,9 @@ fun AppOverviewInlineMetricTile(
             )
         }
     }
-    if (backdrop != null) {
+    if (effectiveBackdrop != null) {
         LiquidSurface(
-            backdrop = backdrop,
+            backdrop = effectiveBackdrop,
             modifier = tileModifier,
             shape = RoundedRectangle(12.dp),
             isInteractive = false,

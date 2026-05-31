@@ -26,6 +26,7 @@ import os.kei.ui.page.main.github.repositoryHealthLabelRes
 import os.kei.ui.page.main.github.repositoryHealthStatusColor
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -117,7 +118,9 @@ internal fun GitHubHealthPreviewBlock(
     onClick: () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
-    val backdrop = rememberLayerBackdrop()
+    val localBackdrop = rememberLayerBackdrop()
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val activeBackdrop = parentBackdrop ?: localBackdrop
     val color = health.level.repositoryHealthStatusColor()
     val surfaceColor =
         if (isDark) {
@@ -126,7 +129,8 @@ internal fun GitHubHealthPreviewBlock(
             MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
         }
     GitHubInlineLiquidSurface(
-        backdrop = backdrop,
+        backdrop = activeBackdrop,
+        captureBackdrop = if (parentBackdrop == null) localBackdrop else null,
         tint = color.copy(alpha = if (isDark) 0.16f else 0.10f),
         surfaceColor = surfaceColor,
         onClick = onClick,

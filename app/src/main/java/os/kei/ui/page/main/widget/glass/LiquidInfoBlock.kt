@@ -39,9 +39,11 @@ fun LiquidInfoBlock(
             Color.White.copy(alpha = 0.66f)
         }
     val cornerRadius = 16.dp
-    if (backdrop != null) {
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val inheritedBackdrop = backdrop ?: parentBackdrop
+    if (inheritedBackdrop != null) {
         LiquidInfoBlockSurface(
-            backdrop = backdrop,
+            backdrop = inheritedBackdrop,
             captureBackdrop = null,
             title = title,
             subtitle = subtitle,

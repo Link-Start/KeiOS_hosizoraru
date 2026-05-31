@@ -22,6 +22,7 @@ import os.kei.ui.page.main.widget.core.AppStatusPrimitives
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
@@ -75,6 +76,8 @@ fun StatusPill(
     val shape = AppStatusPrimitives.pillShape
     val cornerRadius = 999.dp
     val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val inheritedBackdrop = backdrop ?: parentBackdrop
     val pillModifier =
         Modifier
             .then(modifier)
@@ -113,10 +116,10 @@ fun StatusPill(
             )
         }
 
-        backdrop != null -> {
+        inheritedBackdrop != null -> {
             StatusPillLiquid(
                 modifier = pillModifier,
-                backdrop = backdrop,
+                backdrop = inheritedBackdrop,
                 captureBackdrop = null,
                 shape = shape,
                 surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),

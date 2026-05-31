@@ -16,6 +16,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 
 @Composable
@@ -35,6 +36,8 @@ internal fun GuideLiquidCard(
     content: @Composable BoxScope.() -> Unit
 ) {
     val cardBackdrop = rememberLayerBackdrop()
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val activeBackdrop = parentBackdrop ?: cardBackdrop
     val pressSafePadding = if (isInteractive && enabled && onClick != null) {
         AppInteractiveTokens.compactLiquidPressSafePadding
     } else {
@@ -49,10 +52,16 @@ internal fun GuideLiquidCard(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .layerBackdrop(cardBackdrop)
+                .then(
+                    if (parentBackdrop == null) {
+                        Modifier.layerBackdrop(cardBackdrop)
+                    } else {
+                        Modifier
+                    },
+                )
         )
         LiquidSurface(
-            backdrop = cardBackdrop,
+            backdrop = activeBackdrop,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedRectangle(cornerRadius),
             enabled = enabled,

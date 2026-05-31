@@ -16,6 +16,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -76,14 +77,18 @@ internal fun GitHubAssetCountBubble(
     ) {
         if (liquidControlsEnabled) {
             val localBackdrop = rememberLayerBackdrop()
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(localBackdrop),
-            )
+            val parentBackdrop = LocalLiquidParentBackdrop.current
+            val activeBackdrop = parentBackdrop ?: localBackdrop
+            if (parentBackdrop == null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .layerBackdrop(localBackdrop),
+                )
+            }
             LiquidSurface(
-                backdrop = localBackdrop,
+                backdrop = activeBackdrop,
                 modifier =
                     Modifier
                         .matchParentSize()

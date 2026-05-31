@@ -31,6 +31,7 @@ import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -84,6 +85,8 @@ fun AppSurfaceCard(
     val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val inheritedBackdrop = backdrop ?: parentBackdrop
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
             if (showIndication && clickable) {
@@ -94,10 +97,10 @@ fun AppSurfaceCard(
         } else {
             pressSafePadding
         }
-    if (backdrop != null) {
+    if (inheritedBackdrop != null) {
         AppSurfaceCardFrame(
             modifier = modifier,
-            backdrop = backdrop,
+            backdrop = inheritedBackdrop,
             captureBackdrop = null,
             clickModifier = clickModifier,
             interactionSource = interactionSource,

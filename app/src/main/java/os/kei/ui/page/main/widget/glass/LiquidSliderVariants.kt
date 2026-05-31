@@ -101,7 +101,9 @@ fun LiquidMusicProgressSlider(
             trackHeight = 4.dp,
             thumbWidth = 30.dp,
             thumbHeight = 18.dp,
-            pressedScale = 1.28f
+            pressedScale = 1.28f,
+            thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+            thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
         )
     )
 }
@@ -149,7 +151,9 @@ fun LiquidVolumeSlider(
             trackHeight = 6.dp,
             thumbWidth = 40.dp,
             thumbHeight = 26.dp,
-            pressedScale = 1.36f
+            pressedScale = 1.36f,
+            thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+            thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
         )
     )
 }
@@ -205,7 +209,9 @@ fun LiquidKeyPointSlider(
             trackHeight = 7.dp,
             thumbWidth = 38.dp,
             thumbHeight = 22.dp,
-            pressedScale = 1.42f
+            pressedScale = 1.42f,
+            thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+            thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
         )
     )
 }
@@ -491,7 +497,7 @@ private fun LiquidTrackSlider(
                             highlight = {
                                 val progress = dampedDragAnimation.pressProgress
                                 Highlight.Ambient.copy(
-                                    alpha = lerp(SliderThumbRestingHighlightAlpha, 1f, progress)
+                                    alpha = lerp(style.thumbRestingHighlightAlpha, 1f, progress)
                                 )
                             },
                             shadow = {
@@ -513,7 +519,7 @@ private fun LiquidTrackSlider(
                             // A barely-there white tint so the glass stays clear (the tutorial thumb
                             // has no opaque fill); just enough to lift contrast over busy backdrops.
                             onDrawSurface = {
-                                drawRect(Color.White.copy(alpha = SliderThumbGlassSurfaceAlpha))
+                                drawRect(Color.White.copy(alpha = style.thumbGlassSurfaceAlpha))
                             }
                         )
                     } else {
@@ -598,12 +604,26 @@ private data class LiquidTrackSliderStyle(
     // safely under the capsule corner radius (thumbHeight / 2) and refractionAmount under the min
     // dimension (thumbHeight) — exceeding either produces corner discontinuities.
     val lensRefractionHeight: Dp = thumbHeight * 0.375f,
-    val lensRefractionAmount: Dp = thumbHeight * 0.5f
+    val lensRefractionAmount: Dp = thumbHeight * 0.5f,
+    // Theme-aware thumb tuning. In dark mode the black shadow adds almost no definition, so the
+    // clear thumb leans on the white surface + highlight; we lift both a touch to keep it crisp.
+    val thumbGlassSurfaceAlpha: Float = SliderThumbGlassSurfaceAlpha,
+    val thumbRestingHighlightAlpha: Float = SliderThumbRestingHighlightAlpha
 )
 
 // Glass thumb (Backdrop available): clear refractive capsule matching the Glass Slider tutorial.
+// Light mode keeps the thumb nearly clear; dark mode lifts the white surface + highlight a touch
+// because the black drop shadow adds little contrast over dark backgrounds.
 private const val SliderThumbGlassSurfaceAlpha = 0.10f
+private const val SliderThumbGlassSurfaceAlphaDark = 0.18f
 private const val SliderThumbRestingHighlightAlpha = 0.5f
+private const val SliderThumbRestingHighlightAlphaDark = 0.7f
 
 // Fallback thumb (glass effects disabled): needs an opaque-ish fill to stay visible without a lens.
 private const val SliderThumbFallbackSurfaceAlpha = 0.42f
+
+private fun thumbGlassSurfaceAlphaFor(isLightTheme: Boolean): Float =
+    if (isLightTheme) SliderThumbGlassSurfaceAlpha else SliderThumbGlassSurfaceAlphaDark
+
+private fun thumbRestingHighlightAlphaFor(isLightTheme: Boolean): Float =
+    if (isLightTheme) SliderThumbRestingHighlightAlpha else SliderThumbRestingHighlightAlphaDark

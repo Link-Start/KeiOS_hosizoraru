@@ -44,6 +44,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
@@ -278,6 +279,7 @@ private fun LiquidSwitchToggle(
             dampedDragAnimation.animateToValue(target)
         }
     }
+    val glassRuntime = glassEffectRuntime()
 
     val trackBackdrop = rememberLayerBackdrop()
     val combinedBackdrop =
@@ -338,10 +340,18 @@ private fun LiquidSwitchToggle(
                     shape = { Capsule() },
                     effects = {
                         val progress = dampedDragAnimation.pressProgress
-                        blur(8.dp.toPx() * (1f - progress * 0.3f))
+                        vibrancy()
+                        blur(
+                            lerp(
+                                6.dp.toPx() * glassRuntime.blurScaleFor(GlassVariant.Compact),
+                                2.dp.toPx() * glassRuntime.blurScaleFor(GlassVariant.Compact),
+                                progress,
+                            ),
+                        )
+                        val lensScale = glassRuntime.lensScaleFor(GlassVariant.Compact)
                         lens(
-                            12.dp.toPx() * progress,
-                            22.dp.toPx() * progress,
+                            lerp(5.dp.toPx(), 12.dp.toPx(), progress) * lensScale,
+                            lerp(10.dp.toPx(), 22.dp.toPx(), progress) * lensScale,
                             chromaticAberration = true,
                             depthEffect = true,
                         )
@@ -351,7 +361,7 @@ private fun LiquidSwitchToggle(
                         Highlight.Ambient.copy(
                             width = Highlight.Ambient.width / 1.5f,
                             blurRadius = Highlight.Ambient.blurRadius / 1.5f,
-                            alpha = progress,
+                            alpha = lerp(0.34f, 1f, progress),
                         )
                     },
                     shadow = {
@@ -367,7 +377,10 @@ private fun LiquidSwitchToggle(
                     },
                     innerShadow = {
                         val progress = dampedDragAnimation.pressProgress
-                        InnerShadow(radius = 4.dp * progress, alpha = progress)
+                        InnerShadow(
+                            radius = 1.dp + (3.dp * progress),
+                            alpha = lerp(0.12f, 1f, progress),
+                        )
                     },
                     layerBlock = {
                         scaleX = dampedDragAnimation.scaleX

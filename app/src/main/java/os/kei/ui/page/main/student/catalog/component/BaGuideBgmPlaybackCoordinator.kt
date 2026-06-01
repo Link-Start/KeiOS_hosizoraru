@@ -85,6 +85,8 @@ internal class BaGuideBgmPlaybackCoordinator(
     private var lastProgressPersistPositionMs = Long.MIN_VALUE
     private var lastProgressPersistPlaying: Boolean? = null
     private var lastProgressPersistAtMs = 0L
+    private var seekPlaybackPreserveAudioUrl = ""
+    private var seekPlaybackPreserveUntilMs = 0L
     private var playbackSnapshot = GuideBgmFavoritePlaybackSnapshot.Empty
 
     val uiState: StateFlow<BaGuideBgmPlaybackUiState> = _uiState.asStateFlow()
@@ -294,29 +296,36 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     fun toggle(favorite: GuideBgmFavoriteItem) {
-        val previousRuntimeState = activeBackend.runtimeState(favorite)
+        val currentRuntimeState = _runtimeState.value
+        val shouldPauseCurrentFavorite =
+            currentRuntimeState.isPlaying &&
+                normalizeGuideMediaSource(selectedAudioUrl) == normalizeGuideMediaSource(favorite.audioUrl)
         _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl).withResolvedSelection() }
         persistSelection()
-        activeBackend.toggle(
-            favorite = favorite,
-            queue = activePlaybackQueue(favorite),
-            queueMode = queueMode,
-            startPositionMs = resumePosition(favorite),
-        )
-        if (previousRuntimeState.isPlaying) {
+        if (shouldPauseCurrentFavorite) {
+            clearSeekPlaybackPreserve()
+            val pausedBackendRuntimeState = activeBackend.pause(favorite)
             val pausedRuntimeState =
-                previousRuntimeState.copy(
+                pausedBackendRuntimeState.copy(
                     isPlaying = false,
                     isBuffering = false,
                 )
             setRuntimeState(pausedRuntimeState, force = true)
             saveProgress(favorite, pausedRuntimeState, force = true)
         } else {
+            val previousRuntimeState = activeBackend.runtimeState(favorite)
+            activeBackend.toggle(
+                favorite = favorite,
+                queue = activePlaybackQueue(favorite),
+                queueMode = queueMode,
+                startPositionMs = resumePosition(favorite),
+            )
             publishOptimisticPlaybackStart(previousRuntimeState, restart = false)
         }
     }
 
     fun pause(favorite: GuideBgmFavoriteItem): BaGuideBgmPlaybackRuntimeState {
+        clearSeekPlaybackPreserve()
         val nextState = activeBackend.pause(favorite)
         setRuntimeState(nextState, force = true)
         saveProgress(favorite, nextState, force = true)
@@ -327,12 +336,22 @@ internal class BaGuideBgmPlaybackCoordinator(
         favorite: GuideBgmFavoriteItem,
         progress: Float,
     ): BaGuideBgmPlaybackRuntimeState {
-        val nextState =
+        val currentState = _runtimeState.value
+        val backendState =
             activeBackend.seek(
                 favorite = favorite,
                 queueMode = queueMode,
                 progress = progress,
             )
+        val nextState =
+            resolveBaGuideBgmSeekRuntimeState(
+                currentState = currentState,
+                backendState = backendState,
+                progress = progress,
+            )
+        if (currentState.isPlaying && !nextState.isEnded) {
+            markSeekPlaybackPreserve(favorite)
+        }
         setRuntimeState(nextState, force = true)
         saveProgress(favorite, nextState, force = true)
         return nextState
@@ -377,7 +396,11 @@ internal class BaGuideBgmPlaybackCoordinator(
             }
         }
         val resolvedFavorite = selectedFavorite ?: favorite
-        val nextRuntimeState = activeBackend.runtimeState(resolvedFavorite)
+        val nextRuntimeState =
+            preserveSeekPlaybackRuntimeState(
+                favorite = resolvedFavorite,
+                nextState = activeBackend.runtimeState(resolvedFavorite),
+            )
         setRuntimeState(nextRuntimeState)
         if (resolvedFavorite != null) saveProgress(resolvedFavorite, nextRuntimeState)
     }
@@ -460,6 +483,7 @@ internal class BaGuideBgmPlaybackCoordinator(
         previousRuntimeState: BaGuideBgmPlaybackRuntimeState,
         restart: Boolean,
     ) {
+        clearSeekPlaybackPreserve()
         setRuntimeState(
             previousRuntimeState.copy(
                 positionMs = if (restart) 0L else previousRuntimeState.positionMs,
@@ -469,6 +493,36 @@ internal class BaGuideBgmPlaybackCoordinator(
             ),
             force = true,
         )
+    }
+
+    private fun markSeekPlaybackPreserve(favorite: GuideBgmFavoriteItem) {
+        seekPlaybackPreserveAudioUrl = normalizeGuideMediaSource(favorite.audioUrl)
+        seekPlaybackPreserveUntilMs = clock.nowMs() + BGM_SEEK_PLAYBACK_PRESERVE_MS
+    }
+
+    private fun clearSeekPlaybackPreserve() {
+        seekPlaybackPreserveAudioUrl = ""
+        seekPlaybackPreserveUntilMs = 0L
+    }
+
+    private fun preserveSeekPlaybackRuntimeState(
+        favorite: GuideBgmFavoriteItem?,
+        nextState: BaGuideBgmPlaybackRuntimeState,
+    ): BaGuideBgmPlaybackRuntimeState {
+        val audioUrl = normalizeGuideMediaSource(favorite?.audioUrl.orEmpty())
+        if (
+            audioUrl.isBlank() ||
+            audioUrl != seekPlaybackPreserveAudioUrl ||
+            clock.nowMs() > seekPlaybackPreserveUntilMs
+        ) {
+            clearSeekPlaybackPreserve()
+            return nextState
+        }
+        if (nextState.isPlaying || nextState.isEnded || !_runtimeState.value.isPlaying) {
+            clearSeekPlaybackPreserve()
+            return nextState
+        }
+        return nextState.copy(isPlaying = true)
     }
 
     private fun shouldPublishRuntimeState(
@@ -585,6 +639,7 @@ internal fun rememberBaGuideBgmPlaybackCoordinator(
 private const val BGM_RUNTIME_ACTIVE_POLL_MS = 500L
 private const val BGM_RUNTIME_ENDED_POLL_MS = 300L
 private const val BGM_RUNTIME_IDLE_POLL_MS = 5_000L
+private const val BGM_SEEK_PLAYBACK_PRESERVE_MS = 1_600L
 private const val BGM_RUNTIME_UI_POSITION_DELTA_MS = 900L
 private const val BGM_PROGRESS_SAVE_POSITION_DELTA_MS = 2_000L
 private const val BGM_PROGRESS_SAVE_INTERVAL_MS = 5_000L

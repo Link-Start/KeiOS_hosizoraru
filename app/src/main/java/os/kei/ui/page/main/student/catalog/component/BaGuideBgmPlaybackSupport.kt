@@ -24,6 +24,36 @@ internal data class BaGuideBgmPlaybackRuntimeState(
         }
 }
 
+internal fun resolveBaGuideBgmSeekRuntimeState(
+    currentState: BaGuideBgmPlaybackRuntimeState,
+    backendState: BaGuideBgmPlaybackRuntimeState,
+    progress: Float,
+): BaGuideBgmPlaybackRuntimeState {
+    val safeProgress = progress.coerceIn(0f, 1f)
+    val durationMs =
+        when {
+            backendState.durationMs > 0L -> backendState.durationMs
+            currentState.durationMs > 0L -> currentState.durationMs
+            else -> 0L
+        }
+    val targetPositionMs =
+        if (durationMs > 0L) {
+            (durationMs * safeProgress)
+                .toLong()
+                .coerceIn(0L, durationMs)
+        } else {
+            backendState.positionMs
+                .takeIf { it > 0L }
+                ?: currentState.positionMs.coerceAtLeast(0L)
+        }
+    val preservePlaybackIntent = currentState.isPlaying && !backendState.isEnded
+    return backendState.copy(
+        positionMs = targetPositionMs,
+        durationMs = durationMs,
+        isPlaying = backendState.isPlaying || preservePlaybackIntent,
+    )
+}
+
 internal fun favoriteCacheScope(favorite: GuideBgmFavoriteItem): String = favorite.sourceUrl.ifBlank { GUIDE_BGM_FAVORITE_AUDIO_SCOPE_KEY }
 
 internal fun resolveFavoriteBgmMediaUrl(

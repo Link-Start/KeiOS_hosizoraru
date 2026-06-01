@@ -23,12 +23,6 @@ class UiPrefsRepository(
             }
     }
 
-    suspend fun setLiquidBottomBarEnabled(value: Boolean) {
-        updateAndPersist({ copy(liquidBottomBarEnabled = value) }) {
-            UiPrefs.setLiquidBottomBarEnabled(value)
-        }
-    }
-
     suspend fun setLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         updateAndPersist({ copy(liquidActionBarLayeredStyleEnabled = value) }) {
             UiPrefs.setLiquidActionBarLayeredStyleEnabled(value)

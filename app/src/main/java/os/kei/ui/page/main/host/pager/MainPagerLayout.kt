@@ -50,7 +50,6 @@ internal fun MainPagerLayout(
     rootBackHandlersEnabled: Boolean,
     navigator: Navigator,
     settingsReturnToken: Int,
-    liquidBottomBarEnabled: Boolean,
     liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
@@ -197,7 +196,6 @@ internal fun MainPagerLayout(
                 selectedPagePosition = null,
                 selectedPagePositionProvider = selectedPagePositionProvider,
                 backdrop = coordinator.backdrop,
-                liquidBottomBarEnabled = liquidBottomBarEnabled,
                 onPageSelected = coordinator.onPageSelected,
                 onExpand = coordinator.onShowBottomBar,
             )

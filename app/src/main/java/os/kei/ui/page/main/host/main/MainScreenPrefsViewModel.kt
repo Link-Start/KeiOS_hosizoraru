@@ -32,12 +32,6 @@ internal class MainScreenPrefsViewModel : ViewModel() {
             }
     }
 
-    fun updateLiquidBottomBarEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setLiquidBottomBarEnabled(value)
-        }
-    }
-
     fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setLiquidActionBarLayeredStyleEnabled(value)

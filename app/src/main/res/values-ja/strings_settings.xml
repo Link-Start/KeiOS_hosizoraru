@@ -51,12 +51,6 @@
     <string name="settings_group_copy_header">テキストコピー</string>
     <string name="settings_group_copy_title">コピーとテキスト選択</string>
     <string name="settings_group_copy_summary">軽量コピーと完全選択モードを管理します。</string>
-    <string name="settings_bottom_bar_header">下部バー</string>
-    <string name="settings_bottom_bar_title">Liquid Glass 下部バー</string>
-    <string name="settings_bottom_bar_summary_enabled">KeiOS メインナビゲーションで Liquid Glass のカプセル型下部バー、選択ハイライト、軽量ガラス質感を使います。</string>
-    <string name="settings_bottom_bar_summary_disabled">KeiOS メインナビゲーションで軽量なソリッド下部バーを使い、下部ガラス描画の負荷を抑えます。</string>
-    <string name="settings_bottom_bar_summary_miuix_active">現在は MIUIX メインナビゲーションが主下部バーを担当しています。この設定は KeiOS ナビゲーションへ戻した時に反映されます。</string>
-    <string name="settings_bottom_bar_scope">KeiOS メインタブの下部バー表示に反映されます。MIUIX メインナビゲーションでは MIUIX のフローティング下部バーを使います。</string>
     <string name="settings_actionbar_style_header">アクションバー</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus アクションバー</string>
     <string name="settings_actionbar_style_summary_enabled">レイヤード液体スタイルを使用します: カプセルベース、スライドハイライト、選択状態モーション。</string>

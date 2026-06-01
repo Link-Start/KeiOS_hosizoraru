@@ -41,7 +41,6 @@ fun BaGuideCatalogPage(
     onOpenGuide: (String) -> Unit,
     notificationPermissionGranted: Boolean = true,
     onRequestNotificationPermission: () -> Unit = {},
-    liquidBottomBarEnabled: Boolean = true,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     enableSearchBar: Boolean = true,

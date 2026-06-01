@@ -95,19 +95,6 @@ internal fun SettingsComponentEffectsSection(
             onCheckedChange = actions.onLiquidDialogChanged,
         )
         SettingsToggleItem(
-            title = stringResource(R.string.settings_bottom_bar_title),
-            summary =
-                if (state.liquidBottomBarEnabled) {
-                    stringResource(R.string.settings_bottom_bar_summary_enabled)
-                } else {
-                    stringResource(R.string.settings_bottom_bar_summary_disabled)
-                },
-            checked = state.liquidBottomBarEnabled,
-            onCheckedChange = actions.onLiquidBottomBarChanged,
-            infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_bottom_bar_scope),
-        )
-        SettingsToggleItem(
             title = stringResource(R.string.settings_search_auto_focus_title),
             summary =
                 if (state.searchAutoFocusEnabled) {

@@ -58,7 +58,6 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val predictiveBackAnimationsLabel = resolveString(R.string.settings_predictive_back_animations_title)
 
     val componentEffectsGroupLabel = resolveString(R.string.settings_group_component_effects_title)
-    val bottomBarLabel = resolveString(R.string.settings_bottom_bar_title)
     val actionbarStyleLabel = resolveString(R.string.settings_actionbar_style_title)
     val liquidSwitchLabel = resolveString(R.string.settings_liquid_switch_title)
     val liquidToastLabel = resolveString(R.string.settings_liquid_toast_title)
@@ -147,7 +146,6 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                 settingsTokens(
                     effectsCategoryLabel,
                     componentEffectsGroupLabel,
-                    bottomBarLabel,
                     actionbarStyleLabel,
                     liquidSwitchLabel,
                     liquidToastLabel,

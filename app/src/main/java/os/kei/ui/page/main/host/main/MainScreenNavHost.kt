@@ -87,7 +87,6 @@ internal fun MainScreenNavHost(
                     rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
                     navigator = navigator,
                     settingsReturnToken = pagerCoordinator.settingsReturnToken,
-                    liquidBottomBarEnabled = pagerCoordinator.liquidBottomBarEnabled,
                     liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
                     gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
                     homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
@@ -116,8 +115,6 @@ internal fun MainScreenNavHost(
                 SettingsPage(
                     notificationPermissionGranted = notificationPermissionGranted,
                     onRequestNotificationPermission = onRequestNotificationPermission,
-                    liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
-                    onLiquidBottomBarChanged = prefsState::updateLiquidBottomBarEnabled,
                     liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                     onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
                     liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
@@ -191,7 +188,6 @@ internal fun MainScreenNavHost(
             }
             entry<KeiosRoute.BaStudentGuide> {
                 BaStudentGuidePage(
-                    liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                     liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                     preloadingEnabled = prefsState.preloadingEnabled,
                     onBack = onRouteBack,
@@ -199,7 +195,6 @@ internal fun MainScreenNavHost(
             }
             entry<KeiosRoute.BaGuideCatalog> { route ->
                 BaGuideCatalogPage(
-                    liquidBottomBarEnabled = prefsState.liquidBottomBarEnabled,
                     liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                     preloadingEnabled = prefsState.preloadingEnabled,
                     notificationPermissionGranted = notificationPermissionGranted,

@@ -52,7 +52,6 @@ internal fun deriveComponentEffectsPresentation(state: SettingsComponentEffectsS
                 state.reduceToastInterruptionEnabled ||
                 state.liquidSheetEnabled ||
                 state.liquidDialogEnabled ||
-                state.liquidBottomBarEnabled ||
                 state.searchAutoFocusEnabled ||
                 state.gripAwareFloatingDockEnabled,
     )

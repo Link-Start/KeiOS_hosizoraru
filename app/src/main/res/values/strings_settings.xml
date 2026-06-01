@@ -51,12 +51,6 @@
     <string name="settings_group_copy_header">文本复制</string>
     <string name="settings_group_copy_title">复制与文本选择</string>
     <string name="settings_group_copy_summary">统一管理轻量复制与完整选区模式，兼顾流畅与可编辑性。</string>
-    <string name="settings_bottom_bar_header">底栏</string>
-    <string name="settings_bottom_bar_title">液态玻璃底栏</string>
-    <string name="settings_bottom_bar_summary_enabled">KeiOS 主导航使用液态玻璃胶囊底栏，保留选中态高亮与轻量玻璃质感。</string>
-    <string name="settings_bottom_bar_summary_disabled">KeiOS 主导航使用轻量实体底栏，降低底部玻璃渲染负载。</string>
-    <string name="settings_bottom_bar_summary_miuix_active">当前 MIUIX 主导航接管主底栏；本设置会在切回 KeiOS 主导航时生效。</string>
-    <string name="settings_bottom_bar_scope">影响 KeiOS 主分页底栏视觉；MIUIX 主导航模式会使用 MIUIX 浮动底栏。</string>
     <string name="settings_actionbar_style_header">控件栏</string>
     <string name="settings_actionbar_style_title">液态玻璃Plus 控件栏</string>
     <string name="settings_actionbar_style_summary_enabled">启用多层液态样式：胶囊基底 + 滑动高光 + 选中层动效。</string>

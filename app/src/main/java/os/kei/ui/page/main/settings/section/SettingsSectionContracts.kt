@@ -79,7 +79,6 @@ internal data class SettingsComponentEffectsSectionState(
     val reduceToastInterruptionEnabled: Boolean,
     val liquidSheetEnabled: Boolean,
     val liquidDialogEnabled: Boolean,
-    val liquidBottomBarEnabled: Boolean,
     val searchAutoFocusEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
 )
@@ -91,7 +90,6 @@ internal data class SettingsComponentEffectsSectionActions(
     val onReduceToastInterruptionChanged: (Boolean) -> Unit,
     val onLiquidSheetChanged: (Boolean) -> Unit,
     val onLiquidDialogChanged: (Boolean) -> Unit,
-    val onLiquidBottomBarChanged: (Boolean) -> Unit,
     val onSearchAutoFocusChanged: (Boolean) -> Unit,
     val onGripAwareFloatingDockChanged: (Boolean) -> Unit,
 )

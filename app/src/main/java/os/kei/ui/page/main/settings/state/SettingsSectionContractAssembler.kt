@@ -55,7 +55,6 @@ internal fun rememberSettingsSectionContractBundle(
     reduceToastInterruptionEnabled: Boolean,
     liquidSheetEnabled: Boolean,
     liquidDialogEnabled: Boolean,
-    liquidBottomBarEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
@@ -89,7 +88,6 @@ internal fun rememberSettingsSectionContractBundle(
     onReduceToastInterruptionChanged: (Boolean) -> Unit,
     onLiquidSheetChanged: (Boolean) -> Unit,
     onLiquidDialogChanged: (Boolean) -> Unit,
-    onLiquidBottomBarChanged: (Boolean) -> Unit,
     onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
@@ -231,7 +229,6 @@ internal fun rememberSettingsSectionContractBundle(
             reduceToastInterruptionEnabled,
             liquidSheetEnabled,
             liquidDialogEnabled,
-            liquidBottomBarEnabled,
             searchAutoFocusEnabled,
             gripAwareFloatingDockEnabled,
         ) {
@@ -242,7 +239,6 @@ internal fun rememberSettingsSectionContractBundle(
                 reduceToastInterruptionEnabled = reduceToastInterruptionEnabled,
                 liquidSheetEnabled = liquidSheetEnabled,
                 liquidDialogEnabled = liquidDialogEnabled,
-                liquidBottomBarEnabled = liquidBottomBarEnabled,
                 searchAutoFocusEnabled = searchAutoFocusEnabled,
                 gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
             )
@@ -255,7 +251,6 @@ internal fun rememberSettingsSectionContractBundle(
             onReduceToastInterruptionChanged,
             onLiquidSheetChanged,
             onLiquidDialogChanged,
-            onLiquidBottomBarChanged,
             onSearchAutoFocusChanged,
             onGripAwareFloatingDockChanged,
         ) {
@@ -266,7 +261,6 @@ internal fun rememberSettingsSectionContractBundle(
                 onReduceToastInterruptionChanged = onReduceToastInterruptionChanged,
                 onLiquidSheetChanged = onLiquidSheetChanged,
                 onLiquidDialogChanged = onLiquidDialogChanged,
-                onLiquidBottomBarChanged = onLiquidBottomBarChanged,
                 onSearchAutoFocusChanged = onSearchAutoFocusChanged,
                 onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
             )

@@ -63,8 +63,6 @@ import kotlin.math.abs
 fun SettingsPage(
     notificationPermissionGranted: Boolean,
     onRequestNotificationPermission: () -> Unit,
-    liquidBottomBarEnabled: Boolean,
-    onLiquidBottomBarChanged: (Boolean) -> Unit,
     liquidActionBarLayeredStyleEnabled: Boolean,
     onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     liquidSwitchEnabled: Boolean,
@@ -212,8 +210,6 @@ fun SettingsPage(
             onLiquidSheetChanged = onLiquidSheetChanged,
             liquidDialogEnabled = liquidDialogEnabled,
             onLiquidDialogChanged = onLiquidDialogChanged,
-            liquidBottomBarEnabled = liquidBottomBarEnabled,
-            onLiquidBottomBarChanged = onLiquidBottomBarChanged,
             gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
             onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
             superIslandNotificationEnabled = superIslandNotificationEnabled,
@@ -504,7 +500,7 @@ fun SettingsPage(
                 searchContentDescription = searchContentDescription,
                 searchPlaceholder = settingsSearchPlaceholder,
                 backdrop = bottomBarBackdrop,
-                isLiquidEffectEnabled = liquidBottomBarEnabled,
+                isLiquidEffectEnabled = true,
                 onSelectCategory = selectSettingsCategoryAction,
                 onExpandDock = {
                     bottomBarVisibilityController.showNow(

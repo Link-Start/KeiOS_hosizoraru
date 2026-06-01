@@ -19,7 +19,6 @@ internal class MainScreenUiPrefsState(
     private val mcpServerManager: McpServerManager,
     private val viewModel: MainScreenPrefsViewModel,
 ) {
-    val liquidBottomBarEnabled: Boolean get() = snapshot.liquidBottomBarEnabled
     val liquidActionBarLayeredStyleEnabled: Boolean get() = snapshot.liquidActionBarLayeredStyleEnabled
     val liquidSwitchEnabled: Boolean get() = snapshot.liquidSwitchEnabled
     val liquidToastEnabled: Boolean get() = snapshot.liquidToastEnabled
@@ -44,10 +43,6 @@ internal class MainScreenUiPrefsState(
     val textCopyCapabilityExpanded: Boolean get() = snapshot.textCopyCapabilityExpanded
     val cacheDiagnosticsEnabled: Boolean get() = snapshot.cacheDiagnosticsEnabled
     val visibleBottomPageNames: Set<String> get() = snapshot.visibleBottomPageNames
-
-    fun updateLiquidBottomBarEnabled(value: Boolean) {
-        viewModel.updateLiquidBottomBarEnabled(value)
-    }
 
     fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {
         viewModel.updateLiquidActionBarLayeredStyleEnabled(value)

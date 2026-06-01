@@ -16,23 +16,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.log.AppLogLevel
@@ -52,7 +44,7 @@ import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationC
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
+import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -262,12 +254,8 @@ fun SettingsPage(
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val farJumpAlpha = remember { Animatable(1f) }
     val tabJumpCoordinator = remember { SettingsTabJumpCoordinator() }
-    val density = LocalDensity.current
-    val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
-    val bottomBarVisibilityController =
-        remember(bottomBarVisibilityThresholdPx) {
-            ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
-        }
+    val trimmedSearchQuery = searchQuery.trim()
+    val searchActive = trimmedSearchQuery.isNotEmpty()
     val activeCategoryProvider =
         remember(categories, pagerState) {
             {
@@ -285,39 +273,24 @@ fun SettingsPage(
         remember(activeCategoryProvider, categoryListStates) {
             { categoryListStates.forCategory(activeCategoryProvider()) }
         }
-    val currentBottomBarVisible = rememberUpdatedState(bottomBarVisible)
-    val bottomBarNestedScrollConnection =
-        remember(bottomBarVisibilityController, activeCategoryProvider, activePageListStateProvider) {
-            object : NestedScrollConnection {
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource,
-                ): Offset {
-                    val activeCategory = activeCategoryProvider()
-                    if (activeCategory.keepsChromeVisibleOnBounds()) {
-                        bottomBarVisibilityController.showNow(
-                            visible = currentBottomBarVisible.value,
-                            onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-                        )
-                        return Offset.Zero
-                    }
-                    val currentListState = activePageListStateProvider()
-                    bottomBarVisibilityController.updateWithinScrollBounds(
-                        deltaY = consumed.y,
-                        visible = currentBottomBarVisible.value,
-                        canScrollBackward = currentListState.canScrollBackward,
-                        canScrollForward = currentListState.canScrollForward,
-                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-                    )
-                    return Offset.Zero
+    val activeChromeListStateProvider =
+        remember(searchActive, searchListState, activePageListStateProvider) {
+            {
+                if (searchActive) {
+                    searchListState
+                } else {
+                    activePageListStateProvider()
                 }
             }
         }
+    val bottomChromeScrollState =
+        rememberTabbedPageChromeScrollState(
+            visible = bottomBarVisible,
+            activeListStateProvider = activeChromeListStateProvider,
+            onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+        )
     val settingsSearchPlaceholder = stringResource(R.string.settings_search_placeholder)
     val searchContentDescription = settingsSearchPlaceholder
-    val trimmedSearchQuery = searchQuery.trim()
-    val searchActive = trimmedSearchQuery.isNotEmpty()
     val matchingSearchTargets = pageSnapshotState.searchUiState.matchingTargets
     val selectSettingsCategoryAction =
         remember(
@@ -383,39 +356,10 @@ fun SettingsPage(
 
     LaunchedEffect(pagerState.settledPage) {
         settingsPageViewModel.updateSliderInteractionActive(false)
-        bottomBarVisibilityController.showNow(
-            visible = bottomBarVisible,
-            onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-        )
+        bottomChromeScrollState.showNow()
         if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
             settingsPageViewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
-    }
-    LaunchedEffect(activeCategoryProvider, activePageListStateProvider, bottomBarVisibilityController) {
-        snapshotFlow {
-            val category = activeCategoryProvider()
-            val listState = activePageListStateProvider()
-            SettingsActiveChromeBoundsState(
-                category = category,
-                canScrollBackward = listState.canScrollBackward,
-                canScrollForward = listState.canScrollForward,
-            )
-        }.distinctUntilChanged()
-            .collect { boundsState ->
-                if (boundsState.category.keepsChromeVisibleOnBounds()) {
-                    bottomBarVisibilityController.showNow(
-                        visible = currentBottomBarVisible.value,
-                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-                    )
-                } else {
-                    bottomBarVisibilityController.showForStaticContent(
-                        visible = currentBottomBarVisible.value,
-                        canScrollBackward = boundsState.canScrollBackward,
-                        canScrollForward = boundsState.canScrollForward,
-                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-                    )
-                }
-            }
     }
 
     BackHandler(enabled = searchExpanded) {
@@ -455,16 +399,12 @@ fun SettingsPage(
         title = settingsTitle,
         modifier =
             Modifier
-                .fillMaxSize()
-                .nestedScroll(bottomBarNestedScrollConnection),
+                .fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = androidx.compose.ui.graphics.Color.Transparent,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
-            bottomBarVisibilityController.showNow(
-                visible = currentBottomBarVisible.value,
-                onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-            )
+            bottomChromeScrollState.showNow()
         },
         navigationIcon = {
             AppLiquidNavigationButton(
@@ -503,10 +443,7 @@ fun SettingsPage(
                 isLiquidEffectEnabled = true,
                 onSelectCategory = selectSettingsCategoryAction,
                 onExpandDock = {
-                    bottomBarVisibilityController.showNow(
-                        visible = currentBottomBarVisible.value,
-                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
-                    )
+                    bottomChromeScrollState.showNow()
                 },
             )
         },
@@ -521,7 +458,8 @@ fun SettingsPage(
                 categories = categories,
                 listStates = categoryListStates,
                 settingsSearchCardInput = settingsSearchCardInput,
-                scrollNestedConnection = scrollBehavior.nestedScrollConnection,
+                chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,
+                topBarNestedScrollConnection = scrollBehavior.nestedScrollConnection,
                 topBarBackdrop = topBarBackdrop,
                 bottomBarBackdrop = bottomBarBackdrop,
                 sliderInteractionActive = sliderInteractionActive || searchExpanded,
@@ -536,7 +474,8 @@ fun SettingsPage(
                     searchListState = searchListState,
                     matchingSearchTargets = matchingSearchTargets,
                     settingsSearchCardInput = settingsSearchCardInput,
-                    scrollNestedConnection = scrollBehavior.nestedScrollConnection,
+                    chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,
+                    topBarNestedScrollConnection = scrollBehavior.nestedScrollConnection,
                     topBarBackdrop = topBarBackdrop,
                     bottomBarBackdrop = bottomBarBackdrop,
                     sliderInteractionActive = sliderInteractionActive,
@@ -545,12 +484,6 @@ fun SettingsPage(
         }
     }
 }
-
-private data class SettingsActiveChromeBoundsState(
-    val category: SettingsCategory,
-    val canScrollBackward: Boolean,
-    val canScrollForward: Boolean,
-)
 
 internal fun settingsActiveCategoryIndex(
     scrolling: Boolean,

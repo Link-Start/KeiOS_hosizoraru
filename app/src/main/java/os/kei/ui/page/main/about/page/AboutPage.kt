@@ -17,17 +17,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,7 +30,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
@@ -52,7 +45,8 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
+import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -111,12 +105,6 @@ fun AboutPage(
     val farJumpAlpha = remember { Animatable(1f) }
     val tabJumpJobHolder = remember { AboutTabJumpJobHolder() }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val density = LocalDensity.current
-    val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
-    val bottomBarVisibilityController =
-        remember(bottomBarVisibilityThresholdPx) {
-            ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
-        }
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) {
             when (categories.getOrNull(pagerState.settledPage)) {
@@ -126,13 +114,6 @@ fun AboutPage(
                 AboutCategory.Lab -> labListState.animateScrollToItem(0)
                 null -> Unit
             }
-        }
-    }
-
-    LaunchedEffect(pagerState.settledPage) {
-        bottomBarVisibilityController.showNow(showBottomBar, viewModel::updateBottomBarVisible)
-        if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
-            viewModel.updateSelectedCategoryIndex(pagerState.settledPage)
         }
     }
 
@@ -189,42 +170,25 @@ fun AboutPage(
                 }
             }
         }
-    val currentActiveChromeListStateProvider = rememberUpdatedState(activeChromeListStateProvider)
-    val currentShowBottomBar = rememberUpdatedState(showBottomBar)
-    val bottomBarNestedScrollConnection =
-        remember(bottomBarVisibilityController) {
-            object : NestedScrollConnection {
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource,
-                ): Offset {
-                    val currentListState = currentActiveChromeListStateProvider.value()
-                    bottomBarVisibilityController.updateWithinScrollBounds(
-                        deltaY = consumed.y,
-                        visible = currentShowBottomBar.value,
-                        canScrollBackward = currentListState.canScrollBackward,
-                        canScrollForward = currentListState.canScrollForward,
-                        onVisibleChange = viewModel::updateBottomBarVisible,
-                    )
-                    return Offset.Zero
-                }
-            }
+    val bottomChromeScrollState =
+        rememberTabbedPageChromeScrollState(
+            visible = showBottomBar,
+            activeListStateProvider = activeChromeListStateProvider,
+            onVisibleChange = viewModel::updateBottomBarVisible,
+        )
+    val searchNestedScrollConnection =
+        remember(searchListState, bottomChromeScrollState, scrollBehavior.nestedScrollConnection) {
+            tabbedPageContentNestedScrollConnection(
+                listState = searchListState,
+                chrome = bottomChromeScrollState.chromeNestedScrollConnection,
+                delegate = scrollBehavior.nestedScrollConnection,
+            )
         }
-
-    LaunchedEffect(activeChromeListStateProvider, bottomBarVisibilityController) {
-        snapshotFlow {
-            val activeChromeListState = activeChromeListStateProvider()
-            activeChromeListState.canScrollBackward to activeChromeListState.canScrollForward
-        }.distinctUntilChanged()
-            .collect { (canScrollBackward, canScrollForward) ->
-                bottomBarVisibilityController.showForStaticContent(
-                    visible = currentShowBottomBar.value,
-                    canScrollBackward = canScrollBackward,
-                    canScrollForward = canScrollForward,
-                    onVisibleChange = viewModel::updateBottomBarVisible,
-                )
-            }
+    LaunchedEffect(pagerState.settledPage) {
+        bottomChromeScrollState.showNow()
+        if (chromeState.selectedCategoryIndex != pagerState.settledPage) {
+            viewModel.updateSelectedCategoryIndex(pagerState.settledPage)
+        }
     }
     val selectAboutCategory =
         remember(
@@ -326,16 +290,12 @@ fun AboutPage(
         title = stringResource(R.string.about_page_title),
         modifier =
             Modifier
-                .fillMaxSize()
-                .nestedScroll(bottomBarNestedScrollConnection),
+                .fillMaxSize(),
         scrollBehavior = scrollBehavior,
         topBarColor = Color.Transparent,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
-            bottomBarVisibilityController.showNow(
-                visible = currentShowBottomBar.value,
-                onVisibleChange = viewModel::updateBottomBarVisible,
-            )
+            bottomChromeScrollState.showNow()
         },
         navigationIcon = {
             if (onBack != null) {
@@ -376,10 +336,7 @@ fun AboutPage(
                 isLiquidEffectEnabled = true,
                 onSelectCategory = selectAboutCategory,
                 onExpandDock = {
-                    bottomBarVisibilityController.showNow(
-                        visible = currentShowBottomBar.value,
-                        onVisibleChange = viewModel::updateBottomBarVisible,
-                    )
+                    bottomChromeScrollState.showNow()
                 },
             )
         },
@@ -391,7 +348,7 @@ fun AboutPage(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .nestedScroll(searchNestedScrollConnection)
                         .layerBackdrop(topBarBackdrop)
                         .layerBackdrop(bottomBarBackdrop),
                 bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
@@ -432,7 +389,6 @@ fun AboutPage(
                     Modifier
                         .fillMaxSize()
                         .graphicsLayer { alpha = farJumpAlpha.value }
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .layerBackdrop(topBarBackdrop)
                         .layerBackdrop(bottomBarBackdrop),
             ) { pageIndex ->
@@ -444,10 +400,21 @@ fun AboutPage(
                         AboutCategory.Tech -> techListState
                         AboutCategory.Lab -> labListState
                     }
+                val pageNestedScrollConnection =
+                    remember(pageListState, bottomChromeScrollState, scrollBehavior.nestedScrollConnection) {
+                        tabbedPageContentNestedScrollConnection(
+                            listState = pageListState,
+                            chrome = bottomChromeScrollState.chromeNestedScrollConnection,
+                            delegate = scrollBehavior.nestedScrollConnection,
+                        )
+                    }
                 AppPageLazyColumn(
                     innerPadding = innerPadding,
                     state = pageListState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(pageNestedScrollConnection),
                     bottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight,
                     sectionSpacing = 14.dp,
                 ) {

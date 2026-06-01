@@ -23,6 +23,7 @@ import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -33,18 +34,27 @@ internal fun SettingsSearchContent(
     searchListState: LazyListState,
     matchingSearchTargets: List<SettingsSearchTarget>,
     settingsSearchCardInput: SettingsSearchCardRenderInput,
-    scrollNestedConnection: NestedScrollConnection,
+    chromeNestedScrollConnection: NestedScrollConnection,
+    topBarNestedScrollConnection: NestedScrollConnection,
     topBarBackdrop: LayerBackdrop,
     bottomBarBackdrop: LayerBackdrop,
     sliderInteractionActive: Boolean,
 ) {
+    val searchNestedScrollConnection =
+        remember(searchListState, chromeNestedScrollConnection, topBarNestedScrollConnection) {
+            tabbedPageContentNestedScrollConnection(
+                listState = searchListState,
+                chrome = chromeNestedScrollConnection,
+                delegate = topBarNestedScrollConnection,
+            )
+        }
     AppPageLazyColumn(
         innerPadding = innerPadding,
         state = searchListState,
         modifier =
             Modifier
                 .fillMaxSize()
-                .nestedScroll(scrollNestedConnection)
+                .nestedScroll(searchNestedScrollConnection)
                 .layerBackdrop(topBarBackdrop)
                 .layerBackdrop(bottomBarBackdrop),
         bottomExtra =
@@ -85,7 +95,8 @@ internal fun SettingsCategoryPagerContent(
     categories: List<SettingsCategory>,
     listStates: SettingsCategoryListStates,
     settingsSearchCardInput: SettingsSearchCardRenderInput,
-    scrollNestedConnection: NestedScrollConnection,
+    chromeNestedScrollConnection: NestedScrollConnection,
+    topBarNestedScrollConnection: NestedScrollConnection,
     topBarBackdrop: LayerBackdrop,
     bottomBarBackdrop: LayerBackdrop,
     sliderInteractionActive: Boolean,
@@ -107,10 +118,11 @@ internal fun SettingsCategoryPagerContent(
         val category = categories[pageIndex]
         val pageListState = listStates.forCategory(category)
         val pageNestedScrollConnection =
-            remember(pageListState, scrollNestedConnection) {
-                settingsChromeNestedScrollConnection(
+            remember(pageListState, chromeNestedScrollConnection, topBarNestedScrollConnection) {
+                tabbedPageContentNestedScrollConnection(
                     listState = pageListState,
-                    delegate = scrollNestedConnection,
+                    chrome = chromeNestedScrollConnection,
+                    delegate = topBarNestedScrollConnection,
                 )
             }
         AppPageLazyColumn(

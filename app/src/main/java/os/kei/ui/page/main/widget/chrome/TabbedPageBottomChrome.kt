@@ -81,6 +81,29 @@ internal fun tabbedPageCollapsedDockWidth(
     minWidth: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
 ): Dp = (availableWidth - searchDockWidth - gap).coerceAtLeast(minWidth)
 
+internal fun tabbedPageSearchDockTargetX(
+    searchExpanded: Boolean,
+    collapsedDockWidth: Dp,
+    size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
+    gap: Dp = TabbedPageBottomChromeSearchGap,
+): Dp =
+    if (searchExpanded) {
+        size + gap
+    } else {
+        collapsedDockWidth + gap
+    }
+
+internal fun tabbedPageSearchDockTargetWidth(
+    searchExpanded: Boolean,
+    expandedSearchWidth: Dp,
+    size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
+): Dp =
+    if (searchExpanded) {
+        expandedSearchWidth
+    } else {
+        size
+    }
+
 // ── Generic bottom chrome ────────────────────────────────────────────────────
 
 /**
@@ -165,14 +188,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     val compactDockAlphaProvider = remember(compactDockAlphaState) { { compactDockAlphaState.value } }
     val fullDockScaleProvider = remember(fullDockScaleState) { { fullDockScaleState.value } }
     val compactDockScaleProvider = remember(compactDockScaleState) { { compactDockScaleState.value } }
-    val searchDockAlphaState =
-        transition.animateFloat(
-            transitionSpec = { fadeAnimationSpec },
-            label = "${labelPrefix}_search_dock_alpha",
-        ) { compact ->
-            if (compact && !searchExpanded) 0f else 1f
-        }
-    val searchDockAlphaProvider = remember(searchDockAlphaState) { { searchDockAlphaState.value } }
+    val searchDockAlphaProvider = remember { { TabbedPageBottomChromeSearchDockVisibleAlpha } }
     BoxWithConstraints(
         modifier =
             Modifier
@@ -201,19 +217,33 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 gap = gap,
             )
         val visibleDockWidth = collapsedDockWidth
+        val searchTransition =
+            updateTransition(
+                targetState = searchExpanded,
+                label = "${labelPrefix}_search_dock",
+            )
         val searchXState =
-            transition.animateDp(
+            searchTransition.animateDp(
                 transitionSpec = { sizeAnimationSpec },
                 label = "${labelPrefix}_search_dock_x",
             ) { expanded ->
-                if (expanded) size + gap else visibleDockWidth + gap
+                tabbedPageSearchDockTargetX(
+                    searchExpanded = expanded,
+                    collapsedDockWidth = visibleDockWidth,
+                    size = size,
+                    gap = gap,
+                )
             }
         val searchWidthState =
-            transition.animateDp(
+            searchTransition.animateDp(
                 transitionSpec = { sizeAnimationSpec },
                 label = "${labelPrefix}_search_dock_width",
             ) { expanded ->
-                if (expanded) expandedSearchWidth else size
+                tabbedPageSearchDockTargetWidth(
+                    searchExpanded = expanded,
+                    expandedSearchWidth = expandedSearchWidth,
+                    size = size,
+                )
             }
         val searchXProvider = remember(searchXState) { { searchXState.value } }
         val searchWidthProvider = remember(searchWidthState) { { searchWidthState.value } }
@@ -307,31 +337,31 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                     },
         )
 
-        if (visible || searchExpanded || transition.currentState != transition.targetState) {
-            AppBottomSearchDock(
-                backdrop = backdrop,
-                expanded = searchExpanded,
-                query = searchQuery,
-                onQueryChange = onSearchQueryChange,
-                onExpandedChange = onSearchExpandedChange,
-                searchIcon = searchIcon,
-                contentDescription = searchContentDescription,
-                placeholder = searchPlaceholder,
-                modifier =
-                    Modifier
-                        .zIndex(3f)
-                        .graphicsLayer {
-                            alpha = searchDockAlphaProvider()
-                        }
-                        .offset {
-                            IntOffset(x = searchXProvider().roundToPx(), y = 0)
-                        },
-                expandedWidth = expandedSearchWidth,
-                expandedWidthProvider = searchWidthProvider,
-            )
-        }
+        AppBottomSearchDock(
+            backdrop = backdrop,
+            expanded = searchExpanded,
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+            onExpandedChange = onSearchExpandedChange,
+            searchIcon = searchIcon,
+            contentDescription = searchContentDescription,
+            placeholder = searchPlaceholder,
+            modifier =
+                Modifier
+                    .zIndex(3f)
+                    .graphicsLayer {
+                        alpha = searchDockAlphaProvider()
+                    }
+                    .offset {
+                        IntOffset(x = searchXProvider().roundToPx(), y = 0)
+                    },
+            expandedWidth = expandedSearchWidth,
+            expandedWidthProvider = searchWidthProvider,
+        )
     }
 }
+
+internal const val TabbedPageBottomChromeSearchDockVisibleAlpha = 1f
 
 @Composable
 private fun <C : TabbedPageCategory> TabbedPageCompactCategoryDock(

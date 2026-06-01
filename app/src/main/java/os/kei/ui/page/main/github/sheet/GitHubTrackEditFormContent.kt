@@ -149,7 +149,13 @@ internal fun GitHubTrackEditFormContent(
                 ),
             )
         } else {
-            stringResource(R.string.github_track_sheet_summary_precise_apk_version)
+            stringResource(
+                if (gitRepositoryMode) {
+                    R.string.github_track_sheet_summary_precise_apk_version_git
+                } else {
+                    R.string.github_track_sheet_summary_precise_apk_version
+                },
+            )
         }
     val preciseModeSummaryColor =
         if (preciseModeFollowsGlobal) {
@@ -444,6 +450,11 @@ internal fun GitHubTrackEditFormContent(
                         },
                         onAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
                         backdrop = backdrop,
+                    )
+                }
+                if (gitRepositoryMode) {
+                    SheetDescriptionText(
+                        text = stringResource(R.string.github_track_sheet_summary_git_check_options),
                     )
                 }
             }

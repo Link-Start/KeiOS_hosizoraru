@@ -22,6 +22,8 @@ import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitRepositoryPlatform
+import os.kei.feature.github.model.GitRepositoryTrackIdentity
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
@@ -117,12 +119,25 @@ object GitHubReleaseCheckService {
                     detail = error.message ?: "unknown"
                 )
             }
+            val preciseVersions = gitRepositoryPreciseApkVersionResolver(gitIdentity)
+                ?.let { gitResolver ->
+                    resolvePreciseApkVersions(
+                        item = item.copy(owner = gitIdentity.owner, repo = gitIdentity.repo),
+                        localVersion = localVersion,
+                        snapshot = gitSnapshot,
+                        lookupConfig = lookupConfig,
+                        resolver = gitResolver
+                    )
+                }
+                ?: PreciseApkVersionPair()
             return evaluateSnapshot(
                 item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 snapshot = gitSnapshot,
                 checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
+                preciseStableApkVersion = preciseVersions.stable,
+                precisePreReleaseApkVersion = preciseVersions.preRelease,
                 sourceConfigSignature = sourceConfigSignature
             )
         }
@@ -419,6 +434,22 @@ object GitHubReleaseCheckService {
             stable = results.firstOrNull { it.first == PreciseApkVersionChannel.Stable }?.second,
             preRelease = results.firstOrNull { it.first == PreciseApkVersionChannel.PreRelease }?.second
         )
+    }
+
+    private fun gitRepositoryPreciseApkVersionResolver(
+        identity: GitRepositoryTrackIdentity
+    ): GitHubPreciseApkVersionResolver? {
+        return when (identity.platform) {
+            GitRepositoryPlatform.Gitee,
+            GitRepositoryPlatform.GitLab -> {
+                GitHubPreciseApkVersionResolver(
+                    GitRepositoryPreciseApkVersionSource(identity = identity)
+                )
+            }
+
+            GitRepositoryPlatform.GitHub,
+            GitRepositoryPlatform.Generic -> null
+        }
     }
 
     private suspend fun loadRepositoryProfile(

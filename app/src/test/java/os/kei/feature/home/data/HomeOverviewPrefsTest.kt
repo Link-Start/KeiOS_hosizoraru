@@ -34,6 +34,16 @@ class HomeOverviewPrefsTest {
     }
 
     @Test
+    fun `legacy visible cards gain webdav card once`() {
+        val store = InMemoryHomeOverviewStore()
+        store.encode("home_visible_overview_cards", "MCP,GITHUB,BA")
+
+        assertEquals(defaultHomeOverviewCards(), HomeOverviewPrefs.loadVisibleOverviewCards(store))
+        HomeOverviewPrefs.saveVisibleOverviewCards(setOf(HomeOverviewCard.MCP), store)
+        assertEquals(setOf(HomeOverviewCard.MCP), HomeOverviewPrefs.loadVisibleOverviewCards(store))
+    }
+
+    @Test
     fun `cache freshness debug flag defaults off and round trips`() {
         val store = InMemoryHomeOverviewStore()
 

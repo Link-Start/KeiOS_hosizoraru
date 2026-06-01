@@ -52,6 +52,7 @@ internal data class HomePageOverviewCardState(
     val homeHeaderStatusPills: List<HomeHeaderStatusPillState>,
     val mcpOverviewStats: List<HomeCardStatItem>,
     val githubOverviewStats: List<HomeCardStatItem>,
+    val webDavOverviewStats: List<HomeCardStatItem>,
     val baOverviewStats: List<HomeCardStatItem>,
 )
 
@@ -239,12 +240,11 @@ private fun homeHeroAvoidanceProgress(
 internal fun rememberHomePageOverviewCardState(
     homeStatusMcp: String,
     homeStatusGitHub: String,
-    homeStatusBa: String,
+    homeStatusWebDav: String,
     homeStatusShizuku: String,
     mcpRunning: Boolean,
     cacheStateColor: Color,
-    baLoaded: Boolean,
-    baActivated: Boolean,
+    webDavConfigured: Boolean,
     shizukuGranted: Boolean,
     runningColor: Color,
     stoppedColor: Color,
@@ -283,6 +283,13 @@ internal fun rememberHomePageOverviewCardState(
     githubPendingShareImport: Boolean,
     homeStatLastUpdate: String,
     githubLastUpdateLine: String,
+    webDavConfiguredLine: String,
+    homeStatAutoSync: String,
+    webDavAutoSyncLine: String,
+    homeStatSyncItems: String,
+    webDavSyncItemsLine: String,
+    homeStatLastFullSync: String,
+    webDavLastFullSyncLine: String,
     baActivationLine: String,
     homeStatAp: String,
     baApLine: String,
@@ -300,12 +307,11 @@ internal fun rememberHomePageOverviewCardState(
         remember(
             homeStatusMcp,
             homeStatusGitHub,
-            homeStatusBa,
+            homeStatusWebDav,
             homeStatusShizuku,
             mcpRunning,
             cacheStateColor,
-            baLoaded,
-            baActivated,
+            webDavConfigured,
             shizukuGranted,
             runningColor,
             stoppedColor,
@@ -323,14 +329,9 @@ internal fun rememberHomePageOverviewCardState(
                     minWidth = 72.dp,
                 ),
                 HomeHeaderStatusPillState(
-                    label = homeStatusBa,
-                    color =
-                        when {
-                            !baLoaded -> inactiveColor
-                            baActivated -> runningColor
-                            else -> stoppedColor
-                        },
-                    minWidth = 62.dp,
+                    label = homeStatusWebDav,
+                    color = if (webDavConfigured) runningColor else stoppedColor,
+                    minWidth = 78.dp,
                 ),
                 HomeHeaderStatusPillState(
                     label = homeStatusShizuku,
@@ -425,6 +426,32 @@ internal fun rememberHomePageOverviewCardState(
                 baseStats.take(5) + shareStat + baseStats.drop(5)
             }
         }
+    val webDavOverviewStats =
+        remember(
+            homeStatStatus,
+            webDavConfiguredLine,
+            homeStatAutoSync,
+            webDavAutoSyncLine,
+            homeStatSyncItems,
+            webDavSyncItemsLine,
+            homeStatLastFullSync,
+            webDavLastFullSyncLine,
+        ) {
+            listOf(
+                HomeCardStatItem(
+                    label = homeStatStatus,
+                    value = webDavConfiguredLine,
+                    emphasize = true
+                ),
+                HomeCardStatItem(
+                    label = homeStatAutoSync,
+                    value = webDavAutoSyncLine,
+                    emphasize = true
+                ),
+                HomeCardStatItem(label = homeStatSyncItems, value = webDavSyncItemsLine),
+                HomeCardStatItem(label = homeStatLastFullSync, value = webDavLastFullSyncLine),
+            )
+        }
     val baOverviewStats =
         remember(
             homeStatStatus,
@@ -466,12 +493,14 @@ internal fun rememberHomePageOverviewCardState(
         homeHeaderStatusPills,
         mcpOverviewStats,
         githubOverviewStats,
+        webDavOverviewStats,
         baOverviewStats,
     ) {
         HomePageOverviewCardState(
             homeHeaderStatusPills = homeHeaderStatusPills,
             mcpOverviewStats = mcpOverviewStats,
             githubOverviewStats = githubOverviewStats,
+            webDavOverviewStats = webDavOverviewStats,
             baOverviewStats = baOverviewStats,
         )
     }

@@ -51,6 +51,15 @@ data class HomeBaOverview(
 )
 
 @Immutable
+data class HomeWebDavOverview(
+    val configured: Boolean = false,
+    val autoSyncEnabled: Boolean = false,
+    val enabledItemCount: Int = 0,
+    val totalItemCount: Int = 0,
+    val lastFullSyncTimeMs: Long = 0L,
+)
+
+@Immutable
 data class HomeAppOverview(
     val versionName: String = "",
     val versionCode: Long = 0L,
@@ -61,6 +70,7 @@ data class HomeAppOverview(
 enum class HomeOverviewCard {
     MCP,
     GITHUB,
+    WEBDAV,
     BA,
 }
 
@@ -69,6 +79,7 @@ data class HomeOverviewSnapshot(
     val appOverview: HomeAppOverview = HomeAppOverview(),
     val mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     val githubOverview: HomeGitHubOverview = HomeGitHubOverview(),
+    val webDavOverview: HomeWebDavOverview = HomeWebDavOverview(),
     val baOverview: HomeBaOverview = HomeBaOverview(),
     val visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
     val showCacheFreshnessInCards: Boolean = false,

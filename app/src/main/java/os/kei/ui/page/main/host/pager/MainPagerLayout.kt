@@ -170,7 +170,8 @@ internal fun MainPagerLayout(
                 .appGripAwareDockTouchObserver(
                     enabled = gripAwareFloatingDockEnabled,
                     onDockSideTouch = floatingDockState::recordTouchSide,
-                ).background(MiuixTheme.colorScheme.background)
+                )
+                .background(MiuixTheme.colorScheme.background)
                 .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
             val safeSelectedPageIndex =
@@ -287,6 +288,7 @@ internal fun MainPagerLayout(
                                 coordinator.homeAppOverview,
                                 coordinator.homeMcpOverview,
                                 coordinator.homeGitHubOverview,
+                                coordinator.homeWebDavOverview,
                                 coordinator.homeBaOverview,
                                 coordinator.homeRuntimeNowMs,
                                 coordinator.visibleOverviewCards,
@@ -310,6 +312,7 @@ internal fun MainPagerLayout(
                                     homeAppOverview = coordinator.homeAppOverview,
                                     homeMcpOverview = coordinator.homeMcpOverview,
                                     homeGitHubOverview = coordinator.homeGitHubOverview,
+                                    homeWebDavOverview = coordinator.homeWebDavOverview,
                                     homeBaOverview = coordinator.homeBaOverview,
                                     homeRuntimeNowMs = coordinator.homeRuntimeNowMs,
                                     visibleOverviewCards = coordinator.visibleOverviewCards,

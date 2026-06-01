@@ -26,6 +26,7 @@ import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.HomeOverviewSnapshot
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.mcp.server.McpServerManager
 
 @Immutable
@@ -33,6 +34,7 @@ internal data class MainPagerHomeOverviewState(
     val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
+    val homeWebDavOverview: HomeWebDavOverview,
     val homeBaOverview: HomeBaOverview,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
@@ -224,6 +226,7 @@ internal fun rememberMainPagerHomeOverviewState(
             homeMcpOverview = uiState.mcpOverview,
             homeAppOverview = uiState.appOverview,
             homeGitHubOverview = uiState.githubOverview,
+            homeWebDavOverview = uiState.webDavOverview,
             homeBaOverview = uiState.baOverview,
             visibleOverviewCards = uiState.visibleOverviewCards,
             showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,

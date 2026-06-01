@@ -8,6 +8,7 @@ import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -18,10 +19,11 @@ internal data class HomePageContentState(
     val homeTagline: String,
     val homeStatusMcp: String,
     val homeStatusGitHub: String,
-    val homeStatusBa: String,
+    val homeStatusWebDav: String,
     val homeStatusShizuku: String,
     val homeCardMcp: String,
     val homeCardGitHub: String,
+    val homeCardWebDav: String,
     val homeCardBa: String,
     val shizukuGranted: Boolean,
     val runningColor: Color,
@@ -61,6 +63,13 @@ internal data class HomePageContentState(
     val githubShareLine: String,
     val homeStatLastUpdate: String,
     val githubLastUpdateLine: String,
+    val webDavConfiguredLine: String,
+    val webDavAutoSyncLine: String,
+    val webDavSyncItemsLine: String,
+    val webDavLastFullSyncLine: String,
+    val homeStatAutoSync: String,
+    val homeStatSyncItems: String,
+    val homeStatLastFullSync: String,
     val baActivationLine: String,
     val homeStatAp: String,
     val baApLine: String,
@@ -89,6 +98,7 @@ internal fun rememberHomePageContentState(
     appOverview: HomeAppOverview,
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
+    webDavOverview: HomeWebDavOverview,
     baOverview: HomeBaOverview,
     runtimeNowMs: Long,
 ): HomePageContentState {
@@ -100,12 +110,23 @@ internal fun rememberHomePageContentState(
             inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant,
             githubCacheColor = AppStatusColors.Cached,
         )
-    return remember(shizukuStatus, appOverview, mcpOverview, githubOverview, baOverview, runtimeNowMs, text, colors) {
+    return remember(
+        shizukuStatus,
+        appOverview,
+        mcpOverview,
+        githubOverview,
+        webDavOverview,
+        baOverview,
+        runtimeNowMs,
+        text,
+        colors
+    ) {
         deriveHomePageContentState(
             shizukuStatus = shizukuStatus,
             appOverview = appOverview,
             mcpOverview = mcpOverview,
             githubOverview = githubOverview,
+            webDavOverview = webDavOverview,
             baOverview = baOverview,
             runtimeNowMs = runtimeNowMs,
             text = text,

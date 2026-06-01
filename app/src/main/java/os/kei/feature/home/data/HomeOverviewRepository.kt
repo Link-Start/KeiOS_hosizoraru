@@ -30,11 +30,15 @@ import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.HomeOverviewSnapshot
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
 import os.kei.ui.page.main.settings.cache.CacheStores
+import os.kei.ui.page.main.sync.WebDavSyncItem
+import os.kei.ui.page.main.sync.WebDavSyncStore
+import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
 
 private const val TAG = "HomeOverviewRepository"
 
@@ -67,6 +71,7 @@ internal class HomeOverviewRepository(
                 refreshRequests = refreshRequests,
                 githubVersions = GitHubTrackStoreSignals.version,
                 baHomeOverviewVersions = BASettingsStoreSignals.homeOverviewVersion,
+                webDavVersions = WebDavSyncStoreSignals.version,
             ).onStart { emit("initial") }
                 .map { reason ->
                     loadStoredOverview(reason)
@@ -81,6 +86,7 @@ internal class HomeOverviewRepository(
                 appOverview = storedOverview.appOverview,
                 mcpOverview = mcpState.toHomeOverview(),
                 githubOverview = storedOverview.githubOverview,
+                webDavOverview = storedOverview.webDavOverview,
                 baOverview = storedOverview.baOverview,
                 visibleOverviewCards = visibleCards,
                 showCacheFreshnessInCards = showCacheFreshness,
@@ -156,6 +162,7 @@ internal class HomeOverviewRepository(
             StoredHomeOverview(
                 appOverview = loadHomeAppOverview(appContext),
                 githubOverview = githubOverview,
+                webDavOverview = loadHomeWebDavOverview(),
                 baOverview = baOverview,
             )
         }
@@ -176,6 +183,7 @@ internal class HomeOverviewRepository(
     private data class StoredHomeOverview(
         val appOverview: HomeAppOverview,
         val githubOverview: HomeGitHubOverview,
+        val webDavOverview: HomeWebDavOverview,
         val baOverview: HomeBaOverview,
     )
 }
@@ -205,6 +213,7 @@ internal fun buildHomeOverviewStoreRefreshFlow(
     refreshRequests: Flow<String>,
     githubVersions: Flow<Long>,
     baHomeOverviewVersions: Flow<Long>,
+    webDavVersions: Flow<Long>,
 ): Flow<String> =
     merge(
         refreshRequests,
@@ -214,6 +223,9 @@ internal fun buildHomeOverviewStoreRefreshFlow(
         baHomeOverviewVersions
             .drop(1)
             .map { version -> "ba_store_$version" },
+        webDavVersions
+            .drop(1)
+            .map { version -> "webdav_store_$version" },
     )
 
 private fun loadHomeGitHubOverview(
@@ -279,6 +291,15 @@ private fun loadHomeBaOverview(cacheFreshness: CacheFreshnessSnapshot): HomeBaOv
         loaded = true,
     )
 }
+
+private fun loadHomeWebDavOverview(): HomeWebDavOverview =
+    HomeWebDavOverview(
+        configured = WebDavSyncStore.hasConfig(),
+        autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
+        enabledItemCount = WebDavSyncItem.entries.count(WebDavSyncStore::isItemEnabled),
+        totalItemCount = WebDavSyncItem.entries.size,
+        lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
+    )
 
 private fun loadHomeCacheFreshnessById(context: Context): Map<String, CacheFreshnessSnapshot> =
     runCatching {

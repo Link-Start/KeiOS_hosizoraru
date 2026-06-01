@@ -17,6 +17,7 @@ import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BAPage
 import os.kei.ui.page.main.github.page.GitHubPage
@@ -37,6 +38,7 @@ internal data class MainPagerHomePageState(
     val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
+    val homeWebDavOverview: HomeWebDavOverview,
     val homeBaOverview: HomeBaOverview,
     val homeRuntimeNowMs: Long,
     val visibleOverviewCards: Set<HomeOverviewCard>,
@@ -113,6 +115,7 @@ internal fun MainPagerPageHost(
                         homeAppOverview = homeState.homeAppOverview,
                         mcpOverview = homeState.homeMcpOverview,
                         homeGitHubOverview = homeState.homeGitHubOverview,
+                        homeWebDavOverview = homeState.homeWebDavOverview,
                         homeBaOverview = homeState.homeBaOverview,
                         runtimeNowMs = homeState.homeRuntimeNowMs,
                         homeIconHdrEnabled = homeState.homeIconHdrEnabled,

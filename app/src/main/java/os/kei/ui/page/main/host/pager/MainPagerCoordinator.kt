@@ -17,6 +17,7 @@ import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -38,6 +39,7 @@ internal data class MainPagerCoordinatorState(
     val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
     val homeGitHubOverview: HomeGitHubOverview,
+    val homeWebDavOverview: HomeWebDavOverview,
     val homeBaOverview: HomeBaOverview,
     val homeRuntimeNowMs: Long,
     val visibleOverviewCards: Set<HomeOverviewCard>,
@@ -222,6 +224,7 @@ internal fun rememberMainPagerCoordinator(
             homeAppOverview = homeOverviewState.homeAppOverview,
             homeMcpOverview = homeOverviewState.homeMcpOverview,
             homeGitHubOverview = homeOverviewState.homeGitHubOverview,
+            homeWebDavOverview = homeOverviewState.homeWebDavOverview,
             homeBaOverview = homeOverviewState.homeBaOverview,
             homeRuntimeNowMs = homeOverviewState.runtimeNowMs,
             visibleOverviewCards = homeOverviewState.visibleOverviewCards,

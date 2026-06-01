@@ -32,6 +32,7 @@ import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeOverviewCard
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.ui.page.main.home.state.rememberHomePageContentState
 import os.kei.ui.page.main.home.state.rememberHomePageHeroMotionState
@@ -57,6 +58,7 @@ fun HomePage(
     homeAppOverview: HomeAppOverview = HomeAppOverview(),
     mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     homeGitHubOverview: HomeGitHubOverview = HomeGitHubOverview(),
+    homeWebDavOverview: HomeWebDavOverview = HomeWebDavOverview(),
     homeBaOverview: HomeBaOverview = HomeBaOverview(),
     runtimeNowMs: Long,
     homeIconHdrEnabled: Boolean,
@@ -122,6 +124,7 @@ fun HomePage(
             appOverview = homeAppOverview,
             mcpOverview = mcpOverview,
             githubOverview = homeGitHubOverview,
+            webDavOverview = homeWebDavOverview,
             baOverview = homeBaOverview,
             runtimeNowMs = runtimeNowMs,
         )
@@ -183,12 +186,11 @@ fun HomePage(
         rememberHomePageOverviewCardState(
             homeStatusMcp = contentState.homeStatusMcp,
             homeStatusGitHub = contentState.homeStatusGitHub,
-            homeStatusBa = contentState.homeStatusBa,
+            homeStatusWebDav = contentState.homeStatusWebDav,
             homeStatusShizuku = contentState.homeStatusShizuku,
             mcpRunning = mcpOverview.running,
             cacheStateColor = contentState.cacheStateColor,
-            baLoaded = homeBaOverview.loaded,
-            baActivated = homeBaOverview.activated,
+            webDavConfigured = homeWebDavOverview.configured,
             shizukuGranted = contentState.shizukuGranted,
             runningColor = contentState.runningColor,
             stoppedColor = contentState.stoppedColor,
@@ -227,6 +229,13 @@ fun HomePage(
             githubPendingShareImport = homeGitHubOverview.pendingShareImport,
             homeStatLastUpdate = contentState.homeStatLastUpdate,
             githubLastUpdateLine = contentState.githubLastUpdateLine,
+            webDavConfiguredLine = contentState.webDavConfiguredLine,
+            homeStatAutoSync = contentState.homeStatAutoSync,
+            webDavAutoSyncLine = contentState.webDavAutoSyncLine,
+            homeStatSyncItems = contentState.homeStatSyncItems,
+            webDavSyncItemsLine = contentState.webDavSyncItemsLine,
+            homeStatLastFullSync = contentState.homeStatLastFullSync,
+            webDavLastFullSyncLine = contentState.webDavLastFullSyncLine,
             baActivationLine = contentState.baActivationLine,
             homeStatAp = contentState.homeStatAp,
             baApLine = contentState.baApLine,
@@ -262,6 +271,7 @@ fun HomePage(
                 tableDesc = stringResource(R.string.home_sheet_table_desc),
                 homeCardMcp = contentState.homeCardMcp,
                 homeCardGitHub = contentState.homeCardGitHub,
+                homeCardWebDav = contentState.homeCardWebDav,
                 homeCardBa = contentState.homeCardBa,
                 showCacheFreshnessInCards = showCacheFreshnessInCards,
                 cacheFreshnessToggleLabel = stringResource(R.string.home_sheet_show_cache_freshness),
@@ -358,6 +368,8 @@ fun HomePage(
                                 homeCardGitHub = contentState.homeCardGitHub,
                                 githubStats = overviewCardState.githubOverviewStats,
                                 onOpenGitHubPage = onOpenGitHubPage,
+                                homeCardWebDav = contentState.homeCardWebDav,
+                                webDavStats = overviewCardState.webDavOverviewStats,
                                 homeCardBa = contentState.homeCardBa,
                                 baStats = overviewCardState.baOverviewStats,
                             )

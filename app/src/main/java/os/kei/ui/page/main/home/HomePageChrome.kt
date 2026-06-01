@@ -91,6 +91,7 @@ internal fun HomePageControlSheet(
     tableDesc: String,
     homeCardMcp: String,
     homeCardGitHub: String,
+    homeCardWebDav: String,
     homeCardBa: String,
     showCacheFreshnessInCards: Boolean,
     cacheFreshnessToggleLabel: String,
@@ -145,6 +146,7 @@ internal fun HomePageControlSheet(
                                 when (overviewCard) {
                                     HomeOverviewCard.MCP -> homeCardMcp
                                     HomeOverviewCard.GITHUB -> homeCardGitHub
+                                    HomeOverviewCard.WEBDAV -> homeCardWebDav
                                     HomeOverviewCard.BA -> homeCardBa
                                     null -> null
                                 },
@@ -162,6 +164,13 @@ internal fun HomePageControlSheet(
                             },
                         )
                     }
+                HomePageStandaloneCardVisibilityRow(
+                    label = homeCardWebDav,
+                    cardVisible = visibleOverviewCards.contains(HomeOverviewCard.WEBDAV),
+                    onCardVisibleChange = { checked ->
+                        onOverviewCardVisibilityChange(HomeOverviewCard.WEBDAV, checked)
+                    },
+                )
                 SheetDescriptionText(text = tableDesc)
             }
             SheetSectionTitle(debugSectionTitle)
@@ -174,6 +183,47 @@ internal fun HomePageControlSheet(
                 }
                 SheetDescriptionText(text = cacheFreshnessToggleDesc)
             }
+        }
+    }
+}
+
+@Composable
+private fun HomePageStandaloneCardVisibilityRow(
+    label: String,
+    cardVisible: Boolean,
+    onCardVisibleChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 58.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1.35f),
+        )
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            StatusPill(
+                label =
+                    androidx.compose.ui.res
+                        .stringResource(R.string.home_sheet_bottom_unavailable),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+            )
+        }
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppSwitch(
+                checked = cardVisible,
+                onCheckedChange = onCardVisibleChange,
+            )
         }
     }
 }
@@ -325,7 +375,8 @@ internal fun HomePageHero(
                     top = logoPadding.calculateTopPadding() + 36.dp + homeHeaderSinkOffset,
                     start = logoPadding.calculateStartPadding(layoutDirection),
                     end = logoPadding.calculateEndPadding(layoutDirection),
-                ).onSizeChanged { size -> onHeroHeightChanged(size.height) },
+                )
+                .onSizeChanged { size -> onHeroHeightChanged(size.height) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -354,7 +405,8 @@ internal fun HomePageHero(
                         translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
                         scaleX = 1f - (iconExitProgress * 0.05f)
                         scaleY = 1f - (iconExitProgress * 0.05f)
-                    }.onGloballyPositioned { coordinates ->
+                    }
+                    .onGloballyPositioned { coordinates ->
                         onIconBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
                     },
         ) {
@@ -373,7 +425,8 @@ internal fun HomePageHero(
                                     iconProgress = iconValue,
                                 )
                             alpha = (1f - iconExitProgress) * 0.95f
-                        }.homeKeiHdrAccent(
+                        }
+                        .homeKeiHdrAccent(
                             enabled = homeIconHdrEnabled,
                             sweepProgress = hdrSweepProgress,
                             radialAlpha = 0.30f,
@@ -409,7 +462,8 @@ internal fun HomePageHero(
                     .padding(top = 10.dp, bottom = 4.dp)
                     .onGloballyPositioned { coordinates ->
                         onTitleBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
-                    }.graphicsLayer {
+                    }
+                    .graphicsLayer {
                         val avoidanceValue = avoidanceProgress()
                         val iconValue = iconProgress()
                         val titleValue = titleProgress()
@@ -430,7 +484,8 @@ internal fun HomePageHero(
                         translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
                         scaleX = 1f - (titleExitProgress * 0.05f)
                         scaleY = 1f - (titleExitProgress * 0.05f)
-                    }.homeKeiHdrAccent(
+                    }
+                    .homeKeiHdrAccent(
                         enabled = homeIconHdrEnabled,
                         sweepProgress = hdrSweepProgress,
                         radialAlpha = 0.26f,
@@ -483,7 +538,8 @@ internal fun HomePageHero(
                         translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
                         scaleX = 1f - (summaryExitProgress * 0.05f)
                         scaleY = 1f - (summaryExitProgress * 0.05f)
-                    }.onGloballyPositioned { coordinates ->
+                    }
+                    .onGloballyPositioned { coordinates ->
                         onSummaryBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
                     },
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -570,10 +626,11 @@ internal fun HomePageHeroSpacer(
             .fillMaxWidth()
             .height(
                 logoHeightDp + 36.dp +
-                    logoPadding.calculateTopPadding() -
-                    listContentPadding.calculateTopPadding() + 90.dp +
-                    homeHeaderSinkOffset,
-            ).onSizeChanged { size -> onLogoHeightPxChanged(size.height) }
+                        logoPadding.calculateTopPadding() -
+                        listContentPadding.calculateTopPadding() + 90.dp +
+                        homeHeaderSinkOffset,
+            )
+            .onSizeChanged { size -> onLogoHeightPxChanged(size.height) }
             .onGloballyPositioned { coordinates ->
                 onLogoAreaBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
             },
@@ -591,6 +648,8 @@ internal fun HomePageOverviewCards(
     homeCardGitHub: String,
     githubStats: List<HomeCardStatItem>,
     onOpenGitHubPage: () -> Unit,
+    homeCardWebDav: String,
+    webDavStats: List<HomeCardStatItem>,
     homeCardBa: String,
     baStats: List<HomeCardStatItem>,
 ) {
@@ -623,6 +682,20 @@ internal fun HomePageOverviewCards(
                     naText = homeNa,
                     columns = 3,
                     stats = githubStats,
+                )
+            }
+        }
+
+        if (visibleOverviewCards.contains(HomeOverviewCard.WEBDAV)) {
+            HomeInfoCard(
+                backdrop = homeCardBackdrop,
+                blurEnabled = blurEnabled,
+            ) {
+                HomeInfoGridCard(
+                    title = homeCardWebDav,
+                    naText = homeNa,
+                    columns = 3,
+                    stats = webDavStats,
                 )
             }
         }

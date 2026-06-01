@@ -5,14 +5,19 @@ import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
+import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.ui.page.main.home.model.formatGitHubCacheAgo
 import os.kei.ui.page.main.widget.status.AppStatusColors
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 internal fun deriveHomePageContentState(
     shizukuStatus: String,
     appOverview: HomeAppOverview,
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
+    webDavOverview: HomeWebDavOverview,
     baOverview: HomeBaOverview,
     runtimeNowMs: Long,
     text: HomePageContentTextBundle,
@@ -109,6 +114,17 @@ internal fun deriveHomePageContentState(
             githubOverview.shareImportLinkageEnabled -> text.valueOn
             else -> text.valueOff
         }
+    val webDavConfiguredLine =
+        if (webDavOverview.configured) text.webDavConfigured else text.webDavUnconfigured
+    val webDavAutoSyncLine =
+        if (webDavOverview.autoSyncEnabled) text.valueOn else text.valueOff
+    val webDavSyncItemsLine =
+        text.fraction(webDavOverview.enabledItemCount, webDavOverview.totalItemCount)
+    val webDavLastFullSyncLine =
+        webDavOverview.lastFullSyncTimeMs
+            .takeIf { it > 0L }
+            ?.let(::formatHomeWebDavSyncTime)
+            ?: text.webDavNeverSynced
     val baApLine =
         if (baOverview.loaded) {
             text.fraction(baOverview.apCurrent, baOverview.apLimit)
@@ -166,10 +182,11 @@ internal fun deriveHomePageContentState(
         homeTagline = text.tagline,
         homeStatusMcp = text.mcpTitle,
         homeStatusGitHub = text.githubTitle,
-        homeStatusBa = text.baTitle,
+        homeStatusWebDav = text.webDavTitle,
         homeStatusShizuku = text.shizukuTitle,
         homeCardMcp = text.mcpCardTitle,
         homeCardGitHub = text.githubCardTitle,
+        homeCardWebDav = text.webDavCardTitle,
         homeCardBa = text.baCardTitle,
         shizukuGranted = shizukuGranted,
         runningColor = colors.runningColor,
@@ -209,6 +226,13 @@ internal fun deriveHomePageContentState(
         githubShareLine = githubShareLine,
         homeStatLastUpdate = text.statLastUpdate,
         githubLastUpdateLine = githubLastUpdateLine,
+        webDavConfiguredLine = webDavConfiguredLine,
+        webDavAutoSyncLine = webDavAutoSyncLine,
+        webDavSyncItemsLine = webDavSyncItemsLine,
+        webDavLastFullSyncLine = webDavLastFullSyncLine,
+        homeStatAutoSync = text.statAutoSync,
+        homeStatSyncItems = text.statSyncItems,
+        homeStatLastFullSync = text.statLastFullSync,
         baActivationLine = baActivationLine,
         homeStatAp = text.statAp,
         baApLine = baApLine,
@@ -223,6 +247,9 @@ internal fun deriveHomePageContentState(
         baCacheFreshnessLine = homeCacheFreshnessLine(baOverview.cacheFreshness, text),
     )
 }
+
+private fun formatHomeWebDavSyncTime(timeMs: Long): String =
+    SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timeMs))
 
 private fun homeCacheFreshnessLine(
     freshness: CacheFreshnessSnapshot,

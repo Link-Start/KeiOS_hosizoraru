@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.sync
 
 import com.tencent.mmkv.MMKV
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.webdav.model.WebDavConfig
 
@@ -36,6 +38,7 @@ internal object WebDavSyncStore {
         mmkv.encode(KEY_USERNAME, config.username)
         mmkv.encode(KEY_APP_PASSWORD, config.appPassword)
         mmkv.encode(KEY_REMOTE_DIR, config.remoteDir)
+        WebDavSyncStoreSignals.notifyChanged()
     }
 
     fun loadConfig(): WebDavConfig? {
@@ -85,6 +88,7 @@ internal object WebDavSyncStore {
                 KEY_LAST_REMOTE_PROBE,
             ) + itemKeys).toTypedArray(),
         )
+        WebDavSyncStoreSignals.notifyChanged()
     }
 
     // ── Auto-sync preference ───────────────────────────────────────────
@@ -93,6 +97,7 @@ internal object WebDavSyncStore {
 
     fun setAutoSyncEnabled(enabled: Boolean) {
         mmkv.encode(KEY_AUTO_SYNC, enabled)
+        WebDavSyncStoreSignals.notifyChanged()
     }
 
     // ── Per-item enabled flag ──────────────────────────────────────────
@@ -102,6 +107,7 @@ internal object WebDavSyncStore {
 
     fun setItemEnabled(item: WebDavSyncItem, enabled: Boolean) {
         mmkv.encode(enabledKey(item), enabled)
+        WebDavSyncStoreSignals.notifyChanged()
     }
 
     // ── Per-item last sync time ────────────────────────────────────────
@@ -141,6 +147,7 @@ internal object WebDavSyncStore {
 
     fun setLastFullSyncTime(timeMs: Long) {
         mmkv.encode(KEY_LAST_FULL_SYNC, timeMs)
+        WebDavSyncStoreSignals.notifyChanged()
     }
 
     // ── Remote summary (read-only probe results) ───────────────────────
@@ -202,6 +209,14 @@ internal object WebDavSyncStore {
     private fun remoteEtagKey(item: WebDavSyncItem) = "remote_etag_${item.name}"
     private fun remoteProbedAtKey(item: WebDavSyncItem) = "remote_probed_at_${item.name}"
     private fun remoteEmptyKey(item: WebDavSyncItem) = "remote_empty_${item.name}"
+}
+
+internal object WebDavSyncStoreSignals {
+    val version = MutableStateFlow(0L)
+
+    fun notifyChanged() {
+        version.update { current -> current + 1L }
+    }
 }
 
 /**

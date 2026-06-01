@@ -8,16 +8,21 @@ import os.kei.feature.home.model.defaultHomeOverviewCards
 internal object HomeOverviewPrefs {
     const val KV_ID = "home_page_prefs"
     private const val KEY_VISIBLE_OVERVIEW_CARDS = "home_visible_overview_cards"
+    private const val KEY_WEBDAV_OVERVIEW_CARD_MIGRATED = "home_webdav_overview_card_migrated"
     private const val KEY_SHOW_CACHE_FRESHNESS_IN_CARDS = "home_show_cache_freshness_in_cards"
 
     fun loadVisibleOverviewCards(
         store: HomeOverviewKeyValueStore = mmkvStore()
     ): Set<HomeOverviewCard> {
         if (!store.contains(KEY_VISIBLE_OVERVIEW_CARDS)) return defaultHomeOverviewCards()
-        return decodeVisibleOverviewCards(
+        val cards = decodeVisibleOverviewCards(
             raw = store.decodeString(KEY_VISIBLE_OVERVIEW_CARDS, "").orEmpty(),
             missingFallback = emptySet()
         )
+        if (store.decodeBool(KEY_WEBDAV_OVERVIEW_CARD_MIGRATED, false)) return cards
+        val migratedCards = cards + HomeOverviewCard.WEBDAV
+        saveVisibleOverviewCards(migratedCards, store)
+        return migratedCards
     }
 
     fun saveVisibleOverviewCards(
@@ -25,6 +30,7 @@ internal object HomeOverviewPrefs {
         store: HomeOverviewKeyValueStore = mmkvStore()
     ) {
         store.encode(KEY_VISIBLE_OVERVIEW_CARDS, encodeVisibleOverviewCards(cards))
+        store.encode(KEY_WEBDAV_OVERVIEW_CARD_MIGRATED, true)
     }
 
     fun loadCacheFreshnessVisibleInCards(

@@ -7,6 +7,7 @@ import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
+import os.kei.feature.home.model.HomeWebDavOverview
 import kotlin.test.assertEquals
 
 class HomePageContentDeriverTest {
@@ -43,6 +44,13 @@ class HomePageContentDeriverTest {
                         cacheLabelNowMs = 7_200_000L,
                         cacheFreshness = freshCacheSnapshot(),
                     ),
+                webDavOverview =
+                    HomeWebDavOverview(
+                        configured = true,
+                        autoSyncEnabled = true,
+                        enabledItemCount = 4,
+                        totalItemCount = 5,
+                    ),
                 baOverview =
                     HomeBaOverview(
                         loaded = true,
@@ -69,6 +77,8 @@ class HomePageContentDeriverTest {
         assertEquals("fresh", state.githubCacheFreshnessLine)
         assertEquals("3h 1h", state.githubLastUpdateLine)
         assertEquals("stale", state.baCacheFreshnessLine)
+        assertEquals("configured", state.webDavConfiguredLine)
+        assertEquals("4/5", state.webDavSyncItemsLine)
         assertEquals("v1.8.0 (80)", state.appVersionText)
     }
 
@@ -99,10 +109,11 @@ class HomePageContentDeriverTest {
             tagline = "tagline",
             mcpTitle = "MCP",
             githubTitle = "GitHub",
-            baTitle = "BA",
+            webDavTitle = "WebDAV",
             shizukuTitle = "Shizuku",
             mcpCardTitle = "MCP card",
             githubCardTitle = "GitHub card",
+            webDavCardTitle = "WebDAV card",
             baCardTitle = "BA card",
             loading = "loading",
             githubUnconfigured = "unconfigured",
@@ -116,6 +127,9 @@ class HomePageContentDeriverTest {
             mcpRuntimePending = "pending runtime",
             baStatusActive = "active",
             baStatusInactive = "inactive",
+            webDavConfigured = "configured",
+            webDavUnconfigured = "unconfigured",
+            webDavNeverSynced = "never",
             valueOn = "on",
             valueOff = "off",
             valueAuthorized = "authorized",
@@ -143,6 +157,9 @@ class HomePageContentDeriverTest {
             statCacheState = "cache state",
             statShare = "share",
             statLastUpdate = "last",
+            statAutoSync = "auto",
+            statSyncItems = "datasets",
+            statLastFullSync = "full sync",
             statAp = "ap",
             statCafeAp = "cafe",
             statApRemaining = "remaining",

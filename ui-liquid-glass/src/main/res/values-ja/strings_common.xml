@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_expand">展開</string>
+    <string name="common_collapse">折りたたむ</string>
+    <string name="common_selected">選択中</string>
+    <string name="common_expand_details_hint">タップして詳細を展開</string>
+    <string name="common_collapse_details_hint">タップして詳細を折りたたむ</string>
+    <string name="common_unsaved_changes_title">未保存の変更を破棄しますか？</string>
+    <string name="common_unsaved_changes_summary">現在の変更は保存されていません。閉じると再入力または再選択が必要です。</string>
+    <string name="common_keep_editing">編集を続ける</string>
+    <string name="common_discard_changes">破棄</string>
+</resources>

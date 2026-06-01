@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_expand">Expand</string>
+    <string name="common_collapse">Collapse</string>
+    <string name="common_selected">Selected</string>
+    <string name="common_expand_details_hint">Tap to expand details</string>
+    <string name="common_collapse_details_hint">Tap to collapse details</string>
+    <string name="common_unsaved_changes_title">Discard unsaved changes?</string>
+    <string name="common_unsaved_changes_summary">Current changes have not been saved. Closing will require entering or selecting them again.</string>
+    <string name="common_keep_editing">Keep editing</string>
+    <string name="common_discard_changes">Discard</string>
+</resources>

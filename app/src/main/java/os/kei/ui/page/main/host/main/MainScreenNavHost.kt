@@ -53,6 +53,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.rememberLiquidToastState
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 
 @Composable
@@ -256,12 +257,17 @@ internal fun MainScreenNavHost(
         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
         LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled,
+        LocalLiquidSheetEnabled provides prefsState.liquidSheetEnabled,
         LocalTextCopyExpandedOverride provides prefsState.textCopyCapabilityExpanded,
     ) {
         // Liquid Glass Toast host — overlays all navigation content.
         val liquidToastState = rememberLiquidToastState()
         val liquidToastBackdrop = rememberLayerBackdrop()
-        BindLiquidToastBridge(liquidToastState)
+        BindLiquidToastBridge(
+            state = liquidToastState,
+            liquidToastEnabled = prefsState.liquidToastEnabled,
+            reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
+        )
         Box(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().layerBackdrop(liquidToastBackdrop)) {
                 if (routePredictiveBackEnabled) {

@@ -9,6 +9,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubRepositoryProfileRepository
 import os.kei.feature.github.data.remote.GitHubRepositoryProfileRequest
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.data.remote.GitRepositoryReleaseStrategy
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -21,6 +22,7 @@ import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
@@ -94,15 +96,34 @@ object GitHubReleaseCheckService {
         }
         val releaseLookupItem = item.githubReleaseLookupItemOrNull()
         if (item.isGitRepositoryTrack() && releaseLookupItem == null) {
-            return GitHubTrackedReleaseCheck(
-                strategyId = "git_repository",
+            val gitIdentity = buildGitRepositoryTrackIdentity(item.repoUrl)
+                ?: return failedGitRepositoryCheck(
+                    localVersion = localVersion,
+                    localVersionCode = localVersionCode,
+                    sourceConfigSignature = sourceConfigSignature,
+                    detail = "invalid Git repository URL"
+                )
+            val gitStrategy = GitRepositoryReleaseStrategy(gitIdentity)
+            val gitSnapshot = loadSnapshotWithTransientRetry(
+                strategy = gitStrategy,
+                owner = gitIdentity.owner,
+                repo = gitIdentity.repo,
+                forceRefresh = forceRefresh
+            ).getOrElse { error ->
+                return failedGitRepositoryCheck(
+                    localVersion = localVersion,
+                    localVersionCode = localVersionCode,
+                    sourceConfigSignature = sourceConfigSignature,
+                    detail = error.message ?: "unknown"
+                )
+            }
+            return evaluateSnapshot(
+                item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                sourceConfigSignature = item.checkSourceSignature(lookupConfig),
-                status = GitHubTrackedReleaseStatus.Failed,
-                message = GitHubTrackedReleaseStatus.Failed.failureMessage(
-                    "generic Git repository release checks require a platform-specific backend"
-                )
+                snapshot = gitSnapshot,
+                checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
+                sourceConfigSignature = sourceConfigSignature
             )
         }
         val repositoryItem = releaseLookupItem ?: item
@@ -337,6 +358,22 @@ object GitHubReleaseCheckService {
             sourceConfigSignature = sourceConfigSignature,
             status = status,
             message = status.defaultMessage
+        )
+    }
+
+    private fun failedGitRepositoryCheck(
+        localVersion: String,
+        localVersionCode: Long,
+        sourceConfigSignature: String,
+        detail: String
+    ): GitHubTrackedReleaseCheck {
+        return GitHubTrackedReleaseCheck(
+            strategyId = "git_repository",
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            sourceConfigSignature = sourceConfigSignature,
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
         )
     }
 

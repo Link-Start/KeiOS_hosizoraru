@@ -25,6 +25,11 @@ class GitRepositoryReleaseStrategyTest {
                     .setResponseCode(200)
                     .setBody(gitLabReleasesJson())
             )
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody("[]")
+            )
             val identity = assertNotNull(
                 buildGitRepositoryTrackIdentity("https://gitlab.com/group/subgroup/app.git")
             )
@@ -44,6 +49,45 @@ class GitRepositoryReleaseStrategyTest {
             assertTrue(
                 server.takeRequest().path.orEmpty()
                     .contains("/api/v4/projects/group%2Fsubgroup%2Fapp/releases")
+            )
+        }
+    }
+
+    @Test
+    fun `gitee strategy merges releases and newer tags`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(giteeProntoReleasesJson())
+            )
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(giteeProntoTagsJson())
+            )
+            val identity = assertNotNull(
+                buildGitRepositoryTrackIdentity("https://gitee.com/hugedog233/Pronto")
+            )
+            val strategy = GitRepositoryReleaseStrategy(
+                identity = identity,
+                giteeApiBaseUrl = server.url("/api/v5").toString()
+            )
+
+            val snapshot = strategy.loadSnapshot(identity.owner, identity.repo).getOrThrow()
+
+            assertEquals("git_repository_gitee", snapshot.strategyId)
+            assertEquals(true, snapshot.hasStableRelease)
+            assertEquals("2.5.1", snapshot.latestStable.rawTag)
+            assertEquals("v2.0.7", snapshot.latestPreRelease?.rawTag)
+            assertEquals(3, snapshot.feed.entries.size)
+            assertTrue(
+                server.takeRequest().path.orEmpty()
+                    .contains("/api/v5/repos/hugedog233/Pronto/releases?per_page=30&direction=desc")
+            )
+            assertTrue(
+                server.takeRequest().path.orEmpty()
+                    .contains("/api/v5/repos/hugedog233/Pronto/tags?per_page=30&direction=desc")
             )
         }
     }
@@ -146,6 +190,54 @@ class GitRepositoryReleaseStrategyTest {
                 "author": {
                   "username": "demo",
                   "avatar_url": "https://gitlab.com/uploads/avatar.png"
+                }
+              }
+            ]
+        """.trimIndent()
+    }
+
+    private fun giteeProntoReleasesJson(): String {
+        return """
+            [
+              {
+                "name": "大狗记 v2.0.8",
+                "tag_name": "v2.0.8",
+                "body": "Stable build",
+                "prerelease": false,
+                "created_at": "2026-03-25T15:41:12+08:00",
+                "author": {
+                  "login": "hugedog233",
+                  "avatar_url": "https://gitee.com/assets/no_portrait.png"
+                }
+              },
+              {
+                "name": "大狗记 v2.0.7 Beta",
+                "tag_name": "v2.0.7",
+                "body": "Beta build",
+                "prerelease": true,
+                "created_at": "2026-03-24T17:37:12+08:00",
+                "author": {
+                  "login": "hugedog233",
+                  "avatar_url": "https://gitee.com/assets/no_portrait.png"
+                }
+              }
+            ]
+        """.trimIndent()
+    }
+
+    private fun giteeProntoTagsJson(): String {
+        return """
+            [
+              {
+                "name": "2.5.1",
+                "message": "v2.5.1 stable update",
+                "commit": {
+                  "sha": "bf9eb3b60cd0f9aa64a9bf9ea694c806a7bb2252",
+                  "date": "2026-03-07T18:51:13+08:00"
+                },
+                "tagger": {
+                  "name": "mt",
+                  "date": "2026-05-07T15:14:57+00:00"
                 }
               }
             ]

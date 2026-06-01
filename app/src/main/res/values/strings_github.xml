@@ -677,6 +677,7 @@
     <string name="github_track_sheet_summary_package_optional">可留空仅跟踪仓库版本；后续填入包名或安装对应 App 后会自动联动刷新</string>
     <string name="github_track_sheet_summary_package_link">包名用于匹配本机安装状态；也可以通过最新稳定版 APK 自动扫描。</string>
     <string name="github_track_sheet_summary_package_direct_apk">包名用于匹配本机安装状态；扫描包名会解析订阅源指向的 APK Manifest。</string>
+    <string name="github_track_sheet_summary_package_git">Git 来源通过 Release 与 Tag 判断远端版本；包名需要手动填写或从本机 App 选择。</string>
     <string name="github_track_sheet_label_selected_app">已选 App</string>
     <string name="github_track_sheet_selected_none">未选择</string>
     <string name="github_track_sheet_summary_app_binding_none">可选。绑定本机 App 后会用于版本对比和安装后刷新。</string>

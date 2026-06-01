@@ -84,11 +84,13 @@ class GitRepositoryReleaseStrategy(
                 )
             }
             .getOrElse { emptyList() }
-        val entries = releaseEntries.ifEmpty {
-            fetchJsonArray(tagsUrl)
-                .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = gitLabWebBaseUrl()) }
-                .getOrDefault(emptyList())
-        }
+        val tagEntries = fetchJsonArray(tagsUrl)
+            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = gitLabWebBaseUrl()) }
+            .getOrDefault(emptyList())
+        val entries = mergeReleaseAndTagEntries(
+            releaseEntries = releaseEntries,
+            tagEntries = tagEntries
+        )
         return buildSnapshot(entries, feedUrl = releasesUrl)
     }
 
@@ -98,9 +100,9 @@ class GitRepositoryReleaseStrategy(
             .joinToString("/") { it.urlEncodePathSegment() }
         val repoPath = identity.repo.urlEncodePathSegment()
         val releasesUrl =
-            "${giteeApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/releases?per_page=30"
+            "${giteeApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/releases?per_page=30&direction=desc"
         val tagsUrl =
-            "${giteeApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/tags?per_page=30"
+            "${giteeApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/tags?per_page=30&direction=desc"
         val releaseEntries = fetchJsonArray(releasesUrl)
             .map { releases ->
                 parseReleaseEntries(
@@ -110,11 +112,13 @@ class GitRepositoryReleaseStrategy(
                 )
             }
             .getOrElse { emptyList() }
-        val entries = releaseEntries.ifEmpty {
-            fetchJsonArray(tagsUrl)
-                .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = giteeWebBaseUrl()) }
-                .getOrDefault(emptyList())
-        }
+        val tagEntries = fetchJsonArray(tagsUrl)
+            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = giteeWebBaseUrl()) }
+            .getOrDefault(emptyList())
+        val entries = mergeReleaseAndTagEntries(
+            releaseEntries = releaseEntries,
+            tagEntries = tagEntries
+        )
         return buildSnapshot(entries, feedUrl = releasesUrl)
     }
 
@@ -269,17 +273,21 @@ class GitRepositoryReleaseStrategy(
                     .ifBlank { release?.optJSONObject("_links")?.optString("self").orEmpty().trim() }
                     .ifBlank { buildTagUrl(sourceBaseUrl, tagName) }
                 val commit = tag.optJSONObject("commit")
+                val tagger = tag.optJSONObject("tagger")
                 add(
                     GitHubAtomReleaseEntry(
                         entryId = tag.optString("target").trim()
                             .ifBlank { commit?.optString("id").orEmpty().trim() }
+                            .ifBlank { commit?.optString("sha").orEmpty().trim() }
                             .ifBlank { htmlUrl },
                         tag = tagName,
                         title = title,
                         link = htmlUrl,
                         updatedAtMillis = tag.optString("created_at").parseIsoInstantOrNull()
+                            ?: tagger?.optString("date").orEmpty().parseIsoInstantOrNull()
                             ?: commit?.optString("committed_date").orEmpty().parseIsoInstantOrNull()
-                            ?: commit?.optString("created_at").orEmpty().parseIsoInstantOrNull(),
+                            ?: commit?.optString("created_at").orEmpty().parseIsoInstantOrNull()
+                            ?: commit?.optString("date").orEmpty().parseIsoInstantOrNull(),
                         contentText = body,
                         versionCandidates = GitHubVersionUtils.buildVersionCandidates(
                             GitHubVersionCandidateSource.Tag to tagName,
@@ -326,6 +334,20 @@ class GitRepositoryReleaseStrategy(
                 )
             }
             .toList()
+    }
+
+    private fun mergeReleaseAndTagEntries(
+        releaseEntries: List<GitHubAtomReleaseEntry>,
+        tagEntries: List<GitHubAtomReleaseEntry>
+    ): List<GitHubAtomReleaseEntry> {
+        val entriesByTag = linkedMapOf<String, GitHubAtomReleaseEntry>()
+        releaseEntries.forEach { entry ->
+            entriesByTag[entry.mergeKey] = entry
+        }
+        tagEntries.forEach { entry ->
+            entriesByTag.putIfAbsent(entry.mergeKey, entry)
+        }
+        return entriesByTag.values.toList()
     }
 
     private fun fetchJsonArray(url: String): Result<JSONArray> {
@@ -425,22 +447,37 @@ class GitRepositoryReleaseStrategy(
         return entries.maxWithOrNull(entryComparator)
     }
 
+    private val GitHubAtomReleaseEntry.mergeKey: String
+        get() =
+            tag.trim()
+                .lowercase(Locale.ROOT)
+                .replace(leadingVersionPrefixRegex, "")
+
     companion object {
         private const val CACHE_TTL_MS = 90_000L
         private const val GIT_USER_AGENT = "KeiOS-App/1.0 (Android Git Repository)"
 
         private val gitTagRefRegex = Regex("""refs/tags/([^\u0000\s^]+(?:\^\{\})?)""")
+        private val leadingVersionPrefixRegex = Regex("""^v(?=\d)""", RegexOption.IGNORE_CASE)
         private val snapshotCache =
             ConcurrentHashMap<String, GitRepositoryCachedSnapshot>()
-        private val entryComparator =
-            compareBy<GitHubAtomReleaseEntry> { it.updatedAtMillis ?: Long.MIN_VALUE }
-                .thenComparator { left, right ->
-                    GitHubVersionUtils.compareStructuredCandidateSets(
-                        left.versionCandidates,
-                        right.versionCandidates
-                    ) ?: 0
-                }
-                .thenBy { it.link }
+        private val entryComparator = Comparator<GitHubAtomReleaseEntry> { left, right ->
+            val versionCompare =
+                GitHubVersionUtils.compareStructuredCandidateSets(
+                    left.versionCandidates,
+                    right.versionCandidates
+                )
+            if (versionCompare != null && versionCompare != 0) {
+                versionCompare
+            } else {
+                val updatedCompare =
+                    compareValues(
+                        left.updatedAtMillis ?: Long.MIN_VALUE,
+                        right.updatedAtMillis ?: Long.MIN_VALUE
+                    )
+                if (updatedCompare != 0) updatedCompare else left.link.compareTo(right.link)
+            }
+        }
 
         private val defaultClient: OkHttpClient by lazy {
             SharedHttpClient.base.newBuilder()

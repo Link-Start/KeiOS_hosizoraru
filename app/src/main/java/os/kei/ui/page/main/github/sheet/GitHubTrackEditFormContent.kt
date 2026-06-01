@@ -185,10 +185,10 @@ internal fun GitHubTrackEditFormContent(
         )
     val packageSummary =
         stringResource(
-            if (directApkMode) {
-                R.string.github_track_sheet_summary_package_direct_apk
-            } else {
-                R.string.github_track_sheet_summary_package_link
+            when {
+                directApkMode -> R.string.github_track_sheet_summary_package_direct_apk
+                gitRepositoryMode -> R.string.github_track_sheet_summary_package_git
+                else -> R.string.github_track_sheet_summary_package_link
             },
         )
 
@@ -273,22 +273,24 @@ internal fun GitHubTrackEditFormContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
-                AppLiquidTextButton(
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text =
-                        if (packageNameScanRunning) {
-                            stringResource(R.string.github_track_sheet_btn_scan_package_running)
-                        } else {
-                            stringResource(R.string.github_track_sheet_btn_scan_package)
-                        },
-                    enabled = canScanPackageName,
-                    onClick = onScanPackageName,
-                    minHeight = 30.dp,
-                    horizontalPadding = 10.dp,
-                    verticalPadding = 4.dp,
-                    textMaxLines = 1,
-                )
+                if (!gitRepositoryMode) {
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text =
+                            if (packageNameScanRunning) {
+                                stringResource(R.string.github_track_sheet_btn_scan_package_running)
+                            } else {
+                                stringResource(R.string.github_track_sheet_btn_scan_package)
+                            },
+                        enabled = canScanPackageName,
+                        onClick = onScanPackageName,
+                        minHeight = 30.dp,
+                        horizontalPadding = 10.dp,
+                        verticalPadding = 4.dp,
+                        textMaxLines = 1,
+                    )
+                }
             }
             AppLiquidSearchField(
                 value = packageNameInput,

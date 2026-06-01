@@ -104,6 +104,46 @@ class GitHubPageRepositoryTrackEditorTest {
     }
 
     @Test
+    fun `gitee git repository source builds pronto track with package bridge`() = runBlocking {
+        val result = repository.buildTrackedItem(
+            GitHubTrackEditorDraft(
+                sourceMode = GitHubTrackedSourceMode.GitRepository,
+                repoUrl = "https://gitee.com/hugedog233/Pronto",
+                packageName = "com.mt.pronto",
+                preferPreRelease = false,
+                alwaysShowLatestReleaseDownloadButton = true,
+                checkActionsUpdates = true,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30,
+                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
+                appList =
+                    listOf(
+                        InstalledAppItem(
+                            label = "Pronto",
+                            packageName = "com.mt.pronto",
+                            isSystemApp = false,
+                        )
+                    )
+            )
+        )
+
+        val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
+
+        assertEquals(GitHubTrackedSourceMode.GitRepository, item.sourceMode)
+        assertEquals("https://gitee.com/hugedog233/Pronto", item.repoUrl)
+        assertEquals("gitee.com/hugedog233", item.owner)
+        assertEquals("Pronto", item.repo)
+        assertEquals("com.mt.pronto", item.packageName)
+        assertEquals("Pronto", item.appLabel)
+        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, item.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode
+        )
+    }
+
+    @Test
     fun `import preview summarizes github git and direct apk source counts`() = runBlocking {
         val preview = repository.buildTrackedItemsImportPreview(
             payload = GitHubTrackedItemsImportPayload(

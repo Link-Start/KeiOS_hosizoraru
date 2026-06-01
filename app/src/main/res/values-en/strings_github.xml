@@ -677,6 +677,7 @@
     <string name="github_track_sheet_summary_package_optional">Leave empty to track only repository version. Filling a package name later or installing the matching app will link refresh automatically.</string>
     <string name="github_track_sheet_summary_package_link">The package name matches local install state. It can also be scanned from the latest stable APK.</string>
     <string name="github_track_sheet_summary_package_direct_apk">The package name matches local install state. Package scanning resolves the APK Manifest behind this subscription.</string>
+    <string name="github_track_sheet_summary_package_git">Git sources compare remote versions from Release and Tag metadata. Enter the package name manually or choose a local app.</string>
     <string name="github_track_sheet_label_selected_app">Selected app</string>
     <string name="github_track_sheet_selected_none">None selected</string>
     <string name="github_track_sheet_summary_app_binding_none">Optional. Binding a local app enables installed-version comparison and install-time refresh.</string>

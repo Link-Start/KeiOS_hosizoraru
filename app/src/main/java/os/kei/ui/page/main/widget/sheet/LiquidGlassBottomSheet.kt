@@ -190,12 +190,6 @@ fun LiquidGlassBottomSheet(
         show = show,
         modifier = modifier,
         surfaceModifier = sheetSurfaceModifier,
-        dragSurfaceColor =
-            if (useLiquidBackdropSurface) {
-                sheetGlassSurfaceColor
-            } else {
-                resolvedBackgroundColor
-            },
         title = title,
         startAction = startAction,
         endAction = endAction,

@@ -60,6 +60,7 @@ internal class WebDavSyncViewModel : ViewModel() {
 
     fun saveConfig() {
         val s = uiState
+        if (s.interactionLocked) return
         if (!validate()) return
         val config = s.provider.buildConfig(s.serverUrl, s.username, s.appPassword, s.remoteDir)
         WebDavSyncStore.saveConfig(config, s.provider)
@@ -73,12 +74,14 @@ internal class WebDavSyncViewModel : ViewModel() {
     }
 
     fun clearConfig() {
+        if (uiState.interactionLocked) return
         WebDavSyncStore.clearConfig()
         engine.invalidate()
         uiState = buildInitialState()
     }
 
     fun setAutoSyncEnabled(enabled: Boolean) {
+        if (uiState.interactionLocked) return
         WebDavSyncStore.setAutoSyncEnabled(enabled)
         uiState = uiState.copy(autoSyncEnabled = enabled)
     }
@@ -93,17 +96,36 @@ internal class WebDavSyncViewModel : ViewModel() {
      * Sync, Upload, or Download.
      */
     fun refreshRemoteSummary(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
-        if (uiState.busy || uiState.refreshingRemote) return
+        if (uiState.interactionLocked) return
         val config = WebDavSyncStore.loadConfig() ?: run {
             uiState = uiState.copy(missingConfig = true)
             return
         }
+        val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+        if (targets.isEmpty()) return
         viewModelScope.launch {
             uiState = uiState.copy(refreshingRemote = true, missingConfig = false)
-            val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+            val updatedStates = uiState.itemStates.toMutableMap()
             for (item in targets) {
                 val port = dataPorts[item] ?: continue
-                engine.probeRemote(config, item, port)
+                val current = updatedStates[item] ?: defaultItemState(item)
+                updatedStates[item] = current.copy(remoteProbeError = null)
+                val outcome = engine.probeRemote(config, item, port)
+                updatedStates[item] = when (outcome) {
+                    is WebDavRemoteProbeOutcome.Error -> {
+                        current.copy(
+                            remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
+                            remoteProbeError = WebDavItemOutcome(outcome.status, outcome.detail),
+                        )
+                    }
+
+                    else -> {
+                        current.copy(
+                            remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
+                            remoteProbeError = null,
+                        )
+                    }
+                }
             }
             // Per-item probe timestamps are written by the engine; record the wall-clock for the
             // batch so the UI can render "remote refreshed: <relative time>" without scanning all
@@ -112,7 +134,7 @@ internal class WebDavSyncViewModel : ViewModel() {
             uiState = uiState.copy(
                 refreshingRemote = false,
                 lastRemoteProbeTimeMs = WebDavSyncStore.getLastRemoteProbeTime(),
-                itemStates = buildItemStates(uiState.itemStates),
+                itemStates = buildItemStates(updatedStates),
             )
         }
     }
@@ -121,6 +143,7 @@ internal class WebDavSyncViewModel : ViewModel() {
 
     fun testConnection() {
         val s = uiState
+        if (s.interactionLocked) return
         if (!validate()) return
         val config = s.provider.buildConfig(s.serverUrl, s.username, s.appPassword, s.remoteDir)
         viewModelScope.launch {
@@ -133,6 +156,7 @@ internal class WebDavSyncViewModel : ViewModel() {
     // ── Item enable toggle ─────────────────────────────────────────────
 
     fun toggleItem(item: WebDavSyncItem) {
+        if (uiState.interactionLocked) return
         val enabled = !WebDavSyncStore.isItemEnabled(item)
         WebDavSyncStore.setItemEnabled(item, enabled)
         uiState = uiState.copy(itemStates = buildItemStates(uiState.itemStates))
@@ -158,7 +182,8 @@ internal class WebDavSyncViewModel : ViewModel() {
      * blindly wipe data on either side.
      */
     fun requestBatchConfirmation(kind: WebDavBatchKind) {
-        if (uiState.busy || uiState.pendingBatchConfirmation != null || uiState.pendingItemConfirmation != null) return
+        if (uiState.interactionLocked || uiState.pendingBatchConfirmation != null || uiState.pendingItemConfirmation != null) return
+        if (!hasEnabledItems()) return
         if (kind == WebDavBatchKind.Sync) {
             // Sync is union-merge end-to-end, no confirmation needed.
             return
@@ -183,7 +208,7 @@ internal class WebDavSyncViewModel : ViewModel() {
      * so both bypass this gate and run directly via [runItem].
      */
     fun requestItemConfirmation(item: WebDavSyncItem, kind: WebDavBatchKind) {
-        if (uiState.busy || uiState.pendingBatchConfirmation != null || uiState.pendingItemConfirmation != null) return
+        if (uiState.interactionLocked || uiState.pendingBatchConfirmation != null || uiState.pendingItemConfirmation != null) return
         if (kind != WebDavBatchKind.Upload) return
         uiState = uiState.copy(pendingItemConfirmation = item to kind)
     }
@@ -236,7 +261,8 @@ internal class WebDavSyncViewModel : ViewModel() {
         kind: WebDavBatchKind,
         dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
     ) {
-        if (uiState.busy) return
+        if (uiState.interactionLocked) return
+        if (!WebDavSyncStore.isItemEnabled(item)) return
         val config = WebDavSyncStore.loadConfig() ?: return
         val port = dataPorts[item] ?: return
         syncJob = viewModelScope.launch {
@@ -255,14 +281,15 @@ internal class WebDavSyncViewModel : ViewModel() {
         dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
         kind: WebDavBatchKind,
     ) {
-        if (uiState.busy) return
+        if (uiState.interactionLocked) return
         val config = WebDavSyncStore.loadConfig() ?: run {
             uiState = uiState.copy(missingConfig = true)
             return
         }
+        val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+        if (targets.isEmpty()) return
         syncJob = viewModelScope.launch {
             uiState = uiState.copy(runningKind = kind, missingConfig = false)
-            val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             targets.forEach { setItemRunning(it) }
             for (item in targets) {
                 val port = dataPorts[item] ?: continue
@@ -367,6 +394,7 @@ internal class WebDavSyncViewModel : ViewModel() {
                 lastOutcome = previous[item]?.lastOutcome,
                 remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
                 localCount = previous[item]?.localCount ?: -1,
+                remoteProbeError = previous[item]?.remoteProbeError,
             )
         }
 
@@ -391,6 +419,8 @@ internal class WebDavSyncViewModel : ViewModel() {
         lastSyncTimeMs = WebDavSyncStore.getLastSyncTime(item),
         remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
     )
+
+    private fun hasEnabledItems(): Boolean = uiState.itemStates.values.any { it.enabled }
 }
 
 internal enum class WebDavBatchKind { Sync, Upload, Download }
@@ -419,6 +449,8 @@ internal data class WebDavSyncUiState(
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
 ) {
     val busy: Boolean get() = runningKind != null
+    val interactionLocked: Boolean
+        get() = busy || testing || refreshingRemote
     val canConnect: Boolean
         get() = username.isNotBlank() && appPassword.isNotBlank() &&
             (provider.serverUrlLocked || serverUrl.isNotBlank())
@@ -430,6 +462,7 @@ internal data class WebDavSyncItemUiState(
     val lastSyncTimeMs: Long = 0L,
     val lastOutcome: WebDavItemOutcome? = null,
     val remoteSummary: WebDavRemoteSummary? = null,
+    val remoteProbeError: WebDavItemOutcome? = null,
     /** Local item count; -1 means "not yet measured". Populated by [WebDavSyncViewModel.refreshLocalCounts]. */
     val localCount: Int = -1,
 )

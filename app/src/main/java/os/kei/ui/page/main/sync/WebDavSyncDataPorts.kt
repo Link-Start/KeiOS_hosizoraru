@@ -5,15 +5,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import os.kei.BuildConfig
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.domain.GitHubTrackedItemsImportApplier
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
+import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
+import os.kei.ui.page.main.os.shell.buildBuiltInShellCommandCards
 import os.kei.ui.page.main.os.shell.rememberBuiltInShellCommandCards
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
+import os.kei.ui.page.main.os.shortcut.buildBuiltInActivityShortcutCards
 import os.kei.ui.page.main.os.shortcut.rememberBuiltInActivityShortcutCards
+import os.kei.ui.page.main.os.transfer.OsCardTransferService
 import os.kei.ui.page.main.os.transfer.parseOsCardImportRoot
 import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
@@ -45,6 +54,7 @@ internal fun rememberWebDavSyncDataPorts(): Map<WebDavSyncItem, WebDavSyncDataPo
     val builtInShellCards = rememberBuiltInShellCommandCards()
     return remember(context, builtInActivityCards, builtInShellCards, defaults) {
         buildWebDavSyncDataPorts(
+            context = context,
             googleSystemServiceDefaults = defaults,
             builtInActivityShortcutCards = builtInActivityCards,
             builtInShellCommandCards = builtInShellCards,
@@ -57,19 +67,17 @@ internal fun rememberWebDavSyncDataPorts(): Map<WebDavSyncItem, WebDavSyncDataPo
  * can build ports from application scope.
  */
 internal fun buildWebDavSyncDataPorts(context: Context): Map<WebDavSyncItem, WebDavSyncDataPort> {
-    val defaults = OsGoogleSystemServiceConfig(
-        intentFlags = context.getString(R.string.os_google_system_service_default_intent_flags),
-    ).normalized()
+    val builtIns = resolveWebDavBuiltInCardSets(context)
     return buildWebDavSyncDataPorts(
-        googleSystemServiceDefaults = defaults,
-        // Built-in cards default to the single Google-settings sample; export includes whatever the
-        // user actually has, and import merges by identity, so this is sufficient off the UI thread.
-        builtInActivityShortcutCards = emptyList(),
-        builtInShellCommandCards = emptyList(),
+        context = context,
+        googleSystemServiceDefaults = builtIns.googleSystemServiceDefaults,
+        builtInActivityShortcutCards = builtIns.activityShortcutCards,
+        builtInShellCommandCards = builtIns.shellCommandCards,
     )
 }
 
 private fun buildWebDavSyncDataPorts(
+    context: Context,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     builtInActivityShortcutCards: List<OsActivityShortcutCard>,
     builtInShellCommandCards: List<OsShellCommandCard>,
@@ -77,19 +85,24 @@ private fun buildWebDavSyncDataPorts(
     mapOf(
         WebDavSyncItem.GitHubTracked to WebDavSyncDataPort(
             exportJson = {
-                GitHubTrackStore.buildTrackedItemsExportJson(GitHubTrackStore.load())
+                val items = normalizeGitHubTrackedItemsForSync(GitHubTrackStore.load())
+                GitHubTrackStore.buildTrackedItemsExportJson(items)
             },
             merge = { raw ->
-                val imported = GitHubTrackStore.parseTrackedItemsImport(raw).items
-                val existing = GitHubTrackStore.load()
-                // Union by tracked-item id; local config wins on conflict.
-                val existingIds = existing.mapTo(HashSet()) { it.id }
-                val merged = existing + imported.filter { it.id !in existingIds }
-                GitHubTrackStore.save(merged)
+                val payload = GitHubTrackStore.parseTrackedItemsImport(raw)
+                GitHubTrackedItemsImportApplier.apply(
+                    context = context,
+                    payload = payload,
+                    existingItems = GitHubTrackStore.load(),
+                )
             },
-            localCount = { GitHubTrackStore.load().size },
+            localCount = { normalizeGitHubTrackedItemsForSync(GitHubTrackStore.load()).size },
             countRemoteItems = { raw ->
-                runCatching { GitHubTrackStore.parseTrackedItemsImport(raw).items.size }
+                runCatching {
+                    normalizeGitHubTrackedItemsForSync(
+                        GitHubTrackStore.parseTrackedItemsImport(raw).items,
+                    ).size
+                }
                     .getOrDefault(0)
             },
         ),
@@ -133,11 +146,27 @@ private fun buildWebDavSyncDataPorts(
                     builtInSampleDefaults = googleSystemServiceDefaults,
                     builtInActivityShortcutCards = builtInActivityShortcutCards,
                 )
-                OsActivityShortcutCardStore.buildCardsExportJson(cards, googleSystemServiceDefaults)
+                OsCardTransferService.buildActivityCardsExportJson(
+                    cards = cards,
+                    defaults = googleSystemServiceDefaults,
+                )
             },
             merge = { raw ->
-                OsActivityShortcutCardStore.importCardsFromJsonMerged(
-                    raw = raw,
+                val payload =
+                    OsCardTransferService.parseActivityImportPayload(
+                        raw = raw,
+                        defaults = googleSystemServiceDefaults,
+                        builtInSampleDefaults = googleSystemServiceDefaults,
+                        builtInActivityShortcutCards = builtInActivityShortcutCards,
+                    )
+                OsCardTransferService.applyActivityImport(
+                    payload = payload,
+                    existingCards =
+                        OsActivityShortcutCardStore.loadCards(
+                            defaults = googleSystemServiceDefaults,
+                            builtInSampleDefaults = googleSystemServiceDefaults,
+                            builtInActivityShortcutCards = builtInActivityShortcutCards,
+                        ),
                     defaults = googleSystemServiceDefaults,
                     builtInSampleDefaults = googleSystemServiceDefaults,
                     builtInActivityShortcutCards = builtInActivityShortcutCards,
@@ -166,10 +195,17 @@ private fun buildWebDavSyncDataPorts(
                 val cards = OsShellCommandCardStore.loadCards(
                     builtInShellCommandCards = builtInShellCommandCards,
                 )
-                OsShellCommandCardStore.buildCardsExportJson(cards)
+                OsCardTransferService.buildShellCardsExportJson(cards)
             },
             merge = { raw ->
-                OsShellCommandCardStore.importCardsFromJsonMerged(raw)
+                val payload = OsCardTransferService.parseShellImportPayload(raw)
+                OsCardTransferService.applyShellImport(
+                    payload = payload,
+                    existingCards =
+                        OsShellCommandCardStore.loadCards(
+                            builtInShellCommandCards = builtInShellCommandCards,
+                        ),
+                )
             },
             localCount = {
                 OsShellCommandCardStore.loadCards(
@@ -185,3 +221,75 @@ private fun buildWebDavSyncDataPorts(
             },
         ),
     )
+
+internal fun resolveWebDavBuiltInCardSets(context: Context): WebDavBuiltInCardSets {
+    val defaultIntentFlags =
+        context.getString(R.string.os_google_system_service_default_intent_flags)
+    val defaults = OsGoogleSystemServiceConfig(intentFlags = defaultIntentFlags).normalized()
+    return WebDavBuiltInCardSets(
+        googleSystemServiceDefaults = defaults,
+        activityShortcutCards =
+            buildBuiltInActivityShortcutCards(
+                context = context,
+                defaults = defaults,
+                defaultIntentFlags = defaultIntentFlags,
+            ),
+        shellCommandCards = buildBuiltInShellCommandCards(context),
+    )
+}
+
+internal data class WebDavBuiltInCardSets(
+    val googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
+    val activityShortcutCards: List<OsActivityShortcutCard>,
+    val shellCommandCards: List<OsShellCommandCard>,
+)
+
+internal fun normalizeGitHubTrackedItemsForSync(items: List<GitHubTrackedApp>): List<GitHubTrackedApp> {
+    val deduplicated = LinkedHashMap<String, GitHubTrackedApp>()
+    items.forEach { item ->
+        deduplicated[item.id] = item
+    }
+    val selfTrack = defaultKeiOsTrackedApp(packageName = BuildConfig.APPLICATION_ID)
+    if (deduplicated.containsKey(selfTrack.id)) {
+        return deduplicated.values.toList()
+    }
+    return listOf(selfTrack) + deduplicated.values
+}
+
+internal fun mergeGitHubTrackedItemsForSync(
+    existingItems: List<GitHubTrackedApp>,
+    payload: GitHubTrackedItemsImportPayload,
+): List<GitHubTrackedApp> = mergeGitHubTrackedItemsForSync(existingItems, payload.items)
+
+internal fun mergeGitHubTrackedItemsForSync(
+    existingItems: List<GitHubTrackedApp>,
+    importedItems: List<GitHubTrackedApp>,
+): List<GitHubTrackedApp> {
+    if (importedItems.isEmpty()) {
+        return normalizeGitHubTrackedItemsForSync(existingItems)
+    }
+    val mergedItems = existingItems.toMutableList()
+    val indexById =
+        mergedItems
+            .withIndex()
+            .associate { it.value.id to it.index }
+            .toMutableMap()
+    importedItems.forEach { item ->
+        val existingIndex = indexById[item.id]
+        if (existingIndex == null) {
+            mergedItems += item
+            indexById[item.id] = mergedItems.lastIndex
+        } else {
+            val existingItem = mergedItems[existingIndex]
+            mergedItems[existingIndex] = item.withTrackedLocalAppTypeFallback(existingItem)
+        }
+    }
+    return normalizeGitHubTrackedItemsForSync(mergedItems)
+}
+
+private fun GitHubTrackedApp.withTrackedLocalAppTypeFallback(existingItem: GitHubTrackedApp): GitHubTrackedApp =
+    if (localAppType == GitHubTrackedLocalAppType.Unknown) {
+        copy(localAppType = existingItem.localAppType)
+    } else {
+        this
+    }

@@ -20,6 +20,8 @@ internal fun SettingsWebDavSyncSection(
 ) {
     val configured = WebDavSyncStore.hasConfig()
     val presentation = deriveWebDavSyncPresentation(configured)
+    val autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled()
+    val lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime()
     SettingsGroupCard(
         header = stringResource(R.string.settings_category_data),
         title = stringResource(R.string.webdav_sync_title),
@@ -48,6 +50,29 @@ internal fun SettingsWebDavSyncSection(
                     value = config.username,
                 )
             }
+            SettingsInfoItem(
+                key = stringResource(R.string.webdav_sync_auto_sync_label),
+                value = stringResource(
+                    if (autoSyncEnabled) {
+                        R.string.webdav_sync_status_enabled
+                    } else {
+                        R.string.webdav_sync_status_disabled
+                    },
+                ),
+            )
+            SettingsInfoItem(
+                key = stringResource(R.string.webdav_sync_last_sync_label),
+                value = if (lastFullSyncTimeMs > 0L) {
+                    webDavSettingsTime(lastFullSyncTimeMs)
+                } else {
+                    stringResource(R.string.webdav_sync_last_sync_never)
+                },
+            )
         }
     }
+}
+
+private fun webDavSettingsTime(timeMs: Long): String {
+    val formatter = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+    return formatter.format(java.util.Date(timeMs))
 }

@@ -22,17 +22,23 @@ import java.security.MessageDigest
  * those into user-facing text is the UI layer's job, which keeps this engine usable from
  * background (non-Compose) callers such as the auto-sync coordinator.
  */
-internal class WebDavSyncEngine {
+internal class WebDavSyncEngine(
+    private val clientFactory: (WebDavConfig) -> WebDavSyncClientBridge = {
+        RealWebDavSyncClientBridge(WebDavSyncClient(it))
+    },
+    private val metadataStore: WebDavSyncMetadataStore = StoreBackedWebDavSyncMetadataStore,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
+) {
     private val mutex = Mutex()
     private var cachedConfig: WebDavConfig? = null
-    private var cachedClient: WebDavSyncClient? = null
+    private var cachedClient: WebDavSyncClientBridge? = null
 
-    private suspend fun client(config: WebDavConfig): WebDavSyncClient = mutex.withLock {
+    private suspend fun client(config: WebDavConfig): WebDavSyncClientBridge = mutex.withLock {
         val existing = cachedClient
         if (existing != null && cachedConfig == config) {
             existing
         } else {
-            WebDavSyncClient(config).also {
+            clientFactory(config).also {
                 cachedClient = it
                 cachedConfig = config
             }
@@ -81,15 +87,27 @@ internal class WebDavSyncEngine {
         return try {
             when (val download = c.download(item.fileName)) {
                 is WebDavDownloadResult.Success -> {
+                    val localBefore = port.exportJson()
+                    if (contentHash(localBefore) == contentHash(download.content)) {
+                        recordSynced(item, download.etag, localBefore)
+                        return WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                    }
                     // Remote exists → merge it locally, then push the merged result up.
                     port.merge(download.content)
                     val merged = port.exportJson()
-                    pushMerged(c, item, merged, download.etag)
+                    pushMerged(c, item, port, merged, download.etag)
                 }
                 WebDavDownloadResult.Empty -> {
                     // No remote copy yet → first push of local data.
                     val local = port.exportJson()
-                    pushMerged(c, item, local, etag = null, statusWhenWritten = WebDavItemStatus.Uploaded)
+                    pushMerged(
+                        c = c,
+                        item = item,
+                        port = port,
+                        content = local,
+                        etag = null,
+                        statusWhenWritten = WebDavItemStatus.Uploaded,
+                    )
                 }
                 is WebDavDownloadResult.Error -> errorOutcome(download.error)
             }
@@ -100,8 +118,9 @@ internal class WebDavSyncEngine {
     }
 
     private suspend fun pushMerged(
-        c: WebDavSyncClient,
+        c: WebDavSyncClientBridge,
         item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
         content: String,
         etag: String?,
         statusWhenWritten: WebDavItemStatus = WebDavItemStatus.Merged,
@@ -115,8 +134,8 @@ internal class WebDavSyncEngine {
                 // Remote moved under us — pull again, re-merge, and retry once unconditionally.
                 when (val retry = c.download(item.fileName)) {
                     is WebDavDownloadResult.Success -> {
-                        // merge already applied to local above; re-run export to fold in the newer remote
-                        val reMerged = content
+                        port.merge(retry.content)
+                        val reMerged = port.exportJson()
                         when (val second = c.upload(item.fileName, reMerged, retry.etag)) {
                             is WebDavUploadResult.Success -> {
                                 recordSynced(item, second.etag, reMerged)
@@ -159,6 +178,11 @@ internal class WebDavSyncEngine {
         return try {
             when (val download = c.download(item.fileName)) {
                 is WebDavDownloadResult.Success -> {
+                    val localBefore = port.exportJson()
+                    if (contentHash(localBefore) == contentHash(download.content)) {
+                        recordSynced(item, download.etag, localBefore)
+                        return WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                    }
                     port.merge(download.content)
                     // Re-export so the stored hash reflects the post-merge local state.
                     recordSynced(item, download.etag, port.exportJson())
@@ -188,13 +212,13 @@ internal class WebDavSyncEngine {
     ): WebDavRemoteProbeOutcome {
         val c = client(config)
         return try {
-            val nowMs = System.currentTimeMillis()
+            val nowMs = nowMillis()
             when (val download = c.download(item.fileName)) {
                 is WebDavDownloadResult.Success -> {
                     val itemCount = runCatching { port.countRemoteItems(download.content) }
                         .getOrElse { -1 }
                     val byteSize = download.content.toByteArray(Charsets.UTF_8).size.toLong()
-                    WebDavSyncStore.saveRemoteSummaryFound(
+                    metadataStore.saveRemoteSummaryFound(
                         item = item,
                         itemCount = itemCount,
                         byteSize = byteSize,
@@ -208,7 +232,7 @@ internal class WebDavSyncEngine {
                     )
                 }
                 WebDavDownloadResult.Empty -> {
-                    WebDavSyncStore.saveRemoteSummaryEmpty(item, nowMs)
+                    metadataStore.saveRemoteSummaryEmpty(item, nowMs)
                     WebDavRemoteProbeOutcome.Empty
                 }
                 is WebDavDownloadResult.Error -> WebDavRemoteProbeOutcome.Error(
@@ -228,9 +252,9 @@ internal class WebDavSyncEngine {
     }
 
     private fun recordSynced(item: WebDavSyncItem, etag: String?, content: String) {
-        WebDavSyncStore.setItemEtag(item, etag)
-        WebDavSyncStore.setItemContentHash(item, contentHash(content))
-        WebDavSyncStore.setLastSyncTime(item, System.currentTimeMillis())
+        metadataStore.setItemEtag(item, etag)
+        metadataStore.setItemContentHash(item, contentHash(content))
+        metadataStore.setLastSyncTime(item, nowMillis())
     }
 
     private fun errorOutcome(error: WebDavError): WebDavItemOutcome = when (error) {
@@ -248,6 +272,70 @@ internal class WebDavSyncEngine {
             val digest = MessageDigest.getInstance("SHA-256").digest(content.toByteArray(Charsets.UTF_8))
             return digest.joinToString("") { "%02x".format(it) }
         }
+    }
+}
+
+internal interface WebDavSyncClientBridge {
+    suspend fun testConnection(): WebDavTestConnectionResult
+    suspend fun upload(fileName: String, content: String, etag: String? = null): WebDavUploadResult
+    suspend fun download(fileName: String): WebDavDownloadResult
+}
+
+private class RealWebDavSyncClientBridge(
+    private val delegate: WebDavSyncClient,
+) : WebDavSyncClientBridge {
+    override suspend fun testConnection(): WebDavTestConnectionResult = delegate.testConnection()
+
+    override suspend fun upload(
+        fileName: String,
+        content: String,
+        etag: String?,
+    ): WebDavUploadResult = delegate.upload(fileName, content, etag)
+
+    override suspend fun download(fileName: String): WebDavDownloadResult =
+        delegate.download(fileName)
+}
+
+internal interface WebDavSyncMetadataStore {
+    fun setItemEtag(item: WebDavSyncItem, etag: String?)
+    fun setItemContentHash(item: WebDavSyncItem, hash: String)
+    fun setLastSyncTime(item: WebDavSyncItem, timeMs: Long)
+    fun saveRemoteSummaryFound(
+        item: WebDavSyncItem,
+        itemCount: Int,
+        byteSize: Long,
+        etag: String?,
+        probedAtMs: Long,
+    )
+
+    fun saveRemoteSummaryEmpty(item: WebDavSyncItem, probedAtMs: Long)
+}
+
+private object StoreBackedWebDavSyncMetadataStore : WebDavSyncMetadataStore {
+    override fun setItemEtag(item: WebDavSyncItem, etag: String?) {
+        WebDavSyncStore.setItemEtag(item, etag)
+    }
+
+    override fun setItemContentHash(item: WebDavSyncItem, hash: String) {
+        WebDavSyncStore.setItemContentHash(item, hash)
+    }
+
+    override fun setLastSyncTime(item: WebDavSyncItem, timeMs: Long) {
+        WebDavSyncStore.setLastSyncTime(item, timeMs)
+    }
+
+    override fun saveRemoteSummaryFound(
+        item: WebDavSyncItem,
+        itemCount: Int,
+        byteSize: Long,
+        etag: String?,
+        probedAtMs: Long,
+    ) {
+        WebDavSyncStore.saveRemoteSummaryFound(item, itemCount, byteSize, etag, probedAtMs)
+    }
+
+    override fun saveRemoteSummaryEmpty(item: WebDavSyncItem, probedAtMs: Long) {
+        WebDavSyncStore.saveRemoteSummaryEmpty(item, probedAtMs)
     }
 }
 

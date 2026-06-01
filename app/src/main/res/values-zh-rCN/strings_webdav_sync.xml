@@ -29,20 +29,26 @@
 
     <string name="webdav_sync_item_github_tracked">GitHub 追踪</string>
     <string name="webdav_sync_item_github_tracked_desc">追踪仓库和设置</string>
+    <string name="webdav_sync_item_github_tracked_contract">JSON 中包含内置的 KeiOS 应用卡片，以及你的追踪仓库。</string>
     <string name="webdav_sync_item_ba_catalog_fav">BA 图鉴收藏</string>
     <string name="webdav_sync_item_ba_catalog_fav_desc">学生图鉴收藏</string>
     <string name="webdav_sync_item_ba_bgm_fav">BA BGM 收藏</string>
     <string name="webdav_sync_item_ba_bgm_fav_desc">背景音乐收藏</string>
     <string name="webdav_sync_item_os_activity">OS Activity 卡片</string>
     <string name="webdav_sync_item_os_activity_desc">Activity 快捷方式卡片</string>
+    <string name="webdav_sync_item_os_activity_contract">JSON 中包含内置 Activity 卡片和你的自定义卡片。</string>
     <string name="webdav_sync_item_os_shell">OS Shell 卡片</string>
     <string name="webdav_sync_item_os_shell_desc">Shell 命令卡片</string>
+    <string name="webdav_sync_item_os_shell_contract">JSON 中包含内置 Shell 卡片和你的自定义卡片。</string>
 
     <string name="webdav_sync_configured_summary">已配置同步</string>
     <string name="webdav_sync_not_configured_summary">点击配置 WebDAV 同步</string>
     <string name="webdav_sync_status_label">状态</string>
     <string name="webdav_sync_status_active">已启用</string>
+    <string name="webdav_sync_status_enabled">已开启</string>
+    <string name="webdav_sync_status_disabled">已关闭</string>
     <string name="webdav_sync_last_sync_label">上次全量同步</string>
+    <string name="webdav_sync_last_sync_never">从未</string>
 
     <!-- 新版页面：服务商、密码、批量、单项、自动同步 -->
     <string name="webdav_sync_provider_jianguoyun">坚果云</string>
@@ -92,6 +98,9 @@
     <string name="webdav_sync_refreshing_remote">刷新中…</string>
     <string name="webdav_sync_remote_never_probed">点击"刷新远端"载入服务端快照。</string>
     <string name="webdav_sync_last_remote_probe">远端快照：%1$s</string>
+    <string name="webdav_sync_missing_config_summary">先保存有效的 WebDAV 连接，再执行同步操作。</string>
+    <string name="webdav_sync_no_enabled_items_summary">至少启用一个 JSON 数据集后再执行同步。</string>
+    <string name="webdav_sync_enabled_items_summary">共 %2$d 个数据集，当前启用了 %1$d 个。</string>
     <string name="webdav_sync_remote_summary_empty">远端：暂无数据</string>
     <string name="webdav_sync_remote_summary_unknown">远端：尚未加载</string>
     <string name="webdav_sync_remote_summary_format">远端：%1$d 项 · %2$s · %3$s</string>
@@ -121,6 +130,7 @@
     <!-- 概览标题 -->
     <string name="webdav_sync_totals_header">同步总览</string>
     <string name="webdav_sync_totals_local_format">本地：%1$d 项，跨 %2$d 类</string>
+    <string name="webdav_sync_totals_contract_note">计数口径跟随各项目导出的 JSON 内容。</string>
     <string name="webdav_sync_totals_remote_format">远端：%1$d 项 · %2$s</string>
     <string name="webdav_sync_totals_remote_unknown">远端：点击"刷新远端"载入。</string>
 </resources>

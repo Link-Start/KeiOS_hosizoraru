@@ -136,31 +136,31 @@ internal fun WebDavSyncPage(
             }
 
             // ── Sync items + auto-sync ───────────────────────────
-            if (state.isConfigured) {
-                item(key = "webdav-sync-items", contentType = "webdav_card") {
-                    WebDavSyncItemsCard(
-                        state = state,
-                        cardColor = cardColor,
-                        onToggleAutoSync = viewModel::setAutoSyncEnabled,
-                        onToggleItem = viewModel::toggleItem,
-                        onRunItem = { item, kind ->
-                            // Per-item Upload is the only destructive single-item action
-                            // (overwrites remote). Sync and Download both merge, so they run
-                            // directly. Routing Upload through the confirmation flow keeps the
-                            // safety story consistent with batch Upload All.
-                            if (kind == WebDavBatchKind.Upload) {
-                                viewModel.requestItemConfirmation(item, kind)
-                            } else {
-                                viewModel.runItem(item, kind, dataPorts)
-                            }
-                        },
-                        onSyncAll = { viewModel.syncAll(dataPorts) },
-                        onUploadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Upload) },
-                        onDownloadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Download) },
-                        onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
-                    )
-                }
+            item(key = "webdav-sync-items", contentType = "webdav_card") {
+                WebDavSyncItemsCard(
+                    state = state,
+                    cardColor = cardColor,
+                    onToggleAutoSync = viewModel::setAutoSyncEnabled,
+                    onToggleItem = viewModel::toggleItem,
+                    onRunItem = { item, kind ->
+                        // Per-item Upload is the only destructive single-item action
+                        // (overwrites remote). Sync and Download both merge, so they run
+                        // directly. Routing Upload through the confirmation flow keeps the
+                        // safety story consistent with batch Upload All.
+                        if (kind == WebDavBatchKind.Upload) {
+                            viewModel.requestItemConfirmation(item, kind)
+                        } else {
+                            viewModel.runItem(item, kind, dataPorts)
+                        }
+                    },
+                    onSyncAll = { viewModel.syncAll(dataPorts) },
+                    onUploadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Upload) },
+                    onDownloadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Download) },
+                    onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
+                )
+            }
 
+            if (state.isConfigured) {
                 item(key = "webdav-clear", contentType = "webdav_card") {
                     WebDavClearCard(
                         cardColor = cardColor,
@@ -391,7 +391,7 @@ private fun WebDavConnectionCard(
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
                     textColor = MiuixTheme.colorScheme.primary,
-                    enabled = !state.testing && state.canConnect,
+                    enabled = !state.interactionLocked && state.canConnect,
                     onClick = onTestConnection,
                 )
             },
@@ -402,7 +402,7 @@ private fun WebDavConnectionCard(
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
                     textColor = MiuixTheme.colorScheme.primary,
-                    enabled = state.canConnect,
+                    enabled = !state.interactionLocked && state.canConnect,
                     onClick = onSave,
                 )
             },
@@ -424,6 +424,11 @@ private fun WebDavSyncItemsCard(
     onDownloadAll: () -> Unit,
     onRefreshRemote: () -> Unit,
 ) {
+    val hasEnabledItems = state.itemStates.values.any { it.enabled }
+    val syncReady = state.isConfigured
+    val actionEnabled = syncReady && !state.interactionLocked
+    val enabledActionTextColor = MiuixTheme.colorScheme.primary
+    val disabledActionTextColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
     SettingsGroupCard(
         header = stringResource(R.string.webdav_sync_title),
         title = stringResource(R.string.webdav_sync_items_title),
@@ -433,6 +438,14 @@ private fun WebDavSyncItemsCard(
         // Aggregate header — gives an at-a-glance "what's local vs what's on the server" so the
         // user can decide a strategy before drilling into individual items.
         WebDavSyncTotalsHeader(state = state)
+        stateSummaryMessage(state)?.let { summary ->
+            Text(
+                text = summary,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        }
 
         // Auto-sync toggle
         SettingsToggleItem(
@@ -440,13 +453,14 @@ private fun WebDavSyncItemsCard(
             summary = stringResource(R.string.webdav_sync_auto_sync_summary),
             checked = state.autoSyncEnabled,
             onCheckedChange = onToggleAutoSync,
+            enabled = syncReady && !state.interactionLocked,
         )
 
         // Refresh-remote — read-only probe so other devices can see what's on the server
         // before deciding which sync action to take.
         Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
         AppStandaloneLiquidTextButton(
-            variant = GlassVariant.SheetAction,
+            variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetAction else GlassVariant.Content,
             text = if (state.refreshingRemote) {
                 stringResource(R.string.webdav_sync_refreshing_remote)
             } else {
@@ -454,8 +468,8 @@ private fun WebDavSyncItemsCard(
             },
             modifier = Modifier.fillMaxWidth(),
             buttonModifier = Modifier.fillMaxWidth(),
-            textColor = MiuixTheme.colorScheme.primary,
-            enabled = !state.busy && !state.refreshingRemote,
+            textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
+            enabled = actionEnabled && hasEnabledItems,
             onClick = onRefreshRemote,
         )
         if (state.lastRemoteProbeTimeMs > 0L) {
@@ -482,7 +496,7 @@ private fun WebDavSyncItemsCard(
         AppDualActionRow(
             first = { modifier ->
                 AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetPrimaryAction,
+                    variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetPrimaryAction else GlassVariant.Content,
                     text = if (state.runningKind == WebDavBatchKind.Sync) {
                         stringResource(R.string.webdav_sync_syncing)
                     } else {
@@ -490,14 +504,14 @@ private fun WebDavSyncItemsCard(
                     },
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.primary,
-                    enabled = !state.busy,
+                    textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
+                    enabled = actionEnabled && hasEnabledItems,
                     onClick = onSyncAll,
                 )
             },
             second = { modifier ->
                 AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetAction,
+                    variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetAction else GlassVariant.Content,
                     text = if (state.runningKind == WebDavBatchKind.Upload) {
                         stringResource(R.string.webdav_sync_uploading)
                     } else {
@@ -505,15 +519,15 @@ private fun WebDavSyncItemsCard(
                     },
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.primary,
-                    enabled = !state.busy,
+                    textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
+                    enabled = actionEnabled && hasEnabledItems,
                     onClick = onUploadAll,
                 )
             },
         )
         Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
         AppStandaloneLiquidTextButton(
-            variant = GlassVariant.SheetAction,
+            variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetAction else GlassVariant.Content,
             text = if (state.runningKind == WebDavBatchKind.Download) {
                 stringResource(R.string.webdav_sync_downloading)
             } else {
@@ -521,8 +535,8 @@ private fun WebDavSyncItemsCard(
             },
             modifier = Modifier.fillMaxWidth(),
             buttonModifier = Modifier.fillMaxWidth(),
-            textColor = MiuixTheme.colorScheme.primary,
-            enabled = !state.busy,
+            textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
+            enabled = actionEnabled && hasEnabledItems,
             onClick = onDownloadAll,
         )
 
@@ -744,6 +758,12 @@ private fun WebDavSyncTotalsHeader(state: WebDavSyncUiState) {
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
         )
+        Text(
+            text = stringResource(R.string.webdav_sync_totals_contract_note),
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
+            fontSize = AppTypographyTokens.Caption.fontSize,
+            lineHeight = AppTypographyTokens.Caption.lineHeight,
+        )
         if (anyRemoteKnown) {
             Text(
                 text = stringResource(
@@ -775,6 +795,8 @@ private fun WebDavSyncItemRow(
 ) {
     val itemState = state.itemStates[item]
     val enabled = itemState?.enabled ?: true
+    val syncReady = state.isConfigured
+    val actionEnabled = enabled && syncReady && !state.interactionLocked
     val running = itemState?.running == true
     val outcome = itemState?.lastOutcome
     val lastSync = itemState?.lastSyncTimeMs?.takeIf { it > 0 }
@@ -797,6 +819,7 @@ private fun WebDavSyncItemRow(
         stringResource(R.string.webdav_sync_local_summary_unknown)
     }
     val remoteLine = remoteSummaryLine(itemState?.remoteSummary)
+    val remoteProbeError = itemState?.remoteProbeError
     // Disabled rows fade everything but the switch so the user sees they're skipped without
     // losing the data they already have.
     val rowAlpha = if (enabled) 1f else 0.55f
@@ -809,12 +832,12 @@ private fun WebDavSyncItemRow(
     ) {
         AppControlRow(
             title = stringResource(item.labelRes),
-            summary = null,
+            summary = itemContractSummary(item),
             trailing = {
                 AppSwitch(
                     checked = enabled,
                     onCheckedChange = { onToggleItem(item) },
-                    enabled = !state.busy,
+                    enabled = !state.interactionLocked,
                 )
             },
         )
@@ -836,6 +859,14 @@ private fun WebDavSyncItemRow(
             fontSize = AppTypographyTokens.Caption.fontSize,
             lineHeight = AppTypographyTokens.Caption.lineHeight,
         )
+        remoteProbeError?.let { error ->
+            Text(
+                text = remoteProbeErrorLine(error),
+                color = MiuixTheme.colorScheme.error,
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+            )
+        }
         outcome?.detail?.takeIf { it.isNotBlank() }?.let { detail ->
             Text(
                 text = detail,
@@ -853,30 +884,42 @@ private fun WebDavSyncItemRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppStandaloneLiquidTextButton(
-                variant = GlassVariant.SheetPrimaryAction,
+                variant = if (actionEnabled) GlassVariant.SheetPrimaryAction else GlassVariant.Content,
                 text = stringResource(R.string.webdav_sync_item_sync_action),
                 modifier = Modifier.weight(1f),
                 buttonModifier = Modifier.fillMaxWidth(),
-                textColor = MiuixTheme.colorScheme.primary,
-                enabled = enabled && !state.busy,
+                textColor = if (actionEnabled) {
+                    MiuixTheme.colorScheme.primary
+                } else {
+                    MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
+                },
+                enabled = actionEnabled,
                 onClick = { onRunItem(item, WebDavBatchKind.Sync) },
             )
             AppStandaloneLiquidTextButton(
-                variant = GlassVariant.SheetDangerAction,
+                variant = if (actionEnabled) GlassVariant.SheetDangerAction else GlassVariant.Content,
                 text = stringResource(R.string.webdav_sync_item_upload_action),
                 modifier = Modifier.weight(1f),
                 buttonModifier = Modifier.fillMaxWidth(),
-                textColor = MiuixTheme.colorScheme.error,
-                enabled = enabled && !state.busy,
+                textColor = if (actionEnabled) {
+                    MiuixTheme.colorScheme.error
+                } else {
+                    MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
+                },
+                enabled = actionEnabled,
                 onClick = { onRunItem(item, WebDavBatchKind.Upload) },
             )
             AppStandaloneLiquidTextButton(
-                variant = GlassVariant.SheetAction,
+                variant = if (actionEnabled) GlassVariant.SheetAction else GlassVariant.Content,
                 text = stringResource(R.string.webdav_sync_item_download_action),
                 modifier = Modifier.weight(1f),
                 buttonModifier = Modifier.fillMaxWidth(),
-                textColor = MiuixTheme.colorScheme.primary,
-                enabled = enabled && !state.busy,
+                textColor = if (actionEnabled) {
+                    MiuixTheme.colorScheme.primary
+                } else {
+                    MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
+                },
+                enabled = actionEnabled,
                 onClick = { onRunItem(item, WebDavBatchKind.Download) },
             )
         }
@@ -893,6 +936,29 @@ private fun WebDavFieldLabel(text: String) {
         color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
         fontSize = AppTypographyTokens.Caption.fontSize,
         lineHeight = AppTypographyTokens.Caption.lineHeight,
+    )
+}
+
+@Composable
+private fun itemContractSummary(item: WebDavSyncItem): String = when (item) {
+    WebDavSyncItem.GitHubTracked -> stringResource(R.string.webdav_sync_item_github_tracked_contract)
+    WebDavSyncItem.BaCatalogFavorites -> stringResource(item.descriptionRes)
+    WebDavSyncItem.BaBgmFavorites -> stringResource(item.descriptionRes)
+    WebDavSyncItem.OsActivityCards -> stringResource(R.string.webdav_sync_item_os_activity_contract)
+    WebDavSyncItem.OsShellCards -> stringResource(R.string.webdav_sync_item_os_shell_contract)
+}
+
+@Composable
+private fun stateSummaryMessage(state: WebDavSyncUiState): String? {
+    if (!state.isConfigured || state.missingConfig) {
+        return stringResource(R.string.webdav_sync_missing_config_summary)
+    }
+    val enabledCount = state.itemStates.values.count { it.enabled }
+    if (enabledCount == 0) return stringResource(R.string.webdav_sync_no_enabled_items_summary)
+    return stringResource(
+        R.string.webdav_sync_enabled_items_summary,
+        enabledCount,
+        state.itemStates.size,
     )
 }
 
@@ -923,6 +989,13 @@ private fun itemStatusText(outcome: WebDavItemOutcome): String = when (outcome.s
     WebDavItemStatus.NetworkError -> stringResource(R.string.webdav_sync_status_network_error)
     WebDavItemStatus.ConflictUnresolved -> stringResource(R.string.webdav_sync_status_conflict)
     WebDavItemStatus.Error -> stringResource(R.string.webdav_sync_status_error)
+}
+
+@Composable
+private fun remoteProbeErrorLine(outcome: WebDavItemOutcome): String {
+    val base = itemStatusText(outcome)
+    val detail = outcome.detail?.takeIf { it.isNotBlank() } ?: return base
+    return "$base · $detail"
 }
 
 @Composable

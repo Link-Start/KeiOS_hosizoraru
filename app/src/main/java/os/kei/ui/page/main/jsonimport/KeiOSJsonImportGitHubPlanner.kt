@@ -7,13 +7,10 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import os.kei.R
-import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.domain.GitHubTrackedItemsImportApplier
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.GitHubTrackedLocalAppType
-import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 
 internal class KeiOSJsonImportGitHubPlanner(
     private val ioDispatcher: CoroutineDispatcher,
@@ -46,75 +43,17 @@ internal class KeiOSJsonImportGitHubPlanner(
         payload: GitHubTrackedItemsImportPayload
     ): KeiOSJsonImportApplyResult {
         return withContext(ioDispatcher) {
-            if (payload.items.isEmpty()) {
-                return@withContext KeiOSJsonImportApplyResult(
-                    invalidCount = payload.invalidCount,
-                    duplicateCount = payload.duplicateCount
-                )
-            }
-            val nowMillis = System.currentTimeMillis()
-            val existing = GitHubTrackStore.load()
-            val mergedItems = existing.toMutableList()
-            val indexById = mergedItems.withIndex().associate {
-                it.value.id to it.index
-            }.toMutableMap()
-            val trackedAddedAt = GitHubTrackStore.loadTrackedAddedAtById().toMutableMap()
-            val (checkCache, refreshTimestamp) = GitHubTrackStore.loadCheckCache()
-            val nextCheckCache = checkCache.toMutableMap()
-            val changedIds = linkedSetOf<String>()
-            var added = 0
-            var updated = 0
-            var unchanged = 0
-            payload.items.forEachIndexed { index, item ->
+            payload.items.forEachIndexed { index, _ ->
                 currentCoroutineContext().ensureActive()
                 if (index % JSON_IMPORT_YIELD_EVERY_ITEMS == 0) yield()
-                val existingIndex = indexById[item.id]
-                when {
-                    existingIndex == null -> {
-                        mergedItems += item
-                        indexById[item.id] = mergedItems.lastIndex
-                        trackedAddedAt[item.id] = nowMillis
-                        changedIds += item.id
-                        added += 1
-                    }
-
-                    mergedItems[existingIndex] != item -> {
-                        val existingItem = mergedItems[existingIndex]
-                        val mergedItem = item.withTrackedLocalAppTypeFallback(existingItem)
-                        val trackingConfigChanged =
-                            !existingItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(mergedItem)
-                        mergedItems[existingIndex] = mergedItem
-                        if (trackingConfigChanged) {
-                            nextCheckCache.remove(item.id)
-                            changedIds += item.id
-                        }
-                        updated += 1
-                    }
-
-                    else -> unchanged += 1
-                }
             }
-            if (added > 0 || updated > 0) {
-                GitHubTrackStore.save(mergedItems)
-                GitHubTrackStore.saveTrackedAddedAtById(trackedAddedAt)
-                if (nextCheckCache.size != checkCache.size) {
-                    GitHubTrackStore.saveCheckCache(nextCheckCache, refreshTimestamp)
-                }
-                changedIds.forEach { id ->
-                    GitHubTrackStoreSignals.requestTrackRefresh(
-                        trackId = id,
-                        notifyChangeSignal = false
-                    )
-                }
-                GitHubTrackStoreSignals.notifyChanged()
-                AppBackgroundScheduler.scheduleGitHubRefresh(context)
-            }
+            val result = GitHubTrackedItemsImportApplier.apply(context, payload)
             KeiOSJsonImportApplyResult(
-                addedCount = added,
-                updatedCount = updated,
-                unchangedCount = unchanged,
-                invalidCount = payload.invalidCount,
-                duplicateCount = payload.duplicateCount
+                addedCount = result.addedCount,
+                updatedCount = result.updatedCount,
+                unchangedCount = result.unchangedCount,
+                invalidCount = result.invalidCount,
+                duplicateCount = result.duplicateCount
             )
         }
     }
@@ -183,15 +122,5 @@ internal class KeiOSJsonImportGitHubPlanner(
                 )
             }
         )
-    }
-
-    private fun GitHubTrackedApp.withTrackedLocalAppTypeFallback(
-        existingItem: GitHubTrackedApp
-    ): GitHubTrackedApp {
-        return if (localAppType == GitHubTrackedLocalAppType.Unknown) {
-            copy(localAppType = existingItem.localAppType)
-        } else {
-            this
-        }
     }
 }

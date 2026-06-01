@@ -29,20 +29,26 @@
 
     <string name="webdav_sync_item_github_tracked">GitHub Tracked</string>
     <string name="webdav_sync_item_github_tracked_desc">Tracked repositories and settings</string>
+    <string name="webdav_sync_item_github_tracked_contract">JSON includes the built-in KeiOS app card and your tracked repositories.</string>
     <string name="webdav_sync_item_ba_catalog_fav">BA Catalog Favorites</string>
     <string name="webdav_sync_item_ba_catalog_fav_desc">Student catalog favorites</string>
     <string name="webdav_sync_item_ba_bgm_fav">BA BGM Favorites</string>
     <string name="webdav_sync_item_ba_bgm_fav_desc">Background music favorites</string>
     <string name="webdav_sync_item_os_activity">OS Activity Cards</string>
     <string name="webdav_sync_item_os_activity_desc">Activity shortcut cards</string>
+    <string name="webdav_sync_item_os_activity_contract">JSON includes built-in Activity cards and your custom cards.</string>
     <string name="webdav_sync_item_os_shell">OS Shell Cards</string>
     <string name="webdav_sync_item_os_shell_desc">Shell command cards</string>
+    <string name="webdav_sync_item_os_shell_contract">JSON includes built-in shell cards and your custom cards.</string>
 
     <string name="webdav_sync_configured_summary">Sync configured</string>
     <string name="webdav_sync_not_configured_summary">Tap to configure WebDAV sync</string>
     <string name="webdav_sync_status_label">Status</string>
     <string name="webdav_sync_status_active">Active</string>
+    <string name="webdav_sync_status_enabled">Enabled</string>
+    <string name="webdav_sync_status_disabled">Disabled</string>
     <string name="webdav_sync_last_sync_label">Last full sync</string>
+    <string name="webdav_sync_last_sync_never">Never</string>
 
     <!-- New page (rewrite) — provider, password, batch, per-item, auto-sync -->
     <string name="webdav_sync_provider_jianguoyun">Jianguoyun</string>
@@ -92,6 +98,9 @@
     <string name="webdav_sync_refreshing_remote">Refreshing…</string>
     <string name="webdav_sync_remote_never_probed">Tap "Refresh remote" to load the server snapshot.</string>
     <string name="webdav_sync_last_remote_probe">Remote snapshot: %1$s</string>
+    <string name="webdav_sync_missing_config_summary">Save a valid WebDAV connection before running sync actions.</string>
+    <string name="webdav_sync_no_enabled_items_summary">Enable at least one JSON dataset to run sync.</string>
+    <string name="webdav_sync_enabled_items_summary">%1$d of %2$d datasets are enabled for sync.</string>
     <string name="webdav_sync_remote_summary_empty">Remote: empty</string>
     <string name="webdav_sync_remote_summary_unknown">Remote: not yet loaded</string>
     <string name="webdav_sync_remote_summary_format">Remote: %1$d items · %2$s · %3$s</string>
@@ -121,6 +130,7 @@
     <!-- Aggregate totals header -->
     <string name="webdav_sync_totals_header">Sync overview</string>
     <string name="webdav_sync_totals_local_format">Local: %1$d items across %2$d types</string>
+    <string name="webdav_sync_totals_contract_note">Counts follow each item\'s exported JSON payload.</string>
     <string name="webdav_sync_totals_remote_format">Remote: %1$d items · %2$s</string>
     <string name="webdav_sync_totals_remote_unknown">Remote: tap "Refresh remote" to load.</string>
 </resources>

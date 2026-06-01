@@ -155,12 +155,13 @@ internal class BaGuideBgmPlaybackCoordinator(
     }
 
     fun updateQueue(nextQueue: List<GuideBgmFavoriteItem>) {
+        val currentState = _uiState.value
         val selection =
             resolveBaGuideBgmPlaybackQueueSelection(
                 nextQueue = nextQueue,
-                currentSelectedAudioUrl = selectedAudioUrl,
+                currentSelectedAudioUrl = currentState.selectedAudioUrl,
+                currentSelectedFavorite = currentState.selectedQueueFavorite ?: currentState.selectedFavorite,
             )
-        val currentState = _uiState.value
         if (currentState.queue == selection.queue &&
             currentState.selectedAudioUrl == selection.selectedAudioUrl
         ) {
@@ -279,6 +280,7 @@ internal class BaGuideBgmPlaybackCoordinator(
         favorite: GuideBgmFavoriteItem,
         restart: Boolean = false,
     ) {
+        val previousRuntimeState = activeBackend.runtimeState(favorite)
         _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl).withResolvedSelection() }
         persistSelection()
         activeBackend.play(
@@ -288,10 +290,11 @@ internal class BaGuideBgmPlaybackCoordinator(
             startPositionMs = if (restart) 0L else resumePosition(favorite),
             restart = restart,
         )
-        refreshRuntime(favorite)
+        publishOptimisticPlaybackStart(previousRuntimeState, restart = restart)
     }
 
     fun toggle(favorite: GuideBgmFavoriteItem) {
+        val previousRuntimeState = activeBackend.runtimeState(favorite)
         _uiState.update { state -> state.copy(selectedAudioUrl = favorite.audioUrl).withResolvedSelection() }
         persistSelection()
         activeBackend.toggle(
@@ -300,7 +303,17 @@ internal class BaGuideBgmPlaybackCoordinator(
             queueMode = queueMode,
             startPositionMs = resumePosition(favorite),
         )
-        refreshRuntime(favorite)
+        if (previousRuntimeState.isPlaying) {
+            val pausedRuntimeState =
+                previousRuntimeState.copy(
+                    isPlaying = false,
+                    isBuffering = false,
+                )
+            setRuntimeState(pausedRuntimeState, force = true)
+            saveProgress(favorite, pausedRuntimeState, force = true)
+        } else {
+            publishOptimisticPlaybackStart(previousRuntimeState, restart = false)
+        }
     }
 
     fun pause(favorite: GuideBgmFavoriteItem): BaGuideBgmPlaybackRuntimeState {
@@ -441,6 +454,21 @@ internal class BaGuideBgmPlaybackCoordinator(
             return
         }
         _runtimeState.value = nextState
+    }
+
+    private fun publishOptimisticPlaybackStart(
+        previousRuntimeState: BaGuideBgmPlaybackRuntimeState,
+        restart: Boolean,
+    ) {
+        setRuntimeState(
+            previousRuntimeState.copy(
+                positionMs = if (restart) 0L else previousRuntimeState.positionMs,
+                isPlaying = true,
+                isBuffering = previousRuntimeState.durationMs <= 0L || previousRuntimeState.isBuffering,
+                isEnded = false,
+            ),
+            force = true,
+        )
     }
 
     private fun shouldPublishRuntimeState(

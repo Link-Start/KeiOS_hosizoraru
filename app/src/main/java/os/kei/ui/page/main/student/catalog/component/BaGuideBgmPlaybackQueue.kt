@@ -9,11 +9,25 @@ internal data class BaGuideBgmPlaybackQueueSelection(
 
 internal fun resolveBaGuideBgmPlaybackQueueSelection(
     nextQueue: List<GuideBgmFavoriteItem>,
-    currentSelectedAudioUrl: String
+    currentSelectedAudioUrl: String,
+    currentSelectedFavorite: GuideBgmFavoriteItem? = null,
 ): BaGuideBgmPlaybackQueueSelection {
-    val queue = nextQueue
+    val visibleQueue = nextQueue
         .filter { it.audioUrl.isNotBlank() }
         .distinctBy { it.audioUrl }
+    val preservedSelectedFavorite =
+        currentSelectedFavorite
+            ?.takeIf { favorite ->
+                favorite.audioUrl.isNotBlank() &&
+                    favorite.audioUrl == currentSelectedAudioUrl &&
+                    visibleQueue.none { it.audioUrl == favorite.audioUrl }
+            }
+    val queue =
+        if (preservedSelectedFavorite != null) {
+            listOf(preservedSelectedFavorite) + visibleQueue
+        } else {
+            visibleQueue
+        }
     val selected = when {
         queue.isEmpty() -> currentSelectedAudioUrl
         currentSelectedAudioUrl.isBlank() -> queue.first().audioUrl

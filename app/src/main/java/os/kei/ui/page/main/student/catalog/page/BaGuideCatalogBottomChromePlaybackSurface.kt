@@ -10,8 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -43,11 +41,9 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
     modifier: Modifier = Modifier,
 ) {
     val pageScope = rememberCoroutineScope()
-    val playbackIsPlaying by remember(playbackCoordinator) {
+    val playbackRuntimeState by remember(playbackCoordinator) {
         playbackCoordinator.runtimeStateFlow
-            .map { runtimeState -> runtimeState.isPlaying }
-            .distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = playbackCoordinator.runtimeState.isPlaying)
+    }.collectAsStateWithLifecycle(initialValue = playbackCoordinator.runtimeState)
 
     BaGuideBgmFloatingBottomChrome(
         accent = accent,
@@ -59,9 +55,9 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
                 ?.ifBlank { currentTitle }
                 ?: currentTitle,
         artworkImageUrl = artworkImageUrl,
-        isPlaying = playbackIsPlaying,
+        isPlaying = playbackRuntimeState.isPlaying,
         playbackProgress = {
-            pageState.playbackSliderPreview ?: playbackCoordinator.runtimeState.progress
+            pageState.playbackSliderPreview ?: playbackRuntimeState.progress
         },
         onPlaybackProgressChange = pageState::updatePlaybackSliderPreview,
         onPlaybackProgressChangeFinished = { progress ->

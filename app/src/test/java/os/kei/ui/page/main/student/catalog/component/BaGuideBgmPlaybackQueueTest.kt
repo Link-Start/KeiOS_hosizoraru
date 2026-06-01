@@ -7,10 +7,22 @@ import kotlin.test.assertNull
 
 class BaGuideBgmPlaybackQueueTest {
     @Test
-    fun `queue selection clamps current track into visible playlist`() {
+    fun `queue selection keeps current hidden track when metadata is available`() {
         val selection = resolveBaGuideBgmPlaybackQueueSelection(
             nextQueue = listOf(track("a"), track("b"), track("c")),
-            currentSelectedAudioUrl = "outside"
+            currentSelectedAudioUrl = "outside",
+            currentSelectedFavorite = track("outside"),
+        )
+
+        assertEquals("outside", selection.selectedAudioUrl)
+        assertEquals(listOf("outside", "a", "b", "c"), selection.queue.map { it.audioUrl })
+    }
+
+    @Test
+    fun `queue selection clamps invalid current track without metadata`() {
+        val selection = resolveBaGuideBgmPlaybackQueueSelection(
+            nextQueue = listOf(track("a"), track("b"), track("c")),
+            currentSelectedAudioUrl = "outside",
         )
 
         assertEquals("a", selection.selectedAudioUrl)

@@ -1,8 +1,6 @@
 package os.kei.mcp.server
 
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.domain.GitHubCacheService
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
 import os.kei.ui.page.main.ba.support.baPoolTagLabel
@@ -502,9 +500,7 @@ internal class McpBaResponseBuilder(
             }
 
             "github_check" -> {
-                GitHubTrackStore.clearCheckCache()
-                GitHubTrackStoreSignals.notifyChanged()
-                GitHubReleaseAssetCacheStore.clearAll()
+                GitHubCacheService.clearGitHubCheckCaches()
                 cleared += "github_check"
             }
 
@@ -512,9 +508,7 @@ internal class McpBaResponseBuilder(
                 BASettingsStore.clearCalendarAndPoolCaches()
                 BaStudentGuideStore.clearAllCachedInfo()
                 clearBaGuideCatalogCache(appContext)
-                GitHubTrackStore.clearCheckCache()
-                GitHubTrackStoreSignals.notifyChanged()
-                GitHubReleaseAssetCacheStore.clearAll()
+                GitHubCacheService.clearGitHubCheckCaches()
                 cleared += "ba_calendar_pool"
                 cleared += "ba_guide_all"
                 cleared += "ba_guide_catalog"

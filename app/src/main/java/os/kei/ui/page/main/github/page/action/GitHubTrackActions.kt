@@ -5,7 +5,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.BuildConfig
 import os.kei.R
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
@@ -411,7 +410,7 @@ internal class GitHubTrackActions(
                 state.recordTrackedAddedAt(newItem.id, nowMillis)
                 state.recordTrackedModifiedAt(newItem.id, nowMillis)
                 if (!newItem.checkActionsUpdates) {
-                    GitHubActionsRecommendedRunStore.remove(newItem.id)
+                    env.actionsRepository.removeRecommendedRunSnapshot(newItem.id)
                     state.actionsRecommendedRunSnapshots.remove(newItem.id)
                 }
                 state.requestTrackCardFocus(newItem.id)
@@ -453,11 +452,11 @@ internal class GitHubTrackActions(
                     )
                     state.trackedAddedAtById.remove(editing.id)
                     state.trackedModifiedAtById.remove(editing.id)
-                    GitHubActionsRecommendedRunStore.remove(editing.id)
+                    env.actionsRepository.removeRecommendedRunSnapshot(editing.id)
                     state.actionsRecommendedRunSnapshots.remove(editing.id)
                 }
                 if (!newItem.checkActionsUpdates) {
-                    GitHubActionsRecommendedRunStore.remove(newItem.id)
+                    env.actionsRepository.removeRecommendedRunSnapshot(newItem.id)
                     state.actionsRecommendedRunSnapshots.remove(newItem.id)
                 }
                 state.recordTrackedAddedAt(newItem.id, existingAddedAt)
@@ -498,7 +497,7 @@ internal class GitHubTrackActions(
                 )
                 state.trackedAddedAtById.remove(deleting.id)
                 state.trackedModifiedAtById.remove(deleting.id)
-                GitHubActionsRecommendedRunStore.remove(deleting.id)
+                env.actionsRepository.removeRecommendedRunSnapshot(deleting.id)
                 state.actionsRecommendedRunSnapshots.remove(deleting.id)
                 env.saveTrackedItems()
                 refreshActions.persistCheckCache()

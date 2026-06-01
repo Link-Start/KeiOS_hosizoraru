@@ -7,8 +7,9 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.DEFAULT_BOUNDED_TEXT_READ_MAX_BYTES
 import os.kei.core.io.readTextFromUriLimited
-import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.domain.GitHubTrackedItemsImportPreview
+import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
 import os.kei.feature.github.model.GitHubTrackedApp
 
 internal class GitHubPageTransferRepository(
@@ -17,7 +18,7 @@ internal class GitHubPageTransferRepository(
 ) {
     suspend fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload {
         return withContext(defaultDispatcher) {
-            GitHubTrackStore.parseTrackedItemsImport(raw)
+            GitHubTrackedItemsTransferService.parseImport(raw)
         }
     }
 
@@ -26,36 +27,12 @@ internal class GitHubPageTransferRepository(
         existingItems: List<GitHubTrackedApp>
     ): GitHubTrackImportPreview {
         return withContext(defaultDispatcher) {
-            val existingItemsById = existingItems.associateBy { it.id }
-            var newCount = 0
-            var updatedCount = 0
-            var unchangedCount = 0
-            payload.items.forEach { item ->
-                when (val existingItem = existingItemsById[item.id]) {
-                    null -> newCount += 1
-                    item -> unchangedCount += 1
-                    else -> updatedCount += 1
-                }
-            }
-            val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(payload.items)
-            val sourceCounts = GitHubTrackStore.calculateTrackedItemsSourceCounts(payload.items)
-            GitHubTrackImportPreview(
-                payload = payload,
-                fileItemCount = payload.sourceCount,
-                validCount = payload.items.size,
-                duplicateCount = payload.duplicateCount,
-                invalidCount = payload.invalidCount,
-                newCount = newCount,
-                updatedCount = updatedCount,
-                unchangedCount = unchangedCount,
-                mergedCount = existingItems.size + newCount,
-                githubRepositoryCount = sourceCounts.githubRepositoryCount,
-                directApkCount = sourceCounts.directApkCount,
-                preferPreReleaseCount = optionCounts.preferPreReleaseCount,
-                latestReleaseDownloadCount = optionCounts.latestReleaseDownloadCount,
-                actionsUpdateCount = optionCounts.actionsUpdateCount,
-                preciseApkVersionOverrideCount = optionCounts.preciseApkVersionOverrideCount
-            )
+            GitHubTrackedItemsTransferService
+                .buildImportPreview(
+                    payload = payload,
+                    existingItems = existingItems,
+                )
+                .toPagePreview()
         }
     }
 
@@ -64,7 +41,7 @@ internal class GitHubPageTransferRepository(
         exportedAtMillis: Long
     ): String {
         return withContext(defaultDispatcher) {
-            GitHubTrackStore.buildTrackedItemsExportJson(
+            GitHubTrackedItemsTransferService.buildExportJson(
                 items = items,
                 exportedAtMillis = exportedAtMillis
             )
@@ -95,3 +72,22 @@ internal class GitHubPageTransferRepository(
         ).text
     }
 }
+
+private fun GitHubTrackedItemsImportPreview.toPagePreview(): GitHubTrackImportPreview =
+    GitHubTrackImportPreview(
+        payload = payload,
+        fileItemCount = fileItemCount,
+        validCount = validCount,
+        duplicateCount = duplicateCount,
+        invalidCount = invalidCount,
+        newCount = newCount,
+        updatedCount = updatedCount,
+        unchangedCount = unchangedCount,
+        mergedCount = mergedCount,
+        githubRepositoryCount = githubRepositoryCount,
+        directApkCount = directApkCount,
+        preferPreReleaseCount = preferPreReleaseCount,
+        latestReleaseDownloadCount = latestReleaseDownloadCount,
+        actionsUpdateCount = actionsUpdateCount,
+        preciseApkVersionOverrideCount = preciseApkVersionOverrideCount,
+    )

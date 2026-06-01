@@ -2,22 +2,14 @@ package os.kei.ui.page.main.settings.cache
 
 import android.content.Context
 import os.kei.R
-import os.kei.feature.github.data.local.AppIconCache
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
+import os.kei.feature.github.domain.GitHubCacheService
 
 internal fun githubCacheEntryProvider(): CacheEntryProvider =
     CacheEntryProvider(
         id = "github",
         summary = ::githubSummary,
         clear = {
-            GitHubReleaseStrategyRegistry.clearAllCaches()
-            GitHubTrackStore.clearCheckCache()
-            GitHubTrackStoreSignals.notifyChanged()
-            GitHubReleaseAssetCacheStore.clearAll()
-            AppIconCache.clear()
+            GitHubCacheService.clearGitHubCaches()
             CacheEventStore.markCleared("app_icon")
         },
     )
@@ -26,26 +18,21 @@ internal fun appIconCacheEntryProvider(): CacheEntryProvider =
     CacheEntryProvider(
         id = "app_icon",
         summary = ::appIconSummary,
-        clear = { AppIconCache.clear() },
+        clear = { GitHubCacheService.clearAppIconCache() },
     )
 
 private fun githubSummary(context: Context): CacheEntrySummary {
-    val snapshot = GitHubTrackStore.loadSnapshot()
-    val updatedAtMs = snapshot.lastRefreshMs
+    val data = GitHubCacheService.loadGitHubSummaryData()
+    val updatedAtMs = data.lastRefreshMs
     val clearedAtMs = CacheEventStore.loadClearedAt("github")
-    val iconMemory = AppIconCache.estimatedMemoryBytes()
-    val assetCacheCount = GitHubReleaseAssetCacheStore.cachedEntryCount()
     val refreshState =
         context.getString(
-            if (snapshot.lastRefreshMs > 0L) {
+            if (data.lastRefreshMs > 0L) {
                 R.string.settings_cache_refresh_record_present
             } else {
                 R.string.settings_cache_refresh_record_empty
             },
         )
-    val cacheBytes = GitHubTrackStore.cacheBytesEstimated()
-    val configBytes = GitHubTrackStore.configBytesEstimated()
-    val diskBytes = GitHubTrackStore.actualDataBytes()
     return CacheEntrySummary(
         id = "github",
         title = context.getString(R.string.settings_cache_entry_github_title),
@@ -53,64 +40,63 @@ private fun githubSummary(context: Context): CacheEntrySummary {
         detail =
             context.getString(
                 R.string.settings_cache_entry_github_detail,
-                snapshot.items.size,
-                snapshot.checkCache.size,
-                assetCacheCount,
+                data.trackedCount,
+                data.checkCacheCount,
+                data.releaseAssetCacheCount,
                 refreshState,
             ),
         activity = formatActivity(context, updatedAtMs, clearedAtMs),
         storage =
             context.getString(
                 R.string.settings_cache_storage_cache_config_mmkv_icon,
-                formatBytes(cacheBytes),
-                formatBytes(configBytes),
-                formatBytes(diskBytes),
-                formatBytes(iconMemory),
+                formatBytes(data.cacheBytes),
+                formatBytes(data.configBytes),
+                formatBytes(data.diskBytes),
+                formatBytes(data.iconMemoryBytes),
             ),
         clearLabel = context.getString(R.string.common_clear),
-        cacheBytes = cacheBytes,
-        configBytes = configBytes,
-        diskBytes = diskBytes,
-        memoryBytes = iconMemory,
+        cacheBytes = data.cacheBytes,
+        configBytes = data.configBytes,
+        diskBytes = data.diskBytes,
+        memoryBytes = data.iconMemoryBytes,
         updatedAtMs = updatedAtMs,
         clearedAtMs = clearedAtMs,
         freshness =
             cacheFreshness(
                 updatedAtMs = updatedAtMs,
-                bytes = cacheBytes,
+                bytes = data.cacheBytes,
                 rebuildable = true,
-                ttlMs = snapshot.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L,
+                ttlMs = data.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L,
             ),
     )
 }
 
 private fun appIconSummary(context: Context): CacheEntrySummary {
-    val memoryBytes = AppIconCache.estimatedMemoryBytes()
-    val updatedAtMs = AppIconCache.lastUpdatedAtMs()
+    val data = GitHubCacheService.loadAppIconSummaryData()
     val clearedAtMs = CacheEventStore.loadClearedAt("app_icon")
     return CacheEntrySummary(
         id = "app_icon",
         title = context.getString(R.string.settings_cache_entry_app_icon_title),
         summary = context.getString(R.string.settings_cache_entry_app_icon_summary),
-        detail = context.getString(R.string.settings_cache_entry_app_icon_detail, AppIconCache.size()),
-        activity = formatActivity(context, updatedAtMs, clearedAtMs),
+        detail = context.getString(R.string.settings_cache_entry_app_icon_detail, data.iconCount),
+        activity = formatActivity(context, data.updatedAtMs, clearedAtMs),
         storage =
             context.getString(
                 R.string.settings_cache_storage_cache_config_memory,
-                formatBytes(memoryBytes),
+                formatBytes(data.memoryBytes),
                 formatBytes(0L),
-                formatBytes(memoryBytes),
+                formatBytes(data.memoryBytes),
             ),
         clearLabel = context.getString(R.string.common_clear),
-        cacheBytes = memoryBytes,
+        cacheBytes = data.memoryBytes,
         configBytes = 0L,
-        memoryBytes = memoryBytes,
-        updatedAtMs = updatedAtMs,
+        memoryBytes = data.memoryBytes,
+        updatedAtMs = data.updatedAtMs,
         clearedAtMs = clearedAtMs,
         freshness =
             cacheFreshness(
-                updatedAtMs = updatedAtMs,
-                bytes = memoryBytes,
+                updatedAtMs = data.updatedAtMs,
+                bytes = data.memoryBytes,
                 rebuildable = true,
             ),
     )

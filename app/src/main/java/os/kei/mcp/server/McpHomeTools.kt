@@ -1,7 +1,7 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.home.data.HomeOverviewPrefs
 import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
@@ -13,6 +13,8 @@ import java.util.Locale
 internal class McpHomeTools(
     private val environment: McpToolEnvironment
 ) {
+    private val githubTrackService = GitHubTrackService()
+
     fun register(server: Server) {
         server.addMcpTextTool(environment, name = "keios.home.overview.snapshot") { _ ->
             buildHomeOverviewSnapshotText()
@@ -21,7 +23,7 @@ internal class McpHomeTools(
 
     private fun buildHomeOverviewSnapshotText(): String {
         val mcpState = environment.currentState()
-        val githubSnapshot = GitHubTrackStore.loadSnapshot()
+        val githubSnapshot = githubTrackService.loadTrackSnapshotBlocking()
         val activeStrategyId = githubSnapshot.lookupConfig.selectedStrategy.storageId
         val matchedCacheByTrackId = githubSnapshot.items.associate { item ->
             val cache = githubSnapshot.checkCache[item.id]

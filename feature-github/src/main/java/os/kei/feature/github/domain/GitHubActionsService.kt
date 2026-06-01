@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.github.page
+package os.kei.feature.github.domain
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
@@ -7,18 +7,16 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubActionsDownloadHistoryStore
+import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.remote.GitHubActionsArtifactManifestProbe
 import os.kei.feature.github.data.remote.GitHubActionsRepository
-import os.kei.feature.github.domain.GitHubActionsArtifactSelector
-import os.kei.feature.github.domain.GitHubActionsRunSelector
-import os.kei.feature.github.domain.GitHubActionsRunTracker
-import os.kei.feature.github.domain.GitHubActionsWorkflowSelector
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactDownloadResolution
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubActionsRepositoryInfo
 import os.kei.feature.github.model.GitHubActionsRunArtifacts
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -33,16 +31,47 @@ import os.kei.feature.github.model.GitHubActionsWorkflowRun
 import os.kei.feature.github.model.GitHubActionsWorkflowSelectionOptions
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
+import os.kei.feature.github.model.GitHubTrackedApp
 
 private const val nightlyLinkSignalWorkflowBatchSize = 3
 private const val tokenApiSignalWorkflowBatchSize = 3
 private const val tokenApiSignalBranchProbeLimit = 2
 
-internal class GitHubActionsPageRepository(
+class GitHubActionsService(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     private val artifactManifestProbe = GitHubActionsArtifactManifestProbe()
+
+    fun loadRecommendedRunSnapshot(trackId: String): GitHubActionsRecommendedRunSnapshot? =
+        GitHubActionsRecommendedRunStore.load(trackId)
+
+    fun loadRecommendedRunSnapshots(): Map<String, GitHubActionsRecommendedRunSnapshot> =
+        GitHubActionsRecommendedRunStore.loadAll()
+
+    fun saveRecommendedRunSnapshot(snapshot: GitHubActionsRecommendedRunSnapshot) {
+        GitHubActionsRecommendedRunStore.save(snapshot)
+    }
+
+    fun removeRecommendedRunSnapshot(trackId: String) {
+        GitHubActionsRecommendedRunStore.remove(trackId)
+    }
+
+    suspend fun fetchRecommendedRunSnapshot(
+        item: GitHubTrackedApp,
+        lookupConfig: GitHubLookupConfig,
+        previousWorkflowId: Long?,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Result<GitHubActionsRecommendedRunSnapshot> =
+        withContext(ioDispatcher) {
+            GitHubActionsUpdateCheckService()
+                .fetchRecommendedRunSnapshot(
+                    item = item,
+                    lookupConfig = lookupConfig,
+                    previousWorkflowId = previousWorkflowId,
+                    nowMs = nowMs,
+                )
+        }
 
     suspend fun fetchGitHubActionsWorkflows(
         owner: String,

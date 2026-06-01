@@ -1,7 +1,5 @@
 package os.kei.feature.github.domain
 
-import android.content.Context
-import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -10,10 +8,10 @@ import os.kei.feature.github.model.StarImportApplyResult
 
 private const val STAR_IMPORT_IMMEDIATE_REFRESH_REQUEST_LIMIT = 8
 
-internal object GitHubStarImportApplier {
+object GitHubStarImportApplier {
     fun apply(
-        context: Context,
-        candidates: List<GitHubRepositoryImportCandidate>
+        candidates: List<GitHubRepositoryImportCandidate>,
+        onRefreshNeeded: () -> Unit,
     ): StarImportApplyResult {
         if (candidates.isEmpty()) return StarImportApplyResult()
         val merge = GitHubStarImportMerger.merge(
@@ -33,7 +31,7 @@ internal object GitHubStarImportApplier {
                 )
             }
         GitHubTrackStoreSignals.notifyChanged()
-        AppBackgroundScheduler.scheduleGitHubRefresh(context)
+        onRefreshNeeded()
         return result
     }
 

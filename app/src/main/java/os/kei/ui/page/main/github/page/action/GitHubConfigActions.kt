@@ -4,18 +4,15 @@ import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubShareImportFlowMode
-import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
-import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.RefreshIntervalOption
-import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -476,7 +473,6 @@ internal class GitHubConfigActions(
     }
 
     private suspend fun applyImportedTrackedItems(payload: GitHubTrackedItemsImportPayload): GitHubTrackImportApplyResult {
-        val nowMillis = env.clock.nowMs()
         if (payload.items.isEmpty()) {
             return GitHubTrackImportApplyResult(
                 addedCount = 0,
@@ -486,72 +482,27 @@ internal class GitHubConfigActions(
                 duplicateCount = payload.duplicateCount,
             )
         }
-        val mergedItems = state.trackedItems.toMutableList()
-        val indexById =
-            mergedItems
-                .withIndex()
-                .associate { it.value.id to it.index }
-                .toMutableMap()
-        val touchedItems = mutableListOf<GitHubTrackedApp>()
-        val refreshItems = mutableListOf<GitHubTrackedApp>()
-        var addedCount = 0
-        var updatedCount = 0
-        var unchangedCount = 0
-        payload.items.forEach { item ->
-            val existingIndex = indexById[item.id]
-            when {
-                existingIndex == null -> {
-                    mergedItems += item
-                    indexById[item.id] = mergedItems.lastIndex
-                    state.recordTrackedAddedAt(item.id, nowMillis)
-                    state.recordTrackedModifiedAt(item.id, nowMillis)
-                    touchedItems += item
-                    refreshItems += item
-                    addedCount += 1
-                }
-
-                mergedItems[existingIndex] != item -> {
-                    val existingItem = mergedItems[existingIndex]
-                    val mergedItem = item.withTrackedLocalAppTypeFallback(existingItem)
-                    val trackingConfigChanged =
-                        !existingItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(mergedItem)
-                    if (trackingConfigChanged) {
-                        val existingState = state.checkStates[item.id] ?: VersionCheckUi()
-                        assetActions.clearApkAssetStateAndCacheNow(
-                            item = existingItem,
-                            itemState = existingState,
-                        )
-                    }
-                    mergedItems[existingIndex] = mergedItem
-                    state.recordTrackedModifiedAt(mergedItem.id, nowMillis)
-                    if (trackingConfigChanged) {
-                        state.checkStates.remove(item.id)
-                        refreshItems += mergedItem
-                    }
-                    touchedItems += mergedItem
-                    updatedCount += 1
-                }
-
-                else -> {
-                    unchangedCount += 1
-                }
-            }
-        }
-        if (addedCount == 0 && updatedCount == 0) {
+        val result =
+            GitHubTrackedItemsTransferService.applyImport(
+                payload = payload,
+                onRefreshNeeded = { repository.scheduleGitHubRefresh(context) },
+                existingItems = state.trackedItems.toList(),
+            )
+        if (!result.hasChanges) {
             return GitHubTrackImportApplyResult(
                 addedCount = 0,
                 updatedCount = 0,
-                unchangedCount = unchangedCount,
+                unchangedCount = result.unchangedCount,
                 invalidCount = payload.invalidCount,
                 duplicateCount = payload.duplicateCount,
             )
         }
-        state.trackedItems.clear()
-        state.trackedItems.addAll(mergedItems)
-        touchedItems.firstOrNull()?.let { state.requestTrackCardFocus(it.id) }
-        env.saveTrackedItems()
-        refreshActions.persistCheckCache()
+        val trackSnapshot = repository.loadTrackSnapshot()
+        refreshActions.applyTrackSnapshot(trackSnapshot)
+        result.touchedTrackIds.firstOrNull()?.let(state::requestTrackCardFocus)
 
+        val itemsById = trackSnapshot.items.associateBy { it.id }
+        val refreshItems = result.refreshTrackIds.mapNotNull(itemsById::get)
         val refreshCount = refreshItems.size
         if (refreshCount in 1..6) {
             refreshItems.forEach { item ->
@@ -564,18 +515,11 @@ internal class GitHubConfigActions(
             refreshActions.refreshAllTracked(showToast = false)
         }
         return GitHubTrackImportApplyResult(
-            addedCount = addedCount,
-            updatedCount = updatedCount,
-            unchangedCount = unchangedCount,
+            addedCount = result.addedCount,
+            updatedCount = result.updatedCount,
+            unchangedCount = result.unchangedCount,
             invalidCount = payload.invalidCount,
             duplicateCount = payload.duplicateCount,
         )
     }
 }
-
-private fun GitHubTrackedApp.withTrackedLocalAppTypeFallback(existingItem: GitHubTrackedApp): GitHubTrackedApp =
-    if (localAppType == GitHubTrackedLocalAppType.Unknown) {
-        copy(localAppType = existingItem.localAppType)
-    } else {
-        this
-    }

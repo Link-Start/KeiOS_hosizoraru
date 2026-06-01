@@ -17,8 +17,8 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.CacheFreshnessSnapshot
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.home.model.HOME_BA_AP_MAX
@@ -62,6 +62,7 @@ internal class HomeOverviewRepository(
             replay = 1,
             extraBufferCapacity = 1,
         )
+    private val githubTrackService = GitHubTrackService(ioDispatcher)
     private val visibleOverviewCards = MutableStateFlow(defaultHomeOverviewCards())
     private val showCacheFreshnessInCards = MutableStateFlow(false)
 
@@ -69,7 +70,7 @@ internal class HomeOverviewRepository(
         val storedOverviewFlow =
             buildHomeOverviewStoreRefreshFlow(
                 refreshRequests = refreshRequests,
-                githubVersions = GitHubTrackStoreSignals.version,
+                githubVersions = githubTrackService.trackStoreSignalVersions(),
                 baHomeOverviewVersions = BASettingsStoreSignals.homeOverviewVersion,
                 webDavVersions = WebDavSyncStoreSignals.version,
             ).onStart { emit("initial") }
@@ -148,7 +149,9 @@ internal class HomeOverviewRepository(
                 }.getOrElse { HomeBaOverview(loaded = true) }
             val githubOverview =
                 runCatching {
+                    val githubSnapshot = githubTrackService.loadTrackSnapshot()
                     loadHomeGitHubOverview(
+                        snapshot = githubSnapshot,
                         cacheFreshness = cacheFreshnessById["github"] ?: CacheFreshnessSnapshot.Empty,
                         nowMs = clock.nowMs(),
                     )
@@ -229,10 +232,10 @@ internal fun buildHomeOverviewStoreRefreshFlow(
     )
 
 private fun loadHomeGitHubOverview(
+    snapshot: GitHubTrackSnapshot,
     cacheFreshness: CacheFreshnessSnapshot,
     nowMs: Long,
 ): HomeGitHubOverview {
-    val snapshot = GitHubTrackStore.loadSnapshot()
     val activeStrategyId = snapshot.lookupConfig.selectedStrategy.storageId
     val matchedCacheByTrackId =
         snapshot.items.associate { item ->

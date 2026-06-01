@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.github.page
+package os.kei.feature.github.domain
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -6,16 +6,15 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
+import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 
-internal class GitHubPageAssetBridge(
-    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
+class GitHubReleaseAssetService(
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
 ) {
-    fun buildReleaseUrl(owner: String, repo: String): String {
-        return GitHubVersionUtils.buildReleaseUrl(owner, repo)
-    }
+    fun buildReleaseUrl(owner: String, repo: String): String =
+        GitHubVersionUtils.buildReleaseUrl(owner, repo)
 
     fun buildAssetCacheKey(
         owner: String,
@@ -25,9 +24,9 @@ internal class GitHubPageAssetBridge(
         preferHtml: Boolean,
         aggressiveFiltering: Boolean,
         includeAllAssets: Boolean,
-        hasApiToken: Boolean
-    ): String {
-        return GitHubReleaseAssetCacheStore.buildCacheKey(
+        hasApiToken: Boolean,
+    ): String =
+        GitHubReleaseAssetCacheStore.buildCacheKey(
             owner = owner,
             repo = repo,
             rawTag = rawTag,
@@ -35,25 +34,23 @@ internal class GitHubPageAssetBridge(
             preferHtml = preferHtml,
             aggressiveFiltering = aggressiveFiltering,
             includeAllAssets = includeAllAssets,
-            hasApiToken = hasApiToken
+            hasApiToken = hasApiToken,
         )
-    }
 
     suspend fun loadAssetBundle(
         cacheKey: String,
-        refreshIntervalHours: Int
-    ): GitHubReleaseAssetBundle? {
-        return withContext(ioDispatcher) {
+        refreshIntervalHours: Int,
+    ): GitHubReleaseAssetBundle? =
+        withContext(ioDispatcher) {
             GitHubReleaseAssetCacheStore.load(
                 cacheKey = cacheKey,
-                refreshIntervalHours = refreshIntervalHours
+                refreshIntervalHours = refreshIntervalHours,
             )
         }
-    }
 
     suspend fun saveAssetBundle(
         cacheKey: String,
-        bundle: GitHubReleaseAssetBundle
+        bundle: GitHubReleaseAssetBundle,
     ) {
         withContext(ioDispatcher) {
             GitHubReleaseAssetCacheStore.save(cacheKey = cacheKey, bundle = bundle)
@@ -81,9 +78,9 @@ internal class GitHubPageAssetBridge(
         preferHtml: Boolean,
         aggressiveFiltering: Boolean,
         includeAllAssets: Boolean,
-        apiToken: String
-    ): Result<GitHubReleaseAssetBundle> {
-        return withContext(ioDispatcher) {
+        apiToken: String,
+    ): Result<GitHubReleaseAssetBundle> =
+        withContext(ioDispatcher) {
             GitHubReleaseAssetRepository.fetchApkAssets(
                 owner = owner,
                 repo = repo,
@@ -92,38 +89,37 @@ internal class GitHubPageAssetBridge(
                 preferHtml = preferHtml,
                 aggressiveFiltering = aggressiveFiltering,
                 includeAllAssets = includeAllAssets,
-                apiToken = apiToken
+                apiToken = apiToken,
             )
         }
-    }
 
     suspend fun fetchReleaseNotesTargets(
         owner: String,
         repo: String,
-        apiToken: String
-    ): Result<List<GitHubReleaseNotesTarget>> {
-        return withContext(ioDispatcher) {
+        apiToken: String,
+    ): Result<List<GitHubReleaseNotesTarget>> =
+        withContext(ioDispatcher) {
             GitHubReleaseAssetRepository.fetchReleaseNotesTargets(
                 owner = owner,
                 repo = repo,
-                apiToken = apiToken
+                apiToken = apiToken,
             )
         }
-    }
 
     suspend fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,
         useApiAssetUrl: Boolean,
-        apiToken: String
-    ): String {
-        return withContext(ioDispatcher) {
-            GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-                asset = asset,
-                useApiAssetUrl = useApiAssetUrl,
-                apiToken = apiToken
-            ).getOrElse { asset.downloadUrl }
+        apiToken: String,
+    ): String =
+        withContext(ioDispatcher) {
+            GitHubReleaseAssetRepository
+                .resolvePreferredDownloadUrl(
+                    asset = asset,
+                    useApiAssetUrl = useApiAssetUrl,
+                    apiToken = apiToken,
+                )
+                .getOrElse { asset.downloadUrl }
         }
-    }
 
     suspend fun clearAllAssetCache() {
         withContext(ioDispatcher) {

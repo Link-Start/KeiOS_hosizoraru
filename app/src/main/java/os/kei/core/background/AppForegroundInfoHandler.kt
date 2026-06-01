@@ -4,24 +4,11 @@ import android.content.Context
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
-import os.kei.feature.github.GitHubExecution
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
-import os.kei.feature.github.data.local.GitHubTrackSnapshot
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
-import os.kei.feature.github.data.remote.GitHubVersionUtils
-import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
-import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.domain.GitHubBackgroundRefreshService
+import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
-import os.kei.feature.github.domain.GitHubTrackedRefreshBatchResult
-import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
-import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
-import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.actionsUpdateIntervalMs
-import os.kei.feature.github.model.updateIntervalMs
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
@@ -34,155 +21,71 @@ import os.kei.ui.page.main.ba.BaReminderCoordinator
 import os.kei.ui.page.main.ba.BaSlotReminderPlan
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
-import os.kei.core.concurrency.AppDispatchers
 
 object AppForegroundInfoHandler {
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE = 2
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS = 850L
 
-    private val githubTickMutex = Mutex()
+    private val githubRefreshService = GitHubBackgroundRefreshService()
     private val baApTickMutex = Mutex()
 
     suspend fun handleGitHubTick(context: Context) {
-        githubTickMutex.withLock {
-            val snapshot = withContext(AppDispatchers.mcpServer) { GitHubTrackStore.loadSnapshot() }
-            val tracked = snapshot.items
-            if (tracked.isEmpty()) return
-
-            val nowMs = System.currentTimeMillis()
-            val trackedUpdateTargetItems = selectGitHubTrackedUpdateTargets(
-                snapshot = snapshot,
-                nowMs = nowMs
-            )
-            val actionsTargetItems = selectGitHubActionsUpdateTargets(
-                snapshot = snapshot,
-                nowMs = nowMs
-            )
-            if (trackedUpdateTargetItems.isEmpty() && actionsTargetItems.isEmpty()) {
-                return
-            }
-
-            val result = if (trackedUpdateTargetItems.isNotEmpty()) {
-                GitHubTrackedRefreshBatchRunner.run(
-                    trackedItems = trackedUpdateTargetItems,
-                    refreshTimestampMs = nowMs
-                ) { item ->
-                    GitHubReleaseCheckService.evaluateTrackedApp(context, item)
-                }.also { refreshResult ->
-                    AppLogger.d(
-                        "AppForegroundInfoHandler",
-                        "github tick refreshed total=${refreshResult.totalCount} " +
-                                "elapsed=${refreshResult.performance.elapsedMs}ms " +
-                                "p50=${refreshResult.performance.p50ItemMs}ms " +
-                                "p95=${refreshResult.performance.p95ItemMs}ms " +
-                                "updatable=${refreshResult.updatableCount} " +
-                                "prerelease=${refreshResult.preReleaseUpdateCount} " +
-                                "failed=${refreshResult.failedCount}"
-                    )
-                    persistGitHubRefreshResult(
-                        snapshot = snapshot,
-                        result = refreshResult,
-                        replaceCache = trackedUpdateTargetItems.size == tracked.size
-                    )
-                }
-            } else {
-                null
-            }
-            handleGitHubActionsUpdates(
+        val result =
+            githubRefreshService.runDueRefresh(
                 context = context,
-                snapshot = snapshot,
-                nowMs = nowMs,
-                targetItems = actionsTargetItems
+                onActionsUpdateAvailable = { snapshot ->
+                    GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
+                        context = context,
+                        snapshot = snapshot,
+                    )
+                },
             )
-            if (result?.hasNotifiableOutcome == true) {
+        val refreshResult = result.refreshResult
+        if (refreshResult?.hasNotifiableOutcome == true) {
+            GitHubRefreshNotificationHelper.notifyCompleted(
+                context = context,
+                total = refreshResult.totalCount,
+                preReleaseUpdateCount = refreshResult.preReleaseUpdateCount,
+                updatableCount = refreshResult.updatableCount,
+                failedCount = refreshResult.failedCount,
+            )
+        }
+    }
+
+    internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
+        val progressNotifier = GitHubShortcutRefreshProgressNotifier(context = context)
+        return when (
+            val execution =
+                githubRefreshService.runShortcutRefresh(
+                    context = context,
+                    onStart = progressNotifier::notifyInitial,
+                    onProgress = progressNotifier::notifyProgress,
+                    onActionsUpdateAvailable = { snapshot ->
+                        GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
+                            context = context,
+                            snapshot = snapshot,
+                        )
+                    },
+                )
+        ) {
+            GitHubShortcutRefreshExecution.NoTrackedItems -> {
+                GitHubRefreshNotificationHelper.cancel(context)
+                AppShortcutGitHubRefreshResult.NoTrackedItems
+            }
+
+            is GitHubShortcutRefreshExecution.Completed -> {
+                val result = execution.result
                 GitHubRefreshNotificationHelper.notifyCompleted(
                     context = context,
                     total = result.totalCount,
                     preReleaseUpdateCount = result.preReleaseUpdateCount,
                     updatableCount = result.updatableCount,
-                    failedCount = result.failedCount
+                    failedCount = result.failedCount,
                 )
+                AppBackgroundScheduler.scheduleGitHubRefresh(context)
+                AppShortcutGitHubRefreshResult.Completed
             }
-        }
-    }
-
-    internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
-        githubTickMutex.withLock {
-            val nowMs = System.currentTimeMillis()
-            val snapshot = withContext(AppDispatchers.mcpServer) { GitHubTrackStore.loadSnapshot() }
-            val tracked = snapshot.items
-            if (tracked.isEmpty()) {
-                GitHubRefreshNotificationHelper.cancel(context)
-                return AppShortcutGitHubRefreshResult.NoTrackedItems
-            }
-
-            prepareGitHubShortcutRefreshCaches()
-            val progressNotifier = GitHubShortcutRefreshProgressNotifier(context = context)
-            progressNotifier.notifyInitial(total = tracked.size)
-            val result = GitHubTrackedRefreshBatchRunner.run(
-                trackedItems = tracked,
-                refreshTimestampMs = nowMs,
-                onProgress = progressNotifier::notifyProgress
-            ) { item ->
-                GitHubReleaseCheckService.evaluateTrackedApp(
-                    context = context,
-                    item = item,
-                    forceRefresh = true
-                )
-            }
-            AppLogger.i(
-                "AppForegroundInfoHandler",
-                "github shortcut refreshed total=${result.totalCount} elapsed=${result.performance.elapsedMs}ms " +
-                        "p50=${result.performance.p50ItemMs}ms p95=${result.performance.p95ItemMs}ms " +
-                        "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}"
-            )
-            persistGitHubRefreshResult(snapshot = snapshot, result = result)
-            handleGitHubActionsUpdates(
-                context = context,
-                snapshot = snapshot,
-                nowMs = nowMs,
-                targetItems = snapshot.items.filter { it.checkActionsUpdates }
-            )
-            GitHubRefreshNotificationHelper.notifyCompleted(
-                context = context,
-                total = result.totalCount,
-                preReleaseUpdateCount = result.preReleaseUpdateCount,
-                updatableCount = result.updatableCount,
-                failedCount = result.failedCount
-            )
-            AppBackgroundScheduler.scheduleGitHubRefresh(context)
-            return AppShortcutGitHubRefreshResult.Completed
-        }
-    }
-
-    private suspend fun prepareGitHubShortcutRefreshCaches() {
-        withContext(AppDispatchers.mcpServer) {
-            GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
-            GitHubReleaseStrategyRegistry.clearAllCaches()
-            GitHubTrackStore.clearCheckCache()
-            GitHubReleaseAssetCacheStore.clearAll()
-        }
-    }
-
-    private suspend fun persistGitHubRefreshResult(
-        snapshot: GitHubTrackSnapshot,
-        result: GitHubTrackedRefreshBatchResult,
-        replaceCache: Boolean = true
-    ) {
-        withContext(AppDispatchers.mcpServer) {
-            val nextCache = if (replaceCache) {
-                result.cacheEntries
-            } else {
-                snapshot.checkCache + result.cacheEntries
-            }
-            val nextRefreshTimestamp = if (replaceCache) {
-                result.refreshTimestampMs
-            } else {
-                snapshot.lastRefreshMs
-            }
-            GitHubTrackStore.saveCheckCache(nextCache, nextRefreshTimestamp)
-            GitHubTrackStoreSignals.notifyChanged(result.refreshTimestampMs)
         }
     }
 
@@ -237,108 +140,6 @@ object AppForegroundInfoHandler {
                 )
             }
         }
-    }
-
-    private suspend fun handleGitHubActionsUpdates(
-        context: Context,
-        snapshot: GitHubTrackSnapshot,
-        nowMs: Long,
-        targetItems: List<GitHubTrackedApp>
-    ): Int {
-        val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
-        withContext(AppDispatchers.mcpServer) {
-            GitHubActionsRecommendedRunStore.retain(enabledItems.map { it.id }.toSet())
-        }
-        if (enabledItems.isEmpty() || targetItems.isEmpty()) return 0
-
-        val service = GitHubActionsUpdateCheckService()
-        val previousById = withContext(AppDispatchers.mcpServer) {
-            GitHubActionsRecommendedRunStore.loadAll()
-        }
-        val notifiedCount = GitHubExecution.mapOrderedBounded(
-            items = targetItems,
-            maxConcurrency = 2
-        ) { item ->
-            val previous = previousById[item.id]
-            val current = service.fetchRecommendedRunSnapshot(
-                item = item,
-                lookupConfig = snapshot.lookupConfig,
-                previousWorkflowId = previous?.workflowId,
-                nowMs = nowMs
-            ).getOrElse { error ->
-                AppLogger.w(
-                    "AppForegroundInfoHandler",
-                    "github actions update check failed item=${item.id}: ${error.message}"
-                )
-                return@mapOrderedBounded false
-            }
-            withContext(AppDispatchers.mcpServer) {
-                GitHubActionsRecommendedRunStore.save(current)
-            }
-            if (previous != null && current.isNewerThan(previous)) {
-                GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
-                    context = context,
-                    snapshot = current
-                )
-            } else {
-                false
-            }
-        }.count { it }
-
-        if (notifiedCount > 0) {
-            AppLogger.i(
-                "AppForegroundInfoHandler",
-                "github actions update check notified=$notifiedCount checked=${targetItems.size} " +
-                        "enabled=${enabledItems.size}"
-            )
-        }
-        return notifiedCount
-    }
-
-    private fun selectGitHubTrackedUpdateTargets(
-        snapshot: GitHubTrackSnapshot,
-        nowMs: Long
-    ): List<GitHubTrackedApp> {
-        if (snapshot.items.isEmpty()) return emptyList()
-        return snapshot.items.filter { item ->
-            val checkedAtMillis = snapshot.checkCache[item.id]?.checkedAtMillis
-                ?.takeIf { it > 0L }
-                ?: snapshot.lastRefreshMs
-            checkedAtMillis <= 0L ||
-                (nowMs - checkedAtMillis).coerceAtLeast(0L) >=
-                item.updateIntervalMs(snapshot.refreshIntervalHours)
-        }
-    }
-
-    private suspend fun selectGitHubActionsUpdateTargets(
-        snapshot: GitHubTrackSnapshot,
-        nowMs: Long
-    ): List<GitHubTrackedApp> {
-        val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
-        if (enabledItems.isEmpty()) return emptyList()
-        val previousById = withContext(AppDispatchers.mcpServer) {
-            GitHubActionsRecommendedRunStore.loadAll()
-        }
-        return enabledItems.filter { item ->
-            shouldCheckGitHubActionsUpdate(
-                item = item,
-                previous = previousById[item.id],
-                refreshIntervalHours = snapshot.refreshIntervalHours,
-                nowMs = nowMs
-            )
-        }
-    }
-
-    private fun shouldCheckGitHubActionsUpdate(
-        item: GitHubTrackedApp,
-        previous: GitHubActionsRecommendedRunSnapshot?,
-        refreshIntervalHours: Int,
-        nowMs: Long
-    ): Boolean {
-        val checkedAtMillis = previous?.checkedAtMillis ?: 0L
-        if (checkedAtMillis <= 0L) return true
-        val intervalMs = item.actionsUpdateIntervalMs(refreshIntervalHours)
-        return (nowMs - checkedAtMillis).coerceAtLeast(0L) >= intervalMs
     }
 
     suspend fun handleBaApTick(context: Context) {

@@ -18,7 +18,7 @@ import os.kei.BuildConfig
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.log.AppLogStore
-import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.domain.GitHubTrackService
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -30,6 +30,8 @@ internal class FeedbackIssueRepository(
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val httpClient: OkHttpClient = SharedHttpClient.base,
 ) {
+    private val githubTrackService = GitHubTrackService(ioDispatcher)
+
     suspend fun loadDraftSnapshot(context: Context): FeedbackIssueDraftSnapshot =
         coroutineScope {
             val appContext = context.applicationContext
@@ -123,20 +125,14 @@ internal class FeedbackIssueRepository(
         }
 
     suspend fun hasGitHubApiToken(): Boolean =
-        withContext(ioDispatcher) {
-            GitHubTrackStore
-                .loadLookupConfig()
-                .apiToken
-                .trim()
-                .isNotBlank()
-        }
+        githubTrackService.loadApiToken().trim().isNotBlank()
 
     suspend fun submitIssueViaApi(
         title: String,
         body: String,
     ): FeedbackIssueSubmitResult {
         return withContext(ioDispatcher) {
-            val token = GitHubTrackStore.loadLookupConfig().apiToken.trim()
+            val token = githubTrackService.loadApiToken().trim()
             if (token.isBlank()) return@withContext FeedbackIssueSubmitResult.MissingToken
             val payload =
                 JSONObject()

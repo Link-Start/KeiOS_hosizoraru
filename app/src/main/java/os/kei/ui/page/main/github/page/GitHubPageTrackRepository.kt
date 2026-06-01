@@ -3,14 +3,11 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
-import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -24,47 +21,22 @@ import os.kei.ui.page.main.github.share.toShareImportTrack
 internal class GitHubPageTrackRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
-    suspend fun loadTrackSnapshot(): GitHubTrackSnapshot {
-        return withContext(ioDispatcher) {
-            GitHubTrackStore.loadSnapshot()
-        }
-    }
+    private val trackService = GitHubTrackService(ioDispatcher)
 
-    suspend fun loadLookupConfig(): GitHubLookupConfig {
-        return withContext(ioDispatcher) {
-            GitHubTrackStore.loadLookupConfig()
-        }
-    }
+    suspend fun loadTrackSnapshot(): GitHubTrackSnapshot = trackService.loadTrackSnapshot()
 
-    suspend fun saveLookupConfig(config: GitHubLookupConfig) {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.saveLookupConfig(config)
-        }
-    }
+    suspend fun loadLookupConfig(): GitHubLookupConfig = trackService.loadLookupConfig()
 
-    suspend fun loadRefreshIntervalHours(): Int {
-        return withContext(ioDispatcher) {
-            GitHubTrackStore.loadRefreshIntervalHours()
-        }
-    }
+    suspend fun saveLookupConfig(config: GitHubLookupConfig) = trackService.saveLookupConfig(config)
 
-    suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences {
-        return withContext(ioDispatcher) {
-            GitHubTrackStore.loadAppPickerPreferences()
-        }
-    }
+    suspend fun loadRefreshIntervalHours(): Int = trackService.loadRefreshIntervalHours()
 
-    suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.saveAppPickerPreferences(preferences)
-        }
-    }
+    suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences = trackService.loadAppPickerPreferences()
 
-    suspend fun saveRefreshIntervalHours(hours: Int) {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.saveRefreshIntervalHours(hours)
-        }
-    }
+    suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) =
+        trackService.saveAppPickerPreferences(preferences)
+
+    suspend fun saveRefreshIntervalHours(hours: Int) = trackService.saveRefreshIntervalHours(hours)
 
     suspend fun saveTrackedItems(
         context: Context,
@@ -75,21 +47,14 @@ internal class GitHubPageTrackRepository(
         refreshTrackIds: Set<String> = emptySet(),
         emitStoreSignal: Boolean = true
     ) {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.save(items)
-            GitHubTrackStore.saveTrackedFirstInstallAtByPackage(trackedFirstInstallAtByPackage)
-            GitHubTrackStore.saveTrackedAddedAtById(trackedAddedAtById)
-            GitHubTrackStore.saveTrackedModifiedAtById(trackedModifiedAtById)
-            refreshTrackIds.forEach { trackId ->
-                GitHubTrackStoreSignals.requestTrackRefresh(
-                    trackId = trackId,
-                    notifyChangeSignal = false
-                )
-            }
-            if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
-                GitHubTrackStoreSignals.notifyChanged()
-            }
-        }
+        trackService.saveTrackedItems(
+            items = items,
+            trackedFirstInstallAtByPackage = trackedFirstInstallAtByPackage,
+            trackedAddedAtById = trackedAddedAtById,
+            trackedModifiedAtById = trackedModifiedAtById,
+            refreshTrackIds = refreshTrackIds,
+            emitStoreSignal = emitStoreSignal,
+        )
         if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
             AppBackgroundScheduler.scheduleGitHubRefresh(context)
         }
@@ -98,82 +63,37 @@ internal class GitHubPageTrackRepository(
     suspend fun saveCheckCache(
         states: Map<String, GitHubCheckCacheEntry>,
         refreshTimestamp: Long
-    ) {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.saveCheckCache(states, refreshTimestamp)
-            GitHubTrackStoreSignals.notifyChanged(refreshTimestamp)
-        }
-    }
+    ) = trackService.saveCheckCache(states, refreshTimestamp)
 
-    suspend fun clearCheckCache() {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.clearCheckCache()
-        }
-    }
+    suspend fun clearCheckCache() = trackService.clearCheckCache()
 
-    suspend fun clearPendingShareImportTrack() {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.savePendingShareImportTrack(null)
-            GitHubTrackStoreSignals.notifyChanged()
-        }
-    }
+    suspend fun clearPendingShareImportTrack() = trackService.clearPendingShareImportTrack()
 
-    suspend fun clearActiveShareImportFlow() {
-        withContext(ioDispatcher) {
-            GitHubTrackStore.savePendingShareImportTrack(null)
-            GitHubShareImportFlowStore.clearActiveFlow()
-            GitHubTrackStoreSignals.notifyChanged()
-        }
-    }
+    suspend fun clearActiveShareImportFlow() = trackService.clearActiveShareImportFlow()
 
-    suspend fun clearShareImportResult() {
-        withContext(ioDispatcher) {
-            GitHubShareImportFlowStore.clearActiveResult()
-            GitHubTrackStoreSignals.notifyChanged()
-        }
-    }
+    suspend fun clearShareImportResult() = trackService.clearShareImportResult()
 
-    suspend fun saveShareImportResult(result: GitHubShareImportResult) {
-        withContext(ioDispatcher) {
-            GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
-            GitHubTrackStoreSignals.notifyChanged()
-        }
-    }
+    suspend fun saveShareImportResult(result: GitHubShareImportResult) =
+        trackService.saveShareImportResult(result.toRecord())
 
     suspend fun loadActiveShareImportFlow(): GitHubActiveShareImportFlow {
-        return withContext(ioDispatcher) {
-            GitHubActiveShareImportFlow(
-                preview = GitHubShareImportFlowStore
-                    .loadActivePreview()
-                    ?.toShareImportPreview(),
-                pendingTrack = GitHubTrackStore
-                    .loadPendingShareImportTrack()
-                    ?.toShareImportTrack(),
-                attachCandidate = GitHubShareImportFlowStore
-                    .loadActiveAttachCandidate()
-                    ?.toShareImportAttachCandidate(),
-                result = GitHubShareImportFlowStore
-                    .loadActiveResult()
-                    ?.toShareImportResult()
-            )
-        }
+        val records = trackService.loadActiveShareImportFlow()
+        return GitHubActiveShareImportFlow(
+            preview = records.preview?.toShareImportPreview(),
+            pendingTrack = records.pendingTrack?.toShareImportTrack(),
+            attachCandidate = records.attachCandidate?.toShareImportAttachCandidate(),
+            result = records.result?.toShareImportResult(),
+        )
     }
 
     fun scheduleGitHubRefresh(context: Context) {
         AppBackgroundScheduler.scheduleGitHubRefresh(context)
     }
 
-    fun currentTrackStoreSignalVersion(): Long {
-        return GitHubTrackStoreSignals.version.value
-    }
+    fun currentTrackStoreSignalVersion(): Long = trackService.currentTrackStoreSignalVersion()
 
-    fun trackStoreSignalVersions(): StateFlow<Long> {
-        return GitHubTrackStoreSignals.version
-    }
+    fun trackStoreSignalVersions(): StateFlow<Long> = trackService.trackStoreSignalVersions()
 
-    suspend fun consumeTrackRefreshRequests(validTrackIds: Set<String>): Set<String> {
-        return withContext(ioDispatcher) {
-            GitHubTrackStoreSignals.consumeTrackRefreshRequests(validTrackIds)
-        }
-    }
+    suspend fun consumeTrackRefreshRequests(validTrackIds: Set<String>): Set<String> =
+        trackService.consumeTrackRefreshRequests(validTrackIds)
 }

@@ -1,12 +1,11 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
-import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.domain.GitHubCacheService
+import os.kei.feature.github.domain.GitHubTrackService
+import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -22,6 +21,7 @@ internal class McpGitHubTrackingTools(
     private val environment: McpToolEnvironment
 ) {
     private val appContext get() = environment.appContext
+    private val githubTrackService = GitHubTrackService()
 
     fun register(server: Server) {
         server.addMcpTextTool(environment, name = "keios.github.tracks.snapshot") { _ ->
@@ -146,10 +146,7 @@ internal class McpGitHubTrackingTools(
         }
 
         server.addMcpTextTool(environment, name = "keios.github.cache.clear") { _ ->
-            GitHubTrackStore.clearCheckCache()
-            GitHubTrackStoreSignals.notifyChanged()
-            GitHubReleaseAssetCacheStore.clearAll()
-            GitHubStarImportApkVerificationCacheStore.clearAll()
+            GitHubCacheService.clearGitHubMcpCaches()
             "cleared=github_check_cache,github_release_asset_cache,github_star_import_apk_verification_cache"
         }
 
@@ -174,9 +171,9 @@ internal class McpGitHubTrackingTools(
     }
 
     private fun buildGitHubTrackedSnapshotText(): String {
-        val snapshot = GitHubTrackStore.loadSnapshot()
-        val sourceCounts = GitHubTrackStore.calculateTrackedItemsSourceCounts(snapshot.items)
-        val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(snapshot.items)
+        val snapshot = githubTrackService.loadTrackSnapshotBlocking()
+        val sourceCounts = GitHubTrackedItemsTransferService.calculateSourceCounts(snapshot.items)
+        val optionCounts = GitHubTrackedItemsTransferService.calculateOptionCounts(snapshot.items)
         val actionsIntervalOverrideCount = snapshot.items.count {
             it.checkActionsUpdates &&
                     it.actionsUpdateIntervalMode != GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
@@ -275,7 +272,7 @@ internal class McpGitHubTrackingTools(
         sortDirection: GitHubSortDirection,
         limit: Int
     ): String {
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val snapshot = githubTrackService.loadTrackSnapshotBlocking()
         val items = sortTrackedItems(
             items = filterTrackedItems(
                 snapshot = snapshot,
@@ -307,7 +304,7 @@ internal class McpGitHubTrackingTools(
         sortMode: GitHubSortMode,
         sortDirection: GitHubSortDirection
     ): String {
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val snapshot = githubTrackService.loadTrackSnapshotBlocking()
         val items = sortTrackedItems(
             items = filterTrackedItems(
                 snapshot = snapshot,
@@ -320,18 +317,34 @@ internal class McpGitHubTrackingTools(
             sortMode = sortMode,
             sortDirection = sortDirection
         )
-        return GitHubTrackStore.buildTrackedItemsExportJson(items)
+        return GitHubTrackedItemsTransferService.buildExportJson(items)
     }
 
     private fun buildGitHubTrackedImportText(rawJson: String, apply: Boolean): String {
-        val payload = GitHubTrackStore.parseTrackedItemsImport(rawJson)
-        val existing = GitHubTrackStore.load()
-        val preview = buildTrackedImportPreview(payload, existing)
-        val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(payload.items)
-        if (apply && (preview.addedCount > 0 || preview.updatedCount > 0)) {
-            val merged = mergeTrackedItems(payload, existing)
-            GitHubTrackStore.save(merged)
-            GitHubTrackStore.clearCheckCache()
+        val payload = GitHubTrackedItemsTransferService.parseImport(rawJson)
+        val existing = GitHubTrackedItemsTransferService.loadItems()
+        val preview = GitHubTrackedItemsTransferService.buildImportPreview(
+            payload = payload,
+            existingItems = existing,
+        )
+        val optionCounts = GitHubTrackedItemsTransferService.calculateOptionCounts(payload.items)
+        val hasChanges = preview.newCount > 0 || preview.updatedCount > 0
+        val applyResult =
+            if (apply && hasChanges) {
+                GitHubTrackedItemsTransferService.applyImport(
+                    payload = payload,
+                    onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(appContext) },
+                    existingItems = existing,
+                )
+            } else {
+                null
+            }
+        val addedCount = applyResult?.addedCount ?: preview.newCount
+        val updatedCount = applyResult?.updatedCount ?: preview.updatedCount
+        val unchangedCount = applyResult?.unchangedCount ?: preview.unchangedCount
+        val applied = apply && hasChanges
+        if (applied) {
+            githubTrackService.clearCheckCacheBlocking()
         }
         return buildString {
             appendLine("apply=$apply")
@@ -354,61 +367,13 @@ internal class McpGitHubTrackingTools(
             )
             appendLine("preciseApkVersionOverrideCount=${optionCounts.preciseApkVersionOverrideCount}")
             appendLine("latestReleaseDownloadCount=${optionCounts.latestReleaseDownloadCount}")
-            appendLine("newCount=${preview.addedCount}")
-            appendLine("updatedCount=${preview.updatedCount}")
-            appendLine("unchangedCount=${preview.unchangedCount}")
-            appendLine("mergedCount=${existing.size + preview.addedCount}")
-            appendLine("applied=${apply && (preview.addedCount > 0 || preview.updatedCount > 0)}")
-            appendLine("cacheCleared=${apply && (preview.addedCount > 0 || preview.updatedCount > 0)}")
+            appendLine("newCount=$addedCount")
+            appendLine("updatedCount=$updatedCount")
+            appendLine("unchangedCount=$unchangedCount")
+            appendLine("mergedCount=${preview.mergedCount}")
+            appendLine("applied=$applied")
+            appendLine("cacheCleared=$applied")
         }.trim()
-    }
-
-    private data class TrackedImportPreviewCounts(
-        val addedCount: Int,
-        val updatedCount: Int,
-        val unchangedCount: Int
-    )
-
-    private fun buildTrackedImportPreview(
-        payload: GitHubTrackedItemsImportPayload,
-        existingItems: List<GitHubTrackedApp>
-    ): TrackedImportPreviewCounts {
-        val existingItemsById = existingItems.associateBy { it.id }
-        var addedCount = 0
-        var updatedCount = 0
-        var unchangedCount = 0
-        payload.items.forEach { item ->
-            when (val existingItem = existingItemsById[item.id]) {
-                null -> addedCount += 1
-                item -> unchangedCount += 1
-                else -> updatedCount += 1
-            }
-        }
-        return TrackedImportPreviewCounts(
-            addedCount = addedCount,
-            updatedCount = updatedCount,
-            unchangedCount = unchangedCount
-        )
-    }
-
-    private fun mergeTrackedItems(
-        payload: GitHubTrackedItemsImportPayload,
-        existingItems: List<GitHubTrackedApp>
-    ): List<GitHubTrackedApp> {
-        val mergedItems = existingItems.toMutableList()
-        val indexById = mergedItems.withIndex()
-            .associate { it.value.id to it.index }
-            .toMutableMap()
-        payload.items.forEach { item ->
-            val existingIndex = indexById[item.id]
-            if (existingIndex == null) {
-                mergedItems += item
-                indexById[item.id] = mergedItems.lastIndex
-            } else {
-                mergedItems[existingIndex] = item
-            }
-        }
-        return mergedItems
     }
 
     private fun buildGitHubTrackedSummaryFromCache(
@@ -418,7 +383,7 @@ internal class McpGitHubTrackingTools(
         sortMode: GitHubSortMode,
         sortDirection: GitHubSortDirection
     ): String {
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val snapshot = githubTrackService.loadTrackSnapshotBlocking()
         val tracked = sortTrackedItems(
             items = filterTrackedItems(
                 snapshot = snapshot,
@@ -501,7 +466,7 @@ internal class McpGitHubTrackingTools(
         sortMode: GitHubSortMode,
         sortDirection: GitHubSortDirection
     ): List<GitHubCheckRow> {
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val snapshot = githubTrackService.loadTrackSnapshotBlocking()
         val filtered = filterTrackedItems(
             snapshot = snapshot,
             items = snapshot.items,

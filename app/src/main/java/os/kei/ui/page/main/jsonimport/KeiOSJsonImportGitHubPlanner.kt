@@ -7,9 +7,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import os.kei.R
-import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
-import os.kei.feature.github.domain.GitHubTrackedItemsImportApplier
+import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
 import os.kei.feature.github.model.GitHubTrackedApp
 
 internal class KeiOSJsonImportGitHubPlanner(
@@ -22,9 +22,9 @@ internal class KeiOSJsonImportGitHubPlanner(
         header: KeiOSJsonImportHeader
     ): KeiOSJsonImportPlan {
         val payload = withContext(defaultDispatcher) {
-            GitHubTrackStore.parseTrackedItemsImport(file.raw)
+            GitHubTrackedItemsTransferService.parseImport(file.raw)
         }
-        val existing = withContext(ioDispatcher) { GitHubTrackStore.load() }
+        val existing = withContext(ioDispatcher) { GitHubTrackedItemsTransferService.loadItems() }
         val preview = withContext(defaultDispatcher) {
             buildPreview(
                 context = context,
@@ -47,7 +47,10 @@ internal class KeiOSJsonImportGitHubPlanner(
                 currentCoroutineContext().ensureActive()
                 if (index % JSON_IMPORT_YIELD_EVERY_ITEMS == 0) yield()
             }
-            val result = GitHubTrackedItemsImportApplier.apply(context, payload)
+            val result = GitHubTrackedItemsTransferService.applyImport(
+                payload = payload,
+                onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(context) },
+            )
             KeiOSJsonImportApplyResult(
                 addedCount = result.addedCount,
                 updatedCount = result.updatedCount,
@@ -64,20 +67,14 @@ internal class KeiOSJsonImportGitHubPlanner(
         payload: GitHubTrackedItemsImportPayload,
         existingItems: List<GitHubTrackedApp>
     ): KeiOSJsonImportPreview {
-        val existingById = existingItems.associateBy { it.id }
-        var newCount = 0
-        var updatedCount = 0
-        var unchangedCount = 0
-        payload.items.forEachIndexed { index, item ->
+        payload.items.forEachIndexed { index, _ ->
             currentCoroutineContext().ensureActive()
             if (index % JSON_IMPORT_YIELD_EVERY_ITEMS == 0) yield()
-            when (existingById[item.id]) {
-                null -> newCount += 1
-                item -> unchangedCount += 1
-                else -> updatedCount += 1
-            }
         }
-        val optionCounts = GitHubTrackStore.calculateTrackedItemsOptionCounts(payload.items)
+        val preview = GitHubTrackedItemsTransferService.buildImportPreview(
+            payload = payload,
+            existingItems = existingItems,
+        )
         return KeiOSJsonImportPreview(
             kind = header.kind,
             marker = header.marker.ifBlank { payload.format },
@@ -85,31 +82,31 @@ internal class KeiOSJsonImportGitHubPlanner(
             highVersion = header.highVersion,
             readOnly = false,
             legacyFormat = header.legacyFormat,
-            canImport = payload.items.isNotEmpty(),
-            totalCount = payload.sourceCount,
-            validCount = payload.items.size,
-            newCount = newCount,
-            updatedCount = updatedCount,
-            unchangedCount = unchangedCount,
-            duplicateCount = payload.duplicateCount,
-            invalidCount = payload.invalidCount,
+            canImport = preview.canImport,
+            totalCount = preview.fileItemCount,
+            validCount = preview.validCount,
+            newCount = preview.newCount,
+            updatedCount = preview.updatedCount,
+            unchangedCount = preview.unchangedCount,
+            duplicateCount = preview.duplicateCount,
+            invalidCount = preview.invalidCount,
             stats = buildJsonImportStats(
                 context,
-                payload.sourceCount,
-                payload.items.size,
-                newCount,
-                updatedCount,
-                unchangedCount,
-                payload.invalidCount,
-                payload.duplicateCount
+                preview.fileItemCount,
+                preview.validCount,
+                preview.newCount,
+                preview.updatedCount,
+                preview.unchangedCount,
+                preview.invalidCount,
+                preview.duplicateCount
             ) + listOf(
                 KeiOSJsonImportStat(
                     context.getString(R.string.json_import_stat_actions),
-                    optionCounts.actionsUpdateCount.toString()
+                    preview.actionsUpdateCount.toString()
                 ),
                 KeiOSJsonImportStat(
                     context.getString(R.string.json_import_stat_precise_version),
-                    optionCounts.preciseApkVersionOverrideCount.toString()
+                    preview.preciseApkVersionOverrideCount.toString()
                 )
             ),
             samples = payload.items.take(KEIOS_JSON_IMPORT_SAMPLE_LIMIT).map {

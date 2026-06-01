@@ -1,7 +1,5 @@
 package os.kei.feature.github.domain
 
-import android.content.Context
-import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -11,26 +9,30 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 
-internal data class GitHubTrackedItemsImportApplyResult(
+data class GitHubTrackedItemsImportApplyResult(
     val addedCount: Int = 0,
     val updatedCount: Int = 0,
     val unchangedCount: Int = 0,
     val invalidCount: Int = 0,
     val duplicateCount: Int = 0,
+    val mergedItems: List<GitHubTrackedApp> = emptyList(),
+    val touchedTrackIds: Set<String> = emptySet(),
+    val refreshTrackIds: Set<String> = emptySet(),
 ) {
     val hasChanges: Boolean get() = addedCount > 0 || updatedCount > 0
 }
 
-internal object GitHubTrackedItemsImportApplier {
+object GitHubTrackedItemsImportApplier {
     fun apply(
-        context: Context,
         payload: GitHubTrackedItemsImportPayload,
+        onRefreshNeeded: () -> Unit,
         existingItems: List<GitHubTrackedApp> = GitHubTrackStore.load(),
     ): GitHubTrackedItemsImportApplyResult {
         if (payload.items.isEmpty()) {
             return GitHubTrackedItemsImportApplyResult(
                 invalidCount = payload.invalidCount,
                 duplicateCount = payload.duplicateCount,
+                mergedItems = existingItems,
             )
         }
         val nowMillis = System.currentTimeMillis()
@@ -41,6 +43,7 @@ internal object GitHubTrackedItemsImportApplier {
         val (checkCache, refreshTimestamp) = GitHubTrackStore.loadCheckCache()
         val nextCheckCache = checkCache.toMutableMap()
         val changedIds = linkedSetOf<String>()
+        val touchedIds = linkedSetOf<String>()
         var added = 0
         var updated = 0
         var unchanged = 0
@@ -53,6 +56,7 @@ internal object GitHubTrackedItemsImportApplier {
                     indexById[item.id] = mergedItems.lastIndex
                     trackedAddedAt.putIfAbsent(item.id, nowMillis)
                     trackedModifiedAt[item.id] = nowMillis
+                    touchedIds += item.id
                     changedIds += item.id
                     added += 1
                 }
@@ -66,6 +70,7 @@ internal object GitHubTrackedItemsImportApplier {
                         mergedItems[existingIndex] = mergedItem
                         trackedAddedAt.putIfAbsent(item.id, nowMillis)
                         trackedModifiedAt[item.id] = nowMillis
+                        touchedIds += item.id
                         if (!existingItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(mergedItem)) {
                             nextCheckCache.remove(item.id)
                             changedIds += item.id
@@ -92,7 +97,7 @@ internal object GitHubTrackedItemsImportApplier {
                 )
             }
             GitHubTrackStoreSignals.notifyChanged()
-            AppBackgroundScheduler.scheduleGitHubRefresh(context)
+            onRefreshNeeded()
         }
 
         return GitHubTrackedItemsImportApplyResult(
@@ -101,6 +106,9 @@ internal object GitHubTrackedItemsImportApplier {
             unchangedCount = unchanged,
             invalidCount = payload.invalidCount,
             duplicateCount = payload.duplicateCount,
+            mergedItems = mergedItems,
+            touchedTrackIds = touchedIds,
+            refreshTrackIds = changedIds,
         )
     }
 

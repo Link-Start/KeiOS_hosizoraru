@@ -36,6 +36,7 @@ import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.feature.github.domain.GitHubReleaseAssetService
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
@@ -136,7 +137,7 @@ internal class GitHubPageRepository(
             ioDispatcher = ioDispatcher,
             defaultDispatcher = defaultDispatcher,
         )
-    private val assetBridge = GitHubPageAssetBridge(ioDispatcher)
+    private val assetBridge = GitHubReleaseAssetService(ioDispatcher)
 
     suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState = contentStateDeriver.build(input)
 

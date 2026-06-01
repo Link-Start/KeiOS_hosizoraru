@@ -2,9 +2,8 @@ package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import os.kei.feature.github.GitHubExecution
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
-import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
+import os.kei.feature.github.domain.GitHubActionsService
+import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.actionsUpdateIntervalMs
@@ -13,6 +12,9 @@ import os.kei.feature.github.model.isGitHubRepositoryTrack
 internal class McpGitHubActionsTools(
     private val environment: McpToolEnvironment
 ) {
+    private val actionsService = GitHubActionsService()
+    private val trackService = GitHubTrackService()
+
     fun register(server: Server) {
         server.addMcpTextTool(environment, name = "keios.github.actions.recommended") { request ->
             val repoFilter = argString(request.arguments?.get("repoFilter")).trim()
@@ -35,7 +37,7 @@ internal class McpGitHubActionsTools(
         onlyEnabled: Boolean,
         limit: Int
     ): String {
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val snapshot = trackService.loadTrackSnapshotBlocking()
         val targets = snapshot.items
             .asSequence()
             .filter { item -> item.isGitHubRepositoryTrack() }
@@ -48,19 +50,18 @@ internal class McpGitHubActionsTools(
         }
 
         val rows = if (refresh) {
-            val service = GitHubActionsUpdateCheckService()
             GitHubExecution.mapOrderedBounded(
                 items = targets,
                 maxConcurrency = MAX_PARALLEL_ACTIONS_REFRESH
             ) { item ->
-                val previous = GitHubActionsRecommendedRunStore.load(item.id)
-                service.fetchRecommendedRunSnapshot(
+                val previous = actionsService.loadRecommendedRunSnapshot(item.id)
+                actionsService.fetchRecommendedRunSnapshot(
                     item = item,
                     lookupConfig = snapshot.lookupConfig,
                     previousWorkflowId = previous?.workflowId
                 ).fold(
                     onSuccess = { current ->
-                        GitHubActionsRecommendedRunStore.save(current)
+                        actionsService.saveRecommendedRunSnapshot(current)
                         ActionsRunRow(
                             item = item,
                             snapshot = current,
@@ -83,7 +84,7 @@ internal class McpGitHubActionsTools(
             }
         } else {
             targets.map { item ->
-                val cached = GitHubActionsRecommendedRunStore.load(item.id)
+                val cached = actionsService.loadRecommendedRunSnapshot(item.id)
                 ActionsRunRow(
                     item = item,
                     snapshot = cached,

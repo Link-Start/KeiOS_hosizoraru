@@ -4,14 +4,16 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import os.kei.core.platform.AndroidPlatformVersions
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
-import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.domain.GitHubTrackService
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.model.updateIntervalMs
 import os.kei.ui.page.main.ba.support.BASettingsStore
 
 object AppBackgroundScheduler {
+    private val githubTrackService = GitHubTrackService()
+
     fun scheduleAll(context: Context) {
         scheduleGitHubRefresh(context)
         scheduleBaApThreshold(context)
@@ -19,7 +21,8 @@ object AppBackgroundScheduler {
 
     fun scheduleGitHubRefresh(context: Context) {
         val appContext = context.applicationContext
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val scheduleSnapshot = githubTrackService.loadBackgroundScheduleSnapshotBlocking()
+        val snapshot = scheduleSnapshot.trackSnapshot
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
         val pending = AppBackgroundTickReceiver.githubTickPendingIntent(appContext)
         val nowMs = System.currentTimeMillis()
@@ -33,6 +36,7 @@ object AppBackgroundScheduler {
             ),
             nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
                 snapshot = snapshot,
+                previousById = scheduleSnapshot.actionsRecommendedRunsByTrackId,
                 nowMs = nowMs
             ),
             nowMs = nowMs
@@ -64,11 +68,11 @@ object AppBackgroundScheduler {
 
     private fun nextGitHubActionsUpdateDueAtMs(
         snapshot: GitHubTrackSnapshot,
+        previousById: Map<String, GitHubActionsRecommendedRunSnapshot>,
         nowMs: Long
     ): Long? {
         val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
         if (enabledItems.isEmpty()) return null
-        val previousById = GitHubActionsRecommendedRunStore.loadAll()
         return enabledItems.minOfOrNull { item ->
             val checkedAtMillis = previousById[item.id]?.checkedAtMillis ?: 0L
             if (checkedAtMillis > 0L) {

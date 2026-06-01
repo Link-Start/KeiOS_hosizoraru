@@ -7,9 +7,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import os.kei.BuildConfig
 import os.kei.R
-import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
-import os.kei.feature.github.domain.GitHubTrackedItemsImportApplier
+import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
@@ -85,22 +85,29 @@ private fun buildWebDavSyncDataPorts(
     mapOf(
         WebDavSyncItem.GitHubTracked to WebDavSyncDataPort(
             exportJson = {
-                val items = normalizeGitHubTrackedItemsForSync(GitHubTrackStore.load())
-                GitHubTrackStore.buildTrackedItemsExportJson(items)
+                val items =
+                    normalizeGitHubTrackedItemsForSync(
+                        GitHubTrackedItemsTransferService.loadItems(),
+                    )
+                GitHubTrackedItemsTransferService.buildExportJson(items)
             },
             merge = { raw ->
-                val payload = GitHubTrackStore.parseTrackedItemsImport(raw)
-                GitHubTrackedItemsImportApplier.apply(
-                    context = context,
+                val payload = GitHubTrackedItemsTransferService.parseImport(raw)
+                GitHubTrackedItemsTransferService.applyImport(
                     payload = payload,
-                    existingItems = GitHubTrackStore.load(),
+                    onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(context) },
+                    existingItems = GitHubTrackedItemsTransferService.loadItems(),
                 )
             },
-            localCount = { normalizeGitHubTrackedItemsForSync(GitHubTrackStore.load()).size },
+            localCount = {
+                normalizeGitHubTrackedItemsForSync(
+                    GitHubTrackedItemsTransferService.loadItems(),
+                ).size
+            },
             countRemoteItems = { raw ->
                 runCatching {
                     normalizeGitHubTrackedItemsForSync(
-                        GitHubTrackStore.parseTrackedItemsImport(raw).items,
+                        GitHubTrackedItemsTransferService.parseImport(raw).items,
                     ).size
                 }
                     .getOrDefault(0)

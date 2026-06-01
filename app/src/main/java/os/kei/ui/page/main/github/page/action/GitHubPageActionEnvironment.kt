@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.ext.showToast
-import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
+import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.ui.page.main.github.page.GitHubPageRepository
 import os.kei.ui.page.main.github.page.GitHubPageState
 import os.kei.ui.page.main.github.page.GitHubPageViewModel
@@ -17,7 +17,7 @@ internal class GitHubPageActionEnvironment(
     val state: GitHubPageState,
     val viewModel: GitHubPageViewModel,
     val repository: GitHubPageRepository,
-    val actionsRepository: GitHubActionsPageRepository = GitHubActionsPageRepository(),
+    val actionsRepository: GitHubActionsService = GitHubActionsService(),
     val systemDmOption: DownloaderOption,
     val openLinkFailureMessage: String,
     val clock: GitHubActionClock = GitHubSystemActionClock,

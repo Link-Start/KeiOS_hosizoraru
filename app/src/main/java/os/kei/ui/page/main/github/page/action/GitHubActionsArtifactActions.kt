@@ -9,11 +9,11 @@ import os.kei.core.download.AppPrivateDownloadManager
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.feature.github.data.remote.GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsWorkflowMatch
 import os.kei.feature.github.model.supportsManagedApkInstall
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
-import os.kei.ui.page.main.github.page.GitHubActionsPageRepository
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val ACTIONS_ARTIFACT_PACKAGE_PROBE_TIMEOUT_MS = 2_500L
@@ -21,7 +21,7 @@ private val invalidArchiveFileNameRegex = Regex("""[\\/:*?"<>|]+""")
 
 internal class GitHubActionsArtifactActions(
     private val env: GitHubPageActionEnvironment,
-    private val actionsRepository: GitHubActionsPageRepository,
+    private val actionsRepository: GitHubActionsService,
     private val assetActions: GitHubAssetActions,
     private val onDownloadHistoryChanged: suspend () -> Unit
 ) {

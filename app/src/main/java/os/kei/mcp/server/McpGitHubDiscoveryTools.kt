@@ -1,20 +1,14 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import kotlinx.coroutines.withContext
-import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
-import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
-import os.kei.feature.github.data.remote.GitHubApkPackageNameScanRepository
-import os.kei.feature.github.data.remote.GitHubRepositoryDiscoveryRepository
-import os.kei.feature.github.domain.GitHubApkPackageNameScanner
 import os.kei.feature.github.domain.GitHubDirectApkReleaseCheckSource
 import os.kei.feature.github.domain.GitHubPackageNameValidator
-import os.kei.feature.github.domain.GitHubPackageRepositoryResolver
-import os.kei.feature.github.domain.GitHubRepositoryDiscoveryService
-import os.kei.feature.github.domain.GitHubStarImportApkVerifier
-import os.kei.feature.github.domain.GitHubStarImportApplier
+import os.kei.feature.github.domain.GitHubRepositoryDiscoveryFacade
+import os.kei.feature.github.domain.GitHubStarImportService
 import os.kei.feature.github.domain.GitHubStarImportClassifier
+import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
@@ -26,12 +20,14 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.forTrackedItem
 import java.util.Locale
-import os.kei.core.concurrency.AppDispatchers
 
 internal class McpGitHubDiscoveryTools(
     private val environment: McpToolEnvironment
 ) {
     private val appContext get() = environment.appContext
+    private val discoveryFacade = GitHubRepositoryDiscoveryFacade()
+    private val starImportService = GitHubStarImportService()
+    private val trackService = GitHubTrackService()
 
     fun register(server: Server) {
         server.addMcpTextTool(environment, name = "keios.github.config.snapshot") { _ ->
@@ -107,7 +103,7 @@ internal class McpGitHubDiscoveryTools(
     }
 
     private fun buildGitHubConfigSnapshotText(): String {
-        val snapshot = GitHubTrackStore.loadSnapshot()
+        val snapshot = trackService.loadTrackSnapshotBlocking()
         return buildString {
             appendLine("strategy=${snapshot.lookupConfig.selectedStrategy.storageId}")
             appendLine("actionsStrategy=${snapshot.lookupConfig.actionsStrategy.storageId}")
@@ -136,12 +132,12 @@ internal class McpGitHubDiscoveryTools(
 
     private suspend fun buildRepositorySearchText(query: String, limit: Int): String {
         if (query.isBlank()) return "ok=false\nmessage=query_required"
-        val source = GitHubRepositoryDiscoveryRepository(
-            apiToken = GitHubTrackStore.loadLookupConfig().apiToken
-        )
-        return withContext(AppDispatchers.mcpServer) {
-            source.searchRepositories(query, limit)
-        }.fold(
+        val lookupConfig = trackService.loadLookupConfigBlocking()
+        return discoveryFacade.searchRepositories(
+            query = query,
+            apiToken = lookupConfig.apiToken,
+            limit = limit,
+        ).fold(
             onSuccess = { repositories ->
                 buildString {
                     appendLine("ok=true")
@@ -160,11 +156,10 @@ internal class McpGitHubDiscoveryTools(
 
     private suspend fun buildRepoPackageScanText(repoUrl: String, expectedPackageName: String): String {
         if (repoUrl.isBlank()) return "ok=false\nmessage=repoUrl_required"
-        val scanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
-        return scanner.scan(
+        return discoveryFacade.scanPackageNameFromLatestStableApk(
             GitHubApkPackageNameScanRequest(
                 repoUrl = repoUrl,
-                lookupConfig = GitHubTrackStore.loadLookupConfig(),
+                lookupConfig = trackService.loadLookupConfigBlocking(),
                 expectedPackageName = expectedPackageName
             )
         ).fold(
@@ -215,7 +210,7 @@ internal class McpGitHubDiscoveryTools(
             ?: return "ok=false\nmessage=invalid_direct_apk_url"
         return GitHubApkInfoRepository().inspect(
             asset = asset,
-            lookupConfig = GitHubTrackStore.loadLookupConfig().forTrackedItem(item),
+            lookupConfig = trackService.loadLookupConfigBlocking().forTrackedItem(item),
             forceRefresh = forceRefresh
         ).fold(
             onSuccess = { manifest ->
@@ -264,12 +259,8 @@ internal class McpGitHubDiscoveryTools(
         if (!GitHubPackageNameValidator.isValid(packageName)) {
             return "ok=false\nmessage=invalid_package_name\npackageName=$packageName"
         }
-        val lookupConfig = GitHubTrackStore.loadLookupConfig()
-        val resolver = GitHubPackageRepositoryResolver(
-            discoverySource = GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken),
-            packageNameScanner = GitHubApkPackageNameScanner(GitHubApkPackageNameScanRepository())
-        )
-        return resolver.scanRepositoriesForPackage(
+        val lookupConfig = trackService.loadLookupConfigBlocking()
+        return discoveryFacade.scanRepositoryFromPackage(
             GitHubPackageRepositoryScanRequest(
                 packageName = packageName,
                 appLabel = appLabel,
@@ -303,12 +294,14 @@ internal class McpGitHubDiscoveryTools(
         )
     }
 
-    private fun buildStarListsText(url: String): String {
+    private suspend fun buildStarListsText(url: String): String {
         if (url.isBlank()) return "ok=false\nmessage=url_required"
-        val source = GitHubRepositoryDiscoveryRepository(
-            apiToken = GitHubTrackStore.loadLookupConfig().apiToken
-        )
-        return source.fetchStarLists(url).fold(
+        return runCatching {
+            starImportService.fetchStarLists(
+                listUrl = url,
+                apiToken = trackService.loadLookupConfigBlocking().apiToken,
+            )
+        }.fold(
             onSuccess = { lists ->
                 buildString {
                     appendLine("ok=true")
@@ -330,7 +323,8 @@ internal class McpGitHubDiscoveryTools(
         arguments: Map<String, Any?>,
         apply: Boolean
     ): String {
-        val lookupConfig = GitHubTrackStore.loadLookupConfig()
+        val snapshot = trackService.loadTrackSnapshotBlocking()
+        val lookupConfig = snapshot.lookupConfig
         val source = normalizeStarImportSource(argString(arguments["source"]))
         val username = argString(arguments["username"]).trim()
         val listUrl = argString(arguments["listUrl"]).trim()
@@ -343,13 +337,12 @@ internal class McpGitHubDiscoveryTools(
             apiToken = lookupConfig.apiToken,
             limit = limit
         )
-        val service = GitHubRepositoryDiscoveryService(
-            GitHubRepositoryDiscoveryRepository(apiToken = lookupConfig.apiToken)
-        )
-        return service.previewStarredRepositoryImport(
-            request = request,
-            existingItems = GitHubTrackStore.load()
-        ).fold(
+        return runCatching {
+            starImportService.previewStarredRepositoryImport(
+                request = request,
+                existingItems = snapshot.items,
+            )
+        }.fold(
             onSuccess = { preview ->
                 val selected = selectStarImportCandidates(preview.candidates, quality)
                 val imported = if (apply) applyGitHubStarImport(selected) else 0
@@ -377,12 +370,9 @@ internal class McpGitHubDiscoveryTools(
     }
 
     private suspend fun buildStarApkVerificationText(repoUrls: String, limit: Int): String {
-        val lookupConfig = GitHubTrackStore.loadSnapshot().lookupConfig
-        val refreshIntervalHours = GitHubTrackStore.loadSnapshot().refreshIntervalHours
-        val verifier = GitHubStarImportApkVerifier(
-            source = GitHubApkPackageNameScanRepository(),
-            cache = GitHubStarImportApkVerificationCacheStore
-        )
+        val snapshot = trackService.loadTrackSnapshotBlocking()
+        val lookupConfig = snapshot.lookupConfig
+        val refreshIntervalHours = snapshot.refreshIntervalHours
         val candidates = repoUrls.parseGitHubRepoUrls()
             .mapNotNull { url -> url.toSyntheticGitHubImportCandidate() }
             .take(limit)
@@ -390,12 +380,16 @@ internal class McpGitHubDiscoveryTools(
         val output = StringBuilder()
         output.appendLine("ok=true")
         output.appendLine("requested=${candidates.size}")
-        candidates.forEachIndexed { index, candidate ->
-            val verification = verifier.verify(
-                candidate = candidate,
+        val verificationResults =
+            starImportService.verifyApkAssets(
+                targets = candidates,
                 lookupConfig = lookupConfig,
-                refreshIntervalHours = refreshIntervalHours
+                refreshIntervalHours = refreshIntervalHours,
+                maxConcurrency = 1,
             )
+                .associate { it.first to it.second }
+        candidates.forEachIndexed { index, candidate ->
+            val verification = verificationResults.getValue(candidate.trackedApp.id)
             output.appendLine(
                 "repo[$index]=${candidate.repository.fullName} | status:${verification.status.name} | tag:${verification.releaseTag} | apkCount:${verification.apkAssetCount} | asset:${verification.sampleAssetName} | cache:${verification.fromCache} | error:${verification.errorMessage}"
             )
@@ -440,9 +434,9 @@ internal class McpGitHubDiscoveryTools(
     }
 
     private suspend fun applyGitHubStarImport(candidates: List<GitHubRepositoryImportCandidate>): Int {
-        return GitHubStarImportApplier.apply(
-            context = appContext,
-            candidates = candidates
+        return starImportService.importCandidates(
+            candidates = candidates,
+            onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(appContext) },
         ).changedCount
     }
 

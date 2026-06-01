@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.os.Build
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.domain.GitHubActionsWorkflowSelector
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
@@ -126,7 +125,7 @@ internal class GitHubActionsSelectionDelegate(
                 updatedAtMillis = run.updatedAtMillis ?: 0L,
                 checkedAtMillis = clock.nowMs(),
             )
-        GitHubActionsRecommendedRunStore.save(snapshot)
+        actionsRepository.saveRecommendedRunSnapshot(snapshot)
         state.actionsRecommendedRunSnapshots[item.id] = snapshot
     }
 

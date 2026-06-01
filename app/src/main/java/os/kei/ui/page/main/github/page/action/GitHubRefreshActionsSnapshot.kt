@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
 import kotlinx.coroutines.launch
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.model.GitHubCheckCacheEntry
@@ -163,7 +162,7 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
     state.retainTrackedModifiedAtByTrackedItems()
     state.actionsRecommendedRunSnapshots.clear()
     trackSnapshot.items.filter { it.checkActionsUpdates }.forEach { item ->
-        GitHubActionsRecommendedRunStore.load(item.id)?.let { snapshot ->
+        env.actionsRepository.loadRecommendedRunSnapshot(item.id)?.let { snapshot ->
             state.actionsRecommendedRunSnapshots[item.id] = snapshot
         }
     }

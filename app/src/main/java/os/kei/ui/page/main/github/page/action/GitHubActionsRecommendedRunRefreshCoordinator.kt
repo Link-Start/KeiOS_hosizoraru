@@ -4,10 +4,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
-import os.kei.feature.github.domain.GitHubActionsUpdateCheckService
+import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
@@ -22,6 +19,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
     private val context get() = env.context
     private val scope get() = env.scope
     private val state get() = env.state
+    private val actionsRepository get() = env.actionsRepository
     private val itemJobs = ConcurrentHashMap<String, Job>()
 
     fun cancel() {
@@ -40,7 +38,6 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         if (targets.isEmpty()) return
         val lookupConfig = state.lookupConfig
         val job = scope.launch {
-            val service = GitHubActionsUpdateCheckService()
             val nextIndex = AtomicInteger(0)
             val concurrency = targets.size.coerceAtMost(
                 GITHUB_ACTIONS_RECOMMENDED_RUN_REFRESH_PARALLELISM
@@ -55,7 +52,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
                                 refreshItem(
                                     item = targets[index],
                                     lookupConfig = lookupConfig,
-                                    service = service
+                                    service = actionsRepository
                                 )
                             }
                         }
@@ -88,18 +85,14 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
     suspend fun refreshItem(
         item: GitHubTrackedApp,
         lookupConfig: GitHubLookupConfig = state.lookupConfig,
-        service: GitHubActionsUpdateCheckService = GitHubActionsUpdateCheckService()
+        service: GitHubActionsService = actionsRepository,
     ) {
         if (!item.checkActionsUpdates) {
-            withContext(AppDispatchers.githubNetwork) {
-                GitHubActionsRecommendedRunStore.remove(item.id)
-            }
+            service.removeRecommendedRunSnapshot(item.id)
             state.actionsRecommendedRunSnapshots.remove(item.id)
             return
         }
-        val previous = withContext(AppDispatchers.githubNetwork) {
-            GitHubActionsRecommendedRunStore.load(item.id)
-        }
+        val previous = service.loadRecommendedRunSnapshot(item.id)
         val current = service.fetchRecommendedRunSnapshot(
             item = item,
             lookupConfig = lookupConfig,
@@ -107,9 +100,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         ).getOrNull() ?: return
         val activeItem = state.trackedItems.firstOrNull { it.id == item.id } ?: return
         if (!activeItem.checkActionsUpdates) return
-        withContext(AppDispatchers.githubNetwork) {
-            GitHubActionsRecommendedRunStore.save(current)
-        }
+        service.saveRecommendedRunSnapshot(current)
         state.actionsRecommendedRunSnapshots[item.id] = current
         if (previous != null && current.isNewerThan(previous)) {
             GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(

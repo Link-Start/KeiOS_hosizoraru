@@ -30,6 +30,7 @@ internal fun SettingsBottomChrome(
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
+    onExpandDock: () -> Unit,
 ) {
     TabbedPageBottomChrome(
         visible = visible,
@@ -49,6 +50,7 @@ internal fun SettingsBottomChrome(
         backdrop = backdrop,
         isLiquidEffectEnabled = isLiquidEffectEnabled,
         onSelectCategory = onSelectCategory,
+        onExpandDock = onExpandDock,
         labelPrefix = "settings",
     )
 }

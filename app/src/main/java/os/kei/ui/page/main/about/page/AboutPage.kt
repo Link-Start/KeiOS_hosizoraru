@@ -375,6 +375,12 @@ fun AboutPage(
                 backdrop = bottomBarBackdrop,
                 isLiquidEffectEnabled = true,
                 onSelectCategory = selectAboutCategory,
+                onExpandDock = {
+                    bottomBarVisibilityController.showNow(
+                        visible = currentShowBottomBar.value,
+                        onVisibleChange = viewModel::updateBottomBarVisible,
+                    )
+                },
             )
         },
     ) { innerPadding ->

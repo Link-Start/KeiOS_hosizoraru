@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -51,7 +50,6 @@ import os.kei.ui.page.main.settings.state.rememberSettingsPageUiState
 import os.kei.ui.page.main.settings.support.rememberSettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
@@ -508,6 +506,12 @@ fun SettingsPage(
                 backdrop = bottomBarBackdrop,
                 isLiquidEffectEnabled = liquidBottomBarEnabled,
                 onSelectCategory = selectSettingsCategoryAction,
+                onExpandDock = {
+                    bottomBarVisibilityController.showNow(
+                        visible = currentBottomBarVisible.value,
+                        onVisibleChange = settingsPageViewModel::updateBottomBarVisible,
+                    )
+                },
             )
         },
     ) { innerPadding ->

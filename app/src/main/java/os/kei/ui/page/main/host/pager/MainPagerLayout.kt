@@ -199,6 +199,7 @@ internal fun MainPagerLayout(
                 backdrop = coordinator.backdrop,
                 liquidBottomBarEnabled = liquidBottomBarEnabled,
                 onPageSelected = coordinator.onPageSelected,
+                onExpand = coordinator.onShowBottomBar,
             )
         },
     ) { _ ->

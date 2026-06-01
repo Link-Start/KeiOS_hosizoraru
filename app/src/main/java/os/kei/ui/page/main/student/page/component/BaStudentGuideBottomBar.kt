@@ -2,11 +2,9 @@
 
 package os.kei.ui.page.main.student.page.component
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -22,13 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
-import os.kei.ui.page.main.widget.motion.appFloatingEnter
-import os.kei.ui.page.main.widget.motion.appFloatingExit
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun BaStudentGuideBottomBar(
@@ -42,15 +42,12 @@ internal fun BaStudentGuideBottomBar(
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
     onSelectTab: (Int) -> Unit,
+    onExpand: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = appFloatingEnter(),
-            exit = appFloatingExit(),
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            run {
+    AnimatedCompactBottomBar(
+        expanded = visible,
+        expandedContent = { motionModifier ->
+            Box(modifier = motionModifier.align(Alignment.BottomCenter)) {
                 val bottomBarModifier =
                     Modifier
                         .padding(
@@ -127,7 +124,40 @@ internal fun BaStudentGuideBottomBar(
                     content = bottomBarTabs,
                 )
             }
-        }
-    }
+        },
+        compactContent = { motionModifier ->
+            Box(
+                modifier =
+                    motionModifier
+                        .align(Alignment.BottomStart)
+                        .padding(
+                            start = AppChromeTokens.pageHorizontalPadding,
+                            bottom = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp,
+                        ),
+            ) {
+                val tab = bottomTabs.getOrElse(selectedPage) { bottomTabs.first() }
+                val tabLabel = stringResource(tab.labelRes)
+                CompactBottomBarDock(
+                    backdrop = backdrop,
+                    onClick = onExpand,
+                ) {
+                    if (tab.localLogoRes != null) {
+                        Icon(
+                            painter = painterResource(id = tab.localLogoRes),
+                            contentDescription = tabLabel,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(27.dp),
+                        )
+                    } else {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = tabLabel,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(27.dp),
+                        )
+                    }
+                }
+            }
+        },
+    )
 }
-

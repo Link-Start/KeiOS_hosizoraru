@@ -58,7 +58,7 @@ class HomeOverviewPrefsTest {
 
         override fun contains(key: String): Boolean = values.containsKey(key)
 
-        override fun decodeString(key: String, defaultValue: String): String? {
+        override fun decodeString(key: String, defaultValue: String): String {
             return values[key] as? String ?: defaultValue
         }
 

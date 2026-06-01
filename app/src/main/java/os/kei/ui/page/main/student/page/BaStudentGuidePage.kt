@@ -407,6 +407,9 @@ fun BaStudentGuidePage(
                         backdrop = navBackdrop,
                         isLiquidEffectEnabled = liquidBottomBarEnabled,
                         onSelectTab = selectBottomTabAction,
+                        onExpand = {
+                            bottomBarChromeState.showNow(bottomBarVisibilityController)
+                        },
                     )
                 },
             ) { innerPadding ->

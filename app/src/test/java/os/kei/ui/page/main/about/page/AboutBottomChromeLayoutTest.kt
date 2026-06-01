@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.dp
 import org.junit.Test
 import kotlin.test.assertEquals
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChromeSearchDockVisibleAlpha
+import os.kei.ui.page.main.widget.chrome.tabbedPageCategoryDockExpanded
 import os.kei.ui.page.main.widget.chrome.tabbedPageCollapsedDockWidth
 import os.kei.ui.page.main.widget.chrome.tabbedPageExpandedSearchWidth
 import os.kei.ui.page.main.widget.chrome.tabbedPageSearchDockTargetWidth
@@ -89,6 +90,31 @@ class AboutBottomChromeLayoutTest {
                 collapsedDockWidth = 300.dp,
                 size = 62.dp,
                 gap = 8.dp,
+            )
+        )
+    }
+
+    @Test
+    fun categoryDockUsesMainCompactAnimationState() {
+        assertEquals(
+            true,
+            tabbedPageCategoryDockExpanded(
+                visible = true,
+                searchExpanded = false,
+            )
+        )
+        assertEquals(
+            false,
+            tabbedPageCategoryDockExpanded(
+                visible = false,
+                searchExpanded = false,
+            )
+        )
+        assertEquals(
+            false,
+            tabbedPageCategoryDockExpanded(
+                visible = true,
+                searchExpanded = true,
             )
         )
     }

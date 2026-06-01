@@ -7,9 +7,9 @@ package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
@@ -63,7 +63,6 @@ internal interface TabbedPageCategory {
 internal val TabbedPageBottomChromeSearchGap: Dp = 8.dp
 internal val TabbedPageBottomChromeMinSearchWidth: Dp = 196.dp
 internal const val TabbedPageBottomChromeMotionMs = 220
-internal const val TabbedPageBottomChromeFadeMotionMs = 120
 
 // ── Shared utility functions ─────────────────────────────────────────────────
 
@@ -104,6 +103,11 @@ internal fun tabbedPageSearchDockTargetWidth(
         size
     }
 
+internal fun tabbedPageCategoryDockExpanded(
+    visible: Boolean,
+    searchExpanded: Boolean,
+): Boolean = visible && !searchExpanded
+
 // ── Generic bottom chrome ────────────────────────────────────────────────────
 
 /**
@@ -141,7 +145,11 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     val gap = TabbedPageBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
-    val dockCompact = searchExpanded || !visible
+    val categoryDockExpanded =
+        tabbedPageCategoryDockExpanded(
+            visible = visible,
+            searchExpanded = searchExpanded,
+        )
     val keyboardLiftState =
         rememberAppFloatingKeyboardLiftState(
             focusedLift = 18.dp,
@@ -149,45 +157,11 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
             label = "${labelPrefix}_bottom_chrome_keyboard_lift",
         )
     val keyboardLiftProvider = remember(keyboardLiftState) { { keyboardLiftState.value } }
-    val transition =
-        updateTransition(
-            targetState = dockCompact,
-            label = "${labelPrefix}_bottom_chrome",
-        )
     val sizeAnimationSpec =
         tween<Dp>(
             durationMillis = resolvedMotionDuration(TabbedPageBottomChromeMotionMs, animationsEnabled),
             easing = FastOutSlowInEasing,
         )
-    val fadeAnimationSpec =
-        tween<Float>(
-            durationMillis = resolvedMotionDuration(TabbedPageBottomChromeFadeMotionMs, animationsEnabled),
-            easing = FastOutSlowInEasing,
-        )
-    val fullDockAlphaState =
-        transition.animateFloat(
-            transitionSpec = { fadeAnimationSpec },
-            label = "${labelPrefix}_full_dock_alpha",
-        ) { expanded -> if (expanded) 0f else 1f }
-    val compactDockAlphaState =
-        transition.animateFloat(
-            transitionSpec = { fadeAnimationSpec },
-            label = "${labelPrefix}_compact_dock_alpha",
-        ) { expanded -> if (expanded) 1f else 0f }
-    val fullDockScaleState =
-        transition.animateFloat(
-            transitionSpec = { fadeAnimationSpec },
-            label = "${labelPrefix}_full_dock_scale",
-        ) { expanded -> if (expanded) 0.96f else 1f }
-    val compactDockScaleState =
-        transition.animateFloat(
-            transitionSpec = { fadeAnimationSpec },
-            label = "${labelPrefix}_compact_dock_scale",
-        ) { expanded -> if (expanded) 1f else 0.92f }
-    val fullDockAlphaProvider = remember(fullDockAlphaState) { { fullDockAlphaState.value } }
-    val compactDockAlphaProvider = remember(compactDockAlphaState) { { compactDockAlphaState.value } }
-    val fullDockScaleProvider = remember(fullDockScaleState) { { fullDockScaleState.value } }
-    val compactDockScaleProvider = remember(compactDockScaleState) { { compactDockScaleState.value } }
     val searchDockAlphaProvider = remember { { TabbedPageBottomChromeSearchDockVisibleAlpha } }
     BoxWithConstraints(
         modifier =
@@ -248,93 +222,46 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
         val searchXProvider = remember(searchXState) { { searchXState.value } }
         val searchWidthProvider = remember(searchWidthState) { { searchWidthState.value } }
 
-        run {
-            val bottomBarTabs: @Composable RowScope.() -> Unit = {
-                categories.forEachIndexed { index, category ->
-                    val tabColor = liquidGlassBottomBarItemContentColor(index)
-                    val tabContent: @Composable ColumnScope.() -> Unit = {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(category.iconRes),
-                            contentDescription = null,
-                            tint = tabColor,
-                            modifier =
-                                Modifier
-                                    .size(20.dp)
-                                    .graphicsLayer {
-                                        scaleX = 1f
-                                        scaleY = 1f
-                                    },
-                        )
-                        Text(
-                            text = stringResource(category.labelRes),
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            color = tabColor,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Visible,
-                        )
-                    }
-                    LiquidGlassBottomBarItem(
-                        selected = safeSelectedPage == index,
-                        tabIndex = index,
-                        onClick = { onSelectCategory(index) },
-                        modifier = Modifier.defaultMinSize(minWidth = 62.dp),
-                        content = tabContent,
-                    )
-                }
-            }
-            LiquidGlassBottomBar(
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .requiredWidth(collapsedDockWidth)
-                        .height(size)
-                        .zIndex(if (dockCompact) 0f else 1f)
-                        .graphicsLayer {
-                            val alpha = fullDockAlphaProvider()
-                            val scale = fullDockScaleProvider()
-                            this.alpha = alpha
-                            scaleX = scale
-                            scaleY = scale
-                        },
-                selectedIndex = safeSelectedPage,
-                selectedPosition = selectedPagePosition,
-                selectedPositionProvider = selectedPagePositionProvider,
-                onSelected = { index ->
-                    if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
-                        onSelectCategory(index)
-                    }
-                },
-                backdrop = backdrop,
-                tabsCount = categories.size,
-                isLiquidEffectEnabled = isLiquidEffectEnabled,
-                content = bottomBarTabs,
-            )
-        }
-
-        TabbedPageCompactCategoryDock(
-            category = categories[safeSelectedPage],
-            backdrop = backdrop,
-            onClick = {
-                if (visible) {
-                    onSearchExpandedChange(false)
-                } else {
-                    onExpandDock()
-                }
-            },
+        AnimatedCompactBottomBar(
+            expanded = categoryDockExpanded,
             modifier =
                 Modifier
-                    .width(size)
-                    .height(size)
-                    .zIndex(if (dockCompact) 2f else 0f)
-                    .graphicsLayer {
-                        val alpha = compactDockAlphaProvider()
-                        val scale = compactDockScaleProvider()
-                        this.alpha = alpha
-                        scaleX = scale
-                        scaleY = scale
-                    },
+                    .fillMaxWidth()
+                    .height(size),
+            expandedContent = { motionModifier ->
+                Box(modifier = motionModifier.align(Alignment.BottomStart)) {
+                    TabbedPageCategoryBar(
+                        categories = categories,
+                        safeSelectedPage = safeSelectedPage,
+                        selectedPagePosition = selectedPagePosition,
+                        selectedPagePositionProvider = selectedPagePositionProvider,
+                        selectedPageProvider = selectedPageProvider,
+                        collapsedDockWidth = collapsedDockWidth,
+                        backdrop = backdrop,
+                        isLiquidEffectEnabled = isLiquidEffectEnabled,
+                        onSelectCategory = onSelectCategory,
+                    )
+                }
+            },
+            compactContent = { motionModifier ->
+                Box(modifier = motionModifier.align(Alignment.BottomStart)) {
+                    TabbedPageCompactCategoryDock(
+                        category = categories[safeSelectedPage],
+                        backdrop = backdrop,
+                        onClick = {
+                            if (visible) {
+                                onSearchExpandedChange(false)
+                            } else {
+                                onExpandDock()
+                            }
+                        },
+                        modifier =
+                            Modifier
+                                .width(size)
+                                .height(size),
+                    )
+                }
+            },
         )
 
         AppBottomSearchDock(
@@ -362,6 +289,73 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
 }
 
 internal const val TabbedPageBottomChromeSearchDockVisibleAlpha = 1f
+
+@Composable
+private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
+    categories: List<C>,
+    safeSelectedPage: Int,
+    selectedPagePosition: Float?,
+    selectedPagePositionProvider: (() -> Float?)?,
+    selectedPageProvider: () -> Int,
+    collapsedDockWidth: Dp,
+    backdrop: LayerBackdrop,
+    isLiquidEffectEnabled: Boolean,
+    onSelectCategory: (Int) -> Unit,
+) {
+    val bottomBarTabs: @Composable RowScope.() -> Unit = {
+        categories.forEachIndexed { index, category ->
+            val tabColor = liquidGlassBottomBarItemContentColor(index)
+            val tabContent: @Composable ColumnScope.() -> Unit = {
+                Icon(
+                    imageVector = ImageVector.vectorResource(category.iconRes),
+                    contentDescription = null,
+                    tint = tabColor,
+                    modifier =
+                        Modifier
+                            .size(20.dp)
+                            .graphicsLayer {
+                                scaleX = 1f
+                                scaleY = 1f
+                            },
+                )
+                Text(
+                    text = stringResource(category.labelRes),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    color = tabColor,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            LiquidGlassBottomBarItem(
+                selected = safeSelectedPage == index,
+                tabIndex = index,
+                onClick = { onSelectCategory(index) },
+                modifier = Modifier.defaultMinSize(minWidth = 62.dp),
+                content = tabContent,
+            )
+        }
+    }
+    LiquidGlassBottomBar(
+        modifier =
+            Modifier
+                .requiredWidth(collapsedDockWidth)
+                .height(AppChromeTokens.floatingBottomBarOuterHeight),
+        selectedIndex = safeSelectedPage,
+        selectedPosition = selectedPagePosition,
+        selectedPositionProvider = selectedPagePositionProvider,
+        onSelected = { index ->
+            if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
+                onSelectCategory(index)
+            }
+        },
+        backdrop = backdrop,
+        tabsCount = categories.size,
+        isLiquidEffectEnabled = isLiquidEffectEnabled,
+        content = bottomBarTabs,
+    )
+}
 
 @Composable
 private fun <C : TabbedPageCategory> TabbedPageCompactCategoryDock(

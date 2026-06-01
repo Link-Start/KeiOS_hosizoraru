@@ -13,17 +13,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.shizuku.ShizukuConnectivityBridge
 import kotlin.time.Duration.Companion.milliseconds
-import os.kei.core.concurrency.AppDispatchers
 
 internal object McpXiaomiMagicDispatcher {
     private const val TAG = "McpXiaomiMagic"
     private const val XMSF_PACKAGE_NAME = "com.xiaomi.xmsf"
 
     private enum class CommandSet {
+        DIRECT_UID_FIREWALL,
         PACKAGE_NETWORKING,
         UID_FIREWALL,
         NONE
@@ -149,20 +151,81 @@ internal object McpXiaomiMagicDispatcher {
             AppLogger.w(TAG, "shouldExecute=false: Shizuku command unavailable")
             return false
         }
-        val idOutput = shizukuApiUtils.execCommandCancellable("id").orEmpty()
-        val isShellOrRoot = idOutput.contains("uid=2000") || idOutput.contains("uid=0")
-        if (!isShellOrRoot) {
-            AppLogger.w(TAG, "shouldExecute=false: unsupported Shizuku identity '$idOutput'")
-            return false
-        }
         val mode = resolveCommandSet()
         val canUseMode = mode != CommandSet.NONE
-        AppLogger.i(TAG, "Shizuku id='$idOutput', mode=$mode, allowMagic=$canUseMode")
+        AppLogger.i(TAG, "Shizuku mode=$mode, allowMagic=$canUseMode")
         return canUseMode
     }
 
     private suspend fun blockXmsfNetworkingLocked(uid: Int) {
-        when (resolveCommandSet()) {
+        val mode = resolveCommandSet()
+        when (mode) {
+            CommandSet.DIRECT_UID_FIREWALL -> {
+                val blocked = ShizukuConnectivityBridge.setUidNetworkingEnabled(
+                    uid = uid,
+                    enabled = false
+                )
+                isXmsfNetworkBlocked = blocked
+                isUidFirewallChainEnabled = blocked
+                AppLogger.i(TAG, "blockXmsfNetworkingLocked(direct): uid=$uid blocked=$blocked")
+                if (!blocked) {
+                    commandSet = null
+                    blockXmsfNetworkingWithShellLocked(uid, resolveShellCommandSet())
+                }
+            }
+
+            else -> blockXmsfNetworkingWithShellLocked(uid, mode)
+        }
+    }
+
+    private suspend fun restoreXmsfNetworkingLocked(uid: Int) {
+        val mode = resolveCommandSet()
+        val restored = when (mode) {
+            CommandSet.DIRECT_UID_FIREWALL -> {
+                if (isXmsfNetworkBlocked) {
+                    ShizukuConnectivityBridge.setUidNetworkingEnabled(uid = uid, enabled = true)
+                } else {
+                    true
+                }
+            }
+
+            else -> restoreXmsfNetworkingWithShellLocked(uid, mode)
+        }.let { restored ->
+            if (!restored && mode == CommandSet.DIRECT_UID_FIREWALL) {
+                commandSet = null
+                restoreXmsfNetworkingWithShellLocked(uid, resolveShellCommandSet())
+            } else {
+                restored
+            }
+        }
+        AppLogger.i(TAG, "restoreXmsfNetworkingLocked: uid=$uid mode=$mode restored=$restored")
+        isXmsfNetworkBlocked = false
+        isUidFirewallChainEnabled = false
+    }
+
+    private suspend fun healXmsfNetworkingLocked(uid: Int) {
+        val mode = resolveCommandSet()
+        when (mode) {
+            CommandSet.DIRECT_UID_FIREWALL -> {
+                val restored = ShizukuConnectivityBridge.setUidNetworkingEnabled(
+                    uid = uid,
+                    enabled = true
+                )
+                AppLogger.i(TAG, "healXmsfNetworkingLocked(direct): uid=$uid restored=$restored")
+                if (!restored) {
+                    commandSet = null
+                    healXmsfNetworkingWithShellLocked(uid, resolveShellCommandSet())
+                }
+            }
+
+            else -> healXmsfNetworkingWithShellLocked(uid, mode)
+        }
+        isXmsfNetworkBlocked = false
+        isUidFirewallChainEnabled = false
+    }
+
+    private suspend fun blockXmsfNetworkingWithShellLocked(uid: Int, mode: CommandSet) {
+        when (mode) {
             CommandSet.PACKAGE_NETWORKING -> {
                 val blocked =
                     execCommand("cmd connectivity set-package-networking-enabled false $XMSF_PACKAGE_NAME")
@@ -181,7 +244,7 @@ internal object McpXiaomiMagicDispatcher {
                 )
             }
 
-            CommandSet.NONE -> {
+            else -> {
                 isXmsfNetworkBlocked = false
                 isUidFirewallChainEnabled = false
                 AppLogger.w(
@@ -192,9 +255,8 @@ internal object McpXiaomiMagicDispatcher {
         }
     }
 
-    private suspend fun restoreXmsfNetworkingLocked(uid: Int) {
-        val mode = resolveCommandSet()
-        val restored = when (mode) {
+    private suspend fun restoreXmsfNetworkingWithShellLocked(uid: Int, mode: CommandSet): Boolean {
+        return when (mode) {
             CommandSet.PACKAGE_NETWORKING -> {
                 if (isXmsfNetworkBlocked) {
                     execCommand("cmd connectivity set-package-networking-enabled true $XMSF_PACKAGE_NAME")
@@ -211,15 +273,12 @@ internal object McpXiaomiMagicDispatcher {
                 }
             }
 
-            CommandSet.NONE -> false
+            else -> false
         }
-        AppLogger.i(TAG, "restoreXmsfNetworkingLocked: uid=$uid mode=$mode restored=$restored")
-        isXmsfNetworkBlocked = false
-        isUidFirewallChainEnabled = false
     }
 
-    private suspend fun healXmsfNetworkingLocked(uid: Int) {
-        when (resolveCommandSet()) {
+    private suspend fun healXmsfNetworkingWithShellLocked(uid: Int, mode: CommandSet) {
+        when (mode) {
             CommandSet.PACKAGE_NETWORKING -> {
                 val restored =
                     execCommand("cmd connectivity set-package-networking-enabled true $XMSF_PACKAGE_NAME")
@@ -234,19 +293,26 @@ internal object McpXiaomiMagicDispatcher {
                 )
             }
 
-            CommandSet.NONE -> {
+            else -> {
                 AppLogger.w(
                     TAG,
                     "healXmsfNetworkingLocked skipped: no supported connectivity command"
                 )
             }
         }
-        isXmsfNetworkBlocked = false
-        isUidFirewallChainEnabled = false
     }
 
     private suspend fun resolveCommandSet(): CommandSet {
-        commandSet?.let { return it }
+        commandSet?.takeIf { it != CommandSet.NONE }?.let { return it }
+        if (ShizukuConnectivityBridge.canUseUidFirewall()) {
+            commandSet = CommandSet.DIRECT_UID_FIREWALL
+            AppLogger.i(TAG, "resolved Xiaomi magic command set: ${CommandSet.DIRECT_UID_FIREWALL}")
+            return CommandSet.DIRECT_UID_FIREWALL
+        }
+        return resolveShellCommandSet()
+    }
+
+    private suspend fun resolveShellCommandSet(): CommandSet {
         val helpText = shizukuApiUtils.execCommandCancellable("cmd connectivity help")
         if (helpText.isNullOrBlank()) {
             AppLogger.w(TAG, "resolveCommandSet skipped: connectivity help unavailable")

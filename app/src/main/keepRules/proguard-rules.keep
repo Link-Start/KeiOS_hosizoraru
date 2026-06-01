@@ -60,6 +60,15 @@
 
 # ShizukuApiUtils reflects these no-arg static method names.
 # Keep only the reflective surface so the rest can still be optimized/shrunk.
+-dontwarn dalvik.system.VMRuntime
+-keep class org.lsposed.hiddenapibypass.LSPass { *; }
+-keep class org.lsposed.hiddenapibypass.Helper { *; }
+-keepclassmembers class org.lsposed.hiddenapibypass.Helper$* { *; }
+-keepnames class org.lsposed.hiddenapibypass.CoreOjClassLoader
+-keep class rikka.shizuku.ShizukuBinderWrapper {
+    public <init>(android.os.IBinder);
+    public android.os.IInterface queryLocalInterface(java.lang.String);
+}
 -keepclassmembers class rikka.shizuku.Shizuku {
     public static *** getUid(...);
     public static *** getVersion(...);

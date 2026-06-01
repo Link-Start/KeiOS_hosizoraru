@@ -11,6 +11,10 @@ import android.os.Process
 import org.lsposed.hiddenapibypass.LSPass
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
+import rikka.shizuku.SystemServiceHelper
+import java.lang.reflect.Constructor
+import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 
 data class ShizukuPackageInstallerCapability(
     val available: Boolean,
@@ -19,8 +23,17 @@ data class ShizukuPackageInstallerCapability(
 )
 
 open class ShizukuPackageInstallerBridge {
+    private data class CachedPackageInstaller(
+        val packageName: String,
+        val userId: Int,
+        val installer: PackageInstaller
+    )
+
+    @Volatile
+    private var cachedPackageInstaller: CachedPackageInstaller? = null
+
     open fun checkCapability(): ShizukuPackageInstallerCapability {
-        return runCatching {
+        val capability = runCatching {
             when {
                 !Shizuku.pingBinder() -> ShizukuPackageInstallerCapability(
                     available = false,
@@ -53,9 +66,20 @@ open class ShizukuPackageInstallerBridge {
                 message = error.userMessage()
             )
         }
+        if (!capability.available) {
+            cachedPackageInstaller = null
+        }
+        return capability
     }
 
     open fun packageInstaller(context: Context): PackageInstaller {
+        val appContext = context.applicationContext
+        val packageName = appContext.packageName
+        val userId = currentUserId()
+        cachedPackageInstaller
+            ?.takeIf { it.packageName == packageName && it.userId == userId && Shizuku.pingBinder() }
+            ?.let { return it.installer }
+
         enableHiddenApiAccess()
         val packageBinder = systemServiceBinder("package")
         val packageManager = asInterface(
@@ -69,9 +93,15 @@ open class ShizukuPackageInstallerBridge {
         )
         return newPackageInstaller(
             packageInstaller = wrappedPackageInstaller,
-            installerPackageName = context.packageName,
-            userId = currentUserId()
-        )
+            installerPackageName = packageName,
+            userId = userId
+        ).also { installer ->
+            cachedPackageInstaller = CachedPackageInstaller(
+                packageName = packageName,
+                userId = userId,
+                installer = installer
+            )
+        }
     }
 
     open fun wrapSession(session: PackageInstaller.Session): PackageInstaller.Session {
@@ -120,25 +150,25 @@ open class ShizukuPackageInstallerBridge {
 
     @SuppressLint("DiscouragedPrivateApi", "PrivateApi")
     private fun systemServiceBinder(name: String): IBinder {
-        return Class.forName("android.os.ServiceManager")
-            .getDeclaredMethod("getService", String::class.java)
-            .invoke(null, name) as? IBinder
+        return SystemServiceHelper.getSystemService(name)
             ?: error("System service '$name' is unavailable")
     }
 
     private fun asInterface(stubClassName: String, binder: IBinder): IInterface {
-        return Class.forName(stubClassName)
-            .getDeclaredMethod("asInterface", IBinder::class.java)
+        return asInterfaceMethods.getOrPut(stubClassName) {
+            Class.forName(stubClassName).getDeclaredMethod("asInterface", IBinder::class.java)
+        }
             .invoke(null, binder) as? IInterface
             ?: error("Failed to create interface for $stubClassName")
     }
 
     private fun invokeNoArg(target: Any, methodName: String): IInterface {
-        return target.javaClass.methods
-            .firstOrNull { method ->
+        return noArgMethods.getOrPut("${target.javaClass.name}#$methodName") {
+            target.javaClass.methods.firstOrNull { method ->
                 method.name == methodName && method.parameterTypes.isEmpty()
-            }
-            ?.invoke(target) as? IInterface
+            } ?: error("Failed to locate ${target.javaClass.name}.$methodName")
+        }
+            .invoke(target) as? IInterface
             ?: error("Failed to call ${target.javaClass.name}.$methodName")
     }
 
@@ -160,15 +190,7 @@ open class ShizukuPackageInstallerBridge {
         installerPackageName: String,
         userId: Int
     ): PackageInstaller {
-        val packageInstallerClass = Class.forName("android.content.pm.IPackageInstaller")
-        val constructor = PackageInstaller::class.java.getDeclaredConstructor(
-            packageInstallerClass,
-            String::class.java,
-            String::class.java,
-            Int::class.javaPrimitiveType
-        )
-        constructor.isAccessible = true
-        return constructor.newInstance(
+        return packageInstallerConstructor.newInstance(
             packageInstaller,
             installerPackageName,
             null,
@@ -218,8 +240,35 @@ open class ShizukuPackageInstallerBridge {
     }
 
     private fun enableHiddenApiAccess() {
-        runCatching {
-            LSPass.setHiddenApiExemptions("")
+        if (hiddenApiAccessEnabled) return
+        synchronized(hiddenApiAccessLock) {
+            if (hiddenApiAccessEnabled) return
+            runCatching {
+                LSPass.setHiddenApiExemptions("")
+            }.onSuccess {
+                hiddenApiAccessEnabled = true
+            }
+        }
+    }
+
+    private companion object {
+        private val asInterfaceMethods = ConcurrentHashMap<String, Method>()
+        private val noArgMethods = ConcurrentHashMap<String, Method>()
+        private val hiddenApiAccessLock = Any()
+
+        @Volatile
+        private var hiddenApiAccessEnabled = false
+
+        private val packageInstallerConstructor: Constructor<PackageInstaller> by lazy {
+            val packageInstallerClass = Class.forName("android.content.pm.IPackageInstaller")
+            PackageInstaller::class.java.getDeclaredConstructor(
+                packageInstallerClass,
+                String::class.java,
+                String::class.java,
+                Int::class.javaPrimitiveType!!
+            ).apply {
+                isAccessible = true
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ internal data class AboutAppDetails(
     val packageName: String = "",
     val versionText: String = "",
     val buildType: String = "",
+    val commitTime: String = "",
     val buildTime: String = "",
     val updatedAt: String = "",
     val debugEnabledText: String = "",
@@ -45,10 +46,11 @@ internal fun buildAboutAppDetails(
                 )
             } ?: unknown,
         buildType = BuildConfig.BUILD_TYPE,
-        // BUILD_TIME_MILLIS is sourced from Gradle (`buildTimestampMillis` in app/build.gradle.kts)
-        // with a 3-tier fallback (CI override → HEAD commit time → wall clock), so it should never
-        // be 0 here. We still guard with a non-positive check so an unexpected build-config drift
-        // surfaces as the localized unknown placeholder rather than a misleading 1970 timestamp.
+        commitTime = BuildConfig.COMMIT_TIME_MILLIS
+            .takeIf { it > 0L }
+            ?.let(::formatTime)
+            ?.ifBlank { unknown }
+            ?: unknown,
         buildTime = BuildConfig.BUILD_TIME_MILLIS
             .takeIf { it > 0L }
             ?.let(::formatTime)

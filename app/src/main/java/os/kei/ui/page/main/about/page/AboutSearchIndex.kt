@@ -71,6 +71,7 @@ internal fun buildAboutSearchTargets(
                     context.getString(R.string.about_label_package_name),
                     context.getString(R.string.about_label_version),
                     context.getString(R.string.about_label_build_type),
+                    context.getString(R.string.about_label_commit_time),
                     context.getString(R.string.about_label_build_time),
                     context.getString(R.string.about_label_last_update),
                     context.getString(R.string.about_label_debug),

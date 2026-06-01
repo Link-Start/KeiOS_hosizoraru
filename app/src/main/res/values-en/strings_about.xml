@@ -196,6 +196,7 @@
     <string name="about_label_version">Version</string>
     <string name="about_label_build_type">Build Type</string>
     <string name="about_label_project_url">Project URL</string>
+    <string name="about_label_commit_time">Commit time</string>
     <string name="about_label_build_time">Build time</string>
     <string name="about_label_last_update">Last update</string>
     <string name="about_label_debug">Debug</string>

@@ -1,6 +1,9 @@
+import com.android.build.api.variant.BuildConfigField
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ValueSource
+import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -241,6 +244,10 @@ abstract class BakeAppSquircleSdfTask : DefaultTask() {
     }
 }
 
+abstract class BuildTimestampValueSource : ValueSource<Long, ValueSourceParameters.None> {
+    override fun obtain(): Long = System.currentTimeMillis()
+}
+
 val fallbackReleaseVersion = AppSemVer(major = 1, minor = 8, patch = 3)
 val configuredReleaseVersion =
     parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.version.name", "KEIOS_VERSION_NAME"))
@@ -286,24 +293,26 @@ val gitVersionSnapshot =
             readBooleanBuildPropertyOrNull("keios.git.available", "KEIOS_GIT_AVAILABLE")
                 ?: (gitTotalCommitCount > 0 || gitShortHashValue != "local"),
     )
-val buildTimestampMillis: Long = run {
-    // 1. Explicit override (CI sets this via gradle.properties / env). Highest priority so CI
-    //    builds carry the workflow run's real wall-clock time.
+val buildTimestampMillisOverride =
+    readGradleEnvOrLocalPropertyOrNull("keios.build.timestampMillis", "KEIOS_BUILD_TIMESTAMP_MILLIS")
+        ?.trim()
+        ?.toLongOrNull()
+        ?.takeIf { it > 0L }
+val buildTimestampMillisProvider =
+    buildTimestampMillisOverride
+        ?.let { providers.provider { it } }
+        ?: providers.of(BuildTimestampValueSource::class.java) {}
+val commitTimestampMillis: Long = run {
     val overrideMillis =
-        readGradleEnvOrLocalPropertyOrNull("keios.build.timestampMillis", "KEIOS_BUILD_TIMESTAMP_MILLIS")
+        readGradleEnvOrLocalPropertyOrNull("keios.git.commitTimestampMillis", "KEIOS_GIT_COMMIT_TIMESTAMP_MILLIS")
             ?.trim()
             ?.toLongOrNull()
     if (overrideMillis != null && overrideMillis > 0L) return@run overrideMillis
 
-    // 2. HEAD commit timestamp. Stable across rebuilds of the same source tree, so the About
-    //    page shows when the *code* was authored rather than the moment Gradle happened to run.
-    //    Kept inside the snapshot we already collect so we don't fork another git invocation.
     val commitMillisSec = runGitCommandOrNull("log", "-1", "--format=%ct")?.trim()?.toLongOrNull()
     if (commitMillisSec != null && commitMillisSec > 0L) return@run commitMillisSec * 1000L
 
-    // 3. Last resort: configuration-time wall clock. Never 0L — that collapsed to formatTime("")
-    //    → "unknown" on every fresh checkout.
-    System.currentTimeMillis()
+    0L
 }
 val releaseVersionName = releaseVersion.name
 val releaseVersionCode = releaseVersion.toVersionCode(commitCount = 999)
@@ -477,7 +486,7 @@ android {
         buildConfigField("String", "NEXT_VERSION_NAME", "\"${benchmarkVersion.name}\"")
         buildConfigField("String", "VERSION_ANCHOR_TAG", "\"$versionAnchorTag\"")
         buildConfigField("String", "MANIFEST_COMPONENT_PACKAGE", "\"$namespace\"")
-        buildConfigField("long", "BUILD_TIME_MILLIS", "${buildTimestampMillis}L")
+        buildConfigField("long", "COMMIT_TIME_MILLIS", "${commitTimestampMillis}L")
         buildConfigField("int", "GIT_COMMIT_COUNT", gitVersionSnapshot.relativeCommitCount.toString())
         buildConfigField("int", "GIT_TOTAL_COMMIT_COUNT", gitVersionSnapshot.totalCommitCount.toString())
         buildConfigField("String", "GIT_SHORT_HASH", "\"${gitVersionSnapshot.shortHash}\"")
@@ -559,6 +568,16 @@ android {
 
 androidComponents {
     onVariants { variant ->
+        variant.buildConfigFields?.put(
+            "BUILD_TIME_MILLIS",
+            buildTimestampMillisProvider.map { buildTimestampMillis ->
+                BuildConfigField(
+                    type = "long",
+                    value = "${buildTimestampMillis}L",
+                    comment = "Wall-clock timestamp captured while generating BuildConfig.",
+                )
+            },
+        )
         variant.sources.java?.addGeneratedSourceDirectory(
             bakeAppSquircleSdf,
             BakeAppSquircleSdfTask::outputDir,

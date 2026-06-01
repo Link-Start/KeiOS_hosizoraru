@@ -194,6 +194,7 @@
     <string name="about_label_version">バージョン</string>
     <string name="about_label_build_type">ビルド種別</string>
     <string name="about_label_project_url">プロジェクト URL</string>
+    <string name="about_label_commit_time">コミット時刻</string>
     <string name="about_label_build_time">ビルド時刻</string>
     <string name="about_label_last_update">最終更新</string>
     <string name="about_label_debug">Debug</string>

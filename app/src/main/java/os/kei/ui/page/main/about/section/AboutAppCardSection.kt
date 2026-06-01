@@ -108,6 +108,11 @@ internal fun AboutAppCardSection(
                         titleIcon = appLucideFilterIcon(),
                     )
                     AboutCompactInfoRow(
+                        title = stringResource(R.string.about_label_commit_time),
+                        value = details.commitTime,
+                        titleIcon = appLucideTimeIcon(),
+                    )
+                    AboutCompactInfoRow(
                         title = stringResource(R.string.about_label_build_time),
                         value = details.buildTime,
                         titleIcon = appLucideTimeIcon(),

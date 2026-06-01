@@ -63,6 +63,7 @@ internal data class MainPagerCoordinatorState(
     val onHomeActionBarSelectedIndexChange: (Int) -> Unit,
     val onHomeBottomPageEditorVisibleChange: (Boolean) -> Unit,
     val onShowBottomBar: () -> Unit,
+    val onPageScrollBoundsChange: (pageIndex: Int, canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     val osScrollToTopSignal: Int,
     val baScrollToTopSignal: Int,
     val mcpScrollToTopSignal: Int,
@@ -159,6 +160,7 @@ internal fun rememberMainPagerCoordinator(
             settingsReturnToken = settingsReturnToken,
             homeRuntime = homeRuntime,
         )
+    val pageScrollBoundsState = remember { MainPagerPageScrollBoundsState() }
     BindMainPagerCoordinatorEffects(
         tabsSize = tabs.size,
         pagerState = pagerState,
@@ -168,6 +170,7 @@ internal fun rememberMainPagerCoordinator(
             tabs = tabs,
             pagerState = pagerState,
             pagerRuntime = pagerRuntime,
+            pageScrollBoundsState = pageScrollBoundsState,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             requestedBottomPage = requestedBottomPage,
             requestedBottomPageToken = requestedBottomPageToken,
@@ -214,6 +217,7 @@ internal fun rememberMainPagerCoordinator(
         backgroundState.hasNonHomeBackground,
         backgroundState.effectiveNonHomeBackgroundUri,
         onBottomPageVisibilityChange,
+        pageScrollBoundsState,
     ) {
         MainPagerCoordinatorState(
             tabs = tabs,
@@ -248,6 +252,7 @@ internal fun rememberMainPagerCoordinator(
             onHomeActionBarSelectedIndexChange = homeOverviewState.onActionBarSelectedIndexChange,
             onHomeBottomPageEditorVisibleChange = homeOverviewState.onBottomPageEditorVisibleChange,
             onShowBottomBar = tabJumpController.onShowBottomBar,
+            onPageScrollBoundsChange = pageScrollBoundsState::update,
             osScrollToTopSignal = scrollSignalController.osScrollToTopSignal,
             baScrollToTopSignal = scrollSignalController.baScrollToTopSignal,
             mcpScrollToTopSignal = scrollSignalController.mcpScrollToTopSignal,

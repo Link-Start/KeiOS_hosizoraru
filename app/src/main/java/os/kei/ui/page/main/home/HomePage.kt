@@ -45,6 +45,7 @@ import os.kei.ui.page.main.os.osLucideSettingsIcon
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
+import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -83,6 +84,11 @@ fun HomePage(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
+    BindLazyListScrollBoundsEffect(
+        listState = lazyListState,
+        isActive = runtime.isPageActive,
+        onScrollBoundsChange = runtime.onScrollBoundsChange,
+    )
 
     val effectBackgroundEnabled = runtime.isPageActive
     val homeDynamicActive =

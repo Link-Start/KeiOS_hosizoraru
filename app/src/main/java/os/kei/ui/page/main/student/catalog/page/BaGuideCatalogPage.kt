@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -136,7 +135,7 @@ fun BaGuideCatalogPage(
         pageState = pageState,
     )
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
-    val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState(scrollThreshold = 56.dp)
+    val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState()
     val playbackCoordinator =
         rememberBaGuideBgmPlaybackCoordinator(
             context = appContext,

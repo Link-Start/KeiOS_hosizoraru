@@ -8,6 +8,8 @@ package os.kei.ui.page.main.widget.chrome
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Scrolls [listState] to the top when [scrollToTopSignal] increases while
@@ -31,5 +33,22 @@ internal fun BindScrollToTopEffect(
         if (isActive && scrollToTopSignal > 0) {
             listState.animateScrollToItem(0)
         }
+    }
+}
+
+@Composable
+internal fun BindLazyListScrollBoundsEffect(
+    listState: LazyListState,
+    isActive: Boolean = true,
+    onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
+) {
+    LaunchedEffect(listState, isActive, onScrollBoundsChange) {
+        if (!isActive) return@LaunchedEffect
+        snapshotFlow {
+            listState.canScrollBackward to listState.canScrollForward
+        }.distinctUntilChanged()
+            .collect { (canScrollBackward, canScrollForward) ->
+                onScrollBoundsChange(canScrollBackward, canScrollForward)
+            }
     }
 }

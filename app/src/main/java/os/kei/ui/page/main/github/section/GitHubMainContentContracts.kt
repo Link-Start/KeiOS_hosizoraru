@@ -3,7 +3,6 @@ package os.kei.ui.page.main.github.section
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.Dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -28,7 +27,6 @@ internal data class GitHubMainContentLayout(
     val contentBottomPadding: Dp,
     val listState: LazyListState,
     val scrollBehavior: ScrollBehavior,
-    val addButtonScrollConnection: NestedScrollConnection,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
     val onShowBottomBar: () -> Unit,

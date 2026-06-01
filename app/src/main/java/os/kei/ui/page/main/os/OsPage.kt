@@ -26,6 +26,7 @@ import os.kei.ui.page.main.os.state.rememberOsPageCardTransferState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayState
 import os.kei.ui.page.main.os.state.rememberOsPageOverlayTransferActions
 import os.kei.ui.page.main.os.state.rememberOsPageUiContext
+import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
@@ -349,6 +350,11 @@ fun OsPage(
     BindOsScrollToTopEffect(
         scrollToTopSignal = runtime.scrollToTopSignal,
         listState = listState,
+    )
+    BindLazyListScrollBoundsEffect(
+        listState = listState,
+        isActive = runtime.isPageActive,
+        onScrollBoundsChange = runtime.onScrollBoundsChange,
     )
 
     BindOsInitialCacheLoad(

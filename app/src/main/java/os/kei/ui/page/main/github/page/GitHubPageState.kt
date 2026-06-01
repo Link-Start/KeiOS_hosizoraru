@@ -9,12 +9,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.dp
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
@@ -27,11 +22,9 @@ import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
 import os.kei.ui.page.main.github.section.GitHubOverviewUiState
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
-import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 @Stable
 internal class GitHubPageState(
-    private val searchBarHideThresholdPx: Float,
     pageUiState: GitHubPageUiState = GitHubPageUiState(),
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
     overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
@@ -171,11 +164,6 @@ internal class GitHubPageState(
     var actionsRecommendedRunRefreshJob by actionsState::actionsRecommendedRunRefreshJob
     var refreshTargetIds by overviewState::refreshTargetIds
     var deleteInProgress by overviewState::deleteInProgress
-    var showSearchBar by mutableStateOf(true)
-    private var pendingShowSearchBar: Boolean? = null
-    private var canScrollBackward by mutableStateOf(false)
-    private var canScrollForward by mutableStateOf(false)
-    private val searchBarVisibilityController = ScrollChromeVisibilityController(searchBarHideThresholdPx)
 
     val trackedItems = mutableStateListOf<GitHubTrackedApp>()
     val checkStates = mutableStateMapOf<String, VersionCheckUi>()
@@ -205,24 +193,6 @@ internal class GitHubPageState(
     val trackedAddedAtById = mutableStateMapOf<String, Long>()
     val trackedModifiedAtById = mutableStateMapOf<String, Long>()
 
-    val addButtonScrollConnection =
-        object : NestedScrollConnection {
-            override fun onPreScroll(
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset {
-                searchBarVisibilityController.updateWithinScrollBounds(
-                    deltaY = available.y,
-                    visible = pendingShowSearchBar ?: showSearchBar,
-                    canScrollBackward = canScrollBackward,
-                    canScrollForward = canScrollForward,
-                ) {
-                    pendingShowSearchBar = it
-                }
-                return Offset.Zero
-            }
-        }
-
     fun applyPersistedUiState(snapshot: GitHubPagePersistedUiState) {
         val defaultPageUiState = GitHubPageUiState()
         val defaultActionsState = GitHubActionsSectionExpansionState()
@@ -251,32 +221,6 @@ internal class GitHubPageState(
         if (overviewVisibleEntries == defaultOverviewState.visibleEntries) {
             overviewVisibleEntries = snapshot.overviewUiState.visibleEntries
         }
-    }
-
-    fun updateScrollBounds(
-        canScrollBackward: Boolean,
-        canScrollForward: Boolean,
-    ) {
-        this.canScrollBackward = canScrollBackward
-        this.canScrollForward = canScrollForward
-        searchBarVisibilityController.showForStaticContent(
-            visible = pendingShowSearchBar ?: showSearchBar,
-            canScrollBackward = canScrollBackward,
-            canScrollForward = canScrollForward,
-        ) { target ->
-            pendingShowSearchBar = null
-            showSearchBar = target
-        }
-    }
-
-    fun settleScrollChromeVisibility() {
-        pendingShowSearchBar?.let { target ->
-            if (showSearchBar != target) {
-                showSearchBar = target
-            }
-        }
-        pendingShowSearchBar = null
-        searchBarVisibilityController.reset()
     }
 
     fun requestTrackCardFocus(trackId: String) {
@@ -560,12 +504,7 @@ internal fun releaseNotesApkVersionKey(
 
 @Composable
 internal fun rememberGitHubPageState(viewModel: GitHubPageViewModel): GitHubPageState {
-    val density = LocalDensity.current
-    val searchBarHideThresholdPx =
-        remember(density) {
-            with(density) { 28.dp.toPx() }
-        }
-    return remember(viewModel, searchBarHideThresholdPx) {
-        viewModel.pageState(searchBarHideThresholdPx)
+    return remember(viewModel) {
+        viewModel.pageState()
     }
 }

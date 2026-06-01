@@ -96,12 +96,7 @@ internal fun GitHubMainContent(
                 )
             },
         ) { innerPadding ->
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(layout.addButtonScrollConnection),
-            ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 AppPageLazyColumn(
                     modifier =
                         Modifier

@@ -105,21 +105,17 @@ fun GitHubPage(
     DisposableEffect(githubPageViewModel) {
         onDispose { githubPageViewModel.setPageDataActive(false) }
     }
-    LaunchedEffect(listState, state) {
+    LaunchedEffect(listState, runtime.onScrollBoundsChange) {
         snapshotFlow {
             GitHubListScrollSnapshot(
-                scrolling = listState.isScrollInProgress,
                 canScrollBackward = listState.canScrollBackward,
                 canScrollForward = listState.canScrollForward,
             )
         }.distinctUntilChanged()
             .collect { snapshot ->
-                if (!snapshot.scrolling) {
-                    state.settleScrollChromeVisibility()
-                }
-                state.updateScrollBounds(
-                    canScrollBackward = snapshot.canScrollBackward,
-                    canScrollForward = snapshot.canScrollForward,
+                runtime.onScrollBoundsChange(
+                    snapshot.canScrollBackward,
+                    snapshot.canScrollForward,
                 )
             }
     }
@@ -297,7 +293,6 @@ fun GitHubPage(
                     contentBottomPadding = runtime.contentBottomPadding,
                     listState = listState,
                     scrollBehavior = scrollBehavior,
-                    addButtonScrollConnection = state.addButtonScrollConnection,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
                     onShowBottomBar = onShowBottomBar,
@@ -465,7 +460,6 @@ fun GitHubPage(
 }
 
 private data class GitHubListScrollSnapshot(
-    val scrolling: Boolean,
     val canScrollBackward: Boolean,
     val canScrollForward: Boolean,
 )

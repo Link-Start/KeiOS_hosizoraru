@@ -242,12 +242,10 @@ internal class GitHubPageViewModel(
         }
     }
 
-    fun pageState(searchBarHideThresholdPx: Float): GitHubPageState {
+    fun pageState(): GitHubPageState {
         val current = pageState
         if (current != null) return current
-        return GitHubPageState(
-            searchBarHideThresholdPx = searchBarHideThresholdPx,
-        ).also {
+        return GitHubPageState().also {
             pageState = it
             bindContentState(it)
             sheetDerivationController.bindActionsSheetState(it)

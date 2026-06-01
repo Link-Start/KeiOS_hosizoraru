@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,7 +46,9 @@ internal fun BaStudentGuidePagerContent(
     mediaAdaptiveRotationEnabled: Boolean,
     contentPresentationState: BaStudentGuideContentPresentationState,
     guidePagerBeyondViewportPageCount: Int,
-    nestedScrollConnection: NestedScrollConnection,
+    chromeNestedScrollConnection: NestedScrollConnection,
+    topBarNestedScrollConnection: NestedScrollConnection,
+    onPageListStateChange: (pageIndex: Int, listState: LazyListState) -> Unit,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (String, String) -> Unit,
@@ -93,7 +96,9 @@ internal fun BaStudentGuidePagerContent(
             isNpcSatelliteGuide = isNpcSatelliteGuide,
             mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             contentPresentationState = contentPresentationState,
-            nestedScrollConnection = nestedScrollConnection,
+            chromeNestedScrollConnection = chromeNestedScrollConnection,
+            topBarNestedScrollConnection = topBarNestedScrollConnection,
+            onPageListStateChange = onPageListStateChange,
             onOpenExternal = onOpenExternal,
             onOpenGuide = onOpenGuide,
             onSaveMedia = onSaveMedia,

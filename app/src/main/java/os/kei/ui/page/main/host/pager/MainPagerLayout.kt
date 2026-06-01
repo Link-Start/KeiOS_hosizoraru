@@ -260,6 +260,7 @@ internal fun MainPagerLayout(
                             contentBottomPadding,
                             coordinator.showBottomBar,
                             floatingDockSide,
+                            coordinator.onPageScrollBoundsChange,
                             scrollToTopSignal,
                             hasActivated,
                             contentReady,
@@ -271,6 +272,13 @@ internal fun MainPagerLayout(
                                 contentBottomPadding = contentBottomPadding,
                                 bottomBarVisible = coordinator.showBottomBar,
                                 floatingDockSide = floatingDockSide,
+                                onScrollBoundsChange = { canScrollBackward, canScrollForward ->
+                                    coordinator.onPageScrollBoundsChange(
+                                        pageIndex,
+                                        canScrollBackward,
+                                        canScrollForward,
+                                    )
+                                },
                                 scrollToTopSignal = scrollToTopSignal,
                                 hasActivated = hasActivated,
                                 contentReady = contentReady,

@@ -6,11 +6,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
 
 @Stable
 internal class BaGuideBgmBottomChromeScrollState(
@@ -19,48 +21,56 @@ internal class BaGuideBgmBottomChromeScrollState(
     var isCompact by mutableStateOf(false)
         private set
 
-    private var accumulatedScroll = 0f
+    private val visibilityController = ScrollChromeVisibilityController(scrollThresholdPx)
+    private var canScrollBackward = false
+    private var canScrollForward = false
 
     fun expand() {
-        isCompact = false
-        accumulatedScroll = 0f
+        visibilityController.showNow(visible = !isCompact, onVisibleChange = ::updateVisible)
     }
 
     fun compact() {
         isCompact = true
-        accumulatedScroll = 0f
+        visibilityController.reset()
     }
 
     fun expandForStaticContent(
         canScrollBackward: Boolean,
         canScrollForward: Boolean
     ) {
-        if (canScrollBackward || canScrollForward) return
-        expand()
+        this.canScrollBackward = canScrollBackward
+        this.canScrollForward = canScrollForward
+        visibilityController.showForStaticContent(
+            visible = !isCompact,
+            canScrollBackward = canScrollBackward,
+            canScrollForward = canScrollForward,
+            onVisibleChange = ::updateVisible,
+        )
     }
 
-    override fun onPreScroll(
-        available: androidx.compose.ui.geometry.Offset,
+    override fun onPostScroll(
+        consumed: Offset,
+        available: Offset,
         source: NestedScrollSource
-    ): androidx.compose.ui.geometry.Offset {
-        val scrollDelta = available.y
-        if ((accumulatedScroll > 0f && scrollDelta < 0f) || (accumulatedScroll < 0f && scrollDelta > 0f)) {
-            accumulatedScroll = 0f
-        }
+    ): Offset {
+        visibilityController.updateWithinScrollBounds(
+            deltaY = consumed.y,
+            visible = !isCompact,
+            canScrollBackward = canScrollBackward,
+            canScrollForward = canScrollForward,
+            onVisibleChange = ::updateVisible,
+        )
+        return Offset.Zero
+    }
 
-        accumulatedScroll += scrollDelta
-        if (accumulatedScroll <= -scrollThresholdPx && !isCompact) {
-            compact()
-        } else if (accumulatedScroll >= scrollThresholdPx && isCompact) {
-            expand()
-        }
-        return androidx.compose.ui.geometry.Offset.Zero
+    private fun updateVisible(visible: Boolean) {
+        isCompact = !visible
     }
 }
 
 @Composable
 internal fun rememberBaGuideBgmBottomChromeScrollState(
-    scrollThreshold: Dp = 56.dp
+    scrollThreshold: Dp = 22.dp
 ): BaGuideBgmBottomChromeScrollState = with(LocalDensity.current) {
     val thresholdPx = scrollThreshold.toPx()
     remember(thresholdPx) { BaGuideBgmBottomChromeScrollState(thresholdPx) }

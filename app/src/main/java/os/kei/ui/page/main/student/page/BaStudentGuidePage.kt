@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -17,17 +18,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -58,7 +55,6 @@ import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePlayerLifecycleE
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuidePrefetchEffects
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideVoiceListenerEffect
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideVoiceProgressEffect
-import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideBottomBarChromeState
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideMediaPackSaveAction
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuideMediaSaveAction
 import os.kei.ui.page.main.student.page.state.rememberBaStudentGuidePageActions
@@ -72,7 +68,7 @@ import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.ScrollChromeVisibilityController
+import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
@@ -201,7 +197,21 @@ fun BaStudentGuidePage(
             animationsEnabled = transitionAnimationsEnabled,
         )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val bottomBarChromeState = rememberBaStudentGuideBottomBarChromeState()
+    var bottomBarVisible by rememberSaveable { mutableStateOf(true) }
+    val guidePageListStates = remember { mutableStateMapOf<Int, LazyListState>() }
+    val fallbackGuideListState = remember { LazyListState() }
+    val activeGuideListStateProvider =
+        remember(pagerState, guidePageListStates, fallbackGuideListState) {
+            {
+                guidePageListStates[pagerState.currentPage] ?: fallbackGuideListState
+            }
+        }
+    val bottomChromeScrollState =
+        rememberTabbedPageChromeScrollState(
+            visible = bottomBarVisible,
+            activeListStateProvider = activeGuideListStateProvider,
+            onVisibleChange = { bottomBarVisible = it },
+        )
     val farJumpAlpha = remember { Animatable(1f) }
     var scrollToTopSignal by remember { mutableIntStateOf(0) }
     val selectBottomTabAction =
@@ -210,7 +220,7 @@ fun BaStudentGuidePage(
             pagerState = pagerState,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             farJumpAlpha = farJumpAlpha,
-            onShowBottomBarChange = bottomBarChromeState::updateVisible,
+            onShowBottomBarChange = { bottomBarVisible = it },
             onSelectedBottomTabIndexChange = { selectedIndex ->
                 val selectedTab =
                     bottomTabsList
@@ -228,42 +238,8 @@ fun BaStudentGuidePage(
             selectBottomTabAction(targetIndex)
         }
     }
-    val density = LocalDensity.current
-    val bottomBarVisibilityThresholdPx = remember(density) { with(density) { 22.dp.toPx() } }
-    val bottomBarVisibilityController =
-        remember(bottomBarVisibilityThresholdPx) {
-            ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
-        }
-    val currentBottomBarChromeState by rememberUpdatedState(bottomBarChromeState)
-    val bottomBarNestedScrollConnection =
-        remember(bottomBarVisibilityController) {
-            object : NestedScrollConnection {
-                override fun onPostScroll(
-                    consumed: Offset,
-                    available: Offset,
-                    source: NestedScrollSource,
-                ): Offset {
-                    val chromeState = currentBottomBarChromeState
-                    bottomBarVisibilityController.updateWithinScrollBounds(
-                        deltaY = consumed.y,
-                        visible = chromeState.visible,
-                        canScrollBackward = chromeState.activePageCanScrollBackward,
-                        canScrollForward = chromeState.activePageCanScrollForward,
-                        onVisibleChange = chromeState::updateVisible,
-                    )
-                    return Offset.Zero
-                }
-            }
-        }
     LaunchedEffect(sourceUrl, activeBottomTab) {
-        bottomBarChromeState.showNow(bottomBarVisibilityController)
-    }
-    LaunchedEffect(
-        bottomBarChromeState.activePageCanScrollBackward,
-        bottomBarChromeState.activePageCanScrollForward,
-        bottomBarVisibilityController,
-    ) {
-        bottomBarChromeState.showForStaticContent(bottomBarVisibilityController)
+        bottomChromeScrollState.showNow()
     }
     val pageTitle = info?.title?.ifBlank { defaultPageTitle } ?: defaultPageTitle
     val voicePlayerController = rememberBaStudentGuideVoicePlayerController(sourceUrl)
@@ -368,8 +344,7 @@ fun BaStudentGuidePage(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(MiuixTheme.colorScheme.background)
-                        .nestedScroll(bottomBarNestedScrollConnection),
+                        .background(MiuixTheme.colorScheme.background),
                 topBar = {
                     AppTopBarSection(
                         title = pageTitle,
@@ -379,7 +354,7 @@ fun BaStudentGuidePage(
                         titleBackdrop = topBarBackdrop,
                         titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
                         onTitleClick = {
-                            bottomBarChromeState.showNow(bottomBarVisibilityController)
+                            bottomChromeScrollState.showNow()
                         },
                         navigationIcon = {
                             AppLiquidNavigationButton(
@@ -393,7 +368,7 @@ fun BaStudentGuidePage(
                 },
                 bottomBar = {
                     BaStudentGuideBottomBar(
-                        visible = bottomBarChromeState.visible,
+                        visible = bottomBarVisible,
                         navigationBarBottom = navigationBarBottom,
                         bottomTabs = bottomTabsList,
                         selectedPage = pagerState.targetPage,
@@ -407,7 +382,7 @@ fun BaStudentGuidePage(
                         isLiquidEffectEnabled = true,
                         onSelectTab = selectBottomTabAction,
                         onExpand = {
-                            bottomBarChromeState.showNow(bottomBarVisibilityController)
+                            bottomChromeScrollState.showNow()
                         },
                     )
                 },
@@ -438,7 +413,11 @@ fun BaStudentGuidePage(
                     mediaAdaptiveRotationEnabled = guideUiState.mediaSettings.mediaAdaptiveRotationEnabled,
                     contentPresentationState = contentPresentationState,
                     guidePagerBeyondViewportPageCount = preloadPolicy.guidePagerBeyondViewportPageCount,
-                    nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                    chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,
+                    topBarNestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                    onPageListStateChange = { pageIndex, listState ->
+                        guidePageListStates[pageIndex] = listState
+                    },
                     onOpenExternal = pageActions.openExternal,
                     onOpenGuide = pageActions.openGuideInPage,
                     onSaveMedia = pageActions.saveGuideMedia,
@@ -447,9 +426,7 @@ fun BaStudentGuidePage(
                     onRequestProfileLinkTitles = guideViewModel::requestProfileLinkTitles,
                     onToggleVoicePlayback = pageActions.toggleVoicePlayback,
                     scrollToTopSignal = scrollToTopSignal,
-                    onScrollBoundsChange = { canScrollBackward, canScrollForward ->
-                        bottomBarChromeState.updateScrollBounds(canScrollBackward, canScrollForward)
-                    },
+                    onScrollBoundsChange = { _, _ -> },
                     onListScrollInProgressChange = {},
                     onSelectedVoiceLanguageChange = guideViewModel::updateSelectedVoiceLanguage,
                 )

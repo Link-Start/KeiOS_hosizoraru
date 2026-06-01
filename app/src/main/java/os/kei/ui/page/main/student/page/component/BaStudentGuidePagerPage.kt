@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,7 @@ import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -71,7 +73,9 @@ internal fun BaStudentGuidePagerPage(
     isNpcSatelliteGuide: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
     contentPresentationState: BaStudentGuideContentPresentationState,
-    nestedScrollConnection: NestedScrollConnection,
+    chromeNestedScrollConnection: NestedScrollConnection,
+    topBarNestedScrollConnection: NestedScrollConnection,
+    onPageListStateChange: (pageIndex: Int, listState: LazyListState) -> Unit,
     onOpenExternal: (String) -> Unit,
     onOpenGuide: (String) -> Unit,
     onSaveMedia: (String, String) -> Unit,
@@ -110,6 +114,18 @@ internal fun BaStudentGuidePagerPage(
             saver = LazyListState.Saver,
         ) {
             LazyListState()
+        }
+    DisposableEffect(pageIndex, pageListState, onPageListStateChange) {
+        onPageListStateChange(pageIndex, pageListState)
+        onDispose { }
+    }
+    val pageNestedScrollConnection =
+        remember(pageListState, chromeNestedScrollConnection, topBarNestedScrollConnection) {
+            tabbedPageContentNestedScrollConnection(
+                listState = pageListState,
+                chrome = chromeNestedScrollConnection,
+                delegate = topBarNestedScrollConnection,
+            )
         }
     val pageBackdrop: LayerBackdrop =
         key("page-$activationCount-$sourceUrl-$pageIndex") {
@@ -177,7 +193,7 @@ internal fun BaStudentGuidePagerPage(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
+                    .nestedScroll(pageNestedScrollConnection),
             contentPadding =
                 PaddingValues(
                     top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,

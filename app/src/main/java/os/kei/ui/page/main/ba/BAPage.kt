@@ -297,6 +297,7 @@ fun BAPage(
         runtimePersistenceCoordinator = runtimePersistenceCoordinator,
         onUiNowMsChange = { ui.uiNowMs = it },
         onUiMinuteMsChange = { ui.uiMinuteMs = it },
+        onScrollBoundsChange = runtime.onScrollBoundsChange,
         serverIndex = baRouteState.serverIndex,
         onServerChanged = {
             officeViewModel.markCalendarPoolHydrationReady()

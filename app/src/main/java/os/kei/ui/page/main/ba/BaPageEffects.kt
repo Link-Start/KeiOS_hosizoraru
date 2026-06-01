@@ -15,6 +15,7 @@ import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.displayAp
+import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
 import os.kei.ui.page.main.widget.chrome.isPageSettledAtTop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -34,6 +35,7 @@ internal fun BaPageCommonEffects(
     runtimePersistenceCoordinator: BaRuntimePersistenceCoordinator,
     onUiNowMsChange: (Long) -> Unit,
     onUiMinuteMsChange: (Long) -> Unit,
+    onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     serverIndex: Int,
     onServerChanged: suspend () -> Unit,
     context: Context,
@@ -41,6 +43,11 @@ internal fun BaPageCommonEffects(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     val runtimeTickerCoordinator = rememberBaRuntimeTickerCoordinator()
+    BindLazyListScrollBoundsEffect(
+        listState = listState,
+        isActive = isPageActive,
+        onScrollBoundsChange = onScrollBoundsChange,
+    )
 
     DisposableEffect(Unit) {
         onDispose { onDisposeActionBarInteraction() }

@@ -41,6 +41,7 @@ internal fun rememberMainPagerTabJumpController(
     tabs: List<BottomPage>,
     pagerState: MainPagerStateContract,
     pagerRuntime: MainPagerRuntimeSnapshot,
+    pageScrollBoundsState: MainPagerPageScrollBoundsState,
     transitionAnimationsEnabled: Boolean,
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
@@ -61,15 +62,17 @@ internal fun rememberMainPagerTabJumpController(
             ScrollChromeVisibilityController(bottomBarVisibilityThresholdPx)
         }
     val currentShowBottomBar by rememberUpdatedState(showBottomBar)
+    val currentPagerRuntime by rememberUpdatedState(pagerRuntime)
 
     val nestedScrollConnection =
-        remember(pagerRuntime.homePageBottomBarPinned, bottomBarVisibilityController) {
+        remember(bottomBarVisibilityController, pageScrollBoundsState) {
             object : NestedScrollConnection {
                 override fun onPreScroll(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (pagerRuntime.homePageBottomBarPinned) {
+                    val runtime = currentPagerRuntime
+                    if (runtime.homePageBottomBarPinned) {
                         bottomBarVisibilityController.showNow(currentShowBottomBar) { showBottomBar = it }
                     }
                     return Offset.Zero
@@ -80,8 +83,15 @@ internal fun rememberMainPagerTabJumpController(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (!pagerRuntime.homePageBottomBarPinned) {
-                        bottomBarVisibilityController.update(consumed.y, currentShowBottomBar) { showBottomBar = it }
+                    val runtime = currentPagerRuntime
+                    if (!runtime.homePageBottomBarPinned) {
+                        val bounds = pageScrollBoundsState.boundsFor(runtime.stablePageIndex)
+                        bottomBarVisibilityController.updateWithinScrollBounds(
+                            deltaY = consumed.y,
+                            visible = currentShowBottomBar,
+                            canScrollBackward = bounds.canScrollBackward,
+                            canScrollForward = bounds.canScrollForward,
+                        ) { showBottomBar = it }
                     }
                     return Offset.Zero
                 }

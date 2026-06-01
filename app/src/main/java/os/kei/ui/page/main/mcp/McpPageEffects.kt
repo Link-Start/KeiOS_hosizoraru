@@ -11,6 +11,7 @@ import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
+import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
 
 @Composable
 internal fun BindMcpPageEffects(
@@ -22,6 +23,11 @@ internal fun BindMcpPageEffects(
     listState: LazyListState,
     onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
+    BindLazyListScrollBoundsEffect(
+        listState = listState,
+        isActive = runtime.isPageActive,
+        onScrollBoundsChange = runtime.onScrollBoundsChange,
+    )
     LaunchedEffect(
         mcpServerManager,
         uiState.port,

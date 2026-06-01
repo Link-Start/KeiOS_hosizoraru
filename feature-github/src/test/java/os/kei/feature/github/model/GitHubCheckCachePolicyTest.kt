@@ -132,6 +132,37 @@ class GitHubCheckCachePolicyTest {
         )
     }
 
+    @Test
+    fun `git repository cache uses git source signature`() {
+        val item = tracked(sourceMode = GitHubTrackedSourceMode.GitRepository)
+        val lookupConfig = GitHubLookupConfig().forTrackedItem(item)
+        val signature = item.gitRepositoryCheckSourceSignature(lookupConfig)
+
+        assertEquals(signature, item.checkSourceSignature(lookupConfig))
+        assertTrue(signature.contains("git_repository-v1|gitee|gitee.com|"))
+        assertTrue(
+            GitHubCheckCacheEntry(
+                sourceStrategyId = "git_repository",
+                sourceConfigSignature = signature,
+                latestStableRawTag = "v1.0.0"
+            ).isValidForTrackedItem(
+                item = item,
+                lookupConfig = lookupConfig,
+                activeStrategyId = lookupConfig.selectedStrategy.storageId
+            )
+        )
+        assertFalse(
+            GitHubCheckCacheEntry(
+                sourceStrategyId = "git_repository",
+                latestStableRawTag = "v1.0.0"
+            ).isValidForTrackedItem(
+                item = item,
+                lookupConfig = lookupConfig,
+                activeStrategyId = lookupConfig.selectedStrategy.storageId
+            )
+        )
+    }
+
     private fun tracked(
         sourceMode: GitHubTrackedSourceMode,
         preferPreRelease: Boolean = false
@@ -139,6 +170,7 @@ class GitHubCheckCachePolicyTest {
         return GitHubTrackedApp(
             repoUrl = when (sourceMode) {
                 GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo"
+                GitHubTrackedSourceMode.GitRepository -> "https://gitee.com/demo/repo"
                 GitHubTrackedSourceMode.DirectApk -> "https://example.com/download/app.apk"
             },
             owner = "demo",

@@ -86,6 +86,8 @@ internal fun GitHubTrackEditFormContent(
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
     val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
     val directApkMode = sourceModeInput == GitHubTrackedSourceMode.DirectApk
+    val gitRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.GitRepository
+    val githubRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.GitHubRepository
     val updateIntervalModes = GitHubTrackedUpdateIntervalMode.entries
     val updateIntervalOptions =
         updateIntervalModes.map { mode ->
@@ -158,26 +160,27 @@ internal fun GitHubTrackEditFormContent(
     val canScanRepoUrl =
         !repoUrlScanRunning &&
             !packageNameScanRunning &&
-            !directApkMode &&
+            githubRepositoryMode &&
             (packageNameInput.isNotBlank() || selectedApp != null)
     val canScanPackageName =
         !repoUrlScanRunning &&
             !packageNameScanRunning &&
+            !gitRepositoryMode &&
             repoUrlInput.isNotBlank()
     val repoInputLabel =
         stringResource(
-            if (directApkMode) {
-                R.string.github_track_sheet_input_direct_apk
-            } else {
-                R.string.github_track_sheet_input_repo
+            when {
+                directApkMode -> R.string.github_track_sheet_input_direct_apk
+                gitRepositoryMode -> R.string.github_track_sheet_input_git
+                else -> R.string.github_track_sheet_input_repo
             },
         )
     val repoSummary =
         stringResource(
-            if (directApkMode) {
-                R.string.github_track_sheet_summary_direct_apk
-            } else {
-                R.string.github_track_sheet_summary_repo
+            when {
+                directApkMode -> R.string.github_track_sheet_summary_direct_apk
+                gitRepositoryMode -> R.string.github_track_sheet_summary_git
+                else -> R.string.github_track_sheet_summary_repo
             },
         )
     val packageSummary =
@@ -223,7 +226,7 @@ internal fun GitHubTrackEditFormContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SheetInputTitle(repoInputLabel)
-                if (!directApkMode) {
+                if (githubRepositoryMode) {
                     AppLiquidTextButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
@@ -368,49 +371,55 @@ internal fun GitHubTrackEditFormContent(
                         onCheckedChange = onPreferPreReleaseInputChange,
                     )
                 }
-                SheetControlRow(
-                    label = stringResource(R.string.github_track_sheet_label_always_show_latest_release_download),
-                    summary = stringResource(R.string.github_track_sheet_summary_always_show_latest_release_download),
-                ) {
-                    AppSwitch(
-                        checked = alwaysShowLatestReleaseDownloadButtonInput,
-                        onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange,
-                    )
-                }
-                SheetControlRow(
-                    label = stringResource(R.string.github_track_sheet_label_check_actions_updates),
-                    summary = stringResource(R.string.github_track_sheet_summary_check_actions_updates),
-                ) {
-                    AppSwitch(
-                        checked = checkActionsUpdatesInput,
-                        onCheckedChange = onCheckActionsUpdatesInputChange,
-                    )
-                }
-                if (checkActionsUpdatesInput) {
+                if (githubRepositoryMode) {
                     SheetControlRow(
-                        label = stringResource(R.string.github_track_sheet_label_actions_update_interval),
-                        summary = actionsIntervalSummary,
+                        label = stringResource(
+                            R.string.github_track_sheet_label_always_show_latest_release_download,
+                        ),
+                        summary = stringResource(
+                            R.string.github_track_sheet_summary_always_show_latest_release_download,
+                        ),
                     ) {
-                        AppDropdownSelector(
-                            selectedText =
-                                actionsIntervalOptions.getOrElse(actionsIntervalIndex) {
-                                    stringResource(
-                                        R.string.github_track_sheet_actions_update_interval_follow_global,
-                                    )
-                                },
-                            options = actionsIntervalOptions,
-                            selectedIndex = actionsIntervalIndex,
-                            expanded = actionsIntervalDropdownExpanded,
-                            anchorBounds = actionsIntervalDropdownAnchorBounds,
-                            onExpandedChange = onActionsIntervalDropdownExpandedChange,
-                            onSelectedIndexChange = { index ->
-                                actionsIntervalModes
-                                    .getOrNull(index)
-                                    ?.let(onActionsUpdateIntervalModeInputChange)
-                            },
-                            onAnchorBoundsChange = onActionsIntervalDropdownAnchorBoundsChange,
-                            backdrop = backdrop,
+                        AppSwitch(
+                            checked = alwaysShowLatestReleaseDownloadButtonInput,
+                            onCheckedChange = onAlwaysShowLatestReleaseDownloadButtonInputChange,
                         )
+                    }
+                    SheetControlRow(
+                        label = stringResource(R.string.github_track_sheet_label_check_actions_updates),
+                        summary = stringResource(R.string.github_track_sheet_summary_check_actions_updates),
+                    ) {
+                        AppSwitch(
+                            checked = checkActionsUpdatesInput,
+                            onCheckedChange = onCheckActionsUpdatesInputChange,
+                        )
+                    }
+                    if (checkActionsUpdatesInput) {
+                        SheetControlRow(
+                            label = stringResource(R.string.github_track_sheet_label_actions_update_interval),
+                            summary = actionsIntervalSummary,
+                        ) {
+                            AppDropdownSelector(
+                                selectedText =
+                                    actionsIntervalOptions.getOrElse(actionsIntervalIndex) {
+                                        stringResource(
+                                            R.string.github_track_sheet_actions_update_interval_follow_global,
+                                        )
+                                    },
+                                options = actionsIntervalOptions,
+                                selectedIndex = actionsIntervalIndex,
+                                expanded = actionsIntervalDropdownExpanded,
+                                anchorBounds = actionsIntervalDropdownAnchorBounds,
+                                onExpandedChange = onActionsIntervalDropdownExpandedChange,
+                                onSelectedIndexChange = { index ->
+                                    actionsIntervalModes
+                                        .getOrNull(index)
+                                        ?.let(onActionsUpdateIntervalModeInputChange)
+                                },
+                                onAnchorBoundsChange = onActionsIntervalDropdownAnchorBoundsChange,
+                                backdrop = backdrop,
+                            )
+                        }
                     }
                 }
                 SheetControlRow(

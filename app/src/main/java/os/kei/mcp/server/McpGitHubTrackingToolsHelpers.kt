@@ -85,6 +85,7 @@ internal fun filterCheckRows(
         when (filterMode) {
             GitHubTrackedFilterMode.All,
             GitHubTrackedFilterMode.GitHubRepository,
+            GitHubTrackedFilterMode.GitRepository,
             GitHubTrackedFilterMode.DirectApk,
             GitHubTrackedFilterMode.Installed,
             GitHubTrackedFilterMode.ActionsCheckEnabled -> true
@@ -104,6 +105,7 @@ internal fun parseTrackedSourceModeFilter(raw: String): GitHubTrackedSourceMode?
         "github", "repo", "repository", "github_repository" ->
             GitHubTrackedSourceMode.GitHubRepository
 
+        "git", "git_repository", "gitee", "gitlab" -> GitHubTrackedSourceMode.GitRepository
         "direct", "apk", "direct_apk" -> GitHubTrackedSourceMode.DirectApk
         else -> null
     }
@@ -137,6 +139,7 @@ internal fun parseGitHubTrackedFilterMode(raw: String): GitHubTrackedFilterMode 
     } ?: when (normalized) {
         "", "all" -> GitHubTrackedFilterMode.All
         "github", "repo", "repository" -> GitHubTrackedFilterMode.GitHubRepository
+        "git", "git_repository", "gitee", "gitlab" -> GitHubTrackedFilterMode.GitRepository
         "direct", "apk", "subscription", "subscription_project" ->
             GitHubTrackedFilterMode.DirectApk
 

@@ -26,6 +26,8 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
@@ -44,31 +46,32 @@ internal fun GitHubRepositoryLinkCard(
     item: GitHubTrackedApp,
     onOpenExternalUrl: (String) -> Unit,
 ) {
-    val directIdentity =
-        if (item.isGitHubRepositoryTrack()) {
-            null
-        } else {
-            buildDirectApkTrackIdentity(item.repoUrl)
-        }
-    val repoUrl =
-        if (item.isGitHubRepositoryTrack()) {
-            GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
-        } else {
-            item.repoUrl
-        }
+    val directIdentity = item.takeIf { it.isDirectApkDisplaySource() }
+        ?.let { buildDirectApkTrackIdentity(it.repoUrl) }
+    val gitIdentity = item.takeIf { it.isGitRepositoryTrack() }
+        ?.let { buildGitRepositoryTrackIdentity(it.repoUrl) }
+    val repoUrl = if (item.isGitHubRepositoryTrack()) {
+        GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
+    } else {
+        item.repoUrl
+    }
     GitHubLinkedInfoCard(
         label =
             stringResource(
-                if (item.isGitHubRepositoryTrack()) {
-                    R.string.github_item_label_repo
-                } else {
-                    R.string.github_item_label_direct_apk
+                when {
+                    item.isGitHubRepositoryTrack() -> R.string.github_item_label_repo
+                    item.isGitRepositoryTrack() -> R.string.github_item_label_git_repo
+                    else -> R.string.github_item_label_direct_apk
                 },
             ),
-        value = directIdentity?.displayName ?: "${item.owner}/${item.repo}",
+        value = gitIdentity?.displayName ?: directIdentity?.displayName ?: "${item.owner}/${item.repo}",
         valueColor = MiuixTheme.colorScheme.onBackground,
         onClick = { onOpenExternalUrl(repoUrl) },
     )
+}
+
+private fun GitHubTrackedApp.isDirectApkDisplaySource(): Boolean {
+    return !isGitHubRepositoryTrack() && !isGitRepositoryTrack()
 }
 
 @Suppress("FunctionName")

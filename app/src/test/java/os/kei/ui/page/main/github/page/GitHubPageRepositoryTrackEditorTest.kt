@@ -73,7 +73,38 @@ class GitHubPageRepositoryTrackEditorTest {
     }
 
     @Test
-    fun `import preview summarizes github and direct apk source counts`() = runBlocking {
+    fun `git repository source builds host scoped track and closes github options`() = runBlocking {
+        val result = repository.buildTrackedItem(
+            GitHubTrackEditorDraft(
+                sourceMode = GitHubTrackedSourceMode.GitRepository,
+                repoUrl = "git@gitee.com:demo/app.git",
+                packageName = "com.demo.app",
+                preferPreRelease = true,
+                alwaysShowLatestReleaseDownloadButton = true,
+                checkActionsUpdates = true,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours3,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
+                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
+                appList = emptyList()
+            )
+        )
+
+        val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
+
+        assertEquals(GitHubTrackedSourceMode.GitRepository, item.sourceMode)
+        assertEquals("gitee.com/demo", item.owner)
+        assertEquals("app", item.repo)
+        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, item.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode
+        )
+        assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, item.preciseApkVersionMode)
+    }
+
+    @Test
+    fun `import preview summarizes github git and direct apk source counts`() = runBlocking {
         val preview = repository.buildTrackedItemsImportPreview(
             payload = GitHubTrackedItemsImportPayload(
                 items = listOf(
@@ -91,14 +122,23 @@ class GitHubPageRepositoryTrackEditorTest {
                         packageName = "org.telegram.messenger",
                         appLabel = "Telegram",
                         sourceMode = GitHubTrackedSourceMode.DirectApk
+                    ),
+                    GitHubTrackedApp(
+                        repoUrl = "https://gitee.com/demo/git-app",
+                        owner = "gitee.com/demo",
+                        repo = "git-app",
+                        packageName = "com.demo.git",
+                        appLabel = "Git",
+                        sourceMode = GitHubTrackedSourceMode.GitRepository
                     )
                 ),
-                sourceCount = 2
+                sourceCount = 3
             ),
             existingItems = emptyList()
         )
 
         assertEquals(1, preview.githubRepositoryCount)
+        assertEquals(1, preview.gitRepositoryCount)
         assertEquals(1, preview.directApkCount)
         assertEquals(true, preview.hasSourceBreakdown)
     }

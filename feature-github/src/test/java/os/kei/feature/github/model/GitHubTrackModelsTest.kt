@@ -69,6 +69,79 @@ class GitHubTrackModelsTest {
     }
 
     @Test
+    fun `git repository identity parses https and ssh clone urls`() {
+        val gitee = buildGitRepositoryTrackIdentity("https://gitee.com/demo/app.git")
+        val gitlab = buildGitRepositoryTrackIdentity("git@gitlab.com:group/subgroup/app.git")
+
+        assertEquals(GitRepositoryPlatform.Gitee, gitee?.platform)
+        assertEquals("gitee.com", gitee?.host)
+        assertEquals("demo", gitee?.namespace)
+        assertEquals("app", gitee?.repo)
+        assertEquals("gitee.com/demo", gitee?.owner)
+        assertEquals("gitee.com/demo/app", gitee?.displayName)
+        assertEquals(GitRepositoryPlatform.GitLab, gitlab?.platform)
+        assertEquals("group/subgroup", gitlab?.namespace)
+        assertEquals("gitlab.com/group/subgroup", gitlab?.owner)
+        assertEquals("app", gitlab?.repo)
+    }
+
+    @Test
+    fun `git repository identity trims platform page suffixes`() {
+        val identity =
+            buildGitRepositoryTrackIdentity("https://gitlab.com/group/subgroup/app/-/tree/main")
+
+        assertEquals("gitlab.com", identity?.host)
+        assertEquals("group/subgroup", identity?.namespace)
+        assertEquals("app", identity?.repo)
+        assertEquals("gitlab.com/group/subgroup/app", identity?.displayName)
+    }
+
+    @Test
+    fun `git repository track id includes host scoped owner`() {
+        val git = GitHubTrackedApp(
+            repoUrl = "https://gitee.com/demo/app",
+            owner = "gitee.com/demo",
+            repo = "app",
+            packageName = "com.demo.app",
+            appLabel = "Demo",
+            sourceMode = GitHubTrackedSourceMode.GitRepository
+        )
+
+        assertEquals("git_repository|gitee.com/demo/app|com.demo.app", git.id)
+    }
+
+    @Test
+    fun `source mode aliases parse git platforms`() {
+        assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("git"))
+        assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("gitee"))
+        assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("gitlab"))
+        assertEquals(GitHubTrackedSourceMode.DirectApk, GitHubTrackedSourceMode.fromStorageId("subscription"))
+    }
+
+    @Test
+    fun `github git repository can map to release lookup item`() {
+        val git = GitHubTrackedApp(
+            repoUrl = "git@github.com:demo/app.git",
+            owner = "github.com/demo",
+            repo = "app",
+            packageName = "com.demo.app",
+            appLabel = "Demo",
+            sourceMode = GitHubTrackedSourceMode.GitRepository,
+            checkActionsUpdates = true,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15
+        )
+
+        val lookupItem = git.githubReleaseLookupItemOrNull()
+
+        assertEquals(GitHubTrackedSourceMode.GitHubRepository, lookupItem?.sourceMode)
+        assertEquals("https://github.com/demo/app", lookupItem?.repoUrl)
+        assertEquals("demo", lookupItem?.owner)
+        assertEquals("app", lookupItem?.repo)
+        assertEquals(false, lookupItem?.checkActionsUpdates)
+        assertEquals(GitHubTrackedActionsUpdateIntervalMode.FollowGlobal, lookupItem?.actionsUpdateIntervalMode)
+    }
+
+    @Test
     fun `actions interval clears when actions check is disabled`() {
         val item = GitHubTrackedApp(
             repoUrl = "https://github.com/demo/app",

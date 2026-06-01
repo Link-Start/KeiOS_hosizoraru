@@ -7,6 +7,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isKeiOsSelfTrack
 import os.kei.ui.page.main.github.GitHubSortDirection
@@ -62,6 +63,9 @@ internal class GitHubPageContentStateDeriver(
                 GitHubTrackedFilterMode.All -> searchedTracked
                 GitHubTrackedFilterMode.GitHubRepository ->
                     searchedTracked.filter { item -> item.isGitHubRepositoryTrack() }
+
+                GitHubTrackedFilterMode.GitRepository ->
+                    searchedTracked.filter { item -> item.isGitRepositoryTrack() }
 
                 GitHubTrackedFilterMode.DirectApk ->
                     searchedTracked.filter { item -> item.isDirectApkTrack() }

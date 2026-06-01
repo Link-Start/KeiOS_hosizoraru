@@ -159,6 +159,79 @@ class GitHubTrackStoreTrackedItemJsonTest {
     }
 
     @Test
+    fun `git repository import derives host scoped identity when owner and repo are missing`() {
+        val payload = GitHubTrackStore.parseTrackedItemsImport(
+            """
+            [
+              {
+                "source": {
+                  "mode": "git_repository",
+                  "url": "git@gitee.com:demo/app.git"
+                },
+                "repoUrl": "git@gitee.com:demo/app.git",
+                "packageName": "com.demo.app",
+                "appLabel": "",
+                "settings": {
+                  "alwaysShowLatestReleaseDownloadButton": true,
+                  "checkActionsUpdates": true,
+                  "actionsUpdateIntervalMode": "15m"
+                }
+              }
+            ]
+            """.trimIndent()
+        )
+
+        val imported = payload.items.single()
+
+        assertEquals(GitHubTrackedSourceMode.GitRepository, imported.sourceMode)
+        assertEquals("gitee.com/demo", imported.owner)
+        assertEquals("app", imported.repo)
+        assertEquals("com.demo.app", imported.appLabel)
+        assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            imported.actionsUpdateIntervalMode
+        )
+    }
+
+    @Test
+    fun `git repository tracking exports source counts and host scoped owner`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://gitlab.com/group/subgroup/app",
+            owner = "gitlab.com/group/subgroup",
+            repo = "app",
+            packageName = "com.demo.app",
+            appLabel = "Demo",
+            sourceMode = GitHubTrackedSourceMode.GitRepository,
+            checkActionsUpdates = true,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15
+        )
+
+        val exported = GitHubTrackStore.buildTrackedItemsExportJson(
+            listOf(item),
+            exportedAtMillis = 4000L
+        )
+        val root = JSONObject(exported)
+        val exportedItem = root.getJSONArray("items").getJSONObject(0)
+        val source = exportedItem.getJSONObject("source")
+        val sourceCounts = root.getJSONObject("sourceCounts")
+        val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
+
+        assertEquals("git_repository", source.getString("mode"))
+        assertEquals("gitlab.com/group/subgroup", source.getString("owner"))
+        assertEquals("app", source.getString("repo"))
+        assertEquals("gitlab.com/group/subgroup", exportedItem.getString("owner"))
+        assertEquals("app", exportedItem.getString("repo"))
+        assertEquals(0, sourceCounts.getInt("githubRepository"))
+        assertEquals(1, sourceCounts.getInt("gitRepository"))
+        assertEquals(0, sourceCounts.getInt("directApk"))
+        assertEquals(GitHubTrackedSourceMode.GitRepository, imported.sourceMode)
+        assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(GitHubTrackedActionsUpdateIntervalMode.FollowGlobal, imported.actionsUpdateIntervalMode)
+    }
+
+    @Test
     fun `nested v2 settings import as project options`() {
         val payload = GitHubTrackStore.parseTrackedItemsImport(
             """
@@ -264,11 +337,20 @@ class GitHubTrackStoreTrackedItemJsonTest {
                     packageName = "org.telegram.messenger",
                     appLabel = "Telegram",
                     sourceMode = GitHubTrackedSourceMode.DirectApk
+                ),
+                GitHubTrackedApp(
+                    repoUrl = "https://gitee.com/demo/app",
+                    owner = "gitee.com/demo",
+                    repo = "app",
+                    packageName = "com.demo.git",
+                    appLabel = "Git",
+                    sourceMode = GitHubTrackedSourceMode.GitRepository
                 )
             )
         )
 
         assertEquals(1, counts.githubRepositoryCount)
+        assertEquals(1, counts.gitRepositoryCount)
         assertEquals(1, counts.directApkCount)
     }
 }

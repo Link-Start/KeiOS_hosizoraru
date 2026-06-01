@@ -22,6 +22,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.parseGithubOwnerRepoStrict
 
 internal class GitHubPageDiscoveryRepository(
@@ -65,6 +66,16 @@ internal class GitHubPageDiscoveryRepository(
                     )
                 }
 
+                GitHubTrackedSourceMode.GitRepository -> {
+                    val identity = buildGitRepositoryTrackIdentity(draft.repoUrl)
+                        ?: return@withContext GitHubTrackEditorResult.InvalidRepository
+                    GitHubTrackEditorSourceIdentity(
+                        owner = identity.owner,
+                        repo = identity.repo,
+                        fallbackLabel = identity.displayName
+                    )
+                }
+
                 GitHubTrackedSourceMode.DirectApk -> {
                     val identity = buildDirectApkTrackIdentity(draft.repoUrl)
                         ?: return@withContext GitHubTrackEditorResult.InvalidRepository
@@ -104,15 +115,19 @@ internal class GitHubPageDiscoveryRepository(
                         GitHubTrackedSourceMode.GitHubRepository ->
                             draft.alwaysShowLatestReleaseDownloadButton
 
+                        GitHubTrackedSourceMode.GitRepository -> false
                         GitHubTrackedSourceMode.DirectApk -> false
                     },
                     updateIntervalMode = draft.updateIntervalMode,
                     checkActionsUpdates = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.checkActionsUpdates
+                        GitHubTrackedSourceMode.GitRepository -> false
                         GitHubTrackedSourceMode.DirectApk -> false
                     },
                     actionsUpdateIntervalMode = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.actionsUpdateIntervalMode
+                        GitHubTrackedSourceMode.GitRepository ->
+                            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                         GitHubTrackedSourceMode.DirectApk ->
                             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                     },

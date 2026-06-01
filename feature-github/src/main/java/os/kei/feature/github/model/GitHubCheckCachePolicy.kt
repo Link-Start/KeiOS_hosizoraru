@@ -10,8 +10,24 @@ fun GitHubTrackedApp.checkSourceSignature(
     return when (sourceMode) {
         GitHubTrackedSourceMode.DirectApk ->
             directApkCheckSourceSignature(lookupConfig.checkAllTrackedPreReleases)
+        GitHubTrackedSourceMode.GitRepository -> gitRepositoryCheckSourceSignature(lookupConfig)
         GitHubTrackedSourceMode.GitHubRepository -> lookupConfig.githubCheckSourceSignature()
     }
+}
+
+fun GitHubTrackedApp.gitRepositoryCheckSourceSignature(
+    lookupConfig: GitHubLookupConfig
+): String {
+    val identity = buildGitRepositoryTrackIdentity(repoUrl)
+    return listOf(
+        "git_repository-v1",
+        identity?.platform?.storageId.orEmpty().ifBlank { "unknown" },
+        identity?.host.orEmpty().ifBlank { owner.substringBefore('/').trim().lowercase(Locale.ROOT) },
+        repoUrl.trim().lowercase(Locale.ROOT),
+        packageName.trim().lowercase(Locale.ROOT),
+        if (preferPreRelease) "pre" else "stable",
+        lookupConfig.preciseApkVersionEnabled.toString()
+    ).joinToString("|")
 }
 
 fun GitHubTrackedApp.directApkCheckSourceSignature(
@@ -42,6 +58,7 @@ fun GitHubCheckCacheEntry.isValidForTrackedItem(
             sourceId == GITHUB_DIRECT_APK_STRATEGY_ID &&
                     !item.preferPreRelease &&
                     !lookupConfig.checkAllTrackedPreReleases
+        item.isGitRepositoryTrack() -> false
         lookupConfig.preciseApkVersionEnabled -> false
         else -> sourceId == activeStrategyId
     }

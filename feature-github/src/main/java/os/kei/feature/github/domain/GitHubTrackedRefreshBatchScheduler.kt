@@ -1,8 +1,8 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.isGitBackedRepositoryTrack
 import os.kei.feature.github.model.isDirectApkTrack
-import os.kei.feature.github.model.isGitHubRepositoryTrack
 
 private const val DEFAULT_DIRECT_APK_REFRESH_CONCURRENCY = 2
 private const val SMALL_BATCH_REFRESH_CONCURRENCY = 4
@@ -31,7 +31,7 @@ object GitHubTrackedRefreshBatchScheduler {
         trackedItems.forEachIndexed { index, item ->
             val workItem = GitHubTrackedRefreshWorkItem(index, item)
             when {
-                item.isGitHubRepositoryTrack() -> githubItems += workItem
+                item.isGitBackedRepositoryTrack() -> githubItems += workItem
                 item.isDirectApkTrack() -> directApkItems += workItem
                 else -> otherItems += workItem
             }

@@ -34,6 +34,7 @@ data class GitHubTrackedApp(
             val base = "$owner/$repo|$packageName"
             return when (sourceMode) {
                 GitHubTrackedSourceMode.GitHubRepository -> base
+                GitHubTrackedSourceMode.GitRepository -> "${sourceMode.storageId}|$base"
                 GitHubTrackedSourceMode.DirectApk -> "${sourceMode.storageId}|$base"
             }
         }
@@ -41,13 +42,19 @@ data class GitHubTrackedApp(
 
 enum class GitHubTrackedSourceMode(val storageId: String) {
     GitHubRepository("github_repository"),
+    GitRepository("git_repository"),
     DirectApk("direct_apk");
 
     companion object {
         fun fromStorageId(value: String?): GitHubTrackedSourceMode {
-            val normalized = value.orEmpty().trim()
-            return entries.firstOrNull { it.storageId.equals(normalized, ignoreCase = true) }
-                ?: GitHubRepository
+            val normalized = value.orEmpty().trim().lowercase(Locale.ROOT)
+            return entries.firstOrNull { it.storageId == normalized }
+                ?: when (normalized) {
+                    "git", "gitee", "gitlab" -> GitRepository
+                    "github", "repo", "repository" -> GitHubRepository
+                    "direct", "apk", "subscription", "subscription_project" -> DirectApk
+                    else -> GitHubRepository
+                }
         }
     }
 }
@@ -60,8 +67,33 @@ data class GitHubDirectApkTrackIdentity(
     val assetName: String
 )
 
+enum class GitRepositoryPlatform(val storageId: String) {
+    GitHub("github"),
+    Gitee("gitee"),
+    GitLab("gitlab"),
+    Generic("generic")
+}
+
+data class GitRepositoryTrackIdentity(
+    val url: String,
+    val host: String,
+    val namespace: String,
+    val repo: String,
+    val owner: String,
+    val displayName: String,
+    val platform: GitRepositoryPlatform
+)
+
 fun GitHubTrackedApp.isGitHubRepositoryTrack(): Boolean {
     return sourceMode == GitHubTrackedSourceMode.GitHubRepository
+}
+
+fun GitHubTrackedApp.isGitRepositoryTrack(): Boolean {
+    return sourceMode == GitHubTrackedSourceMode.GitRepository
+}
+
+fun GitHubTrackedApp.isGitBackedRepositoryTrack(): Boolean {
+    return isGitHubRepositoryTrack() || isGitRepositoryTrack()
 }
 
 fun GitHubTrackedApp.isDirectApkTrack(): Boolean {
@@ -78,12 +110,64 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
             }
         }
 
+        GitHubTrackedSourceMode.GitRepository -> copy(
+            alwaysShowLatestReleaseDownloadButton = false,
+            checkActionsUpdates = false,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+        )
+
         GitHubTrackedSourceMode.DirectApk -> copy(
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         )
     }
+}
+
+fun buildGitRepositoryTrackIdentity(rawUrl: String): GitRepositoryTrackIdentity? {
+    val normalizedUrl = rawUrl.trim()
+        .removePrefix("git+")
+        .trimEnd('/')
+    if (normalizedUrl.isBlank()) return null
+    val parsed = parseGitRepositoryHostAndPath(normalizedUrl) ?: return null
+    val host = parsed.first
+        .lowercase(Locale.ROOT)
+        .removePrefix("www.")
+        .ifBlank { return null }
+    val pathSegments = normalizeGitRepositoryPathSegments(parsed.second)
+    if (pathSegments.size < 2) return null
+    val namespace = pathSegments
+        .dropLast(1)
+        .joinToString("/")
+        .ifBlank { return null }
+    val repo = pathSegments.last().removeSuffix(".git").ifBlank { return null }
+    val owner = "$host/$namespace"
+    val displayName = "$owner/$repo"
+    return GitRepositoryTrackIdentity(
+        url = normalizedUrl,
+        host = host,
+        namespace = namespace,
+        repo = repo,
+        owner = owner,
+        displayName = displayName,
+        platform = gitRepositoryPlatform(host)
+    )
+}
+
+fun GitHubTrackedApp.githubReleaseLookupItemOrNull(): GitHubTrackedApp? {
+    if (isGitHubRepositoryTrack()) return this
+    if (!isGitRepositoryTrack()) return null
+    val identity = buildGitRepositoryTrackIdentity(repoUrl) ?: return null
+    if (identity.platform != GitRepositoryPlatform.GitHub) return null
+    if ('/' in identity.namespace) return null
+    return copy(
+        repoUrl = "https://github.com/${identity.namespace}/${identity.repo}",
+        owner = identity.namespace,
+        repo = identity.repo,
+        sourceMode = GitHubTrackedSourceMode.GitHubRepository,
+        checkActionsUpdates = false,
+        actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+    ).withSourceModeConstraints()
 }
 
 fun buildDirectApkTrackIdentity(rawUrl: String): GitHubDirectApkTrackIdentity? {
@@ -123,6 +207,89 @@ fun buildDirectApkTrackIdentity(rawUrl: String): GitHubDirectApkTrackIdentity? {
         displayName = displayName,
         assetName = assetName
     )
+}
+
+private fun parseGitRepositoryHostAndPath(rawUrl: String): Pair<String, String>? {
+    parseScpLikeGitRepositoryUrl(rawUrl)?.let { return it }
+    val uri = runCatching { URI(rawUrl) }.getOrNull()
+    if (uri?.scheme != null) {
+        val scheme = uri.scheme.orEmpty().lowercase(Locale.ROOT)
+        if (scheme !in setOf("http", "https", "ssh", "git")) return null
+        val host = uri.host.orEmpty().ifBlank { return null }
+        val path = uri.path.orEmpty()
+        return host to path
+    }
+    val parts = rawUrl
+        .split('/')
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+    if (parts.size >= 3 && looksLikeGitHost(parts.first())) {
+        return parts.first().substringAfter('@') to parts.drop(1).joinToString("/")
+    }
+    return null
+}
+
+private fun parseScpLikeGitRepositoryUrl(rawUrl: String): Pair<String, String>? {
+    if ("://" in rawUrl) return null
+    val colonIndex = rawUrl.indexOf(':')
+    if (colonIndex <= 0) return null
+    val beforeColon = rawUrl.substring(0, colonIndex)
+    if ('/' in beforeColon) return null
+    val host = beforeColon.substringAfter('@').trim()
+    val path = rawUrl.substring(colonIndex + 1).trim()
+    if (host.isBlank() || path.isBlank() || '/' !in path) return null
+    return host to path
+}
+
+private fun normalizeGitRepositoryPathSegments(path: String): List<String> {
+    val markers = setOf(
+        "-",
+        "tree",
+        "blob",
+        "src",
+        "commits",
+        "commit",
+        "releases",
+        "tags",
+        "issues",
+        "pulls",
+        "merge_requests"
+    )
+    val rawSegments = path
+        .substringBefore('?')
+        .substringBefore('#')
+        .trim('/')
+        .split('/')
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+    val markerIndex = rawSegments.indexOfFirst { segment ->
+        segment.lowercase(Locale.ROOT) in markers
+    }
+    val repositorySegments = if (markerIndex >= 2) {
+        rawSegments.take(markerIndex)
+    } else {
+        rawSegments
+    }
+    if (repositorySegments.isEmpty()) return emptyList()
+    return repositorySegments.dropLast(1) +
+        repositorySegments.last().removeSuffix(".git")
+}
+
+private fun gitRepositoryPlatform(host: String): GitRepositoryPlatform {
+    val normalized = host.lowercase(Locale.ROOT).removePrefix("www.")
+    return when {
+        normalized == "github.com" -> GitRepositoryPlatform.GitHub
+        normalized == "gitee.com" -> GitRepositoryPlatform.Gitee
+        normalized == "gitlab.com" || normalized.endsWith(".gitlab.com") -> GitRepositoryPlatform.GitLab
+        else -> GitRepositoryPlatform.Generic
+    }
+}
+
+private fun looksLikeGitHost(value: String): Boolean {
+    val normalized = value.trim().lowercase(Locale.ROOT)
+    return '.' in normalized ||
+        normalized == "localhost" ||
+        normalized.startsWith("git@")
 }
 
 fun parseGithubOwnerRepoStrict(urlOrPath: String): Pair<String, String>? {

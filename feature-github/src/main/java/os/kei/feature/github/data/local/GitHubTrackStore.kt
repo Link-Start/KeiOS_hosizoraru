@@ -19,6 +19,7 @@ import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.requiredCapabilities
 import os.kei.feature.github.model.resolvedRefreshTimestamp
@@ -58,6 +59,7 @@ data class GitHubTrackedItemsOptionCounts(
 
 data class GitHubTrackedItemsSourceCounts(
     val githubRepositoryCount: Int = 0,
+    val gitRepositoryCount: Int = 0,
     val directApkCount: Int = 0
 )
 
@@ -432,6 +434,7 @@ object GitHubTrackStore {
         val normalizedItems = items.map { it.withSourceModeConstraints() }
         return GitHubTrackedItemsSourceCounts(
             githubRepositoryCount = normalizedItems.count { it.isGitHubRepositoryTrack() },
+            gitRepositoryCount = normalizedItems.count { it.isGitRepositoryTrack() },
             directApkCount = normalizedItems.count { it.isDirectApkTrack() }
         )
     }

@@ -254,6 +254,7 @@
     <string name="github_sort_direction_reverse">反序</string>
     <string name="github_filter_all">全部</string>
     <string name="github_filter_github_repository">GitHub 项目</string>
+    <string name="github_filter_git_repository">Git 项目</string>
     <string name="github_filter_direct_apk">订阅项目</string>
     <string name="github_filter_prerelease_tracked">预发追踪</string>
     <string name="github_filter_update_available">可更新</string>
@@ -269,6 +270,7 @@
     <string name="github_list_label_search_result">搜索结果</string>
     <string name="github_list_msg_no_match">没有匹配的跟踪项目</string>
     <string name="github_item_label_repo">仓库地址</string>
+    <string name="github_item_label_git_repo">Git 仓库地址</string>
     <string name="github_item_label_direct_apk">订阅地址</string>
     <string name="github_item_label_direct_apk_remote_health">远端健康度</string>
     <string name="github_direct_apk_remote_health_checking">检查中</string>
@@ -648,10 +650,13 @@
     <string name="github_track_sheet_section_repository">仓库来源</string>
     <string name="github_track_sheet_section_package_app">包名与本机 App</string>
     <string name="github_track_sheet_source_mode_github">GitHub 项目</string>
+    <string name="github_track_sheet_source_mode_git">Git 项目</string>
     <string name="github_track_sheet_source_mode_direct_apk">订阅项目</string>
     <string name="github_track_sheet_input_repo">GitHub 项目地址</string>
+    <string name="github_track_sheet_input_git">Git 项目地址</string>
     <string name="github_track_sheet_input_direct_apk">订阅地址</string>
     <string name="github_track_sheet_summary_repo">填写仓库主页或 release 地址；也可以通过包名反向扫描项目地址。</string>
+    <string name="github_track_sheet_summary_git">填写 Gitee、GitLab、自建 Git 或其他 Git 平台仓库地址，支持 HTTPS 与 SSH clone URL。</string>
     <string name="github_track_sheet_summary_direct_apk">填写 APK 下载链接、APK 目录索引、JSON 订阅源或带版本目录的 APK 地址；刷新时会解析远端 APK Manifest 与本机版本对比。</string>
     <string name="github_track_sheet_section_repo_candidates">项目候选</string>
     <string name="github_track_sheet_repo_candidates_summary">已验证到同一包名，选择一个仓库写入草稿。</string>
@@ -747,6 +752,7 @@
     <string name="github_import_dialog_label_unchanged_items">保持不变</string>
     <string name="github_import_dialog_label_merged_items">导入后总数</string>
     <string name="github_import_dialog_label_github_items">GitHub 项目</string>
+    <string name="github_import_dialog_label_git_items">Git 项目</string>
     <string name="github_import_dialog_label_direct_apk_items">订阅项目</string>
     <string name="github_import_dialog_label_project_options">项目设置</string>
     <string name="github_import_dialog_label_pre_release_items">预发行优先</string>

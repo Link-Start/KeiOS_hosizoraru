@@ -80,7 +80,7 @@ class McpToolCatalogLocalizationTest {
         )
         assertEquals(
             true,
-            english.contains("filterMode=all|github_repository|direct_apk")
+            english.contains("filterMode=all|github_repository|git_repository|direct_apk")
         )
         assertEquals(true, english.contains("sortMode=update|name|pre_release|changed|added"))
 

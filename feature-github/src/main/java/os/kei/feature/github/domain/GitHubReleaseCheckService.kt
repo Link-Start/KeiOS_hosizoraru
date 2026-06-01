@@ -21,10 +21,12 @@ import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
-import os.kei.feature.github.model.githubCheckSourceSignature
+import os.kei.feature.github.model.githubReleaseLookupItemOrNull
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import java.io.IOException
 
 object GitHubReleaseCheckService {
@@ -75,7 +77,7 @@ object GitHubReleaseCheckService {
         forceRefresh: Boolean
     ): GitHubTrackedReleaseCheck {
         val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig().forTrackedItem(item)
-        val sourceConfigSignature = lookupConfig.githubCheckSourceSignature()
+        val sourceConfigSignature = item.checkSourceSignature(lookupConfig)
         val localVersionInfo = runCatching {
             GitHubVersionUtils.localVersionInfoOrNull(context, item.packageName)
         }.getOrNull()
@@ -90,11 +92,25 @@ object GitHubReleaseCheckService {
                 forceRefresh = forceRefresh
             )
         }
+        val releaseLookupItem = item.githubReleaseLookupItemOrNull()
+        if (item.isGitRepositoryTrack() && releaseLookupItem == null) {
+            return GitHubTrackedReleaseCheck(
+                strategyId = "git_repository",
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                sourceConfigSignature = item.checkSourceSignature(lookupConfig),
+                status = GitHubTrackedReleaseStatus.Failed,
+                message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                    "generic Git repository release checks require a platform-specific backend"
+                )
+            )
+        }
+        val repositoryItem = releaseLookupItem ?: item
         val profileRepository = GitHubRepositoryProfileRepository()
         val effectiveStrategy = strategy ?: GitHubReleaseStrategyRegistry.resolveConfiguredStrategy().getOrElse { error ->
             val profile = loadRepositoryProfile(
                 profileRepository = profileRepository,
-                item = item,
+                item = repositoryItem,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
@@ -118,8 +134,8 @@ object GitHubReleaseCheckService {
         }
 
         val snapshot = loadSnapshotWithFallback(
-            owner = item.owner,
-            repo = item.repo,
+            owner = repositoryItem.owner,
+            repo = repositoryItem.repo,
             strategy = effectiveStrategy,
             lookupConfig = lookupConfig,
             allowFallback = strategy == null,
@@ -127,7 +143,7 @@ object GitHubReleaseCheckService {
         ).getOrElse { error ->
             val profile = loadRepositoryProfile(
                 profileRepository = profileRepository,
-                item = item,
+                item = repositoryItem,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
@@ -158,7 +174,7 @@ object GitHubReleaseCheckService {
         )
         val profile = loadRepositoryProfile(
             profileRepository = profileRepository,
-            item = item,
+            item = repositoryItem,
             lookupConfig = lookupConfig,
             localVersion = localVersion,
             localVersionCode = localVersionCode,

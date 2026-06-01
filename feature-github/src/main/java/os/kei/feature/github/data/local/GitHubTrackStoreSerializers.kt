@@ -10,26 +10,38 @@ import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.withSourceModeConstraints
 
 fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {
     val settings = obj.optJSONObject("settings")
     val source = obj.optJSONObject("source")
     val repository = obj.optJSONObject("repository")
-    val repoUrl = obj.optString("repoUrl").trim()
+    val repoUrl = obj.optString("repoUrl").trim().ifBlank {
+        source?.optString("url").orEmpty().trim()
+    }
     val sourceMode = parseTrackedSourceMode(obj)
     val directIdentity = if (sourceMode == GitHubTrackedSourceMode.DirectApk) {
         buildDirectApkTrackIdentity(repoUrl)
     } else {
         null
     }
+    val gitIdentity = if (sourceMode == GitHubTrackedSourceMode.GitRepository) {
+        buildGitRepositoryTrackIdentity(repoUrl)
+    } else {
+        null
+    }
     val owner = obj.optString("owner").trim().ifBlank {
         source?.optString("owner").orEmpty().trim()
+    }.ifBlank {
+        gitIdentity?.owner.orEmpty()
     }.ifBlank {
         directIdentity?.owner.orEmpty()
     }
     val repo = obj.optString("repo").trim().ifBlank {
         source?.optString("repo").orEmpty().trim()
+    }.ifBlank {
+        gitIdentity?.repo.orEmpty()
     }.ifBlank {
         directIdentity?.repo.orEmpty()
     }
@@ -39,7 +51,7 @@ fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {
         return null
     }
     val fallbackLabel = packageName.ifBlank {
-        directIdentity?.displayName ?: "$owner/$repo"
+        directIdentity?.displayName ?: gitIdentity?.displayName ?: "$owner/$repo"
     }
     val preferPreRelease = when {
         settings?.has("preferPreRelease") == true ->
@@ -53,7 +65,8 @@ fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {
         else -> false
     }
     val alwaysShowLatestReleaseDownloadButton = when {
-        sourceMode == GitHubTrackedSourceMode.DirectApk -> false
+        sourceMode == GitHubTrackedSourceMode.DirectApk ||
+                sourceMode == GitHubTrackedSourceMode.GitRepository -> false
         settings?.has("alwaysShowLatestReleaseDownloadButton") == true ->
             settings.optBoolean("alwaysShowLatestReleaseDownloadButton", false)
 
@@ -69,7 +82,8 @@ fun parseTrackedItem(obj: JSONObject): GitHubTrackedApp? {
         else -> false
     }
     val checkActionsUpdates = when {
-        sourceMode == GitHubTrackedSourceMode.DirectApk -> false
+        sourceMode == GitHubTrackedSourceMode.DirectApk ||
+                sourceMode == GitHubTrackedSourceMode.GitRepository -> false
         settings?.has("checkActionsUpdates") == true ->
             settings.optBoolean("checkActionsUpdates", false)
 
@@ -267,7 +281,7 @@ fun trackedItemToJson(item: GitHubTrackedApp): JSONObject {
         .put("repository", repository)
         .put("repositoryArchived", normalizedItem.repositoryArchived)
         .put("repositoryFork", normalizedItem.repositoryFork)
-    if (normalizedItem.sourceMode == GitHubTrackedSourceMode.GitHubRepository) {
+    if (normalizedItem.sourceMode != GitHubTrackedSourceMode.DirectApk) {
         payload
             .put("owner", normalizedItem.owner)
             .put("repo", normalizedItem.repo)
@@ -288,6 +302,7 @@ fun GitHubTrackedItemsOptionCounts.toJson(): JSONObject {
 fun GitHubTrackedItemsSourceCounts.toJson(): JSONObject {
     return JSONObject()
         .put("githubRepository", githubRepositoryCount)
+        .put("gitRepository", gitRepositoryCount)
         .put("directApk", directApkCount)
 }
 

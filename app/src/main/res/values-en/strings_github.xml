@@ -254,6 +254,7 @@
     <string name="github_sort_direction_reverse">Reverse</string>
     <string name="github_filter_all">All</string>
     <string name="github_filter_github_repository">GitHub projects</string>
+    <string name="github_filter_git_repository">Git projects</string>
     <string name="github_filter_direct_apk">Subscriptions</string>
     <string name="github_filter_prerelease_tracked">Pre-release tracking</string>
     <string name="github_filter_update_available">Update available</string>
@@ -269,6 +270,7 @@
     <string name="github_list_label_search_result">Search results</string>
     <string name="github_list_msg_no_match">No matching tracked projects</string>
     <string name="github_item_label_repo">Repository URL</string>
+    <string name="github_item_label_git_repo">Git repository URL</string>
     <string name="github_item_label_direct_apk">Subscription URL</string>
     <string name="github_item_label_direct_apk_remote_health">Remote health</string>
     <string name="github_direct_apk_remote_health_checking">Checking</string>
@@ -648,10 +650,13 @@
     <string name="github_track_sheet_section_repository">Repository source</string>
     <string name="github_track_sheet_section_package_app">Package &amp; local app</string>
     <string name="github_track_sheet_source_mode_github">GitHub project</string>
+    <string name="github_track_sheet_source_mode_git">Git project</string>
     <string name="github_track_sheet_source_mode_direct_apk">Subscription project</string>
     <string name="github_track_sheet_input_repo">GitHub project URL</string>
+    <string name="github_track_sheet_input_git">Git project URL</string>
     <string name="github_track_sheet_input_direct_apk">Subscription URL</string>
     <string name="github_track_sheet_summary_repo">Use a repository or release URL. The project URL can also be scanned from the package name.</string>
+    <string name="github_track_sheet_summary_git">Use a Gitee, GitLab, self-hosted Git, or other Git platform repository URL. HTTPS and SSH clone URLs are supported.</string>
     <string name="github_track_sheet_summary_direct_apk">Use an APK download link, APK directory index, JSON feed, or versioned APK directory URL. Refresh resolves the remote APK Manifest and compares it with the local version.</string>
     <string name="github_track_sheet_section_repo_candidates">Project candidates</string>
     <string name="github_track_sheet_repo_candidates_summary">These repositories were verified against the same package name. Select one to fill the draft.</string>
@@ -747,6 +752,7 @@
     <string name="github_import_dialog_label_unchanged_items">Unchanged</string>
     <string name="github_import_dialog_label_merged_items">Total after import</string>
     <string name="github_import_dialog_label_github_items">GitHub projects</string>
+    <string name="github_import_dialog_label_git_items">Git projects</string>
     <string name="github_import_dialog_label_direct_apk_items">Subscriptions</string>
     <string name="github_import_dialog_action_confirm">Confirm import</string>
     <string name="github_share_import_dialog_title">Share import</string>

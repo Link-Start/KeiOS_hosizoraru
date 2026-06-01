@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
@@ -185,6 +186,7 @@ internal class McpGitHubTrackingTools(
         return buildString {
             appendLine("trackedCount=${snapshot.items.size}")
             appendLine("githubRepositoryCount=${sourceCounts.githubRepositoryCount}")
+            appendLine("gitRepositoryCount=${sourceCounts.gitRepositoryCount}")
             appendLine("directApkCount=${sourceCounts.directApkCount}")
             appendLine("cachedCheckCount=${snapshot.checkCache.size}")
             appendLine("cachedHasUpdateCount=$cachedUpdateCount")
@@ -230,12 +232,14 @@ internal class McpGitHubTrackingTools(
             val sourceMatches = when (sourceModeFilter) {
                 null -> true
                 GitHubTrackedSourceMode.GitHubRepository -> item.isGitHubRepositoryTrack()
+                GitHubTrackedSourceMode.GitRepository -> item.isGitRepositoryTrack()
                 GitHubTrackedSourceMode.DirectApk -> item.isDirectApkTrack()
             }
             if (!sourceMatches) return@filter false
             val filterMatches = when (filterMode) {
                 GitHubTrackedFilterMode.All -> true
                 GitHubTrackedFilterMode.GitHubRepository -> item.isGitHubRepositoryTrack()
+                GitHubTrackedFilterMode.GitRepository -> item.isGitRepositoryTrack()
                 GitHubTrackedFilterMode.DirectApk -> item.isDirectApkTrack()
                 GitHubTrackedFilterMode.Installed -> item.packageName.trim() in installedPackageNames
                 GitHubTrackedFilterMode.ActionsCheckEnabled -> item.checkActionsUpdates

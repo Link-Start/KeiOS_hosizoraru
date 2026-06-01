@@ -77,7 +77,7 @@ internal class GitHubTrackActions(
     fun setTrackSourceModeInput(value: GitHubTrackedSourceMode) {
         state.trackSourceModeInput = value
         state.repoScanCandidates = emptyList()
-        if (value == GitHubTrackedSourceMode.DirectApk) {
+        if (value != GitHubTrackedSourceMode.GitHubRepository) {
             state.alwaysShowLatestReleaseDownloadButtonInput = false
             state.checkActionsUpdatesInput = false
             state.actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
@@ -237,6 +237,10 @@ internal class GitHubTrackActions(
                                 lookupConfig = state.lookupConfig,
                             )
                         }
+
+                        GitHubTrackedSourceMode.GitRepository -> {
+                            Result.failure(IllegalStateException("Git repository package scanning is unavailable"))
+                        }
                     }.getOrElse { error ->
                         env.toast(
                             R.string.github_toast_package_scan_failed,
@@ -264,7 +268,7 @@ internal class GitHubTrackActions(
 
     fun scanRepoUrlFromPackage() {
         if (state.repoUrlScanRunning || state.packageNameScanRunning) return
-        if (state.trackSourceModeInput == GitHubTrackedSourceMode.DirectApk) return
+        if (state.trackSourceModeInput != GitHubTrackedSourceMode.GitHubRepository) return
         val packageName =
             state.packageNameInput.trim().ifBlank {
                 state.selectedApp
@@ -355,6 +359,10 @@ internal class GitHubTrackActions(
                             state.alwaysShowLatestReleaseDownloadButtonInput
                         }
 
+                        GitHubTrackedSourceMode.GitRepository -> {
+                            false
+                        }
+
                         GitHubTrackedSourceMode.DirectApk -> {
                             false
                         }
@@ -362,12 +370,13 @@ internal class GitHubTrackActions(
                 checkActionsUpdates =
                     when (state.trackSourceModeInput) {
                         GitHubTrackedSourceMode.GitHubRepository -> state.checkActionsUpdatesInput
+                        GitHubTrackedSourceMode.GitRepository -> false
                         GitHubTrackedSourceMode.DirectApk -> false
                     },
                 updateIntervalMode = state.updateIntervalModeInput,
                 actionsUpdateIntervalMode =
                     when {
-                        state.trackSourceModeInput == GitHubTrackedSourceMode.DirectApk -> {
+                        state.trackSourceModeInput != GitHubTrackedSourceMode.GitHubRepository -> {
                             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                         }
 

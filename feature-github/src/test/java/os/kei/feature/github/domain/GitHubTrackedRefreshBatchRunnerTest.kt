@@ -164,6 +164,25 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `scheduler treats git repository sources as repository work`() {
+        val items = listOf(
+            tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
+            tracked(2, sourceMode = GitHubTrackedSourceMode.GitRepository),
+            tracked(3),
+            tracked(4, sourceMode = GitHubTrackedSourceMode.DirectApk)
+        )
+
+        val order = GitHubTrackedRefreshBatchScheduler
+            .buildFairRefreshOrder(items)
+            .map { it.item.packageName }
+
+        assertEquals(
+            listOf("demo.repo2", "demo.repo1", "demo.repo3", "demo.repo4"),
+            order
+        )
+    }
+
+    @Test
     fun `scheduler increases refresh concurrency for larger batches`() {
         assertEquals(1, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(1))
         assertEquals(4, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(8))
@@ -213,6 +232,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
         return GitHubTrackedApp(
             repoUrl = when (sourceMode) {
                 GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo-$index"
+                GitHubTrackedSourceMode.GitRepository -> "https://gitee.com/demo/repo-$index"
                 GitHubTrackedSourceMode.DirectApk -> "https://example.com/download/repo-$index.apk"
             },
             owner = "demo",

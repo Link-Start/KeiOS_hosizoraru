@@ -15,6 +15,10 @@ internal fun trackedSourceModeLabel(mode: GitHubTrackedSourceMode): String =
             stringResource(R.string.github_track_sheet_source_mode_github)
         }
 
+        GitHubTrackedSourceMode.GitRepository -> {
+            stringResource(R.string.github_track_sheet_source_mode_git)
+        }
+
         GitHubTrackedSourceMode.DirectApk -> {
             stringResource(R.string.github_track_sheet_source_mode_direct_apk)
         }

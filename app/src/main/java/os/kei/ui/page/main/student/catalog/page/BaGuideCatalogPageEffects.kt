@@ -48,12 +48,18 @@ internal fun BaGuideCatalogPageDerivedEffects(
     favoriteBgms: List<GuideBgmFavoriteItem>,
     pageState: BaGuideCatalogPageStateHolder,
 ) {
-    val catalogSortMode = filterSortState.sortMode
-    val catalogSelectedFilterOptions = filterSortState.selectedFilterOptions
+    val catalogSortModes =
+        BaGuideCatalogTab.entries.associateWith { tab ->
+            filterSortState.sortModeFor(tab)
+        }
+    val catalogSelectedFilterOptions =
+        BaGuideCatalogTab.entries.associateWith { tab ->
+            filterSortState.selectedFilterOptionsFor(tab)
+        }
     LaunchedEffect(
         pageActions,
         catalogDataState.catalog,
-        catalogSortMode,
+        catalogSortModes,
         catalogFavoriteEntries,
         catalogSelectedFilterOptions,
         pageState.studentSearchQuery,
@@ -64,9 +70,9 @@ internal fun BaGuideCatalogPageDerivedEffects(
                 BaGuideCatalogListInput(
                     catalog = catalogDataState.catalog,
                     tab = tab,
-                    sortMode = catalogSortMode,
+                    sortMode = catalogSortModes.getValue(tab),
                     favoriteCatalogEntries = catalogFavoriteEntries,
-                    selectedFilterOptions = catalogSelectedFilterOptions,
+                    selectedFilterOptions = catalogSelectedFilterOptions.getValue(tab),
                     searchQuery = pageState.searchQueries.catalogSearchQueryFor(tab),
                 ),
             )

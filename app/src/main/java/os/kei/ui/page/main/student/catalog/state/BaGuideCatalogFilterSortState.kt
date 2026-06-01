@@ -6,18 +6,24 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 
 @Stable
 internal data class BaGuideCatalogFilterSortSnapshot(
     val searchQuery: String = "",
     val sortMode: BaGuideCatalogSortMode = BaGuideCatalogSortMode.Default,
     val selectedFiltersRaw: String = "",
+    val studentSortMode: BaGuideCatalogSortMode = BaGuideCatalogSortMode.Default,
+    val npcSatelliteSortMode: BaGuideCatalogSortMode = BaGuideCatalogSortMode.Default,
+    val studentSelectedFiltersRaw: String = "",
+    val npcSatelliteSelectedFiltersRaw: String = "",
 )
 
 @Stable
 internal class BaGuideCatalogFilterSortState(
     private val snapshot: () -> BaGuideCatalogFilterSortSnapshot,
     private val onSnapshotChange: (BaGuideCatalogFilterSortSnapshot) -> Unit,
+    private val activeCatalogTab: () -> BaGuideCatalogTab?,
     private val showSortPopupState: MutableState<Boolean>,
     private val showFilterPopupState: MutableState<Boolean>,
 ) {
@@ -28,9 +34,17 @@ internal class BaGuideCatalogFilterSortState(
         }
 
     var sortMode: BaGuideCatalogSortMode
-        get() = snapshot().sortMode
+        get() = sortModeFor(activeCatalogTab() ?: BaGuideCatalogTab.Student)
         set(value) {
-            onSnapshotChange(snapshot().copy(sortMode = value))
+            val tab = activeCatalogTab() ?: BaGuideCatalogTab.Student
+            val current = snapshot()
+            onSnapshotChange(
+                current
+                    .withSortMode(
+                        tab = tab,
+                        mode = value,
+                    ).copy(sortMode = value),
+            )
         }
 
     var showSortPopup: Boolean
@@ -46,10 +60,15 @@ internal class BaGuideCatalogFilterSortState(
         }
 
     val selectedFilterOptions: Map<Int, Set<Int>>
-        get() = decodeSelectedFilters(snapshot().selectedFiltersRaw)
+        get() = selectedFilterOptionsFor(activeCatalogTab() ?: BaGuideCatalogTab.Student)
 
     val activeFilterCount: Int
         get() = selectedFilterOptions.values.count { it.isNotEmpty() }
+
+    fun sortModeFor(tab: BaGuideCatalogTab): BaGuideCatalogSortMode = snapshot().sortModeFor(tab)
+
+    fun selectedFilterOptionsFor(tab: BaGuideCatalogTab): Map<Int, Set<Int>> =
+        decodeSelectedFilters(snapshot().selectedFiltersRawFor(tab))
 
     fun selectSortMode(mode: BaGuideCatalogSortMode) {
         sortMode = mode
@@ -83,11 +102,26 @@ internal class BaGuideCatalogFilterSortState(
         } else {
             next[filterId] = options.toSet()
         }
-        onSnapshotChange(snapshot().copy(selectedFiltersRaw = encodeSelectedFilters(next)))
+        val tab = activeCatalogTab() ?: BaGuideCatalogTab.Student
+        val encoded = encodeSelectedFilters(next)
+        onSnapshotChange(
+            snapshot()
+                .withSelectedFiltersRaw(
+                    tab = tab,
+                    raw = encoded,
+                ).copy(selectedFiltersRaw = encoded),
+        )
     }
 
     fun clearFilters() {
-        onSnapshotChange(snapshot().copy(selectedFiltersRaw = ""))
+        val tab = activeCatalogTab() ?: BaGuideCatalogTab.Student
+        onSnapshotChange(
+            snapshot()
+                .withSelectedFiltersRaw(
+                    tab = tab,
+                    raw = "",
+                ).copy(selectedFiltersRaw = ""),
+        )
         showFilterPopup = false
     }
 }
@@ -95,9 +129,11 @@ internal class BaGuideCatalogFilterSortState(
 @Composable
 internal fun rememberBaGuideCatalogFilterSortState(
     snapshot: BaGuideCatalogFilterSortSnapshot,
+    activeCatalogTab: BaGuideCatalogTab?,
     onSnapshotChange: (BaGuideCatalogFilterSortSnapshot) -> Unit,
 ): BaGuideCatalogFilterSortState {
     val currentSnapshot = rememberUpdatedState(snapshot)
+    val currentActiveCatalogTab = rememberUpdatedState(activeCatalogTab)
     val currentOnSnapshotChange = rememberUpdatedState(onSnapshotChange)
     val showSortPopupState = remember { mutableStateOf(false) }
     val showFilterPopupState = remember { mutableStateOf(false) }
@@ -108,11 +144,42 @@ internal fun rememberBaGuideCatalogFilterSortState(
         BaGuideCatalogFilterSortState(
             snapshot = { currentSnapshot.value },
             onSnapshotChange = { currentOnSnapshotChange.value(it) },
+            activeCatalogTab = { currentActiveCatalogTab.value },
             showSortPopupState = showSortPopupState,
             showFilterPopupState = showFilterPopupState,
         )
     }
 }
+
+private fun BaGuideCatalogFilterSortSnapshot.sortModeFor(tab: BaGuideCatalogTab): BaGuideCatalogSortMode =
+    when (tab) {
+        BaGuideCatalogTab.Student -> studentSortMode
+        BaGuideCatalogTab.NpcSatellite -> npcSatelliteSortMode
+    }
+
+private fun BaGuideCatalogFilterSortSnapshot.withSortMode(
+    tab: BaGuideCatalogTab,
+    mode: BaGuideCatalogSortMode,
+): BaGuideCatalogFilterSortSnapshot =
+    when (tab) {
+        BaGuideCatalogTab.Student -> copy(studentSortMode = mode)
+        BaGuideCatalogTab.NpcSatellite -> copy(npcSatelliteSortMode = mode)
+    }
+
+private fun BaGuideCatalogFilterSortSnapshot.selectedFiltersRawFor(tab: BaGuideCatalogTab): String =
+    when (tab) {
+        BaGuideCatalogTab.Student -> studentSelectedFiltersRaw
+        BaGuideCatalogTab.NpcSatellite -> npcSatelliteSelectedFiltersRaw
+    }
+
+private fun BaGuideCatalogFilterSortSnapshot.withSelectedFiltersRaw(
+    tab: BaGuideCatalogTab,
+    raw: String,
+): BaGuideCatalogFilterSortSnapshot =
+    when (tab) {
+        BaGuideCatalogTab.Student -> copy(studentSelectedFiltersRaw = raw)
+        BaGuideCatalogTab.NpcSatellite -> copy(npcSatelliteSelectedFiltersRaw = raw)
+    }
 
 private fun encodeSelectedFilters(filters: Map<Int, Set<Int>>): String =
     filters

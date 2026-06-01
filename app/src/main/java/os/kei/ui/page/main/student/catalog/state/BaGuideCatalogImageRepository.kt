@@ -15,16 +15,16 @@ internal data class BaGuideCatalogImageLoadResult(
     val missingUrls: Set<String>,
 )
 
-internal class BaGuideCatalogImageRepository {
-    fun cachedBitmap(imageUrl: String): Bitmap? = BaGuideCatalogIconCache.get(imageUrl)
+internal open class BaGuideCatalogImageRepository {
+    open fun cachedBitmap(imageUrl: String): Bitmap? = BaGuideCatalogIconCache.get(imageUrl)
 
     /**
      * Loads every requested icon concurrently instead of one-by-one. Actual IO parallelism is
-     * bounded by [AppDispatchers.catalogThumbnails] (6 threads), and per-URL dedup is handled
+     * bounded by [AppDispatchers.catalogThumbnails] (4 threads), and per-URL dedup is handled
      * inside [GameKeeMediaImageLoader]. Each completion is streamed back via [onResult] so the
      * caller can paint cards progressively rather than waiting for the whole batch.
      */
-    suspend fun loadImages(
+    open suspend fun loadImages(
         context: Context,
         imageUrls: List<String>,
         onResult: (imageUrl: String, bitmap: Bitmap?) -> Unit = { _, _ -> },
@@ -48,7 +48,7 @@ internal class BaGuideCatalogImageRepository {
         coroutineScope {
             targets
                 .map { imageUrl ->
-                    async {
+                    async(AppDispatchers.catalogThumbnails) {
                         BaGuideCatalogIconCache.get(imageUrl)?.let { cached ->
                             resolvedBitmaps[imageUrl] = cached
                             onResult(imageUrl, cached)

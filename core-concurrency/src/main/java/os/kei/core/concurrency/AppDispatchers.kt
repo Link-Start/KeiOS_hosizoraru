@@ -69,13 +69,10 @@ object AppDispatchers {
 
     /**
      * Catalog thumbnail loading: small (≤256px) GameKee icon fetch + decode for grid pages.
-     * Bounded to 6 threads — unlike full-size guide images these loads are light and
-     * network-latency bound, so overlapping round-trips matters more than decode cost.
-     * Kept separate from [media] so full-size decodes and grid thumbnails don't starve each
-     * other. The explicit cap is the Android 17 fair-scheduling backstop: the catalog can
-     * saturate at most 6 IO threads instead of monopolizing the shared pool during a scroll.
+     * Bounded to 4 threads so the catalog can overlap network round-trips while leaving enough
+     * scheduler room for SystemUI, media, and BA detail hydration during page entry.
      */
-    val catalogThumbnails: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(6)
+    val catalogThumbnails: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
     /**
      * UI data derivation: filtering, sorting, and grouping already-loaded in-memory models.

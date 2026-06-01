@@ -30,9 +30,9 @@ private const val BA_GUIDE_STUDENT_PID = 49443
 private const val BA_GUIDE_NPC_SATELLITE_PID = 107619
 private const val BA_GUIDE_INDEX_REFERER_PATH = "/ba/second/$BA_GUIDE_SECOND_PAGE_ID"
 private const val BA_GUIDE_FILTER_INDEX_PATH_PREFIX = "/v1/entryFilter/getEntryFilter?entry_id="
-private const val BA_GUIDE_RELEASE_INDEX_MAX_NETWORK_FETCH_PER_PASS = 24
-private const val BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE = 6
-private const val BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS = 120L
+private const val BA_GUIDE_RELEASE_INDEX_MAX_NETWORK_FETCH_PER_PASS = 12
+private const val BA_GUIDE_RELEASE_INDEX_NETWORK_BATCH_SIZE = 3
+private const val BA_GUIDE_RELEASE_INDEX_REQUEST_THROTTLE_MS = 180L
 internal const val BA_GUIDE_INDEX_URL = "https://www.gamekee.com$BA_GUIDE_INDEX_REFERER_PATH"
 
 @Volatile
@@ -131,7 +131,9 @@ internal fun isBaGuideCatalogBundleComplete(bundle: BaGuideCatalogBundle?): Bool
     bundle ?: return false
     return BaGuideCatalogTab.entries.all { tab ->
         val entries = bundle.entries(tab)
+        val filterDefinitions = bundle.filterDefinitions(tab)
         entries.isNotEmpty() &&
+            filterDefinitions.isNotEmpty() &&
             entries.all { entry ->
                 entry.contentId > 0L &&
                     entry.name.isNotBlank() &&
@@ -177,6 +179,10 @@ internal suspend fun fetchBaGuideCatalogBundle(
         withContext(networkDispatcher) {
             BaGuideCatalogStore.loadReleaseDateIndexSnapshot()
         }
+    val cachedFilterBundle =
+        withContext(networkDispatcher) {
+            loadCachedBaGuideCatalogBundle()
+        }
 
     val (studentRaw, npcSatelliteRaw, studentFilterIndex, npcSatelliteFilterIndex) =
         coroutineScope {
@@ -197,21 +203,36 @@ internal suspend fun fetchBaGuideCatalogBundle(
 
     val (studentEntries, npcSatelliteEntries) =
         withContext(parseDispatcher) {
+            val studentFilterFallback = cachedFilterBundle.filterFallback(BaGuideCatalogTab.Student)
+            val npcSatelliteFilterFallback = cachedFilterBundle.filterFallback(BaGuideCatalogTab.NpcSatellite)
             val studentEntries =
                 studentRaw.map { raw ->
-                    val filterReleaseDateSec = studentFilterIndex.releaseDateSec(raw.entryId)
+                    val filterAttributes =
+                        studentFilterIndex
+                            .attributes(raw.entryId)
+                            .ifEmpty { studentFilterFallback.attributes(raw) }
+                    val filterReleaseDateSec =
+                        studentFilterIndex.releaseDateSec(raw.entryId).takeIf { it > 0L }
+                            ?: filterAttributes.releaseDateSec()
                     raw.toCatalogEntry(
                         tab = BaGuideCatalogTab.Student,
                         releaseDateSec = releaseDateIndex[raw.contentId] ?: filterReleaseDateSec,
-                        filterAttributes = studentFilterIndex.attributes(raw.entryId),
+                        filterAttributes = filterAttributes,
                     )
                 }
             val npcSatelliteEntries =
                 npcSatelliteRaw.map { raw ->
+                    val filterAttributes =
+                        npcSatelliteFilterIndex
+                            .attributes(raw.entryId)
+                            .ifEmpty { npcSatelliteFilterFallback.attributes(raw) }
+                    val filterReleaseDateSec =
+                        npcSatelliteFilterIndex.releaseDateSec(raw.entryId).takeIf { it > 0L }
+                            ?: filterAttributes.releaseDateSec()
                     raw.toCatalogEntry(
                         tab = BaGuideCatalogTab.NpcSatellite,
-                        releaseDateSec = releaseDateIndex[raw.contentId] ?: 0L,
-                        filterAttributes = npcSatelliteFilterIndex.attributes(raw.entryId),
+                        releaseDateSec = releaseDateIndex[raw.contentId] ?: filterReleaseDateSec,
+                        filterAttributes = filterAttributes,
                     )
                 }
             studentEntries to npcSatelliteEntries
@@ -227,8 +248,14 @@ internal suspend fun fetchBaGuideCatalogBundle(
             syncedAtMs = now,
             filterDefinitionsByTab =
                 mapOf(
-                    BaGuideCatalogTab.Student to studentFilterIndex.definitions,
-                    BaGuideCatalogTab.NpcSatellite to npcSatelliteFilterIndex.definitions,
+                    BaGuideCatalogTab.Student to
+                        studentFilterIndex.definitions.ifEmpty {
+                            cachedFilterBundle?.filterDefinitions(BaGuideCatalogTab.Student).orEmpty()
+                        },
+                    BaGuideCatalogTab.NpcSatellite to
+                        npcSatelliteFilterIndex.definitions.ifEmpty {
+                            cachedFilterBundle?.filterDefinitions(BaGuideCatalogTab.NpcSatellite).orEmpty()
+                        },
                 ),
         )
     cachedCatalogBundle = bundle
@@ -244,6 +271,47 @@ private data class CatalogFetchPayload(
     val studentFilterIndex: BaGuideCatalogFilterIndex,
     val npcSatelliteFilterIndex: BaGuideCatalogFilterIndex,
 )
+
+private data class CatalogFilterFallback(
+    val byEntryId: Map<Int, BaGuideCatalogEntryFilterAttributes>,
+    val byContentId: Map<Long, BaGuideCatalogEntryFilterAttributes>,
+) {
+    fun attributes(raw: RawEntry): BaGuideCatalogEntryFilterAttributes =
+        byEntryId[raw.entryId]
+            ?: byContentId[raw.contentId]
+            ?: BaGuideCatalogEntryFilterAttributes.EMPTY
+}
+
+private fun BaGuideCatalogBundle?.filterFallback(tab: BaGuideCatalogTab): CatalogFilterFallback {
+    val entries = this?.entries(tab).orEmpty()
+    return CatalogFilterFallback(
+        byEntryId =
+            entries
+                .filter { entry -> entry.entryId > 0 && !entry.filterAttributes.isEmpty() }
+                .associate { entry -> entry.entryId to entry.filterAttributes },
+        byContentId =
+            entries
+                .filter { entry -> entry.contentId > 0L && !entry.filterAttributes.isEmpty() }
+                .associate { entry -> entry.contentId to entry.filterAttributes },
+    )
+}
+
+private fun BaGuideCatalogEntryFilterAttributes.ifEmpty(
+    fallback: () -> BaGuideCatalogEntryFilterAttributes,
+): BaGuideCatalogEntryFilterAttributes =
+    if (isEmpty()) fallback() else this
+
+private fun BaGuideCatalogEntryFilterAttributes.isEmpty(): Boolean =
+    optionIdsByFilterId.isEmpty() && numericValueByFilterId.isEmpty()
+
+private fun BaGuideCatalogEntryFilterAttributes.releaseDateSec(): Long {
+    val raw = numericValue(BA_GUIDE_FILTER_ID_RELEASE_DATE)
+    return when {
+        raw >= 1_000_000_000_000L -> raw / 1000L
+        raw > 0L -> raw
+        else -> 0L
+    }
+}
 
 internal suspend fun hydrateBaGuideCatalogReleaseDateIndex(
     source: BaGuideCatalogBundle,

@@ -44,10 +44,18 @@ internal class BaGuideStudentBgmLookupCoordinator(
 
     private var cachePrewarmJob: Job? = null
     private val cachePrewarmCheckedContentIds = mutableSetOf<Long>()
+    private val pendingResolveLock = Any()
+    private val pendingResolveCallbacksByContentId =
+        mutableMapOf<Long, MutableList<(BaGuideStudentBgmResolvedItem?) -> Unit>>()
+    private var lookupGeneration = 0
 
     fun clear() {
         cachePrewarmJob?.cancel()
         cachePrewarmCheckedContentIds.clear()
+        synchronized(pendingResolveLock) {
+            lookupGeneration++
+            pendingResolveCallbacksByContentId.clear()
+        }
         _states.value = emptyMap()
     }
 
@@ -102,14 +110,22 @@ internal class BaGuideStudentBgmLookupCoordinator(
         allowNetwork: Boolean,
         onResolved: (BaGuideStudentBgmResolvedItem?) -> Unit
     ) {
-        val current = _states.value[entry.contentId]
-        if (current is BaGuideStudentBgmLookupState.Ready) {
-            onResolved(current.item)
-            return
-        }
-        if (current == BaGuideStudentBgmLookupState.Loading) return
-        _states.update { states ->
-            states + (entry.contentId to BaGuideStudentBgmLookupState.Loading)
+        val contentId = entry.contentId
+        val generation: Int
+        synchronized(pendingResolveLock) {
+            val current = _states.value[contentId]
+            if (current is BaGuideStudentBgmLookupState.Ready) {
+                onResolved(current.item)
+                return
+            }
+            pendingResolveCallbacksByContentId
+                .getOrPut(contentId) { mutableListOf() }
+                .add(onResolved)
+            if (current == BaGuideStudentBgmLookupState.Loading) return
+            generation = lookupGeneration
+            _states.update { states ->
+                states + (contentId to BaGuideStudentBgmLookupState.Loading)
+            }
         }
         scope.launch {
             val resolved = runCatchingCancellable {
@@ -119,10 +135,19 @@ internal class BaGuideStudentBgmLookupCoordinator(
                     cachedLoader(entry)
                 }
             }.getOrNull()
+            val callbacks =
+                synchronized(pendingResolveLock) {
+                    if (generation != lookupGeneration) {
+                        emptyList()
+                    } else {
+                        pendingResolveCallbacksByContentId.remove(contentId).orEmpty()
+                    }
+                }
+            if (callbacks.isEmpty() && generation != lookupGeneration) return@launch
             if (allowNetwork || resolved != null) {
                 _states.update { states ->
                     states + (
-                            entry.contentId to if (resolved == null) {
+                            contentId to if (resolved == null) {
                                 BaGuideStudentBgmLookupState.Missing
                             } else {
                                 BaGuideStudentBgmLookupState.Ready(resolved)
@@ -130,9 +155,9 @@ internal class BaGuideStudentBgmLookupCoordinator(
                             )
                 }
             } else {
-                _states.update { states -> states - entry.contentId }
+                _states.update { states -> states - contentId }
             }
-            onResolved(resolved)
+            callbacks.forEach { callback -> callback(resolved) }
         }
     }
 

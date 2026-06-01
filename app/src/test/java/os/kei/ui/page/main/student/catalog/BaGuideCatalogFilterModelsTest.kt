@@ -134,6 +134,46 @@ class BaGuideCatalogFilterModelsTest {
     }
 
     @Test
+    fun `complete catalog bundle requires filter definitions for every catalog tab`() {
+        val definition =
+            BaGuideCatalogFilterDefinition(
+                id = 68,
+                name = "星级",
+                type = 0,
+                options = listOf(BaGuideCatalogFilterOption(176, "三星")),
+            )
+        val student = catalogEntry("学生", 1, BaGuideCatalogEntryFilterAttributes.EMPTY)
+        val npc =
+            catalogEntry(
+                name = "NPC",
+                order = 2,
+                attributes = BaGuideCatalogEntryFilterAttributes.EMPTY,
+                tab = BaGuideCatalogTab.NpcSatellite,
+            )
+        val withoutNpcFilters =
+            BaGuideCatalogBundle(
+                entriesByTab =
+                    mapOf(
+                        BaGuideCatalogTab.Student to listOf(student),
+                        BaGuideCatalogTab.NpcSatellite to listOf(npc),
+                    ),
+                syncedAtMs = 1_000L,
+                filterDefinitionsByTab = mapOf(BaGuideCatalogTab.Student to listOf(definition)),
+            )
+        val withAllFilters =
+            withoutNpcFilters.copy(
+                filterDefinitionsByTab =
+                    mapOf(
+                        BaGuideCatalogTab.Student to listOf(definition),
+                        BaGuideCatalogTab.NpcSatellite to listOf(definition),
+                    ),
+            )
+
+        assertEquals(false, isBaGuideCatalogBundleComplete(withoutNpcFilters))
+        assertEquals(true, isBaGuideCatalogBundleComplete(withAllFilters))
+    }
+
+    @Test
     fun `catalog filters are scoped to current tab definitions`() {
         val studentDefinition =
             BaGuideCatalogFilterDefinition(

@@ -45,6 +45,33 @@ class BaGuideCatalogRepositoryTest {
         }
 
     @Test
+    fun `refresh failure keeps partial cached entries`() =
+        runBlocking {
+            val cached = catalogBundle("旧缓存")
+            val repository =
+                BaGuideCatalogRepository(
+                    ioDispatcher = Dispatchers.Unconfined,
+                    refreshIntervalLoader = { 1 },
+                    cachedBundleLoader = { cached },
+                    catalogFetcher = { _, _, _, _ -> error("blocked") },
+                    completeChecker = { false },
+                    expiredChecker = { _, _, _ -> true },
+                )
+
+            val result =
+                repository.loadCatalog(
+                    context = null,
+                    currentCatalog = BaGuideCatalogBundle.EMPTY,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(cached, result.catalog)
+            assertEquals("保留缓存", result.error)
+        }
+
+    @Test
     fun `fresh complete cache returns without network fetch`() =
         runBlocking {
             val cached = catalogBundle("新缓存")

@@ -15,6 +15,7 @@ private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 4
 
 internal object BaGuideCatalogStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_GUIDE_CATALOG_KV_ID) }
+    private val favoritesLock = Any()
 
     private fun kv(): MMKV = store
 
@@ -249,8 +250,13 @@ internal object BaGuideCatalogStore {
 
     fun configBytesEstimated(): Long = 0L
 
-    fun loadFavorites(): Map<Long, Long> {
-        val raw = kv().decodeString(KEY_FAVORITES_RAW, "").orEmpty()
+    fun loadFavorites(): Map<Long, Long> =
+        synchronized(favoritesLock) {
+            loadFavoritesLocked(kv())
+        }
+
+    private fun loadFavoritesLocked(store: MMKV): Map<Long, Long> {
+        val raw = store.decodeString(KEY_FAVORITES_RAW, "").orEmpty()
         if (raw.isBlank()) return emptyMap()
         return runCatching {
             val json = JSONObject(raw)
@@ -268,9 +274,17 @@ internal object BaGuideCatalogStore {
         }.getOrDefault(emptyMap())
     }
 
-    fun saveFavorites(favorites: Map<Long, Long>) {
+    fun saveFavorites(favorites: Map<Long, Long>) =
+        synchronized(favoritesLock) {
+            saveFavoritesLocked(kv(), favorites)
+        }
+
+    private fun saveFavoritesLocked(
+        store: MMKV,
+        favorites: Map<Long, Long>,
+    ) {
         if (favorites.isEmpty()) {
-            kv().removeValueForKey(KEY_FAVORITES_RAW)
+            store.removeValueForKey(KEY_FAVORITES_RAW)
             return
         }
         val raw =
@@ -282,23 +296,33 @@ internal object BaGuideCatalogStore {
                         }
                     }
                 }.toString()
-        kv().encode(KEY_FAVORITES_RAW, raw)
+        store.encode(KEY_FAVORITES_RAW, raw)
     }
 
     fun toggleFavorite(
         contentId: Long,
         nowMs: Long = System.currentTimeMillis(),
-    ): Boolean {
-        if (contentId <= 0L) return false
-        val current = loadFavorites().toMutableMap()
-        return if (current.containsKey(contentId)) {
-            current.remove(contentId)
-            saveFavorites(current)
-            false
-        } else {
-            current[contentId] = nowMs.coerceAtLeast(1L)
-            saveFavorites(current)
-            true
+    ): Boolean =
+        toggleFavoriteSnapshot(
+            contentId = contentId,
+            nowMs = nowMs,
+        )[contentId] != null
+
+    fun toggleFavoriteSnapshot(
+        contentId: Long,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Map<Long, Long> {
+        val store = kv()
+        return synchronized(favoritesLock) {
+            if (contentId <= 0L) return@synchronized loadFavoritesLocked(store)
+            val current = loadFavoritesLocked(store).toMutableMap()
+            if (current.containsKey(contentId)) {
+                current.remove(contentId)
+            } else {
+                current[contentId] = nowMs.coerceAtLeast(1L)
+            }
+            saveFavoritesLocked(store, current)
+            current.toMap()
         }
     }
 }

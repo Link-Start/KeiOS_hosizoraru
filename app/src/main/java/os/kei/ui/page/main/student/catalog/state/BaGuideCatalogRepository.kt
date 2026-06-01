@@ -78,8 +78,7 @@ internal class BaGuideCatalogRepository(
     suspend fun toggleCatalogFavorite(contentId: Long): Map<Long, Long> =
         withContext(ioDispatcher) {
             if (contentId <= 0L) return@withContext BaGuideCatalogStore.loadFavorites()
-            BaGuideCatalogStore.toggleFavorite(contentId)
-            BaGuideCatalogStore.loadFavorites()
+            BaGuideCatalogStore.toggleFavoriteSnapshot(contentId)
         }
 
     suspend fun replaceCatalogFavorites(favorites: Map<Long, Long>): Map<Long, Long> =
@@ -219,7 +218,7 @@ internal class BaGuideCatalogRepository(
                 val fallback =
                     when {
                         currentCatalog.entriesByTab.values.any { it.isNotEmpty() } -> currentCatalog
-                        cacheComplete && cachedBundle != null -> cachedBundle
+                        cachedBundle?.entriesByTab?.values?.any { it.isNotEmpty() } == true -> cachedBundle
                         else -> BaGuideCatalogBundle.EMPTY
                     }
                 BaGuideCatalogLoadResult(

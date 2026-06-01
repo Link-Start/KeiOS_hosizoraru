@@ -17,7 +17,7 @@ import kotlin.math.max
 
 internal const val CATALOG_BATCH_SIZE = 20
 private const val CATALOG_LOAD_MORE_THRESHOLD = 10
-internal const val CATALOG_RELEASE_DATE_FETCH_LIMIT_PER_PASS = 24
+internal const val CATALOG_RELEASE_DATE_FETCH_LIMIT_PER_PASS = 12
 
 @Stable
 internal data class BaGuideCatalogTabListState(

@@ -581,6 +581,7 @@ internal class BaGuideCatalogViewModel(
         hydrateJob?.cancel()
         hydrateJob =
             viewModelScope.launch {
+                delay(CATALOG_RELEASE_DATE_HYDRATE_INITIAL_REST_MS.milliseconds)
                 repository.hydrateReleaseDateIndex(
                     source = catalog,
                     onBundleUpdated = { updated ->
@@ -603,5 +604,9 @@ internal class BaGuideCatalogViewModel(
         bgmCacheController.cancel()
         imageController.clearLoadingState()
         super.onCleared()
+    }
+
+    private companion object {
+        const val CATALOG_RELEASE_DATE_HYDRATE_INITIAL_REST_MS = 900L
     }
 }

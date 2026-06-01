@@ -1,8 +1,12 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -11,6 +15,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class BaGuideStudentBgmLookupCoordinatorTest {
     @Test
     fun `prewarm cached entries stores ready states without network`() = runBlocking {
@@ -103,6 +108,35 @@ class BaGuideStudentBgmLookupCoordinatorTest {
             BaGuideStudentBgmLookupState.Missing,
             coordinator.states.value[entry.contentId]
         )
+    }
+
+    @Test
+    fun `resolve entry while loading fans out result to every caller`() = runTest {
+        val entry = catalogEntry(contentId = 4L)
+        val item = resolvedItem("network.mp3")
+        val deferred = CompletableDeferred<BaGuideStudentBgmResolvedItem?>()
+        val coordinator = BaGuideStudentBgmLookupCoordinator(
+            scope = this,
+            ioDispatcher = Dispatchers.Unconfined,
+            cachedLoader = { null },
+            networkLoader = { deferred.await() },
+        )
+        val resolvedAudioUrls = mutableListOf<String?>()
+
+        coordinator.resolveEntry(entry, allowNetwork = true) { resolved ->
+            resolvedAudioUrls += resolved?.favorite?.audioUrl
+        }
+        coordinator.resolveEntry(entry, allowNetwork = true) { resolved ->
+            resolvedAudioUrls += resolved?.favorite?.audioUrl
+        }
+        deferred.complete(item)
+        advanceUntilIdle()
+
+        assertEquals(listOf<String?>(item.favorite.audioUrl, item.favorite.audioUrl), resolvedAudioUrls)
+        val ready = assertIs<BaGuideStudentBgmLookupState.Ready>(
+            coordinator.states.value.getValue(entry.contentId),
+        )
+        assertEquals(item.favorite.audioUrl, ready.item.favorite.audioUrl)
     }
 
     private fun catalogEntry(contentId: Long): BaGuideCatalogEntry {

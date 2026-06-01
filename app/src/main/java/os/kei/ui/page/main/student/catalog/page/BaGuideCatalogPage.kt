@@ -124,6 +124,7 @@ fun BaGuideCatalogPage(
     val filterSortState =
         rememberBaGuideCatalogFilterSortState(
             snapshot = filterSortSnapshot,
+            activeCatalogTab = tabs.getOrNull(pageState.selectedTabIndex)?.catalogTab,
             onSnapshotChange = catalogViewModel::updateCatalogFilterSortState,
         )
     BaGuideCatalogPageDerivedEffects(

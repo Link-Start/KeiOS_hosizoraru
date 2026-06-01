@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedSt
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -83,6 +85,12 @@ internal fun BaGuideCatalogPageContent(
     onRequestNotificationPermission: () -> Unit,
 ) {
     val navigationBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topScrimHeight =
+        maxOf(
+            CATALOG_MUSIC_CONTENT_TOP_PADDING,
+            statusTop + AppChromeTokens.liquidActionBarOuterHeight + AppChromeTokens.topBarToHeaderGap,
+        )
     val keyboardLiftState =
         rememberAppFloatingKeyboardLiftState(
             focusedLift = 18.dp,
@@ -139,6 +147,23 @@ internal fun BaGuideCatalogPageContent(
                 transitionAnimationsEnabled = transitionAnimationsEnabled,
                 accent = accent,
                 onOpenGuide = onOpenGuide,
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(topScrimHeight)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        panelBackground.copy(alpha = if (isDark) 0.96f else 0.94f),
+                                        panelBackground.copy(alpha = if (isDark) 0.78f else 0.72f),
+                                        Color.Transparent,
+                                    ),
+                            ),
+                        ),
             )
             BaGuideCatalogMusicTopBar(
                 title = pageTitle,

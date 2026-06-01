@@ -58,7 +58,44 @@ class BaGuideCatalogImagePreloadEffectTest {
         )
     }
 
-    private fun catalogEntry(iconUrl: String): BaGuideCatalogEntry =
+    @Test
+    fun `student catalog warmup keeps first screen first then alternates student and npc`() {
+        val studentEntries = (0 until 24).map { index -> catalogEntry("student-$index", BaGuideCatalogTab.Student) }
+        val npcEntries = (0 until 3).map { index -> catalogEntry("npc-$index", BaGuideCatalogTab.NpcSatellite) }
+
+        val urls =
+            buildBaGuideCatalogImagePreloadUrls(
+                activeTab = BaGuideCatalogPageTab.Student,
+                catalogListDerivedStates =
+                    mapOf(
+                        BaGuideCatalogTab.Student to BaGuideCatalogListDerivedState(filteredEntries = studentEntries),
+                        BaGuideCatalogTab.NpcSatellite to BaGuideCatalogListDerivedState(filteredEntries = npcEntries),
+                    ),
+                studentBgmEntries = emptyList(),
+                favoriteBgms = emptyList(),
+                artworkImageUrl = "",
+                playbackFavorite = null,
+            )
+
+        assertEquals(
+            (0 until 20).map { index -> "student-$index" } +
+                listOf(
+                    "student-20",
+                    "npc-0",
+                    "student-21",
+                    "npc-1",
+                    "student-22",
+                    "npc-2",
+                    "student-23",
+                ),
+            urls,
+        )
+    }
+
+    private fun catalogEntry(
+        iconUrl: String,
+        tab: BaGuideCatalogTab = BaGuideCatalogTab.Student,
+    ): BaGuideCatalogEntry =
         BaGuideCatalogEntry(
             entryId = iconUrl.hashCode(),
             pid = 0,
@@ -71,7 +108,7 @@ class BaGuideCatalogImagePreloadEffectTest {
             order = 0,
             createdAtSec = 0L,
             detailUrl = "",
-            tab = BaGuideCatalogTab.Student,
+            tab = tab,
         )
 
     private fun favorite(

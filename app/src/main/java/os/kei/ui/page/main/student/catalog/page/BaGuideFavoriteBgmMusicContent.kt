@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -14,12 +15,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -32,6 +35,7 @@ import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmAlbumContent
 import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
+import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
 
 @Composable
 internal fun BaGuideFavoriteBgmMusicContent(
@@ -60,28 +64,45 @@ internal fun BaGuideFavoriteBgmMusicContent(
 ) {
     val contentBackdrop = rememberLayerBackdrop()
     val listState = rememberLazyListState()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    val playbackChromeState by remember(playbackCoordinator, isPageActive) {
+    val playbackRuntimeState by remember(playbackCoordinator, isPageActive) {
         if (isPageActive) {
             playbackCoordinator.runtimeStateFlow
-                .map { runtimeState ->
-                    BaGuideFavoriteBgmPlaybackChromeState(
-                        isPlaying = runtimeState.isPlaying,
-                        volume = runtimeState.volume,
-                    )
-                }.distinctUntilChanged()
         } else {
             emptyFlow()
         }
     }.collectAsStateWithLifecycle(
-        initialValue =
-            BaGuideFavoriteBgmPlaybackChromeState(
-                isPlaying = playbackCoordinator.runtimeState.isPlaying,
-                volume = playbackCoordinator.runtimeState.volume,
-            ),
+        initialValue = playbackCoordinator.runtimeState,
     )
+    val playbackChromeState =
+        remember(playbackRuntimeState) {
+            BaGuideFavoriteBgmPlaybackChromeState(
+                isPlaying = playbackRuntimeState.isPlaying,
+                volume = playbackRuntimeState.volume,
+            )
+        }
+    val selectedAudioUrl = playbackState.selectedAudioUrl
+    val displayedTracks =
+        remember(
+            derivedState.tracks,
+            selectedAudioUrl,
+            playbackRuntimeState.durationMs,
+        ) {
+            val durationMs = playbackRuntimeState.durationMs
+            if (durationMs <= 0L || selectedAudioUrl.isBlank()) {
+                derivedState.tracks
+            } else {
+                derivedState.tracks.map { track ->
+                    if (track.id == selectedAudioUrl) {
+                        track.copy(durationLabel = formatAudioDuration(durationMs))
+                    } else {
+                        track
+                    }
+                }
+            }
+        }
     val displayedFavorites = derivedState.displayedFavorites
-    val tracks = derivedState.tracks
     val favoritesByTrackId = derivedState.favoritesByTrackId
     val favoriteOfflineCacheState =
         rememberBaGuideFavoriteBgmOfflineCacheState(
@@ -110,15 +131,29 @@ internal fun BaGuideFavoriteBgmMusicContent(
     }
     val selectedFavorite =
         remember(
-            playbackState.selectedAudioUrl,
-            playbackState.queue,
-            playbackState.favorites,
+        playbackState.selectedAudioUrl,
+        playbackState.queue,
+        playbackState.favorites,
             displayedFavorites,
         ) {
             playbackState.selectedFavorite
                 ?: displayedFavorites.firstOrNull { it.audioUrl == playbackState.selectedAudioUrl }
-                ?: displayedFavorites.firstOrNull()
+            ?: displayedFavorites.firstOrNull()
+    }
+    DisposableEffect(lifecycleOwner, selectedFavorite?.audioUrl, playbackCoordinator) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_STOP && !playbackCoordinator.keepsPlaybackAfterPageStop) {
+                    selectedFavorite?.let { favorite ->
+                        playbackCoordinator.pause(favorite)
+                    }
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
     val sectionTitle =
         selectedFavorite
             ?.studentTitle
@@ -156,7 +191,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
         )
         BaGuideBgmAlbumContent(
             accent = accent,
-            tracks = tracks,
+            tracks = displayedTracks,
             currentTrackId = selectedFavorite?.audioUrl.orEmpty(),
             isPlaying = playbackChromeState.isPlaying,
             repeatEnabled = playbackState.queueMode == BaGuideBgmQueueMode.SingleLoop,

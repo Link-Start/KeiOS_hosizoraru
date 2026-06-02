@@ -6,14 +6,25 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Icon
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.graphics.toColorInt
-import com.xzakota.hyper.notification.focus.FocusNotification
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.notification.focus.MI_FOCUS_DEFAULT_BUSINESS
+import os.kei.core.notification.focus.MiFocusExpandedComponent
+import os.kei.core.notification.focus.MiFocusExpandedSpec
+import os.kei.core.notification.focus.MiFocusExpandedText
+import os.kei.core.notification.focus.MiFocusIslandBigTemplate
+import os.kei.core.notification.focus.MiFocusIslandPic
+import os.kei.core.notification.focus.MiFocusIslandProgress
+import os.kei.core.notification.focus.MiFocusIslandSmallTemplate
+import os.kei.core.notification.focus.MiFocusIslandSpec
+import os.kei.core.notification.focus.MiFocusIslandText
+import os.kei.core.notification.focus.MiFocusNotificationAction
+import os.kei.core.notification.focus.MiFocusNotificationSpec
+import os.kei.core.notification.focus.MiFocusNotificationTemplate
+import os.kei.core.notification.focus.MiFocusPictureRef
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
@@ -479,126 +490,125 @@ object GitHubRefreshNotificationHelper {
         } else {
             resolveCompactStateContent(context, state) ?: fractionText
         }
-        FocusNotification.buildV3 {
-            val lightLogoIcon = Icon.createWithResource(context, iconResId)
-            val darkLogoIcon = Icon.createWithResource(context, iconResId)
-            val light = createPicture("github_logo_light", lightLogoIcon)
-            val dark = createPicture("github_logo_dark", darkLogoIcon)
-
-            islandFirstFloat = true
-            enableFloat = !state.running
-            updatable = true
-            business = MI_FOCUS_DEFAULT_BUSINESS
-            notifyId = NOTIFICATION_ID.toString()
-            orderId = "github_refresh"
-            ticker = title
-            tickerPic = light
-            tickerPicDark = dark
-            outEffectSrc = "outer_glow"
-
-            island {
-                islandProperty = 1
-                bigIslandArea {
-                    imageTextInfoLeft {
-                        type = 1
-                        picInfo {
-                            type = 1
-                            pic = dark
-                        }
-                    }
-                    if (state.running) {
-                        progressTextInfo {
-                            progressInfo {
-                                progress = progressPercent
-                                isCCW = true
-                                colorReach = MI_PROGRESS_COLOR
-                                colorUnReach = MI_PROGRESS_TRACK_COLOR
-                            }
-                            textInfo {
-                                this.title = progressText
-                                this.content = fractionText.takeIf { it != progressText }
-                            }
-                        }
-                    } else {
-                        imageTextInfoRight {
-                            type = 3
-                            textInfo {
-                                this.title = compactStateTitle
-                                this.content = compactStateContent
-                                this.showHighlightColor = state.failedCount > 0
-                            }
-                        }
-                    }
-                }
-                smallIslandArea {
-                    if (state.running) {
-                        combinePicInfo {
-                            picInfo {
-                                type = 1
-                                pic = dark
-                            }
-                            progressInfo {
-                                progress = progressPercent
-                                isCCW = true
-                                colorReach = MI_PROGRESS_COLOR
-                                colorUnReach = MI_PROGRESS_TRACK_COLOR
-                            }
-                        }
-                    } else {
-                        picInfo {
-                            type = 1
-                            pic = dark
-                        }
-                    }
-                }
-            }
-
-            baseInfo {
-                type = 2
-                this.title = title
-                this.content = content.ifBlank { " " }
-            }
-
+        val progress = MiFocusIslandProgress(
+            progressPercent = progressPercent,
+            colorReach = MI_PROGRESS_COLOR,
+            colorUnReach = MI_PROGRESS_TRACK_COLOR,
+        )
+        val islandBigTemplates = buildList {
+            add(
+                MiFocusIslandBigTemplate.ImageTextLeft(
+                    pic = MiFocusIslandPic(pic = MiFocusPictureRef.Display),
+                )
+            )
             if (state.running) {
-                multiProgressInfo {
-                    progress = progressPercent
-                    color = MI_PROGRESS_COLOR
-                }
-            }
-
-            picInfo {
-                type = 1
-                pic = light
-                picDark = dark
-            }
-
-            if (!state.running) {
-                textButton {
-                    addActionInfo {
-                        val nativeAction = Notification.Action.Builder(
-                            Icon.createWithResource(context, iconResId),
-                            context.getString(R.string.common_open),
-                            focusOpenPendingIntent
-                        ).build()
-                        action = createAction("github_action_open", nativeAction)
-                        actionTitle = context.getString(R.string.common_open)
-                        actionBgColor = "#006EFF"
-                        actionBgColorDark = "#006EFF"
-                        actionTitleColor = "#FFFFFF"
-                        actionTitleColorDark = "#FFFFFF"
-                    }
-                    addActionInfo {
-                        val nativeAction = Notification.Action.Builder(
-                            Icon.createWithResource(context, iconResId),
-                            context.getString(R.string.common_acknowledge),
-                            markReadPendingIntent
-                        ).build()
-                        action = createAction("github_action_read", nativeAction)
-                        actionTitle = context.getString(R.string.common_acknowledge)
-                    }
-                }
+                add(
+                    MiFocusIslandBigTemplate.ProgressText(
+                        text = MiFocusIslandText(
+                            title = progressText,
+                            content = fractionText.takeIf { it != progressText },
+                        ),
+                        progress = progress,
+                    )
+                )
+            } else {
+                add(
+                    MiFocusIslandBigTemplate.ImageTextRight(
+                        type = 3,
+                        text = MiFocusIslandText(
+                            title = compactStateTitle,
+                            content = compactStateContent,
+                            showHighlightColor = state.failedCount > 0,
+                        ),
+                    )
+                )
             }
         }
+        val expandedComponents = buildList {
+            add(
+                MiFocusExpandedComponent.Base(
+                    text = MiFocusExpandedText(
+                        title = title,
+                        content = content.ifBlank { " " },
+                    )
+                )
+            )
+            if (state.running) {
+                add(
+                    MiFocusExpandedComponent.MultiProgress(
+                        progressPercent = progressPercent,
+                        color = MI_PROGRESS_COLOR,
+                        text = MiFocusExpandedText(
+                            title = progressText,
+                            content = fractionText,
+                        ),
+                    )
+                )
+            }
+            add(
+                MiFocusExpandedComponent.Picture(
+                    pic = MiFocusPictureRef.Expanded,
+                    picDark = MiFocusPictureRef.Display,
+                    type = 1,
+                )
+            )
+            if (!state.running) {
+                add(
+                    MiFocusExpandedComponent.TextButtons(
+                        actions = listOf(
+                            MiFocusNotificationAction(
+                                key = "github_action_open",
+                                title = context.getString(R.string.common_open),
+                                pendingIntent = focusOpenPendingIntent,
+                                iconResId = iconResId,
+                                isHighlighted = true,
+                            ),
+                            MiFocusNotificationAction(
+                                key = "github_action_read",
+                                title = context.getString(R.string.common_acknowledge),
+                                pendingIntent = markReadPendingIntent,
+                                iconResId = iconResId,
+                            ),
+                        )
+                    )
+                )
+            }
+        }
+        MiFocusNotificationTemplate.build(
+            context = context,
+            spec = MiFocusNotificationSpec(
+                title = title,
+                content = content.ifBlank { " " },
+                displayIconResId = iconResId,
+                expandedIconResId = iconResId,
+                actionIconResId = iconResId,
+                tickerIconResId = iconResId,
+                island = MiFocusIslandSpec(
+                    bigTemplates = islandBigTemplates,
+                    smallTemplate =
+                        if (state.running) {
+                            MiFocusIslandSmallTemplate.CombinePic(
+                                pic = MiFocusIslandPic(pic = MiFocusPictureRef.Display),
+                                progress = progress,
+                            )
+                        } else {
+                            MiFocusIslandSmallTemplate.Picture(
+                                pic = MiFocusIslandPic(pic = MiFocusPictureRef.Display),
+                            )
+                        },
+                ),
+                expanded = MiFocusExpandedSpec(components = expandedComponents),
+                allowFloat = !state.running,
+                islandFirstFloat = true,
+                updatable = true,
+                outerGlow = true,
+                business = MI_FOCUS_DEFAULT_BUSINESS,
+                notifyId = NOTIFICATION_ID.toString(),
+                orderId = "github_refresh",
+                ticker = title,
+                compactTicker = title,
+            )
+        )
     }.onFailure {
         AppLogger.e(TAG, "Build FocusNotification extras failed", it)
     }.getOrNull()

@@ -23,6 +23,7 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 object AppForegroundInfoHandler {
+    private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL = 4
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE = 2
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS = 850L
@@ -31,9 +32,15 @@ object AppForegroundInfoHandler {
     private val baApTickMutex = Mutex()
 
     suspend fun handleGitHubTick(context: Context) {
+        val progressNotifier = GitHubRefreshProgressNotifier(
+            context = context,
+            minTotalForInitialProgress = GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL,
+        )
         val result =
             githubRefreshService.runDueRefresh(
                 context = context,
+                onRefreshStart = progressNotifier::notifyInitial,
+                onRefreshProgress = progressNotifier::notifyProgress,
                 onActionsUpdateAvailable = { snapshot ->
                     GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
                         context = context,
@@ -50,11 +57,13 @@ object AppForegroundInfoHandler {
                 updatableCount = refreshResult.updatableCount,
                 failedCount = refreshResult.failedCount,
             )
+        } else if (progressNotifier.didNotify) {
+            GitHubRefreshNotificationHelper.cancel(context)
         }
     }
 
     internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
-        val progressNotifier = GitHubShortcutRefreshProgressNotifier(context = context)
+        val progressNotifier = GitHubRefreshProgressNotifier(context = context)
         return when (
             val execution =
                 githubRefreshService.runShortcutRefresh(
@@ -89,24 +98,41 @@ object AppForegroundInfoHandler {
         }
     }
 
-    private class GitHubShortcutRefreshProgressNotifier(
-        private val context: Context
+    private class GitHubRefreshProgressNotifier(
+        private val context: Context,
+        private val minTotalForInitialProgress: Int = 1,
     ) {
         private val mutex = Mutex()
         private var lastNotifyAtMs = 0L
+        @Volatile
+        var didNotify: Boolean = false
+            private set
 
         fun notifyInitial(total: Int) {
-            GitHubRefreshNotificationHelper.notifyProgress(
-                context = context,
-                current = 0,
-                total = total,
-                preReleaseUpdateCount = 0,
-                updatableCount = 0,
-                failedCount = 0
-            )
+            if (total < minTotalForInitialProgress) return
+            lastNotifyAtMs = System.currentTimeMillis()
+            runCatching {
+                GitHubRefreshNotificationHelper.notifyProgress(
+                    context = context,
+                    current = 0,
+                    total = total,
+                    preReleaseUpdateCount = 0,
+                    updatableCount = 0,
+                    failedCount = 0
+                )
+            }.onSuccess {
+                didNotify = true
+            }.onFailure { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "github refresh initial progress notification failed",
+                    error
+                )
+            }
         }
 
         suspend fun notifyProgress(progress: GitHubTrackedRefreshBatchProgress) {
+            if (progress.total < minTotalForInitialProgress) return
             val shouldNotify = mutex.withLock {
                 if (progress.current >= progress.total) return@withLock false
                 val nowMs = System.currentTimeMillis()
@@ -132,10 +158,12 @@ object AppForegroundInfoHandler {
                     updatableCount = progress.updatableCount,
                     failedCount = progress.failedCount
                 )
+            }.onSuccess {
+                didNotify = true
             }.onFailure { error ->
                 AppLogger.w(
                     "AppForegroundInfoHandler",
-                    "github shortcut progress notification failed",
+                    "github refresh progress notification failed",
                     error
                 )
             }

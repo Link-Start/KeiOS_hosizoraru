@@ -11,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -50,8 +51,13 @@ class GitHubRefreshNotificationHelperTest {
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
+        assertTrue(focusParam.contains("imageTextInfoLeft"))
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("baseInfo"))
+        assertTrue(focusParam.contains("multiProgressInfo"))
+        assertTrue(focusParam.contains("picInfo"))
+        assertFalse(focusParam.contains("textButton"))
         assertTrue(focusParam.contains("\"title\":\"50%\""))
         assertTrue(focusParam.contains("\"content\":\"2/4\""))
         assertTrue(focusParam.contains("\"progress\":50"))
@@ -67,6 +73,13 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(
             focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_completed)}\"")
         )
+        assertTrue(focusParam.contains("imageTextInfoLeft"))
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("picInfo"))
+        assertTrue(focusParam.contains("baseInfo"))
+        assertTrue(focusParam.contains("textButton"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
         assertTrue(focusParam.contains("github_action_open"))
         assertTrue(focusParam.contains("github_action_read"))

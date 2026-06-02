@@ -85,25 +85,18 @@ object AppBackgroundScheduler {
 
     fun scheduleBaApThreshold(context: Context) {
         val appContext = context.applicationContext
-        val snapshot = BASettingsStore.loadSnapshot()
+        val reminderSnapshots = BASettingsStore.loadReminderSnapshots()
+        val snapshots = reminderSnapshots.map { it.snapshot }
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
         val pending = AppBackgroundTickReceiver.baApTickPendingIntent(appContext)
-        val needsBaBackgroundTick =
-            snapshot.apNotifyEnabled ||
-                    snapshot.cafeApNotifyEnabled ||
-                    snapshot.cafeVisitNotifyEnabled ||
-                    snapshot.arenaRefreshNotifyEnabled
-        if (!needsBaBackgroundTick) {
+        if (!AppBackgroundSchedulePolicy.hasEnabledBaReminder(snapshots)) {
             alarmManager.cancel(pending)
             pending.cancel()
-            BASettingsStore.saveApLastNotifiedLevel(-1)
-            BASettingsStore.saveCafeApLastNotifiedLevel(-1)
-            BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
-            BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
+            BASettingsStore.resetReminderRuntimeForAccounts(reminderSnapshots.map { it.accountId })
             return
         }
         val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshot = snapshot,
+            snapshots = snapshots,
             nowMs = System.currentTimeMillis()
         )
         if (schedule == null) {

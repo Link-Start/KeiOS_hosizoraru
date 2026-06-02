@@ -2,6 +2,9 @@ package os.kei.ui.page.main.ba
 
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountProfileInput
+import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
@@ -20,8 +23,6 @@ internal data class BaOfficeServerRestorePersistenceResult(
 
 internal data class BaOfficeSettingsSavePersistenceResult(
     val persisted: BaSettingsPersistenceResult,
-    val refreshCalendar: Boolean,
-    val refreshPool: Boolean,
 )
 
 internal data class BaOfficeNotificationSavePersistenceResult(
@@ -36,6 +37,44 @@ internal class BaOfficePageRepository(
     private val clock: BaOfficeClock = BaSystemOfficeClock,
 ) {
     suspend fun loadInitialSnapshot(): BaPageSnapshot = BaOfficeRepository.loadSnapshotAsync()
+
+    suspend fun loadAccountState(): BaAccountStoreSnapshot = BaOfficeRepository.loadAccountStateAsync()
+
+    suspend fun selectActiveAccount(accountId: BaAccountId): BaPageSnapshot? =
+        BaOfficeRepository.selectActiveAccountAsync(accountId)
+
+    suspend fun saveAllAccountsFollowGlobalNotificationSettings(enabled: Boolean): BaAccountStoreSnapshot =
+        BaOfficeRepository.saveAllAccountsFollowGlobalNotificationSettingsAsync(enabled)
+
+    suspend fun saveAccountEnabled(
+        accountId: BaAccountId,
+        enabled: Boolean,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.saveAccountEnabledAsync(
+            accountId = accountId,
+            enabled = enabled,
+        )
+
+    suspend fun addAccount(input: BaAccountProfileInput): BaAccountStoreSnapshot =
+        BaOfficeRepository.addAccountAsync(input)
+
+    suspend fun updateAccountProfile(
+        accountId: BaAccountId,
+        input: BaAccountProfileInput,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.updateAccountProfileAsync(
+            accountId = accountId,
+            input = input,
+        )
+
+    suspend fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot =
+        BaOfficeRepository.deleteAccountAsync(accountId)
+
+    suspend fun moveAccount(
+        accountId: BaAccountId,
+        offset: Int,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.moveAccountAsync(accountId = accountId, offset = offset)
 
     suspend fun clearListScrollState() {
         BaOfficeRepository.clearListScrollStateAsync()
@@ -110,32 +149,10 @@ internal class BaOfficePageRepository(
             )
         }
 
-    suspend fun persistSettings(
-        sheetState: BaSettingsSheetState,
-        currentShowEndedActivities: Boolean,
-        currentShowCalendarPoolImages: Boolean,
-        serverIndex: Int,
-    ): BaOfficeSettingsSavePersistenceResult =
+    suspend fun persistSettings(sheetState: BaSettingsSheetState): BaOfficeSettingsSavePersistenceResult =
         withContext(AppDispatchers.baFetch) {
-            val persisted =
-                BaSettingsPersistenceRepository.persistSettingsDraft(
-                    sheetState = sheetState,
-                    currentShowEndedActivities = currentShowEndedActivities,
-                    currentShowCalendarPoolImages = currentShowCalendarPoolImages,
-                )
-            val refreshCalendarForEnded =
-                persisted.turningEndedActivitiesOn &&
-                    BaSettingsPersistenceRepository.calendarCacheIsBlank(serverIndex)
-            val refreshCalendarForImages =
-                persisted.turningImagesOn &&
-                    !BaSettingsPersistenceRepository.hasAnyImageInCalendarCache(serverIndex)
-            val refreshPoolForImages =
-                persisted.turningImagesOn &&
-                    !BaSettingsPersistenceRepository.hasAnyImageInPoolCache(serverIndex)
             BaOfficeSettingsSavePersistenceResult(
-                persisted = persisted,
-                refreshCalendar = refreshCalendarForEnded || refreshCalendarForImages,
-                refreshPool = refreshPoolForImages,
+                persisted = BaSettingsPersistenceRepository.persistSettingsDraft(sheetState),
             )
         }
 
@@ -202,15 +219,6 @@ internal class BaOfficePageRepository(
             )
         }
 
-    suspend fun persistRefreshInterval(
-        hours: Int,
-        calendarLastSyncMs: Long,
-    ): BaRefreshIntervalPersistenceResult =
-        BaSettingsPersistenceRepository.persistRefreshIntervalAsync(
-            hours = hours,
-            calendarLastSyncMs = calendarLastSyncMs,
-            nowMs = clock.nowMs(),
-        )
 }
 
 private fun BaNotificationSettingsSheetState.toSavedDraft(

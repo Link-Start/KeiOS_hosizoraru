@@ -16,8 +16,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.ba.card.BaAccountPagerCard
+import os.kei.ui.page.main.ba.card.BaApCard
 import os.kei.ui.page.main.ba.card.BaCafeCard
 import os.kei.ui.page.main.ba.card.BaOverviewCard
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -28,6 +31,7 @@ internal data class BaPageContentState(
     val officeOverviewTitle: String,
     val officeState: BaOfficeState,
     val clockState: BaPageClockState,
+    val accountUiState: BaOfficeAccountUiState,
     val serverOptions: List<String>,
     val cafeLevelOptions: List<Int>,
     val serverIndex: Int,
@@ -60,6 +64,7 @@ internal data class BaPageContentActions(
     val onOverviewServerPopupChange: (Boolean) -> Unit,
     val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     val onCafeLevelPopupChange: (Boolean) -> Unit,
+    val onAccountSelected: (BaAccountId) -> Unit,
     val onCafeLevelChange: (Int) -> Unit,
     val onServerSelected: (Int) -> Unit,
     val onClaimCafeStoredAp: () -> Unit,
@@ -73,7 +78,6 @@ internal data class BaPageContentActions(
     val onOpenCalendarLink: (String) -> Unit,
     val onRefreshPool: () -> Unit,
     val onOpenPoolStudentGuide: (String) -> Unit,
-    val onOpenGuideCatalog: () -> Unit,
     val onIdNicknameInputChange: (String) -> Unit,
     val onSaveIdNickname: () -> Unit,
     val onIdFriendCodeInputChange: (String) -> Unit,
@@ -81,7 +85,9 @@ internal data class BaPageContentActions(
 )
 
 internal enum class BaPageContentType {
+    Account,
     Overview,
+    Ap,
     Cafe,
 }
 
@@ -114,6 +120,18 @@ internal fun BaPageContent(
             ),
         verticalArrangement = Arrangement.spacedBy(pageGap),
     ) {
+        if (state.accountUiState.accounts.isNotEmpty()) {
+            item(key = "ba-account", contentType = BaPageContentType.Account) {
+                BaAccountPagerCard(
+                    backdrop = backdrop,
+                    accounts = state.accountUiState.accounts,
+                    activeAccountId = state.accountUiState.activeAccountId,
+                    serverOptions = state.serverOptions,
+                    onAccountSelected = actions.onAccountSelected,
+                )
+            }
+        }
+
         item(key = "ba-overview", contentType = BaPageContentType.Overview) {
             BaOverviewCard(
                 backdrop = backdrop,
@@ -125,6 +143,19 @@ internal fun BaPageContent(
                 idFriendCodeInput = state.officeState.idFriendCodeInput,
                 onIdFriendCodeInputChange = actions.onIdFriendCodeInputChange,
                 onSaveIdFriendCode = actions.onSaveIdFriendCode,
+                serverOptions = state.serverOptions,
+                serverIndex = state.serverIndex,
+                showOverviewServerPopup = state.showOverviewServerPopup,
+                overviewServerPopupAnchorBounds = state.overviewServerPopupAnchorBounds,
+                onOverviewServerPopupAnchorBoundsChange = actions.onOverviewServerPopupAnchorBoundsChange,
+                onOverviewServerPopupChange = actions.onOverviewServerPopupChange,
+                onServerSelected = actions.onServerSelected,
+            )
+        }
+
+        item(key = "ba-ap", contentType = BaPageContentType.Ap) {
+            BaApCard(
+                backdrop = backdrop,
                 clockState = state.clockState,
                 apSyncMs = state.officeState.apSyncMs,
                 apLimit = state.officeState.apLimit,
@@ -136,17 +167,6 @@ internal fun BaPageContent(
                 apLimitInput = state.officeState.apLimitInput,
                 onApLimitInputChange = actions.onApLimitInputChange,
                 onApLimitDone = actions.onApLimitDone,
-                cafeStoredAp = state.officeState.cafeStoredAp,
-                cafeLevel = state.officeState.cafeLevel,
-                serverOptions = state.serverOptions,
-                serverIndex = state.serverIndex,
-                showOverviewServerPopup = state.showOverviewServerPopup,
-                overviewServerPopupAnchorBounds = state.overviewServerPopupAnchorBounds,
-                onOverviewServerPopupAnchorBoundsChange = actions.onOverviewServerPopupAnchorBoundsChange,
-                onOverviewServerPopupChange = actions.onOverviewServerPopupChange,
-                onServerSelected = actions.onServerSelected,
-                onClaimCafeStoredAp = actions.onClaimCafeStoredAp,
-                onOpenGuideCatalog = actions.onOpenGuideCatalog,
             )
         }
 
@@ -156,12 +176,14 @@ internal fun BaPageContent(
                 clockState = state.clockState,
                 serverIndex = state.serverIndex,
                 cafeLevel = state.officeState.cafeLevel,
+                cafeStoredAp = state.officeState.cafeStoredAp,
                 cafeLevelOptions = state.cafeLevelOptions,
                 showCafeLevelPopup = state.showCafeLevelPopup,
                 cafeLevelPopupAnchorBounds = state.cafeLevelPopupAnchorBounds,
                 onCafeLevelPopupAnchorBoundsChange = actions.onCafeLevelPopupAnchorBoundsChange,
                 onCafeLevelPopupChange = actions.onCafeLevelPopupChange,
                 onCafeLevelChange = actions.onCafeLevelChange,
+                onClaimCafeStoredAp = actions.onClaimCafeStoredAp,
                 coffeeHeadpatMs = state.officeState.coffeeHeadpatMs,
                 coffeeInvite1UsedMs = state.officeState.coffeeInvite1UsedMs,
                 coffeeInvite2UsedMs = state.officeState.coffeeInvite2UsedMs,

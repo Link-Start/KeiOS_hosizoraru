@@ -8,8 +8,10 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AppBackgroundSchedulePolicyTest {
     @Test
@@ -187,6 +189,50 @@ class AppBackgroundSchedulePolicyTest {
         assertNotNull(schedule)
         assertEquals(NOW_MS, schedule.triggerAtMillis)
         assertEquals(BackgroundAlarmPrecision.Prompt, schedule.precision)
+    }
+
+    @Test
+    fun `ba multi account schedule picks earliest account reminder`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshots =
+                listOf(
+                    BaPageSnapshot(
+                        apNotifyEnabled = true,
+                        apCurrent = 118.0,
+                        apRegenBaseMs = NOW_MS,
+                        apNotifyThreshold = 120,
+                        apLimit = 240,
+                        apLastNotifiedLevel = -1,
+                    ),
+                    BaPageSnapshot(
+                        cafeApNotifyEnabled = true,
+                        cafeStoredAp = 130.0,
+                        cafeLastHourMs = floorToHourMs(NOW_MS),
+                        cafeApNotifyThreshold = 120,
+                        cafeApLastNotifiedLevel = 120,
+                        cafeLevel = 10,
+                    ),
+                ),
+            nowMs = NOW_MS,
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmPrecision.Prompt, schedule.precision)
+    }
+
+    @Test
+    fun `ba reminder enabled predicate scans every account snapshot`() {
+        assertFalse(AppBackgroundSchedulePolicy.hasEnabledBaReminder(emptyList()))
+        assertFalse(AppBackgroundSchedulePolicy.hasEnabledBaReminder(listOf(BaPageSnapshot())))
+        assertTrue(
+            AppBackgroundSchedulePolicy.hasEnabledBaReminder(
+                listOf(
+                    BaPageSnapshot(),
+                    BaPageSnapshot(arenaRefreshNotifyEnabled = true),
+                ),
+            ),
+        )
     }
 
     @Test

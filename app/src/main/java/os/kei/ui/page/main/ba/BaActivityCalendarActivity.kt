@@ -45,6 +45,7 @@ import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
@@ -186,6 +187,16 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
         actions = {
             AppLiquidIconButton(
                 backdrop = pageBackdrop,
+                icon = appLucideConfigIcon(),
+                contentDescription = stringResource(R.string.ba_calendar_pool_cd_data_settings),
+                onClick = { calendarPoolViewModel.updateDataSettingsSheetVisible(true) },
+                width = 52.dp,
+                height = 52.dp,
+                variant = GlassVariant.Bar,
+                iconTint = MiuixTheme.colorScheme.primary,
+            )
+            AppLiquidIconButton(
+                backdrop = pageBackdrop,
                 icon = appLucideRefreshIcon(),
                 contentDescription = stringResource(R.string.ba_calendar_cd_refresh),
                 onClick = calendarPoolViewModel::requestCalendarReload,
@@ -250,6 +261,27 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
             )
         }
     }
+    BaCalendarPoolDataSettingsSheet(
+        show = chromeUiState.showDataSettingsSheet,
+        backdrop = pageBackdrop,
+        pageKind = BaCalendarPoolPageKind.Calendar,
+        snapshot = snapshot,
+        refreshIntervalDropdownExpanded = chromeUiState.dataRefreshIntervalDropdownExpanded,
+        refreshIntervalDropdownAnchorBounds = chromeUiState.dataRefreshIntervalDropdownAnchorBounds,
+        onRefreshIntervalDropdownExpandedChange = calendarPoolViewModel::updateDataRefreshIntervalDropdownExpanded,
+        onRefreshIntervalDropdownAnchorBoundsChange = calendarPoolViewModel::updateDataRefreshIntervalDropdownAnchorBounds,
+        onRefreshIntervalSelected = { hours ->
+            calendarPoolViewModel.saveRefreshInterval(
+                hours = hours,
+                lastSyncMs = calendarUiState.lastSyncMs,
+                pageKind = BaCalendarPoolPageKind.Calendar,
+            )
+        },
+        onShowEndedActivitiesChange = calendarPoolViewModel::saveShowEndedActivities,
+        onShowEndedPoolsChange = calendarPoolViewModel::saveShowEndedPools,
+        onShowCalendarPoolImagesChange = calendarPoolViewModel::saveShowCalendarPoolImages,
+        onDismissRequest = { calendarPoolViewModel.updateDataSettingsSheetVisible(false) },
+    )
 }
 
 @Composable

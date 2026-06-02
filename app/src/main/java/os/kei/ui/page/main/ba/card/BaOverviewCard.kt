@@ -5,7 +5,6 @@ package os.kei.ui.page.main.ba.card
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,26 +24,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
-import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
-import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_NICKNAME
-import os.kei.ui.page.main.ba.support.cafeDailyCapacity
-import os.kei.ui.page.main.ba.support.calculateApFullAtMs
-import os.kei.ui.page.main.ba.support.calculateApNextPointAtMs
-import os.kei.ui.page.main.ba.support.displayAp
-import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
-import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
@@ -62,19 +49,6 @@ internal fun BaOverviewCard(
     idFriendCodeInput: String,
     onIdFriendCodeInputChange: (String) -> Unit,
     onSaveIdFriendCode: () -> Unit,
-    clockState: BaPageClockState,
-    apSyncMs: Long,
-    apLimit: Int,
-    apCurrent: Double,
-    apRegenBaseMs: Long,
-    apCurrentInput: String,
-    onApCurrentInputChange: (String) -> Unit,
-    onApCurrentDone: () -> Unit,
-    apLimitInput: String,
-    onApLimitInputChange: (String) -> Unit,
-    onApLimitDone: () -> Unit,
-    cafeStoredAp: Double,
-    cafeLevel: Int,
     serverOptions: List<String>,
     serverIndex: Int,
     showOverviewServerPopup: Boolean,
@@ -82,15 +56,9 @@ internal fun BaOverviewCard(
     onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOverviewServerPopupChange: (Boolean) -> Unit,
     onServerSelected: (Int) -> Unit,
-    onClaimCafeStoredAp: () -> Unit,
-    onOpenGuideCatalog: () -> Unit,
 ) {
     val isWorkActivated = idFriendCode != BA_DEFAULT_FRIEND_CODE
-    val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val apSyncTimeText =
-        if (apSyncMs > 0L) formatBaDateTimeNoSeconds(apSyncMs, notSyncedText) else notSyncedText
     val accentBlue = AppStatusColors.Cached
-    val accentGreen = AppStatusColors.Fresh
     val stateAccent =
         if (isWorkActivated) accentBlue else MiuixTheme.colorScheme.onBackgroundVariant
     val nicknameLengthForWidth =
@@ -191,93 +159,6 @@ internal fun BaOverviewCard(
             backdrop = backdrop,
             accentColor = stateAccent,
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier.heightIn(min = 40.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Text(stringResource(R.string.ba_overview_catalog_title), color = MiuixTheme.colorScheme.onBackground)
-                    }
-                    AppLiquidIconButton(
-                        backdrop = backdrop,
-                        painter = painterResource(id = R.drawable.common_icon_dailyreward_small),
-                        contentDescription = stringResource(R.string.ba_overview_cd_open_catalog),
-                        variant = GlassVariant.Content,
-                        onClick = onOpenGuideCatalog,
-                        width = 48.dp,
-                        height = 34.dp,
-                        iconTint = Color.Unspecified,
-                        iconModifier =
-                            Modifier
-                                .width(26.dp)
-                                .height(26.dp),
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier.heightIn(min = 40.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(stringResource(R.string.ba_overview_server_label), color = MiuixTheme.colorScheme.onBackground)
-                            Image(
-                                painter = painterResource(id = R.drawable.lobby_icon_work_small),
-                                contentDescription = stringResource(R.string.ba_overview_cd_server_icon),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                    AppDropdownSelector(
-                        selectedText = serverOptions[serverIndex],
-                        options = serverOptions,
-                        selectedIndex = serverIndex,
-                        expanded = showOverviewServerPopup,
-                        anchorBounds = overviewServerPopupAnchorBounds,
-                        onExpandedChange = onOverviewServerPopupChange,
-                        onSelectedIndexChange = onServerSelected,
-                        onAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
-                        backdrop = backdrop,
-                        variant = GlassVariant.Content,
-                    )
-                }
-            }
-        }
-
-        BaOverviewApPanel(
-            backdrop = backdrop,
-            clockState = clockState,
-            accentGreen = accentGreen,
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            apCurrentInput = apCurrentInput,
-            onApCurrentInputChange = onApCurrentInputChange,
-            onApCurrentDone = onApCurrentDone,
-            apLimitInput = apLimitInput,
-            onApLimitInputChange = onApLimitInputChange,
-            onApLimitDone = onApLimitDone,
-        )
-
-        BaLiquidPanel(
-            backdrop = backdrop,
-            accentColor = accentGreen,
-        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -287,188 +168,33 @@ internal fun BaOverviewCard(
                     modifier = Modifier.heightIn(min = 40.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
-                    Text(stringResource(R.string.ba_overview_cafe_ap_title), color = MiuixTheme.colorScheme.onBackground)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(R.string.ba_overview_server_label), color = MiuixTheme.colorScheme.onBackground)
+                        Image(
+                            painter = painterResource(id = R.drawable.lobby_icon_work_small),
+                            contentDescription = stringResource(R.string.ba_overview_cd_server_icon),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppLiquidIconButton(
-                        backdrop = backdrop,
-                        painter = painterResource(id = R.drawable.item_icon_consumable_ap_3_small),
-                        contentDescription = stringResource(R.string.ba_overview_cd_claim_cafe_ap),
-                        variant = GlassVariant.Content,
-                        iconTint = Color.Unspecified,
-                        containerColor = accentGreen,
-                        onClick = onClaimCafeStoredAp,
-                    )
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        text = "${displayAp(cafeStoredAp)}/${cafeDailyCapacity(cafeLevel)}",
-                        textColor = accentGreen,
-                        containerColor = accentGreen,
-                        variant = GlassVariant.Floating,
-                        onClick = {},
-                    )
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            BaLiquidMetricPanel(
-                backdrop = backdrop,
-                label = stringResource(R.string.ba_metric_ap_sync),
-                value = apSyncTimeText,
-                accentColor = accentBlue,
-                valueColor = accentBlue,
-                valueMaxLines = 2,
-                modifier = Modifier.weight(1f),
-            )
-            BaOverviewApFullMetric(
-                backdrop = backdrop,
-                clockState = clockState,
-                apLimit = apLimit,
-                apCurrent = apCurrent,
-                apRegenBaseMs = apRegenBaseMs,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun BaOverviewApPanel(
-    backdrop: Backdrop?,
-    clockState: BaPageClockState,
-    accentGreen: Color,
-    apLimit: Int,
-    apCurrent: Double,
-    apRegenBaseMs: Long,
-    apCurrentInput: String,
-    onApCurrentInputChange: (String) -> Unit,
-    onApCurrentDone: () -> Unit,
-    apLimitInput: String,
-    onApLimitInputChange: (String) -> Unit,
-    onApLimitDone: () -> Unit,
-) {
-    val uiNowMs = clockState.uiNowMs.longValue
-    val uiMinuteMs = clockState.uiMinuteMs.longValue
-    val apNextPointAt =
-        calculateApNextPointAtMs(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = uiNowMs,
-        )
-    val apFullAt =
-        calculateApFullAtMs(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = uiMinuteMs,
-        )
-    val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs, includeSeconds = true)
-    val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
-
-    BaLiquidPanel(
-        backdrop = backdrop,
-        accentColor = accentGreen,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.heightIn(min = 40.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("AP", color = accentGreen, fontWeight = FontWeight.Bold)
-                    Image(
-                        painter = painterResource(id = R.drawable.ba_ap_icon_tight_small),
-                        contentDescription = stringResource(R.string.ba_overview_cd_ap_icon),
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppLiquidSearchField(
-                    modifier = Modifier.width(72.dp),
-                    value = apCurrentInput,
-                    onValueChange = onApCurrentInputChange,
-                    onImeActionDone = onApCurrentDone,
-                    label = "0",
+                AppDropdownSelector(
+                    selectedText = serverOptions[serverIndex],
+                    options = serverOptions,
+                    selectedIndex = serverIndex,
+                    expanded = showOverviewServerPopup,
+                    anchorBounds = overviewServerPopupAnchorBounds,
+                    onExpandedChange = onOverviewServerPopupChange,
+                    onSelectedIndexChange = onServerSelected,
+                    onAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
                     backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true,
-                    textAlign = TextAlign.Center,
-                    fontSize = 18.sp,
-                    textColor = accentGreen,
-                )
-                Text("/", color = MiuixTheme.colorScheme.onBackgroundVariant)
-                AppLiquidSearchField(
-                    modifier = Modifier.width(72.dp),
-                    value = apLimitInput,
-                    onValueChange = onApLimitInputChange,
-                    onImeActionDone = onApLimitDone,
-                    label = "240",
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true,
-                    textAlign = TextAlign.Center,
-                    fontSize = 18.sp,
-                    textColor = accentGreen,
+                    variant = GlassVariant.Content,
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.ba_overview_ap_regen_status, apNextPointRemain, apFullText),
-            color = Color(0xFF60A5FA),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
-}
-
-@Composable
-private fun BaOverviewApFullMetric(
-    backdrop: Backdrop?,
-    clockState: BaPageClockState,
-    apLimit: Int,
-    apCurrent: Double,
-    apRegenBaseMs: Long,
-    modifier: Modifier = Modifier,
-) {
-    val uiMinuteMs = clockState.uiMinuteMs.longValue
-    val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val apFullAt =
-        calculateApFullAtMs(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = uiMinuteMs,
-        )
-    val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
-    BaLiquidMetricPanel(
-        backdrop = backdrop,
-        label = stringResource(R.string.ba_metric_ap_full),
-        value = apFullTimeText,
-        accentColor = Color(0xFF60A5FA),
-        valueColor = Color(0xFF60A5FA),
-        valueMaxLines = 2,
-        modifier = modifier,
-    )
 }
 
 @Composable

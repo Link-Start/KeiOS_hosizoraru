@@ -3,10 +3,10 @@ package os.kei.ui.page.main.ba
 import android.content.Context
 import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
+import os.kei.ui.page.main.ba.support.BaAccountId
 
 internal fun buildBaSettingsSheetState(
     draft: BaPageSettingsDraftState,
-    calendarRefreshIntervalHours: Int,
 ): BaSettingsSheetState =
     BaSettingsSheetState(
         cafeLevel = draft.cafeLevel,
@@ -14,10 +14,6 @@ internal fun buildBaSettingsSheetState(
         mediaSaveCustomEnabled = draft.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = draft.mediaSaveFixedTreeUri,
         idIndependentByServer = draft.idIndependentByServer,
-        showEndedActivities = draft.showEndedActivities,
-        showEndedPools = draft.showEndedPools,
-        showCalendarPoolImages = draft.showCalendarPoolImages,
-        calendarRefreshIntervalHours = calendarRefreshIntervalHours,
     )
 
 internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraftState): BaNotificationSettingsSheetState =
@@ -51,6 +47,7 @@ internal fun buildBaPageContentState(
         officeOverviewTitle = officeOverviewTitle,
         officeState = officeState,
         clockState = clockState,
+        accountUiState = routeState.accountUiState,
         serverOptions = serverOptions,
         cafeLevelOptions = cafeLevelOptions,
         serverIndex = routeState.serverIndex,
@@ -79,32 +76,34 @@ internal fun buildBaPageContentActions(
     office: BaOfficeController,
     scope: CoroutineScope,
     serverIndexProvider: () -> Int,
+    accountIdProvider: () -> BaAccountId?,
     onServerSelected: (Int) -> Unit,
     onSettingsCafeLevelChange: (Int) -> Unit,
     onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOverviewServerPopupChange: (Boolean) -> Unit,
     onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onCafeLevelPopupChange: (Boolean) -> Unit,
+    onAccountSelected: (BaAccountId) -> Unit,
     onRefreshCalendar: () -> Unit,
     onRefreshPool: () -> Unit,
     onOpenCalendarLink: (String) -> Unit,
     onOpenPoolStudentGuide: (String) -> Unit,
-    onOpenGuideCatalog: () -> Unit,
 ): BaPageContentActions =
     BaOfficeActionCoordinator(
         context = context,
         office = office,
         scope = scope,
         serverIndexProvider = serverIndexProvider,
+        accountIdProvider = accountIdProvider,
         onServerSelected = onServerSelected,
         onSettingsCafeLevelChange = onSettingsCafeLevelChange,
         onOverviewServerPopupAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
         onOverviewServerPopupChange = onOverviewServerPopupChange,
         onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
         onCafeLevelPopupChange = onCafeLevelPopupChange,
+        onAccountSelected = onAccountSelected,
         onRefreshCalendar = onRefreshCalendar,
         onRefreshPool = onRefreshPool,
         onOpenCalendarLink = onOpenCalendarLink,
         onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-        onOpenGuideCatalog = onOpenGuideCatalog,
     ).buildContentActions()

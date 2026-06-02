@@ -64,6 +64,7 @@ internal object AppBackgroundSchedulePolicy {
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ): BackgroundAlarmSchedule? {
+        if (!hasEnabledBaReminder(snapshot)) return null
         val candidates = buildList {
             if (snapshot.apNotifyEnabled) {
                 nextBaApSchedule(snapshot = snapshot, nowMs = nowMs)?.let(::add)
@@ -80,6 +81,28 @@ internal object AppBackgroundSchedulePolicy {
         }
         return candidates.minByOrNull { it.triggerAtMillis }
     }
+
+    fun nextBaReminderSchedule(
+        snapshots: List<BaPageSnapshot>,
+        nowMs: Long,
+    ): BackgroundAlarmSchedule? =
+        snapshots
+            .mapNotNull { snapshot ->
+                nextBaReminderSchedule(
+                    snapshot = snapshot,
+                    nowMs = nowMs,
+                )
+            }
+            .minByOrNull { it.triggerAtMillis }
+
+    fun hasEnabledBaReminder(snapshot: BaPageSnapshot): Boolean =
+        snapshot.apNotifyEnabled ||
+                snapshot.cafeApNotifyEnabled ||
+                snapshot.cafeVisitNotifyEnabled ||
+                snapshot.arenaRefreshNotifyEnabled
+
+    fun hasEnabledBaReminder(snapshots: List<BaPageSnapshot>): Boolean =
+        snapshots.any(::hasEnabledBaReminder)
 
     fun android17WindowLength(
         triggerAtMillis: Long,

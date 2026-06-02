@@ -1,7 +1,5 @@
 package os.kei.ui.page.main.ba
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import os.kei.R
 import os.kei.core.ext.showToast
@@ -18,17 +16,6 @@ import os.kei.ui.page.main.ba.support.floorToHourMs
 import os.kei.ui.page.main.ba.support.fractionalApPart
 import os.kei.ui.page.main.ba.support.normalizeAp
 import kotlin.math.roundToInt
-
-internal fun copyBaFriendCodeToClipboard(
-    context: Context,
-    friendCode: String,
-) {
-    val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
-    clipboard.setPrimaryClip(
-        ClipData.newPlainText(context.getString(R.string.ba_friend_code_clipboard_label), friendCode),
-    )
-    context.showToast(R.string.ba_toast_friend_code_copied)
-}
 
 internal fun openBaExternalLink(
     context: Context,

@@ -9,6 +9,7 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 
 @Composable
@@ -27,8 +28,11 @@ internal fun BaPageSheetHost(
     savedNotificationSettingsSheetState: BaNotificationSettingsSheetState,
     calendarUiState: BaCalendarUiState,
     poolUiState: BaPoolUiState,
+    accountUiState: BaOfficeAccountUiState,
     onDismissSettings: () -> Unit,
     onSaveSettings: () -> Unit,
+    onDismissAccountManagement: () -> Unit,
+    onSelectAccount: (BaAccountId) -> Unit,
     onDismissNotificationSettings: () -> Unit,
     onSaveNotificationSettings: () -> Unit,
     onDismissDebug: () -> Unit,
@@ -49,28 +53,23 @@ internal fun BaPageSheetHost(
         onIdIndependentByServerChange = { enabled ->
             viewModel.updateSettingsDraft { draft -> draft.copy(idIndependentByServer = enabled) }
         },
-        onShowEndedActivitiesChange = { show ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(showEndedActivities = show) }
-        },
-        onShowEndedPoolsChange = { show ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(showEndedPools = show) }
-        },
-        onShowCalendarPoolImagesChange = { show ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(showCalendarPoolImages = show) }
-        },
-        onCalendarRefreshIntervalSelected = { hours ->
-            viewModel.saveRefreshInterval(
-                hours = hours,
-                calendarLastSyncMs = routeState.calendarUiState.lastSyncMs,
-            )
-        },
-        refreshIntervalDropdownExpanded = chromeUiState.settingsRefreshIntervalDropdownExpanded,
-        refreshIntervalDropdownAnchorBounds = chromeUiState.settingsRefreshIntervalDropdownAnchorBounds,
-        onRefreshIntervalDropdownExpandedChange = viewModel::updateSettingsRefreshIntervalDropdownExpanded,
-        onRefreshIntervalDropdownAnchorBoundsChange = viewModel::updateSettingsRefreshIntervalDropdownAnchorBounds,
         hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,
         onDismissRequest = onDismissSettings,
         onSaveRequest = onSaveSettings,
+    )
+    BaAccountManagementSheet(
+        show = routeState.showAccountManagementSheet,
+        backdrop = backdrop,
+        state = accountUiState,
+        onAllAccountsFollowGlobalNotificationSettingsChange =
+            viewModel::updateAllAccountsFollowGlobalNotificationSettings,
+        onAccountEnabledChange = viewModel::updateAccountEnabled,
+        onSelectAccount = onSelectAccount,
+        onAddAccount = viewModel::addAccount,
+        onUpdateAccount = viewModel::updateAccountProfile,
+        onDeleteAccount = viewModel::deleteAccount,
+        onMoveAccount = viewModel::moveAccount,
+        onDismissRequest = onDismissAccountManagement,
     )
     BaNotificationSettingsSheet(
         show = routeState.showNotificationSettingsSheet,
@@ -276,6 +275,7 @@ private fun BaDebugSheetHost(
                 sent =
                     BaCalendarPoolNotificationDispatcher.sendDataChanged(
                         context = context,
+                        serverIndex = routeState.serverIndex,
                         calendarChangeCount = 1,
                         poolChangeCount = 1,
                         detail = detail,

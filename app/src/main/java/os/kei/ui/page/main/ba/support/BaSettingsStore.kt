@@ -5,6 +5,7 @@ package os.kei.ui.page.main.ba.support
 import com.tencent.mmkv.MMKV
 import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
+import java.util.UUID
 
 internal object BASettingsStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_SETTINGS_KV_ID) }
@@ -16,6 +17,21 @@ internal object BASettingsStore {
     }
 
     private fun idSettings(): BaIdSettingsAccessor = BaIdSettingsAccessor(MmkvBaSettingsKeyValueStore(kv()))
+
+    private fun accountKeyValueStore(): MmkvBaSettingsKeyValueStore = MmkvBaSettingsKeyValueStore(kv())
+
+    private fun accountStore(keyValueStore: MmkvBaSettingsKeyValueStore = accountKeyValueStore()): BaAccountStore =
+        BaAccountStore(keyValueStore)
+
+    private fun migratedAccountStore(): BaAccountStore {
+        val keyValueStore = accountKeyValueStore()
+        val store = accountStore(keyValueStore)
+        BaAccountMigration(
+            accountStore = store,
+            keyValueStore = keyValueStore,
+        ).migrateLegacyIfNeeded()
+        return store
+    }
 
     private fun cacheStore(): BaSettingsCacheStore = BaSettingsCacheStore(kv()) { notifyChanged() }
 
@@ -106,16 +122,190 @@ internal object BASettingsStore {
         notifyChanged()
     }
 
-    fun loadSnapshot(): BaPageSnapshot = loadBaSettingsSnapshot(kv())
+    fun loadAccountState(): BaAccountStoreSnapshot {
+        return migratedAccountStore().loadState()
+    }
+
+    fun selectActiveAccount(accountId: BaAccountId): Boolean {
+        val selected = migratedAccountStore().selectActiveAccount(accountId)
+        if (selected) {
+            notifyChanged()
+        }
+        return selected
+    }
+
+    fun saveAllAccountsFollowGlobalNotificationSettings(enabled: Boolean) {
+        migratedAccountStore().saveAllAccountsFollowGlobalNotificationSettings(enabled)
+        notifyChanged()
+    }
+
+    fun saveAccountEnabled(
+        accountId: BaAccountId,
+        enabled: Boolean,
+    ): Boolean {
+        val store = migratedAccountStore()
+        val account = store.loadAccounts().firstOrNull { it.profile.id == accountId } ?: return false
+        val updated = store.updateAccount(account.copy(profile = account.profile.copy(enabled = enabled)))
+        if (updated) {
+            notifyChanged()
+        }
+        return updated
+    }
+
+    fun addAccount(input: BaAccountProfileInput): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        val accountId = newManualAccountId(input.serverIndex)
+        val nextNickname = sanitizeBaAccountNickname(input.nickname)
+        val account =
+            BaAccountRecord(
+                profile =
+                    BaAccountProfile(
+                        id = accountId,
+                        serverIndex = input.serverIndex.coerceIn(0, 2),
+                        displayName = sanitizeBaAccountDisplayName(input.displayName, nextNickname),
+                        nickname = nextNickname,
+                        friendCode = sanitizeBaAccountFriendCode(input.friendCode),
+                        notificationMode = input.notificationMode,
+                        remindersEnabled = input.remindersEnabled,
+                        sortOrder = store.loadAccounts().size,
+                    ),
+                reminderOverride =
+                    if (input.notificationMode == BaAccountNotificationMode.Custom) {
+                        input.customReminderSettings.toAccountReminderOverride(accountId)
+                    } else {
+                        null
+                    },
+            )
+        store.addAccount(account)
+        store.selectActiveAccount(account.profile.id)
+        notifyChanged()
+        return store.loadState()
+    }
+
+    fun updateAccountProfile(
+        accountId: BaAccountId,
+        input: BaAccountProfileInput,
+    ): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        val account = store.loadAccounts().firstOrNull { it.profile.id == accountId }
+        if (account != null) {
+            val nextNickname = sanitizeBaAccountNickname(input.nickname)
+            store.updateAccount(
+                account.copy(
+                    profile =
+                        account.profile.copy(
+                            serverIndex = input.serverIndex.coerceIn(0, 2),
+                            displayName = sanitizeBaAccountDisplayName(input.displayName, nextNickname),
+                            nickname = nextNickname,
+                            friendCode = sanitizeBaAccountFriendCode(input.friendCode),
+                            notificationMode = input.notificationMode,
+                            remindersEnabled = input.remindersEnabled,
+                        ),
+                    reminderOverride =
+                        if (input.notificationMode == BaAccountNotificationMode.Custom) {
+                            input.customReminderSettings.toAccountReminderOverride(accountId)
+                        } else {
+                            null
+                        },
+                ),
+            )
+            notifyChanged()
+        }
+        return store.loadState()
+    }
+
+    fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        if (store.deleteAccount(accountId)) {
+            notifyChanged()
+        }
+        return store.loadState()
+    }
+
+    fun moveAccount(
+        accountId: BaAccountId,
+        offset: Int,
+    ): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        if (store.moveAccount(accountId = accountId, offset = offset)) {
+            notifyChanged()
+        }
+        return store.loadState()
+    }
+
+    fun migrateAccountsIfNeeded(): BaAccountMigrationResult {
+        val keyValueStore = accountKeyValueStore()
+        val store = accountStore(keyValueStore)
+        return BaAccountMigration(
+            accountStore = store,
+            keyValueStore = keyValueStore,
+        ).migrateLegacyIfNeeded()
+    }
+
+    private fun newManualAccountId(serverIndex: Int): BaAccountId =
+        BaAccountId(
+            value = "manual-${serverIndex.coerceIn(0, 2)}-${UUID.randomUUID()}",
+        )
+
+    fun loadSnapshot(): BaPageSnapshot =
+        loadBaSettingsSnapshot(kv()).withActiveBaAccount(loadAccountState())
+
+    fun loadCalendarPoolSnapshot(): BaPageSnapshot =
+        loadSnapshot().copy(serverIndex = loadCalendarPoolServerIndex())
+
+    fun loadReminderSnapshots(): List<BaAccountReminderSnapshot> {
+        val accountState = loadAccountState()
+        val baseSnapshot = loadBaSettingsSnapshot(kv())
+        return accountState
+            .accounts
+            .filter { it.profile.enabled }
+            .map { account ->
+                BaAccountReminderSnapshot(
+                    accountId = account.profile.id,
+                    displayName = account.profile.displayName,
+                    snapshot =
+                        baseSnapshot.withBaAccount(
+                            accountState = accountState,
+                            account = account,
+                        ),
+                )
+            }
+    }
 
     fun loadCalendarCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadCalendarCacheSnapshot(serverIndex)
 
     fun loadPoolCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadPoolCacheSnapshot(serverIndex)
 
-    fun loadServerIndex(): Int = kv().decodeInt(KEY_SERVER_INDEX, DEFAULT_SERVER_INDEX).coerceIn(0, 2)
+    fun loadServerIndex(): Int {
+        val accountState = loadAccountState()
+        return accountState
+            .accounts
+            .firstOrNull { it.profile.id == accountState.activeAccountId }
+            ?.profile
+            ?.serverIndex
+            ?: kv().decodeInt(KEY_SERVER_INDEX, DEFAULT_SERVER_INDEX).coerceIn(0, 2)
+    }
 
     fun saveServerIndex(index: Int) {
-        kv().encode(KEY_SERVER_INDEX, index.coerceIn(0, 2))
+        val normalized = index.coerceIn(0, 2)
+        kv().encode(KEY_SERVER_INDEX, normalized)
+        migratedAccountStore().updateActiveAccountProfile { profile ->
+            profile.copy(serverIndex = normalized)
+        }
+        notifyChanged()
+    }
+
+    fun loadCalendarPoolServerIndex(): Int =
+        BaCalendarPoolServerSelectionAccessor(accountKeyValueStore())
+            .load(legacyServerIndex = loadServerIndex())
+
+    fun loadCalendarPoolSyncServerIndices(): List<Int> =
+        loadAccountState()
+            .enabledServerIndices()
+            .ifEmpty { listOf(loadCalendarPoolServerIndex()) }
+
+    fun saveCalendarPoolServerIndex(index: Int) {
+        BaCalendarPoolServerSelectionAccessor(accountKeyValueStore()).save(index)
         pruneCalendarPoolNotifiedKeysForCurrentPolicy()
         notifyChanged()
     }
@@ -123,7 +313,11 @@ internal object BASettingsStore {
     fun loadCafeLevel(): Int = kv().decodeInt(KEY_CAFE_LEVEL, DEFAULT_CAFE_LEVEL).coerceIn(1, 10)
 
     fun saveCafeLevel(level: Int) {
-        kv().encode(KEY_CAFE_LEVEL, level.coerceIn(1, 10))
+        val normalized = level.coerceIn(1, 10)
+        kv().encode(KEY_CAFE_LEVEL, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(cafeLevel = normalized)
+        }
         notifyChanged()
     }
 
@@ -168,7 +362,11 @@ internal object BASettingsStore {
     fun loadCafeApLastNotifiedLevel(): Int = kv().decodeInt(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, -1).coerceIn(-1, BA_AP_MAX)
 
     fun saveCafeApLastNotifiedLevel(level: Int) {
-        kv().encode(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        kv().encode(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(cafeApLastNotifiedLevel = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
@@ -186,6 +384,11 @@ internal object BASettingsStore {
         serverIndex: Int? = null,
     ) {
         idSettings().saveNickname(name, serverIndex)
+        updateActiveAccountIdentity(
+            serverIndex = serverIndex,
+            nickname = name,
+            friendCode = null,
+        )
         notifyChanged()
     }
 
@@ -196,6 +399,11 @@ internal object BASettingsStore {
         serverIndex: Int? = null,
     ) {
         idSettings().saveFriendCode(code, serverIndex)
+        updateActiveAccountIdentity(
+            serverIndex = serverIndex,
+            nickname = null,
+            friendCode = code,
+        )
         notifyChanged()
     }
 
@@ -206,7 +414,11 @@ internal object BASettingsStore {
         )
 
     fun saveApLimit(limit: Int) {
-        kv().encode(KEY_AP_LIMIT, limit.coerceIn(0, BA_AP_LIMIT_MAX))
+        val normalized = limit.coerceIn(0, BA_AP_LIMIT_MAX)
+        kv().encode(KEY_AP_LIMIT, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(apLimit = normalized)
+        }
         notifyChanged()
     }
 
@@ -227,7 +439,11 @@ internal object BASettingsStore {
     fun loadApLastNotifiedLevel(): Int = kv().decodeInt(KEY_AP_LAST_NOTIFIED_LEVEL, -1).coerceIn(-1, BA_AP_MAX)
 
     fun saveApLastNotifiedLevel(level: Int) {
-        kv().encode(KEY_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        kv().encode(KEY_AP_LAST_NOTIFIED_LEVEL, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(apLastNotifiedLevel = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
@@ -241,7 +457,11 @@ internal object BASettingsStore {
     fun loadArenaRefreshLastNotifiedSlotMs(): Long = kv().decodeLong(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, 0L).coerceAtLeast(0L)
 
     fun saveArenaRefreshLastNotifiedSlotMs(slotMs: Long) {
-        kv().encode(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+        val normalized = slotMs.coerceAtLeast(0L)
+        kv().encode(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(arenaRefreshLastNotifiedSlotMs = normalized)
+        }
         notifyChanged()
     }
 
@@ -255,8 +475,22 @@ internal object BASettingsStore {
     fun loadCafeVisitLastNotifiedSlotMs(): Long = kv().decodeLong(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, 0L).coerceAtLeast(0L)
 
     fun saveCafeVisitLastNotifiedSlotMs(slotMs: Long) {
-        kv().encode(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+        val normalized = slotMs.coerceAtLeast(0L)
+        kv().encode(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(cafeVisitLastNotifiedSlotMs = normalized)
+        }
         notifyChanged()
+    }
+
+    fun resetReminderRuntimeForAccounts(accountIds: List<BaAccountId>) {
+        val store = migratedAccountStore()
+        accountIds.forEach { accountId ->
+            store.updateAccountReminderRuntime(accountId) {
+                BaAccountReminderRuntime()
+            }
+        }
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCalendarUpcomingNotifyEnabled(): Boolean = kv().decodeBool(KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED, false)
@@ -344,7 +578,7 @@ internal object BASettingsStore {
     fun pruneCalendarPoolNotifiedKeysForCurrentPolicy() {
         val snapshot = loadSnapshot()
         pruneCalendarPoolNotifiedKeysForPolicy(
-            serverIndex = snapshot.serverIndex,
+            serverIndex = loadCalendarPoolServerIndex(),
             leadHours = snapshot.calendarPoolNotifyLeadHours,
             calendarUpcomingEnabled = snapshot.calendarUpcomingNotifyEnabled,
             calendarEndingEnabled = snapshot.calendarEndingNotifyEnabled,
@@ -439,27 +673,121 @@ internal object BASettingsStore {
         cafeLastHourMs?.let { epochMs ->
             store.encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
         }
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(
+                apCurrent = apCurrent?.let(::normalizeAp) ?: runtime.apCurrent,
+                apRegenBaseMs = apRegenBaseMs?.coerceAtLeast(0L) ?: runtime.apRegenBaseMs,
+                apSyncMs = apSyncMs?.coerceAtLeast(0L) ?: runtime.apSyncMs,
+                cafeStoredAp = cafeStoredAp?.let(::normalizeAp) ?: runtime.cafeStoredAp,
+                cafeLastHourMs =
+                    cafeLastHourMs
+                        ?.coerceAtLeast(0L)
+                        ?.let(::floorToHourMs)
+                        ?: runtime.cafeLastHourMs,
+            )
+        }
         notifyChanged(notifyHomeOverview = notifyHomeOverview)
+    }
+
+    fun saveAccountBaRuntimeState(
+        accountId: BaAccountId,
+        apCurrent: Double? = null,
+        apRegenBaseMs: Long? = null,
+        apSyncMs: Long? = null,
+        cafeStoredAp: Double? = null,
+        cafeLastHourMs: Long? = null,
+        notifyHomeOverview: Boolean = false,
+    ) {
+        migratedAccountStore().updateAccountRuntime(accountId) { runtime ->
+            runtime.copy(
+                apCurrent = apCurrent?.let(::normalizeAp) ?: runtime.apCurrent,
+                apRegenBaseMs = apRegenBaseMs?.coerceAtLeast(0L) ?: runtime.apRegenBaseMs,
+                apSyncMs = apSyncMs?.coerceAtLeast(0L) ?: runtime.apSyncMs,
+                cafeStoredAp = cafeStoredAp?.let(::normalizeAp) ?: runtime.cafeStoredAp,
+                cafeLastHourMs =
+                    cafeLastHourMs
+                        ?.coerceAtLeast(0L)
+                        ?.let(::floorToHourMs)
+                        ?: runtime.cafeLastHourMs,
+            )
+        }
+        notifyChanged(notifyHomeOverview = notifyHomeOverview)
+    }
+
+    fun saveAccountApLastNotifiedLevel(
+        accountId: BaAccountId,
+        level: Int,
+    ) {
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(apLastNotifiedLevel = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    fun saveAccountCafeApLastNotifiedLevel(
+        accountId: BaAccountId,
+        level: Int,
+    ) {
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(cafeApLastNotifiedLevel = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    fun saveAccountArenaRefreshLastNotifiedSlotMs(
+        accountId: BaAccountId,
+        slotMs: Long,
+    ) {
+        val normalized = slotMs.coerceAtLeast(0L)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(arenaRefreshLastNotifiedSlotMs = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    fun saveAccountCafeVisitLastNotifiedSlotMs(
+        accountId: BaAccountId,
+        slotMs: Long,
+    ) {
+        val normalized = slotMs.coerceAtLeast(0L)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(cafeVisitLastNotifiedSlotMs = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)
 
     fun saveCoffeeHeadpatMs(epochMs: Long) {
-        kv().encode(KEY_COFFEE_HEADPAT_MS, epochMs.coerceAtLeast(0L))
+        val normalized = epochMs.coerceAtLeast(0L)
+        kv().encode(KEY_COFFEE_HEADPAT_MS, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(coffeeHeadpatMs = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeInvite1UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE1_USED_MS, 0L)
 
     fun saveCoffeeInvite1UsedMs(epochMs: Long) {
-        kv().encode(KEY_COFFEE_INVITE1_USED_MS, epochMs.coerceAtLeast(0L))
+        val normalized = epochMs.coerceAtLeast(0L)
+        kv().encode(KEY_COFFEE_INVITE1_USED_MS, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(coffeeInvite1UsedMs = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeInvite2UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE2_USED_MS, 0L)
 
     fun saveCoffeeInvite2UsedMs(epochMs: Long) {
-        kv().encode(KEY_COFFEE_INVITE2_USED_MS, epochMs.coerceAtLeast(0L))
+        val normalized = epochMs.coerceAtLeast(0L)
+        kv().encode(KEY_COFFEE_INVITE2_USED_MS, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(coffeeInvite2UsedMs = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
@@ -491,5 +819,29 @@ internal object BASettingsStore {
         val store = kv()
         store.removeValueForKey(KEY_LIST_SCROLL_INDEX)
         store.removeValueForKey(KEY_LIST_SCROLL_OFFSET)
+    }
+
+    private fun updateActiveAccountIdentity(
+        serverIndex: Int?,
+        nickname: String?,
+        friendCode: String?,
+    ) {
+        migratedAccountStore().updateActiveAccountProfile { profile ->
+            if (serverIndex != null && serverIndex.coerceIn(0, 2) != profile.serverIndex) {
+                return@updateActiveAccountProfile profile
+            }
+            val nextNickname = nickname?.let(::sanitizeBaAccountNickname) ?: profile.nickname
+            val nextFriendCode = friendCode?.let(::sanitizeBaAccountFriendCode) ?: profile.friendCode
+            profile.copy(
+                displayName =
+                    if (nickname != null && profile.displayName == profile.nickname) {
+                        nextNickname
+                    } else {
+                        profile.displayName
+                    },
+                nickname = nextNickname,
+                friendCode = nextFriendCode,
+            )
+        }
     }
 }

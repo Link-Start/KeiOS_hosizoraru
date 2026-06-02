@@ -1,63 +1,59 @@
 package os.kei.ui.page.main.ba.support
 
-import com.tencent.mmkv.MMKV
+internal class InMemoryBaAccountKeyValueStore : BaAccountKeyValueStore {
+    private val values = mutableMapOf<String, Any>()
 
-internal class MmkvBaSettingsKeyValueStore(
-    private val store: MMKV,
-) : BaIdKeyValueStore,
-    BaAccountKeyValueStore,
-    BaNativeBgmMediaNotificationKeyValueStore {
     override fun decodeBool(
         key: String,
         defaultValue: Boolean,
-    ): Boolean = store.decodeBool(key, defaultValue)
+    ): Boolean = values[key] as? Boolean ?: defaultValue
 
     override fun encode(
         key: String,
         value: Boolean,
     ) {
-        store.encode(key, value)
+        values[key] = value
     }
 
     override fun decodeString(
         key: String,
         defaultValue: String,
-    ): String? = store.decodeString(key, defaultValue)
+    ): String? = values[key] as? String ?: defaultValue
 
     override fun encode(
         key: String,
         value: String,
     ) {
-        store.encode(key, value)
+        values[key] = value
     }
 
     override fun decodeInt(
         key: String,
         defaultValue: Int,
-    ): Int = store.decodeInt(key, defaultValue)
+    ): Int = values[key] as? Int ?: defaultValue
 
     override fun encode(
         key: String,
         value: Int,
     ) {
-        store.encode(key, value)
+        values[key] = value
     }
 
     override fun decodeLong(
         key: String,
         defaultValue: Long,
-    ): Long = store.decodeLong(key, defaultValue)
+    ): Long = values[key] as? Long ?: defaultValue
 
     override fun encode(
         key: String,
         value: Long,
     ) {
-        store.encode(key, value)
+        values[key] = value
     }
 
-    override fun containsKey(key: String): Boolean = store.containsKey(key)
+    override fun containsKey(key: String): Boolean = values.containsKey(key)
 
     override fun removeValueForKey(key: String) {
-        store.removeValueForKey(key)
+        values.remove(key)
     }
 }

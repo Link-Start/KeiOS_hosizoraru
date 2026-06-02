@@ -9,6 +9,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.appLucideBellIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideFlaskIcon
+import os.kei.ui.page.main.os.appLucideListIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
@@ -37,27 +38,37 @@ internal fun BaTopBar(
 internal fun BaTopBarActions(
     backdrop: LayerBackdrop,
     liquidActionBarLayeredStyleEnabled: Boolean,
+    onShowAccountManagement: () -> Unit,
     onShowSettings: () -> Unit,
     onShowNotificationSettings: () -> Unit,
     onShowDebug: () -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
 ) {
+    val accountIcon = appLucideListIcon()
     val editIcon = appLucideEditIcon()
     val bellIcon = appLucideBellIcon()
     val debugIcon = appLucideFlaskIcon()
+    val accountContentDescription = stringResource(R.string.ba_cd_account_management)
     val editContentDescription = stringResource(R.string.ba_cd_edit)
     val notificationContentDescription = stringResource(R.string.ba_cd_notification_settings)
     val debugContentDescription = stringResource(R.string.ba_cd_debug_tools)
     val actionItems =
         remember(
+            accountContentDescription,
             editContentDescription,
             notificationContentDescription,
             debugContentDescription,
+            onShowAccountManagement,
             onShowSettings,
             onShowNotificationSettings,
             onShowDebug,
         ) {
             listOf(
+                LiquidActionItem(
+                    icon = accountIcon,
+                    contentDescription = accountContentDescription,
+                    onClick = onShowAccountManagement,
+                ),
                 LiquidActionItem(
                     icon = bellIcon,
                     contentDescription = notificationContentDescription,

@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba.support
 
 internal const val BA_SETTINGS_KV_ID = "ba_page_settings"
 internal const val KEY_SERVER_INDEX = "server_index"
+internal const val KEY_CALENDAR_POOL_SERVER_INDEX = "calendar_pool_server_index"
 internal const val KEY_CAFE_LEVEL = "cafe_level"
 internal const val KEY_CAFE_STORED_AP = "cafe_stored_ap"
 internal const val KEY_CAFE_LAST_HOUR_MS = "cafe_last_hour_ms"

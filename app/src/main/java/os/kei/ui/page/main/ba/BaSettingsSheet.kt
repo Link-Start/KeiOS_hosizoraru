@@ -8,22 +8,17 @@ import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.kyant.backdrop.Backdrop
 import os.kei.R
-import os.kei.ui.page.main.ba.support.BaCalendarRefreshIntervalOption
-import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -49,10 +44,6 @@ internal data class BaSettingsSheetState(
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
     val idIndependentByServer: Boolean,
-    val showEndedActivities: Boolean,
-    val showEndedPools: Boolean,
-    val showCalendarPoolImages: Boolean,
-    val calendarRefreshIntervalHours: Int,
 )
 
 @Composable
@@ -64,14 +55,6 @@ internal fun BaSettingsSheet(
     onMediaSaveCustomEnabledChange: (Boolean) -> Unit,
     onMediaSaveFixedTreeUriChange: (String) -> Unit,
     onIdIndependentByServerChange: (Boolean) -> Unit,
-    onShowEndedActivitiesChange: (Boolean) -> Unit,
-    onShowEndedPoolsChange: (Boolean) -> Unit,
-    onShowCalendarPoolImagesChange: (Boolean) -> Unit,
-    onCalendarRefreshIntervalSelected: (Int) -> Unit,
-    refreshIntervalDropdownExpanded: Boolean,
-    refreshIntervalDropdownAnchorBounds: IntRect?,
-    onRefreshIntervalDropdownExpandedChange: (Boolean) -> Unit,
-    onRefreshIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     hasUnsavedChanges: Boolean,
     onDismissRequest: () -> Unit,
     onSaveRequest: () -> Unit,
@@ -135,28 +118,6 @@ internal fun BaSettingsSheet(
         },
     ) {
         SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_sync))
-            SheetSectionCard {
-                Text(
-                    text = stringResource(R.string.ba_settings_card_sync_title),
-                    color = settingsAccent,
-                )
-                SheetControlRow(
-                    label = stringResource(R.string.ba_cd_refresh_interval),
-                    summary = stringResource(R.string.ba_settings_summary_refresh_interval),
-                ) {
-                    BaSettingsRefreshIntervalDropdown(
-                        backdrop = backdrop,
-                        selectedHours = state.calendarRefreshIntervalHours,
-                        expanded = refreshIntervalDropdownExpanded,
-                        anchorBounds = refreshIntervalDropdownAnchorBounds,
-                        onExpandedChange = onRefreshIntervalDropdownExpandedChange,
-                        onAnchorBoundsChange = onRefreshIntervalDropdownAnchorBoundsChange,
-                        onSelected = onCalendarRefreshIntervalSelected,
-                    )
-                }
-            }
-
             SheetSectionTitle(stringResource(R.string.ba_settings_section_media))
             SheetSectionCard {
                 Text(
@@ -245,67 +206,11 @@ internal fun BaSettingsSheet(
                     )
                 }
             }
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_content))
-            SheetSectionCard {
-                SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_activity)) {
-                    AppSwitch(
-                        checked = state.showEndedActivities,
-                        onCheckedChange = onShowEndedActivitiesChange,
-                    )
-                }
-                SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_pool)) {
-                    AppSwitch(
-                        checked = state.showEndedPools,
-                        onCheckedChange = onShowEndedPoolsChange,
-                    )
-                }
-                SheetControlRow(label = stringResource(R.string.ba_settings_label_show_images)) {
-                    AppSwitch(
-                        checked = state.showCalendarPoolImages,
-                        onCheckedChange = onShowCalendarPoolImagesChange,
-                    )
-                }
-            }
         }
     }
     UnsavedSheetDismissConfirmDialog(
         show = dismissHandler.showConfirmDialog,
         onKeepEditing = dismissHandler.keepEditing,
         onDiscardChanges = dismissHandler.discardChanges,
-    )
-}
-
-@Composable
-private fun BaSettingsRefreshIntervalDropdown(
-    backdrop: Backdrop?,
-    selectedHours: Int,
-    expanded: Boolean,
-    anchorBounds: IntRect?,
-    onExpandedChange: (Boolean) -> Unit,
-    onAnchorBoundsChange: (IntRect?) -> Unit,
-    onSelected: (Int) -> Unit,
-) {
-    val options = BaCalendarRefreshIntervalOption.entries
-    val selected = BaCalendarRefreshIntervalOption.fromHours(selectedHours)
-    AppDropdownSelector(
-        modifier = Modifier.width(128.dp),
-        selectedText = stringResource(selected.labelRes),
-        options = options.map { stringResource(it.labelRes) },
-        selectedIndex = options.indexOf(selected).coerceAtLeast(0),
-        expanded = expanded,
-        anchorBounds = anchorBounds,
-        onExpandedChange = onExpandedChange,
-        onSelectedIndexChange = { index ->
-            options.getOrNull(index)?.let { option ->
-                onSelected(option.hours)
-            }
-            onExpandedChange(false)
-        },
-        onAnchorBoundsChange = onAnchorBoundsChange,
-        backdrop = backdrop,
-        variant = GlassVariant.SheetAction,
-        textColor = MiuixTheme.colorScheme.primary,
-        horizontalPadding = 10.dp,
-        anchorAlignment = Alignment.CenterEnd,
     )
 }

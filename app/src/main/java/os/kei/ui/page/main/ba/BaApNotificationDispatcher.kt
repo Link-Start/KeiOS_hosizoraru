@@ -11,6 +11,7 @@ internal object BaApNotificationDispatcher {
         currentDisplay: Int,
         limitDisplay: Int,
         thresholdDisplay: Int,
+        notificationId: Int = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -20,7 +21,7 @@ internal object BaApNotificationDispatcher {
         return runCatching {
             McpNotificationHelper.notifyStandaloneEvent(
                 context = context,
-                notificationId = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
+                notificationId = notificationId,
                 serverName = McpNotificationPayload.BA_AP_SERVER_NAME,
                 running = true,
                 port = currentDisplay,
@@ -35,6 +36,7 @@ internal object BaApNotificationDispatcher {
         currentDisplay: Int,
         limitDisplay: Int,
         thresholdDisplay: Int,
+        notificationId: Int = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -44,7 +46,7 @@ internal object BaApNotificationDispatcher {
         return runCatching {
             McpNotificationHelper.refreshStandaloneEventIfActive(
                 context = context,
-                notificationId = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
+                notificationId = notificationId,
                 serverName = McpNotificationPayload.BA_AP_SERVER_NAME,
                 running = true,
                 port = currentDisplay,

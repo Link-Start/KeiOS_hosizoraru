@@ -62,6 +62,7 @@ class BaCalendarPoolContentStateTest {
                     ),
                 chromeUiState = BaOfficeChromeUiState(),
                 syncUiState = BaOfficeSyncUiState(),
+                accountUiState = BaOfficeAccountUiState(),
                 serverUiState = BaOfficeServerUiState(),
                 runtimeUiState = BaOfficeRuntimeUiState(),
                 settingsDraftUiState = BaOfficeSettingsDraftUiState(),

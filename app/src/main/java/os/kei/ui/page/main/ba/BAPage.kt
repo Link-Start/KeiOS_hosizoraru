@@ -26,7 +26,6 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
-import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
@@ -128,6 +127,7 @@ fun BAPage(
             )
         }
     val baRouteState = pagePresentationState.routeState
+    val accountUiState = officePageUiState.accountUiState
     val settingsSheetState = pagePresentationState.settingsSheetState
     val notificationSettingsSheetState = pagePresentationState.notificationSettingsSheetState
     val savedSettingsDraftState = pagePresentationState.savedSettingsDraftState
@@ -141,7 +141,10 @@ fun BAPage(
             active = runtime.isSettledDataActive,
         )
     val baGlassRuntime = LocalGlassEffectRuntime.current
-    val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
+    val runtimePersistenceCoordinator =
+        rememberBaRuntimePersistenceCoordinator(
+            accountIdProvider = { accountUiState.activeAccountId },
+        )
 
     fun openSettingsSheet() {
         officeViewModel.showSettingsSheet(savedSettingsDraftState)
@@ -149,6 +152,14 @@ fun BAPage(
 
     fun closeSettingsSheet() {
         officeViewModel.hideSettingsSheet(savedSettingsDraftState)
+    }
+
+    fun openAccountManagementSheet() {
+        officeViewModel.showAccountManagementSheet()
+    }
+
+    fun closeAccountManagementSheet() {
+        officeViewModel.hideAccountManagementSheet()
     }
 
     fun openNotificationSettingsSheet() {
@@ -186,8 +197,6 @@ fun BAPage(
             when (event) {
                 is BaOfficeEvent.SettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.clampUpdate)
-                    if (event.refreshCalendar) refreshCalendar(force = true)
-                    if (event.refreshPool) refreshPool(force = true)
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
                     officeViewModel.hideSettingsSheet(
                         BaPageSettingsDraftState(
@@ -196,9 +205,6 @@ fun BAPage(
                             mediaSaveCustomEnabled = event.persisted.mediaSaveCustomEnabled,
                             mediaSaveFixedTreeUri = event.persisted.mediaSaveFixedTreeUri,
                             idIndependentByServer = event.persisted.idIndependentByServer,
-                            showEndedPools = event.persisted.showEndedPools,
-                            showEndedActivities = event.persisted.showEndedActivities,
-                            showCalendarPoolImages = event.persisted.showCalendarPoolImages,
                         ),
                     )
                 }
@@ -206,13 +212,6 @@ fun BAPage(
                 is BaOfficeEvent.NotificationSettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
                     officeViewModel.hideNotificationSettingsSheet()
-                }
-
-                is BaOfficeEvent.RefreshIntervalSaved -> {
-                    if (event.shouldRefresh) {
-                        refreshCalendar(force = true)
-                        refreshPool(force = true)
-                    }
                 }
 
                 is BaOfficeEvent.OperationFailed -> {
@@ -228,6 +227,7 @@ fun BAPage(
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
+                    officeViewModel.refreshRuntimeSettingsFromStore()
                     officeViewModel.restoreServerFromStore()
                 }
             }
@@ -241,8 +241,6 @@ fun BAPage(
         runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         officeViewModel.saveSettings(
             sheetState = settingsSheetState,
-            currentShowEndedActivities = baRouteState.showEndedActivities,
-            currentShowCalendarPoolImages = baRouteState.showCalendarPoolImages,
             serverIndex = baRouteState.serverIndex,
         )
     }
@@ -262,13 +260,13 @@ fun BAPage(
             pageScope,
             officeViewModel,
             onOpenPoolStudentGuide,
-            onOpenGuideCatalog,
         ) {
             buildBaPageContentActions(
                 context = context,
                 office = office,
                 scope = pageScope,
                 serverIndexProvider = { currentServerIndexState.value },
+                accountIdProvider = { accountUiState.activeAccountId },
                 onServerSelected = officeViewModel::selectServer,
                 onSettingsCafeLevelChange = { level ->
                     officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
@@ -277,11 +275,19 @@ fun BAPage(
                 onOverviewServerPopupChange = officeViewModel::updateOverviewServerPopupExpanded,
                 onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
                 onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
+                onAccountSelected = { accountId ->
+                    officeViewModel.selectActiveAccount(
+                        accountId = accountId,
+                        currentRuntimeUpdate =
+                            office
+                                .applyRuntimeTick()
+                                ?.withAccountId(accountUiState.activeAccountId),
+                    )
+                },
                 onRefreshCalendar = { refreshCalendar(force = true) },
                 onRefreshPool = { refreshPool(force = true) },
                 onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
                 onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-                onOpenGuideCatalog = onOpenGuideCatalog,
             )
         }
 
@@ -310,8 +316,6 @@ fun BAPage(
         syncPageActive = settledWorkActive,
         routeState = baRouteState,
     )
-    val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE
-
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppScaffold(
@@ -339,6 +343,7 @@ fun BAPage(
                 BaTopBarActions(
                     backdrop = backdrops.topBar,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                    onShowAccountManagement = ::openAccountManagementSheet,
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,
                     onShowDebug = ::openDebugSheet,
@@ -348,10 +353,9 @@ fun BAPage(
             BaPageFloatingDock(
                 backdrop = backdrops.content,
                 runtime = runtime,
-                friendCodeActivated = friendCodeActivated,
-                onCopyFriendCode = { office.copyFriendCodeToClipboard(context) },
                 onOpenCalendar = { BaActivityCalendarActivity.launch(context) },
                 onOpenPool = { BaPoolActivity.launch(context) },
+                onOpenGuideCatalog = onOpenGuideCatalog,
             )
         }
 
@@ -370,8 +374,19 @@ fun BAPage(
             savedNotificationSettingsSheetState = savedNotificationSettingsSheetState,
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
+            accountUiState = accountUiState,
             onDismissSettings = ::closeSettingsSheet,
             onSaveSettings = ::saveSettings,
+            onDismissAccountManagement = ::closeAccountManagementSheet,
+            onSelectAccount = { accountId ->
+                officeViewModel.selectActiveAccount(
+                    accountId = accountId,
+                    currentRuntimeUpdate =
+                        office
+                            .applyRuntimeTick()
+                            ?.withAccountId(accountUiState.activeAccountId),
+                )
+            },
             onDismissNotificationSettings = ::closeNotificationSettingsSheet,
             onSaveNotificationSettings = ::saveNotificationSettings,
             onDismissDebug = ::closeDebugSheet,

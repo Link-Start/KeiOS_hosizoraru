@@ -3,12 +3,15 @@
 package os.kei.ui.page.main.ba.card
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -16,15 +19,22 @@ import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidMetricPanel
+import os.kei.ui.page.main.ba.BaLiquidPanel
 import os.kei.ui.page.main.ba.BaPageClockState
+import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
 import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
+import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.nextArenaRefreshMs
 import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
+import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun BaCafeCard(
@@ -32,12 +42,14 @@ internal fun BaCafeCard(
     clockState: BaPageClockState,
     serverIndex: Int,
     cafeLevel: Int,
+    cafeStoredAp: Double,
     cafeLevelOptions: List<Int>,
     showCafeLevelPopup: Boolean,
     cafeLevelPopupAnchorBounds: IntRect?,
     onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onCafeLevelPopupChange: (Boolean) -> Unit,
     onCafeLevelChange: (Int) -> Unit,
+    onClaimCafeStoredAp: () -> Unit,
     coffeeHeadpatMs: Long,
     coffeeInvite1UsedMs: Long,
     coffeeInvite2UsedMs: Long,
@@ -106,6 +118,49 @@ internal fun BaCafeCard(
                 )
             },
         )
+
+        BaLiquidPanel(
+            backdrop = backdrop,
+            accentColor = accentPink,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.heightIn(min = 40.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        text = stringResource(R.string.ba_overview_cafe_ap_title),
+                        color = MiuixTheme.colorScheme.onBackground,
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppLiquidIconButton(
+                        backdrop = backdrop,
+                        painter = painterResource(id = R.drawable.item_icon_consumable_ap_3_small),
+                        contentDescription = stringResource(R.string.ba_overview_cd_claim_cafe_ap),
+                        variant = GlassVariant.Content,
+                        iconTint = Color.Unspecified,
+                        containerColor = accentPink,
+                        onClick = onClaimCafeStoredAp,
+                    )
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        text = "${displayAp(cafeStoredAp)}/${cafeDailyCapacity(cafeLevel)}",
+                        textColor = accentPink,
+                        containerColor = accentPink,
+                        variant = GlassVariant.Floating,
+                        onClick = {},
+                    )
+                }
+            }
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -55,20 +55,47 @@ internal object BaCalendarPoolRepository {
     private val poolStudentGuideUrlRepository = BaPoolStudentGuideUrlRepository()
     private val studentGuideRepository = BaStudentGuideRepository()
 
-    fun loadSettingsSnapshot() = BASettingsStore.loadSnapshot()
+    fun loadSettingsSnapshot() = BASettingsStore.loadCalendarPoolSnapshot()
 
     suspend fun loadSettingsSnapshotAsync() =
         withContext(AppDispatchers.baFetch) {
-            BASettingsStore.loadSnapshot()
+            BASettingsStore.loadCalendarPoolSnapshot()
         }
 
     fun saveServerIndex(index: Int) {
-        BASettingsStore.saveServerIndex(index)
+        BASettingsStore.saveCalendarPoolServerIndex(index)
     }
 
     suspend fun saveServerIndexAsync(index: Int) {
         withContext(AppDispatchers.baFetch) {
-            BASettingsStore.saveServerIndex(index)
+            BASettingsStore.saveCalendarPoolServerIndex(index)
+        }
+    }
+
+    suspend fun saveRefreshIntervalAsync(
+        hours: Int,
+        lastSyncMs: Long,
+    ): BaRefreshIntervalPersistenceResult =
+        BaSettingsPersistenceRepository.persistRefreshIntervalAsync(
+            hours = hours,
+            calendarLastSyncMs = lastSyncMs,
+        )
+
+    suspend fun saveActivityShowEndedAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveActivityShowEnded(enabled)
+        }
+    }
+
+    suspend fun savePoolShowEndedAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.savePoolShowEnded(enabled)
+        }
+    }
+
+    suspend fun saveShowCalendarPoolImagesAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveShowCalendarPoolImages(enabled)
         }
     }
 

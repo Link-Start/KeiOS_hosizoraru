@@ -55,7 +55,6 @@ fun GitHubPage(
     externalActionsSheetToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onShowBottomBar: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -295,7 +294,11 @@ fun GitHubPage(
                     scrollBehavior = scrollBehavior,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
-                    onShowBottomBar = onShowBottomBar,
+                    onTitleClick = {
+                        scope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
                 ),
             surfaces =
                 GitHubMainContentSurfaces(

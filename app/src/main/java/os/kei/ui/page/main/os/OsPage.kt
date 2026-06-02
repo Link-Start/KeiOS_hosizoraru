@@ -7,6 +7,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,10 +39,10 @@ fun OsPage(
     shizukuApiUtils: ShizukuApiUtils,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onShowBottomBar: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
+    val pageScope = rememberCoroutineScope()
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
@@ -492,7 +493,11 @@ fun OsPage(
             onOpenActivityVisibilityManager = { overlayState.onShowActivityVisibilityManagerChange(true) },
             onOpenShellCardVisibilityManager = { overlayState.onShowShellCardVisibilityManagerChange(true) },
             onRefresh = actionState.refreshAllSections,
-            onTitleClick = onShowBottomBar,
+            onTitleClick = {
+                pageScope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
             onActionBarInteractingChanged = onActionBarInteractingChanged,
         ) { innerPadding ->
             OsPageOverlayCoordinator(

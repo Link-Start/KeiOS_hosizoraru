@@ -92,7 +92,7 @@ internal fun GitHubMainContent(
                     topBarColor = surfaces.topBarColor,
                     scrollBehavior = layout.scrollBehavior,
                     titleBackdrop = surfaces.topBarBackdrop,
-                    onTitleClick = layout.onShowBottomBar,
+                    onTitleClick = layout.onTitleClick,
                 )
             },
         ) { innerPadding ->

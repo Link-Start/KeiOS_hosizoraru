@@ -404,7 +404,9 @@ fun SettingsPage(
         topBarColor = androidx.compose.ui.graphics.Color.Transparent,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
-            bottomChromeScrollState.showNow()
+            scope.launch {
+                activeChromeListStateProvider().animateScrollToItem(0)
+            }
         },
         navigationIcon = {
             AppLiquidNavigationButton(

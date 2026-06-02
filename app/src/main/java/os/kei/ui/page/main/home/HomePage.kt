@@ -20,11 +20,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ui.effect.background.BgEffectBackground
 import os.kei.feature.home.model.HomeAppOverview
@@ -76,7 +78,6 @@ fun HomePage(
     onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
     onActionBarSelectedIndexChange: (Int) -> Unit = {},
     onBottomPageEditorVisibleChange: (Boolean) -> Unit = {},
-    onShowBottomBar: () -> Unit = {},
     onOpenGitHubPage: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
@@ -84,6 +85,7 @@ fun HomePage(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val lazyListState = rememberLazyListState()
+    val pageScope = rememberCoroutineScope()
     BindLazyListScrollBoundsEffect(
         listState = lazyListState,
         isActive = runtime.isPageActive,
@@ -263,7 +265,11 @@ fun HomePage(
                     title = "",
                     largeTitle = "",
                     color = Color.Transparent,
-                    onTitleClick = onShowBottomBar,
+                    onTitleClick = {
+                        pageScope.launch {
+                            lazyListState.animateScrollToItem(0)
+                        }
+                    },
                 )
             },
         ) { innerPadding ->

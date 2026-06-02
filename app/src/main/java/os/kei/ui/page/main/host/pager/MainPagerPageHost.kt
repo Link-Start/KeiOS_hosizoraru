@@ -91,7 +91,6 @@ internal fun MainPagerPageHost(
     baPageState: MainPagerBaPageState?,
     mcpPageState: MainPagerMcpPageState?,
     githubPageState: MainPagerGitHubPageState?,
-    onShowBottomBar: () -> Unit,
     onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     val glassRuntime = remember { GlassEffectRuntime() }
@@ -132,7 +131,6 @@ internal fun MainPagerPageHost(
                         onCacheFreshnessVisibilityChange = homeState.onCacheFreshnessVisibilityChange,
                         onActionBarSelectedIndexChange = homeState.onHomeActionBarSelectedIndexChange,
                         onBottomPageEditorVisibleChange = homeState.onHomeBottomPageEditorVisibleChange,
-                        onShowBottomBar = onShowBottomBar,
                         onOpenGitHubPage = homeState.onOpenGitHubPage,
                         onOpenSettings = homeState.onOpenSettings,
                         onOpenAbout = homeState.onOpenAbout,
@@ -150,7 +148,6 @@ internal fun MainPagerPageHost(
                         shizukuStatus = osState.shizukuStatus,
                         shizukuApiUtils = osState.shizukuApiUtils,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onShowBottomBar = onShowBottomBar,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
@@ -164,7 +161,6 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         preloadingEnabled = baState.preloadingEnabled,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onShowBottomBar = onShowBottomBar,
                         onOpenPoolStudentGuide = baState.onOpenPoolGuideDetail,
                         onOpenGuideCatalog = baState.onOpenBaGuideCatalog,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
@@ -180,7 +176,6 @@ internal fun MainPagerPageHost(
                         mcpServerManager = mcpState.mcpServerManager,
                         runtime = runtime,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onShowBottomBar = onShowBottomBar,
                         onOpenSkill = mcpState.onOpenMcpSkill,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
@@ -197,7 +192,6 @@ internal fun MainPagerPageHost(
                         externalActionsTrackId = githubState.requestedGitHubActionsTrackId,
                         externalActionsSheetToken = githubState.requestedGitHubActionsSheetToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onShowBottomBar = onShowBottomBar,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }

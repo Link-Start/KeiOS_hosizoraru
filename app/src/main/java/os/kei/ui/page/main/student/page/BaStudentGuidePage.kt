@@ -354,7 +354,7 @@ fun BaStudentGuidePage(
                         titleBackdrop = topBarBackdrop,
                         titleEndReserve = AppChromeTokens.topBarTitleActionReserve,
                         onTitleClick = {
-                            bottomChromeScrollState.showNow()
+                            scrollToTopSignal++
                         },
                         navigationIcon = {
                             AppLiquidNavigationButton(

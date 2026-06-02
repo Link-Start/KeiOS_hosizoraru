@@ -39,7 +39,6 @@ fun BAPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     preloadingEnabled: Boolean = false,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
-    onShowBottomBar: () -> Unit = {},
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
@@ -303,7 +302,11 @@ fun BAPage(
                         topBarColor = topBarMaterialBackdrop,
                         scrollBehavior = scrollBehavior,
                         titleBackdrop = backdrops.topBar,
-                        onTitleClick = onShowBottomBar,
+                        onTitleClick = {
+                            pageScope.launch {
+                                listState.animateScrollToItem(0)
+                            }
+                        },
                     )
                 },
             ) { innerPadding ->

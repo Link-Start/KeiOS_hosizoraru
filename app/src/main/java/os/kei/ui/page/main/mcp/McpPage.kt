@@ -13,6 +13,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
@@ -47,7 +49,6 @@ fun McpPage(
     mcpServerManager: McpServerManager,
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     liquidActionBarLayeredStyleEnabled: Boolean = true,
-    onShowBottomBar: () -> Unit = {},
     onOpenSkill: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
@@ -102,6 +103,7 @@ fun McpPage(
         )
 
     val listState = rememberLazyListState()
+    val pageScope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdropEffectsEnabled = runtime.isPageActive && !runtime.isPagerScrollInProgress
     val backdrops =
@@ -322,7 +324,11 @@ fun McpPage(
             topBarColor = topBarMaterialBackdrop,
             titleBackdrop = backdrops.topBar,
             reserveTopEndActionSpace = true,
-            onTitleClick = onShowBottomBar,
+            onTitleClick = {
+                pageScope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
             actions = {
                 LiquidActionBar(
                     backdrop = backdrops.topBar,

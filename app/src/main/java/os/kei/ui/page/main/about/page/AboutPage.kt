@@ -295,7 +295,9 @@ fun AboutPage(
         topBarColor = Color.Transparent,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
-            bottomChromeScrollState.showNow()
+            scope.launch {
+                activeChromeListStateProvider().animateScrollToItem(0)
+            }
         },
         navigationIcon = {
             if (onBack != null) {

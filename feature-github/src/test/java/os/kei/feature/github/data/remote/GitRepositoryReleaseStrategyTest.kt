@@ -125,6 +125,48 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
+    fun `gitee strategy falls back to git refs when api is rate limited`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(403)
+                    .setBody("403 Forbidden (Rate Limit Exceeded)")
+            )
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(403)
+                    .setBody("403 Forbidden (Rate Limit Exceeded)")
+            )
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(gitRefsTags())
+            )
+            val identity = assertNotNull(
+                buildGitRepositoryTrackIdentity("https://gitee.com/hugedog233/Pronto")
+            )
+            val strategy = GitRepositoryReleaseStrategy(
+                identity = identity,
+                giteeApiBaseUrl = server.url("/api/v5").toString(),
+                genericRepositoryBaseUrl = server.url("/hugedog233/Pronto.git").toString()
+            )
+
+            val snapshot = strategy.loadSnapshot(identity.owner, identity.repo).getOrThrow()
+
+            assertEquals("git_repository_gitee", snapshot.strategyId)
+            assertEquals(true, snapshot.hasStableRelease)
+            assertEquals("v2.7.2", snapshot.latestStable.rawTag)
+            assertEquals(3, snapshot.feed.entries.size)
+            assertTrue(server.takeRequest().path.orEmpty().contains("/api/v5/repos/hugedog233/Pronto/releases"))
+            assertTrue(server.takeRequest().path.orEmpty().contains("/api/v5/repos/hugedog233/Pronto/tags"))
+            assertTrue(
+                server.takeRequest().path.orEmpty()
+                    .contains("/hugedog233/Pronto.git/info/refs?service=git-upload-pack")
+            )
+        }
+    }
+
+    @Test
     fun `gitea release api builds stable and prerelease snapshot`() {
         MockWebServer().use { server ->
             server.enqueue(
@@ -304,6 +346,17 @@ class GitRepositoryReleaseStrategyTest {
                 }
               }
             ]
+        """.trimIndent()
+    }
+
+    private fun gitRefsTags(): String {
+        return """
+            001e# service=git-upload-pack
+            0000003fb31 refs/tags/v2.6.5
+            0040b32 refs/tags/v2.7.1
+            003fc33 refs/tags/v2.7.2
+            0044c33 refs/tags/v2.7.2^{}
+            0000
         """.trimIndent()
     }
 

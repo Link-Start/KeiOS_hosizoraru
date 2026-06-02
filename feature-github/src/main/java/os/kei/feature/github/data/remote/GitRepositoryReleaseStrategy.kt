@@ -87,23 +87,12 @@ class GitRepositoryReleaseStrategy(
             "${gitLabApiBaseUrl.trimEnd('/')}/projects/$projectId/releases?per_page=30"
         val tagsUrl =
             "${gitLabApiBaseUrl.trimEnd('/')}/projects/$projectId/repository/tags?per_page=30"
-        val releaseEntries = fetchJsonArray(releasesUrl)
-            .map { releases ->
-                parseReleaseEntries(
-                    releases = releases,
-                    releaseBodyKey = "description",
-                    sourceBaseUrl = gitLabWebBaseUrl()
-                )
-            }
-            .getOrElse { emptyList() }
-        val tagEntries = fetchJsonArray(tagsUrl)
-            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = gitLabWebBaseUrl()) }
-            .getOrDefault(emptyList())
-        val entries = mergeReleaseAndTagEntries(
-            releaseEntries = releaseEntries,
-            tagEntries = tagEntries
+        return loadApiSnapshotWithGitFallback(
+            releasesUrl = releasesUrl,
+            tagsUrl = tagsUrl,
+            releaseBodyKey = "description",
+            sourceBaseUrl = gitLabWebBaseUrl()
         )
-        return buildSnapshot(entries, feedUrl = releasesUrl)
     }
 
     private fun loadGiteeSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
@@ -115,23 +104,12 @@ class GitRepositoryReleaseStrategy(
             "${giteeApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/releases?per_page=30&direction=desc"
         val tagsUrl =
             "${giteeApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/tags?per_page=30&direction=desc"
-        val releaseEntries = fetchJsonArray(releasesUrl)
-            .map { releases ->
-                parseReleaseEntries(
-                    releases = releases,
-                    releaseBodyKey = "body",
-                    sourceBaseUrl = giteeWebBaseUrl()
-                )
-            }
-            .getOrElse { emptyList() }
-        val tagEntries = fetchJsonArray(tagsUrl)
-            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = giteeWebBaseUrl()) }
-            .getOrDefault(emptyList())
-        val entries = mergeReleaseAndTagEntries(
-            releaseEntries = releaseEntries,
-            tagEntries = tagEntries
+        return loadApiSnapshotWithGitFallback(
+            releasesUrl = releasesUrl,
+            tagsUrl = tagsUrl,
+            releaseBodyKey = "body",
+            sourceBaseUrl = giteeWebBaseUrl()
         )
-        return buildSnapshot(entries, feedUrl = releasesUrl)
     }
 
     private fun loadGiteaSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
@@ -143,29 +121,17 @@ class GitRepositoryReleaseStrategy(
             "${giteaApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/releases?limit=30"
         val tagsUrl =
             "${giteaApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/tags?limit=30"
-        val releaseEntries = fetchJsonArray(releasesUrl)
-            .map { releases ->
-                parseReleaseEntries(
-                    releases = releases,
-                    releaseBodyKey = "body",
-                    sourceBaseUrl = giteaWebBaseUrl()
-                )
-            }
-            .getOrElse { emptyList() }
-        val tagEntries = fetchJsonArray(tagsUrl)
-            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = giteaWebBaseUrl()) }
-            .getOrDefault(emptyList())
-        val entries = mergeReleaseAndTagEntries(
-            releaseEntries = releaseEntries,
-            tagEntries = tagEntries
+        return loadApiSnapshotWithGitFallback(
+            releasesUrl = releasesUrl,
+            tagsUrl = tagsUrl,
+            releaseBodyKey = "body",
+            sourceBaseUrl = giteaWebBaseUrl()
         )
-        return buildSnapshot(entries, feedUrl = releasesUrl)
     }
 
     private fun loadGenericGitSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
-        val refsUrl = "${genericRepositoryBaseUrl.trimEnd('/')}/info/refs?service=git-upload-pack"
-        return fetchText(refsUrl)
-            .map { refs -> parseGitRefsTagEntries(refs, sourceBaseUrl = genericRepositoryBaseUrl) }
+        val refsUrl = genericGitRefsUrl()
+        return fetchGitRefsTagEntries(sourceBaseUrl = genericRepositoryWebBaseUrl())
             .let { result ->
                 if (result.getOrNull().orEmpty().isNotEmpty()) {
                     result.flatMapCompat { entries -> buildSnapshot(entries, feedUrl = refsUrl) }
@@ -173,6 +139,53 @@ class GitRepositoryReleaseStrategy(
                     result.exceptionOrNull()?.let { Result.failure(it) }
                         ?: Result.failure(IllegalStateException("No Git tags found"))
                 }
+            }
+    }
+
+    private fun loadApiSnapshotWithGitFallback(
+        releasesUrl: String,
+        tagsUrl: String,
+        releaseBodyKey: String,
+        sourceBaseUrl: String
+    ): Result<GitHubRepositoryReleaseSnapshot> {
+        val releaseEntries = fetchJsonArray(releasesUrl)
+            .map { releases ->
+                parseReleaseEntries(
+                    releases = releases,
+                    releaseBodyKey = releaseBodyKey,
+                    sourceBaseUrl = sourceBaseUrl
+                )
+            }
+            .getOrElse { emptyList() }
+        var refsFallback: Result<List<GitHubAtomReleaseEntry>>? = null
+        fun loadRefsFallback(): Result<List<GitHubAtomReleaseEntry>> {
+            refsFallback?.let { return it }
+            return fetchGitRefsTagEntries(sourceBaseUrl = sourceBaseUrl)
+                .also { refsFallback = it }
+        }
+
+        var usedRefsFallbackForTags = false
+        val tagEntries = fetchJsonArray(tagsUrl)
+            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = sourceBaseUrl) }
+            .getOrElse {
+                usedRefsFallbackForTags = true
+                loadRefsFallback().getOrDefault(emptyList())
+            }
+        val entries = mergeReleaseAndTagEntries(
+            releaseEntries = releaseEntries,
+            tagEntries = tagEntries
+        )
+        if (entries.isNotEmpty()) {
+            val feedUrl = if (usedRefsFallbackForTags && releaseEntries.isEmpty()) {
+                genericGitRefsUrl()
+            } else {
+                releasesUrl
+            }
+            return buildSnapshot(entries, feedUrl = feedUrl)
+        }
+        return loadRefsFallback()
+            .flatMapCompat { refsEntries ->
+                buildSnapshot(refsEntries, feedUrl = genericGitRefsUrl())
             }
     }
 
@@ -409,6 +422,24 @@ class GitRepositoryReleaseStrategy(
                 error(buildErrorMessage(response, bodyText))
             }
             bodyText
+        }
+    }
+
+    private fun fetchGitRefsTagEntries(sourceBaseUrl: String): Result<List<GitHubAtomReleaseEntry>> {
+        return fetchText(genericGitRefsUrl())
+            .map { refs -> parseGitRefsTagEntries(refs, sourceBaseUrl = sourceBaseUrl) }
+    }
+
+    private fun genericGitRefsUrl(): String {
+        return "${genericRepositoryBaseUrl.trimEnd('/')}/info/refs?service=git-upload-pack"
+    }
+
+    private fun genericRepositoryWebBaseUrl(): String {
+        val base = genericRepositoryBaseUrl.trimEnd('/')
+        return if (base.endsWith(".git", ignoreCase = true)) {
+            base.dropLast(4)
+        } else {
+            base
         }
     }
 

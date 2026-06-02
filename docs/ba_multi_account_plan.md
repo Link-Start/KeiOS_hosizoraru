@@ -134,7 +134,7 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | P6 Settings migration | Done | Data sync/display moved to Activity Calendar and Pool pages; BA settings no longer owns those page-specific fields | `09b5dfda`, targeted BA tests |
 | P7 Account UI bridge | Done | Account pager card, active-account switching bridge, account management entry/sheet, AP card split, and cafe AP card relocation landed | `3a9f91e0`, `ead413f7`, P7b-2 targeted BA tests |
 | P8 Dock cleanup | Done | Vertical dock only has Calendar, Pool, Catalog icons; old copy-friend-code dock path removed | Targeted BA tests; AVD visual/navigation check remains in P9 |
-| P9 Release verification | Pending | Release build, R8 path, AVD smoke | `:app:assembleRelease`, AVD only |
+| P9 Release verification | Done | Release build, R8 path, baseline profile collection, AVD smoke | `:app:assembleRelease`; `:baselineprofile:collectNonMinifiedReleaseBaselineProfile`; AVD `emulator-5554` |
 
 ## Commit Plan
 
@@ -192,3 +192,5 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | BA Page account switching updates AP and cafe cards | AVD smoke |
 | Vertical dock opens Calendar, Pool, Catalog | AVD smoke |
 | Release and R8 path pass | `./gradlew :app:assembleRelease` |
+| Baseline profile BA journey remains collectable | `ANDROID_SERIAL=emulator-5554 ./gradlew :baselineprofile:collectNonMinifiedReleaseBaselineProfile -Pandroid.injected.test.device.serial=emulator-5554` |
+| Account management sheet opens from BA action bar | AVD smoke |

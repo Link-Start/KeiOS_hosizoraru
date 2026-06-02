@@ -137,6 +137,9 @@ internal object BASettingsStore {
     fun loadSnapshot(): BaPageSnapshot =
         loadBaSettingsSnapshot(kv()).withActiveBaAccount(loadAccountState())
 
+    fun loadCalendarPoolSnapshot(): BaPageSnapshot =
+        loadSnapshot().copy(serverIndex = loadCalendarPoolServerIndex())
+
     fun loadReminderSnapshots(): List<BaAccountReminderSnapshot> {
         val accountState = loadAccountState()
         val baseSnapshot = loadBaSettingsSnapshot(kv())
@@ -176,6 +179,20 @@ internal object BASettingsStore {
         migratedAccountStore().updateActiveAccountProfile { profile ->
             profile.copy(serverIndex = normalized)
         }
+        notifyChanged()
+    }
+
+    fun loadCalendarPoolServerIndex(): Int =
+        BaCalendarPoolServerSelectionAccessor(accountKeyValueStore())
+            .load(legacyServerIndex = loadServerIndex())
+
+    fun loadCalendarPoolSyncServerIndices(): List<Int> =
+        loadAccountState()
+            .enabledServerIndices()
+            .ifEmpty { listOf(loadCalendarPoolServerIndex()) }
+
+    fun saveCalendarPoolServerIndex(index: Int) {
+        BaCalendarPoolServerSelectionAccessor(accountKeyValueStore()).save(index)
         pruneCalendarPoolNotifiedKeysForCurrentPolicy()
         notifyChanged()
     }
@@ -448,7 +465,7 @@ internal object BASettingsStore {
     fun pruneCalendarPoolNotifiedKeysForCurrentPolicy() {
         val snapshot = loadSnapshot()
         pruneCalendarPoolNotifiedKeysForPolicy(
-            serverIndex = snapshot.serverIndex,
+            serverIndex = loadCalendarPoolServerIndex(),
             leadHours = snapshot.calendarPoolNotifyLeadHours,
             calendarUpcomingEnabled = snapshot.calendarUpcomingNotifyEnabled,
             calendarEndingEnabled = snapshot.calendarEndingNotifyEnabled,

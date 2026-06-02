@@ -166,7 +166,7 @@ internal object BaSettingsPersistenceRepository {
         BASettingsStore.saveCalendarPoolNotifyLeadHours(sheetState.calendarPoolNotifyLeadHours)
         BASettingsStore.saveApNotifyThreshold(savedThreshold)
         BASettingsStore.pruneCalendarPoolNotifiedKeysForPolicy(
-            serverIndex = BASettingsStore.loadServerIndex(),
+            serverIndex = BASettingsStore.loadCalendarPoolServerIndex(),
             leadHours = sheetState.calendarPoolNotifyLeadHours,
             calendarUpcomingEnabled = sheetState.calendarUpcomingNotifyEnabled,
             calendarEndingEnabled = sheetState.calendarEndingNotifyEnabled,

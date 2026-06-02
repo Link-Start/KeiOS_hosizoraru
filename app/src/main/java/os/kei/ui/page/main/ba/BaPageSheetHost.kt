@@ -276,6 +276,7 @@ private fun BaDebugSheetHost(
                 sent =
                     BaCalendarPoolNotificationDispatcher.sendDataChanged(
                         context = context,
+                        serverIndex = routeState.serverIndex,
                         calendarChangeCount = 1,
                         poolChangeCount = 1,
                         detail = detail,

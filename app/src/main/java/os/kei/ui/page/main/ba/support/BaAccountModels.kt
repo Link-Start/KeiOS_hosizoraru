@@ -88,6 +88,14 @@ internal data class BaAccountStoreSnapshot(
     val globalReminderSettings: BaGlobalReminderSettings,
 )
 
+internal fun BaAccountStoreSnapshot.enabledServerIndices(): List<Int> =
+    accounts
+        .asSequence()
+        .filter { it.profile.enabled }
+        .map { it.profile.serverIndex.coerceIn(0, 2) }
+        .distinct()
+        .toList()
+
 internal data class BaAccountReminderSnapshot(
     val accountId: BaAccountId,
     val displayName: String,

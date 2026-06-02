@@ -72,6 +72,7 @@ internal object BaCalendarPoolSyncNotifier {
                 changeKey !in notifiedKeys &&
                 BaCalendarPoolNotificationDispatcher.sendDataChanged(
                     context = context,
+                    serverIndex = serverIndex,
                     calendarChangeCount = changedCount,
                     poolChangeCount = 0,
                     detail = firstChangedCalendarTitle(previousEntries, nextEntries),
@@ -149,6 +150,7 @@ internal object BaCalendarPoolSyncNotifier {
                 changeKey !in notifiedKeys &&
                 BaCalendarPoolNotificationDispatcher.sendDataChanged(
                     context = context,
+                    serverIndex = serverIndex,
                     calendarChangeCount = 0,
                     poolChangeCount = changedCount,
                     detail = firstChangedPoolTitle(previousEntries, nextEntries),

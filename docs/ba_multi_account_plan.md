@@ -130,7 +130,7 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | P2 Active account compatibility | Done | `BASettingsStore.loadSnapshot()` and BA repositories read active account snapshot | Existing BA tests plus new active-account tests |
 | P3 Account-scoped runtime writes | Done | Runtime persistence update carries account id, AP/cafe/cooldown writes target active account | Runtime tests |
 | P4 Multi-account reminders | Done | Background reminder service scans all enabled accounts, uses scoped notification ids | Reminder service tests and scheduler tests |
-| P5 Server-scoped calendar/pool sync cleanup | Pending | Distinct server sync for enabled accounts, server-scoped notified keys | Calendar/pool notification tests |
+| P5 Server-scoped calendar/pool sync cleanup | Done | Distinct server sync for enabled accounts, server-scoped notified keys | Calendar/pool notification tests |
 | P6 Settings migration | Pending | BA settings sheet becomes global reminder/media settings; data sync/display moved to data pages | UI compile and targeted tests |
 | P7 Account UI bridge | Pending | Account pager card, account management sheet, AP card split | AVD navigation and state checks |
 | P8 Dock cleanup | Pending | Vertical dock only has Calendar, Pool, Catalog icons | AVD visual/navigation check |

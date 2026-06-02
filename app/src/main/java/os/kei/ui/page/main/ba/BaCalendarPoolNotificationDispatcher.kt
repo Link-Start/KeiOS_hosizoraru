@@ -44,9 +44,10 @@ internal object BaCalendarPoolNotificationDispatcher {
         return sendLiveUpdate(
             context = context,
             notificationId =
-                groupedNotificationId(
-                    CALENDAR_UPCOMING_NOTIFICATION_ID_BASE,
-                    notifyAtMs,
+                baCalendarPoolGroupedNotificationId(
+                    baseId = CALENDAR_UPCOMING_NOTIFICATION_ID_BASE,
+                    serverIndex = serverIndex,
+                    notifyAtMs = notifyAtMs,
                 ),
             title = context.getString(R.string.ba_calendar_notify_upcoming_title),
             content =
@@ -80,9 +81,10 @@ internal object BaCalendarPoolNotificationDispatcher {
         return sendLiveUpdate(
             context = context,
             notificationId =
-                groupedNotificationId(
-                    CALENDAR_ENDING_NOTIFICATION_ID_BASE,
-                    notifyAtMs,
+                baCalendarPoolGroupedNotificationId(
+                    baseId = CALENDAR_ENDING_NOTIFICATION_ID_BASE,
+                    serverIndex = serverIndex,
+                    notifyAtMs = notifyAtMs,
                 ),
             title = context.getString(R.string.ba_calendar_notify_ending_title),
             content =
@@ -112,7 +114,12 @@ internal object BaCalendarPoolNotificationDispatcher {
         val notifyAtMs = normalizedEntries.firstOrNull()?.startAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = groupedNotificationId(POOL_UPCOMING_NOTIFICATION_ID_BASE, notifyAtMs),
+            notificationId =
+                baCalendarPoolGroupedNotificationId(
+                    baseId = POOL_UPCOMING_NOTIFICATION_ID_BASE,
+                    serverIndex = serverIndex,
+                    notifyAtMs = notifyAtMs,
+                ),
             title = context.getString(R.string.ba_pool_notify_upcoming_title),
             content =
                 context.getString(
@@ -144,7 +151,12 @@ internal object BaCalendarPoolNotificationDispatcher {
         val notifyAtMs = normalizedEntries.firstOrNull()?.endAtMs ?: return false
         return sendLiveUpdate(
             context = context,
-            notificationId = groupedNotificationId(POOL_ENDING_NOTIFICATION_ID_BASE, notifyAtMs),
+            notificationId =
+                baCalendarPoolGroupedNotificationId(
+                    baseId = POOL_ENDING_NOTIFICATION_ID_BASE,
+                    serverIndex = serverIndex,
+                    notifyAtMs = notifyAtMs,
+                ),
             title = context.getString(R.string.ba_pool_notify_ending_title),
             content =
                 context.getString(
@@ -160,6 +172,7 @@ internal object BaCalendarPoolNotificationDispatcher {
 
     fun sendDataChanged(
         context: Context,
+        serverIndex: Int,
         calendarChangeCount: Int,
         poolChangeCount: Int,
         detail: String = "",
@@ -172,7 +185,7 @@ internal object BaCalendarPoolNotificationDispatcher {
             )
         return sendLiveUpdate(
             context = context,
-            notificationId = CHANGE_NOTIFICATION_ID,
+            notificationId = changeNotificationId(serverIndex),
             title = context.getString(R.string.ba_calendar_pool_notify_change_title),
             content =
                 detail.takeIf { it.isNotBlank() }?.let { "$baseContent · $it" }
@@ -282,13 +295,8 @@ internal object BaCalendarPoolNotificationDispatcher {
         }
     }
 
-    private fun groupedNotificationId(
-        baseId: Int,
-        notifyAtMs: Long,
-    ): Int {
-        val timeBucketHash = (notifyAtMs / 60_000L).hashCode().and(0x7fffffff) % 900_000
-        return baseId + timeBucketHash
-    }
+    private fun changeNotificationId(serverIndex: Int): Int =
+        CHANGE_NOTIFICATION_ID + serverIndex.coerceIn(0, 2)
 
     private fun resolveDeadlineProgressPercent(deadlineAtMs: Long): Int {
         val nowMs = System.currentTimeMillis()
@@ -346,4 +354,14 @@ internal object BaCalendarPoolNotificationDispatcher {
             notificationId = notificationId,
             requestCode = 521_100 + notificationId,
         )
+}
+
+internal fun baCalendarPoolGroupedNotificationId(
+    baseId: Int,
+    serverIndex: Int,
+    notifyAtMs: Long,
+): Int {
+    val serverBucket = serverIndex.coerceIn(0, 2) * 300_000
+    val timeBucketHash = (notifyAtMs / 60_000L).hashCode().and(0x7fffffff) % 300_000
+    return baseId + serverBucket + timeBucketHash
 }

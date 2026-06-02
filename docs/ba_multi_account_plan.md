@@ -132,7 +132,7 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | P4 Multi-account reminders | Done | Background reminder service scans all enabled accounts, uses scoped notification ids | Reminder service tests and scheduler tests |
 | P5 Server-scoped calendar/pool sync cleanup | Done | Distinct server sync for enabled accounts, server-scoped notified keys | Calendar/pool notification tests |
 | P6 Settings migration | Done | Data sync/display moved to Activity Calendar and Pool pages; BA settings no longer owns those page-specific fields | `09b5dfda`, targeted BA tests |
-| P7 Account UI bridge | In Progress | Account pager card, active-account switching bridge, and account management entry/sheet landed; AP card split remains | `3a9f91e0`, P7b-1 targeted BA tests |
+| P7 Account UI bridge | Done | Account pager card, active-account switching bridge, account management entry/sheet, AP card split, and cafe AP card relocation landed | `3a9f91e0`, `ead413f7`, P7b-2 targeted BA tests |
 | P8 Dock cleanup | Pending | Vertical dock only has Calendar, Pool, Catalog icons | AVD visual/navigation check |
 | P9 Release verification | Pending | Release build, R8 path, AVD smoke | `:app:assembleRelease`, AVD only |
 
@@ -157,8 +157,8 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | Phase | Main Change | Notes |
 |---|---|---|
 | UI-1 | `BaAccountPagerCard` | Horizontal account switching; `activeAccountId` drives page state |
-| UI-2 | `BaApCard` | AP leaves old overview card and becomes account-scoped |
-| UI-3 | `BaCafeCard` binding | Cafe state follows active account |
+| UI-2 | `BaApCard` | AP left old overview card and follows active account |
+| UI-3 | `BaCafeCard` binding | Cafe state and cafe AP follow active account |
 | UI-4 | Account management sheet | Follow-global controls and account list landed; add/edit/delete/reorder remains |
 | UI-5 | BA settings sheet | Global reminders and media settings |
 | UI-6 | Data-page settings | Activity/pool sync and display settings move to their pages |

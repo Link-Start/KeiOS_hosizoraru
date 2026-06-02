@@ -35,6 +35,7 @@
     <string name="ba_overview_ap_regen_status">AP +1 %1$s | Full AP %2$s</string>
     <string name="ba_overview_cafe_ap_title">Cafe AP</string>
     <string name="ba_overview_cd_claim_cafe_ap">Claim Cafe AP</string>
+    <string name="ba_ap_card_title">AP</string>
     <string name="ba_metric_ap_sync">AP Sync</string>
     <string name="ba_metric_ap_full">Full AP</string>
     <string name="ba_id_card_title">ID Card</string>

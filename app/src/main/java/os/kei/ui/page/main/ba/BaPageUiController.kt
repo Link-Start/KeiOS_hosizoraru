@@ -20,7 +20,6 @@ internal data class BaPagePopupState(
     val showCafeLevelPopup: Boolean,
     val overviewServerPopupAnchorBounds: IntRect?,
     val cafeLevelPopupAnchorBounds: IntRect?,
-    val showCalendarIntervalPopup: Boolean,
 )
 
 @Stable
@@ -70,7 +69,6 @@ internal fun buildBaPageRouteState(
                 showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
                 overviewServerPopupAnchorBounds = chromeUiState.overviewServerPopupAnchorBounds,
                 cafeLevelPopupAnchorBounds = chromeUiState.cafeLevelPopupAnchorBounds,
-                showCalendarIntervalPopup = chromeUiState.showCalendarIntervalPopup,
             ),
         serverIndex = serverUiState.serverIndex,
         baCalendarReloadSignal = syncUiState.calendarReloadSignal,

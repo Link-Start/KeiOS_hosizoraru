@@ -72,6 +72,33 @@ internal object BaCalendarPoolRepository {
         }
     }
 
+    suspend fun saveRefreshIntervalAsync(
+        hours: Int,
+        lastSyncMs: Long,
+    ): BaRefreshIntervalPersistenceResult =
+        BaSettingsPersistenceRepository.persistRefreshIntervalAsync(
+            hours = hours,
+            calendarLastSyncMs = lastSyncMs,
+        )
+
+    suspend fun saveActivityShowEndedAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveActivityShowEnded(enabled)
+        }
+    }
+
+    suspend fun savePoolShowEndedAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.savePoolShowEnded(enabled)
+        }
+    }
+
+    suspend fun saveShowCalendarPoolImagesAsync(enabled: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveShowCalendarPoolImages(enabled)
+        }
+    }
+
     suspend fun preparePoolGuideOpen(rawUrl: String): BaPoolGuideOpenPlan =
         withContext(AppDispatchers.baFetch) {
             val normalized = normalizeGuideUrl(rawUrl)

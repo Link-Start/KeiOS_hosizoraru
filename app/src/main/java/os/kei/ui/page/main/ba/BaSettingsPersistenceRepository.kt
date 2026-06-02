@@ -9,15 +9,10 @@ import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
 
 internal data class BaSettingsPersistenceResult(
     val savedCafeLevel: Int,
-    val showEndedPools: Boolean,
-    val showEndedActivities: Boolean,
-    val showCalendarPoolImages: Boolean,
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
     val idIndependentByServer: Boolean,
-    val turningEndedActivitiesOn: Boolean,
-    val turningImagesOn: Boolean,
 )
 
 internal data class BaNotificationSettingsPersistenceResult(
@@ -104,17 +99,10 @@ internal object BaSettingsPersistenceRepository {
         BASettingsStore.markCalendarPoolNotified(key)
     }
 
-    fun persistSettingsDraft(
-        sheetState: BaSettingsSheetState,
-        currentShowEndedActivities: Boolean,
-        currentShowCalendarPoolImages: Boolean,
-    ): BaSettingsPersistenceResult {
+    fun persistSettingsDraft(sheetState: BaSettingsSheetState): BaSettingsPersistenceResult {
         val savedCafeLevel = sheetState.cafeLevel.coerceIn(1, 10)
 
         BASettingsStore.saveCafeLevel(savedCafeLevel)
-        BASettingsStore.savePoolShowEnded(sheetState.showEndedPools)
-        BASettingsStore.saveActivityShowEnded(sheetState.showEndedActivities)
-        BASettingsStore.saveShowCalendarPoolImages(sheetState.showCalendarPoolImages)
         BASettingsStore.saveMediaAdaptiveRotationEnabled(sheetState.mediaAdaptiveRotationEnabled)
         BASettingsStore.saveMediaSaveCustomEnabled(sheetState.mediaSaveCustomEnabled)
         BASettingsStore.saveMediaSaveFixedTreeUri(sheetState.mediaSaveFixedTreeUri)
@@ -122,29 +110,16 @@ internal object BaSettingsPersistenceRepository {
 
         return BaSettingsPersistenceResult(
             savedCafeLevel = savedCafeLevel,
-            showEndedPools = sheetState.showEndedPools,
-            showEndedActivities = sheetState.showEndedActivities,
-            showCalendarPoolImages = sheetState.showCalendarPoolImages,
             mediaAdaptiveRotationEnabled = sheetState.mediaAdaptiveRotationEnabled,
             mediaSaveCustomEnabled = sheetState.mediaSaveCustomEnabled,
             mediaSaveFixedTreeUri = sheetState.mediaSaveFixedTreeUri,
             idIndependentByServer = sheetState.idIndependentByServer,
-            turningEndedActivitiesOn = !currentShowEndedActivities && sheetState.showEndedActivities,
-            turningImagesOn = !currentShowCalendarPoolImages && sheetState.showCalendarPoolImages,
         )
     }
 
-    suspend fun persistSettingsDraftAsync(
-        sheetState: BaSettingsSheetState,
-        currentShowEndedActivities: Boolean,
-        currentShowCalendarPoolImages: Boolean,
-    ): BaSettingsPersistenceResult =
+    suspend fun persistSettingsDraftAsync(sheetState: BaSettingsSheetState): BaSettingsPersistenceResult =
         withContext(AppDispatchers.baFetch) {
-            persistSettingsDraft(
-                sheetState = sheetState,
-                currentShowEndedActivities = currentShowEndedActivities,
-                currentShowCalendarPoolImages = currentShowCalendarPoolImages,
-            )
+            persistSettingsDraft(sheetState = sheetState)
         }
 
     fun persistNotificationSettingsDraft(sheetState: BaNotificationSettingsSheetState): BaNotificationSettingsPersistenceResult {

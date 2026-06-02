@@ -80,6 +80,8 @@
     <string name="ba_pool_error_sync_failed">卡池同步失败（超时或网络异常）</string>
     <string name="ba_settings_title">BA 配置</string>
     <string name="ba_notification_settings_title">BA 通知设置</string>
+    <string name="ba_calendar_pool_data_settings_title">数据与显示设置</string>
+    <string name="ba_calendar_pool_cd_data_settings">活动与卡池数据设置</string>
     <string name="ba_settings_section_basic">基础设置</string>
     <string name="ba_settings_section_sync">同步</string>
     <string name="ba_settings_section_notifications">通知</string>

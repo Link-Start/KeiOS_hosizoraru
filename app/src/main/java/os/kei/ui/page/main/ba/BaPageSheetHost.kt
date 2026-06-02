@@ -49,25 +49,6 @@ internal fun BaPageSheetHost(
         onIdIndependentByServerChange = { enabled ->
             viewModel.updateSettingsDraft { draft -> draft.copy(idIndependentByServer = enabled) }
         },
-        onShowEndedActivitiesChange = { show ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(showEndedActivities = show) }
-        },
-        onShowEndedPoolsChange = { show ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(showEndedPools = show) }
-        },
-        onShowCalendarPoolImagesChange = { show ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(showCalendarPoolImages = show) }
-        },
-        onCalendarRefreshIntervalSelected = { hours ->
-            viewModel.saveRefreshInterval(
-                hours = hours,
-                calendarLastSyncMs = routeState.calendarUiState.lastSyncMs,
-            )
-        },
-        refreshIntervalDropdownExpanded = chromeUiState.settingsRefreshIntervalDropdownExpanded,
-        refreshIntervalDropdownAnchorBounds = chromeUiState.settingsRefreshIntervalDropdownAnchorBounds,
-        onRefreshIntervalDropdownExpandedChange = viewModel::updateSettingsRefreshIntervalDropdownExpanded,
-        onRefreshIntervalDropdownAnchorBoundsChange = viewModel::updateSettingsRefreshIntervalDropdownAnchorBounds,
         hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,
         onDismissRequest = onDismissSettings,
         onSaveRequest = onSaveSettings,

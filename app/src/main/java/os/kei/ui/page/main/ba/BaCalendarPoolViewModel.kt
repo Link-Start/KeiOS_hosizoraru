@@ -56,7 +56,15 @@ internal data class BaCalendarPoolChromeUiState(
     val poolReloadSignal: Int = 0,
     val showServerPopup: Boolean = false,
     val serverPopupAnchorBounds: IntRect? = null,
+    val showDataSettingsSheet: Boolean = false,
+    val dataRefreshIntervalDropdownExpanded: Boolean = false,
+    val dataRefreshIntervalDropdownAnchorBounds: IntRect? = null,
 )
+
+internal enum class BaCalendarPoolPageKind {
+    Calendar,
+    Pool,
+}
 
 private data class BaCalendarRequestKey(
     val isPageActive: Boolean,
@@ -298,6 +306,102 @@ internal class BaCalendarPoolViewModel(
         }
     }
 
+    fun updateDataSettingsSheetVisible(visible: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.showDataSettingsSheet == visible) {
+                state
+            } else {
+                state.copy(
+                    showDataSettingsSheet = visible,
+                    dataRefreshIntervalDropdownExpanded =
+                        if (visible) {
+                            state.dataRefreshIntervalDropdownExpanded
+                        } else {
+                            false
+                        },
+                    dataRefreshIntervalDropdownAnchorBounds =
+                        if (visible) {
+                            state.dataRefreshIntervalDropdownAnchorBounds
+                        } else {
+                            null
+                        },
+                )
+            }
+        }
+    }
+
+    fun updateDataRefreshIntervalDropdownExpanded(expanded: Boolean) {
+        _chromeUiState.update { state ->
+            if (state.dataRefreshIntervalDropdownExpanded == expanded) {
+                state
+            } else {
+                state.copy(dataRefreshIntervalDropdownExpanded = expanded)
+            }
+        }
+    }
+
+    fun updateDataRefreshIntervalDropdownAnchorBounds(bounds: IntRect?) {
+        _chromeUiState.update { state ->
+            if (state.dataRefreshIntervalDropdownAnchorBounds == bounds) {
+                state
+            } else {
+                state.copy(dataRefreshIntervalDropdownAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun saveRefreshInterval(
+        hours: Int,
+        lastSyncMs: Long,
+        pageKind: BaCalendarPoolPageKind,
+    ) {
+        viewModelScope.launch {
+            val result =
+                BaCalendarPoolRepository.saveRefreshIntervalAsync(
+                    hours = hours,
+                    lastSyncMs = lastSyncMs,
+                )
+            _settingsUiState.update { state ->
+                state.copy(
+                    snapshot = state.snapshot.copy(calendarRefreshIntervalHours = result.hours),
+                )
+            }
+            if (result.shouldRefresh) {
+                when (pageKind) {
+                    BaCalendarPoolPageKind.Calendar -> requestCalendarReload()
+                    BaCalendarPoolPageKind.Pool -> requestPoolReload()
+                }
+            }
+        }
+    }
+
+    fun saveShowEndedActivities(enabled: Boolean) {
+        viewModelScope.launch {
+            BaCalendarPoolRepository.saveActivityShowEndedAsync(enabled)
+            _settingsUiState.update { state ->
+                state.copy(snapshot = state.snapshot.copy(showEndedActivities = enabled))
+            }
+        }
+    }
+
+    fun saveShowEndedPools(enabled: Boolean) {
+        viewModelScope.launch {
+            BaCalendarPoolRepository.savePoolShowEndedAsync(enabled)
+            _settingsUiState.update { state ->
+                state.copy(snapshot = state.snapshot.copy(showEndedPools = enabled))
+            }
+        }
+    }
+
+    fun saveShowCalendarPoolImages(enabled: Boolean) {
+        viewModelScope.launch {
+            BaCalendarPoolRepository.saveShowCalendarPoolImagesAsync(enabled)
+            _settingsUiState.update { state ->
+                state.copy(snapshot = state.snapshot.copy(showCalendarPoolImages = enabled))
+            }
+        }
+    }
+
     fun updateServerPopupExpanded(expanded: Boolean) {
         _chromeUiState.update { state ->
             if (state.showServerPopup == expanded) {
@@ -320,12 +424,18 @@ internal class BaCalendarPoolViewModel(
 
     fun clearServerPopup() {
         _chromeUiState.update { state ->
-            if (!state.showServerPopup && state.serverPopupAnchorBounds == null) {
+            if (!state.showServerPopup &&
+                state.serverPopupAnchorBounds == null &&
+                !state.dataRefreshIntervalDropdownExpanded &&
+                state.dataRefreshIntervalDropdownAnchorBounds == null
+            ) {
                 state
             } else {
                 state.copy(
                     showServerPopup = false,
                     serverPopupAnchorBounds = null,
+                    dataRefreshIntervalDropdownExpanded = false,
+                    dataRefreshIntervalDropdownAnchorBounds = null,
                 )
             }
         }

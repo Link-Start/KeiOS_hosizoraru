@@ -10,9 +10,6 @@ internal data class BaPageSettingsDraftState(
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
     val idIndependentByServer: Boolean,
-    val showEndedPools: Boolean,
-    val showEndedActivities: Boolean,
-    val showCalendarPoolImages: Boolean,
 )
 
 @Stable
@@ -38,9 +35,6 @@ internal fun BaPageSnapshot.toSettingsDraftState(): BaPageSettingsDraftState =
         mediaSaveCustomEnabled = mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
         idIndependentByServer = idIndependentByServer,
-        showEndedPools = showEndedPools,
-        showEndedActivities = showEndedActivities,
-        showCalendarPoolImages = showCalendarPoolImages,
     )
 
 internal fun BaPageSnapshot.toNotificationDraftState(): BaPageNotificationDraftState =

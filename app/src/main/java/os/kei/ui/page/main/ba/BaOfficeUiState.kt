@@ -16,9 +16,6 @@ internal data class BaOfficeChromeUiState(
     val showCafeLevelPopup: Boolean = false,
     val overviewServerPopupAnchorBounds: IntRect? = null,
     val cafeLevelPopupAnchorBounds: IntRect? = null,
-    val showCalendarIntervalPopup: Boolean = false,
-    val settingsRefreshIntervalDropdownExpanded: Boolean = false,
-    val settingsRefreshIntervalDropdownAnchorBounds: IntRect? = null,
     val notificationLeadDropdownExpanded: Boolean = false,
     val notificationLeadDropdownAnchorBounds: IntRect? = null,
     val consumedScrollToTopSignal: Int = 0,
@@ -66,18 +63,11 @@ internal sealed interface BaOfficeEvent {
         val persisted: BaSettingsPersistenceResult,
         val clampUpdate: BaRuntimePersistenceUpdate?,
         val runtimeUpdate: BaRuntimePersistenceUpdate?,
-        val refreshCalendar: Boolean,
-        val refreshPool: Boolean,
     ) : BaOfficeEvent
 
     data class NotificationSettingsSaved(
         val savedDraft: BaPageNotificationDraftState,
         val runtimeUpdate: BaRuntimePersistenceUpdate?,
-    ) : BaOfficeEvent
-
-    data class RefreshIntervalSaved(
-        val hours: Int,
-        val shouldRefresh: Boolean,
     ) : BaOfficeEvent
 
     data class OperationFailed(
@@ -101,9 +91,6 @@ internal fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiStat
     copy(
         showOverviewServerPopup = false,
         showCafeLevelPopup = false,
-        showCalendarIntervalPopup = false,
-        settingsRefreshIntervalDropdownExpanded = false,
-        settingsRefreshIntervalDropdownAnchorBounds = null,
         notificationLeadDropdownExpanded = false,
         notificationLeadDropdownAnchorBounds = null,
     )

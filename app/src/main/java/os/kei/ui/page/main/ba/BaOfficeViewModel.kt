@@ -121,8 +121,6 @@ internal class BaOfficeViewModel(
         _chromeUiState.update { state ->
             state.copy(
                 showSettingsSheet = false,
-                settingsRefreshIntervalDropdownExpanded = false,
-                settingsRefreshIntervalDropdownAnchorBounds = null,
             )
         }
     }
@@ -224,26 +222,6 @@ internal class BaOfficeViewModel(
                 state
             } else {
                 state.copy(consumedScrollToTopSignal = signal)
-            }
-        }
-    }
-
-    fun updateSettingsRefreshIntervalDropdownExpanded(expanded: Boolean) {
-        _chromeUiState.update { state ->
-            if (state.settingsRefreshIntervalDropdownExpanded == expanded) {
-                state
-            } else {
-                state.copy(settingsRefreshIntervalDropdownExpanded = expanded)
-            }
-        }
-    }
-
-    fun updateSettingsRefreshIntervalDropdownAnchorBounds(bounds: IntRect?) {
-        _chromeUiState.update { state ->
-            if (state.settingsRefreshIntervalDropdownAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(settingsRefreshIntervalDropdownAnchorBounds = bounds)
             }
         }
     }
@@ -369,21 +347,35 @@ internal class BaOfficeViewModel(
         }
     }
 
+    fun refreshRuntimeSettingsFromStore() {
+        viewModelScope.launch {
+            val snapshot = repository.loadInitialSnapshot()
+            _runtimeUiState.update { state ->
+                state.copy(
+                    showEndedPools = snapshot.showEndedPools,
+                    showEndedActivities = snapshot.showEndedActivities,
+                    showCalendarPoolImages = snapshot.showCalendarPoolImages,
+                    mediaAdaptiveRotationEnabled = snapshot.mediaAdaptiveRotationEnabled,
+                    mediaSaveCustomEnabled = snapshot.mediaSaveCustomEnabled,
+                    mediaSaveFixedTreeUri = snapshot.mediaSaveFixedTreeUri,
+                    idIndependentByServer = snapshot.idIndependentByServer,
+                    calendarRefreshIntervalHours = snapshot.calendarRefreshIntervalHours,
+                )
+            }
+            if (!_chromeUiState.value.showSettingsSheet) {
+                _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
+            }
+        }
+    }
+
     fun saveSettings(
         sheetState: BaSettingsSheetState,
-        currentShowEndedActivities: Boolean,
-        currentShowCalendarPoolImages: Boolean,
         serverIndex: Int,
     ) {
         viewModelScope.launch {
             try {
                 val saveResult =
-                    repository.persistSettings(
-                        sheetState = sheetState,
-                        currentShowEndedActivities = currentShowEndedActivities,
-                        currentShowCalendarPoolImages = currentShowCalendarPoolImages,
-                        serverIndex = serverIndex,
-                    )
+                    repository.persistSettings(sheetState = sheetState)
                 val persisted = saveResult.persisted
                 office.cafeLevel = persisted.savedCafeLevel
                 val clampUpdate = office.clampCafeStoredToCapUpdate()
@@ -394,9 +386,6 @@ internal class BaOfficeViewModel(
                     ).persistAsync()
                 _runtimeUiState.update { state ->
                     state.copy(
-                        showEndedPools = persisted.showEndedPools,
-                        showEndedActivities = persisted.showEndedActivities,
-                        showCalendarPoolImages = persisted.showCalendarPoolImages,
                         mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled,
                         mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled,
                         mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri,
@@ -411,9 +400,6 @@ internal class BaOfficeViewModel(
                             mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled,
                             mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri,
                             idIndependentByServer = persisted.idIndependentByServer,
-                            showEndedPools = persisted.showEndedPools,
-                            showEndedActivities = persisted.showEndedActivities,
-                            showCalendarPoolImages = persisted.showCalendarPoolImages,
                         ),
                     )
 
@@ -423,8 +409,6 @@ internal class BaOfficeViewModel(
                         persisted = persisted,
                         clampUpdate = clampUpdate,
                         runtimeUpdate = office.applyRuntimeTick(),
-                        refreshCalendar = saveResult.refreshCalendar,
-                        refreshPool = saveResult.refreshPool,
                     ),
                 )
             } catch (error: Throwable) {
@@ -482,33 +466,6 @@ internal class BaOfficeViewModel(
                     BaOfficeEvent.NotificationSettingsSaved(
                         savedDraft = savedDraft,
                         runtimeUpdate = office.applyRuntimeTick(),
-                    ),
-                )
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                _events.emit(BaOfficeEvent.OperationFailed(error))
-            }
-        }
-    }
-
-    fun saveRefreshInterval(
-        hours: Int,
-        calendarLastSyncMs: Long,
-    ) {
-        viewModelScope.launch {
-            try {
-                val persisted =
-                    repository.persistRefreshInterval(
-                        hours = hours,
-                        calendarLastSyncMs = calendarLastSyncMs,
-                    )
-                _runtimeUiState.update { state ->
-                    state.copy(calendarRefreshIntervalHours = persisted.hours)
-                }
-                _events.emit(
-                    BaOfficeEvent.RefreshIntervalSaved(
-                        hours = persisted.hours,
-                        shouldRefresh = persisted.shouldRefresh,
                     ),
                 )
             } catch (error: Throwable) {

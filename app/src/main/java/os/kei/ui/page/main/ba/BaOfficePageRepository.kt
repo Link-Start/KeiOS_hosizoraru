@@ -20,8 +20,6 @@ internal data class BaOfficeServerRestorePersistenceResult(
 
 internal data class BaOfficeSettingsSavePersistenceResult(
     val persisted: BaSettingsPersistenceResult,
-    val refreshCalendar: Boolean,
-    val refreshPool: Boolean,
 )
 
 internal data class BaOfficeNotificationSavePersistenceResult(
@@ -110,32 +108,10 @@ internal class BaOfficePageRepository(
             )
         }
 
-    suspend fun persistSettings(
-        sheetState: BaSettingsSheetState,
-        currentShowEndedActivities: Boolean,
-        currentShowCalendarPoolImages: Boolean,
-        serverIndex: Int,
-    ): BaOfficeSettingsSavePersistenceResult =
+    suspend fun persistSettings(sheetState: BaSettingsSheetState): BaOfficeSettingsSavePersistenceResult =
         withContext(AppDispatchers.baFetch) {
-            val persisted =
-                BaSettingsPersistenceRepository.persistSettingsDraft(
-                    sheetState = sheetState,
-                    currentShowEndedActivities = currentShowEndedActivities,
-                    currentShowCalendarPoolImages = currentShowCalendarPoolImages,
-                )
-            val refreshCalendarForEnded =
-                persisted.turningEndedActivitiesOn &&
-                    BaSettingsPersistenceRepository.calendarCacheIsBlank(serverIndex)
-            val refreshCalendarForImages =
-                persisted.turningImagesOn &&
-                    !BaSettingsPersistenceRepository.hasAnyImageInCalendarCache(serverIndex)
-            val refreshPoolForImages =
-                persisted.turningImagesOn &&
-                    !BaSettingsPersistenceRepository.hasAnyImageInPoolCache(serverIndex)
             BaOfficeSettingsSavePersistenceResult(
-                persisted = persisted,
-                refreshCalendar = refreshCalendarForEnded || refreshCalendarForImages,
-                refreshPool = refreshPoolForImages,
+                persisted = BaSettingsPersistenceRepository.persistSettingsDraft(sheetState),
             )
         }
 
@@ -202,15 +178,6 @@ internal class BaOfficePageRepository(
             )
         }
 
-    suspend fun persistRefreshInterval(
-        hours: Int,
-        calendarLastSyncMs: Long,
-    ): BaRefreshIntervalPersistenceResult =
-        BaSettingsPersistenceRepository.persistRefreshIntervalAsync(
-            hours = hours,
-            calendarLastSyncMs = calendarLastSyncMs,
-            nowMs = clock.nowMs(),
-        )
 }
 
 private fun BaNotificationSettingsSheetState.toSavedDraft(

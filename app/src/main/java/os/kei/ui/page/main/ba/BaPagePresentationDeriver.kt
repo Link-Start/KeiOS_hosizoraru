@@ -38,7 +38,6 @@ internal fun buildBaPagePresentationState(
     val settingsSheetState =
         buildBaSettingsSheetState(
             draft = routeState.settingsDraftState,
-            calendarRefreshIntervalHours = routeState.calendarRefreshIntervalHours,
         )
     val notificationSettingsSheetState =
         buildBaNotificationSettingsSheetState(
@@ -52,7 +51,6 @@ internal fun buildBaPagePresentationState(
     val savedSettingsSheetState =
         buildBaSettingsSheetState(
             draft = savedSettingsDraftState,
-            calendarRefreshIntervalHours = routeState.calendarRefreshIntervalHours,
         )
     val savedNotificationSettingsSheetState =
         buildBaNotificationSettingsSheetState(
@@ -89,7 +87,4 @@ internal fun buildBaSavedSettingsDraftState(
         mediaSaveCustomEnabled = routeState.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = routeState.mediaSaveFixedTreeUri,
         idIndependentByServer = routeState.idIndependentByServer,
-        showEndedActivities = routeState.showEndedActivities,
-        showEndedPools = routeState.showEndedPools,
-        showCalendarPoolImages = routeState.showCalendarPoolImages,
     )

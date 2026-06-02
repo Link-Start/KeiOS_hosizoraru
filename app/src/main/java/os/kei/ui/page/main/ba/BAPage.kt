@@ -186,8 +186,6 @@ fun BAPage(
             when (event) {
                 is BaOfficeEvent.SettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.clampUpdate)
-                    if (event.refreshCalendar) refreshCalendar(force = true)
-                    if (event.refreshPool) refreshPool(force = true)
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
                     officeViewModel.hideSettingsSheet(
                         BaPageSettingsDraftState(
@@ -196,9 +194,6 @@ fun BAPage(
                             mediaSaveCustomEnabled = event.persisted.mediaSaveCustomEnabled,
                             mediaSaveFixedTreeUri = event.persisted.mediaSaveFixedTreeUri,
                             idIndependentByServer = event.persisted.idIndependentByServer,
-                            showEndedPools = event.persisted.showEndedPools,
-                            showEndedActivities = event.persisted.showEndedActivities,
-                            showCalendarPoolImages = event.persisted.showCalendarPoolImages,
                         ),
                     )
                 }
@@ -206,13 +201,6 @@ fun BAPage(
                 is BaOfficeEvent.NotificationSettingsSaved -> {
                     runtimePersistenceCoordinator.submit(event.runtimeUpdate)
                     officeViewModel.hideNotificationSettingsSheet()
-                }
-
-                is BaOfficeEvent.RefreshIntervalSaved -> {
-                    if (event.shouldRefresh) {
-                        refreshCalendar(force = true)
-                        refreshPool(force = true)
-                    }
                 }
 
                 is BaOfficeEvent.OperationFailed -> {
@@ -228,6 +216,7 @@ fun BAPage(
         val observer =
             LifecycleEventObserver { _, event ->
                 if (event == Lifecycle.Event.ON_RESUME) {
+                    officeViewModel.refreshRuntimeSettingsFromStore()
                     officeViewModel.restoreServerFromStore()
                 }
             }
@@ -241,8 +230,6 @@ fun BAPage(
         runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         officeViewModel.saveSettings(
             sheetState = settingsSheetState,
-            currentShowEndedActivities = baRouteState.showEndedActivities,
-            currentShowCalendarPoolImages = baRouteState.showCalendarPoolImages,
             serverIndex = baRouteState.serverIndex,
         )
     }

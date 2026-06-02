@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineScope
 
 internal fun buildBaSettingsSheetState(
     draft: BaPageSettingsDraftState,
-    calendarRefreshIntervalHours: Int,
 ): BaSettingsSheetState =
     BaSettingsSheetState(
         cafeLevel = draft.cafeLevel,
@@ -14,10 +13,6 @@ internal fun buildBaSettingsSheetState(
         mediaSaveCustomEnabled = draft.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = draft.mediaSaveFixedTreeUri,
         idIndependentByServer = draft.idIndependentByServer,
-        showEndedActivities = draft.showEndedActivities,
-        showEndedPools = draft.showEndedPools,
-        showCalendarPoolImages = draft.showCalendarPoolImages,
-        calendarRefreshIntervalHours = calendarRefreshIntervalHours,
     )
 
 internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraftState): BaNotificationSettingsSheetState =

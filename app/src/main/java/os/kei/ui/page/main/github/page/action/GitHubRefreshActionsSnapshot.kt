@@ -35,17 +35,34 @@ internal fun GitHubRefreshActions.consumeDeferredTrackStoreSyncAfterRefresh(): B
 
 internal suspend fun GitHubRefreshActions.persistCheckCacheNow(refreshTimestamp: Long? = null) {
     val entries = buildCheckCacheEntries()
-    val resolvedRefreshTimestamp =
-        entries.resolvedRefreshTimestamp(refreshTimestamp ?: state.lastRefreshMs)
-    state.lastRefreshMs = resolvedRefreshTimestamp
-    repository.saveCheckCache(entries, resolvedRefreshTimestamp)
+    state.lastRefreshMs = repository.saveCheckCache(
+        states = entries,
+        refreshTimestamp = entries.resolvedRefreshTimestamp(refreshTimestamp ?: state.lastRefreshMs),
+    )
 }
 
-internal fun GitHubRefreshActions.buildCheckCacheEntries(): Map<String, GitHubCheckCacheEntry> =
-    state.trackedItems.associate { item ->
-        val itemState = state.checkStates[item.id] ?: VersionCheckUi()
-        item.id to itemState.toCacheEntry()
-    }
+internal suspend fun GitHubRefreshActions.mergeCheckCacheNow(
+    targetIds: Set<String>,
+    refreshTimestamp: Long? = null,
+) {
+    val entries = buildCheckCacheEntries(targetIds)
+    if (entries.isEmpty()) return
+    state.lastRefreshMs = repository.mergeCheckCache(
+        entries = entries,
+        refreshTimestamp = refreshTimestamp ?: state.lastRefreshMs,
+    )
+}
+
+internal fun GitHubRefreshActions.buildCheckCacheEntries(
+    targetIds: Set<String>? = null
+): Map<String, GitHubCheckCacheEntry> =
+    state.trackedItems
+        .asSequence()
+        .filter { item -> targetIds == null || item.id in targetIds }
+        .mapNotNull { item ->
+            state.checkStates[item.id]?.let { item.id to it.toCacheEntry() }
+        }
+        .toMap()
 
 internal fun GitHubRefreshActions.mergeDirectApkRemoteFallback(
     item: GitHubTrackedApp,

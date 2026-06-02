@@ -63,7 +63,12 @@ internal class GitHubPageTrackRepository(
     suspend fun saveCheckCache(
         states: Map<String, GitHubCheckCacheEntry>,
         refreshTimestamp: Long
-    ) = trackService.saveCheckCache(states, refreshTimestamp)
+    ): Long = trackService.saveCheckCache(states, refreshTimestamp)
+
+    suspend fun mergeCheckCache(
+        entries: Map<String, GitHubCheckCacheEntry>,
+        refreshTimestamp: Long
+    ): Long = trackService.mergeCheckCache(entries, refreshTimestamp)
 
     suspend fun clearCheckCache() = trackService.clearCheckCache()
 

@@ -5,14 +5,37 @@ import kotlin.test.assertEquals
 
 class GitHubCheckCacheTimestampsTest {
     @Test
-    fun `refresh timestamp follows latest checked result instead of newer fallback`() {
+    fun `refresh timestamp follows oldest checked result instead of partial refresh`() {
         val entries =
             mapOf(
                 "one" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
                 "two" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
             )
 
-        assertEquals(250L, entries.resolvedRefreshTimestamp(fallbackMs = 1_000L))
+        assertEquals(100L, entries.resolvedRefreshTimestamp(fallbackMs = 1_000L))
+    }
+
+    @Test
+    fun `latest checked timestamp still reports newest entry`() {
+        val entries =
+            mapOf(
+                "one" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
+                "two" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
+            )
+
+        assertEquals(250L, entries.latestCheckedAtMillis())
+    }
+
+    @Test
+    fun `oldest checked timestamp ignores missing entries`() {
+        val entries =
+            mapOf(
+                "missing" to GitHubCheckCacheEntry(),
+                "old" to GitHubCheckCacheEntry(checkedAtMillis = 100L),
+                "fresh" to GitHubCheckCacheEntry(checkedAtMillis = 250L),
+            )
+
+        assertEquals(100L, entries.oldestCheckedAtMillis())
     }
 
     @Test

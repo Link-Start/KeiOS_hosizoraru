@@ -169,7 +169,7 @@ class GitHubBackgroundRefreshService {
                 if (replaceCache) {
                     result.cacheEntries
                 } else {
-                    snapshot.checkCache + result.cacheEntries
+                    result.cacheEntries
                 }
             val nextRefreshTimestamp =
                 if (replaceCache) {
@@ -177,8 +177,15 @@ class GitHubBackgroundRefreshService {
                 } else {
                     snapshot.lastRefreshMs
                 }
-            GitHubTrackStore.saveCheckCache(nextCache, nextRefreshTimestamp)
-            GitHubTrackStoreSignals.notifyChanged(result.refreshTimestampMs)
+            val resolvedRefreshTimestamp =
+                if (replaceCache) {
+                    GitHubTrackStore.saveCheckCache(nextCache, nextRefreshTimestamp)
+                } else {
+                    GitHubTrackStore.mergeCheckCache(nextCache, nextRefreshTimestamp)
+                }
+            GitHubTrackStoreSignals.notifyChanged(
+                resolvedRefreshTimestamp.takeIf { it > 0L } ?: result.refreshTimestampMs
+            )
         }
     }
 

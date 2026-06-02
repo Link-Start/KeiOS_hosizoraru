@@ -40,8 +40,6 @@ object GitHubTrackedItemsImportApplier {
         val indexById = mergedItems.withIndex().associate { it.value.id to it.index }.toMutableMap()
         val trackedAddedAt = GitHubTrackStore.loadTrackedAddedAtById().toMutableMap()
         val trackedModifiedAt = GitHubTrackStore.loadTrackedModifiedAtById().toMutableMap()
-        val (checkCache, refreshTimestamp) = GitHubTrackStore.loadCheckCache()
-        val nextCheckCache = checkCache.toMutableMap()
         val changedIds = linkedSetOf<String>()
         val touchedIds = linkedSetOf<String>()
         var added = 0
@@ -72,7 +70,6 @@ object GitHubTrackedItemsImportApplier {
                         trackedModifiedAt[item.id] = nowMillis
                         touchedIds += item.id
                         if (!existingItem.hasSameGitHubTrackingConfigIgnoringLocalAppType(mergedItem)) {
-                            nextCheckCache.remove(item.id)
                             changedIds += item.id
                         }
                         updated += 1
@@ -85,8 +82,8 @@ object GitHubTrackedItemsImportApplier {
             GitHubTrackStore.save(mergedItems)
             GitHubTrackStore.saveTrackedAddedAtById(trackedAddedAt)
             GitHubTrackStore.saveTrackedModifiedAtById(trackedModifiedAt)
-            if (nextCheckCache.size != checkCache.size) {
-                GitHubTrackStore.saveCheckCache(nextCheckCache, refreshTimestamp)
+            if (changedIds.isNotEmpty()) {
+                GitHubTrackStore.removeCheckCacheEntries(changedIds)
             }
             GitHubReleaseAssetCacheStore.clearAll()
             GitHubStarImportApkVerificationCacheStore.clearAll()

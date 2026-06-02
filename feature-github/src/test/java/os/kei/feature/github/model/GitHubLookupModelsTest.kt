@@ -195,6 +195,7 @@ class GitHubLookupModelsTest {
         val custom = global.copy(updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hour1)
 
         assertEquals(3L * 60L * 60L * 1000L, global.updateIntervalMs(3))
+        assertEquals(12L * 60L * 60L * 1000L, global.updateIntervalMs(12))
         assertEquals(1L * 60L * 60L * 1000L, custom.updateIntervalMs(3))
     }
 

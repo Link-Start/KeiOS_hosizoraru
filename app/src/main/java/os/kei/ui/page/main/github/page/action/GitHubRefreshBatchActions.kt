@@ -229,7 +229,11 @@ internal class GitHubRefreshBatchActions(
                     state.lastRefreshMs = clock.nowMs()
                 }
                 state.refreshProgress = 1f
-                owner.persistCheckCacheNow()
+                if (clearAllCheckCache || updateGlobalRefreshTimestamp) {
+                    owner.persistCheckCacheNow()
+                } else {
+                    owner.mergeCheckCacheNow(targetIds = targetIds.toSet())
+                }
                 onFinished?.invoke()
                 repository.notifyRefreshCompleted(
                     context = context,

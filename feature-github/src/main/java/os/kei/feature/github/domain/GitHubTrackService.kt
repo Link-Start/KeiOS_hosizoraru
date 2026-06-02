@@ -125,12 +125,26 @@ class GitHubTrackService(
     suspend fun saveCheckCache(
         states: Map<String, GitHubCheckCacheEntry>,
         refreshTimestamp: Long,
-    ) {
+    ): Long =
         withContext(ioDispatcher) {
-            GitHubTrackStore.saveCheckCache(states, refreshTimestamp)
-            GitHubTrackStoreSignals.notifyChanged(refreshTimestamp)
+            val resolvedRefreshTimestamp = GitHubTrackStore.saveCheckCache(states, refreshTimestamp)
+            GitHubTrackStoreSignals.notifyChanged(
+                resolvedRefreshTimestamp.takeIf { it > 0L } ?: refreshTimestamp
+            )
+            resolvedRefreshTimestamp
         }
-    }
+
+    suspend fun mergeCheckCache(
+        entries: Map<String, GitHubCheckCacheEntry>,
+        refreshTimestamp: Long,
+    ): Long =
+        withContext(ioDispatcher) {
+            val resolvedRefreshTimestamp = GitHubTrackStore.mergeCheckCache(entries, refreshTimestamp)
+            GitHubTrackStoreSignals.notifyChanged(
+                resolvedRefreshTimestamp.takeIf { it > 0L } ?: refreshTimestamp
+            )
+            resolvedRefreshTimestamp
+        }
 
     suspend fun clearCheckCache() {
         withContext(ioDispatcher) {

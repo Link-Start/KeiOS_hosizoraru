@@ -28,7 +28,7 @@ internal class GitHubBackgroundRefreshCoordinator(
     private val env: GitHubPageActionEnvironment,
     private val actionsRunRefreshCoordinator: GitHubActionsRecommendedRunRefreshCoordinator,
     private val refreshItem: suspend (GitHubItemRefreshRequest) -> Unit,
-    private val persistCheckCache: suspend () -> Unit
+    private val persistCheckCache: suspend (Set<String>) -> Unit
 ) {
     private val context get() = env.context
     private val scope get() = env.scope
@@ -112,7 +112,7 @@ internal class GitHubBackgroundRefreshCoordinator(
                     }
                 }.joinAll()
             }
-            persistCheckCache()
+            persistCheckCache(items.mapTo(HashSet()) { it.id })
             actionsRunRefreshCoordinator.refreshItems(items)
         }
         backgroundJobs.add(job)

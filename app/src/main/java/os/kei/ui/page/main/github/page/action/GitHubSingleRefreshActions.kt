@@ -79,7 +79,7 @@ internal class GitHubSingleRefreshActions(
             owner.env.toast(itemState.message)
         }
         state.checkStates[item.id] = itemState
-        if (persistAfterUpdate) owner.persistCheckCacheNow()
+        if (persistAfterUpdate) owner.mergeCheckCacheNow(targetIds = setOf(item.id))
         if (refreshActionsAfterUpdate) actionsRunRefreshCoordinator.refreshItemInBackground(item)
         onUpdated?.invoke(itemState)
     }

@@ -1,9 +1,52 @@
 package os.kei.ui.page.main.github.page.action
 
+import os.kei.feature.github.model.GitHubTrackedApp
 import org.junit.Test
 import kotlin.test.assertEquals
 
 class GitHubRefreshActionsTest {
+    @Test
+    fun `tracked update selector respects twelve hour global interval`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example"
+        )
+        val nowMs = 12L * 60L * 60L * 1000L
+        val selected = selectDueTrackedUpdateItems(
+            trackedItems = listOf(item),
+            checkedAtMillisById = mapOf(item.id to 1L),
+            lastRefreshMs = 0L,
+            refreshIntervalHours = 12,
+            nowMs = nowMs,
+        )
+
+        assertEquals(emptyList(), selected)
+    }
+
+    @Test
+    fun `tracked update selector refreshes after twelve hour global interval`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example"
+        )
+        val nowMs = 12L * 60L * 60L * 1000L + 1L
+        val selected = selectDueTrackedUpdateItems(
+            trackedItems = listOf(item),
+            checkedAtMillisById = mapOf(item.id to 1L),
+            lastRefreshMs = 0L,
+            refreshIntervalHours = 12,
+            nowMs = nowMs,
+        )
+
+        assertEquals(listOf(item), selected)
+    }
+
     @Test
     fun `track mutation refresh selects all affected ids within limit`() {
         val selected = selectImmediateTrackMutationRefreshIds(

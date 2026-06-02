@@ -109,6 +109,7 @@ object GitHubTrackStore {
     private const val KEY_CHECK_CACHE = "tracked_check_cache"
     private const val KEY_PROFILE_CACHE = "tracked_profile_cache"
     private const val KEY_LAST_REFRESH_MS = "last_full_refresh_ms"
+    private val checkCacheLock = Any()
     private const val KEY_REFRESH_INTERVAL_HOURS = "refresh_interval_hours"
     private const val KEY_LOOKUP_STRATEGY = "lookup_strategy"
     private const val KEY_ACTIONS_LOOKUP_STRATEGY = "actions_lookup_strategy"
@@ -407,7 +408,12 @@ object GitHubTrackStore {
         )
     }
 
-    fun loadCheckCache(): Pair<Map<String, GitHubCheckCacheEntry>, Long> {
+    fun loadCheckCache(): Pair<Map<String, GitHubCheckCacheEntry>, Long> =
+        synchronized(checkCacheLock) {
+            loadCheckCacheLocked()
+        }
+
+    private fun loadCheckCacheLocked(): Pair<Map<String, GitHubCheckCacheEntry>, Long> {
         val raw = kv().decodeString(KEY_CHECK_CACHE).orEmpty()
         val ts = kv().decodeLong(KEY_LAST_REFRESH_MS, 0L)
         val profileCache = loadProfileCache()
@@ -556,13 +562,57 @@ object GitHubTrackStore {
         )
     }
 
-    fun saveCheckCache(states: Map<String, GitHubCheckCacheEntry>, lastRefreshMs: Long) {
+    fun saveCheckCache(states: Map<String, GitHubCheckCacheEntry>, lastRefreshMs: Long): Long =
+        synchronized(checkCacheLock) {
+            saveCheckCacheLocked(states, lastRefreshMs)
+        }
+
+    fun mergeCheckCache(
+        entries: Map<String, GitHubCheckCacheEntry>,
+        refreshTimestamp: Long
+    ): Long =
+        synchronized(checkCacheLock) {
+            if (entries.isEmpty()) {
+                loadCheckCacheLocked().second
+            } else {
+                val (currentCache, currentRefreshTimestamp) = loadCheckCacheLocked()
+                saveCheckCacheLocked(
+                    states = currentCache + entries,
+                    lastRefreshMs = currentRefreshTimestamp.takeIf { it > 0L }
+                        ?: refreshTimestamp,
+                )
+            }
+        }
+
+    fun removeCheckCacheEntries(trackIds: Set<String>, refreshTimestamp: Long = 0L): Long =
+        synchronized(checkCacheLock) {
+            if (trackIds.isEmpty()) {
+                loadCheckCacheLocked().second
+            } else {
+                val (currentCache, currentRefreshTimestamp) = loadCheckCacheLocked()
+                val nextCache = currentCache.filterKeys { it !in trackIds }
+                if (nextCache.size == currentCache.size) {
+                    currentRefreshTimestamp
+                } else {
+                    saveCheckCacheLocked(
+                        states = nextCache,
+                        lastRefreshMs = currentRefreshTimestamp.takeIf { it > 0L }
+                            ?: refreshTimestamp,
+                    )
+                }
+            }
+        }
+
+    private fun saveCheckCacheLocked(
+        states: Map<String, GitHubCheckCacheEntry>,
+        lastRefreshMs: Long,
+    ): Long {
         if (states.isEmpty()) {
             val store = kv()
             store.removeValueForKey(KEY_CHECK_CACHE)
             store.removeValueForKey(KEY_PROFILE_CACHE)
             store.removeValueForKey(KEY_LAST_REFRESH_MS)
-            return
+            return 0L
         }
         val resolvedLastRefreshMs = states.resolvedRefreshTimestamp(lastRefreshMs)
         val obj = buildJsonObject {
@@ -627,9 +677,10 @@ object GitHubTrackStore {
             kv().removeValueForKey(KEY_PROFILE_CACHE)
         }
         kv().encode(KEY_LAST_REFRESH_MS, resolvedLastRefreshMs)
+        return resolvedLastRefreshMs
     }
 
-    fun clearCheckCache() {
+    fun clearCheckCache() = synchronized(checkCacheLock) {
         val store = kv()
         store.removeValueForKey(KEY_CHECK_CACHE)
         store.removeValueForKey(KEY_PROFILE_CACHE)

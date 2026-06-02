@@ -47,7 +47,7 @@ internal class GitHubRefreshActions(
                     refreshActionsAfterUpdate = false,
                 )
             },
-            persistCheckCache = { persistCheckCacheNow() },
+            persistCheckCache = { targetIds -> mergeCheckCacheNow(targetIds) },
         )
     private val batchActions =
         GitHubRefreshBatchActions(
@@ -61,9 +61,8 @@ internal class GitHubRefreshActions(
         val states = buildCheckCacheEntries()
         val resolvedRefreshTimestamp =
             states.resolvedRefreshTimestamp(refreshTimestamp ?: state.lastRefreshMs)
-        state.lastRefreshMs = resolvedRefreshTimestamp
         scope.launch {
-            repository.saveCheckCache(states, resolvedRefreshTimestamp)
+            state.lastRefreshMs = repository.saveCheckCache(states, resolvedRefreshTimestamp)
         }
     }
 

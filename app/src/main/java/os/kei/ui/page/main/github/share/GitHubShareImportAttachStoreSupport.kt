@@ -105,13 +105,14 @@ private suspend fun prefetchAttachedTrackLatestCheck(
                     .copy(checkedAtMillis = nowMs)
             }
         withContext(AppDispatchers.githubLocal) {
-            val (cache, _) = GitHubTrackStore.loadCheckCache()
-            val updatedCache =
-                cache.toMutableMap().apply {
-                    put(trackedItem.id, refreshedUi.toCacheEntry())
-                }
-            GitHubTrackStore.saveCheckCache(updatedCache, nowMs)
-            GitHubTrackStoreSignals.notifyChanged(nowMs)
+            val resolvedRefreshTimestamp =
+                GitHubTrackStore.mergeCheckCache(
+                    entries = mapOf(trackedItem.id to refreshedUi.toCacheEntry()),
+                    refreshTimestamp = nowMs,
+                )
+            GitHubTrackStoreSignals.notifyChanged(
+                resolvedRefreshTimestamp.takeIf { it > 0L } ?: nowMs
+            )
         }
     }
 }

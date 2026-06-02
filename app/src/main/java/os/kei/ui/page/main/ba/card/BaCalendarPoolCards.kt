@@ -18,8 +18,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.ui.page.main.ba.BaCalendarPoolContentStatus
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaLiquidPanel
+import os.kei.ui.page.main.ba.baCalendarPoolSyncNoticeColor
+import os.kei.ui.page.main.ba.resolveBaCalendarPoolContentStatus
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.GameKeeCoverImage
@@ -65,11 +68,12 @@ internal fun BaCalendarSectionHeaderCard(
     baCalendarLastSyncMs: Long,
     effectsEnabled: Boolean,
     onRefreshCalendar: () -> Unit,
+    baCalendarRefreshing: Boolean = false,
 ) {
     val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
-        baCalendarLoading -> stringResource(R.string.ba_syncing)
+        baCalendarLoading || baCalendarRefreshing -> stringResource(R.string.ba_syncing)
         baCalendarLastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
             baCalendarLastSyncMs,
             serverTimeZone
@@ -119,11 +123,12 @@ internal fun BaCalendarCard(
     effectsEnabled: Boolean,
     onRefreshCalendar: () -> Unit,
     onOpenCalendarLink: (String) -> Unit,
+    baCalendarRefreshing: Boolean = false,
 ) {
     val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
-        baCalendarLoading -> stringResource(R.string.ba_syncing)
+        baCalendarLoading || baCalendarRefreshing -> stringResource(R.string.ba_syncing)
         baCalendarLastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
             baCalendarLastSyncMs,
             serverTimeZone
@@ -154,46 +159,84 @@ internal fun BaCalendarCard(
                 )
             },
         )
-        when {
-            !baCalendarError.isNullOrBlank() -> {
-                BaCalendarStatePanel(
-                    backdrop = backdrop,
-                    text = baCalendarError,
-                    accentColor = baCalendarPoolCardNoticeColor(
-                        hasVisibleEntries = visibleCalendarEntries.isNotEmpty()
-                    ),
-                    effectsEnabled = effectsEnabled
-                )
-            }
+        BaCalendarCardStatusPanel(
+            backdrop = backdrop,
+            status =
+                resolveBaCalendarPoolContentStatus(
+                    visibleEntryCount = visibleCalendarEntries.size,
+                    loading = baCalendarLoading,
+                    refreshing = baCalendarRefreshing,
+                    error = baCalendarError,
+                ),
+            error = baCalendarError,
+            hasVisibleEntries = visibleCalendarEntries.isNotEmpty(),
+            showEndedActivities = showEndedActivities,
+            syncTextColor = countdownBlue,
+            effectsEnabled = effectsEnabled,
+        )
+        visibleCalendarEntries.forEach { activity ->
+            BaCalendarEntryPanel(
+                backdrop = backdrop,
+                isPageActive = isPageActive,
+                serverIndex = serverIndex,
+                activity = activity,
+                nowMs = nowMs,
+                showCalendarPoolImages = showCalendarPoolImages,
+                effectsEnabled = effectsEnabled,
+                onOpenCalendarLink = onOpenCalendarLink
+            )
+        }
+    }
+}
 
-            !baCalendarLoading && visibleCalendarEntries.isEmpty() -> {
-                BaCalendarStatePanel(
-                    backdrop = backdrop,
-                    text = if (showEndedActivities) {
+@Composable
+private fun BaCalendarCardStatusPanel(
+    backdrop: Backdrop?,
+    status: BaCalendarPoolContentStatus?,
+    error: String?,
+    hasVisibleEntries: Boolean,
+    showEndedActivities: Boolean,
+    syncTextColor: Color,
+    effectsEnabled: Boolean,
+) {
+    when (status) {
+        BaCalendarPoolContentStatus.Loading,
+        BaCalendarPoolContentStatus.Refreshing -> {
+            BaCalendarStatePanel(
+                backdrop = backdrop,
+                text = stringResource(R.string.ba_syncing),
+                accentColor = syncTextColor,
+                effectsEnabled = effectsEnabled,
+            )
+        }
+
+        BaCalendarPoolContentStatus.Error -> {
+            BaCalendarStatePanel(
+                backdrop = backdrop,
+                text = error.orEmpty(),
+                accentColor =
+                    baCalendarPoolSyncNoticeColor(
+                        hasVisibleEntries = hasVisibleEntries,
+                    ),
+                effectsEnabled = effectsEnabled,
+            )
+        }
+
+        BaCalendarPoolContentStatus.Empty -> {
+            BaCalendarStatePanel(
+                backdrop = backdrop,
+                text =
+                    if (showEndedActivities) {
                         stringResource(R.string.ba_calendar_empty_all)
                     } else {
                         stringResource(R.string.ba_calendar_empty_active)
                     },
-                    accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    effectsEnabled = effectsEnabled
-                )
-            }
-
-            else -> {
-                visibleCalendarEntries.forEach { activity ->
-                    BaCalendarEntryPanel(
-                        backdrop = backdrop,
-                        isPageActive = isPageActive,
-                        serverIndex = serverIndex,
-                        activity = activity,
-                        nowMs = nowMs,
-                        showCalendarPoolImages = showCalendarPoolImages,
-                        effectsEnabled = effectsEnabled,
-                        onOpenCalendarLink = onOpenCalendarLink
-                    )
-                }
-            }
+                accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                effectsEnabled = effectsEnabled,
+            )
         }
+
+        null -> Unit
     }
 }
 
@@ -318,11 +361,12 @@ internal fun BaPoolSectionHeaderCard(
     baPoolLastSyncMs: Long,
     effectsEnabled: Boolean,
     onRefreshPool: () -> Unit,
+    baPoolRefreshing: Boolean = false,
 ) {
     val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
-        baPoolLoading -> stringResource(R.string.ba_syncing)
+        baPoolLoading || baPoolRefreshing -> stringResource(R.string.ba_syncing)
         baPoolLastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
             baPoolLastSyncMs,
             serverTimeZone
@@ -373,11 +417,12 @@ internal fun BaPoolCard(
     onRefreshPool: () -> Unit,
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
+    baPoolRefreshing: Boolean = false,
 ) {
     val countdownBlue = AppStatusColors.Refreshing
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText = when {
-        baPoolLoading -> stringResource(R.string.ba_syncing)
+        baPoolLoading || baPoolRefreshing -> stringResource(R.string.ba_syncing)
         baPoolLastSyncMs > 0L -> formatBaDateTimeNoYearInTimeZone(
             baPoolLastSyncMs,
             serverTimeZone
@@ -408,47 +453,85 @@ internal fun BaPoolCard(
                 )
             },
         )
-        when {
-            !baPoolError.isNullOrBlank() -> {
-                BaPoolStatePanel(
-                    backdrop = backdrop,
-                    text = baPoolError,
-                    accentColor = baCalendarPoolCardNoticeColor(
-                        hasVisibleEntries = visiblePoolEntries.isNotEmpty()
-                    ),
-                    effectsEnabled = effectsEnabled
-                )
-            }
+        BaPoolCardStatusPanel(
+            backdrop = backdrop,
+            status =
+                resolveBaCalendarPoolContentStatus(
+                    visibleEntryCount = visiblePoolEntries.size,
+                    loading = baPoolLoading,
+                    refreshing = baPoolRefreshing,
+                    error = baPoolError,
+                ),
+            error = baPoolError,
+            hasVisibleEntries = visiblePoolEntries.isNotEmpty(),
+            showEndedPools = showEndedPools,
+            syncTextColor = countdownBlue,
+            effectsEnabled = effectsEnabled,
+        )
+        visiblePoolEntries.forEach { pool ->
+            BaPoolEntryPanel(
+                backdrop = backdrop,
+                isPageActive = isPageActive,
+                serverIndex = serverIndex,
+                pool = pool,
+                nowMs = nowMs,
+                showCalendarPoolImages = showCalendarPoolImages,
+                effectsEnabled = effectsEnabled,
+                onOpenPoolStudentGuide = onOpenPoolStudentGuide,
+                onOpenCalendarLink = onOpenCalendarLink
+            )
+        }
+    }
+}
 
-            !baPoolLoading && visiblePoolEntries.isEmpty() -> {
-                BaPoolStatePanel(
-                    backdrop = backdrop,
-                    text = if (showEndedPools) {
+@Composable
+private fun BaPoolCardStatusPanel(
+    backdrop: Backdrop?,
+    status: BaCalendarPoolContentStatus?,
+    error: String?,
+    hasVisibleEntries: Boolean,
+    showEndedPools: Boolean,
+    syncTextColor: Color,
+    effectsEnabled: Boolean,
+) {
+    when (status) {
+        BaCalendarPoolContentStatus.Loading,
+        BaCalendarPoolContentStatus.Refreshing -> {
+            BaPoolStatePanel(
+                backdrop = backdrop,
+                text = stringResource(R.string.ba_syncing),
+                accentColor = syncTextColor,
+                effectsEnabled = effectsEnabled,
+            )
+        }
+
+        BaCalendarPoolContentStatus.Error -> {
+            BaPoolStatePanel(
+                backdrop = backdrop,
+                text = error.orEmpty(),
+                accentColor =
+                    baCalendarPoolSyncNoticeColor(
+                        hasVisibleEntries = hasVisibleEntries,
+                    ),
+                effectsEnabled = effectsEnabled,
+            )
+        }
+
+        BaCalendarPoolContentStatus.Empty -> {
+            BaPoolStatePanel(
+                backdrop = backdrop,
+                text =
+                    if (showEndedPools) {
                         stringResource(R.string.ba_pool_empty_all)
                     } else {
                         stringResource(R.string.ba_pool_empty_active)
                     },
-                    accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    effectsEnabled = effectsEnabled
-                )
-            }
-
-            else -> {
-                visiblePoolEntries.forEach { pool ->
-                    BaPoolEntryPanel(
-                        backdrop = backdrop,
-                        isPageActive = isPageActive,
-                        serverIndex = serverIndex,
-                        pool = pool,
-                        nowMs = nowMs,
-                        showCalendarPoolImages = showCalendarPoolImages,
-                        effectsEnabled = effectsEnabled,
-                        onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-                        onOpenCalendarLink = onOpenCalendarLink
-                    )
-                }
-            }
+                accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                effectsEnabled = effectsEnabled,
+            )
         }
+
+        null -> Unit
     }
 }
 
@@ -589,10 +672,4 @@ private fun baCalendarKindLabel(kindId: Int, fallback: String): String {
 @Composable
 private fun baPoolTagLabel(tagId: Int, fallback: String): String {
     return LocalContext.current.baPoolTagLabel(tagId, fallback)
-}
-
-private fun baCalendarPoolCardNoticeColor(
-    hasVisibleEntries: Boolean,
-): Color {
-    return if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
 }

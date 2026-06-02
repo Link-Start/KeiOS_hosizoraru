@@ -22,6 +22,7 @@ import os.kei.ui.page.main.ba.support.BaPoolEntry
 internal data class BaCalendarUiState(
     val entries: List<BaCalendarEntry> = emptyList(),
     val loading: Boolean = true,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val lastSyncMs: Long = 0L,
 )
@@ -30,6 +31,7 @@ internal data class BaCalendarUiState(
 internal data class BaPoolUiState(
     val entries: List<BaPoolEntry> = emptyList(),
     val loading: Boolean = true,
+    val refreshing: Boolean = false,
     val error: String? = null,
     val lastSyncMs: Long = 0L,
 )
@@ -151,11 +153,25 @@ internal class BaCalendarPoolViewModel(
         calendarJob =
             viewModelScope.launch {
                 val current = _calendarUiState.value
-                val showLoading =
-                    current.entries.isEmpty() ||
-                        reloadSignal > 0 ||
-                        previousKey?.serverIndex != serverIndex
-                _calendarUiState.value = current.copy(loading = showLoading, error = null)
+                if (!hydrationReady) {
+                    _calendarUiState.value =
+                        current.copy(
+                            loading = current.entries.isEmpty(),
+                            refreshing = false,
+                            error = null,
+                        )
+                    return@launch
+                }
+                val serverChanged = previousKey != null && previousKey.serverIndex != serverIndex
+                val retainedEntries = if (serverChanged) emptyList() else current.entries
+                val showLoading = retainedEntries.isEmpty()
+                _calendarUiState.value =
+                    current.copy(
+                        entries = retainedEntries,
+                        loading = showLoading,
+                        refreshing = !showLoading,
+                        error = null,
+                    )
                 val snapshot =
                     BaCalendarPoolRepository.syncCalendar(
                         context = appContext,
@@ -165,10 +181,12 @@ internal class BaCalendarPoolViewModel(
                         calendarRefreshIntervalHours = calendarRefreshIntervalHours,
                         hydrationReady = hydrationReady,
                     )
+                if (lastCalendarRequestKey != key) return@launch
                 _calendarUiState.value =
                     BaCalendarUiState(
                         entries = snapshot.entries,
                         loading = snapshot.loading,
+                        refreshing = false,
                         error = snapshot.error,
                         lastSyncMs = snapshot.lastSyncMs,
                     )
@@ -203,11 +221,25 @@ internal class BaCalendarPoolViewModel(
         poolJob =
             viewModelScope.launch {
                 val current = _poolUiState.value
-                val showLoading =
-                    current.entries.isEmpty() ||
-                        reloadSignal > 0 ||
-                        previousKey?.serverIndex != serverIndex
-                _poolUiState.value = current.copy(loading = showLoading, error = null)
+                if (!hydrationReady) {
+                    _poolUiState.value =
+                        current.copy(
+                            loading = current.entries.isEmpty(),
+                            refreshing = false,
+                            error = null,
+                        )
+                    return@launch
+                }
+                val serverChanged = previousKey != null && previousKey.serverIndex != serverIndex
+                val retainedEntries = if (serverChanged) emptyList() else current.entries
+                val showLoading = retainedEntries.isEmpty()
+                _poolUiState.value =
+                    current.copy(
+                        entries = retainedEntries,
+                        loading = showLoading,
+                        refreshing = !showLoading,
+                        error = null,
+                    )
                 val snapshot =
                     BaCalendarPoolRepository.syncPool(
                         context = appContext,
@@ -217,10 +249,12 @@ internal class BaCalendarPoolViewModel(
                         calendarRefreshIntervalHours = calendarRefreshIntervalHours,
                         hydrationReady = hydrationReady,
                     )
+                if (lastPoolRequestKey != key) return@launch
                 _poolUiState.value =
                     BaPoolUiState(
                         entries = snapshot.entries,
                         loading = snapshot.loading,
+                        refreshing = false,
                         error = snapshot.error,
                         lastSyncMs = snapshot.lastSyncMs,
                     )
@@ -280,6 +314,19 @@ internal class BaCalendarPoolViewModel(
                 state
             } else {
                 state.copy(serverPopupAnchorBounds = bounds)
+            }
+        }
+    }
+
+    fun clearServerPopup() {
+        _chromeUiState.update { state ->
+            if (!state.showServerPopup && state.serverPopupAnchorBounds == null) {
+                state
+            } else {
+                state.copy(
+                    showServerPopup = false,
+                    serverPopupAnchorBounds = null,
+                )
             }
         }
     }

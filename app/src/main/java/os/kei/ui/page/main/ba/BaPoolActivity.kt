@@ -18,9 +18,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -47,8 +47,6 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.ui.page.main.ba.card.BaPoolEntryPanel
-import os.kei.ui.page.main.ba.card.BaPoolStatePanel
 import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
@@ -63,7 +61,6 @@ import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -161,7 +158,7 @@ private fun BaPoolPage(
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText =
         when {
-            poolUiState.loading -> {
+            poolUiState.loading || poolUiState.refreshing -> {
                 stringResource(R.string.ba_syncing)
             }
 
@@ -177,6 +174,10 @@ private fun BaPoolPage(
             }
         }
     val countdownBlue = AppStatusColors.Refreshing
+
+    DisposableEffect(calendarPoolViewModel) {
+        onDispose { calendarPoolViewModel.clearServerPopup() }
+    }
 
     LaunchedEffect(
         serverIndex,
@@ -194,7 +195,7 @@ private fun BaPoolPage(
     }
 
     val refreshIconRotation =
-        if (poolUiState.loading) {
+        if (poolUiState.loading || poolUiState.refreshing) {
             val loadingRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
                 .animateFloat(
                     initialValue = 0f,
@@ -246,7 +247,7 @@ private fun BaPoolPage(
                 height = 52.dp,
                 variant = GlassVariant.Bar,
                 iconTint =
-                    if (poolUiState.loading) {
+                    if (poolUiState.loading || poolUiState.refreshing) {
                         countdownBlue
                     } else {
                         MiuixTheme.colorScheme.primary
@@ -283,6 +284,7 @@ private fun BaPoolPage(
                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
                 entries = poolUiState.entries,
                 loading = poolUiState.loading,
+                refreshing = poolUiState.refreshing,
                 error = poolUiState.error,
                 syncText = syncText,
                 syncTextColor = countdownBlue,
@@ -323,6 +325,7 @@ private fun BaPoolListContent(
     showCalendarPoolImages: Boolean,
     entries: List<BaPoolEntry>,
     loading: Boolean,
+    refreshing: Boolean,
     error: String?,
     syncText: String,
     syncTextColor: Color,
@@ -332,7 +335,7 @@ private fun BaPoolListContent(
     onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
-    val nowMs = rememberBaMinuteTickMs(enabled = !loading && error.isNullOrBlank())
+    val nowMs = rememberBaMinuteTickMs(enabled = !loading && entries.isNotEmpty())
     val visibleEntries =
         remember(
             entries,
@@ -372,82 +375,22 @@ private fun BaPoolListContent(
                 onServerSelected = onServerSelected,
             )
         }
-        when {
-            loading -> {
-                item(
-                    key = "ba-pool-loading",
-                    contentType = "ba_pool_status",
-                ) {
-                    BaPoolLoadingPanel(accentColor = syncTextColor)
-                }
-            }
-
-            !error.isNullOrBlank() -> {
-                item(
-                    key = "ba-pool-error",
-                    contentType = "ba_pool_status",
-                ) {
-                    BaPoolStatePanel(
-                        backdrop = backdrop,
-                        text = error,
-                        accentColor =
-                            baCalendarPoolSyncNoticeColor(
-                                hasVisibleEntries = visibleEntries.isNotEmpty(),
-                            ),
-                        effectsEnabled = true,
-                    )
-                }
-            }
-
-            visibleEntries.isEmpty() -> {
-                item(
-                    key = "ba-pool-empty-$showEndedPools",
-                    contentType = "ba_pool_status",
-                ) {
-                    BaPoolStatePanel(
-                        backdrop = backdrop,
-                        text =
-                            if (showEndedPools) {
-                                stringResource(R.string.ba_pool_empty_all)
-                            } else {
-                                stringResource(R.string.ba_pool_empty_active)
-                            },
-                        accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                        effectsEnabled = true,
-                    )
-                }
-            }
-
-            else -> {
-                items(
-                    items = visibleEntries,
-                    key = { pool -> pool.id },
-                    contentType = { "ba_pool_entry" },
-                ) { pool ->
-                    BaPoolEntryPanel(
-                        backdrop = backdrop,
-                        isPageActive = true,
-                        serverIndex = serverIndex,
-                        pool = pool,
-                        nowMs = nowMs,
-                        showCalendarPoolImages = showCalendarPoolImages,
-                        effectsEnabled = true,
-                        onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-                        onOpenCalendarLink = onOpenCalendarLink,
-                    )
-                }
-            }
-        }
+        baPoolEntryItems(
+            backdrop = backdrop,
+            serverIndex = serverIndex,
+            visibleEntries = visibleEntries,
+            loading = loading,
+            refreshing = refreshing,
+            error = error,
+            showEndedPools = showEndedPools,
+            showCalendarPoolImages = showCalendarPoolImages,
+            nowMs = nowMs,
+            syncTextColor = syncTextColor,
+            onOpenPoolStudentGuide = onOpenPoolStudentGuide,
+            onOpenCalendarLink = onOpenCalendarLink,
+        )
     }
 }
-
-@Composable
-private fun BaPoolLoadingPanel(accentColor: Color) {
-    AppAronaLoadingPanel(accent = accentColor)
-}
-
-internal fun baCalendarPoolSyncNoticeColor(hasVisibleEntries: Boolean): Color =
-    if (hasVisibleEntries) AppStatusColors.Cached else AppStatusColors.Failed
 
 private fun openBaPoolGuideLink(
     context: Context,

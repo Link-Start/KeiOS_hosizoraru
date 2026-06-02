@@ -3,12 +3,12 @@ package os.kei.ui.page.main.ba.support
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.withTimeout
+import os.kei.core.concurrency.AppDispatchers
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 internal const val BA_CALENDAR_ENDPOINT = "/v1/activity/page-list"
 internal const val BA_SYNC_TIMEOUT_MS = 20_000L
@@ -37,27 +37,21 @@ internal fun <T> runWithRetry(
     throw lastError ?: IllegalStateException("network retry failed")
 }
 
-internal fun <T> runWithHardTimeout(
+internal suspend fun <T> runWithHardTimeout(
     timeoutMs: Long,
     block: () -> T,
 ): T {
-    val executor =
-        Executors.newSingleThreadExecutor { runnable ->
-            Thread(runnable, "ba-sync-hard-timeout").apply { isDaemon = true }
-        }
-    val future = executor.submit<T> { block() }
     return try {
-        future.get(timeoutMs, TimeUnit.MILLISECONDS)
-    } catch (timeout: TimeoutException) {
-        future.cancel(true)
+        withTimeout(timeoutMs) {
+            runInterruptible(AppDispatchers.baFetch) {
+                block()
+            }
+        }
+    } catch (timeout: TimeoutCancellationException) {
         throw IllegalStateException("hard timeout ${timeoutMs}ms", timeout)
     } catch (interrupted: InterruptedException) {
         Thread.currentThread().interrupt()
         throw IllegalStateException("hard timeout interrupted", interrupted)
-    } catch (execution: ExecutionException) {
-        throw (execution.cause ?: execution)
-    } finally {
-        executor.shutdownNow()
     }
 }
 

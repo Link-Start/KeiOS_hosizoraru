@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
@@ -170,12 +171,16 @@ internal object BaCalendarPoolRepository {
         }
 
         val result =
-            withContext(AppDispatchers.baFetch) {
-                runCatching {
+            try {
+                Result.success(
                     runWithHardTimeout(15_000L) {
                         fetchBaCalendarRemoteResult(serverIndex, now)
-                    }
-                }
+                    },
+                )
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Throwable) {
+                Result.failure(error)
             }
         if (result.isSuccess) {
             val entries = result.getOrThrow().entries
@@ -317,12 +322,16 @@ internal object BaCalendarPoolRepository {
         }
 
         val result =
-            withContext(AppDispatchers.baFetch) {
-                runCatching {
+            try {
+                Result.success(
                     runWithHardTimeout(15_000L) {
                         fetchBaPoolRemoteResult(serverIndex, now)
-                    }
-                }
+                    },
+                )
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Throwable) {
+                Result.failure(error)
             }
         if (result.isSuccess) {
             val entries =

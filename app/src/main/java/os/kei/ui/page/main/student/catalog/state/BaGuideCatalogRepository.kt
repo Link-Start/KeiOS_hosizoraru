@@ -13,6 +13,7 @@ import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogRefreshMode
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.buildBaGuideStudentBgmDisplayedModel
@@ -34,6 +35,7 @@ import os.kei.ui.page.main.student.catalog.page.buildBaGuideCatalogImportPreview
 import os.kei.ui.page.main.student.catalog.page.buildBgmFavoritesExportJsonAsync
 import os.kei.ui.page.main.student.catalog.page.buildCatalogAllFavoritesExportJsonAsync
 import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJsonAsync
+import os.kei.ui.page.main.student.catalog.selectBaGuideCatalogRefreshMode
 import os.kei.ui.page.main.student.catalog.selectedCatalogFilterOptionsForDefinitions
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.state.GuideDetailTabRequestStore
@@ -47,13 +49,14 @@ internal data class BaGuideCatalogLoadResult(
 internal class BaGuideCatalogRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
-    private val refreshIntervalLoader: () -> Int = BASettingsStore::loadCalendarRefreshIntervalHours,
+    private val refreshIntervalLoader: () -> Int = BaGuideCatalogStore::loadIncrementalRefreshIntervalHours,
     private val cachedBundleLoader: () -> BaGuideCatalogBundle? = ::loadCachedBaGuideCatalogBundle,
     private val catalogFetcher: suspend (
         forceRefresh: Boolean,
         networkDispatcher: CoroutineDispatcher,
         parseDispatcher: CoroutineDispatcher,
         clock: BaGuideDataClock,
+        refreshMode: BaGuideCatalogRefreshMode,
     ) -> BaGuideCatalogBundle =
         ::fetchBaGuideCatalogBundle,
     private val completeChecker: (BaGuideCatalogBundle?) -> Boolean =
@@ -141,6 +144,16 @@ internal class BaGuideCatalogRepository(
 
     suspend fun loadTransferSettings(): BaGuideCatalogTransferSettingsUiState = BaGuideCatalogTransferSettingsRepository.loadSettings()
 
+    suspend fun loadCatalogIncrementalRefreshIntervalHours(): Int =
+        withContext(ioDispatcher) {
+            BaGuideCatalogStore.loadIncrementalRefreshIntervalHours()
+        }
+
+    suspend fun saveCatalogIncrementalRefreshIntervalHours(hours: Int): Int =
+        withContext(ioDispatcher) {
+            BaGuideCatalogStore.saveIncrementalRefreshIntervalHours(hours)
+        }
+
     suspend fun saveTransferMediaSaveCustomEnabled(enabled: Boolean) {
         BaGuideCatalogTransferSettingsRepository.saveMediaSaveCustomEnabled(enabled)
     }
@@ -184,6 +197,13 @@ internal class BaGuideCatalogRepository(
             }
         val cacheComplete = completeChecker(cachedBundle)
         val cacheExpired = expiredChecker(cachedBundle, refreshIntervalHours, now)
+        val refreshMode =
+            selectBaGuideCatalogRefreshMode(
+                cachedBundle = cachedBundle,
+                manualRefresh = manualRefresh,
+                cacheComplete = cacheComplete,
+                nowMs = now,
+            )
 
         if (!manualRefresh && cacheComplete && !cacheExpired) {
             return BaGuideCatalogLoadResult(
@@ -200,6 +220,7 @@ internal class BaGuideCatalogRepository(
                         ioDispatcher,
                         parseDispatcher,
                         clock,
+                        refreshMode,
                     ),
                 )
             } catch (error: CancellationException) {

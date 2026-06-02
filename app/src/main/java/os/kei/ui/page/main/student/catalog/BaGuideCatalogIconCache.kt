@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.util.LruCache
 import os.kei.feature.ba.data.remote.GameKeeNetworkClient
 import os.kei.feature.ba.data.remote.GameKeeNetworkResult
-import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import java.io.File
 import java.security.MessageDigest
@@ -43,13 +42,12 @@ internal object BaGuideCatalogIconCache {
         return File(cacheRoot(context), fileName)
     }
 
-    private fun isFileFreshByBaInterval(file: File): Boolean {
-        if (!file.exists() || file.length() <= 0L) return false
-        val refreshIntervalHours = BASettingsStore.loadCalendarRefreshIntervalHours().coerceAtLeast(1)
-        val ttlMs = refreshIntervalHours * 60L * 60L * 1000L
-        val ageMs = (BaGuideSystemDataClock.nowMs() - file.lastModified()).coerceAtLeast(0L)
-        return ageMs < ttlMs
-    }
+    private fun isDiskFileFresh(file: File): Boolean =
+        isBaGuideCatalogIconDiskCacheFresh(
+            length = file.length(),
+            lastModifiedMs = file.lastModified(),
+            nowMs = BaGuideSystemDataClock.nowMs(),
+        )
 
     private fun sha1(text: String): String {
         val digest = MessageDigest.getInstance("SHA-1")
@@ -66,12 +64,13 @@ internal object BaGuideCatalogIconCache {
         if (key.isBlank()) return null
         get(key)?.let { return it }
         val diskFile = cacheFile(context, key)
-        if (isFileFreshByBaInterval(diskFile)) {
+        if (isDiskFileFresh(diskFile)) {
             val diskBitmap =
                 runCatching {
                     android.graphics.BitmapFactory.decodeFile(diskFile.absolutePath)
                 }.getOrNull()
             if (diskBitmap != null) {
+                runCatching { diskFile.setLastModified(BaGuideSystemDataClock.nowMs()) }
                 synchronized(cache) { cache.put(key, diskBitmap) }
                 return diskBitmap
             }
@@ -106,3 +105,15 @@ internal object BaGuideCatalogIconCache {
         }
     }
 }
+
+internal fun isBaGuideCatalogIconDiskCacheFresh(
+    length: Long,
+    lastModifiedMs: Long,
+    nowMs: Long,
+): Boolean {
+    if (length <= 0L || lastModifiedMs <= 0L) return false
+    val ageMs = (nowMs - lastModifiedMs).coerceAtLeast(0L)
+    return ageMs < BA_GUIDE_CATALOG_ICON_DISK_CACHE_MAX_AGE_MS
+}
+
+internal const val BA_GUIDE_CATALOG_ICON_DISK_CACHE_MAX_AGE_MS = 30L * 24L * 60L * 60L * 1000L

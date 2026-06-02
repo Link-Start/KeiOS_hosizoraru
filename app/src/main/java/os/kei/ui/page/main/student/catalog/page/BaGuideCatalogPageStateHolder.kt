@@ -15,7 +15,9 @@ internal data class BaGuideCatalogPageChromeState(
     val selectedTabIndex: Int = 0,
     val searchQueries: Map<String, String> = emptyMap(),
     val showTransferSheet: Boolean = false,
+    val showMorePopup: Boolean = false,
     val importPreviewState: BaGuideCatalogImportPreviewState? = null,
+    val catalogIncrementalRefreshIntervalHours: Int = 12,
     val searchVisible: Boolean = false,
     val searchInputActive: Boolean = false,
     val bgmVolumeControlVisible: Boolean = true,
@@ -47,8 +49,14 @@ internal class BaGuideCatalogPageStateHolder(
     val showTransferSheet: Boolean
         get() = chromeState().showTransferSheet
 
+    val showMorePopup: Boolean
+        get() = chromeState().showMorePopup
+
     val importPreviewState: BaGuideCatalogImportPreviewState?
         get() = chromeState().importPreviewState
+
+    val catalogIncrementalRefreshIntervalHours: Int
+        get() = chromeState().catalogIncrementalRefreshIntervalHours
 
     val searchVisible: Boolean
         get() = chromeState().searchVisible
@@ -165,6 +173,18 @@ internal class BaGuideCatalogPageStateHolder(
         actions().onShowTransferSheetChange(false)
     }
 
+    fun toggleMorePopup() {
+        actions().onShowMorePopupChange(!showMorePopup)
+    }
+
+    fun closeMorePopup() {
+        actions().onShowMorePopupChange(false)
+    }
+
+    fun updateCatalogIncrementalRefreshIntervalHours(hours: Int) {
+        actions().onCatalogIncrementalRefreshIntervalHoursChange(hours)
+    }
+
     fun updateImportPreviewState(state: BaGuideCatalogImportPreviewState?) {
         actions().onImportPreviewStateChange(state)
     }
@@ -180,6 +200,8 @@ internal data class BaGuideCatalogPageChromeActions(
     val onSelectedTabIndexChange: (Int) -> Unit,
     val onSearchQueriesChange: (Map<String, String>) -> Unit,
     val onShowTransferSheetChange: (Boolean) -> Unit,
+    val onShowMorePopupChange: (Boolean) -> Unit,
+    val onCatalogIncrementalRefreshIntervalHoursChange: (Int) -> Unit,
     val onImportPreviewStateChange: (BaGuideCatalogImportPreviewState?) -> Unit,
     val onSearchVisibilityChange: (visible: Boolean, inputActive: Boolean) -> Unit,
     val onBgmVolumeControlVisibleChange: (Boolean) -> Unit,

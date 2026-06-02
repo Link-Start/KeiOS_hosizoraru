@@ -11,6 +11,7 @@ private const val KEY_CACHE_SYNC_MS = "catalog_cache_sync_ms"
 private const val KEY_CACHE_VERSION = "catalog_cache_version"
 private const val KEY_FAVORITES_RAW = "catalog_favorites_raw"
 private const val KEY_RELEASE_DATE_INDEX_RAW = "catalog_release_date_index_raw"
+private const val KEY_INCREMENTAL_REFRESH_INTERVAL_HOURS = "catalog_incremental_refresh_interval_hours"
 private const val BA_GUIDE_CATALOG_CACHE_SCHEMA_VERSION = 4
 
 internal object BaGuideCatalogStore {
@@ -25,6 +26,7 @@ internal object BaGuideCatalogStore {
             JSONObject()
                 .apply {
                     put("syncedAtMs", bundle.syncedAtMs.coerceAtLeast(0L))
+                    put("fullSyncedAtMs", bundle.fullSyncedAtMs.coerceAtLeast(0L))
                     put(
                         "tabs",
                         JSONObject().apply {
@@ -161,10 +163,17 @@ internal object BaGuideCatalogStore {
                         "syncedAtMs",
                         store.decodeLong(KEY_CACHE_SYNC_MS, 0L),
                     ).coerceAtLeast(0L)
+            val fullSyncedAtMs =
+                root
+                    .optLong(
+                        "fullSyncedAtMs",
+                        syncedAtMs,
+                    ).coerceAtLeast(0L)
             BaGuideCatalogBundle(
                 entriesByTab = entriesByTab,
                 syncedAtMs = syncedAtMs,
                 filterDefinitionsByTab = filterDefinitionsByTab,
+                fullSyncedAtMs = fullSyncedAtMs,
             )
         }.getOrNull()
     }
@@ -175,6 +184,21 @@ internal object BaGuideCatalogStore {
         store.removeValueForKey(KEY_CACHE_SYNC_MS)
         store.removeValueForKey(KEY_CACHE_VERSION)
         store.trim()
+    }
+
+    fun loadIncrementalRefreshIntervalHours(): Int {
+        val raw =
+            kv().decodeInt(
+                KEY_INCREMENTAL_REFRESH_INTERVAL_HOURS,
+                BA_GUIDE_CATALOG_INCREMENTAL_REFRESH_MIN_HOURS,
+            )
+        return resolvedBaGuideCatalogIncrementalRefreshIntervalHours(raw)
+    }
+
+    fun saveIncrementalRefreshIntervalHours(hours: Int): Int {
+        val normalized = resolvedBaGuideCatalogIncrementalRefreshIntervalHours(hours)
+        kv().encode(KEY_INCREMENTAL_REFRESH_INTERVAL_HOURS, normalized)
+        return normalized
     }
 
     private fun loadReleaseDateIndex(store: MMKV = kv()): Map<Long, Long> {
@@ -248,7 +272,10 @@ internal object BaGuideCatalogStore {
         return rawBytes + indexBytes
     }
 
-    fun configBytesEstimated(): Long = 0L
+    fun configBytesEstimated(): Long {
+        val store = kv()
+        return if (store.containsKey(KEY_INCREMENTAL_REFRESH_INTERVAL_HOURS)) 8L else 0L
+    }
 
     fun loadFavorites(): Map<Long, Long> =
         synchronized(favoritesLock) {

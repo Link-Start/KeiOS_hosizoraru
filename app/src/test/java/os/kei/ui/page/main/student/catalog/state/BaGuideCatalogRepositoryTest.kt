@@ -10,6 +10,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntryFilterAttributes
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterOption
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogRefreshMode
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmFavoriteSortMode
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmLookupState
@@ -26,7 +27,7 @@ class BaGuideCatalogRepositoryTest {
                     ioDispatcher = Dispatchers.Unconfined,
                     refreshIntervalLoader = { 1 },
                     cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _ -> error("blocked") },
+                    catalogFetcher = { _, _, _, _, _ -> error("blocked") },
                     completeChecker = { it === cached },
                     expiredChecker = { _, _, _ -> true },
                 )
@@ -53,7 +54,7 @@ class BaGuideCatalogRepositoryTest {
                     ioDispatcher = Dispatchers.Unconfined,
                     refreshIntervalLoader = { 1 },
                     cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _ -> error("blocked") },
+                    catalogFetcher = { _, _, _, _, _ -> error("blocked") },
                     completeChecker = { false },
                     expiredChecker = { _, _, _ -> true },
                 )
@@ -82,7 +83,7 @@ class BaGuideCatalogRepositoryTest {
                     ioDispatcher = Dispatchers.Unconfined,
                     refreshIntervalLoader = { 12 },
                     cachedBundleLoader = { cached },
-                    catalogFetcher = { _, _, _, _ ->
+                    catalogFetcher = { _, _, _, _, _ ->
                         fetchCalled = true
                         BaGuideCatalogBundle.EMPTY
                     },
@@ -119,7 +120,7 @@ class BaGuideCatalogRepositoryTest {
                     ioDispatcher = Dispatchers.Unconfined,
                     refreshIntervalLoader = { 12 },
                     cachedBundleLoader = { null },
-                    catalogFetcher = { _, _, _, clock ->
+                    catalogFetcher = { _, _, _, clock, _ ->
                         fetchNowMs = clock.nowMs()
                         fetched
                     },
@@ -140,6 +141,145 @@ class BaGuideCatalogRepositoryTest {
             assertEquals(fetched, result.catalog)
             assertEquals(null, result.error)
             assertEquals(99_000L, fetchNowMs)
+        }
+
+    @Test
+    fun `short configured interval keeps complete cache fresh for twelve hours`() =
+        runBlocking {
+            val syncedAtMs = 1_000L
+            val cached =
+                catalogBundle("十二小时内缓存").copy(
+                    syncedAtMs = syncedAtMs,
+                    fullSyncedAtMs = syncedAtMs,
+                )
+            val repository =
+                BaGuideCatalogRepository(
+                    ioDispatcher = Dispatchers.Unconfined,
+                    refreshIntervalLoader = { 3 },
+                    cachedBundleLoader = { cached },
+                    catalogFetcher = { _, _, _, _, _ -> error("blocked") },
+                    completeChecker = { true },
+                    clock = BaGuideDataClock { syncedAtMs + 11L * 60L * 60L * 1000L },
+                )
+
+            val result =
+                repository.loadCatalog(
+                    context = null,
+                    currentCatalog = BaGuideCatalogBundle.EMPTY,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(cached, result.catalog)
+            assertEquals(null, result.error)
+        }
+
+    @Test
+    fun `expired complete cache fetches incremental refresh before full cadence`() =
+        runBlocking {
+            val syncedAtMs = 1_000L
+            val cached =
+                catalogBundle("增量缓存").copy(
+                    syncedAtMs = syncedAtMs,
+                    fullSyncedAtMs = syncedAtMs,
+                )
+            val fetched = catalogBundle("增量结果")
+            var observedMode: BaGuideCatalogRefreshMode? = null
+            val repository =
+                BaGuideCatalogRepository(
+                    ioDispatcher = Dispatchers.Unconfined,
+                    refreshIntervalLoader = { 12 },
+                    cachedBundleLoader = { cached },
+                    catalogFetcher = { _, _, _, _, refreshMode ->
+                        observedMode = refreshMode
+                        fetched
+                    },
+                    completeChecker = { true },
+                    clock = BaGuideDataClock { syncedAtMs + 13L * 60L * 60L * 1000L },
+                )
+
+            val result =
+                repository.loadCatalog(
+                    context = null,
+                    currentCatalog = BaGuideCatalogBundle.EMPTY,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(fetched, result.catalog)
+            assertEquals(BaGuideCatalogRefreshMode.Incremental, observedMode)
+        }
+
+    @Test
+    fun `manual refresh uses full refresh mode`() =
+        runBlocking {
+            val cached = catalogBundle("手动刷新缓存")
+            val fetched = catalogBundle("手动刷新结果")
+            var observedMode: BaGuideCatalogRefreshMode? = null
+            val repository =
+                BaGuideCatalogRepository(
+                    ioDispatcher = Dispatchers.Unconfined,
+                    refreshIntervalLoader = { 24 },
+                    cachedBundleLoader = { cached },
+                    catalogFetcher = { _, _, _, _, refreshMode ->
+                        observedMode = refreshMode
+                        fetched
+                    },
+                    completeChecker = { true },
+                    clock = BaGuideDataClock { cached.syncedAtMs + 60_000L },
+                )
+
+            val result =
+                repository.loadCatalog(
+                    context = null,
+                    currentCatalog = BaGuideCatalogBundle.EMPTY,
+                    manualRefresh = true,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(fetched, result.catalog)
+            assertEquals(BaGuideCatalogRefreshMode.Full, observedMode)
+        }
+
+    @Test
+    fun `expired full cadence uses full refresh mode`() =
+        runBlocking {
+            val dayMs = 24L * 60L * 60L * 1000L
+            val nowMs = 5L * dayMs
+            val cached =
+                catalogBundle("全量过期缓存").copy(
+                    syncedAtMs = nowMs - 13L * 60L * 60L * 1000L,
+                    fullSyncedAtMs = nowMs - 4L * dayMs,
+                )
+            val fetched = catalogBundle("全量结果")
+            var observedMode: BaGuideCatalogRefreshMode? = null
+            val repository =
+                BaGuideCatalogRepository(
+                    ioDispatcher = Dispatchers.Unconfined,
+                    refreshIntervalLoader = { 12 },
+                    cachedBundleLoader = { cached },
+                    catalogFetcher = { _, _, _, _, refreshMode ->
+                        observedMode = refreshMode
+                        fetched
+                    },
+                    completeChecker = { true },
+                    clock = BaGuideDataClock { nowMs },
+                )
+
+            val result =
+                repository.loadCatalog(
+                    context = null,
+                    currentCatalog = BaGuideCatalogBundle.EMPTY,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(fetched, result.catalog)
+            assertEquals(BaGuideCatalogRefreshMode.Full, observedMode)
         }
 
     @Test

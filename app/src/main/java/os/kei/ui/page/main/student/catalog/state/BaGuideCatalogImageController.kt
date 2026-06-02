@@ -24,6 +24,8 @@ internal class BaGuideCatalogImageController(
     private val pendingBitmaps = linkedMapOf<String, Bitmap>()
     private val pendingMissing = linkedSetOf<String>()
     private val missingUrlRecordedAtMs = linkedMapOf<String, Long>()
+    private val foregroundLock = Any()
+    private val foregroundUrls = linkedSetOf<String>()
     private var flushJob: Job? = null
     private val queueLock = Any()
     private val queuedUrls = ArrayDeque<String>()
@@ -33,6 +35,17 @@ internal class BaGuideCatalogImageController(
     val state: StateFlow<BaGuideCatalogImageUiState> = mutableState.asStateFlow()
 
     fun requestImages(imageUrls: List<String>) {
+        requestImages(imageUrls = imageUrls, foreground = false)
+    }
+
+    fun requestVisibleImages(imageUrls: List<String>) {
+        requestImages(imageUrls = imageUrls, foreground = true)
+    }
+
+    private fun requestImages(
+        imageUrls: List<String>,
+        foreground: Boolean,
+    ) {
         val normalizedUrls =
             imageUrls
                 .map { it.trim() }
@@ -40,6 +53,10 @@ internal class BaGuideCatalogImageController(
                 .distinct()
         if (normalizedUrls.isEmpty()) return
 
+        if (foreground) {
+            rememberForegroundUrls(normalizedUrls)
+            touchLoadedUrls(normalizedUrls)
+        }
         val nowMs = clock()
         val currentState = mutableState.value
         val cachedBitmaps = linkedMapOf<String, Bitmap>()
@@ -51,7 +68,7 @@ internal class BaGuideCatalogImageController(
                 }
             if (
                 currentState.bitmaps.containsKey(imageUrl) ||
-                shouldSkipRecentMissingUrl(imageUrl, nowMs) ||
+                (!foreground && shouldSkipRecentMissingUrl(imageUrl, nowMs)) ||
                 alreadyLoading
             ) {
                 return@forEach
@@ -74,6 +91,7 @@ internal class BaGuideCatalogImageController(
                             current = state.bitmaps,
                             added = cachedBitmaps,
                             limit = CATALOG_IMAGE_STATE_LIMIT,
+                            protectedKeys = foregroundUrlsSnapshot(),
                         ),
                     missingUrls = state.missingUrls - cachedBitmaps.keys,
                 )
@@ -83,6 +101,44 @@ internal class BaGuideCatalogImageController(
 
         enqueueMissingUrls(missingUrls)
         ensureWorker()
+    }
+
+    private fun rememberForegroundUrls(imageUrls: List<String>) {
+        synchronized(foregroundLock) {
+            imageUrls.forEach { imageUrl ->
+                foregroundUrls.remove(imageUrl)
+                foregroundUrls.add(imageUrl)
+            }
+            while (foregroundUrls.size > CATALOG_FOREGROUND_URL_LIMIT) {
+                val eldestKey = foregroundUrls.firstOrNull() ?: break
+                foregroundUrls.remove(eldestKey)
+            }
+        }
+    }
+
+    private fun foregroundUrlsSnapshot(): Set<String> =
+        synchronized(foregroundLock) {
+            foregroundUrls.toSet()
+        }
+
+    private fun touchLoadedUrls(imageUrls: List<String>) {
+        val currentBitmaps = mutableState.value.bitmaps
+        val touchedBitmaps =
+            imageUrls.mapNotNull { imageUrl ->
+                currentBitmaps[imageUrl]?.let { bitmap -> imageUrl to bitmap }
+            }.toMap()
+        if (touchedBitmaps.isEmpty()) return
+        mutableState.update { state ->
+            state.copy(
+                bitmaps =
+                    mergeLimitedMap(
+                        current = state.bitmaps,
+                        added = touchedBitmaps,
+                        limit = CATALOG_IMAGE_STATE_LIMIT,
+                        protectedKeys = foregroundUrlsSnapshot(),
+                    ),
+            )
+        }
     }
 
     private fun enqueueMissingUrls(missingUrls: List<String>) {
@@ -256,6 +312,7 @@ internal class BaGuideCatalogImageController(
                             current = state.bitmaps,
                             added = bitmapsToApply,
                             limit = CATALOG_IMAGE_STATE_LIMIT,
+                            protectedKeys = foregroundUrlsSnapshot(),
                         )
                     },
                 missingUrls =
@@ -276,6 +333,9 @@ internal class BaGuideCatalogImageController(
             pendingMissing.clear()
             missingUrlRecordedAtMs.clear()
         }
+        synchronized(foregroundLock) {
+            foregroundUrls.clear()
+        }
         synchronized(queueLock) {
             workerJob?.cancel()
             workerJob = null
@@ -288,6 +348,7 @@ internal class BaGuideCatalogImageController(
         current: Map<String, Bitmap>,
         added: Map<String, Bitmap>,
         limit: Int,
+        protectedKeys: Set<String> = emptySet(),
     ): Map<String, Bitmap> {
         if (added.isEmpty()) return current
         val merged = LinkedHashMap<String, Bitmap>(current.size + added.size)
@@ -300,7 +361,10 @@ internal class BaGuideCatalogImageController(
             merged[key] = value
         }
         while (merged.size > limit) {
-            val eldestKey = merged.entries.firstOrNull()?.key ?: break
+            val eldestKey =
+                merged.keys.firstOrNull { key -> !protectedKeys.contains(key) }
+                    ?: merged.entries.firstOrNull()?.key
+                    ?: break
             merged.remove(eldestKey)
         }
         return merged
@@ -334,6 +398,7 @@ internal class BaGuideCatalogImageController(
         const val FLUSH_INTERVAL_MS = 96L
         const val MISSING_URL_RETRY_INTERVAL_MS = 30_000L
         const val CATALOG_IMAGE_STATE_LIMIT = 96
+        const val CATALOG_FOREGROUND_URL_LIMIT = CATALOG_IMAGE_STATE_LIMIT
         const val CATALOG_MISSING_URL_STATE_LIMIT = 192
     }
 }

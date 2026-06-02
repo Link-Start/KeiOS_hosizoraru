@@ -26,10 +26,9 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogFilterActionPopup
-import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogSortActionPopup
+import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogMoreActionPopup
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
@@ -47,30 +46,30 @@ internal fun BaGuideCatalogMusicTopBar(
     title: String,
     accent: Color,
     onBack: () -> Unit,
-    showSortPopup: Boolean,
     sortMode: BaGuideCatalogSortMode,
     showFilterPopup: Boolean,
     filterEnabled: Boolean,
     filterDefinitions: List<BaGuideCatalogFilterDefinition>,
     selectedFilterOptions: Map<Int, Set<Int>>,
-    onSort: () -> Unit,
-    onDismissSort: () -> Unit,
+    showMorePopup: Boolean,
+    incrementalRefreshIntervalHours: Int,
     onSelectSortMode: (BaGuideCatalogSortMode) -> Unit,
     onFilter: () -> Unit,
     onDismissFilter: () -> Unit,
     onToggleFilterOption: (filterId: Int, optionId: Int) -> Unit,
     onClearFilters: () -> Unit,
+    onMore: () -> Unit,
+    onDismissMore: () -> Unit,
     onTransfer: () -> Unit,
+    onSelectIncrementalRefreshIntervalHours: (Int) -> Unit,
     onRefresh: () -> Unit,
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
 ) {
     val filterContentDescription = stringResource(R.string.ba_catalog_action_filter)
-    val sortContentDescription = stringResource(R.string.ba_catalog_action_sort)
     val refreshContentDescription = stringResource(R.string.ba_catalog_action_refresh)
-    val transferContentDescription = stringResource(R.string.ba_catalog_action_transfer)
+    val moreContentDescription = stringResource(R.string.ba_catalog_action_more)
     val filterIcon = appLucideFilterIcon()
-    val sortIcon = appLucideSortIcon()
     val refreshIcon = appLucideRefreshIcon()
     val moreIcon = appLucideMoreIcon()
     var actionBarAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
@@ -101,17 +100,14 @@ internal fun BaGuideCatalogMusicTopBar(
                     items =
                         remember(
                             filterContentDescription,
-                            sortContentDescription,
-                            transferContentDescription,
+                            moreContentDescription,
                             refreshContentDescription,
                             filterIcon,
-                            sortIcon,
                             moreIcon,
                             refreshIcon,
                             filterEnabled,
                             onFilter,
-                            onSort,
-                            onTransfer,
+                            onMore,
                             onRefresh,
                         ) {
                             listOf(
@@ -122,14 +118,9 @@ internal fun BaGuideCatalogMusicTopBar(
                                     enabled = filterEnabled,
                                 ),
                                 LiquidActionItem(
-                                    icon = sortIcon,
-                                    contentDescription = sortContentDescription,
-                                    onClick = onSort,
-                                ),
-                                LiquidActionItem(
                                     icon = moreIcon,
-                                    contentDescription = transferContentDescription,
-                                    onClick = onTransfer,
+                                    contentDescription = moreContentDescription,
+                                    onClick = onMore,
                                 ),
                                 LiquidActionItem(
                                     icon = refreshIcon,
@@ -139,7 +130,7 @@ internal fun BaGuideCatalogMusicTopBar(
                             )
                         },
                 )
-                LiquidActionBarPopupAnchors(itemCount = 4) { slotIndex, popupAnchorBounds ->
+                LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
                     when (slotIndex) {
                         0 -> {
                             BaGuideCatalogFilterActionPopup(
@@ -154,12 +145,16 @@ internal fun BaGuideCatalogMusicTopBar(
                         }
 
                         1 -> {
-                            BaGuideCatalogSortActionPopup(
-                                show = showSortPopup,
+                            BaGuideCatalogMoreActionPopup(
+                                show = showMorePopup,
                                 anchorBounds = popupAnchorBounds,
+                                backdrop = backdrop,
                                 sortMode = sortMode,
-                                onDismissRequest = onDismissSort,
+                                incrementalRefreshIntervalHours = incrementalRefreshIntervalHours,
+                                onDismissRequest = onDismissMore,
+                                onOpenTransfer = onTransfer,
                                 onSelectSortMode = onSelectSortMode,
+                                onSelectIncrementalRefreshIntervalHours = onSelectIncrementalRefreshIntervalHours,
                             )
                         }
                     }

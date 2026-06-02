@@ -79,6 +79,7 @@ internal data class BaGuideCatalogBundle(
     val syncedAtMs: Long,
     val filterDefinitionsByTab: Map<BaGuideCatalogTab, List<BaGuideCatalogFilterDefinition>> =
         emptyMap(),
+    val fullSyncedAtMs: Long = syncedAtMs,
 ) {
     fun entries(tab: BaGuideCatalogTab): List<BaGuideCatalogEntry> = entriesByTab[tab].orEmpty()
 
@@ -90,6 +91,7 @@ internal data class BaGuideCatalogBundle(
                 entriesByTab = BaGuideCatalogTab.entries.associateWith { emptyList() },
                 syncedAtMs = 0L,
                 filterDefinitionsByTab = emptyMap(),
+                fullSyncedAtMs = 0L,
             )
     }
 }
@@ -142,17 +144,6 @@ internal fun isBaGuideCatalogBundleComplete(bundle: BaGuideCatalogBundle?): Bool
     }
 }
 
-internal fun isBaGuideCatalogCacheExpired(
-    bundle: BaGuideCatalogBundle?,
-    refreshIntervalHours: Int,
-    nowMs: Long = System.currentTimeMillis(),
-): Boolean {
-    bundle ?: return true
-    val intervalMs = refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
-    if (bundle.syncedAtMs <= 0L) return true
-    return (nowMs - bundle.syncedAtMs).coerceAtLeast(0L) >= intervalMs
-}
-
 internal fun clearBaGuideCatalogCache(context: Context? = null) {
     cachedCatalogBundle = null
     BaGuideCatalogStore.clearCache()
@@ -164,6 +155,7 @@ internal suspend fun fetchBaGuideCatalogBundle(
     networkDispatcher: CoroutineDispatcher = AppDispatchers.baFetch,
     parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     clock: BaGuideDataClock = BaGuideSystemDataClock,
+    refreshMode: BaGuideCatalogRefreshMode = BaGuideCatalogRefreshMode.Full,
 ): BaGuideCatalogBundle {
     if (!forceRefresh) {
         val cached =
@@ -184,79 +176,80 @@ internal suspend fun fetchBaGuideCatalogBundle(
             loadCachedBaGuideCatalogBundle()
         }
 
-    val (studentRaw, npcSatelliteRaw, studentFilterIndex, npcSatelliteFilterIndex) =
+    val (studentRaw, npcSatelliteRaw) =
         coroutineScope {
             val studentDeferred = async(networkDispatcher) { fetchRawEntriesByPid(BA_GUIDE_STUDENT_PID) }
             val npcSatelliteDeferred =
                 async(networkDispatcher) {
                     fetchRawEntriesByPid(BA_GUIDE_NPC_SATELLITE_PID)
                 }
-            val studentFilterDeferred = async(networkDispatcher) { fetchFilterIndex(BA_GUIDE_STUDENT_PID) }
-            val npcSatelliteFilterDeferred = async(networkDispatcher) { fetchFilterIndex(BA_GUIDE_NPC_SATELLITE_PID) }
-            CatalogFetchPayload(
-                studentRaw = studentDeferred.await(),
-                npcSatelliteRaw = npcSatelliteDeferred.await(),
-                studentFilterIndex = studentFilterDeferred.await(),
-                npcSatelliteFilterIndex = npcSatelliteFilterDeferred.await(),
-            )
+            studentDeferred.await() to npcSatelliteDeferred.await()
         }
+    val rawByTab =
+        mapOf(
+            BaGuideCatalogTab.Student to studentRaw,
+            BaGuideCatalogTab.NpcSatellite to npcSatelliteRaw,
+        )
+    val fullRefresh = refreshMode == BaGuideCatalogRefreshMode.Full || !isBaGuideCatalogBundleComplete(cachedFilterBundle)
+    val changedTabs =
+        BaGuideCatalogTab.entries.filter { tab ->
+            fullRefresh || cachedFilterBundle.rawChanged(tab = tab, rawEntries = rawByTab.getValue(tab))
+        }
+    if (!fullRefresh && changedTabs.isEmpty() && cachedFilterBundle != null) {
+        val bundle = cachedFilterBundle.copy(syncedAtMs = now)
+        cachedCatalogBundle = bundle
+        withContext(networkDispatcher) {
+            BaGuideCatalogStore.saveBundle(bundle)
+        }
+        return bundle
+    }
 
-    val (studentEntries, npcSatelliteEntries) =
+    val filterIndexByTab = fetchFilterIndices(changedTabs, networkDispatcher)
+
+    val entriesByTab =
         withContext(parseDispatcher) {
-            val studentFilterFallback = cachedFilterBundle.filterFallback(BaGuideCatalogTab.Student)
-            val npcSatelliteFilterFallback = cachedFilterBundle.filterFallback(BaGuideCatalogTab.NpcSatellite)
-            val studentEntries =
-                studentRaw.map { raw ->
-                    val filterAttributes =
-                        studentFilterIndex
-                            .attributes(raw.entryId)
-                            .ifEmpty { studentFilterFallback.attributes(raw) }
-                    val filterReleaseDateSec =
-                        studentFilterIndex.releaseDateSec(raw.entryId).takeIf { it > 0L }
-                            ?: filterAttributes.releaseDateSec()
-                    raw.toCatalogEntry(
-                        tab = BaGuideCatalogTab.Student,
-                        releaseDateSec = releaseDateIndex[raw.contentId] ?: filterReleaseDateSec,
-                        filterAttributes = filterAttributes,
-                    )
+            BaGuideCatalogTab.entries.associateWith { tab ->
+                if (!changedTabs.contains(tab)) {
+                    cachedFilterBundle?.entries(tab).orEmpty()
+                } else {
+                    val filterIndex = filterIndexByTab[tab] ?: BaGuideCatalogFilterIndex.EMPTY
+                    val filterFallback = cachedFilterBundle.filterFallback(tab)
+                    rawByTab.getValue(tab).map { raw ->
+                        val filterAttributes =
+                            filterIndex
+                                .attributes(raw.entryId)
+                                .ifEmpty { filterFallback.attributes(raw) }
+                        val filterReleaseDateSec =
+                            filterIndex.releaseDateSec(raw.entryId).takeIf { it > 0L }
+                                ?: filterAttributes.releaseDateSec()
+                        raw.toCatalogEntry(
+                            tab = tab,
+                            releaseDateSec = releaseDateIndex[raw.contentId] ?: filterReleaseDateSec,
+                            filterAttributes = filterAttributes,
+                        )
+                    }
                 }
-            val npcSatelliteEntries =
-                npcSatelliteRaw.map { raw ->
-                    val filterAttributes =
-                        npcSatelliteFilterIndex
-                            .attributes(raw.entryId)
-                            .ifEmpty { npcSatelliteFilterFallback.attributes(raw) }
-                    val filterReleaseDateSec =
-                        npcSatelliteFilterIndex.releaseDateSec(raw.entryId).takeIf { it > 0L }
-                            ?: filterAttributes.releaseDateSec()
-                    raw.toCatalogEntry(
-                        tab = BaGuideCatalogTab.NpcSatellite,
-                        releaseDateSec = releaseDateIndex[raw.contentId] ?: filterReleaseDateSec,
-                        filterAttributes = filterAttributes,
-                    )
-                }
-            studentEntries to npcSatelliteEntries
+            }
         }
 
     val bundle =
         BaGuideCatalogBundle(
-            entriesByTab =
-                mapOf(
-                    BaGuideCatalogTab.Student to studentEntries,
-                    BaGuideCatalogTab.NpcSatellite to npcSatelliteEntries,
-                ),
+            entriesByTab = entriesByTab,
             syncedAtMs = now,
             filterDefinitionsByTab =
-                mapOf(
-                    BaGuideCatalogTab.Student to
-                        studentFilterIndex.definitions.ifEmpty {
-                            cachedFilterBundle?.filterDefinitions(BaGuideCatalogTab.Student).orEmpty()
-                        },
-                    BaGuideCatalogTab.NpcSatellite to
-                        npcSatelliteFilterIndex.definitions.ifEmpty {
-                            cachedFilterBundle?.filterDefinitions(BaGuideCatalogTab.NpcSatellite).orEmpty()
-                        },
-                ),
+                BaGuideCatalogTab.entries.associateWith { tab ->
+                    filterIndexByTab[tab]?.definitions.orEmpty().ifEmpty {
+                        cachedFilterBundle?.filterDefinitions(tab).orEmpty()
+                    }
+                },
+            fullSyncedAtMs =
+                if (refreshMode == BaGuideCatalogRefreshMode.Full) {
+                    now
+                } else {
+                    cachedFilterBundle?.fullSyncedAtMs?.takeIf { it > 0L }
+                        ?: cachedFilterBundle?.syncedAtMs?.takeIf { it > 0L }
+                        ?: now
+                },
         )
     cachedCatalogBundle = bundle
     withContext(networkDispatcher) {
@@ -265,12 +258,19 @@ internal suspend fun fetchBaGuideCatalogBundle(
     return bundle
 }
 
-private data class CatalogFetchPayload(
-    val studentRaw: List<RawEntry>,
-    val npcSatelliteRaw: List<RawEntry>,
-    val studentFilterIndex: BaGuideCatalogFilterIndex,
-    val npcSatelliteFilterIndex: BaGuideCatalogFilterIndex,
-)
+private suspend fun fetchFilterIndices(
+    tabs: List<BaGuideCatalogTab>,
+    networkDispatcher: CoroutineDispatcher,
+): Map<BaGuideCatalogTab, BaGuideCatalogFilterIndex> {
+    if (tabs.isEmpty()) return emptyMap()
+    return coroutineScope {
+        tabs
+            .distinct()
+            .associateWith { tab ->
+                async(networkDispatcher) { fetchFilterIndex(tab.pid) }
+            }.mapValues { (_, deferred) -> deferred.await() }
+    }
+}
 
 private data class CatalogFilterFallback(
     val byEntryId: Map<Int, BaGuideCatalogEntryFilterAttributes>,
@@ -295,6 +295,33 @@ private fun BaGuideCatalogBundle?.filterFallback(tab: BaGuideCatalogTab): Catalo
                 .associate { entry -> entry.contentId to entry.filterAttributes },
     )
 }
+
+private val BaGuideCatalogTab.pid: Int
+    get() =
+        when (this) {
+            BaGuideCatalogTab.Student -> BA_GUIDE_STUDENT_PID
+            BaGuideCatalogTab.NpcSatellite -> BA_GUIDE_NPC_SATELLITE_PID
+        }
+
+private fun BaGuideCatalogBundle?.rawChanged(
+    tab: BaGuideCatalogTab,
+    rawEntries: List<RawEntry>,
+): Boolean {
+    val currentEntries = this?.entries(tab).orEmpty()
+    if (currentEntries.size != rawEntries.size) return true
+    return currentEntries.zip(rawEntries).any { (entry, raw) -> entry.rawChanged(raw) }
+}
+
+private fun BaGuideCatalogEntry.rawChanged(raw: RawEntry): Boolean =
+    entryId != raw.entryId ||
+        pid != raw.pid ||
+        contentId != raw.contentId ||
+        name != raw.name ||
+        alias != raw.alias ||
+        iconUrl != raw.iconUrl ||
+        type != raw.type ||
+        order != raw.order ||
+        createdAtSec != raw.createdAtSec
 
 private fun BaGuideCatalogEntryFilterAttributes.ifEmpty(
     fallback: () -> BaGuideCatalogEntryFilterAttributes,

@@ -92,6 +92,9 @@ fun BaGuideCatalogPage(
                     onSelectedTabIndexChange = catalogViewModel::updateCatalogSelectedTabIndex,
                     onSearchQueriesChange = catalogViewModel::updateCatalogSearchQueries,
                     onShowTransferSheetChange = catalogViewModel::updateCatalogTransferSheetVisible,
+                    onShowMorePopupChange = catalogViewModel::updateCatalogMorePopupVisible,
+                    onCatalogIncrementalRefreshIntervalHoursChange =
+                        catalogViewModel::updateCatalogIncrementalRefreshIntervalHours,
                     onImportPreviewStateChange = catalogViewModel::updateCatalogImportPreviewState,
                     onSearchVisibilityChange = catalogViewModel::updateCatalogSearchVisibility,
                     onBgmVolumeControlVisibleChange = catalogViewModel::updateCatalogBgmVolumeControlVisible,
@@ -256,6 +259,7 @@ fun BaGuideCatalogPage(
             enableSearchBar = enableSearchBar,
             onBack = onBack,
             onOpenGuide = onOpenGuide,
+            onRequestVisibleCatalogImages = catalogViewModel::requestVisibleCatalogImages,
             pageActions = pageActions,
             onRequestNotificationPermission = onRequestNotificationPermission,
         )

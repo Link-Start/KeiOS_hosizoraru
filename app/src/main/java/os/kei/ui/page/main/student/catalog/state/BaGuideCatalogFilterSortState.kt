@@ -24,7 +24,6 @@ internal class BaGuideCatalogFilterSortState(
     private val snapshot: () -> BaGuideCatalogFilterSortSnapshot,
     private val onSnapshotChange: (BaGuideCatalogFilterSortSnapshot) -> Unit,
     private val activeCatalogTab: () -> BaGuideCatalogTab?,
-    private val showSortPopupState: MutableState<Boolean>,
     private val showFilterPopupState: MutableState<Boolean>,
 ) {
     var searchQuery: String
@@ -47,12 +46,6 @@ internal class BaGuideCatalogFilterSortState(
             )
         }
 
-    var showSortPopup: Boolean
-        get() = showSortPopupState.value
-        set(value) {
-            showSortPopupState.value = value
-        }
-
     var showFilterPopup: Boolean
         get() = showFilterPopupState.value
         set(value) {
@@ -72,16 +65,9 @@ internal class BaGuideCatalogFilterSortState(
 
     fun selectSortMode(mode: BaGuideCatalogSortMode) {
         sortMode = mode
-        showSortPopup = false
-    }
-
-    fun openSortPopup() {
-        showFilterPopup = false
-        showSortPopup = true
     }
 
     fun openFilterPopup() {
-        showSortPopup = false
         showFilterPopup = true
     }
 
@@ -135,17 +121,14 @@ internal fun rememberBaGuideCatalogFilterSortState(
     val currentSnapshot = rememberUpdatedState(snapshot)
     val currentActiveCatalogTab = rememberUpdatedState(activeCatalogTab)
     val currentOnSnapshotChange = rememberUpdatedState(onSnapshotChange)
-    val showSortPopupState = remember { mutableStateOf(false) }
     val showFilterPopupState = remember { mutableStateOf(false) }
     return remember(
-        showSortPopupState,
         showFilterPopupState,
     ) {
         BaGuideCatalogFilterSortState(
             snapshot = { currentSnapshot.value },
             onSnapshotChange = { currentOnSnapshotChange.value(it) },
             activeCatalogTab = { currentActiveCatalogTab.value },
-            showSortPopupState = showSortPopupState,
             showFilterPopupState = showFilterPopupState,
         )
     }

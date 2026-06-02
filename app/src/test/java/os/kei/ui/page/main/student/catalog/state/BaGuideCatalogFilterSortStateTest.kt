@@ -16,7 +16,6 @@ class BaGuideCatalogFilterSortStateTest {
                 snapshot = { snapshot },
                 onSnapshotChange = { snapshot = it },
                 activeCatalogTab = { activeTab },
-                showSortPopupState = mutableStateOf(false),
                 showFilterPopupState = mutableStateOf(false),
             )
 

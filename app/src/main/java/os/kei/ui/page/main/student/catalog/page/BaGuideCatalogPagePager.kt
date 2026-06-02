@@ -49,6 +49,7 @@ internal fun BaGuideCatalogPagePager(
     transitionAnimationsEnabled: Boolean,
     accent: Color,
     onOpenGuide: (String) -> Unit,
+    onRequestVisibleCatalogImages: (List<String>) -> Unit,
 ) {
     MainLoadedPager(
         state = pagerState,
@@ -83,6 +84,7 @@ internal fun BaGuideCatalogPagePager(
                 chromeScrollState = chromeScrollState,
                 accent = accent,
                 onOpenGuide = onOpenGuide,
+                onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
                 onSliderInteractionChanged = pageState::updateSliderInteractionActive,
             )
         }
@@ -111,6 +113,7 @@ private fun BaGuideCatalogPageTabContent(
     chromeScrollState: BaGuideBgmBottomChromeScrollState,
     accent: Color,
     onOpenGuide: (String) -> Unit,
+    onRequestVisibleCatalogImages: (List<String>) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
 ) {
     when {
@@ -134,6 +137,7 @@ private fun BaGuideCatalogPageTabContent(
                 isPageActive = pageIndex == pagerState.settledPage,
                 scrollToTopSignal = pageState.scrollToTopSignal,
                 onScrollBoundsChange = chromeScrollState::expandForStaticContent,
+                onRequestVisibleImages = onRequestVisibleCatalogImages,
                 onOpenGuide = onOpenGuide,
                 onToggleFavorite = pageActions.onToggleCatalogFavorite,
             )

@@ -81,6 +81,7 @@ internal fun BaGuideCatalogPageContent(
     enableSearchBar: Boolean,
     onBack: () -> Unit,
     onOpenGuide: (String) -> Unit,
+    onRequestVisibleCatalogImages: (List<String>) -> Unit,
     pageActions: BaGuideCatalogPageActions,
     onRequestNotificationPermission: () -> Unit,
 ) {
@@ -147,6 +148,7 @@ internal fun BaGuideCatalogPageContent(
                 transitionAnimationsEnabled = transitionAnimationsEnabled,
                 accent = accent,
                 onOpenGuide = onOpenGuide,
+                onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
             )
             Box(
                 modifier =
@@ -169,21 +171,39 @@ internal fun BaGuideCatalogPageContent(
                 title = pageTitle,
                 accent = accent,
                 onBack = onBack,
-                showSortPopup = filterSortState.showSortPopup,
                 sortMode = catalogSortMode,
                 showFilterPopup = filterSortState.showFilterPopup,
                 filterEnabled = chromePresentation.filterEnabled,
                 filterDefinitions = chromePresentation.filterDefinitions,
                 selectedFilterOptions = catalogSelectedFilterOptions,
-                onSort = filterSortState::openSortPopup,
-                onDismissSort = { filterSortState.showSortPopup = false },
-                onSelectSortMode = filterSortState::selectSortMode,
-                onFilter = filterSortState::openFilterPopup,
+                showMorePopup = pageState.showMorePopup,
+                incrementalRefreshIntervalHours = pageState.catalogIncrementalRefreshIntervalHours,
+                onSelectSortMode = { mode ->
+                    filterSortState.selectSortMode(mode)
+                    pageState.closeMorePopup()
+                },
+                onFilter = {
+                    pageState.closeMorePopup()
+                    filterSortState.openFilterPopup()
+                },
                 onDismissFilter = { filterSortState.showFilterPopup = false },
                 onToggleFilterOption = filterSortState::toggleFilterOption,
                 onClearFilters = filterSortState::clearFilters,
-                onTransfer = pageState::openTransferSheet,
-                onRefresh = pageActions.onRefresh,
+                onMore = {
+                    filterSortState.showFilterPopup = false
+                    pageState.toggleMorePopup()
+                },
+                onDismissMore = pageState::closeMorePopup,
+                onTransfer = {
+                    pageState.closeMorePopup()
+                    pageState.openTransferSheet()
+                },
+                onSelectIncrementalRefreshIntervalHours = pageState::updateCatalogIncrementalRefreshIntervalHours,
+                onRefresh = {
+                    pageState.closeMorePopup()
+                    filterSortState.showFilterPopup = false
+                    pageActions.onRefresh()
+                },
                 backdrop = pageChromeBackdrop,
                 modifier =
                     Modifier

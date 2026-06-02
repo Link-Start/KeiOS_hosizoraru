@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.resolvedBaGuideCatalogIncrementalRefreshIntervalHours
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
@@ -148,6 +149,12 @@ internal class BaGuideCatalogViewModel(
         viewModelScope.launch {
             _transferSettings.value = repository.loadTransferSettings()
         }
+        viewModelScope.launch {
+            val refreshHours = repository.loadCatalogIncrementalRefreshIntervalHours()
+            _pageChromeState.update { state ->
+                state.copy(catalogIncrementalRefreshIntervalHours = refreshHours)
+            }
+        }
     }
 
     fun bind(
@@ -209,6 +216,30 @@ internal class BaGuideCatalogViewModel(
             } else {
                 state.copy(showTransferSheet = visible)
             }
+        }
+    }
+
+    fun updateCatalogMorePopupVisible(visible: Boolean) {
+        _pageChromeState.update { state ->
+            if (state.showMorePopup == visible) {
+                state
+            } else {
+                state.copy(showMorePopup = visible)
+            }
+        }
+    }
+
+    fun updateCatalogIncrementalRefreshIntervalHours(hours: Int) {
+        val normalized = resolvedBaGuideCatalogIncrementalRefreshIntervalHours(hours)
+        _pageChromeState.update { state ->
+            if (state.catalogIncrementalRefreshIntervalHours == normalized) {
+                state
+            } else {
+                state.copy(catalogIncrementalRefreshIntervalHours = normalized)
+            }
+        }
+        viewModelScope.launch {
+            repository.saveCatalogIncrementalRefreshIntervalHours(normalized)
         }
     }
 
@@ -338,6 +369,10 @@ internal class BaGuideCatalogViewModel(
 
     fun requestCatalogImages(imageUrls: List<String>) {
         imageController.requestImages(imageUrls)
+    }
+
+    fun requestVisibleCatalogImages(imageUrls: List<String>) {
+        imageController.requestVisibleImages(imageUrls)
     }
 
     fun ensureCatalogFavoritesLoaded() {

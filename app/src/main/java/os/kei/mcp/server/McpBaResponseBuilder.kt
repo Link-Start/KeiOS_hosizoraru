@@ -193,7 +193,7 @@ internal class McpBaResponseBuilder(
         val filterTab = parseCatalogTab(tab)
         val bundle = loadCachedBaGuideCatalogBundle()
         val counts = BaGuideCatalogStore.cachedEntryCounts()
-        val refreshHours = BASettingsStore.loadCalendarRefreshIntervalHours()
+        val refreshHours = BaGuideCatalogStore.loadIncrementalRefreshIntervalHours()
         val complete = isBaGuideCatalogBundleComplete(bundle)
         val expired = isBaGuideCatalogCacheExpired(bundle, refreshHours)
         val latestSyncedAtMs = bundle?.syncedAtMs ?: BaGuideCatalogStore.latestSyncedAtMs()

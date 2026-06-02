@@ -14,6 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -64,6 +66,56 @@ class BaGuideCatalogImageControllerTest {
             )
         }
 
+    @Test
+    fun `visible bitmap is kept while background warmup evicts older bitmaps`() =
+        runTest {
+            val bitmaps =
+                (0 until 192).associate { index ->
+                    "icon-$index" to Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+                }
+            val controller =
+                BaGuideCatalogImageController(
+                    scope = this,
+                    appContext = ApplicationProvider.getApplicationContext<Application>(),
+                    repository = CachedCatalogImageRepository(bitmaps),
+                    clock = { 1_000L },
+                )
+
+            controller.requestImages((0 until 96).map { index -> "icon-$index" })
+            controller.requestVisibleImages(listOf("icon-0"))
+            controller.requestImages((96 until 192).map { index -> "icon-$index" })
+
+            val loadedBitmaps = controller.state.value.bitmaps
+            assertEquals(96, loadedBitmaps.size)
+            assertTrue(loadedBitmaps.containsKey("icon-0"))
+            assertFalse(loadedBitmaps.containsKey("icon-1"))
+        }
+
+    @Test
+    fun `visible request retries recent missing url`() =
+        runTest {
+            val repository = RecordingCatalogImageRepository()
+            val controller =
+                BaGuideCatalogImageController(
+                    scope = this,
+                    appContext = ApplicationProvider.getApplicationContext<Application>(),
+                    repository = repository,
+                    clock = { 1_000L },
+                )
+
+            controller.requestImages(listOf("missing"))
+            advanceUntilIdle()
+            controller.requestImages(listOf("missing"))
+            advanceUntilIdle()
+            controller.requestVisibleImages(listOf("missing"))
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(listOf("missing"), listOf("missing")),
+                repository.batches,
+            )
+        }
+
     private open class RecordingCatalogImageRepository : BaGuideCatalogImageRepository() {
         val batches = mutableListOf<List<String>>()
 
@@ -83,6 +135,12 @@ class BaGuideCatalogImageControllerTest {
                 missingUrls = imageUrls.toSet(),
             )
         }
+    }
+
+    private class CachedCatalogImageRepository(
+        private val bitmaps: Map<String, Bitmap>,
+    ) : BaGuideCatalogImageRepository() {
+        override fun cachedBitmap(imageUrl: String): Bitmap? = bitmaps[imageUrl]
     }
 
     private class PausingCatalogImageRepository : RecordingCatalogImageRepository() {

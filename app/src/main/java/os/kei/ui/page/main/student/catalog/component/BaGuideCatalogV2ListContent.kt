@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -40,6 +42,7 @@ internal fun BaGuideCatalogV2ListContent(
     isPageActive: Boolean,
     scrollToTopSignal: Int,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
+    onRequestVisibleImages: (List<String>) -> Unit,
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
 ) {
@@ -61,6 +64,7 @@ internal fun BaGuideCatalogV2ListContent(
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
         )
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    val requestVisibleImages by rememberUpdatedState(onRequestVisibleImages)
     val consumedScrollToTopSignal = remember(tab) { mutableIntStateOf(0) }
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > consumedScrollToTopSignal.intValue && isPageActive) {
@@ -78,6 +82,41 @@ internal fun BaGuideCatalogV2ListContent(
             }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
+            }
+    }
+    LaunchedEffect(
+        tabListState.listState,
+        tabListState.displayedEntries,
+        uiState.showError,
+        uiState.showLoading,
+        uiState.showEmpty,
+        isPageActive,
+        snapshotFlowManager,
+    ) {
+        if (!isPageActive || uiState.showLoading || uiState.showEmpty || tabListState.displayedEntries.isEmpty()) {
+            return@LaunchedEffect
+        }
+        val entryStartIndex =
+            if (uiState.showError) {
+                1
+            } else {
+                0
+            }
+        snapshotFlowManager
+            .snapshotFlow {
+                val visibleItemIndices =
+                    tabListState.listState.layoutInfo.visibleItemsInfo
+                        .map { itemInfo -> itemInfo.index }
+                buildBaGuideCatalogVisibleImageRequestUrls(
+                    displayedEntries = tabListState.displayedEntries,
+                    visibleItemIndices = visibleItemIndices,
+                    entryStartIndex = entryStartIndex,
+                )
+            }.distinctUntilChanged()
+            .collect { imageUrls ->
+                if (imageUrls.isNotEmpty()) {
+                    requestVisibleImages(imageUrls)
+                }
             }
     }
     LazyColumn(

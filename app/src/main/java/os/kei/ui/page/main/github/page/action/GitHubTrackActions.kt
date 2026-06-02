@@ -17,6 +17,7 @@ import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.localizedGitHubRepositoryDiscoveryErrorMessage
 import os.kei.ui.page.main.github.page.GitHubTrackEditorDraft
 import os.kei.ui.page.main.github.page.GitHubTrackEditorResult
 
@@ -309,9 +310,7 @@ internal class GitHubTrackActions(
                         ).getOrElse { error ->
                             env.toast(
                                 R.string.github_toast_repo_scan_failed,
-                                error.message.orEmpty().ifBlank {
-                                    env.string(R.string.github_error_repo_scan_failed)
-                                },
+                                localizedGitHubRepositoryDiscoveryErrorMessage(env.context, error),
                             )
                             return@launch
                         }

@@ -4,8 +4,10 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import os.kei.feature.github.domain.GitHubRepositoryDiscoveryHttpException
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class GitHubRepositoryDiscoveryRepositoryTest {
     @Test
@@ -133,6 +135,35 @@ class GitHubRepositoryDiscoveryRepositoryTest {
             assertEquals(query, request.requestUrl?.queryParameter("q"))
             assertEquals("2", request.requestUrl?.queryParameter("per_page"))
             assertEquals("Bearer token-123", request.getHeader("Authorization"))
+        }
+    }
+
+    @Test
+    fun `repository search exposes http status and message for api failures`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(403)
+                    .setBody("""{"message":"API rate limit exceeded"}""")
+            )
+            val repository = GitHubRepositoryDiscoveryRepository(
+                apiToken = "",
+                client = OkHttpClient(),
+                apiBaseUrl = server.url("/").toString()
+            )
+
+            val error = repository
+                .searchRepositories(query = "KeiOS android", limit = 2)
+                .exceptionOrNull()
+
+            assertTrue(error is GitHubRepositoryDiscoveryHttpException)
+            val httpError = error
+            assertEquals(403, httpError.statusCode)
+            assertEquals("API rate limit exceeded", httpError.responseMessage)
+            assertEquals(
+                "GitHub discovery request failed: HTTP 403 API rate limit exceeded",
+                httpError.message
+            )
         }
     }
 

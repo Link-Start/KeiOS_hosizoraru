@@ -14,6 +14,7 @@ import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.feature.github.domain.GitHubRepositoryDiscoveryHttpException
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
@@ -156,7 +157,7 @@ class GitHubRepositoryDiscoveryRepository(
         client.newCall(requestBuilder.build()).execute().use { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
-                error(response.buildErrorMessage(bodyText))
+                throw response.buildHttpException(bodyText)
             }
             return GitHubDiscoveryResponse(
                 bodyText = bodyText,
@@ -177,7 +178,7 @@ class GitHubRepositoryDiscoveryRepository(
         client.newCall(requestBuilder.build()).execute().use { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
-                error(response.buildErrorMessage(bodyText))
+                throw response.buildHttpException(bodyText)
             }
             return GitHubDiscoveryResponse(
                 bodyText = bodyText,
@@ -388,13 +389,17 @@ class GitHubRepositoryDiscoveryRepository(
             .any { linkPart -> linkPart.contains("""rel="next"""", ignoreCase = true) }
     }
 
-    private fun Response.buildErrorMessage(bodyText: String): String {
-        val message = runCatching {
+    private fun Response.buildHttpException(bodyText: String): GitHubRepositoryDiscoveryHttpException {
+        val parsedMessage = runCatching {
             bodyText.parseJsonObjectOrNull()?.optString("message")
         }.getOrNull()
             .orEmpty()
             .ifBlank { bodyText.take(160) }
-        return "GitHub discovery request failed: HTTP $code $message".trim()
+            .ifBlank { message }
+        return GitHubRepositoryDiscoveryHttpException(
+            statusCode = code,
+            responseMessage = parsedMessage
+        )
     }
 
     private fun String.urlEncode(): String {

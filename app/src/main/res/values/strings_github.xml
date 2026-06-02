@@ -180,6 +180,11 @@
     <string name="github_error_load_apk_assets_failed">加载 APK 资产失败</string>
     <string name="github_error_package_scan_failed">包名扫描失败</string>
     <string name="github_error_repo_scan_failed">项目地址扫描失败</string>
+    <string name="github_error_repo_discovery_token_invalid">GitHub Token 无效或已过期，请更新 API Token</string>
+    <string name="github_error_repo_discovery_rate_limited">GitHub 搜索已限流，请稍后重试或填写 API Token</string>
+    <string name="github_error_repo_discovery_forbidden">GitHub 搜索被拒绝，请稍后重试或填写 API Token</string>
+    <string name="github_error_repo_discovery_query_rejected">GitHub 搜索查询被拒绝，请更换关键词或填写 API Token</string>
+    <string name="github_error_repo_discovery_http_failed">GitHub 搜索请求失败（HTTP %1$d）</string>
     <string name="github_toast_fill_repo_and_select_app">请填写正确仓库地址</string>
     <string name="github_toast_repo_scan_requires_package">请先填写包名或选择本机 App</string>
     <string name="github_toast_invalid_package_name">包名格式不正确</string>

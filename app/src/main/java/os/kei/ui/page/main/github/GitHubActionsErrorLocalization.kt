@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github
 
 import android.content.Context
 import os.kei.R
+import os.kei.feature.github.domain.GitHubRepositoryDiscoveryHttpException
 
 internal fun localizedGitHubActionsErrorMessage(
     context: Context,
@@ -108,6 +109,74 @@ internal fun localizedGitHubActionsErrorMessage(
         else -> message
     }
 }
+
+internal fun localizedGitHubRepositoryDiscoveryErrorMessage(
+    context: Context,
+    error: Throwable,
+): String {
+    val httpError = error as? GitHubRepositoryDiscoveryHttpException
+    if (httpError != null) {
+        return localizedGitHubRepositoryDiscoveryHttpErrorMessage(
+            context = context,
+            statusCode = httpError.statusCode,
+            responseMessage = httpError.responseMessage,
+        )
+    }
+    val message = error.message?.trim().orEmpty()
+    val legacyHttpError = message.toLegacyGitHubRepositoryDiscoveryHttpError()
+    if (legacyHttpError != null) {
+        return localizedGitHubRepositoryDiscoveryHttpErrorMessage(
+            context = context,
+            statusCode = legacyHttpError.statusCode,
+            responseMessage = legacyHttpError.responseMessage,
+        )
+    }
+    return message.ifBlank { context.getString(R.string.common_unknown) }
+}
+
+private fun localizedGitHubRepositoryDiscoveryHttpErrorMessage(
+    context: Context,
+    statusCode: Int,
+    responseMessage: String,
+): String {
+    val normalizedMessage = responseMessage.trim().lowercase()
+    return when {
+        statusCode == 401 ->
+            context.getString(R.string.github_error_repo_discovery_token_invalid)
+
+        statusCode == 403 && normalizedMessage.contains("rate limit") ->
+            context.getString(R.string.github_error_repo_discovery_rate_limited)
+
+        statusCode == 429 ->
+            context.getString(R.string.github_error_repo_discovery_rate_limited)
+
+        statusCode == 403 ->
+            context.getString(R.string.github_error_repo_discovery_forbidden)
+
+        statusCode == 422 ->
+            context.getString(R.string.github_error_repo_discovery_query_rejected)
+
+        else ->
+            context.getString(R.string.github_error_repo_discovery_http_failed, statusCode)
+    }
+}
+
+private fun String.toLegacyGitHubRepositoryDiscoveryHttpError(): LegacyGitHubRepositoryDiscoveryHttpError? {
+    val prefix = "GitHub discovery request failed: HTTP "
+    if (!startsWith(prefix)) return null
+    val remainder = removePrefix(prefix).trim()
+    val statusCode = remainder.substringBefore(' ').toIntOrNull() ?: return null
+    val responseMessage = remainder.substringAfter(' ', missingDelimiterValue = "").trim()
+    return LegacyGitHubRepositoryDiscoveryHttpError(
+        statusCode = statusCode,
+        responseMessage = responseMessage,
+    )
+}
+
+private data class LegacyGitHubRepositoryDiscoveryHttpError(
+    val statusCode: Int,
+    val responseMessage: String,
+)
 
 internal fun localizedGitHubShareImportErrorMessage(
     context: Context,

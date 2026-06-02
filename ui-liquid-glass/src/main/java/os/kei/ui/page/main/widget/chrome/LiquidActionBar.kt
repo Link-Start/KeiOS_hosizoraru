@@ -69,6 +69,8 @@ data class LiquidActionItem(
     val onClick: () -> Unit,
     val enabled: Boolean = true,
     val testTag: String? = null,
+    val iconRotationDegrees: Float = 0f,
+    val iconTint: Color? = null,
 )
 
 @Composable
@@ -168,7 +170,8 @@ internal fun RowScope.LiquidActionItemSlot(
                     val scale = iconScale()
                     scaleX = scale
                     scaleY = scale
-                    colorFilter = ColorFilter.tint(tint())
+                    rotationZ = item.iconRotationDegrees
+                    colorFilter = ColorFilter.tint(item.iconTint ?: tint())
                 },
         contentAlignment = Alignment.Center,
     ) {

@@ -32,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -56,14 +55,10 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
-import os.kei.ui.page.main.os.appLucideConfigIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -235,34 +230,15 @@ private fun BaPoolPage(
             )
         },
         actions = {
-            AppLiquidIconButton(
+            BaCalendarPoolActionBar(
                 backdrop = pageBackdrop,
-                icon = appLucideConfigIcon(),
-                contentDescription = stringResource(R.string.ba_calendar_pool_cd_data_settings),
-                onClick = { calendarPoolViewModel.updateDataSettingsSheetVisible(true) },
-                width = 52.dp,
-                height = 52.dp,
-                variant = GlassVariant.Bar,
-                iconTint = MiuixTheme.colorScheme.primary,
-            )
-            AppLiquidIconButton(
-                backdrop = pageBackdrop,
-                icon = appLucideRefreshIcon(),
-                contentDescription = stringResource(R.string.ba_pool_cd_refresh),
-                onClick = calendarPoolViewModel::requestPoolReload,
-                iconModifier =
-                    Modifier.graphicsLayer {
-                        rotationZ = refreshIconRotation
-                    },
-                width = 52.dp,
-                height = 52.dp,
-                variant = GlassVariant.Bar,
-                iconTint =
-                    if (poolUiState.loading || poolUiState.refreshing) {
-                        countdownBlue
-                    } else {
-                        MiuixTheme.colorScheme.primary
-                    },
+                settingsContentDescription = stringResource(R.string.ba_calendar_pool_cd_data_settings),
+                refreshContentDescription = stringResource(R.string.ba_pool_cd_refresh),
+                refreshing = poolUiState.loading || poolUiState.refreshing,
+                refreshIconRotation = refreshIconRotation,
+                refreshingTint = countdownBlue,
+                onOpenSettings = { calendarPoolViewModel.updateDataSettingsSheetVisible(true) },
+                onRefresh = calendarPoolViewModel::requestPoolReload,
             )
         },
     ) { innerPadding ->

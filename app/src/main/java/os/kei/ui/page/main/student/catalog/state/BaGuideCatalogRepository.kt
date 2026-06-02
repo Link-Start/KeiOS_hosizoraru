@@ -18,6 +18,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.buildBaGuideStudentBgmDisplayedModel
 import os.kei.ui.page.main.student.catalog.component.filterAndSortBgmFavorites
+import os.kei.ui.page.main.student.catalog.component.withResolvedCatalogStudentMetadata
 import os.kei.ui.page.main.student.catalog.fetchBaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.filterByCatalogFilters
 import os.kei.ui.page.main.student.catalog.filterByQuery
@@ -335,16 +336,22 @@ internal class BaGuideCatalogRepository(
         }
 
     suspend fun deriveFavoriteBgmListState(input: BaGuideFavoriteBgmListInput): BaGuideFavoriteBgmListDerivedState {
+        val favoritesWithCatalogMetadata =
+            withContext(parseDispatcher) {
+                input.favorites.map { favorite ->
+                    favorite.withResolvedCatalogStudentMetadata(input.catalog)
+                }
+            }
         val metadataIndex =
             withContext(ioDispatcher) {
                 runCatching {
-                    BaGuideBgmFavoriteMetadataIndex.build(input.favorites)
+                    BaGuideBgmFavoriteMetadataIndex.build(favoritesWithCatalogMetadata)
                 }.getOrDefault(BaGuideBgmFavoriteMetadataIndex.Empty)
             }
         return withContext(parseDispatcher) {
             val displayedFavorites =
                 filterAndSortBgmFavorites(
-                    favorites = input.favorites,
+                    favorites = favoritesWithCatalogMetadata,
                     searchQuery = input.searchQuery,
                     sortMode = input.sortMode,
                     metadataIndex = metadataIndex,

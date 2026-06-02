@@ -66,6 +66,7 @@ internal class BaGuideStudentBgmListInput(
 }
 
 internal class BaGuideFavoriteBgmListInput(
+    val catalog: BaGuideCatalogBundle,
     val favorites: List<GuideBgmFavoriteItem>,
     val searchQuery: String,
     val sortMode: BaGuideBgmFavoriteSortMode,
@@ -73,13 +74,15 @@ internal class BaGuideFavoriteBgmListInput(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         return other is BaGuideFavoriteBgmListInput &&
+            catalog === other.catalog &&
             favorites == other.favorites &&
             searchQuery == other.searchQuery &&
             sortMode == other.sortMode
     }
 
     override fun hashCode(): Int {
-        var result = favorites.hashCode()
+        var result = System.identityHashCode(catalog)
+        result = 31 * result + favorites.hashCode()
         result = 31 * result + searchQuery.hashCode()
         result = 31 * result + sortMode.hashCode()
         return result

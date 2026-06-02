@@ -119,6 +119,27 @@ internal fun buildBaGuideCatalogImagePreloadUrls(
     return urls.toList()
 }
 
+internal fun buildBaGuidePlaybackForegroundImageUrls(
+    artworkImageUrl: String,
+    playbackFavorite: GuideBgmFavoriteItem?,
+): List<String> {
+    val urls = linkedSetOf<String>()
+
+    fun addUrl(url: String) {
+        val normalized = url.trim()
+        if (normalized.isNotBlank()) {
+            urls.add(normalized)
+        }
+    }
+
+    addUrl(artworkImageUrl)
+    playbackFavorite?.let { favorite ->
+        addUrl(favorite.studentImageUrl)
+        addUrl(favorite.imageUrl)
+    }
+    return urls.toList()
+}
+
 private fun buildFairCatalogWarmupUrls(
     catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
     activeCatalogTab: BaGuideCatalogTab?,

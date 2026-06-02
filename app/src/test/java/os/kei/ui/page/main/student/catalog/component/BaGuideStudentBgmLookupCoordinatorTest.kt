@@ -63,6 +63,53 @@ class BaGuideStudentBgmLookupCoordinatorTest {
     }
 
     @Test
+    fun `visible network prewarm stores ready state when resolved`() = runBlocking {
+        var networkCalls = 0
+        val entry = catalogEntry(contentId = 21L)
+        val item = resolvedItem("visible.mp3")
+        val coordinator =
+            BaGuideStudentBgmLookupCoordinator(
+                scope = CoroutineScope(Dispatchers.Unconfined),
+                ioDispatcher = Dispatchers.Unconfined,
+                cachedLoader = { null },
+                networkLoader = {
+                    networkCalls += 1
+                    item
+                },
+            )
+
+        coordinator.prewarmVisibleNetwork(listOf(entry))
+
+        val ready =
+            assertIs<BaGuideStudentBgmLookupState.Ready>(
+                coordinator.states.value.getValue(entry.contentId),
+            )
+        assertEquals(item.favorite.audioUrl, ready.item.favorite.audioUrl)
+        assertEquals(1, networkCalls)
+    }
+
+    @Test
+    fun `visible network prewarm keeps idle state when unresolved`() = runBlocking {
+        var networkCalls = 0
+        val entry = catalogEntry(contentId = 22L)
+        val coordinator =
+            BaGuideStudentBgmLookupCoordinator(
+                scope = CoroutineScope(Dispatchers.Unconfined),
+                ioDispatcher = Dispatchers.Unconfined,
+                cachedLoader = { null },
+                networkLoader = {
+                    networkCalls += 1
+                    null
+                },
+            )
+
+        coordinator.prewarmVisibleNetwork(listOf(entry))
+
+        assertNull(coordinator.states.value[entry.contentId])
+        assertEquals(1, networkCalls)
+    }
+
+    @Test
     fun `resolve entry reuses ready state before loaders`() = runBlocking {
         var cacheCalls = 0
         var networkCalls = 0

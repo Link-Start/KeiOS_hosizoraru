@@ -94,11 +94,13 @@ internal fun BaGuideCatalogPageDerivedEffects(
     }
     LaunchedEffect(
         pageActions,
+        catalogDataState.catalog,
         favoriteBgms,
         pageState.favoriteBgmSearchQuery,
     ) {
         pageActions.onRequestFavoriteBgmListState(
             BaGuideFavoriteBgmListInput(
+                catalog = catalogDataState.catalog,
                 favorites = favoriteBgms,
                 searchQuery = pageState.favoriteBgmSearchQuery,
                 sortMode = BaGuideBgmFavoriteSortMode.Recent,

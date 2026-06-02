@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +50,8 @@ import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 
+private const val STUDENT_BGM_ENTRY_START_INDEX = 1
+
 @Composable
 internal fun BaGuideStudentBgmTabContent(
     catalogSyncedAtMs: Long,
@@ -56,6 +59,7 @@ internal fun BaGuideStudentBgmTabContent(
     derivedState: BaGuideStudentBgmListDerivedState,
     displayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
     onRequestDisplayedDerivedState: (BaGuideStudentBgmDisplayedInput) -> Unit,
+    onRequestVisibleImages: (List<String>) -> Unit,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     playbackState: BaGuideBgmPlaybackUiState,
     nowPlayingVisible: Boolean,
@@ -85,6 +89,7 @@ internal fun BaGuideStudentBgmTabContent(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
+    val requestVisibleImages by rememberUpdatedState(onRequestVisibleImages)
     val lookupCoordinator =
         remember(pageScope) {
             BaGuideStudentBgmLookupCoordinator(scope = pageScope)
@@ -146,6 +151,29 @@ internal fun BaGuideStudentBgmTabContent(
                 filteredEntries.subList(0, tabState.visibleCount)
             }
         }
+    LaunchedEffect(isPageActive, listState, displayedEntries, snapshotFlowManager, lookupCoordinator) {
+        if (!isPageActive) return@LaunchedEffect
+        snapshotFlowManager
+            .snapshotFlow {
+                listState.layoutInfo.visibleItemsInfo.map { item -> item.index }
+            }.distinctUntilChanged()
+            .collect { visibleItemIndices ->
+                val imageUrls =
+                    buildBaGuideCatalogVisibleImageRequestUrls(
+                        displayedEntries = displayedEntries,
+                        visibleItemIndices = visibleItemIndices,
+                        entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
+                    )
+                requestVisibleImages(imageUrls)
+                val prewarmEntries =
+                    buildBaGuideStudentBgmVisiblePrewarmEntries(
+                        displayedEntries = displayedEntries,
+                        visibleItemIndices = visibleItemIndices,
+                        entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
+                    )
+                lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)
+            }
+    }
 
     fun setNowPlayingVisible(visible: Boolean) {
         onNowPlayingVisibleChange(visible)
@@ -201,6 +229,20 @@ internal fun BaGuideStudentBgmTabContent(
     }
     val selectedIndex = displayedPlayableFavorites.indexOfFirst { it.audioUrl == selectedAudioUrl }
     val selectedFavorite = displayedPlayableFavorites.getOrNull(selectedIndex)
+    LaunchedEffect(
+        selectedFavorite?.audioUrl,
+        selectedFavorite?.studentImageUrl,
+        selectedFavorite?.imageUrl,
+    ) {
+        selectedFavorite?.let { favorite ->
+            requestVisibleImages(
+                listOf(
+                    favorite.studentImageUrl,
+                    favorite.imageUrl,
+                ),
+            )
+        }
+    }
     val showNowPlaying = showNowPlayingOverlay && selectedFavorite != null && nowPlayingVisible
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listBottomChromePadding =

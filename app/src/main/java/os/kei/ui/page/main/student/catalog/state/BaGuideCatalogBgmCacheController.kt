@@ -50,17 +50,40 @@ internal class BaGuideCatalogBgmCacheController(
     }
 
     fun cacheMissingBgms(favorites: List<GuideBgmFavoriteItem>) {
+        val current = mutableFavoriteBgmOfflineCacheState.value
+        val targetAudioUrls =
+            favorites
+                .map { favorite -> favorite.audioUrl }
+                .filter { audioUrl ->
+                    audioUrl.isNotBlank() &&
+                        audioUrl !in current.offlineAudioUrls &&
+                        audioUrl !in current.cachingAudioUrls
+                }
+                .toSet()
+        if (targetAudioUrls.isNotEmpty()) {
+            mutableFavoriteBgmOfflineCacheState.update { state ->
+                state.copy(cachingAudioUrls = state.cachingAudioUrls + targetAudioUrls)
+            }
+        }
         scope.launch {
-            val targetCount =
-                BaGuideFavoriteBgmCacheRepository.cacheMissingFavorites(
-                    context = appContext,
-                    favorites = favorites,
+            try {
+                val targetCount =
+                    BaGuideFavoriteBgmCacheRepository.cacheMissingFavorites(
+                        context = appContext,
+                        favorites = favorites,
+                    )
+                refreshBgmCacheStates(
+                    allFavorites = favoriteBgms.value,
+                    displayedFavorites = favoriteBgmOfflineCacheInput,
                 )
-            refreshBgmCacheStates(
-                allFavorites = favoriteBgms.value,
-                displayedFavorites = favoriteBgmOfflineCacheInput,
-            )
-            events.emit(BaGuideCatalogEvent.BgmCacheBatchDone(targetCount))
+                events.emit(BaGuideCatalogEvent.BgmCacheBatchDone(targetCount))
+            } finally {
+                if (targetAudioUrls.isNotEmpty()) {
+                    mutableFavoriteBgmOfflineCacheState.update { state ->
+                        state.copy(cachingAudioUrls = state.cachingAudioUrls - targetAudioUrls)
+                    }
+                }
+            }
         }
     }
 
@@ -109,11 +132,14 @@ internal class BaGuideCatalogBgmCacheController(
         if (audioUrl.isBlank()) return
         val current = mutableFavoriteBgmOfflineCacheState.value
         if (audioUrl in current.offlineAudioUrls) {
+            mutableFavoriteBgmOfflineCacheState.update { state ->
+                state.copy(
+                    offlineAudioUrls = state.offlineAudioUrls - audioUrl,
+                    cachingAudioUrls = state.cachingAudioUrls - audioUrl,
+                )
+            }
             scope.launch {
                 BaGuideFavoriteBgmCacheRepository.clearFavorite(appContext, favorite)
-                mutableFavoriteBgmOfflineCacheState.update { state ->
-                    state.copy(offlineAudioUrls = state.offlineAudioUrls - audioUrl)
-                }
                 refreshBgmCacheStates(
                     allFavorites = favoriteBgms.value,
                     displayedFavorites = displayedFavorites,

@@ -106,10 +106,39 @@ class BaGuideStudentBgmDisplayedModelTest {
         assertEquals(2, model.resolvedCount)
     }
 
+    @Test
+    fun `displayed model fills favorite fallback artwork from entry`() {
+        val entry =
+            catalogEntry(
+                contentId = 8L,
+                name = "Aris",
+                order = 1,
+                iconUrl = "https://example.com/aris.png",
+            )
+        val favorite =
+            favorite(sourceUrl = entry.detailUrl)
+                .copy(studentTitle = "", studentImageUrl = "", imageUrl = "")
+
+        val model =
+            buildBaGuideStudentBgmDisplayedModel(
+                displayedEntries = listOf(entry),
+                lookupStates = emptyMap(),
+                favoriteByNormalizedSourceUrl = mapOf(entry.detailUrl to favorite),
+                favoriteAudioUrls = setOf(favorite.audioUrl),
+            )
+
+        val playableFavorite = model.playableFavorites.single()
+        assertEquals(entry.name, playableFavorite.studentTitle)
+        assertEquals(entry.iconUrl, playableFavorite.studentImageUrl)
+        assertEquals(entry.iconUrl, playableFavorite.imageUrl)
+        assertEquals(playableFavorite.audioUrl, model.rows.single().readyAudioUrl)
+    }
+
     private fun catalogEntry(
         contentId: Long,
         name: String,
         order: Int,
+        iconUrl: String = "",
     ): BaGuideCatalogEntry =
         BaGuideCatalogEntry(
             entryId = contentId.toInt(),
@@ -118,7 +147,7 @@ class BaGuideStudentBgmDisplayedModelTest {
             name = name,
             alias = "",
             aliasDisplay = "",
-            iconUrl = "",
+            iconUrl = iconUrl,
             type = 0,
             order = order,
             createdAtSec = 0L,

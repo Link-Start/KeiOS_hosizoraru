@@ -40,6 +40,7 @@ internal fun favoriteForStudentBgmEntry(
     val detailUrl = normalizeGuideUrl(entry.detailUrl)
     if (detailUrl.isBlank()) return null
     return favoriteByNormalizedSourceUrl[detailUrl]
+        ?.withCatalogEntryStudentMetadata(entry)
 }
 
 internal fun studentBgmStateWithFavoriteFallback(

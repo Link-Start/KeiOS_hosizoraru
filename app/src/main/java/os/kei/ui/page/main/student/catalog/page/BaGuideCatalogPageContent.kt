@@ -16,7 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -100,6 +103,21 @@ internal fun BaGuideCatalogPageContent(
     val keyboardLiftProvider = remember(keyboardLiftState) { { keyboardLiftState.value } }
     val catalogSortMode = filterSortState.sortMode
     val catalogSelectedFilterOptions = filterSortState.selectedFilterOptions
+    val requestVisibleCatalogImages by rememberUpdatedState(onRequestVisibleCatalogImages)
+    val playbackForegroundImageUrls =
+        remember(
+            chromePresentation.artworkImageUrl,
+            chromePresentation.playbackFavorite,
+        ) {
+            buildBaGuidePlaybackForegroundImageUrls(
+                artworkImageUrl = chromePresentation.artworkImageUrl,
+                playbackFavorite = chromePresentation.playbackFavorite,
+            )
+        }
+
+    LaunchedEffect(playbackForegroundImageUrls) {
+        requestVisibleCatalogImages(playbackForegroundImageUrls)
+    }
 
     BackHandler(enabled = pageState.searchVisible) {
         pageState.closeSearch()

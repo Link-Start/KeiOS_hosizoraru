@@ -10,12 +10,50 @@ internal fun GuideBgmFavoriteItem.resolveStudentArtworkImageUrl(
 ): String {
     return sequenceOf(
         studentImageUrl,
-        resolveCatalogEntryArtworkImageUrl(catalog),
+        resolveCatalogEntry(catalog)?.iconUrl.orEmpty(),
         imageUrl
     )
         .map { it.trim() }
         .firstOrNull { it.isNotBlank() }
         .orEmpty()
+}
+
+internal fun GuideBgmFavoriteItem.withResolvedCatalogStudentMetadata(
+    catalog: BaGuideCatalogBundle
+): GuideBgmFavoriteItem = withCatalogEntryStudentMetadata(resolveCatalogEntry(catalog))
+
+internal fun GuideBgmFavoriteItem.withCatalogEntryStudentMetadata(
+    entry: BaGuideCatalogEntry?
+): GuideBgmFavoriteItem {
+    if (entry == null) return this
+    val entryName = entry.name.trim()
+    val entryIconUrl = entry.iconUrl.trim()
+    val entryDetailUrl = entry.detailUrl.trim()
+    if (
+        entryName.isBlank() &&
+        entryIconUrl.isBlank() &&
+        entryDetailUrl.isBlank()
+    ) {
+        return this
+    }
+    val resolvedStudentImageUrl = studentImageUrl.ifBlank { entryIconUrl }
+    val resolvedImageUrl = imageUrl.ifBlank { resolvedStudentImageUrl.ifBlank { entryIconUrl } }
+    val resolvedStudentTitle = studentTitle.ifBlank { entryName }
+    val resolvedSourceUrl = sourceUrl.ifBlank { entryDetailUrl }
+    if (
+        resolvedStudentImageUrl == studentImageUrl &&
+        resolvedImageUrl == imageUrl &&
+        resolvedStudentTitle == studentTitle &&
+        resolvedSourceUrl == sourceUrl
+    ) {
+        return this
+    }
+    return copy(
+        studentTitle = resolvedStudentTitle,
+        studentImageUrl = resolvedStudentImageUrl,
+        imageUrl = resolvedImageUrl,
+        sourceUrl = resolvedSourceUrl,
+    )
 }
 
 internal fun GuideBgmFavoriteItem.resolvePlaybackArtworkImageUrl(): String {
@@ -25,11 +63,11 @@ internal fun GuideBgmFavoriteItem.resolvePlaybackArtworkImageUrl(): String {
         .orEmpty()
 }
 
-private fun GuideBgmFavoriteItem.resolveCatalogEntryArtworkImageUrl(
+private fun GuideBgmFavoriteItem.resolveCatalogEntry(
     catalog: BaGuideCatalogBundle
-): String {
+): BaGuideCatalogEntry? {
     val contentId = extractGuideContentIdFromUrl(sourceUrl)
-    val matchedEntry = catalog.entriesByTab.values
+    return catalog.entriesByTab.values
         .asSequence()
         .flatten()
         .firstOrNull { entry ->
@@ -43,7 +81,6 @@ private fun GuideBgmFavoriteItem.resolveCatalogEntryArtworkImageUrl(
             .asSequence()
             .flatten()
             .firstOrNull { entry -> entry.matchesFavoriteStudentName(this) }
-    return matchedEntry?.iconUrl.orEmpty()
 }
 
 private fun BaGuideCatalogEntry.matchesFavoriteStudentName(

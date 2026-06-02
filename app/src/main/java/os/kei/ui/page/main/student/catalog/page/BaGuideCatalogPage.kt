@@ -26,6 +26,7 @@ import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.student.catalog.component.LocalBaGuideCatalogImageBitmaps
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
+import os.kei.ui.page.main.student.catalog.component.withResolvedCatalogStudentMetadata
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
@@ -140,10 +141,16 @@ fun BaGuideCatalogPage(
     )
     val chromeTabs = rememberBaGuideCatalogChromeTabs()
     val chromeScrollState = rememberBaGuideBgmBottomChromeScrollState()
+    val playbackFavorites =
+        remember(routeState.favoriteBgms, routeState.catalogDataState.catalog) {
+            routeState.favoriteBgms.map { favorite ->
+                favorite.withResolvedCatalogStudentMetadata(routeState.catalogDataState.catalog)
+            }
+        }
     val playbackCoordinator =
         rememberBaGuideBgmPlaybackCoordinator(
             context = appContext,
-            favorites = routeState.favoriteBgms,
+            favorites = playbackFavorites,
             nativeMediaNotificationEnabled = routeState.nativeBgmMediaNotificationEnabled,
         )
     val playbackSessionState by playbackCoordinator.sessionState.collectAsStateWithLifecycle()

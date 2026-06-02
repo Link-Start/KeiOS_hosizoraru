@@ -150,6 +150,7 @@ private fun BaGuideCatalogPageTabContent(
                 derivedState = studentBgmListDerivedState,
                 displayedDerivedState = studentBgmDisplayedDerivedState,
                 onRequestDisplayedDerivedState = pageActions.onRequestStudentBgmDisplayedState,
+                onRequestVisibleImages = onRequestVisibleCatalogImages,
                 playbackCoordinator = playbackCoordinator,
                 playbackState = playbackUiState,
                 nowPlayingVisible = pageState.studentBgmNowPlayingVisible,
@@ -204,6 +205,7 @@ private fun BaGuideCatalogPageTabContent(
                 onRemoveBgmFavorite = pageActions.onRemoveBgmFavorite,
                 onRequestOfflineCache = pageActions.onRequestFavoriteBgmOfflineCache,
                 onToggleFavoriteCache = pageActions.onToggleFavoriteBgmOfflineCache,
+                onRequestVisibleImages = onRequestVisibleCatalogImages,
                 onOpenGuide = onOpenGuide,
                 onRequestGuideDetailTab = pageActions.onRequestGuideDetailTab,
             )

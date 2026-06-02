@@ -22,6 +22,9 @@ import kotlin.coroutines.cancellation.CancellationException
 
 private const val BGM_CACHE_PREWARM_BATCH_SIZE = 32
 private const val BGM_CACHE_PREWARM_PARALLELISM = 4
+private const val BGM_VISIBLE_NETWORK_PREWARM_LIMIT = 8
+private const val BGM_VISIBLE_NETWORK_PREWARM_BATCH_SIZE = 4
+private const val BGM_VISIBLE_NETWORK_PREWARM_PARALLELISM = 2
 
 internal class BaGuideStudentBgmLookupCoordinator(
     private val scope: CoroutineScope,
@@ -44,6 +47,8 @@ internal class BaGuideStudentBgmLookupCoordinator(
 
     private var cachePrewarmJob: Job? = null
     private val cachePrewarmCheckedContentIds = mutableSetOf<Long>()
+    private var visibleNetworkPrewarmJob: Job? = null
+    private val visibleNetworkPrewarmCheckedContentIds = mutableSetOf<Long>()
     private val pendingResolveLock = Any()
     private val pendingResolveCallbacksByContentId =
         mutableMapOf<Long, MutableList<(BaGuideStudentBgmResolvedItem?) -> Unit>>()
@@ -51,7 +56,9 @@ internal class BaGuideStudentBgmLookupCoordinator(
 
     fun clear() {
         cachePrewarmJob?.cancel()
+        visibleNetworkPrewarmJob?.cancel()
         cachePrewarmCheckedContentIds.clear()
+        visibleNetworkPrewarmCheckedContentIds.clear()
         synchronized(pendingResolveLock) {
             lookupGeneration++
             pendingResolveCallbacksByContentId.clear()
@@ -103,6 +110,55 @@ internal class BaGuideStudentBgmLookupCoordinator(
                 yield()
             }
         }
+    }
+
+    fun prewarmVisibleNetwork(entries: List<BaGuideCatalogEntry>) {
+        val currentStates = _states.value
+        val pendingEntries =
+            entries
+                .asSequence()
+                .filter { entry -> entry.contentId > 0L }
+                .distinctBy { entry -> entry.contentId }
+                .filter { entry ->
+                    entry.contentId !in visibleNetworkPrewarmCheckedContentIds &&
+                        currentStates[entry.contentId] !is BaGuideStudentBgmLookupState.Ready &&
+                        currentStates[entry.contentId] != BaGuideStudentBgmLookupState.Loading &&
+                        currentStates[entry.contentId] != BaGuideStudentBgmLookupState.Missing
+                }
+                .take(BGM_VISIBLE_NETWORK_PREWARM_LIMIT)
+                .toList()
+        if (pendingEntries.isEmpty()) return
+        visibleNetworkPrewarmJob?.cancel()
+        visibleNetworkPrewarmJob =
+            scope.launch {
+                val semaphore = Semaphore(BGM_VISIBLE_NETWORK_PREWARM_PARALLELISM)
+                pendingEntries.chunked(BGM_VISIBLE_NETWORK_PREWARM_BATCH_SIZE).forEach { batch ->
+                    currentCoroutineContext().ensureActive()
+                    val resolved =
+                        batch
+                            .map { entry ->
+                                async {
+                                    semaphore.withPermit {
+                                        val item =
+                                            runCatchingCancellable {
+                                                networkLoader(entry)
+                                            }.getOrNull()
+                                        entry.contentId to item
+                                    }
+                                }
+                            }.awaitAll()
+                    visibleNetworkPrewarmCheckedContentIds += batch.map { entry -> entry.contentId }
+                    val readyStates =
+                        resolved
+                            .mapNotNull { (contentId, item) ->
+                                item?.let { contentId to BaGuideStudentBgmLookupState.Ready(it) }
+                            }.toMap()
+                    if (readyStates.isNotEmpty()) {
+                        _states.update { states -> states + readyStates }
+                    }
+                    yield()
+                }
+            }
     }
 
     fun resolveEntry(

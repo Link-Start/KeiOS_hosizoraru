@@ -412,6 +412,7 @@ class BaGuideCatalogRepositoryTest {
             val result =
                 repository.deriveFavoriteBgmListState(
                     BaGuideFavoriteBgmListInput(
+                        catalog = BaGuideCatalogBundle.EMPTY,
                         favorites = listOf(older, newer),
                         searchQuery = "",
                         sortMode = BaGuideBgmFavoriteSortMode.Recent,
@@ -423,6 +424,49 @@ class BaGuideCatalogRepositoryTest {
             assertEquals(newer, result.favoritesByTrackId[newer.audioUrl])
             assertEquals(older, result.favoritesByTrackId[older.audioUrl])
             assertEquals(false, result.deriving)
+        }
+
+    @Test
+    fun `favorite bgm list derivation fills missing artwork from catalog`() =
+        runBlocking {
+            val entry =
+                catalogEntry(
+                    name = "阿露",
+                    tab = BaGuideCatalogTab.Student,
+                    order = 1,
+                )
+            val bundle =
+                BaGuideCatalogBundle(
+                    entriesByTab =
+                        mapOf(
+                            BaGuideCatalogTab.Student to listOf(entry),
+                            BaGuideCatalogTab.NpcSatellite to emptyList(),
+                        ),
+                    syncedAtMs = 4_000L,
+                )
+            val favorite =
+                bgmFavorite(
+                    sourceUrl = entry.detailUrl,
+                    title = "Theme",
+                    studentTitle = "",
+                )
+            val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
+
+            val result =
+                repository.deriveFavoriteBgmListState(
+                    BaGuideFavoriteBgmListInput(
+                        catalog = bundle,
+                        favorites = listOf(favorite),
+                        searchQuery = "",
+                        sortMode = BaGuideBgmFavoriteSortMode.Recent,
+                    ),
+                )
+
+            val displayedFavorite = result.displayedFavorites.single()
+            assertEquals(entry.name, displayedFavorite.studentTitle)
+            assertEquals(entry.iconUrl, displayedFavorite.studentImageUrl)
+            assertEquals(entry.iconUrl, displayedFavorite.imageUrl)
+            assertEquals(displayedFavorite, result.favoritesByTrackId.getValue(favorite.audioUrl))
         }
 
     @Test

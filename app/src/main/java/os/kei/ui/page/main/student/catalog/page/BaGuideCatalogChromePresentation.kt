@@ -13,6 +13,7 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
+import os.kei.ui.page.main.student.catalog.component.withResolvedCatalogStudentMetadata
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
 
 @Stable
@@ -63,8 +64,10 @@ internal fun rememberBaGuideCatalogChromePresentation(
             playbackUiState.selectedAudioUrl,
             playbackUiState.queue,
             playbackUiState.favorites,
+            catalogDataState.catalog,
         ) {
             playbackUiState.selectedFavorite
+                ?.withResolvedCatalogStudentMetadata(catalogDataState.catalog)
         }
     val artworkImageUrl =
         remember(playbackFavorite, catalogDataState.catalog) {

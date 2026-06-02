@@ -101,10 +101,26 @@ internal class BaAccountStore(
             account.copy(runtime = transform(account.runtime).normalized())
         }
 
+    fun updateAccountRuntime(
+        accountId: BaAccountId,
+        transform: (BaAccountRuntime) -> BaAccountRuntime,
+    ): Boolean =
+        updateAccountRecord(accountId) { account ->
+            account.copy(runtime = transform(account.runtime).normalized())
+        }
+
     fun updateActiveAccountReminderRuntime(
         transform: (BaAccountReminderRuntime) -> BaAccountReminderRuntime,
     ): Boolean =
         updateActiveAccountRecord { account ->
+            account.copy(reminderRuntime = transform(account.reminderRuntime).normalized())
+        }
+
+    fun updateAccountReminderRuntime(
+        accountId: BaAccountId,
+        transform: (BaAccountReminderRuntime) -> BaAccountReminderRuntime,
+    ): Boolean =
+        updateAccountRecord(accountId) { account ->
             account.copy(reminderRuntime = transform(account.reminderRuntime).normalized())
         }
 
@@ -186,10 +202,32 @@ internal class BaAccountStore(
     private fun updateActiveAccountRecord(transform: (BaAccountRecord) -> BaAccountRecord): Boolean {
         val current = loadAccounts()
         val activeAccountId = resolveActiveAccountId(current) ?: return false
+        return updateAccountRecord(
+            accounts = current,
+            accountId = activeAccountId,
+            transform = transform,
+        )
+    }
+
+    private fun updateAccountRecord(
+        accountId: BaAccountId,
+        transform: (BaAccountRecord) -> BaAccountRecord,
+    ): Boolean =
+        updateAccountRecord(
+            accounts = loadAccounts(),
+            accountId = accountId,
+            transform = transform,
+        )
+
+    private fun updateAccountRecord(
+        accounts: List<BaAccountRecord>,
+        accountId: BaAccountId,
+        transform: (BaAccountRecord) -> BaAccountRecord,
+    ): Boolean {
         var changed = false
         val updated =
-            current.map { account ->
-                if (account.profile.id != activeAccountId) {
+            accounts.map { account ->
+                if (account.profile.id != accountId) {
                     account
                 } else {
                     changed = true
@@ -197,7 +235,7 @@ internal class BaAccountStore(
                     transformed.copy(
                         profile =
                             transformed.profile.copy(
-                                id = activeAccountId,
+                                id = accountId,
                             ),
                     )
                 }

@@ -11,6 +11,7 @@ import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
+import os.kei.ui.page.main.ba.BaAccountNotificationKind
 import os.kei.ui.page.main.ba.BaApNotificationDispatcher
 import os.kei.ui.page.main.ba.BaApReminderPlan
 import os.kei.ui.page.main.ba.BaArenaRefreshNotificationDispatcher
@@ -20,6 +21,8 @@ import os.kei.ui.page.main.ba.BaCafeVisitNotificationDispatcher
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import os.kei.ui.page.main.ba.BaSlotReminderPlan
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountReminderSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 object AppForegroundInfoHandler {
@@ -144,85 +147,127 @@ object AppForegroundInfoHandler {
 
     suspend fun handleBaApTick(context: Context) {
         baApTickMutex.withLock {
-            val snapshot = withContext(AppDispatchers.mcpServer) { BASettingsStore.loadSnapshot() }
-            val shouldHandleApNotify = snapshot.apNotifyEnabled
-            val shouldHandleCafeApNotify = snapshot.cafeApNotifyEnabled
-            val shouldHandleArenaRefreshNotify = snapshot.arenaRefreshNotifyEnabled
-            val shouldHandleCafeVisitNotify = snapshot.cafeVisitNotifyEnabled
-            if (!shouldHandleApNotify &&
-                !shouldHandleCafeApNotify &&
-                !shouldHandleArenaRefreshNotify &&
-                !shouldHandleCafeVisitNotify
-            ) {
+            val reminderSnapshots =
                 withContext(AppDispatchers.mcpServer) {
-                    BASettingsStore.saveApLastNotifiedLevel(-1)
-                    BASettingsStore.saveCafeApLastNotifiedLevel(-1)
-                    BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
-                    BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
+                    BASettingsStore.loadReminderSnapshots()
                 }
+            if (!AppBackgroundSchedulePolicy.hasEnabledBaReminder(reminderSnapshots.map { it.snapshot })) {
+                resetReminderRuntimeForAccounts(reminderSnapshots)
                 return
             }
 
             val nowMs = System.currentTimeMillis()
-            if (shouldHandleApNotify) {
-                handleBaApThresholdTick(context = context, snapshot = snapshot, nowMs = nowMs)
-            } else {
-                withContext(AppDispatchers.mcpServer) {
-                    BASettingsStore.saveApLastNotifiedLevel(-1)
-                }
+            reminderSnapshots.forEach { reminderSnapshot ->
+                handleBaReminderTick(
+                    context = context,
+                    reminderSnapshot = reminderSnapshot,
+                    nowMs = nowMs,
+                )
             }
+        }
+    }
 
-            if (shouldHandleCafeApNotify) {
-                handleBaCafeApThresholdTick(context = context, snapshot = snapshot, nowMs = nowMs)
-            } else {
-                withContext(AppDispatchers.mcpServer) {
-                    BASettingsStore.saveCafeApLastNotifiedLevel(-1)
-                }
+    private suspend fun resetReminderRuntimeForAccounts(reminderSnapshots: List<BaAccountReminderSnapshot>) {
+        withContext(AppDispatchers.mcpServer) {
+            BASettingsStore.resetReminderRuntimeForAccounts(reminderSnapshots.map { it.accountId })
+        }
+    }
+
+    private suspend fun handleBaReminderTick(
+        context: Context,
+        reminderSnapshot: BaAccountReminderSnapshot,
+        nowMs: Long,
+    ) {
+        val accountId = reminderSnapshot.accountId
+        val snapshot = reminderSnapshot.snapshot
+
+        if (snapshot.apNotifyEnabled) {
+            handleBaApThresholdTick(
+                context = context,
+                accountId = accountId,
+                snapshot = snapshot,
+                nowMs = nowMs,
+            )
+        } else {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountApLastNotifiedLevel(accountId, -1)
             }
+        }
 
-            if (shouldHandleArenaRefreshNotify) {
-                handleBaArenaRefreshTick(context = context, snapshot = snapshot, nowMs = nowMs)
-            } else {
-                withContext(AppDispatchers.mcpServer) {
-                    BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L)
-                }
+        if (snapshot.cafeApNotifyEnabled) {
+            handleBaCafeApThresholdTick(
+                context = context,
+                accountId = accountId,
+                snapshot = snapshot,
+                nowMs = nowMs,
+            )
+        } else {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountCafeApLastNotifiedLevel(accountId, -1)
             }
+        }
 
-            if (shouldHandleCafeVisitNotify) {
-                handleBaCafeVisitTick(context = context, snapshot = snapshot, nowMs = nowMs)
-            } else {
-                withContext(AppDispatchers.mcpServer) {
-                    BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L)
-                }
+        if (snapshot.arenaRefreshNotifyEnabled) {
+            handleBaArenaRefreshTick(
+                context = context,
+                accountId = accountId,
+                snapshot = snapshot,
+                nowMs = nowMs,
+            )
+        } else {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountArenaRefreshLastNotifiedSlotMs(accountId, 0L)
+            }
+        }
+
+        if (snapshot.cafeVisitNotifyEnabled) {
+            handleBaCafeVisitTick(
+                context = context,
+                accountId = accountId,
+                snapshot = snapshot,
+                nowMs = nowMs,
+            )
+        } else {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountCafeVisitLastNotifiedSlotMs(accountId, 0L)
             }
         }
     }
 
     private suspend fun handleBaCafeApThresholdTick(
         context: Context,
+        accountId: BaAccountId,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
         val plan = BaReminderCoordinator.evaluateCafeApThreshold(snapshot = snapshot, nowMs = nowMs)
-        persistBaCafeApReminderPlan(plan)
+        persistBaCafeApReminderPlan(accountId = accountId, plan = plan)
         val notification = plan.notification ?: return
         val sent = BaCafeApNotificationDispatcher.send(
             context = context,
             currentDisplay = notification.currentDisplay,
             limitDisplay = notification.limitDisplay,
-            thresholdDisplay = notification.thresholdDisplay
+            thresholdDisplay = notification.thresholdDisplay,
+            notificationId = BaAccountNotificationKind.CafeAp.notificationId(accountId),
         )
         if (sent) {
             withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveCafeApLastNotifiedLevel(notification.currentDisplay)
+                BASettingsStore.saveAccountCafeApLastNotifiedLevel(
+                    accountId = accountId,
+                    level = notification.currentDisplay,
+                )
             }
         }
     }
 
-    private suspend fun persistBaCafeApReminderPlan(plan: BaCafeApReminderPlan) {
+    private suspend fun persistBaCafeApReminderPlan(
+        accountId: BaAccountId,
+        plan: BaCafeApReminderPlan,
+    ) {
         if (plan.shouldSaveCafe) {
             withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveBaRuntimeState(
+                BASettingsStore.saveAccountBaRuntimeState(
+                    accountId = accountId,
                     cafeStoredAp = plan.nextStoredAp,
                     cafeLastHourMs = plan.nextCafeLastHourMs,
                     notifyHomeOverview = false,
@@ -231,36 +276,48 @@ object AppForegroundInfoHandler {
         }
         if (plan.resetLastNotifiedLevel) {
             withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveCafeApLastNotifiedLevel(-1)
+                BASettingsStore.saveAccountCafeApLastNotifiedLevel(
+                    accountId = accountId,
+                    level = -1,
+                )
             }
         }
     }
 
     private suspend fun handleBaApThresholdTick(
         context: Context,
+        accountId: BaAccountId,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
         val plan = BaReminderCoordinator.evaluateApThreshold(snapshot = snapshot, nowMs = nowMs)
-        persistBaApReminderPlan(plan)
+        persistBaApReminderPlan(accountId = accountId, plan = plan)
         val notification = plan.notification ?: return
         val sent = BaApNotificationDispatcher.send(
             context = context,
             currentDisplay = notification.currentDisplay,
             limitDisplay = notification.limitDisplay,
-            thresholdDisplay = notification.thresholdDisplay
+            thresholdDisplay = notification.thresholdDisplay,
+            notificationId = BaAccountNotificationKind.Ap.notificationId(accountId),
         )
         if (sent) {
             withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveApLastNotifiedLevel(notification.currentDisplay)
+                BASettingsStore.saveAccountApLastNotifiedLevel(
+                    accountId = accountId,
+                    level = notification.currentDisplay,
+                )
             }
         }
     }
 
-    private suspend fun persistBaApReminderPlan(plan: BaApReminderPlan) {
+    private suspend fun persistBaApReminderPlan(
+        accountId: BaAccountId,
+        plan: BaApReminderPlan,
+    ) {
         if (plan.shouldSaveAp) {
             withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveBaRuntimeState(
+                BASettingsStore.saveAccountBaRuntimeState(
+                    accountId = accountId,
                     apCurrent = plan.nextAp,
                     apRegenBaseMs = plan.nextApRegenBaseMs,
                     notifyHomeOverview = false,
@@ -269,34 +326,45 @@ object AppForegroundInfoHandler {
         }
         if (plan.resetLastNotifiedLevel) {
             withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveApLastNotifiedLevel(-1)
+                BASettingsStore.saveAccountApLastNotifiedLevel(
+                    accountId = accountId,
+                    level = -1,
+                )
             }
         }
     }
 
     private suspend fun handleBaCafeVisitTick(
         context: Context,
+        accountId: BaAccountId,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
         when (val plan = BaReminderCoordinator.evaluateCafeVisit(snapshot = snapshot, nowMs = nowMs)) {
             BaSlotReminderPlan.None -> Unit
             BaSlotReminderPlan.Reset -> {
-                withContext(AppDispatchers.mcpServer) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(0L) }
+                withContext(AppDispatchers.mcpServer) {
+                    BASettingsStore.saveAccountCafeVisitLastNotifiedSlotMs(accountId, 0L)
+                }
             }
 
             is BaSlotReminderPlan.SeedBaseline -> {
-                withContext(AppDispatchers.mcpServer) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(plan.slotMs) }
+                withContext(AppDispatchers.mcpServer) {
+                    BASettingsStore.saveAccountCafeVisitLastNotifiedSlotMs(accountId, plan.slotMs)
+                }
             }
 
             is BaSlotReminderPlan.Notify -> {
                 val sent = BaCafeVisitNotificationDispatcher.send(
                     context = context,
                     serverIndex = snapshot.serverIndex,
-                    slotMs = plan.slotMs
+                    slotMs = plan.slotMs,
+                    notificationId = BaAccountNotificationKind.CafeVisit.notificationId(accountId),
                 )
                 if (sent) {
-                    withContext(AppDispatchers.mcpServer) { BASettingsStore.saveCafeVisitLastNotifiedSlotMs(plan.slotMs) }
+                    withContext(AppDispatchers.mcpServer) {
+                        BASettingsStore.saveAccountCafeVisitLastNotifiedSlotMs(accountId, plan.slotMs)
+                    }
                 }
             }
         }
@@ -304,27 +372,35 @@ object AppForegroundInfoHandler {
 
     private suspend fun handleBaArenaRefreshTick(
         context: Context,
+        accountId: BaAccountId,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
         when (val plan = BaReminderCoordinator.evaluateArenaRefresh(snapshot = snapshot, nowMs = nowMs)) {
             BaSlotReminderPlan.None -> Unit
             BaSlotReminderPlan.Reset -> {
-                withContext(AppDispatchers.mcpServer) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(0L) }
+                withContext(AppDispatchers.mcpServer) {
+                    BASettingsStore.saveAccountArenaRefreshLastNotifiedSlotMs(accountId, 0L)
+                }
             }
 
             is BaSlotReminderPlan.SeedBaseline -> {
-                withContext(AppDispatchers.mcpServer) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(plan.slotMs) }
+                withContext(AppDispatchers.mcpServer) {
+                    BASettingsStore.saveAccountArenaRefreshLastNotifiedSlotMs(accountId, plan.slotMs)
+                }
             }
 
             is BaSlotReminderPlan.Notify -> {
                 val sent = BaArenaRefreshNotificationDispatcher.send(
                     context = context,
                     serverIndex = snapshot.serverIndex,
-                    slotMs = plan.slotMs
+                    slotMs = plan.slotMs,
+                    notificationId = BaAccountNotificationKind.ArenaRefresh.notificationId(accountId),
                 )
                 if (sent) {
-                    withContext(AppDispatchers.mcpServer) { BASettingsStore.saveArenaRefreshLastNotifiedSlotMs(plan.slotMs) }
+                    withContext(AppDispatchers.mcpServer) {
+                        BASettingsStore.saveAccountArenaRefreshLastNotifiedSlotMs(accountId, plan.slotMs)
+                    }
                 }
             }
         }

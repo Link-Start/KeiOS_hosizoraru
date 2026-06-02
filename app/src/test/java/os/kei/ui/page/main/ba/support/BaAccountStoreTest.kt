@@ -97,6 +97,37 @@ class BaAccountStoreTest {
     }
 
     @Test
+    fun `runtime updates target account by id`() {
+        val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
+        store.saveAccounts(
+            listOf(
+                testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                testAccount(id = "cn-alt", serverIndex = 0, sortOrder = 1),
+            ),
+        )
+
+        assertTrue(
+            store.updateAccountRuntime(BaAccountId("cn-main")) { runtime ->
+                runtime.copy(
+                    apCurrent = 90.0,
+                    cafeStoredAp = 45.0,
+                )
+            },
+        )
+        assertFalse(
+            store.updateAccountRuntime(BaAccountId("missing")) { runtime ->
+                runtime.copy(apCurrent = 1.0)
+            },
+        )
+
+        val accounts = store.loadAccounts()
+        assertEquals(90.0, accounts[0].runtime.apCurrent)
+        assertEquals(45.0, accounts[0].runtime.cafeStoredAp)
+        assertEquals(DEFAULT_AP_CURRENT, accounts[1].runtime.apCurrent)
+        assertEquals(DEFAULT_CAFE_STORED_AP, accounts[1].runtime.cafeStoredAp)
+    }
+
+    @Test
     fun `profile updates only active account and keeps account id stable`() {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(
@@ -160,6 +191,37 @@ class BaAccountStoreTest {
         assertEquals(130, accounts[1].reminderRuntime.cafeApLastNotifiedLevel)
         assertEquals(4000L, accounts[1].reminderRuntime.arenaRefreshLastNotifiedSlotMs)
         assertEquals(5000L, accounts[1].reminderRuntime.cafeVisitLastNotifiedSlotMs)
+    }
+
+    @Test
+    fun `reminder runtime updates target account by id`() {
+        val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
+        store.saveAccounts(
+            listOf(
+                testAccount(id = "global-main", serverIndex = 1, sortOrder = 0),
+                testAccount(id = "global-alt", serverIndex = 1, sortOrder = 1),
+            ),
+        )
+
+        assertTrue(
+            store.updateAccountReminderRuntime(BaAccountId("global-main")) { runtime ->
+                runtime.copy(
+                    apLastNotifiedLevel = 111,
+                    cafeVisitLastNotifiedSlotMs = 6_000L,
+                )
+            },
+        )
+        assertFalse(
+            store.updateAccountReminderRuntime(BaAccountId("missing")) { runtime ->
+                runtime.copy(apLastNotifiedLevel = 1)
+            },
+        )
+
+        val accounts = store.loadAccounts()
+        assertEquals(111, accounts[0].reminderRuntime.apLastNotifiedLevel)
+        assertEquals(6_000L, accounts[0].reminderRuntime.cafeVisitLastNotifiedSlotMs)
+        assertEquals(-1, accounts[1].reminderRuntime.apLastNotifiedLevel)
+        assertEquals(0L, accounts[1].reminderRuntime.cafeVisitLastNotifiedSlotMs)
     }
 
     @Test

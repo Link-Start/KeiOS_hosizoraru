@@ -7,24 +7,31 @@ internal fun BaPageSnapshot.withActiveBaAccount(
         accountState.accounts.firstOrNull { account ->
             account.profile.id == accountState.activeAccountId
         } ?: return this
-    val runtime = activeAccount.runtime.normalized()
-    val reminderRuntime = activeAccount.reminderRuntime.normalized()
+    return withBaAccount(accountState = accountState, account = activeAccount)
+}
+
+internal fun BaPageSnapshot.withBaAccount(
+    accountState: BaAccountStoreSnapshot,
+    account: BaAccountRecord,
+): BaPageSnapshot {
+    val runtime = account.runtime.normalized()
+    val reminderRuntime = account.reminderRuntime.normalized()
     val reminderSettings =
-        activeAccount.effectiveReminderSettings(
+        account.effectiveReminderSettings(
             globalSettings = accountState.globalReminderSettings,
             allAccountsFollowGlobalNotificationSettings =
                 accountState.allAccountsFollowGlobalNotificationSettings,
         )
     return copy(
-        serverIndex = activeAccount.profile.serverIndex.coerceIn(0, 2),
+        serverIndex = account.profile.serverIndex.coerceIn(0, 2),
         cafeLevel = runtime.cafeLevel,
         cafeStoredAp = runtime.cafeStoredAp,
         cafeLastHourMs = runtime.cafeLastHourMs,
         cafeApNotifyEnabled = reminderSettings.cafeApNotifyEnabled,
         cafeApNotifyThreshold = reminderSettings.cafeApNotifyThreshold,
         cafeApLastNotifiedLevel = reminderRuntime.cafeApLastNotifiedLevel,
-        idNickname = activeAccount.profile.nickname,
-        idFriendCode = activeAccount.profile.friendCode,
+        idNickname = account.profile.nickname,
+        idFriendCode = account.profile.friendCode,
         idIndependentByServer = false,
         apLimit = runtime.apLimit,
         apCurrent = runtime.apCurrent,

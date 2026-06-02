@@ -88,6 +88,12 @@ internal data class BaAccountStoreSnapshot(
     val globalReminderSettings: BaGlobalReminderSettings,
 )
 
+internal data class BaAccountReminderSnapshot(
+    val accountId: BaAccountId,
+    val displayName: String,
+    val snapshot: BaPageSnapshot,
+)
+
 internal fun sanitizeBaAccountNickname(name: String): String =
     name.trim().take(10).ifEmpty { BA_DEFAULT_NICKNAME }
 

@@ -126,10 +126,10 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | Phase | Status | Deliverables | Verification |
 |---|---|---|---|
 | P0 Plan document | Done | This md file | Commit exists |
-| P1 Account backend foundation | Pending | Account models, store, repository, migration, account tests | Targeted unit tests |
-| P2 Active account compatibility | Pending | `BASettingsStore.loadSnapshot()` and BA repositories read active account snapshot | Existing BA tests plus new active-account tests |
-| P3 Account-scoped runtime writes | Pending | Runtime persistence update carries account id, AP/cafe/cooldown writes target active account | Runtime tests |
-| P4 Multi-account reminders | Pending | Background reminder service scans all enabled accounts, uses scoped notification ids | Reminder service tests and scheduler tests |
+| P1 Account backend foundation | Done | Account models, store, repository, migration, account tests | Targeted unit tests |
+| P2 Active account compatibility | Done | `BASettingsStore.loadSnapshot()` and BA repositories read active account snapshot | Existing BA tests plus new active-account tests |
+| P3 Account-scoped runtime writes | Done | Runtime persistence update carries account id, AP/cafe/cooldown writes target active account | Runtime tests |
+| P4 Multi-account reminders | Done | Background reminder service scans all enabled accounts, uses scoped notification ids | Reminder service tests and scheduler tests |
 | P5 Server-scoped calendar/pool sync cleanup | Pending | Distinct server sync for enabled accounts, server-scoped notified keys | Calendar/pool notification tests |
 | P6 Settings migration | Pending | BA settings sheet becomes global reminder/media settings; data sync/display moved to data pages | UI compile and targeted tests |
 | P7 Account UI bridge | Pending | Account pager card, account management sheet, AP card split | AVD navigation and state checks |
@@ -190,4 +190,3 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | BA Page account switching updates AP and cafe cards | AVD smoke |
 | Vertical dock opens Calendar, Pool, Catalog | AVD smoke |
 | Release and R8 path pass | `./gradlew :app:assembleRelease` |
-

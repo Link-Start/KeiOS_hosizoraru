@@ -137,6 +137,25 @@ internal object BASettingsStore {
     fun loadSnapshot(): BaPageSnapshot =
         loadBaSettingsSnapshot(kv()).withActiveBaAccount(loadAccountState())
 
+    fun loadReminderSnapshots(): List<BaAccountReminderSnapshot> {
+        val accountState = loadAccountState()
+        val baseSnapshot = loadBaSettingsSnapshot(kv())
+        return accountState
+            .accounts
+            .filter { it.profile.enabled }
+            .map { account ->
+                BaAccountReminderSnapshot(
+                    accountId = account.profile.id,
+                    displayName = account.profile.displayName,
+                    snapshot =
+                        baseSnapshot.withBaAccount(
+                            accountState = accountState,
+                            account = account,
+                        ),
+                )
+            }
+    }
+
     fun loadCalendarCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadCalendarCacheSnapshot(serverIndex)
 
     fun loadPoolCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadPoolCacheSnapshot(serverIndex)
@@ -334,6 +353,16 @@ internal object BASettingsStore {
         notifyChanged()
     }
 
+    fun resetReminderRuntimeForAccounts(accountIds: List<BaAccountId>) {
+        val store = migratedAccountStore()
+        accountIds.forEach { accountId ->
+            store.updateAccountReminderRuntime(accountId) {
+                BaAccountReminderRuntime()
+            }
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
     fun loadCalendarUpcomingNotifyEnabled(): Boolean = kv().decodeBool(KEY_CALENDAR_UPCOMING_NOTIFY_ENABLED, false)
 
     fun saveCalendarUpcomingNotifyEnabled(enabled: Boolean) {
@@ -528,6 +557,75 @@ internal object BASettingsStore {
             )
         }
         notifyChanged(notifyHomeOverview = notifyHomeOverview)
+    }
+
+    fun saveAccountBaRuntimeState(
+        accountId: BaAccountId,
+        apCurrent: Double? = null,
+        apRegenBaseMs: Long? = null,
+        apSyncMs: Long? = null,
+        cafeStoredAp: Double? = null,
+        cafeLastHourMs: Long? = null,
+        notifyHomeOverview: Boolean = false,
+    ) {
+        migratedAccountStore().updateAccountRuntime(accountId) { runtime ->
+            runtime.copy(
+                apCurrent = apCurrent?.let(::normalizeAp) ?: runtime.apCurrent,
+                apRegenBaseMs = apRegenBaseMs?.coerceAtLeast(0L) ?: runtime.apRegenBaseMs,
+                apSyncMs = apSyncMs?.coerceAtLeast(0L) ?: runtime.apSyncMs,
+                cafeStoredAp = cafeStoredAp?.let(::normalizeAp) ?: runtime.cafeStoredAp,
+                cafeLastHourMs =
+                    cafeLastHourMs
+                        ?.coerceAtLeast(0L)
+                        ?.let(::floorToHourMs)
+                        ?: runtime.cafeLastHourMs,
+            )
+        }
+        notifyChanged(notifyHomeOverview = notifyHomeOverview)
+    }
+
+    fun saveAccountApLastNotifiedLevel(
+        accountId: BaAccountId,
+        level: Int,
+    ) {
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(apLastNotifiedLevel = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    fun saveAccountCafeApLastNotifiedLevel(
+        accountId: BaAccountId,
+        level: Int,
+    ) {
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(cafeApLastNotifiedLevel = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    fun saveAccountArenaRefreshLastNotifiedSlotMs(
+        accountId: BaAccountId,
+        slotMs: Long,
+    ) {
+        val normalized = slotMs.coerceAtLeast(0L)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(arenaRefreshLastNotifiedSlotMs = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    fun saveAccountCafeVisitLastNotifiedSlotMs(
+        accountId: BaAccountId,
+        slotMs: Long,
+    ) {
+        val normalized = slotMs.coerceAtLeast(0L)
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(cafeVisitLastNotifiedSlotMs = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)

@@ -14,6 +14,7 @@ internal object BaCafeVisitNotificationDispatcher {
         context: Context,
         serverIndex: Int,
         slotMs: Long,
+        notificationId: Int = McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -28,7 +29,7 @@ internal object BaCafeVisitNotificationDispatcher {
         return runCatching {
             McpNotificationHelper.notifyStandaloneEvent(
                 context = context,
-                notificationId = McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID,
+                notificationId = notificationId,
                 serverName = McpNotificationPayload.BA_CAFE_VISIT_SERVER_NAME,
                 running = true,
                 port = 0,

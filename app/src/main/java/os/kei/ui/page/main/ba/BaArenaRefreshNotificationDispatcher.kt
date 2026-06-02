@@ -13,6 +13,7 @@ internal object BaArenaRefreshNotificationDispatcher {
         context: Context,
         serverIndex: Int,
         slotMs: Long,
+        notificationId: Int = McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -28,7 +29,7 @@ internal object BaArenaRefreshNotificationDispatcher {
         return runCatching {
             McpNotificationHelper.notifyStandaloneEvent(
                 context = context,
-                notificationId = McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID,
+                notificationId = notificationId,
                 serverName = McpNotificationPayload.BA_ARENA_REFRESH_SERVER_NAME,
                 running = true,
                 port = 0,

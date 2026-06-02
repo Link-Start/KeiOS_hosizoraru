@@ -37,13 +37,11 @@ internal class GitHubRefreshBatchActions(
         updateGlobalRefreshTimestamp: Boolean,
         onFinished: (() -> Unit)? = null,
     ) {
-        val activeItemsById = state.trackedItems.associateBy { it.id }
-        val targetIds =
-            selectActiveTrackedRefreshTargetIds(
-                requestedTrackIds = requestedTargetIds,
-                validTrackIds = activeItemsById.keys,
-            )
-        val snapshot = targetIds.mapNotNull { activeItemsById[it] }
+        val snapshot = selectActiveTrackedRefreshTargets(
+            requestedTrackIds = requestedTargetIds,
+            activeItems = state.trackedItems.toList(),
+        )
+        val targetIds = snapshot.map { it.id }
         if (snapshot.isEmpty()) {
             if (showToast) {
                 owner.env.toast(R.string.github_toast_no_checkable_item)

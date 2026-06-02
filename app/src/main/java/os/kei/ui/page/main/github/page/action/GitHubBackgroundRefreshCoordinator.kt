@@ -42,11 +42,15 @@ internal class GitHubBackgroundRefreshCoordinator(
     }
 
     suspend fun refreshRequestedTracksIfNeeded(): Boolean {
-        val trackedById = state.trackedItems.associateBy { it.id }
-        if (trackedById.isEmpty()) return false
-        val requestedIds = repository.consumeTrackRefreshRequests(trackedById.keys)
+        val activeItems = state.trackedItems.toList()
+        val validTrackIds = activeItems.mapTo(LinkedHashSet()) { it.id }
+        if (validTrackIds.isEmpty()) return false
+        val requestedIds = repository.consumeTrackRefreshRequests(validTrackIds)
         if (requestedIds.isEmpty()) return false
-        val requestedItems = requestedIds.mapNotNull { trackId -> trackedById[trackId] }
+        val requestedItems = selectActiveTrackedRefreshTargets(
+            requestedTrackIds = requestedIds,
+            activeItems = activeItems,
+        )
         requestedItems.forEach(::markItemChecking)
         refreshItemsInBackground(
             items = requestedItems,

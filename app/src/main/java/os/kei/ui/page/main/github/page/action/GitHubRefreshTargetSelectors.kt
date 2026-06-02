@@ -49,3 +49,18 @@ internal fun selectActiveTrackedRefreshTargetIds(
         .distinct()
         .toList()
 }
+
+internal fun selectActiveTrackedRefreshTargets(
+    requestedTrackIds: Iterable<String>,
+    activeItems: List<GitHubTrackedApp>,
+): List<GitHubTrackedApp> {
+    if (activeItems.isEmpty()) return emptyList()
+    val activeItemsById = linkedMapOf<String, GitHubTrackedApp>()
+    activeItems.forEach { item ->
+        activeItemsById[item.id] = item
+    }
+    return selectActiveTrackedRefreshTargetIds(
+        requestedTrackIds = requestedTrackIds,
+        validTrackIds = activeItemsById.keys,
+    ).mapNotNull(activeItemsById::get)
+}

@@ -31,6 +31,7 @@ import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
@@ -155,12 +156,17 @@ object GitHubTrackStore {
         val raw = store.decodeString(KEY_ITEMS).orEmpty()
         if (raw.isBlank()) return emptyList()
         val array = raw.parseJsonArrayOrNull() ?: return emptyList()
-        return buildList {
+        val parsedItems = buildList {
             array.forEach { element ->
                 val obj = element.jsonObjectOrNull() ?: return@forEach
                 parseTrackedItem(obj)?.let(::add)
             }
         }
+        val normalizedItems = normalizeTrackedItems(parsedItems)
+        if (normalizedItems != parsedItems) {
+            saveNormalizedItemsIfRawUnchanged(raw, normalizedItems)
+        }
+        return normalizedItems
     }
 
     private fun seedDefaultTrackedItems(): List<GitHubTrackedApp> {
@@ -170,8 +176,22 @@ object GitHubTrackStore {
     }
 
     fun save(items: List<GitHubTrackedApp>) {
+        val normalizedItems = normalizeTrackedItems(items)
+        saveNormalizedItems(normalizedItems)
+    }
+
+    private fun saveNormalizedItemsIfRawUnchanged(
+        expectedRaw: String,
+        normalizedItems: List<GitHubTrackedApp>
+    ) {
+        val store = kv()
+        if (store.decodeString(KEY_ITEMS).orEmpty() != expectedRaw) return
+        saveNormalizedItems(normalizedItems)
+    }
+
+    private fun saveNormalizedItems(normalizedItems: List<GitHubTrackedApp>) {
         val array = buildJsonArray {
-            items.forEach { item ->
+            normalizedItems.forEach { item ->
                 add(trackedItemToJson(item))
             }
         }
@@ -309,18 +329,19 @@ object GitHubTrackStore {
         items: List<GitHubTrackedApp>,
         exportedAtMillis: Long = System.currentTimeMillis()
     ): String {
+        val normalizedItems = normalizeTrackedItems(items)
         val array = buildJsonArray {
-            items.forEach { item ->
+            normalizedItems.forEach { item ->
                 add(trackedItemToJson(item))
             }
         }
-        val optionCounts = calculateTrackedItemsOptionCounts(items)
-        val sourceCounts = calculateTrackedItemsSourceCounts(items)
+        val optionCounts = calculateTrackedItemsOptionCounts(normalizedItems)
+        val sourceCounts = calculateTrackedItemsSourceCounts(normalizedItems)
         val payload = buildJsonObject {
             put("format", TRACK_EXPORT_FORMAT)
             put("schemaVersion", TRACK_EXPORT_SCHEMA_VERSION)
             put("exportedAtMillis", exportedAtMillis)
-            put("itemCount", items.size)
+            put("itemCount", normalizedItems.size)
             put("sourceCounts", sourceCounts.toJson())
             put("optionCounts", optionCounts.toJson())
             put("items", array)
@@ -351,7 +372,8 @@ object GitHubTrackStore {
             is JsonArray -> rootElement
             else -> throw IllegalArgumentException("unsupported github track import format")
         }
-        val deduplicated = linkedMapOf<String, GitHubTrackedApp>()
+        val parsedItems = mutableListOf<GitHubTrackedApp>()
+        val seenIds = linkedSetOf<String>()
         var invalidCount = 0
         var duplicateCount = 0
         rootArray.forEach { element ->
@@ -361,13 +383,13 @@ object GitHubTrackStore {
                 invalidCount += 1
                 return@forEach
             }
-            if (deduplicated.containsKey(item.id)) {
+            if (!seenIds.add(item.id)) {
                 duplicateCount += 1
             }
-            deduplicated[item.id] = item
+            parsedItems += item
         }
         return GitHubTrackedItemsImportPayload(
-            items = deduplicated.values.toList(),
+            items = normalizeTrackedItems(parsedItems),
             sourceCount = rootArray.size,
             invalidCount = invalidCount,
             duplicateCount = duplicateCount,
@@ -380,7 +402,7 @@ object GitHubTrackStore {
     fun calculateTrackedItemsOptionCounts(
         items: List<GitHubTrackedApp>
     ): GitHubTrackedItemsOptionCounts {
-        val normalizedItems = items.map { it.withSourceModeConstraints() }
+        val normalizedItems = normalizeTrackedItems(items)
         return GitHubTrackedItemsOptionCounts(
             preferPreReleaseCount = normalizedItems.count { it.preferPreRelease },
             latestReleaseDownloadCount = normalizedItems.count {
@@ -400,7 +422,7 @@ object GitHubTrackStore {
     fun calculateTrackedItemsSourceCounts(
         items: List<GitHubTrackedApp>
     ): GitHubTrackedItemsSourceCounts {
-        val normalizedItems = items.map { it.withSourceModeConstraints() }
+        val normalizedItems = normalizeTrackedItems(items)
         return GitHubTrackedItemsSourceCounts(
             githubRepositoryCount = normalizedItems.count { it.isGitHubRepositoryTrack() },
             gitRepositoryCount = normalizedItems.count { it.isGitRepositoryTrack() },
@@ -424,85 +446,115 @@ object GitHubTrackStore {
                     buildMap {
                         obj.forEach { (id, element) ->
                             val item = element.jsonObjectOrNull() ?: return@forEach
-                    put(
-                        id,
-                        GitHubCheckCacheEntry(
-                            loading = false,
-                            localVersion = item.optString("localVersion"),
-                            localVersionCode = item.optLong("localVersionCode", -1L),
-                            latestTag = item.optString("latestTag"),
-                            latestStableName = item.optString("latestStableName").ifBlank {
-                                item.optString("latestTag")
-                            },
-                            latestStableRawTag = item.optString("latestStableRawTag"),
-                            latestStableUrl = item.optString("latestStableUrl"),
-                            latestStableAuthorAvatarUrl = item.optString(
-                                "latestStableAuthorAvatarUrl"
-                            ),
-                            latestStableUpdatedAtMillis = item.optLong("latestStableUpdatedAtMillis", -1L),
-                            latestPreName = item.optString("latestPreName").ifBlank {
-                                item.optString("preReleaseInfo")
-                            },
-                            latestPreRawTag = item.optString("latestPreRawTag"),
-                            latestPreUrl = item.optString("latestPreUrl"),
-                            latestPreAuthorAvatarUrl = item.optString(
-                                "latestPreAuthorAvatarUrl"
-                            ),
-                            latestPreUpdatedAtMillis = item.optLong("latestPreUpdatedAtMillis", -1L),
-                            hasStableRelease = if (item.hasNonNull("hasStableRelease")) {
-                                item.optBoolean("hasStableRelease", true)
-                            } else {
-                                item.optString("latestStableRawTag").isNotBlank() || item.optString("latestTag").isNotBlank()
-                            },
-                            hasUpdate = if (item.hasNonNull("hasUpdate")) item.optBoolean("hasUpdate") else null,
-                            message = item.optString("message"),
-                            isPreRelease = item.optBoolean("isPreRelease", false),
-                            preReleaseInfo = item.optString("preReleaseInfo"),
-                            showPreReleaseInfo = item.optBoolean("showPreReleaseInfo", false),
-                            hasPreReleaseUpdate = item.optBoolean("hasPreReleaseUpdate", false),
-                            recommendsPreRelease = item.optBoolean("recommendsPreRelease", false),
-                            releaseHint = item.optString("releaseHint"),
-                            repositoryArchived = item.optBoolean("repositoryArchived", false),
-                            repositoryFork = item.optBoolean("repositoryFork", false),
-                            repositoryPushedAtMillis = item.optLong(
-                                "repositoryPushedAtMillis",
-                                -1L
-                            ),
-                            upstreamFullName = item.optString("upstreamFullName"),
-                            upstreamArchived = item.optBoolean("upstreamArchived", false),
-                            upstreamPushedAtMillis = item.optLong("upstreamPushedAtMillis", -1L),
-                            repositoryProfile = parseGitHubRepositoryProfileSnapshot(
-                                item.optObject("repositoryProfile")
-                            ) ?: profileCache[id],
-                            sourceStrategyId = item.optString("sourceStrategyId"),
-                            sourceConfigSignature = item.optString("sourceConfigSignature"),
-                            latestStableApkVersion = parseRemoteApkVersionInfo(
-                                item.optObject("latestStableApkVersion")
-                            ),
-                            latestPreApkVersion = parseRemoteApkVersionInfo(
-                                item.optObject("latestPreApkVersion")
-                            ),
-                            directApkRemoteHealth = parseDirectApkRemoteHealth(
-                                item.optString("directApkRemoteHealth")
-                            ),
-                            directApkRemoteHealthMessage = item.optString(
-                                "directApkRemoteHealthMessage"
-                            ),
-                            directApkRemoteCheckedAtMillis = item.optLong(
-                                "directApkRemoteCheckedAtMillis",
-                                -1L
-                            ),
-                            checkedAtMillis =
-                                if (item.hasNonNull("checkedAtMillis")) {
-                                    item.optLong("checkedAtMillis", -1L)
-                                } else {
-                                    ts
-                                }
-                        )
-                    )
-                }
-            }
-        } ?: emptyMap()
+                            put(
+                                id,
+                                GitHubCheckCacheEntry(
+                                    loading = false,
+                                    localVersion = item.optString("localVersion"),
+                                    localVersionCode = item.optLong("localVersionCode", -1L),
+                                    latestTag = item.optString("latestTag"),
+                                    latestStableName = item.optString("latestStableName").ifBlank {
+                                        item.optString("latestTag")
+                                    },
+                                    latestStableRawTag = item.optString("latestStableRawTag"),
+                                    latestStableUrl = item.optString("latestStableUrl"),
+                                    latestStableAuthorAvatarUrl = item.optString(
+                                        "latestStableAuthorAvatarUrl"
+                                    ),
+                                    latestStableUpdatedAtMillis = item.optLong(
+                                        "latestStableUpdatedAtMillis",
+                                        -1L
+                                    ),
+                                    latestPreName = item.optString("latestPreName").ifBlank {
+                                        item.optString("preReleaseInfo")
+                                    },
+                                    latestPreRawTag = item.optString("latestPreRawTag"),
+                                    latestPreUrl = item.optString("latestPreUrl"),
+                                    latestPreAuthorAvatarUrl = item.optString(
+                                        "latestPreAuthorAvatarUrl"
+                                    ),
+                                    latestPreUpdatedAtMillis = item.optLong(
+                                        "latestPreUpdatedAtMillis",
+                                        -1L
+                                    ),
+                                    hasStableRelease =
+                                        if (item.hasNonNull("hasStableRelease")) {
+                                            item.optBoolean("hasStableRelease", true)
+                                        } else {
+                                            item.optString("latestStableRawTag").isNotBlank() ||
+                                                item.optString("latestTag").isNotBlank()
+                                        },
+                                    hasUpdate =
+                                        if (item.hasNonNull("hasUpdate")) {
+                                            item.optBoolean("hasUpdate")
+                                        } else {
+                                            null
+                                        },
+                                    message = item.optString("message"),
+                                    isPreRelease = item.optBoolean("isPreRelease", false),
+                                    preReleaseInfo = item.optString("preReleaseInfo"),
+                                    showPreReleaseInfo = item.optBoolean(
+                                        "showPreReleaseInfo",
+                                        false
+                                    ),
+                                    hasPreReleaseUpdate = item.optBoolean(
+                                        "hasPreReleaseUpdate",
+                                        false
+                                    ),
+                                    recommendsPreRelease = item.optBoolean(
+                                        "recommendsPreRelease",
+                                        false
+                                    ),
+                                    releaseHint = item.optString("releaseHint"),
+                                    repositoryArchived = item.optBoolean(
+                                        "repositoryArchived",
+                                        false
+                                    ),
+                                    repositoryFork = item.optBoolean("repositoryFork", false),
+                                    repositoryPushedAtMillis = item.optLong(
+                                        "repositoryPushedAtMillis",
+                                        -1L
+                                    ),
+                                    upstreamFullName = item.optString("upstreamFullName"),
+                                    upstreamArchived = item.optBoolean("upstreamArchived", false),
+                                    upstreamPushedAtMillis = item.optLong(
+                                        "upstreamPushedAtMillis",
+                                        -1L
+                                    ),
+                                    repositoryProfile = parseGitHubRepositoryProfileSnapshot(
+                                        item.optObject("repositoryProfile")
+                                    ) ?: profileCache[id],
+                                    sourceStrategyId = item.optString("sourceStrategyId"),
+                                    sourceConfigSignature = item.optString(
+                                        "sourceConfigSignature"
+                                    ),
+                                    latestStableApkVersion = parseRemoteApkVersionInfo(
+                                        item.optObject("latestStableApkVersion")
+                                    ),
+                                    latestPreApkVersion = parseRemoteApkVersionInfo(
+                                        item.optObject("latestPreApkVersion")
+                                    ),
+                                    directApkRemoteHealth = parseDirectApkRemoteHealth(
+                                        item.optString("directApkRemoteHealth")
+                                    ),
+                                    directApkRemoteHealthMessage = item.optString(
+                                        "directApkRemoteHealthMessage"
+                                    ),
+                                    directApkRemoteCheckedAtMillis = item.optLong(
+                                        "directApkRemoteCheckedAtMillis",
+                                        -1L
+                                    ),
+                                    checkedAtMillis =
+                                        if (item.hasNonNull("checkedAtMillis")) {
+                                            item.optLong("checkedAtMillis", -1L)
+                                        } else {
+                                            ts
+                                        }
+                                )
+                            )
+                        }
+                    }
+                } ?: emptyMap()
         return map to map.resolvedRefreshTimestamp(ts)
     }
 
@@ -515,10 +567,10 @@ object GitHubTrackStore {
                     obj.forEach { (id, element) ->
                         val profile = parseGitHubRepositoryProfileSnapshot(element.jsonObjectOrNull())
                             ?: return@forEach
-                    put(id, profile)
+                        put(id, profile)
+                    }
                 }
-            }
-        } ?: emptyMap()
+            } ?: emptyMap()
     }
 
     fun loadSnapshot(): GitHubTrackSnapshot {
@@ -825,4 +877,27 @@ object GitHubTrackStore {
         kv().encode(KEY_RELEASE_NOTES_MODE, config.releaseNotesMode.storageId)
     }
 
+}
+
+internal fun normalizeTrackedItems(
+    items: List<GitHubTrackedApp>
+): List<GitHubTrackedApp> {
+    if (items.isEmpty()) return emptyList()
+    val byId = LinkedHashMap<String, GitHubTrackedApp>(items.size)
+    items.forEach { rawItem ->
+        val item = rawItem.withSourceModeConstraints()
+        val previous = byId[item.id]
+        byId[item.id] = previous?.mergeDuplicate(item) ?: item
+    }
+    return byId.values.toList()
+}
+
+private fun GitHubTrackedApp.mergeDuplicate(
+    incoming: GitHubTrackedApp
+): GitHubTrackedApp {
+    return if (incoming.localAppType == GitHubTrackedLocalAppType.Unknown) {
+        incoming.copy(localAppType = localAppType)
+    } else {
+        incoming
+    }
 }

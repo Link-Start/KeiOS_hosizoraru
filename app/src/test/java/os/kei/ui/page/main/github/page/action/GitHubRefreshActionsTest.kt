@@ -102,6 +102,18 @@ class GitHubRefreshActionsTest {
     }
 
     @Test
+    fun `visible refresh target selector resolves ids against active tracked items`() {
+        val alpha = tracked("alpha")
+        val beta = tracked("beta")
+        val selected = selectActiveTrackedRefreshTargets(
+            requestedTrackIds = listOf(beta.id, "missing", alpha.id, beta.id),
+            activeItems = listOf(alpha, beta),
+        )
+
+        assertEquals(listOf(beta, alpha), selected)
+    }
+
+    @Test
     fun `visible refresh returns empty list when no active targets exist`() {
         val selected = selectActiveTrackedRefreshTargetIds(
             requestedTrackIds = listOf("one", "two"),
@@ -110,4 +122,13 @@ class GitHubRefreshActionsTest {
 
         assertEquals(emptyList(), selected)
     }
+
+    private fun tracked(name: String): GitHubTrackedApp =
+        GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/$name",
+            owner = "owner",
+            repo = name,
+            packageName = "com.example.$name",
+            appLabel = name,
+        )
 }

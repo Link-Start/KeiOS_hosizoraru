@@ -14,6 +14,7 @@ import os.kei.feature.github.data.local.GitHubShareImportResultRecord
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.local.normalizeTrackedItems
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -106,17 +107,28 @@ class GitHubTrackService(
         emitStoreSignal: Boolean = true,
     ) {
         withContext(ioDispatcher) {
-            GitHubTrackStore.save(items)
+            val normalizedItems = normalizeTrackedItems(items)
+            val validTrackIds = normalizedItems.mapTo(LinkedHashSet()) { it.id }
+            val normalizedRefreshTrackIds = refreshTrackIds
+                .asSequence()
+                .map { it.trim() }
+                .filter { it.isNotBlank() && it in validTrackIds }
+                .toList()
+            GitHubTrackStore.save(normalizedItems)
             GitHubTrackStore.saveTrackedFirstInstallAtByPackage(trackedFirstInstallAtByPackage)
-            GitHubTrackStore.saveTrackedAddedAtById(trackedAddedAtById)
-            GitHubTrackStore.saveTrackedModifiedAtById(trackedModifiedAtById)
-            refreshTrackIds.forEach { trackId ->
+            GitHubTrackStore.saveTrackedAddedAtById(
+                trackedAddedAtById.filterKeys { it in validTrackIds }
+            )
+            GitHubTrackStore.saveTrackedModifiedAtById(
+                trackedModifiedAtById.filterKeys { it in validTrackIds }
+            )
+            normalizedRefreshTrackIds.forEach { trackId ->
                 GitHubTrackStoreSignals.requestTrackRefresh(
                     trackId = trackId,
                     notifyChangeSignal = false,
                 )
             }
-            if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
+            if (emitStoreSignal || normalizedRefreshTrackIds.isNotEmpty()) {
                 GitHubTrackStoreSignals.notifyChanged()
             }
         }

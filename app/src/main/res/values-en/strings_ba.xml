@@ -1,5 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PluralsCandidate">
     <string name="ba_topbar_title">Blue Archive</string>
+    <string name="ba_cd_account_management">Account management</string>
     <string name="ba_cd_edit">Edit</string>
     <string name="ba_cd_notification_settings">Notification settings</string>
     <string name="ba_cd_debug_tools">Debug tools</string>
@@ -80,6 +81,16 @@
     <string name="ba_pool_error_sync_failed">Recruitment banner sync failed. Check your network and try again.</string>
     <string name="ba_settings_title">Blue Archive Settings</string>
     <string name="ba_notification_settings_title">Blue Archive Notifications</string>
+    <string name="ba_account_management_title">Account Management</string>
+    <string name="ba_account_management_section_global">Global notifications</string>
+    <string name="ba_account_management_follow_global">All accounts follow Blue Archive notification settings</string>
+    <string name="ba_account_management_follow_global_summary">When enabled, AP, Cafe, and Tactical Challenge reminders share the Blue Archive notification settings. Account-level overrides can be extended when disabled.</string>
+    <string name="ba_account_management_section_accounts">Accounts</string>
+    <string name="ba_account_management_empty">No accounts yet. Saving Blue Archive settings will create a default account.</string>
+    <string name="ba_account_management_active_badge">Current</string>
+    <string name="ba_account_management_account_summary">%1$s | %2$s | %3$s</string>
+    <string name="ba_account_management_active_action">Active</string>
+    <string name="ba_account_management_use_action">Switch</string>
     <string name="ba_settings_section_basic">Basic</string>
     <string name="ba_settings_section_sync">Sync</string>
     <string name="ba_settings_section_notifications">Notifications</string>

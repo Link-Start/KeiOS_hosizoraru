@@ -18,6 +18,7 @@ internal data class BaOfficeAccountCardUiState(
 internal data class BaOfficeAccountUiState(
     val accounts: List<BaOfficeAccountCardUiState> = emptyList(),
     val activeAccountId: BaAccountId? = null,
+    val allAccountsFollowGlobalNotificationSettings: Boolean = true,
 ) {
     val activeIndex: Int
         get() = accounts.indexOfFirst { it.id == activeAccountId }.coerceAtLeast(0)
@@ -29,6 +30,7 @@ internal data class BaOfficeServerUiState(
 
 internal data class BaOfficeChromeUiState(
     val showSettingsSheet: Boolean = false,
+    val showAccountManagementSheet: Boolean = false,
     val showNotificationSettingsSheet: Boolean = false,
     val showDebugSheet: Boolean = false,
     val showOverviewServerPopup: Boolean = false,
@@ -121,6 +123,7 @@ internal fun BaAccountStoreSnapshot.toOfficeAccountUiState(): BaOfficeAccountUiS
                 )
             },
         activeAccountId = activeAccountId,
+        allAccountsFollowGlobalNotificationSettings = allAccountsFollowGlobalNotificationSettings,
     )
 
 internal fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiState =

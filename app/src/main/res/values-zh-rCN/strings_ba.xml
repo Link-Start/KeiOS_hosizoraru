@@ -1,5 +1,6 @@
 <resources>
     <string name="ba_topbar_title">BlueArchive</string>
+    <string name="ba_cd_account_management">账号管理</string>
     <string name="ba_cd_edit">编辑</string>
     <string name="ba_cd_notification_settings">通知设置</string>
     <string name="ba_cd_debug_tools">调试工具</string>
@@ -80,6 +81,16 @@
     <string name="ba_pool_error_sync_failed">卡池同步失败（超时或网络异常）</string>
     <string name="ba_settings_title">BA 配置</string>
     <string name="ba_notification_settings_title">BA 通知设置</string>
+    <string name="ba_account_management_title">账号管理</string>
+    <string name="ba_account_management_section_global">全局通知</string>
+    <string name="ba_account_management_follow_global">全部账号跟随 BA 通知设置</string>
+    <string name="ba_account_management_follow_global_summary">开启后，AP、咖啡厅和竞技场提醒统一使用 BA 通知设置；关闭后可在账号维度单独扩展。</string>
+    <string name="ba_account_management_section_accounts">账号</string>
+    <string name="ba_account_management_empty">当前暂无账号。保存 BA 配置后会自动生成一个默认账号。</string>
+    <string name="ba_account_management_active_badge">当前</string>
+    <string name="ba_account_management_account_summary">%1$s · %2$s · %3$s</string>
+    <string name="ba_account_management_active_action">使用中</string>
+    <string name="ba_account_management_use_action">切换</string>
     <string name="ba_settings_section_basic">基础设置</string>
     <string name="ba_settings_section_sync">同步</string>
     <string name="ba_settings_section_notifications">通知</string>

@@ -1,5 +1,6 @@
 <resources>
     <string name="ba_topbar_title">ブルーアーカイブ</string>
+    <string name="ba_cd_account_management">アカウント管理</string>
     <string name="ba_cd_edit">編集</string>
     <string name="ba_cd_notification_settings">通知設定</string>
     <string name="ba_cd_debug_tools">デバッグツール</string>
@@ -80,6 +81,16 @@
     <string name="ba_pool_error_sync_failed">募集情報の同期に失敗しました。ネットワークを確認して再試行してください。</string>
     <string name="ba_settings_title">ブルーアーカイブ設定</string>
     <string name="ba_notification_settings_title">ブルーアーカイブ通知設定</string>
+    <string name="ba_account_management_title">アカウント管理</string>
+    <string name="ba_account_management_section_global">全体通知</string>
+    <string name="ba_account_management_follow_global">すべてのアカウントをブルーアーカイブ通知設定に従わせる</string>
+    <string name="ba_account_management_follow_global_summary">オンの場合、AP、カフェ、戦術対抗戦のリマインダーは共通の通知設定を使います。オフの場合、アカウント別設定へ拡張できます。</string>
+    <string name="ba_account_management_section_accounts">アカウント</string>
+    <string name="ba_account_management_empty">アカウントはありません。ブルーアーカイブ設定を保存すると既定アカウントが作成されます。</string>
+    <string name="ba_account_management_active_badge">現在</string>
+    <string name="ba_account_management_account_summary">%1$s | %2$s | %3$s</string>
+    <string name="ba_account_management_active_action">使用中</string>
+    <string name="ba_account_management_use_action">切替</string>
     <string name="ba_settings_section_basic">基本</string>
     <string name="ba_settings_section_sync">同期</string>
     <string name="ba_settings_section_notifications">通知</string>

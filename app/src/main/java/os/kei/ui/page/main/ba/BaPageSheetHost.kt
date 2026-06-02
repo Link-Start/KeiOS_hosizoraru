@@ -9,6 +9,7 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 
 @Composable
@@ -27,8 +28,11 @@ internal fun BaPageSheetHost(
     savedNotificationSettingsSheetState: BaNotificationSettingsSheetState,
     calendarUiState: BaCalendarUiState,
     poolUiState: BaPoolUiState,
+    accountUiState: BaOfficeAccountUiState,
     onDismissSettings: () -> Unit,
     onSaveSettings: () -> Unit,
+    onDismissAccountManagement: () -> Unit,
+    onSelectAccount: (BaAccountId) -> Unit,
     onDismissNotificationSettings: () -> Unit,
     onSaveNotificationSettings: () -> Unit,
     onDismissDebug: () -> Unit,
@@ -52,6 +56,16 @@ internal fun BaPageSheetHost(
         hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,
         onDismissRequest = onDismissSettings,
         onSaveRequest = onSaveSettings,
+    )
+    BaAccountManagementSheet(
+        show = routeState.showAccountManagementSheet,
+        backdrop = backdrop,
+        state = accountUiState,
+        onAllAccountsFollowGlobalNotificationSettingsChange =
+            viewModel::updateAllAccountsFollowGlobalNotificationSettings,
+        onAccountEnabledChange = viewModel::updateAccountEnabled,
+        onSelectAccount = onSelectAccount,
+        onDismissRequest = onDismissAccountManagement,
     )
     BaNotificationSettingsSheet(
         show = routeState.showNotificationSettingsSheet,

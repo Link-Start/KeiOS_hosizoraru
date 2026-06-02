@@ -133,6 +133,24 @@ internal object BASettingsStore {
         return selected
     }
 
+    fun saveAllAccountsFollowGlobalNotificationSettings(enabled: Boolean) {
+        migratedAccountStore().saveAllAccountsFollowGlobalNotificationSettings(enabled)
+        notifyChanged()
+    }
+
+    fun saveAccountEnabled(
+        accountId: BaAccountId,
+        enabled: Boolean,
+    ): Boolean {
+        val store = migratedAccountStore()
+        val account = store.loadAccounts().firstOrNull { it.profile.id == accountId } ?: return false
+        val updated = store.updateAccount(account.copy(profile = account.profile.copy(enabled = enabled)))
+        if (updated) {
+            notifyChanged()
+        }
+        return updated
+    }
+
     fun migrateAccountsIfNeeded(): BaAccountMigrationResult {
         val keyValueStore = accountKeyValueStore()
         val store = accountStore(keyValueStore)

@@ -155,6 +155,14 @@ fun BAPage(
         officeViewModel.hideSettingsSheet(savedSettingsDraftState)
     }
 
+    fun openAccountManagementSheet() {
+        officeViewModel.showAccountManagementSheet()
+    }
+
+    fun closeAccountManagementSheet() {
+        officeViewModel.hideAccountManagementSheet()
+    }
+
     fun openNotificationSettingsSheet() {
         officeViewModel.showNotificationSettingsSheet()
     }
@@ -340,6 +348,7 @@ fun BAPage(
                 BaTopBarActions(
                     backdrop = backdrops.topBar,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                    onShowAccountManagement = ::openAccountManagementSheet,
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,
                     onShowDebug = ::openDebugSheet,
@@ -371,8 +380,19 @@ fun BAPage(
             savedNotificationSettingsSheetState = savedNotificationSettingsSheetState,
             calendarUiState = calendarUiState,
             poolUiState = poolUiState,
+            accountUiState = accountUiState,
             onDismissSettings = ::closeSettingsSheet,
             onSaveSettings = ::saveSettings,
+            onDismissAccountManagement = ::closeAccountManagementSheet,
+            onSelectAccount = { accountId ->
+                officeViewModel.selectActiveAccount(
+                    accountId = accountId,
+                    currentRuntimeUpdate =
+                        office
+                            .applyRuntimeTick()
+                            ?.withAccountId(accountUiState.activeAccountId),
+                )
+            },
             onDismissNotificationSettings = ::closeNotificationSettingsSheet,
             onSaveNotificationSettings = ::saveNotificationSettings,
             onDismissDebug = ::closeDebugSheet,

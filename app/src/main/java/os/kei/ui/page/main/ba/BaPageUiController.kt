@@ -25,6 +25,7 @@ internal data class BaPagePopupState(
 @Stable
 internal data class BaPageRouteState(
     val showSettingsSheet: Boolean,
+    val showAccountManagementSheet: Boolean,
     val showNotificationSettingsSheet: Boolean,
     val showDebugSheet: Boolean,
     val popupState: BaPagePopupState,
@@ -63,6 +64,7 @@ internal fun buildBaPageRouteState(
 ): BaPageRouteState =
     BaPageRouteState(
         showSettingsSheet = chromeUiState.showSettingsSheet,
+        showAccountManagementSheet = chromeUiState.showAccountManagementSheet,
         showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
         showDebugSheet = chromeUiState.showDebugSheet,
         popupState =

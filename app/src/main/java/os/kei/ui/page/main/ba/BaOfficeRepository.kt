@@ -36,6 +36,21 @@ internal object BaOfficeRepository {
             }
         }
 
+    suspend fun saveAllAccountsFollowGlobalNotificationSettingsAsync(enabled: Boolean): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveAllAccountsFollowGlobalNotificationSettings(enabled)
+            BASettingsStore.loadAccountState()
+        }
+
+    suspend fun saveAccountEnabledAsync(
+        accountId: BaAccountId,
+        enabled: Boolean,
+    ): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveAccountEnabled(accountId, enabled)
+            BASettingsStore.loadAccountState()
+        }
+
     fun loadServerIndex(): Int = BASettingsStore.loadServerIndex()
 
     suspend fun loadServerIndexAsync(): Int =

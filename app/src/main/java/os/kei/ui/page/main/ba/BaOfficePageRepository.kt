@@ -42,6 +42,18 @@ internal class BaOfficePageRepository(
     suspend fun selectActiveAccount(accountId: BaAccountId): BaPageSnapshot? =
         BaOfficeRepository.selectActiveAccountAsync(accountId)
 
+    suspend fun saveAllAccountsFollowGlobalNotificationSettings(enabled: Boolean): BaAccountStoreSnapshot =
+        BaOfficeRepository.saveAllAccountsFollowGlobalNotificationSettingsAsync(enabled)
+
+    suspend fun saveAccountEnabled(
+        accountId: BaAccountId,
+        enabled: Boolean,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.saveAccountEnabledAsync(
+            accountId = accountId,
+            enabled = enabled,
+        )
+
     suspend fun clearListScrollState() {
         BaOfficeRepository.clearListScrollStateAsync()
     }

@@ -134,6 +134,20 @@ internal class BaOfficeViewModel(
         }
     }
 
+    fun showAccountManagementSheet() {
+        _chromeUiState.update { state ->
+            state
+                .withoutFloatingPopups()
+                .copy(showAccountManagementSheet = true)
+        }
+    }
+
+    fun hideAccountManagementSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showAccountManagementSheet = false)
+        }
+    }
+
     fun showNotificationSettingsSheet() {
         val savedDraft = notificationRuntimeDraft(_notificationDraftUiState.value.savedDraft)
         _notificationDraftUiState.value =
@@ -402,6 +416,39 @@ internal class BaOfficeViewModel(
                     )
                 refreshCalendar(force = true)
                 refreshPool(force = true)
+                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(BaOfficeEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun updateAllAccountsFollowGlobalNotificationSettings(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val accountState = repository.saveAllAccountsFollowGlobalNotificationSettings(enabled)
+                _accountUiState.value = accountState.toOfficeAccountUiState()
+                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(BaOfficeEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    fun updateAccountEnabled(
+        accountId: BaAccountId,
+        enabled: Boolean,
+    ) {
+        viewModelScope.launch {
+            try {
+                val accountState =
+                    repository.saveAccountEnabled(
+                        accountId = accountId,
+                        enabled = enabled,
+                    )
+                _accountUiState.value = accountState.toOfficeAccountUiState()
                 AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()

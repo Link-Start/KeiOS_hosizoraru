@@ -30,7 +30,7 @@ internal class GitHubShareImportEntryCoordinator(
     ): ShareImportIncomingCoordinatorResult {
         val appContext = context.applicationContext
         val resolvedLookupConfig =
-            lookupConfig ?: withContext(AppDispatchers.githubNetwork) {
+            lookupConfig ?: withContext(AppDispatchers.githubLocal) {
                 GitHubTrackStore.loadLookupConfig()
             }
         val notificationFirst =
@@ -40,7 +40,7 @@ internal class GitHubShareImportEntryCoordinator(
             val parsedIncoming =
                 GitHubShareIntentParser.parseSharedReleaseLink(sharedText)
                     ?: error(appContext.getString(R.string.github_share_import_error_no_valid_link))
-            withContext(AppDispatchers.githubNetwork) {
+            withContext(AppDispatchers.githubLocal) {
                 GitHubTrackStore.savePendingShareImportTrack(null)
                 GitHubShareImportFlowStore.clearActiveFlow()
             }

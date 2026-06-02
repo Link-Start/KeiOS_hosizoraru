@@ -118,10 +118,11 @@ internal data class GitHubPagePersistedUiState(
 
 internal class GitHubPageRepository(
     ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val localDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ) {
     private val contentStateDeriver = GitHubPageContentStateDeriver(defaultDispatcher)
-    private val trackRepository = GitHubPageTrackRepository(ioDispatcher)
+    private val trackRepository = GitHubPageTrackRepository(localDispatcher)
     private val installedAppRepository =
         GitHubPageInstalledAppRepository(
             ioDispatcher = ioDispatcher,
@@ -138,7 +139,11 @@ internal class GitHubPageRepository(
             ioDispatcher = ioDispatcher,
             defaultDispatcher = defaultDispatcher,
         )
-    private val assetBridge = GitHubReleaseAssetService(ioDispatcher)
+    private val assetBridge =
+        GitHubReleaseAssetService(
+            networkDispatcher = ioDispatcher,
+            localDispatcher = localDispatcher,
+        )
 
     suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState = contentStateDeriver.build(input)
 
@@ -187,7 +192,7 @@ internal class GitHubPageRepository(
         }
 
     suspend fun loadPersistedUiState(): GitHubPagePersistedUiState =
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubPagePersistedUiState(
                 pageUiState = GitHubPageUiStateStore.load(),
                 actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
@@ -197,19 +202,19 @@ internal class GitHubPageRepository(
         }
 
     suspend fun saveTrackedFilterMode(value: GitHubTrackedFilterMode) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubPageUiStateStore.setTrackedFilterMode(value)
         }
     }
 
     suspend fun saveOverviewExpanded(value: Boolean) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubOverviewUiStateStore.setExpanded(value)
         }
     }
 
     suspend fun saveOverviewVisibleEntries(entries: Set<GitHubOverviewEntry>) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubOverviewUiStateStore.setVisibleEntries(entries)
         }
     }
@@ -218,7 +223,7 @@ internal class GitHubPageRepository(
         itemId: String,
         value: Boolean,
     ) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubTrackedReleaseUiStateStore.setStableVersionExpanded(itemId, value)
         }
     }
@@ -227,7 +232,7 @@ internal class GitHubPageRepository(
         itemId: String,
         value: Boolean,
     ) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubTrackedReleaseUiStateStore.setLocalVersionExpanded(itemId, value)
         }
     }
@@ -236,19 +241,19 @@ internal class GitHubPageRepository(
         itemId: String,
         value: Boolean,
     ) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubTrackedReleaseUiStateStore.setPreReleaseVersionExpanded(itemId, value)
         }
     }
 
     suspend fun removeTrackedReleaseExpansion(itemId: String) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubTrackedReleaseUiStateStore.remove(itemId)
         }
     }
 
     suspend fun retainTrackedReleaseExpansion(validItemIds: Set<String>) {
-        withContext(AppDispatchers.githubLocal) {
+        withContext(localDispatcher) {
             GitHubTrackedReleaseUiStateStore.retain(validItemIds)
         }
     }

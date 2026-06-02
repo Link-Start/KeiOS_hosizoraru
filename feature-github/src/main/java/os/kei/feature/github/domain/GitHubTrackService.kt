@@ -32,7 +32,7 @@ data class GitHubBackgroundScheduleSnapshot(
 )
 
 class GitHubTrackService(
-    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
 ) {
     suspend fun loadTrackSnapshot(): GitHubTrackSnapshot =
         withContext(ioDispatcher) {

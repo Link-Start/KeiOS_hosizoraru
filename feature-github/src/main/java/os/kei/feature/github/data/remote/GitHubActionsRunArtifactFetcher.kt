@@ -1,15 +1,15 @@
 package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsWorkflowRun
 
 class GitHubActionsRunArtifactFetcher(
     private val maxConcurrency: Int,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val fetchRunArtifacts: (
         owner: String,
         repo: String,

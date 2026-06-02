@@ -19,7 +19,7 @@ import os.kei.ui.page.main.github.share.toShareImportResult
 import os.kei.ui.page.main.github.share.toShareImportTrack
 
 internal class GitHubPageTrackRepository(
-    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal
 ) {
     private val trackService = GitHubTrackService(ioDispatcher)
 

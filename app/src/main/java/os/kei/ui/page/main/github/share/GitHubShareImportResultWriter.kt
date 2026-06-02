@@ -18,7 +18,7 @@ internal class GitHubShareImportResultWriter(
         clearActiveFlow: Boolean = false,
         clearPendingTrack: Boolean = false,
     ) {
-        withContext(AppDispatchers.githubNetwork) {
+        withContext(AppDispatchers.githubLocal) {
             if (clearPendingTrack) {
                 GitHubTrackStore.savePendingShareImportTrack(null)
             }
@@ -50,7 +50,7 @@ internal class GitHubShareImportResultWriter(
                 message = message,
                 completedAtMillis = clock.nowMs(),
             )
-        withContext(AppDispatchers.githubNetwork) {
+        withContext(AppDispatchers.githubLocal) {
             GitHubTrackStore.savePendingShareImportTrack(null)
             GitHubShareImportFlowStore.clearActiveFlow()
             GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
@@ -59,14 +59,14 @@ internal class GitHubShareImportResultWriter(
     }
 
     suspend fun saveResultAfterClearingActiveFlow(result: GitHubShareImportResult) {
-        withContext(AppDispatchers.githubNetwork) {
+        withContext(AppDispatchers.githubLocal) {
             GitHubShareImportFlowStore.clearActiveFlow()
             GitHubShareImportFlowStore.saveActiveResult(result.toRecord())
         }
     }
 
     suspend fun saveResultAndClearActiveFlow(result: GitHubShareImportResult?) {
-        withContext(AppDispatchers.githubNetwork) {
+        withContext(AppDispatchers.githubLocal) {
             GitHubShareImportFlowStore.clearActiveFlow()
             GitHubTrackStore.savePendingShareImportTrack(null)
             if (result != null) {

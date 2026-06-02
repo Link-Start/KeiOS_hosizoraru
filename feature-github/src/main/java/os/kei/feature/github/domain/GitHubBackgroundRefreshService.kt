@@ -43,7 +43,7 @@ class GitHubBackgroundRefreshService {
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
     ): GitHubBackgroundTickResult =
         mutex.withLock {
-            val snapshot = withContext(AppDispatchers.mcpServer) { GitHubTrackStore.loadSnapshot() }
+            val snapshot = withContext(AppDispatchers.githubLocal) { GitHubTrackStore.loadSnapshot() }
             val tracked = snapshot.items
             if (tracked.isEmpty()) return@withLock GitHubBackgroundTickResult()
 
@@ -112,7 +112,7 @@ class GitHubBackgroundRefreshService {
     ): GitHubShortcutRefreshExecution =
         mutex.withLock {
             val nowMs = System.currentTimeMillis()
-            val snapshot = withContext(AppDispatchers.mcpServer) { GitHubTrackStore.loadSnapshot() }
+            val snapshot = withContext(AppDispatchers.githubLocal) { GitHubTrackStore.loadSnapshot() }
             val tracked = snapshot.items
             if (tracked.isEmpty()) return@withLock GitHubShortcutRefreshExecution.NoTrackedItems
 
@@ -151,7 +151,7 @@ class GitHubBackgroundRefreshService {
         }
 
     private suspend fun prepareShortcutRefreshCaches() {
-        withContext(AppDispatchers.mcpServer) {
+        withContext(AppDispatchers.githubLocal) {
             GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
             GitHubReleaseStrategyRegistry.clearAllCaches()
             GitHubTrackStore.clearCheckCache()
@@ -164,7 +164,7 @@ class GitHubBackgroundRefreshService {
         result: GitHubTrackedRefreshBatchResult,
         replaceCache: Boolean = true,
     ) {
-        withContext(AppDispatchers.mcpServer) {
+        withContext(AppDispatchers.githubLocal) {
             val nextCache =
                 if (replaceCache) {
                     result.cacheEntries
@@ -189,14 +189,14 @@ class GitHubBackgroundRefreshService {
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
     ): Int {
         val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
-        withContext(AppDispatchers.mcpServer) {
+        withContext(AppDispatchers.githubLocal) {
             GitHubActionsRecommendedRunStore.retain(enabledItems.map { it.id }.toSet())
         }
         if (enabledItems.isEmpty() || targetItems.isEmpty()) return 0
 
         val service = GitHubActionsUpdateCheckService()
         val previousById =
-            withContext(AppDispatchers.mcpServer) {
+            withContext(AppDispatchers.githubLocal) {
                 GitHubActionsRecommendedRunStore.loadAll()
             }
         val notifiedCount =
@@ -221,7 +221,7 @@ class GitHubBackgroundRefreshService {
                                 )
                                 return@mapOrderedBounded false
                             }
-                    withContext(AppDispatchers.mcpServer) {
+                    withContext(AppDispatchers.githubLocal) {
                         GitHubActionsRecommendedRunStore.save(current)
                     }
                     previous != null && current.isNewerThan(previous) && onActionsUpdateAvailable(current)
@@ -260,7 +260,7 @@ class GitHubBackgroundRefreshService {
         val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
         if (enabledItems.isEmpty()) return emptyList()
         val previousById =
-            withContext(AppDispatchers.mcpServer) {
+            withContext(AppDispatchers.githubLocal) {
                 GitHubActionsRecommendedRunStore.loadAll()
             }
         return enabledItems.filter { item ->

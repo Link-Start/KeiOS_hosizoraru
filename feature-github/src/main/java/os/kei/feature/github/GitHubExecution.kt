@@ -3,7 +3,6 @@ package os.kei.feature.github
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
@@ -13,6 +12,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.yield
+import os.kei.core.concurrency.AppDispatchers
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
@@ -22,7 +22,7 @@ object GitHubExecution {
     suspend fun <T, R> mapOrderedBounded(
         items: List<T>,
         maxConcurrency: Int,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         block: suspend (T) -> R
     ): List<R> {
         if (items.isEmpty()) return emptyList()
@@ -55,7 +55,7 @@ object GitHubExecution {
     suspend fun <T, R> firstSuccessBounded(
         items: List<T>,
         maxConcurrency: Int,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         block: suspend (T) -> Result<R>
     ): Result<R> {
         if (items.isEmpty()) {
@@ -141,7 +141,7 @@ object GitHubExecution {
     fun <T, R> mapOrderedBoundedBlocking(
         items: List<T>,
         maxConcurrency: Int,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         block: (T) -> R
     ): List<R> {
         return runBlocking(dispatcher) {
@@ -163,7 +163,7 @@ class GitHubSingleFlight<K, V> {
 
     suspend fun run(
         key: K,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO,
+        dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         block: suspend () -> Result<V>
     ): Result<V> {
         return coroutineScope {

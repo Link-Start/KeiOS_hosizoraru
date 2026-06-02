@@ -13,7 +13,8 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
 
 class GitHubReleaseAssetService(
-    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val networkDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val localDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
 ) {
     fun buildReleaseUrl(owner: String, repo: String): String =
         GitHubVersionUtils.buildReleaseUrl(owner, repo)
@@ -43,7 +44,7 @@ class GitHubReleaseAssetService(
         cacheKey: String,
         refreshIntervalHours: Int,
     ): GitHubReleaseAssetBundle? =
-        withContext(ioDispatcher) {
+        withContext(localDispatcher) {
             GitHubReleaseAssetCacheStore.load(
                 cacheKey = cacheKey,
                 refreshIntervalHours = refreshIntervalHours,
@@ -54,20 +55,20 @@ class GitHubReleaseAssetService(
         cacheKey: String,
         bundle: GitHubReleaseAssetBundle,
     ) {
-        withContext(ioDispatcher) {
+        withContext(localDispatcher) {
             GitHubReleaseAssetCacheStore.save(cacheKey = cacheKey, bundle = bundle)
         }
     }
 
     suspend fun clearAssetCache(cacheKey: String) {
-        withContext(ioDispatcher) {
+        withContext(localDispatcher) {
             GitHubReleaseAssetCacheStore.clear(cacheKey)
         }
     }
 
     suspend fun clearAssetCaches(cacheKeys: List<String>) {
         if (cacheKeys.isEmpty()) return
-        withContext(ioDispatcher) {
+        withContext(localDispatcher) {
             cacheKeys.forEach(GitHubReleaseAssetCacheStore::clear)
         }
     }
@@ -82,7 +83,7 @@ class GitHubReleaseAssetService(
         includeAllAssets: Boolean,
         apiToken: String,
     ): Result<GitHubReleaseAssetBundle> =
-        withContext(ioDispatcher) {
+        withContext(networkDispatcher) {
             GitHubReleaseAssetRepository.fetchApkAssets(
                 owner = owner,
                 repo = repo,
@@ -100,7 +101,7 @@ class GitHubReleaseAssetService(
         repo: String,
         apiToken: String,
     ): Result<List<GitHubReleaseNotesTarget>> =
-        withContext(ioDispatcher) {
+        withContext(networkDispatcher) {
             GitHubReleaseAssetRepository.fetchReleaseNotesTargets(
                 owner = owner,
                 repo = repo,
@@ -125,7 +126,7 @@ class GitHubReleaseAssetService(
     suspend fun fetchGitRepositoryReleaseNotesTargets(
         identity: GitRepositoryTrackIdentity,
     ): Result<List<GitHubReleaseNotesTarget>> =
-        withContext(ioDispatcher) {
+        withContext(networkDispatcher) {
             GitRepositoryReleaseAssetSource(identity = identity).fetchReleaseNotesTargets()
         }
 
@@ -136,7 +137,7 @@ class GitHubReleaseAssetService(
         lookupConfig: GitHubLookupConfig,
         includeAllAssets: Boolean,
     ): Result<GitHubReleaseAssetBundle> =
-        withContext(ioDispatcher) {
+        withContext(networkDispatcher) {
             GitRepositoryReleaseAssetSource(identity = identity).loadReleaseAssetBundle(
                 rawTag = rawTag,
                 releaseUrl = releaseUrl,
@@ -150,7 +151,7 @@ class GitHubReleaseAssetService(
         useApiAssetUrl: Boolean,
         apiToken: String,
     ): String =
-        withContext(ioDispatcher) {
+        withContext(networkDispatcher) {
             GitHubReleaseAssetRepository
                 .resolvePreferredDownloadUrl(
                     asset = asset,
@@ -161,7 +162,7 @@ class GitHubReleaseAssetService(
         }
 
     suspend fun clearAllAssetCache() {
-        withContext(ioDispatcher) {
+        withContext(localDispatcher) {
             GitHubReleaseAssetCacheStore.clearAll()
         }
     }

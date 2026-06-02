@@ -1,9 +1,9 @@
 package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubActionsArtifact
@@ -29,7 +29,7 @@ class GitHubActionsRepository(
     private val requireApiTokenForApiStrategy: Boolean = false,
     private val githubHtmlBaseUrl: String = DEFAULT_GITHUB_HTML_BASE_URL,
     private val nightlyLinkBaseUrl: String = DEFAULT_NIGHTLY_LINK_BASE_URL,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     private val sanitizedToken: String = apiToken.trim()
     private val useNightlyLink: Boolean

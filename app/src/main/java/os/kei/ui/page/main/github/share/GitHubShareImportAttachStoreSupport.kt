@@ -30,20 +30,36 @@ internal suspend fun attachCandidateToTracked(
     candidate: GitHubPendingShareImportAttachCandidate,
     prefetchLatestCheck: Boolean = true,
     clock: GitHubShareImportClock = GitHubSystemShareImportClock,
-): ShareImportAttachResult =
-    withContext(AppDispatchers.githubNetwork) {
+): ShareImportAttachResult {
+    val candidateId = "${candidate.owner}/${candidate.repo}|${candidate.packageName}"
+    val duplicate =
+        withContext(AppDispatchers.githubLocal) {
+            GitHubTrackStore.load().any { it.id == candidateId }
+        }
+    if (duplicate) {
+        return ShareImportAttachResult.Duplicate
+    }
+    val trackedItem =
+        withContext(AppDispatchers.githubNetwork) {
+            candidate.toTrackedApp(context)
+        }
+    withContext(AppDispatchers.githubLocal) {
         val trackedItems = GitHubTrackStore.load().toMutableList()
-        val candidateId = "${candidate.owner}/${candidate.repo}|${candidate.packageName}"
         if (trackedItems.any { it.id == candidateId }) {
             return@withContext ShareImportAttachResult.Duplicate
         }
 
-        val trackedItem = candidate.toTrackedApp(context)
         trackedItems.add(trackedItem)
         GitHubTrackStore.save(trackedItems)
         saveTrackedFirstInstallAtFallback(candidate)
         saveTrackedAddedAtFallback(trackedItem.id, candidate.detectedAtMillis)
         saveTrackedModifiedAtFallback(trackedItem.id, candidate.detectedAtMillis)
+        GitHubTrackStoreSignals.requestTrackRefresh(trackedItem.id)
+        ShareImportAttachResult.Added(trackedItem.appLabel.ifBlank { trackedItem.packageName })
+    }.let { localResult ->
+        if (localResult !is ShareImportAttachResult.Added) {
+            return localResult
+        }
         AppBackgroundScheduler.scheduleGitHubRefresh(context)
 
         if (prefetchLatestCheck) {
@@ -53,10 +69,9 @@ internal suspend fun attachCandidateToTracked(
                 clock = clock,
             )
         }
-        GitHubTrackStoreSignals.requestTrackRefresh(trackedItem.id)
-
-        ShareImportAttachResult.Added(trackedItem.appLabel.ifBlank { trackedItem.packageName })
+        return localResult
     }
+}
 
 private fun GitHubPendingShareImportAttachCandidate.toTrackedApp(context: Context): GitHubTrackedApp =
     GitHubTrackedApp(
@@ -83,17 +98,21 @@ private suspend fun prefetchAttachedTrackLatestCheck(
     runCatching {
         val nowMs = clock.nowMs()
         val refreshedUi =
-            GitHubReleaseCheckService
-                .evaluateTrackedApp(context, trackedItem)
-                .toUi()
-                .copy(checkedAtMillis = nowMs)
-        val (cache, _) = GitHubTrackStore.loadCheckCache()
-        val updatedCache =
-            cache.toMutableMap().apply {
-                put(trackedItem.id, refreshedUi.toCacheEntry())
+            withContext(AppDispatchers.githubNetwork) {
+                GitHubReleaseCheckService
+                    .evaluateTrackedApp(context, trackedItem)
+                    .toUi()
+                    .copy(checkedAtMillis = nowMs)
             }
-        GitHubTrackStore.saveCheckCache(updatedCache, nowMs)
-        GitHubTrackStoreSignals.notifyChanged(nowMs)
+        withContext(AppDispatchers.githubLocal) {
+            val (cache, _) = GitHubTrackStore.loadCheckCache()
+            val updatedCache =
+                cache.toMutableMap().apply {
+                    put(trackedItem.id, refreshedUi.toCacheEntry())
+                }
+            GitHubTrackStore.saveCheckCache(updatedCache, nowMs)
+            GitHubTrackStoreSignals.notifyChanged(nowMs)
+        }
     }
 }
 

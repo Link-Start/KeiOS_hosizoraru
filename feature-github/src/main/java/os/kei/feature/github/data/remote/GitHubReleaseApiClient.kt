@@ -1,13 +1,13 @@
 package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONArray
 import org.json.JSONObject
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import java.io.IOException
 import java.net.URLEncoder
@@ -16,7 +16,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class GitHubReleaseApiClient(
     private val client: OkHttpClient,
     private val apiBaseUrl: String = DEFAULT_GITHUB_API_BASE_URL,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun resolveApiAssetDownloadUrlAsync(
         apiAssetUrl: String,

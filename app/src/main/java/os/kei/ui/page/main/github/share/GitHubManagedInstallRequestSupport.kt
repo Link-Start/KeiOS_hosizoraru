@@ -8,6 +8,7 @@ import os.kei.feature.github.install.GitHubApkInstallFailureReason
 import os.kei.feature.github.install.GitHubApkInstallRequest
 import os.kei.feature.github.install.GitHubApkInstallResult
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 
 internal fun GitHubApkInstallRequest.toManagedInstallRecord(sessionId: Int): GitHubPendingShareImportManagedInstallRecord =
     GitHubPendingShareImportManagedInstallRecord(
@@ -81,6 +82,12 @@ internal fun managedInstallFailureMessage(
         else -> {
             result.message.ifBlank {
                 context.getString(R.string.github_share_import_error_app_managed_install_failed)
+            }.let { message ->
+                localizedGitHubPageErrorMessage(
+                    context = context,
+                    rawMessage = message,
+                    fallbackMessage = context.getString(R.string.github_share_import_error_app_managed_install_failed),
+                )
             }
         }
     }

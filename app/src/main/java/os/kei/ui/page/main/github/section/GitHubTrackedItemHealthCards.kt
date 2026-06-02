@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import os.kei.ui.page.main.github.GitHubRepositoryHealth
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.repositoryHealthLabelRes
 import os.kei.ui.page.main.github.repositoryHealthStatusColor
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -39,8 +41,9 @@ internal fun GitHubDirectApkRemoteHealthCard(
     onOpenExternalUrl: (String) -> Unit,
 ) {
     if (!item.isDirectApkTrack()) return
+    val context = LocalContext.current
     val checkedAt = formatReleaseUpdatedAtCompact(state.directApkRemoteCheckedAtMillis)
-    val reason = state.directApkRemoteHealthMessage.directApkRemoteHealthReason()
+    val reason = state.directApkRemoteHealthMessage.directApkRemoteHealthReason(context)
     val health =
         when {
             state.loading -> GitHubDirectApkRemoteHealth.Unknown
@@ -99,9 +102,21 @@ internal fun GitHubDirectApkRemoteHealthCard(
     )
 }
 
-private fun String.directApkRemoteHealthReason(): String {
+private fun String.directApkRemoteHealthReason(context: android.content.Context): String {
     val message = trim()
     if (message.isBlank()) return ""
+    val localizedMessage =
+        localizedGitHubPageErrorMessage(
+            context = context,
+            rawMessage = message,
+            fallbackMessage = "",
+        )
+    if (localizedMessage.isNotBlank() && localizedMessage != message) {
+        return localizedMessage
+            .substringBefore('\n')
+            .take(36)
+            .trim()
+    }
     Regex("""HTTP\s+(\d{3})""", RegexOption.IGNORE_CASE)
         .find(message)
         ?.let { match -> return "HTTP ${match.groupValues[1]}" }

@@ -13,6 +13,7 @@ import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.RefreshIntervalOption
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -432,7 +433,11 @@ internal class GitHubConfigActions(
             }.onSuccess { report ->
                 state.strategyBenchmarkReport = report
             }.onFailure { error ->
-                state.strategyBenchmarkError = error.message ?: "unknown"
+                state.strategyBenchmarkError =
+                    localizedGitHubPageErrorMessage(
+                        context = context,
+                        error = error,
+                    )
             }
             state.strategyBenchmarkRunning = false
         }
@@ -448,7 +453,13 @@ internal class GitHubConfigActions(
                 val token = state.githubApiTokenInput.trim()
                 val trace = repository.checkCredential(token)
                 state.credentialCheckStatus = trace.result.getOrNull()
-                state.credentialCheckError = trace.result.exceptionOrNull()?.message
+                state.credentialCheckError =
+                    trace.result.exceptionOrNull()?.let { error ->
+                        localizedGitHubPageErrorMessage(
+                            context = context,
+                            error = error,
+                        )
+                    }
             } finally {
                 state.credentialCheckRunning = false
             }

@@ -11,6 +11,7 @@ import os.kei.R
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -129,7 +130,10 @@ internal class GitHubRefreshBatchActions(
                                     }.getOrElse { throwable ->
                                         VersionCheckUi(
                                             failed = true,
-                                            message = throwable.message ?: throwable.javaClass.simpleName,
+                                            message =
+                                                GitHubTrackedReleaseStatus.Failed.failureMessage(
+                                                    throwable.message ?: throwable.javaClass.simpleName,
+                                                ),
                                         )
                                     }
                                 val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()

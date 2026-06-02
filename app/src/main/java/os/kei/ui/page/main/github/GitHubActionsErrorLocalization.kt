@@ -3,6 +3,9 @@ package os.kei.ui.page.main.github
 import android.content.Context
 import os.kei.R
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryHttpException
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+
+private val githubPageHttpStatusRegex = Regex("""HTTP\s+(\d{3})""", RegexOption.IGNORE_CASE)
 
 internal fun localizedGitHubActionsErrorMessage(
     context: Context,
@@ -209,8 +212,150 @@ internal fun localizedGitHubShareImportErrorMessage(
         LEGACY_SHARE_NO_STABLE_RELEASE ->
             context.getString(R.string.github_share_import_error_no_stable_release)
 
-        else -> localizedGitHubActionsErrorMessage(context, message)
+        else -> localizedGitHubPageErrorMessage(context, message)
     }
+}
+
+internal fun localizedGitHubPageErrorMessage(
+    context: Context,
+    error: Throwable,
+    fallbackMessage: String = context.getString(R.string.common_unknown),
+): String =
+    localizedGitHubPageErrorMessage(
+        context = context,
+        rawMessage =
+            error.message
+                ?.takeIf { it.isNotBlank() }
+                ?: error.javaClass.simpleName,
+        fallbackMessage = fallbackMessage,
+    )
+
+internal fun localizedGitHubPageErrorMessage(
+    context: Context,
+    rawMessage: String?,
+    fallbackMessage: String = context.getString(R.string.common_unknown),
+): String {
+    val message = rawMessage?.trim().orEmpty()
+    if (message.isBlank()) return fallbackMessage
+    if (GitHubTrackedReleaseStatus.fromMessage(message) == GitHubTrackedReleaseStatus.Failed) {
+        return localizedGitHubTrackedReleaseStatusMessage(context, message)
+    }
+    val lower = message.lowercase()
+    val httpStatusCode = message.githubPageHttpStatusCodeOrNull()
+    return when {
+        message == "GitHub API token is invalid or expired" ->
+            context.getString(R.string.github_error_github_api_token_invalid)
+
+        message == "GitHub guest API is rate limited. Try again later or enter a token" ->
+            context.getString(R.string.github_error_github_guest_rate_limited)
+
+        message == "GitHub API is rate limited" ||
+            message == "GitHub API asset download is rate limited" ||
+            (lower.contains("api rate limit exceeded") && lower.contains("github")) ->
+            context.getString(R.string.github_error_github_api_rate_limited)
+
+        message == "GitHub API asset URL has expired" ->
+            context.getString(R.string.github_error_github_asset_url_expired)
+
+        message == "GitHub API asset download returned no redirect URL" ->
+            context.getString(R.string.github_error_github_asset_no_redirect)
+
+        message == "GitHub connection closed unexpectedly. Try again later." ||
+            message == "GitHub page connection closed unexpectedly. Try again later." ||
+            (lower.contains("github") && lower.contains("connection closed")) ->
+            context.getString(R.string.github_error_github_connection_closed)
+
+        message == "No release was found for this tag" ||
+            message == "This repository has no usable release" ->
+            context.getString(R.string.github_share_import_error_no_release)
+
+        message == "This repository has no stable release" ->
+            context.getString(R.string.github_share_import_error_no_stable_release)
+
+        message == "This repository has no stable release tag" ||
+            message == "missing Git release tag" ||
+            message == "The shared link is missing a release tag" ->
+            context.getString(R.string.github_share_import_error_missing_release_tag)
+
+        message == "Invalid GitHub repository URL" ||
+            message == "invalid Git repository URL" ->
+            context.getString(R.string.github_error_invalid_repository_url)
+
+        message == "invalid direct APK URL" ->
+            context.getString(R.string.github_error_invalid_direct_apk_url)
+
+        message == "The target release contains no usable APK" ||
+            message == "The latest stable release contains no APK asset" ||
+            message == "Release contains no APK asset" ||
+            message == "No APK asset manifest could be parsed" ->
+            context.getString(R.string.github_share_import_error_no_usable_apk)
+
+        message.startsWith("No downloadable assets found on") ->
+            context.getString(R.string.github_error_no_downloadable_assets)
+
+        message == "Git release notes are unavailable" ->
+            context.getString(R.string.github_error_release_notes_unavailable)
+
+        message == "Git release assets are unavailable" ->
+            context.getString(R.string.github_error_release_assets_unavailable)
+
+        message == "No Git tags found" ||
+            message == "No Git release or tag entries found" ->
+            context.getString(R.string.github_error_no_git_release_tags)
+
+        message == "Git repository package scanning is unavailable" ->
+            context.getString(R.string.github_error_git_package_scan_unavailable)
+
+        message == "remote APK manifest read failed" ||
+            lower.contains("no apk manifest could be inspected") ->
+            context.getString(R.string.github_error_remote_apk_manifest_failed)
+
+        lower.startsWith("direct apk") && lower.contains("too large") ->
+            context.getString(R.string.github_error_direct_apk_index_too_large)
+
+        httpStatusCode != null && lower.startsWith("github api asset download") ->
+            context.getString(R.string.github_error_github_asset_http_failed, httpStatusCode)
+
+        httpStatusCode != null && lower.startsWith("github") ->
+            context.getString(R.string.github_error_github_http_failed, httpStatusCode)
+
+        httpStatusCode != null && lower.startsWith("git repository") ->
+            context.getString(R.string.github_error_git_repository_http_failed, httpStatusCode)
+
+        httpStatusCode != null && lower.startsWith("git release") ->
+            context.getString(R.string.github_error_git_asset_http_failed, httpStatusCode)
+
+        httpStatusCode != null && lower.startsWith("direct apk") ->
+            context.getString(R.string.github_error_direct_apk_http_failed, httpStatusCode)
+
+        httpStatusCode != null && lower.startsWith("http") ->
+            context.getString(R.string.github_error_download_http_failed, httpStatusCode)
+
+        else -> {
+            val actionsMessage = localizedGitHubActionsErrorMessage(context, message)
+            if (actionsMessage != message) actionsMessage else message
+        }
+    }
+}
+
+internal fun localizedGitHubTrackedReleaseStatusMessage(
+    context: Context,
+    rawMessage: String,
+): String {
+    val message = rawMessage.trim()
+    if (GitHubTrackedReleaseStatus.fromMessage(message) != GitHubTrackedReleaseStatus.Failed) {
+        return message
+    }
+    val prefix = context.getString(R.string.github_check_failed_prefix)
+    val detail = message.githubTrackedReleaseFailureDetail()
+    if (detail.isBlank()) return prefix
+    val localizedDetail =
+        localizedGitHubPageErrorMessage(
+            context = context,
+            rawMessage = detail,
+            fallbackMessage = detail,
+        )
+    return context.getString(R.string.github_error_check_failed_detail, localizedDetail)
 }
 
 private const val LEGACY_ACTIONS_DOWNLOAD_TOKEN_REQUIRED =
@@ -259,3 +404,28 @@ private const val LEGACY_SHARE_MISSING_RELEASE_TAG =
     "\u5206\u4eab\u94fe\u63a5\u7f3a\u5c11 release tag"
 private const val LEGACY_SHARE_NO_STABLE_RELEASE =
     "\u8be5\u4ed3\u5e93\u6682\u65e0\u7a33\u5b9a\u7248 release"
+
+private fun String.githubPageHttpStatusCodeOrNull(): Int? =
+    githubPageHttpStatusRegex
+        .find(this)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+
+private fun String.githubTrackedReleaseFailureDetail(): String {
+    val message = trim()
+    val failed = GitHubTrackedReleaseStatus.Failed
+    val prefixes =
+        listOf(
+            "${failed.defaultMessage}:",
+            "${failed.defaultMessage}\uff1a",
+            "${failed.defaultMessage} -",
+            "\u68c0\u67e5\u5931\u8d25:",
+            "\u68c0\u67e5\u5931\u8d25\uff1a",
+            "Check failed:",
+        )
+    prefixes.forEach { prefix ->
+        if (message.startsWith(prefix)) return message.removePrefix(prefix).trim()
+    }
+    return ""
+}

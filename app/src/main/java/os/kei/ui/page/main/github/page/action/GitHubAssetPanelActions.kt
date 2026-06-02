@@ -7,6 +7,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.statusActionUrl
 
 internal class GitHubAssetPanelActions(
@@ -158,8 +159,12 @@ internal class GitHubAssetPanelActions(
                             )
                     }
                 }.onFailure { error ->
-                    errorState[item.id] = error.message
-                        ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                    errorState[item.id] =
+                        localizedGitHubPageErrorMessage(
+                            context = context,
+                            error = error,
+                            fallbackMessage = context.getString(R.string.github_error_load_apk_assets_failed),
+                        )
                 }
         }
     }

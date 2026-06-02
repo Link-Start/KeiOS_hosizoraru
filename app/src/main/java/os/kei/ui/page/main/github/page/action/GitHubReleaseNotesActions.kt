@@ -19,6 +19,7 @@ import os.kei.feature.github.model.githubReleaseLookupItemOrNull
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.releaseNotesApkVersionKey
 import os.kei.ui.page.main.github.statusActionUrl
 
@@ -114,8 +115,12 @@ internal class GitHubReleaseNotesActions(
                 }.getOrElse { error ->
                     fallbackReleaseNotesTargets(item, itemState).ifEmpty {
                         state.releaseNotesLoading[item.id] = false
-                        state.releaseNotesErrors[item.id] = error.message
-                            ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                        state.releaseNotesErrors[item.id] =
+                            localizedGitHubPageErrorMessage(
+                                context = context,
+                                error = error,
+                                fallbackMessage = context.getString(R.string.github_error_load_apk_assets_failed),
+                            )
                         return@launch
                     }
                 }
@@ -293,8 +298,12 @@ internal class GitHubReleaseNotesActions(
             }.onFailure { error ->
                 if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
                 state.releaseNotesLoading[item.id] = false
-                state.releaseNotesErrors[item.id] = error.message
-                    ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                state.releaseNotesErrors[item.id] =
+                    localizedGitHubPageErrorMessage(
+                        context = context,
+                        error = error,
+                        fallbackMessage = context.getString(R.string.github_error_load_apk_assets_failed),
+                    )
             }
         }
     }

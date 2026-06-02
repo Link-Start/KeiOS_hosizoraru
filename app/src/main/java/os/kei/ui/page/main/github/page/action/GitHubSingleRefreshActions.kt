@@ -6,6 +6,7 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.statusMessage
 
 internal class GitHubSingleRefreshActions(
     private val owner: GitHubRefreshActions,
@@ -76,7 +77,7 @@ internal class GitHubSingleRefreshActions(
                 ).copy(checkedAtMillis = clock.nowMs())
         if (state.trackedItems.none { it.id == item.id }) return
         if (showToastOnError && itemState.failed) {
-            owner.env.toast(itemState.message)
+            owner.env.toast(itemState.statusMessage(context))
         }
         state.checkStates[item.id] = itemState
         if (persistAfterUpdate) owner.mergeCheckCacheNow(targetIds = setOf(item.id))

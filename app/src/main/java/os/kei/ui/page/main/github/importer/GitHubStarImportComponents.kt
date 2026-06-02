@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -26,6 +27,7 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
@@ -326,15 +328,24 @@ internal fun StarImportStatusCard(
     selectedCount: Int,
     discoveredListCount: Int
 ) {
+    val context = LocalContext.current
+    val displayError =
+        error?.let { rawError ->
+            localizedGitHubPageErrorMessage(
+                context = context,
+                rawMessage = rawError,
+                fallbackMessage = rawError,
+            )
+        }
     val title = when {
         loading -> stringResource(R.string.github_star_import_status_loading)
         importing -> stringResource(R.string.github_star_import_status_importing)
-        error != null -> stringResource(R.string.github_star_import_status_error)
+        displayError != null -> stringResource(R.string.github_star_import_status_error)
         preview != null -> stringResource(R.string.github_star_import_status_ready)
         else -> stringResource(R.string.github_star_import_status_waiting)
     }
     val subtitle = when {
-        error != null -> error
+        displayError != null -> displayError
         preview != null -> stringResource(
             R.string.github_star_import_status_preview_format,
             preview.totalFetchedCount,
@@ -358,13 +369,13 @@ internal fun StarImportStatusCard(
         headerEndActions = {
             StatusPill(
                 label = when {
-                    error != null -> stringResource(R.string.common_status_failed)
+                    displayError != null -> stringResource(R.string.common_status_failed)
                     loading || importing -> stringResource(R.string.common_status_running)
                     preview != null -> stringResource(R.string.common_available)
                     else -> stringResource(R.string.common_not_loaded)
                 },
                 color = when {
-                    error != null -> GitHubStatusPalette.Error
+                    displayError != null -> GitHubStatusPalette.Error
                     loading || importing -> GitHubStatusPalette.Active
                     preview != null -> GitHubStatusPalette.Update
                     else -> MiuixTheme.colorScheme.onBackgroundVariant

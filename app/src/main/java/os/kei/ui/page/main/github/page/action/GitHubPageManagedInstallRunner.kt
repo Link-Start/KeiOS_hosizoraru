@@ -25,6 +25,7 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.asset.assetDisplayName
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.page.githubManagedInstallKey
 
@@ -51,10 +52,14 @@ internal class GitHubPageManagedInstallRunner(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                val reason = error.message
-                    ?.takeIf { it.isNotBlank() }
-                    ?: appContext.getString(
-                        R.string.github_share_import_error_app_managed_install_failed
+                val reason =
+                    localizedGitHubPageErrorMessage(
+                        context = appContext,
+                        error = error,
+                        fallbackMessage =
+                            appContext.getString(
+                                R.string.github_share_import_error_app_managed_install_failed
+                            ),
                     )
                 AppLogger.w(
                     GITHUB_PAGE_MANAGED_INSTALL_TAG,
@@ -344,6 +349,12 @@ internal class GitHubPageManagedInstallRunner(
 
             else -> result.message.ifBlank {
                 context.getString(R.string.github_share_import_error_app_managed_install_failed)
+            }.let { message ->
+                localizedGitHubPageErrorMessage(
+                    context = context,
+                    rawMessage = message,
+                    fallbackMessage = context.getString(R.string.github_share_import_error_app_managed_install_failed),
+                )
             }
         }
     }

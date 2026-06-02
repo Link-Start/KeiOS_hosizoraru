@@ -143,10 +143,7 @@ internal fun VersionCheckUi.statusMessage(context: Context): String {
         GitHubTrackedReleaseStatus.isOnlyPreReleasesHint(rawMessage) ->
             context.getString(R.string.github_status_only_prereleases_hint)
         status == GitHubTrackedReleaseStatus.Failed ->
-            GitHubTrackedReleaseStatus.localizedFailureDetail(
-                rawMessage,
-                context.getString(R.string.github_check_failed_prefix)
-            )
+            localizedGitHubTrackedReleaseStatusMessage(context, rawMessage)
         else -> {
             rawMessage
         }

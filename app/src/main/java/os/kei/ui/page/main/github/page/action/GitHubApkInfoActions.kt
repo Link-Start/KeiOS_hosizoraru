@@ -8,6 +8,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
+import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 
 internal class GitHubApkInfoActions(
@@ -64,8 +65,12 @@ internal class GitHubApkInfoActions(
                             managedInstallConfirmActions.notifyConfirm(request.item, asset, info)
                         }
                 }.onFailure { error ->
-                    state.apkInfoErrors[key] = error.message
-                        ?: context.getString(R.string.github_apk_info_error_failed)
+                    state.apkInfoErrors[key] =
+                        localizedGitHubPageErrorMessage(
+                            context = context,
+                            error = error,
+                            fallbackMessage = context.getString(R.string.github_apk_info_error_failed),
+                        )
                 }
         }
     }

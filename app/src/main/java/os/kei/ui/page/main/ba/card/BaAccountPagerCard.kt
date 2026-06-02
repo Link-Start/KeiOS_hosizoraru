@@ -45,7 +45,10 @@ internal fun BaAccountPagerCard(
     serverOptions: List<String>,
     onAccountSelected: (BaAccountId) -> Unit,
 ) {
-    if (accounts.isEmpty()) return
+    if (accounts.isEmpty()) {
+        BaAccountLoadingCard(backdrop = backdrop)
+        return
+    }
 
     val activeIndex = accounts.indexOfFirst { it.id == activeAccountId }.coerceAtLeast(0)
     val pagerState =
@@ -85,6 +88,42 @@ internal fun BaAccountPagerCard(
             pageCount = accounts.size,
             serverOptions = serverOptions,
         )
+    }
+}
+
+@Composable
+private fun BaAccountLoadingCard(backdrop: Backdrop?) {
+    val accentColor = AppStatusColors.Cached
+    BaLiquidCard(
+        backdrop = backdrop,
+        accentColor = accentColor,
+        accentAlpha = 0f,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BaCardHeader(title = stringResource(R.string.ba_account_card_title))
+            Text(
+                text = stringResource(R.string.common_loading),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                textAlign = TextAlign.End,
+            )
+        }
+
+        BaLiquidPanel(
+            backdrop = backdrop,
+            accentColor = accentColor,
+            accentAlpha = 0f,
+        ) {
+            Text(
+                text = stringResource(R.string.common_loading),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

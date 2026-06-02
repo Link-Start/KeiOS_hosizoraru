@@ -120,16 +120,14 @@ internal fun BaPageContent(
             ),
         verticalArrangement = Arrangement.spacedBy(pageGap),
     ) {
-        if (state.accountUiState.accounts.isNotEmpty()) {
-            item(key = "ba-account", contentType = BaPageContentType.Account) {
-                BaAccountPagerCard(
-                    backdrop = backdrop,
-                    accounts = state.accountUiState.accounts,
-                    activeAccountId = state.accountUiState.activeAccountId,
-                    serverOptions = state.serverOptions,
-                    onAccountSelected = actions.onAccountSelected,
-                )
-            }
+        item(key = "ba-account", contentType = BaPageContentType.Account) {
+            BaAccountPagerCard(
+                backdrop = backdrop,
+                accounts = state.accountUiState.accounts,
+                activeAccountId = state.accountUiState.activeAccountId,
+                serverOptions = state.serverOptions,
+                onAccountSelected = actions.onAccountSelected,
+            )
         }
 
         item(key = "ba-overview", contentType = BaPageContentType.Overview) {

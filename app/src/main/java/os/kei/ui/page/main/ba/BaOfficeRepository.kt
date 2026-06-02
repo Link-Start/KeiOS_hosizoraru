@@ -51,6 +51,51 @@ internal object BaOfficeRepository {
             BASettingsStore.loadAccountState()
         }
 
+    suspend fun addAccountAsync(
+        serverIndex: Int,
+        displayName: String,
+        nickname: String,
+        friendCode: String,
+    ): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.addAccount(
+                serverIndex = serverIndex,
+                displayName = displayName,
+                nickname = nickname,
+                friendCode = friendCode,
+            )
+        }
+
+    suspend fun updateAccountProfileAsync(
+        accountId: BaAccountId,
+        serverIndex: Int,
+        displayName: String,
+        nickname: String,
+        friendCode: String,
+    ): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.updateAccountProfile(
+                accountId = accountId,
+                serverIndex = serverIndex,
+                displayName = displayName,
+                nickname = nickname,
+                friendCode = friendCode,
+            )
+        }
+
+    suspend fun deleteAccountAsync(accountId: BaAccountId): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.deleteAccount(accountId)
+        }
+
+    suspend fun moveAccountAsync(
+        accountId: BaAccountId,
+        offset: Int,
+    ): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.moveAccount(accountId = accountId, offset = offset)
+        }
+
     fun loadServerIndex(): Int = BASettingsStore.loadServerIndex()
 
     suspend fun loadServerIndexAsync(): Int =

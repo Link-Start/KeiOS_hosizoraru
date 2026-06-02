@@ -132,6 +132,27 @@ internal class BaAccountStore(
         return true
     }
 
+    fun moveAccount(
+        accountId: BaAccountId,
+        offset: Int,
+    ): Boolean {
+        if (offset == 0) return false
+        val current = loadAccounts()
+        val fromIndex = current.indexOfFirst { it.profile.id == accountId }
+        if (fromIndex < 0) return false
+        val toIndex = (fromIndex + offset).coerceIn(0, current.lastIndex)
+        if (fromIndex == toIndex) return false
+        val mutable = current.toMutableList()
+        val account = mutable.removeAt(fromIndex)
+        mutable.add(toIndex, account)
+        saveAccounts(
+            mutable.mapIndexed { index, record ->
+                record.copy(profile = record.profile.copy(sortOrder = index))
+            },
+        )
+        return true
+    }
+
     fun loadActiveAccountId(): BaAccountId? =
         store
             .decodeString(KEY_BA_ACTIVE_ACCOUNT_ID, "")

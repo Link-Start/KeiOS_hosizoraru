@@ -54,6 +54,43 @@ internal class BaOfficePageRepository(
             enabled = enabled,
         )
 
+    suspend fun addAccount(
+        serverIndex: Int,
+        displayName: String,
+        nickname: String,
+        friendCode: String,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.addAccountAsync(
+            serverIndex = serverIndex,
+            displayName = displayName,
+            nickname = nickname,
+            friendCode = friendCode,
+        )
+
+    suspend fun updateAccountProfile(
+        accountId: BaAccountId,
+        serverIndex: Int,
+        displayName: String,
+        nickname: String,
+        friendCode: String,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.updateAccountProfileAsync(
+            accountId = accountId,
+            serverIndex = serverIndex,
+            displayName = displayName,
+            nickname = nickname,
+            friendCode = friendCode,
+        )
+
+    suspend fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot =
+        BaOfficeRepository.deleteAccountAsync(accountId)
+
+    suspend fun moveAccount(
+        accountId: BaAccountId,
+        offset: Int,
+    ): BaAccountStoreSnapshot =
+        BaOfficeRepository.moveAccountAsync(accountId = accountId, offset = offset)
+
     suspend fun clearListScrollState() {
         BaOfficeRepository.clearListScrollStateAsync()
     }

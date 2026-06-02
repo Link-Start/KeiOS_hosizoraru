@@ -5,6 +5,7 @@ package os.kei.ui.page.main.ba.support
 import com.tencent.mmkv.MMKV
 import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
+import java.util.UUID
 
 internal object BASettingsStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_SETTINGS_KV_ID) }
@@ -151,6 +152,77 @@ internal object BASettingsStore {
         return updated
     }
 
+    fun addAccount(
+        serverIndex: Int,
+        displayName: String,
+        nickname: String,
+        friendCode: String,
+    ): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        val account =
+            BaAccountRecord(
+                profile =
+                    BaAccountProfile(
+                        id = newManualAccountId(serverIndex),
+                        serverIndex = serverIndex.coerceIn(0, 2),
+                        displayName = sanitizeBaAccountDisplayName(displayName, nickname),
+                        nickname = sanitizeBaAccountNickname(nickname),
+                        friendCode = sanitizeBaAccountFriendCode(friendCode),
+                        sortOrder = store.loadAccounts().size,
+                    ),
+            )
+        store.addAccount(account)
+        store.selectActiveAccount(account.profile.id)
+        notifyChanged()
+        return store.loadState()
+    }
+
+    fun updateAccountProfile(
+        accountId: BaAccountId,
+        serverIndex: Int,
+        displayName: String,
+        nickname: String,
+        friendCode: String,
+    ): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        val account = store.loadAccounts().firstOrNull { it.profile.id == accountId }
+        if (account != null) {
+            val nextNickname = sanitizeBaAccountNickname(nickname)
+            store.updateAccount(
+                account.copy(
+                    profile =
+                        account.profile.copy(
+                            serverIndex = serverIndex.coerceIn(0, 2),
+                            displayName = sanitizeBaAccountDisplayName(displayName, nextNickname),
+                            nickname = nextNickname,
+                            friendCode = sanitizeBaAccountFriendCode(friendCode),
+                        ),
+                ),
+            )
+            notifyChanged()
+        }
+        return store.loadState()
+    }
+
+    fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        if (store.deleteAccount(accountId)) {
+            notifyChanged()
+        }
+        return store.loadState()
+    }
+
+    fun moveAccount(
+        accountId: BaAccountId,
+        offset: Int,
+    ): BaAccountStoreSnapshot {
+        val store = migratedAccountStore()
+        if (store.moveAccount(accountId = accountId, offset = offset)) {
+            notifyChanged()
+        }
+        return store.loadState()
+    }
+
     fun migrateAccountsIfNeeded(): BaAccountMigrationResult {
         val keyValueStore = accountKeyValueStore()
         val store = accountStore(keyValueStore)
@@ -159,6 +231,11 @@ internal object BASettingsStore {
             keyValueStore = keyValueStore,
         ).migrateLegacyIfNeeded()
     }
+
+    private fun newManualAccountId(serverIndex: Int): BaAccountId =
+        BaAccountId(
+            value = "manual-${serverIndex.coerceIn(0, 2)}-${UUID.randomUUID()}",
+        )
 
     fun loadSnapshot(): BaPageSnapshot =
         loadBaSettingsSnapshot(kv()).withActiveBaAccount(loadAccountState())

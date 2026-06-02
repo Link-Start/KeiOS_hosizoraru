@@ -65,6 +65,10 @@ internal fun BaPageSheetHost(
             viewModel::updateAllAccountsFollowGlobalNotificationSettings,
         onAccountEnabledChange = viewModel::updateAccountEnabled,
         onSelectAccount = onSelectAccount,
+        onAddAccount = viewModel::addAccount,
+        onUpdateAccount = viewModel::updateAccountProfile,
+        onDeleteAccount = viewModel::deleteAccount,
+        onMoveAccount = viewModel::moveAccount,
         onDismissRequest = onDismissAccountManagement,
     )
     BaNotificationSettingsSheet(

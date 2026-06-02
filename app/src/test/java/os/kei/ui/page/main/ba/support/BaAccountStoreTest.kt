@@ -53,6 +53,27 @@ class BaAccountStoreTest {
     }
 
     @Test
+    fun `moving account rewrites sort order and keeps active id stable`() {
+        val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
+        store.saveAccounts(
+            listOf(
+                testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                testAccount(id = "cn-alt", serverIndex = 0, sortOrder = 1),
+                testAccount(id = "jp-main", serverIndex = 2, sortOrder = 2),
+            ),
+        )
+        assertTrue(store.selectActiveAccount(BaAccountId("cn-alt")))
+
+        assertTrue(store.moveAccount(BaAccountId("jp-main"), offset = -2))
+        assertFalse(store.moveAccount(BaAccountId("jp-main"), offset = -1))
+
+        val accounts = store.loadAccounts()
+        assertEquals(listOf("jp-main", "cn-main", "cn-alt"), accounts.map { it.profile.id.value })
+        assertEquals(listOf(0, 1, 2), accounts.map { it.profile.sortOrder })
+        assertEquals(BaAccountId("cn-alt"), store.loadState().activeAccountId)
+    }
+
+    @Test
     fun `all accounts follow global notification setting defaults on and persists`() {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
 

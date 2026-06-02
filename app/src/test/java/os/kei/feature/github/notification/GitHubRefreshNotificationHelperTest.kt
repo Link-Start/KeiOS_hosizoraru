@@ -60,6 +60,8 @@ class GitHubRefreshNotificationHelperTest {
         assertFalse(focusParam.contains("textButton"))
         assertTrue(focusParam.contains("\"title\":\"50%\""))
         assertTrue(focusParam.contains("\"content\":\"2/4\""))
+        assertTrue(focusParam.contains("已查 2/4 · 预发 1 · 稳定 2"))
+        assertFalse(focusParam.contains("预发可更新"))
         assertTrue(focusParam.contains("\"progress\":50"))
     }
 
@@ -81,6 +83,8 @@ class GitHubRefreshNotificationHelperTest {
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
+        assertTrue(focusParam.contains("已查 4/4 · 预发 1 · 稳定 2"))
+        assertFalse(focusParam.contains("稳定可更新"))
         assertTrue(focusParam.contains("github_action_open"))
         assertTrue(focusParam.contains("github_action_read"))
     }
@@ -125,6 +129,7 @@ class GitHubRefreshNotificationHelperTest {
             )
         )
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
+        assertTrue(focusParam.contains("已查 4/4 · 预发 1 · 稳定 2 · 失败 1"))
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
     }
 

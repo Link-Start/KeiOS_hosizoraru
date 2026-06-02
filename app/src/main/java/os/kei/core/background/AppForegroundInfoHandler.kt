@@ -50,7 +50,7 @@ object AppForegroundInfoHandler {
             )
         val refreshResult = result.refreshResult
         if (refreshResult?.hasNotifiableOutcome == true) {
-            GitHubRefreshNotificationHelper.notifyCompleted(
+            notifyGitHubRefreshCompletedOrCancel(
                 context = context,
                 total = refreshResult.totalCount,
                 preReleaseUpdateCount = refreshResult.preReleaseUpdateCount,
@@ -58,7 +58,14 @@ object AppForegroundInfoHandler {
                 failedCount = refreshResult.failedCount,
             )
         } else if (progressNotifier.didNotify) {
-            GitHubRefreshNotificationHelper.cancel(context)
+            runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                .onFailure { error ->
+                    AppLogger.w(
+                        "AppForegroundInfoHandler",
+                        "github refresh quiet tick notification cancel failed",
+                        error
+                    )
+                }
         }
     }
 
@@ -79,13 +86,20 @@ object AppForegroundInfoHandler {
                 )
         ) {
             GitHubShortcutRefreshExecution.NoTrackedItems -> {
-                GitHubRefreshNotificationHelper.cancel(context)
+                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                    .onFailure { error ->
+                        AppLogger.w(
+                            "AppForegroundInfoHandler",
+                            "github refresh empty shortcut notification cancel failed",
+                            error
+                        )
+                    }
                 AppShortcutGitHubRefreshResult.NoTrackedItems
             }
 
             is GitHubShortcutRefreshExecution.Completed -> {
                 val result = execution.result
-                GitHubRefreshNotificationHelper.notifyCompleted(
+                notifyGitHubRefreshCompletedOrCancel(
                     context = context,
                     total = result.totalCount,
                     preReleaseUpdateCount = result.preReleaseUpdateCount,
@@ -95,6 +109,42 @@ object AppForegroundInfoHandler {
                 AppBackgroundScheduler.scheduleGitHubRefresh(context)
                 AppShortcutGitHubRefreshResult.Completed
             }
+        }
+    }
+
+    private fun notifyGitHubRefreshCompletedOrCancel(
+        context: Context,
+        total: Int,
+        preReleaseUpdateCount: Int,
+        updatableCount: Int,
+        failedCount: Int,
+    ) {
+        val posted =
+            runCatching {
+                GitHubRefreshNotificationHelper.notifyCompleted(
+                    context = context,
+                    total = total,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    updatableCount = updatableCount,
+                    failedCount = failedCount,
+                )
+            }.getOrElse { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "github refresh completed notification failed",
+                    error
+                )
+                false
+            }
+        if (!posted) {
+            runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                .onFailure { error ->
+                    AppLogger.w(
+                        "AppForegroundInfoHandler",
+                        "github refresh stale notification cancel failed",
+                        error
+                    )
+                }
         }
     }
 
@@ -120,8 +170,8 @@ object AppForegroundInfoHandler {
                     updatableCount = 0,
                     failedCount = 0
                 )
-            }.onSuccess {
-                didNotify = true
+            }.onSuccess { posted ->
+                if (posted) didNotify = true
             }.onFailure { error ->
                 AppLogger.w(
                     "AppForegroundInfoHandler",
@@ -137,12 +187,13 @@ object AppForegroundInfoHandler {
                 if (progress.current >= progress.total) return@withLock false
                 val nowMs = System.currentTimeMillis()
                 val elapsedMs = (nowMs - lastNotifyAtMs).coerceAtLeast(0L)
-                val shouldEmit = progress.current == 1 ||
+                val shouldEmit =
+                    progress.current == 1 ||
                         elapsedMs >= GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS ||
                         (
-                                progress.current % GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&
-                                        elapsedMs >= GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS
-                                )
+                            progress.current % GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&
+                                elapsedMs >= GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS
+                        )
                 if (shouldEmit) {
                     lastNotifyAtMs = nowMs
                 }
@@ -158,8 +209,8 @@ object AppForegroundInfoHandler {
                     updatableCount = progress.updatableCount,
                     failedCount = progress.failedCount
                 )
-            }.onSuccess {
-                didNotify = true
+            }.onSuccess { posted ->
+                if (posted) didNotify = true
             }.onFailure { error ->
                 AppLogger.w(
                     "AppForegroundInfoHandler",

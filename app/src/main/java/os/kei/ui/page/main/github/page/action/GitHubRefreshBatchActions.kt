@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -126,6 +127,7 @@ internal class GitHubRefreshBatchActions(
                                             )
                                         }
                                     }.getOrElse { throwable ->
+                                        if (throwable is CancellationException) throw throwable
                                         VersionCheckUi(
                                             failed = true,
                                             message =
@@ -221,6 +223,14 @@ internal class GitHubRefreshBatchActions(
                         }
                     }.joinAll()
                 }
+                repository.notifyRefreshProgress(
+                    context = context,
+                    current = totalCount,
+                    total = totalCount,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    updatableCount = updatableCount,
+                    failedCount = failedCount,
+                )
                 state.overviewRefreshState =
                     if (failedCount > 0) {
                         OverviewRefreshState.Failed

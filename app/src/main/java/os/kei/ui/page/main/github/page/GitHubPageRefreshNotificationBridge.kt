@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.log.AppLogger
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 
 internal class GitHubPageRefreshNotificationBridge(
@@ -16,16 +17,21 @@ internal class GitHubPageRefreshNotificationBridge(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        withContext(ioDispatcher) {
-            GitHubRefreshNotificationHelper.notifyProgress(
-                context = context,
-                current = current,
-                total = total,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount
-            )
+    ): Boolean {
+        return withContext(ioDispatcher) {
+            runCatching {
+                GitHubRefreshNotificationHelper.notifyProgress(
+                    context = context,
+                    current = current,
+                    total = total,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    updatableCount = updatableCount,
+                    failedCount = failedCount
+                )
+            }.getOrElse { error ->
+                AppLogger.w(TAG, "github refresh progress notification failed", error)
+                false
+            }
         }
     }
 
@@ -35,15 +41,28 @@ internal class GitHubPageRefreshNotificationBridge(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        withContext(ioDispatcher) {
-            GitHubRefreshNotificationHelper.notifyCompleted(
-                context = context,
-                total = total,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount
-            )
+    ): Boolean {
+        return withContext(ioDispatcher) {
+            val posted =
+                runCatching {
+                    GitHubRefreshNotificationHelper.notifyCompleted(
+                        context = context,
+                        total = total,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        updatableCount = updatableCount,
+                        failedCount = failedCount
+                    )
+                }.getOrElse { error ->
+                    AppLogger.w(TAG, "github refresh completed notification failed", error)
+                    false
+                }
+            if (!posted) {
+                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                    .onFailure { error ->
+                        AppLogger.w(TAG, "github refresh stale notification cancel failed", error)
+                    }
+            }
+            posted
         }
     }
 
@@ -54,20 +73,41 @@ internal class GitHubPageRefreshNotificationBridge(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        withContext(ioDispatcher) {
-            GitHubRefreshNotificationHelper.notifyCancelled(
-                context = context,
-                current = current,
-                total = total,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount
-            )
+    ): Boolean {
+        return withContext(ioDispatcher) {
+            val posted =
+                runCatching {
+                    GitHubRefreshNotificationHelper.notifyCancelled(
+                        context = context,
+                        current = current,
+                        total = total,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        updatableCount = updatableCount,
+                        failedCount = failedCount
+                    )
+                }.getOrElse { error ->
+                    AppLogger.w(TAG, "github refresh cancelled notification failed", error)
+                    false
+                }
+            if (!posted) {
+                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                    .onFailure { error ->
+                        AppLogger.w(TAG, "github refresh cancelled notification cleanup failed", error)
+                    }
+            }
+            posted
         }
     }
 
     fun cancel(context: Context) {
-        GitHubRefreshNotificationHelper.cancel(context)
+        runCatching {
+            GitHubRefreshNotificationHelper.cancel(context)
+        }.onFailure { error ->
+            AppLogger.w(TAG, "github refresh notification cancel failed", error)
+        }
+    }
+
+    private companion object {
+        const val TAG = "GitHubRefreshNotifyBridge"
     }
 }

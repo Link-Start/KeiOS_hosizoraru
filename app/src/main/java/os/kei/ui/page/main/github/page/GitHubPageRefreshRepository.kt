@@ -39,8 +39,8 @@ internal class GitHubPageRefreshRepository(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        notificationBridge.notifyProgress(
+    ): Boolean {
+        return notificationBridge.notifyProgress(
             context = context,
             current = current,
             total = total,
@@ -56,8 +56,8 @@ internal class GitHubPageRefreshRepository(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        notificationBridge.notifyCompleted(
+    ): Boolean {
+        return notificationBridge.notifyCompleted(
             context = context,
             total = total,
             preReleaseUpdateCount = preReleaseUpdateCount,
@@ -73,8 +73,8 @@ internal class GitHubPageRefreshRepository(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        notificationBridge.notifyCancelled(
+    ): Boolean {
+        return notificationBridge.notifyCancelled(
             context = context,
             current = current,
             total = total,

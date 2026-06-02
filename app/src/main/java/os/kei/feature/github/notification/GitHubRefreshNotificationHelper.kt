@@ -100,7 +100,7 @@ object GitHubRefreshNotificationHelper {
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
+    ): Boolean {
         val safeTotal = total.coerceAtLeast(1)
         val safeCurrent = current.coerceIn(0, safeTotal)
         val isComplete = total > 0 && safeCurrent >= safeTotal
@@ -110,7 +110,7 @@ object GitHubRefreshNotificationHelper {
             running = !isComplete,
             cancelled = false
         )
-        notifyInternal(
+        return notifyInternal(
             context = context,
             state = RefreshState(
                 current = safeCurrent,
@@ -132,8 +132,8 @@ object GitHubRefreshNotificationHelper {
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        notifyInternal(
+    ): Boolean {
+        return notifyInternal(
             context = context,
             state = RefreshState(
                 current = total,
@@ -161,8 +161,8 @@ object GitHubRefreshNotificationHelper {
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int
-    ) {
-        notifyInternal(
+    ): Boolean {
+        return notifyInternal(
             context = context,
             state = RefreshState(
                 current = current,
@@ -257,6 +257,27 @@ object GitHubRefreshNotificationHelper {
         }
     }
 
+    private fun resolveCondensedContent(context: Context, state: RefreshState): String {
+        return if (state.failedCount > 0) {
+            context.getString(
+                R.string.github_refresh_content_compact_with_failed,
+                state.safeCurrent,
+                state.safeTotal,
+                state.preReleaseUpdateCount,
+                state.updatableCount,
+                state.failedCount
+            )
+        } else {
+            context.getString(
+                R.string.github_refresh_content_compact,
+                state.safeCurrent,
+                state.safeTotal,
+                state.preReleaseUpdateCount,
+                state.updatableCount
+            )
+        }
+    }
+
     private fun resolveCompactProgressText(context: Context, state: RefreshState): String {
         return context.getString(R.string.github_refresh_progress_percent, state.progressPercent)
     }
@@ -295,28 +316,28 @@ object GitHubRefreshNotificationHelper {
         context: Context,
         state: RefreshState,
         onlyAlertOnce: Boolean
-    ) {
+    ): Boolean {
         ensureChannel(context)
         val buildResult = buildNotification(
             context = context,
             state = state,
             onlyAlertOnce = onlyAlertOnce
         )
-        if (buildResult.style == RenderStyle.MI_ISLAND) {
+        return if (buildResult.style == RenderStyle.MI_ISLAND) {
             McpNotificationHelper.dispatchNotification(
                 context = context,
                 notificationId = NOTIFICATION_ID,
                 notification = buildResult.notification,
                 useXiaomiMagic = buildResult.useXiaomiMagic
             )
-            return
+        } else {
+            McpNotificationHelper.dispatchNotification(
+                context = context,
+                notificationId = NOTIFICATION_ID,
+                notification = buildResult.notification,
+                useXiaomiMagic = false
+            )
         }
-        McpNotificationHelper.dispatchNotification(
-            context = context,
-            notificationId = NOTIFICATION_ID,
-            notification = buildResult.notification,
-            useXiaomiMagic = false
-        )
     }
 
     private fun buildNotification(
@@ -427,7 +448,7 @@ object GitHubRefreshNotificationHelper {
     ): Notification {
         val iconResId = ISLAND_ICON_RES_ID
         val title = resolveTitle(context, state)
-        val content = resolveContent(context, state)
+        val content = resolveCondensedContent(context, state)
         val openPendingIntent = buildOpenPendingIntent(context)
         val readPendingIntent = buildMarkReadPendingIntent(context)
         val shortCriticalText = if (state.running) {

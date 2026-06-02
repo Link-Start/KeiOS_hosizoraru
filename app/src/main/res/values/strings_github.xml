@@ -6,6 +6,8 @@
     <string name="github_refresh_title_completed">GitHub项目追踪刷新完成</string>
     <string name="github_refresh_content">已检查 %1$d/%2$d · 预发可更新 %3$d · 稳定可更新 %4$d</string>
     <string name="github_refresh_content_with_failed">已检查 %1$d/%2$d · 预发可更新 %3$d · 稳定可更新 %4$d · 失败 %5$d</string>
+    <string name="github_refresh_content_compact">已查 %1$d/%2$d · 预发 %3$d · 稳定 %4$d</string>
+    <string name="github_refresh_content_compact_with_failed">已查 %1$d/%2$d · 预发 %3$d · 稳定 %4$d · 失败 %5$d</string>
     <string name="github_refresh_progress_percent">%1$d%%</string>
     <string name="github_refresh_progress_fraction">%1$d/%2$d</string>
     <string name="github_refresh_island_running">刷新中</string>

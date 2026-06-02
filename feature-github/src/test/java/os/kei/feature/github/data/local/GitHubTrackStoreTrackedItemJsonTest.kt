@@ -1,7 +1,11 @@
 package os.kei.feature.github.data.local
 
-import org.json.JSONObject
 import org.junit.Test
+import os.kei.core.json.optArray
+import os.kei.core.json.optInt
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
@@ -93,22 +97,24 @@ class GitHubTrackStoreTrackedItemJsonTest {
             listOf(item),
             exportedAtMillis = 3000L
         )
-        val exportedItem = JSONObject(exported)
-            .getJSONArray("items")
-            .getJSONObject(0)
-        val sourceCounts = JSONObject(exported).getJSONObject("sourceCounts")
+        val root = exported.parseJsonObjectOrNull() ?: error("export json should parse")
+        val exportedItem = root.optArray("items")?.optObject(0)
+            ?: error("exported item should exist")
+        val sourceCounts = root.optObject("sourceCounts")
+            ?: error("source counts should exist")
+        val source = exportedItem.optObject("source") ?: error("source should exist")
         val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
 
-        assertEquals(false, exportedItem.has("owner"))
-        assertEquals(false, exportedItem.has("repo"))
-        assertEquals("direct_apk", exportedItem.getJSONObject("source").getString("mode"))
-        assertEquals("telegram.org", exportedItem.getJSONObject("source").getString("owner"))
+        assertEquals(false, exportedItem.containsKey("owner"))
+        assertEquals(false, exportedItem.containsKey("repo"))
+        assertEquals("direct_apk", source.optString("mode"))
+        assertEquals("telegram.org", source.optString("owner"))
         assertEquals(
             "dl-android-apk-public-beta",
-            exportedItem.getJSONObject("source").getString("repo")
+            source.optString("repo")
         )
-        assertEquals(0, sourceCounts.getInt("githubRepository"))
-        assertEquals(1, sourceCounts.getInt("directApk"))
+        assertEquals(0, sourceCounts.optInt("githubRepository"))
+        assertEquals(1, sourceCounts.optInt("directApk"))
         assertEquals(GitHubTrackedSourceMode.DirectApk, imported.sourceMode)
         assertEquals("telegram.org", imported.owner)
         assertEquals("dl-android-apk-public-beta", imported.repo)
@@ -212,23 +218,28 @@ class GitHubTrackStoreTrackedItemJsonTest {
             listOf(item),
             exportedAtMillis = 4000L
         )
-        val root = JSONObject(exported)
-        val exportedItem = root.getJSONArray("items").getJSONObject(0)
-        val source = exportedItem.getJSONObject("source")
-        val sourceCounts = root.getJSONObject("sourceCounts")
+        val root = exported.parseJsonObjectOrNull() ?: error("export json should parse")
+        val exportedItem = root.optArray("items")?.optObject(0)
+            ?: error("exported item should exist")
+        val source = exportedItem.optObject("source") ?: error("source should exist")
+        val sourceCounts = root.optObject("sourceCounts")
+            ?: error("source counts should exist")
         val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
 
-        assertEquals("git_repository", source.getString("mode"))
-        assertEquals("gitlab.com/group/subgroup", source.getString("owner"))
-        assertEquals("app", source.getString("repo"))
-        assertEquals("gitlab.com/group/subgroup", exportedItem.getString("owner"))
-        assertEquals("app", exportedItem.getString("repo"))
-        assertEquals(0, sourceCounts.getInt("githubRepository"))
-        assertEquals(1, sourceCounts.getInt("gitRepository"))
-        assertEquals(0, sourceCounts.getInt("directApk"))
+        assertEquals("git_repository", source.optString("mode"))
+        assertEquals("gitlab.com/group/subgroup", source.optString("owner"))
+        assertEquals("app", source.optString("repo"))
+        assertEquals("gitlab.com/group/subgroup", exportedItem.optString("owner"))
+        assertEquals("app", exportedItem.optString("repo"))
+        assertEquals(0, sourceCounts.optInt("githubRepository"))
+        assertEquals(1, sourceCounts.optInt("gitRepository"))
+        assertEquals(0, sourceCounts.optInt("directApk"))
         assertEquals(GitHubTrackedSourceMode.GitRepository, imported.sourceMode)
         assertEquals(false, imported.checkActionsUpdates)
-        assertEquals(GitHubTrackedActionsUpdateIntervalMode.FollowGlobal, imported.actionsUpdateIntervalMode)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            imported.actionsUpdateIntervalMode
+        )
     }
 
     @Test

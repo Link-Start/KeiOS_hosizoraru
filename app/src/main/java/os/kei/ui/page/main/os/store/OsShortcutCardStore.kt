@@ -4,9 +4,14 @@ import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
 import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtraType
 import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONArray
-import org.json.JSONObject
 
 internal object OsShortcutCardStore {
     private const val KV_ID = "os_ui_state"
@@ -89,26 +94,27 @@ internal object OsShortcutCardStore {
 
     private fun encodeIntentExtras(extras: List<ShortcutIntentExtra>): String {
         val normalized = normalizeShortcutIntentExtras(extras)
-        val array = JSONArray()
-        normalized.forEach { extra ->
-            array.put(
-                JSONObject().apply {
+        val array = buildJsonArray {
+            normalized.forEach { extra ->
+                add(
+                    buildJsonObject {
                     put(KEY_EXTRA_KEY, extra.key)
                     put(KEY_EXTRA_TYPE, extra.type.rawValue)
                     put(KEY_EXTRA_VALUE, extra.value)
                 }
             )
+            }
         }
-        return array.toString()
+        return array.encodeCompact()
     }
 
     private fun decodeIntentExtras(raw: String?): List<ShortcutIntentExtra> {
         if (raw.isNullOrBlank()) return emptyList()
         return runCatching {
-            val array = JSONArray(raw)
+            val array = raw.parseJsonArrayOrNull() ?: return@runCatching emptyList()
             buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.optJSONObject(index) ?: continue
+                for (element in array) {
+                    val item = element as? JsonObject ?: continue
                     add(
                         ShortcutIntentExtra(
                             key = item.optString(KEY_EXTRA_KEY),

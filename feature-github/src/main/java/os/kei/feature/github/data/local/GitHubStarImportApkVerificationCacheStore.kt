@@ -1,9 +1,18 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.feature.github.domain.GitHubStarImportApkVerificationCache
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubStarImportApkVerification
@@ -28,9 +37,9 @@ object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkVerificati
         val id = keyId(cacheKey)
         val raw = store.decodeString(entryStoreKey(id), "").orEmpty()
         if (raw.isBlank()) return null
-        val root = runCatching { JSONObject(raw) }.getOrNull() ?: return clearAndNull(id)
+        val root = raw.parseJsonObjectOrNull() ?: return clearAndNull(id)
         if (root.optString("cacheKey").trim() != cacheKey) return clearAndNull(id)
-        val verification = decode(root.optJSONObject("verification")) ?: return clearAndNull(id)
+        val verification = decode(root.optObject("verification")) ?: return clearAndNull(id)
         val checkedAt = verification.checkedAtMillis.coerceAtLeast(0L)
         val intervalMs = refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
         val expired = checkedAt <= 0L || (nowMillis - checkedAt).coerceAtLeast(0L) >= intervalMs
@@ -62,10 +71,10 @@ object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkVerificati
         verification: GitHubStarImportApkVerification
     ) {
         val id = keyId(cacheKey)
-        val payload = JSONObject()
-            .put("cacheKey", cacheKey)
-            .put("verification", encode(verification))
-            .toString()
+        val payload = buildJsonObject {
+            put("cacheKey", cacheKey)
+            put("verification", encode(verification))
+        }.encodeCompact()
         store.encode(entryStoreKey(id), payload)
         addIndex(id, verification.checkedAtMillis)
         trimToMaxEntries()
@@ -120,10 +129,10 @@ object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkVerificati
     private fun loadIndex(): Map<String, Long> {
         val raw = store.decodeString(KEY_INDEX, "").orEmpty()
         if (raw.isBlank()) return emptyMap()
-        val array = runCatching { JSONArray(raw) }.getOrNull() ?: return emptyMap()
+        val array = raw.parseJsonArrayOrNull() ?: return emptyMap()
         return buildMap {
-            for (index in 0 until array.length()) {
-                val obj = array.optJSONObject(index) ?: continue
+            for (element in array) {
+                val obj = element as? JsonObject ?: continue
                 val id = obj.optString("id").trim()
                 if (id.isNotBlank()) {
                     put(id, obj.optLong("checkedAtMillis", 0L))
@@ -133,34 +142,37 @@ object GitHubStarImportApkVerificationCacheStore : GitHubStarImportApkVerificati
     }
 
     private fun saveIndex(index: Map<String, Long>) {
-        val array = JSONArray()
-        index.entries
-            .sortedByDescending { it.value }
-            .forEach { (id, checkedAt) ->
-                array.put(
-                    JSONObject()
-                        .put("id", id)
-                        .put("checkedAtMillis", checkedAt.coerceAtLeast(0L))
-                )
-            }
-        store.encode(KEY_INDEX, array.toString())
+        val array = buildJsonArray {
+            index.entries
+                .sortedByDescending { it.value }
+                .forEach { (id, checkedAt) ->
+                    add(
+                        buildJsonObject {
+                            put("id", id)
+                            put("checkedAtMillis", checkedAt.coerceAtLeast(0L))
+                        }
+                    )
+                }
+        }
+        store.encode(KEY_INDEX, array.encodeCompact())
     }
 
-    private fun encode(verification: GitHubStarImportApkVerification): JSONObject {
-        return JSONObject()
-            .put("owner", verification.owner)
-            .put("repo", verification.repo)
-            .put("status", verification.status.name)
-            .put("releaseTag", verification.releaseTag)
-            .put("releaseUrl", verification.releaseUrl)
-            .put("apkAssetCount", verification.apkAssetCount)
-            .put("sampleAssetName", verification.sampleAssetName)
-            .put("packageName", verification.packageName)
-            .put("checkedAtMillis", verification.checkedAtMillis)
-            .put("errorMessage", verification.errorMessage)
+    private fun encode(verification: GitHubStarImportApkVerification): JsonObject {
+        return buildJsonObject {
+            put("owner", verification.owner)
+            put("repo", verification.repo)
+            put("status", verification.status.name)
+            put("releaseTag", verification.releaseTag)
+            put("releaseUrl", verification.releaseUrl)
+            put("apkAssetCount", verification.apkAssetCount)
+            put("sampleAssetName", verification.sampleAssetName)
+            put("packageName", verification.packageName)
+            put("checkedAtMillis", verification.checkedAtMillis)
+            put("errorMessage", verification.errorMessage)
+        }
     }
 
-    private fun decode(obj: JSONObject?): GitHubStarImportApkVerification? {
+    private fun decode(obj: JsonObject?): GitHubStarImportApkVerification? {
         obj ?: return null
         val owner = obj.optString("owner").trim()
         val repo = obj.optString("repo").trim()

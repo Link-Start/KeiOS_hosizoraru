@@ -5,10 +5,12 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import os.kei.core.json.optArray
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -43,13 +45,14 @@ class OsPageExportRepositoryTest {
                 ),
             )
 
-        val json = JSONObject(document.content)
+        val json = document.content.parseJsonObjectOrNull()
+            ?: error("section export should parse")
 
         assertTrue(document.fileName.startsWith("keios-os-system-table-"))
         assertEquals("keios.os.card.v1", json.optString("schema"))
         assertEquals(context.getString(OsSectionCard.SYSTEM.titleRes), json.optString("cardTitle"))
         assertEquals("granted", json.optString("shizukuStatus"))
-        assertTrue(assertNotNull(json.optJSONArray("rows")).length() >= 1)
+        assertTrue(assertNotNull(json.optArray("rows")).size >= 1)
     }
 
     @Test
@@ -79,7 +82,9 @@ class OsPageExportRepositoryTest {
                     shizukuStatus = "granted",
                 ),
             )
-        val rows = assertNotNull(JSONObject(document.content).optJSONArray("rows")).toString()
+        val rows = assertNotNull(
+            document.content.parseJsonObjectOrNull()?.optArray("rows")
+        ).toString()
 
         assertTrue(rows.contains("com.android.settings"))
         assertTrue(rows.contains("SettingsActivity"))

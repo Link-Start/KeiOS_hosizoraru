@@ -1,7 +1,12 @@
 package os.kei.ui.page.main.jsonimport
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import os.kei.core.json.optArray
+import os.kei.core.json.optInt
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 
 private const val GITHUB_TRACKED_FORMAT_PREFIX = "keios.github.tracked"
 private const val GITHUB_TRACKED_SCHEMA_VERSION = 3
@@ -23,13 +28,19 @@ internal object KeiOSJsonImportRouter {
             throw KeiOSJsonImportException(KeiOSJsonImportFailureReason.EmptyFile)
         }
         return when (trimmed.firstOrNull()) {
-            '[' -> inspectLegacyArray(JSONArray(trimmed))
-            '{' -> inspectObject(JSONObject(trimmed))
+            '[' -> inspectLegacyArray(
+                trimmed.parseJsonArrayOrNull()
+                    ?: throw KeiOSJsonImportException(KeiOSJsonImportFailureReason.ParseFailed)
+            )
+            '{' -> inspectObject(
+                trimmed.parseJsonObjectOrNull()
+                    ?: throw KeiOSJsonImportException(KeiOSJsonImportFailureReason.ParseFailed)
+            )
             else -> KeiOSJsonImportHeader(kind = KeiOSJsonImportKind.Unknown)
         }
     }
 
-    private fun inspectObject(root: JSONObject): KeiOSJsonImportHeader {
+    private fun inspectObject(root: JsonObject): KeiOSJsonImportHeader {
         val format = root.optString("format").trim()
         val schema = root.optString("schema").trim()
         val type = root.optString("type").trim()
@@ -48,13 +59,13 @@ internal object KeiOSJsonImportRouter {
             type == BA_ALL_FAVORITES_TYPE -> KeiOSJsonImportKind.BaAllFavorites
             schema == MCP_LOGS_SCHEMA -> KeiOSJsonImportKind.McpLogs
             schema == OS_INFO_CARD_SCHEMA -> KeiOSJsonImportKind.OsInfoCard
-            root.has("trackedItems") -> KeiOSJsonImportKind.GitHubTracked
-            looksLikeGitHubItems(root.optJSONArray("items")) -> KeiOSJsonImportKind.GitHubTracked
-            root.has("activity") && root.has("shell") -> KeiOSJsonImportKind.OsCardsBundle
-            root.has("catalogFavorites") && root.has("bgmFavorites") -> KeiOSJsonImportKind.BaAllFavorites
-            root.has("bgmFavorites") -> KeiOSJsonImportKind.BaBgmFavorites
-            looksLikeBgmFavorites(root.optJSONArray("favorites")) -> KeiOSJsonImportKind.BaBgmFavorites
-            root.has("favorites") || root.has("catalogFavorites") || root.has("students") ->
+            root.containsKey("trackedItems") -> KeiOSJsonImportKind.GitHubTracked
+            looksLikeGitHubItems(root.optArray("items")) -> KeiOSJsonImportKind.GitHubTracked
+            root.containsKey("activity") && root.containsKey("shell") -> KeiOSJsonImportKind.OsCardsBundle
+            root.containsKey("catalogFavorites") && root.containsKey("bgmFavorites") -> KeiOSJsonImportKind.BaAllFavorites
+            root.containsKey("bgmFavorites") -> KeiOSJsonImportKind.BaBgmFavorites
+            looksLikeBgmFavorites(root.optArray("favorites")) -> KeiOSJsonImportKind.BaBgmFavorites
+            root.containsKey("favorites") || root.containsKey("catalogFavorites") || root.containsKey("students") ->
                 KeiOSJsonImportKind.BaCatalogFavorites
 
             else -> KeiOSJsonImportKind.Unknown
@@ -69,7 +80,7 @@ internal object KeiOSJsonImportRouter {
         )
     }
 
-    private fun inspectLegacyArray(array: JSONArray): KeiOSJsonImportHeader {
+    private fun inspectLegacyArray(array: JsonArray): KeiOSJsonImportHeader {
         val kind = when {
             looksLikeGitHubItems(array) -> KeiOSJsonImportKind.GitHubTracked
             looksLikeOsActivityItems(array) -> KeiOSJsonImportKind.OsActivityCards
@@ -87,14 +98,14 @@ internal object KeiOSJsonImportRouter {
         )
     }
 
-    private fun looksLikeGitHubItems(array: JSONArray?): Boolean {
-        if (array == null || array.length() == 0) return false
-        repeat(minOf(array.length(), 8)) { index ->
-            val item = array.optJSONObject(index) ?: return@repeat
+    private fun looksLikeGitHubItems(array: JsonArray?): Boolean {
+        if (array == null || array.isEmpty()) return false
+        repeat(minOf(array.size, 8)) { index ->
+            val item = array.getOrNull(index) as? JsonObject ?: return@repeat
             if (
-                item.has("repoUrl") ||
-                item.has("owner") && item.has("repo") ||
-                item.has("packageName") && item.has("preferPreRelease")
+                item.containsKey("repoUrl") ||
+                item.containsKey("owner") && item.containsKey("repo") ||
+                item.containsKey("packageName") && item.containsKey("preferPreRelease")
             ) {
                 return true
             }
@@ -102,33 +113,33 @@ internal object KeiOSJsonImportRouter {
         return false
     }
 
-    private fun looksLikeOsActivityItems(array: JSONArray?): Boolean {
-        if (array == null || array.length() == 0) return false
-        repeat(minOf(array.length(), 8)) { index ->
-            val item = array.optJSONObject(index) ?: return@repeat
-            if (item.has("className") || item.has("intentAction") || item.has("intentUriData")) {
+    private fun looksLikeOsActivityItems(array: JsonArray?): Boolean {
+        if (array == null || array.isEmpty()) return false
+        repeat(minOf(array.size, 8)) { index ->
+            val item = array.getOrNull(index) as? JsonObject ?: return@repeat
+            if (item.containsKey("className") || item.containsKey("intentAction") || item.containsKey("intentUriData")) {
                 return true
             }
         }
         return false
     }
 
-    private fun looksLikeOsShellItems(array: JSONArray?): Boolean {
-        if (array == null || array.length() == 0) return false
-        repeat(minOf(array.length(), 8)) { index ->
-            val item = array.optJSONObject(index) ?: return@repeat
-            if (item.has("command") || item.has("runOutput")) {
+    private fun looksLikeOsShellItems(array: JsonArray?): Boolean {
+        if (array == null || array.isEmpty()) return false
+        repeat(minOf(array.size, 8)) { index ->
+            val item = array.getOrNull(index) as? JsonObject ?: return@repeat
+            if (item.containsKey("command") || item.containsKey("runOutput")) {
                 return true
             }
         }
         return false
     }
 
-    private fun looksLikeBgmFavorites(array: JSONArray?): Boolean {
-        if (array == null || array.length() == 0) return false
-        repeat(minOf(array.length(), 8)) { index ->
-            val item = array.optJSONObject(index) ?: return@repeat
-            if (item.has("audioUrl") || item.has("studentTitle") && item.has("imageUrl")) {
+    private fun looksLikeBgmFavorites(array: JsonArray?): Boolean {
+        if (array == null || array.isEmpty()) return false
+        repeat(minOf(array.size, 8)) { index ->
+            val item = array.getOrNull(index) as? JsonObject ?: return@repeat
+            if (item.containsKey("audioUrl") || item.containsKey("studentTitle") && item.containsKey("imageUrl")) {
                 return true
             }
         }

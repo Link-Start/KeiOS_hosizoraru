@@ -1,7 +1,11 @@
 package os.kei.ui.page.main.os.shell
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.KeiJson
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.ui.page.main.os.transfer.OS_CARD_EXPORT_SCHEMA_VERSION
 import os.kei.ui.page.main.os.transfer.OS_SHELL_CARD_EXPORT_SCHEMA
 import os.kei.ui.page.main.os.transfer.OsCardImportRoot
@@ -13,19 +17,19 @@ internal object OsShellCommandCardImportExport {
         exportedAtMillis: Long,
     ): String {
         val normalized = cards.mapNotNull(OsShellCommandCardCodec::normalizeCard)
-        val items = JSONArray(OsShellCommandCardCodec.encodeCards(normalized))
-        return JSONObject()
-            .apply {
-                put(OS_SHELL_CARD_KEY_EXPORT_SCHEMA, OS_SHELL_CARD_EXPORT_SCHEMA)
-                put(OS_SHELL_CARD_KEY_EXPORT_SCHEMA_VERSION, OS_CARD_EXPORT_SCHEMA_VERSION)
-                put(OS_SHELL_CARD_KEY_EXPORT_EXPORTED_AT, exportedAtMillis)
-                put(OS_SHELL_CARD_KEY_EXPORT_ITEM_COUNT, normalized.size)
-                put(OS_SHELL_CARD_KEY_EXPORT_ITEMS, items)
-            }.toString(2)
+        val items = OsShellCommandCardCodec.encodeCards(normalized).parseJsonArrayOrNull()
+            ?: error("shell card export items are invalid")
+        return buildJsonObject {
+            put(OS_SHELL_CARD_KEY_EXPORT_SCHEMA, OS_SHELL_CARD_EXPORT_SCHEMA)
+            put(OS_SHELL_CARD_KEY_EXPORT_SCHEMA_VERSION, OS_CARD_EXPORT_SCHEMA_VERSION)
+            put(OS_SHELL_CARD_KEY_EXPORT_EXPORTED_AT, exportedAtMillis)
+            put(OS_SHELL_CARD_KEY_EXPORT_ITEM_COUNT, normalized.size)
+            put(OS_SHELL_CARD_KEY_EXPORT_ITEMS, items)
+        }.encodeCompact(KeiJson.pretty)
     }
 
     fun parseCardsImport(root: OsCardImportRoot): OsShellCardImportPayload {
-        if (root.items.length() == 0) {
+        if (root.items.isEmpty()) {
             return OsShellCardImportPayload(
                 cards = emptyList(),
                 sourceCount = root.sourceCount,
@@ -38,8 +42,8 @@ internal object OsShellCommandCardImportExport {
         }
         val decoded =
             buildList {
-                for (index in 0 until root.items.length()) {
-                    val item = root.items.optJSONObject(index) ?: continue
+                for (element in root.items) {
+                    val item = element as? JsonObject ?: continue
                     OsShellCommandCardCodec.decodeCard(item)?.let(::add)
                 }
             }

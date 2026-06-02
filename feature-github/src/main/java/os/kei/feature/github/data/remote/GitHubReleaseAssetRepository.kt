@@ -1,9 +1,11 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.json.JSONArray
-import org.json.JSONObject
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optString
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.GitHubSingleFlight
 import java.io.IOException
@@ -375,7 +377,7 @@ object GitHubReleaseAssetRepository {
         rawTag: String,
         releaseUrl: String,
         apiToken: String
-    ): Result<JSONObject> {
+    ): Result<JsonObject> {
         val byTag = apiClient.fetchReleaseByTagAsync(owner, repo, rawTag, apiToken)
         if (byTag.isSuccess) return byTag
 
@@ -397,20 +399,20 @@ object GitHubReleaseAssetRepository {
         owner: String,
         repo: String,
         apiToken: String,
-        block: (JSONArray) -> T
+        block: (JsonArray) -> T
     ): Result<T> = cancellableResult {
         val releases = apiClient.fetchReleaseListAsync(owner, repo, apiToken).getOrThrow()
         block(releases)
     }
 
     private fun buildReleaseNotesTargets(
-        releases: JSONArray,
+        releases: JsonArray,
         stableLimit: Int,
         prereleaseLimit: Int
     ): List<GitHubReleaseNotesTarget> {
         val targets = buildList {
-            for (index in 0 until releases.length()) {
-                val release = releases.optJSONObject(index) ?: continue
+            for (element in releases) {
+                val release = element as? JsonObject ?: continue
                 if (release.optBoolean("draft", false)) continue
                 val tagName = release.optString("tag_name").trim()
                 val htmlUrl = release.optString("html_url").trim()
@@ -448,7 +450,7 @@ object GitHubReleaseAssetRepository {
         rawTag: String,
         releaseUrl: String,
         apiToken: String
-    ): Result<JSONObject> = cancellableResult {
+    ): Result<JsonObject> = cancellableResult {
         val normalizedReleaseUrl = releaseUrl.trim().ifBlank {
             GitHubVersionUtils.buildReleaseTagUrl(owner, repo, rawTag)
         }
@@ -714,10 +716,10 @@ object GitHubReleaseAssetRepository {
         }
     }
 
-    private fun findMatchingRelease(releases: JSONArray, rawTag: String): JSONObject? {
+    private fun findMatchingRelease(releases: JsonArray, rawTag: String): JsonObject? {
         val normalizedTag = rawTag.trim()
-        for (index in 0 until releases.length()) {
-            val release = releases.optJSONObject(index) ?: continue
+        for (element in releases) {
+            val release = element as? JsonObject ?: continue
             val candidateTag = release.optString("tag_name").trim()
             if (candidateTag.equals(normalizedTag, ignoreCase = true)) {
                 return release
@@ -737,7 +739,7 @@ object GitHubReleaseAssetRepository {
         releaseUpdatedAtMillis: Long? = null,
         releaseNotesBody: String = "",
         assets: List<GitHubReleaseAssetFile> = emptyList()
-    ): JSONObject = GitHubReleaseAssetJsonMapper.buildReleaseStub(
+    ): JsonObject = GitHubReleaseAssetJsonMapper.buildReleaseStub(
         releaseName = releaseName,
         rawTag = rawTag,
         releaseUrl = releaseUrl,
@@ -746,7 +748,7 @@ object GitHubReleaseAssetRepository {
         assets = assets
     )
 
-    private fun parseReleaseBundle(release: JSONObject): GitHubReleaseAssetBundle =
+    private fun parseReleaseBundle(release: JsonObject): GitHubReleaseAssetBundle =
         GitHubReleaseAssetJsonMapper.parseReleaseBundle(release)
 
     private fun String.parseIsoInstantOrNull(): Long? {

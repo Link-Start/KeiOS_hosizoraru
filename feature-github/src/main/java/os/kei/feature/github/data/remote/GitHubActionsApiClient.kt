@@ -3,7 +3,8 @@ package os.kei.feature.github.data.remote
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubApiAuthMode
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
@@ -94,7 +95,7 @@ class GitHubActionsApiClient(
 
     private fun buildErrorMessage(response: Response, bodyText: String): String {
         val apiMessage = runCatching {
-            JSONObject(bodyText).optString("message").trim()
+            bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
         }.getOrDefault("")
         val rateRemaining = response.header("X-RateLimit-Remaining").orEmpty()
         val looksRateLimited = response.code == 429 ||

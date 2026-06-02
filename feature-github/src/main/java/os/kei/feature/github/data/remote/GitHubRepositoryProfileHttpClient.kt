@@ -3,8 +3,9 @@ package os.kei.feature.github.data.remote
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import kotlin.time.Duration.Companion.seconds
 
 class GitHubRepositoryProfileHttpClient(
@@ -98,7 +99,7 @@ class GitHubRepositoryProfileHttpClient(
 
     private fun Response.buildErrorMessage(bodyText: String): String {
         val apiMessage = runCatching {
-            JSONObject(bodyText).optString("message").trim()
+            bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
         }.getOrDefault("")
         return when (code) {
             401 -> "GitHub API token is invalid or expired"

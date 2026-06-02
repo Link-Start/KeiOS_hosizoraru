@@ -26,6 +26,7 @@ android {
 dependencies {
     implementation(project(":core-concurrency"))
     implementation(project(":core-io"))
+    implementation(project(":core-json"))
     implementation(project(":core-log"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
@@ -42,7 +43,6 @@ dependencies {
     testImplementation("androidx.test:core:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("org.robolectric:robolectric:4.16.1")
-    testImplementation("org.json:json:20260522")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
     testImplementation("xmlpull:xmlpull:1.1.3.4d_b4_min")
     testImplementation("net.sf.kxml:kxml2:2.3.0")

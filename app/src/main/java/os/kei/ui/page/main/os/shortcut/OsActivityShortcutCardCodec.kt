@@ -1,17 +1,25 @@
 package os.kei.ui.page.main.os.shortcut
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 
 internal object OsActivityShortcutCardCodec {
     fun encodeCards(cards: List<OsActivityShortcutCard>): String {
-        val array = JSONArray()
-        cards.forEach { card ->
-            val normalizedId = card.id.trim().ifBlank { newOsActivityShortcutCardId() }
-            val normalizedConfig = card.config
-            array.put(
-                JSONObject().apply {
+        val array = buildJsonArray {
+            cards.forEach { card ->
+                val normalizedId = card.id.trim().ifBlank { newOsActivityShortcutCardId() }
+                val normalizedConfig = card.config
+                add(
+                    buildJsonObject {
                     put(OS_ACTIVITY_CARD_KEY_ID, normalizedId)
                     put(OS_ACTIVITY_CARD_KEY_VISIBLE, card.visible)
                     put(OS_ACTIVITY_CARD_KEY_IS_BUILT_IN_SAMPLE, card.isBuiltInSample)
@@ -28,8 +36,9 @@ internal object OsActivityShortcutCardCodec {
                     put(OS_ACTIVITY_CARD_KEY_INTENT_EXTRAS, encodeIntentExtras(normalizedConfig.intentExtras))
                 },
             )
+            }
         }
-        return array.toString()
+        return array.encodeCompact()
     }
 
     fun decodeCards(
@@ -37,17 +46,17 @@ internal object OsActivityShortcutCardCodec {
         defaults: OsGoogleSystemServiceConfig,
     ): List<OsActivityShortcutCard> =
         runCatching {
-            val array = JSONArray(raw)
+            val array = raw.parseJsonArrayOrNull() ?: return@runCatching emptyList()
             buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.optJSONObject(index) ?: continue
+                for (element in array) {
+                    val item = element as? JsonObject ?: continue
                     decodeCard(item, defaults)?.let(::add)
                 }
             }
         }.getOrDefault(emptyList())
 
     fun decodeCard(
-        item: JSONObject,
+        item: JsonObject,
         defaults: OsGoogleSystemServiceConfig,
     ): OsActivityShortcutCard? {
         if (!isActivityCardItem(item)) return null
@@ -63,7 +72,7 @@ internal object OsActivityShortcutCardCodec {
                 intentFlags = item.optString(OS_ACTIVITY_CARD_KEY_INTENT_FLAGS),
                 intentUriData = item.optString(OS_ACTIVITY_CARD_KEY_INTENT_URI_DATA),
                 intentMimeType = item.optString(OS_ACTIVITY_CARD_KEY_INTENT_MIME_TYPE),
-                intentExtras = decodeIntentExtras(item.optJSONArray(OS_ACTIVITY_CARD_KEY_INTENT_EXTRAS)),
+                intentExtras = decodeIntentExtras(item.optArray(OS_ACTIVITY_CARD_KEY_INTENT_EXTRAS)),
             )
         return OsActivityShortcutCard(
             id =
@@ -77,36 +86,37 @@ internal object OsActivityShortcutCardCodec {
         )
     }
 
-    private fun isActivityCardItem(item: JSONObject): Boolean =
-        item.has(OS_ACTIVITY_CARD_KEY_APP_NAME) ||
-            item.has(OS_ACTIVITY_CARD_KEY_PACKAGE_NAME) ||
-            item.has(OS_ACTIVITY_CARD_KEY_CLASS_NAME) ||
-            item.has(OS_ACTIVITY_CARD_KEY_INTENT_ACTION) ||
-            item.has(OS_ACTIVITY_CARD_KEY_INTENT_CATEGORY) ||
-            item.has(OS_ACTIVITY_CARD_KEY_INTENT_FLAGS) ||
-            item.has(OS_ACTIVITY_CARD_KEY_INTENT_URI_DATA) ||
-            item.has(OS_ACTIVITY_CARD_KEY_INTENT_MIME_TYPE) ||
-            item.has(OS_ACTIVITY_CARD_KEY_INTENT_EXTRAS)
+    private fun isActivityCardItem(item: JsonObject): Boolean =
+        item.containsKey(OS_ACTIVITY_CARD_KEY_APP_NAME) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_PACKAGE_NAME) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_CLASS_NAME) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_INTENT_ACTION) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_INTENT_CATEGORY) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_INTENT_FLAGS) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_INTENT_URI_DATA) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_INTENT_MIME_TYPE) ||
+            item.containsKey(OS_ACTIVITY_CARD_KEY_INTENT_EXTRAS)
 
-    private fun encodeIntentExtras(extras: List<ShortcutIntentExtra>): JSONArray {
-        val array = JSONArray()
-        normalizeShortcutIntentExtras(extras).forEach { extra ->
-            array.put(
-                JSONObject().apply {
+    private fun encodeIntentExtras(extras: List<ShortcutIntentExtra>): JsonArray {
+        val array = buildJsonArray {
+            normalizeShortcutIntentExtras(extras).forEach { extra ->
+                add(
+                    buildJsonObject {
                     put(OS_ACTIVITY_CARD_KEY_EXTRA_KEY, extra.key)
                     put(OS_ACTIVITY_CARD_KEY_EXTRA_TYPE, extra.type.rawValue)
                     put(OS_ACTIVITY_CARD_KEY_EXTRA_VALUE, extra.value)
                 },
             )
+            }
         }
         return array
     }
 
-    private fun decodeIntentExtras(raw: JSONArray?): List<ShortcutIntentExtra> {
+    private fun decodeIntentExtras(raw: JsonArray?): List<ShortcutIntentExtra> {
         if (raw == null) return emptyList()
         return buildList {
-            for (index in 0 until raw.length()) {
-                val item = raw.optJSONObject(index) ?: continue
+            for (element in raw) {
+                val item = element as? JsonObject ?: continue
                 add(
                     ShortcutIntentExtra(
                         key = item.optString(OS_ACTIVITY_CARD_KEY_EXTRA_KEY),

@@ -1,8 +1,15 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
 import java.security.MessageDigest
 import java.util.Locale
@@ -23,7 +30,7 @@ object GitHubActionsDownloadHistoryStore {
         }
         val kv = kv()
         val id = recordId(normalized)
-        kv.encode(entryStoreKey(id), encodeRecord(normalized).toString())
+        kv.encode(entryStoreKey(id), encodeRecord(normalized).encodeCompact())
         val index = loadIndex(kv)
         index.remove(id)
         index.add(id)
@@ -76,36 +83,37 @@ object GitHubActionsDownloadHistoryStore {
 
     fun cachedRecordCount(): Int = loadIndex().size
 
-    internal fun encodeRecord(record: GitHubActionsDownloadRecord): JSONObject {
-        return JSONObject()
-            .put("owner", record.owner)
-            .put("repo", record.repo)
-            .put("workflowId", record.workflowId)
-            .put("workflowName", record.workflowName)
-            .put("workflowPath", record.workflowPath)
-            .put("runId", record.runId)
-            .put("runNumber", record.runNumber)
-            .put("runAttempt", record.runAttempt)
-            .put("runDisplayName", record.runDisplayName)
-            .put("headBranch", record.headBranch)
-            .put("headSha", record.headSha)
-            .put("event", record.event)
-            .put("status", record.status)
-            .put("conclusion", record.conclusion)
-            .put("artifactId", record.artifactId)
-            .put("artifactName", record.artifactName)
-            .put("artifactDigest", record.artifactDigest)
-            .put("artifactSizeBytes", record.artifactSizeBytes)
-            .put("sourceTrackId", record.sourceTrackId)
-            .put("packageName", record.packageName)
-            .put("artifactPackageName", record.artifactPackageName)
-            .put("downloadedAtMillis", record.downloadedAtMillis)
+    internal fun encodeRecord(record: GitHubActionsDownloadRecord): JsonObject {
+        return buildJsonObject {
+            put("owner", record.owner)
+            put("repo", record.repo)
+            put("workflowId", record.workflowId)
+            put("workflowName", record.workflowName)
+            put("workflowPath", record.workflowPath)
+            put("runId", record.runId)
+            put("runNumber", record.runNumber)
+            put("runAttempt", record.runAttempt)
+            put("runDisplayName", record.runDisplayName)
+            put("headBranch", record.headBranch)
+            put("headSha", record.headSha)
+            put("event", record.event)
+            put("status", record.status)
+            put("conclusion", record.conclusion)
+            put("artifactId", record.artifactId)
+            put("artifactName", record.artifactName)
+            put("artifactDigest", record.artifactDigest)
+            put("artifactSizeBytes", record.artifactSizeBytes)
+            put("sourceTrackId", record.sourceTrackId)
+            put("packageName", record.packageName)
+            put("artifactPackageName", record.artifactPackageName)
+            put("downloadedAtMillis", record.downloadedAtMillis)
+        }
     }
 
     internal fun decodeRecord(raw: String): GitHubActionsDownloadRecord? {
         if (raw.isBlank()) return null
         return runCatching {
-            val obj = JSONObject(raw)
+            val obj = raw.parseJsonObjectOrNull() ?: return@runCatching null
             val owner = obj.optString("owner").trim()
             val repo = obj.optString("repo").trim()
             val artifactName = obj.optString("artifactName").trim()

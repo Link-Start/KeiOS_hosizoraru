@@ -1,11 +1,18 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitRepositoryPlatform
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -213,13 +220,13 @@ class GitRepositoryReleaseStrategy(
     }
 
     private fun parseReleaseEntries(
-        releases: JSONArray,
+        releases: JsonArray,
         releaseBodyKey: String,
         sourceBaseUrl: String
     ): List<GitHubAtomReleaseEntry> {
         return buildList {
-            for (index in 0 until releases.length()) {
-                val release = releases.optJSONObject(index) ?: continue
+            for (element in releases) {
+                val release = element as? JsonObject ?: continue
                 if (release.optBoolean("draft", false)) continue
                 val tag = release.optString("tag_name").trim()
                     .ifBlank { release.optString("tag").trim() }
@@ -244,10 +251,10 @@ class GitRepositoryReleaseStrategy(
                     else -> GitHubReleaseChannel.STABLE
                 }
                 val htmlUrl = release.optString("html_url").trim()
-                    .ifBlank { release.optJSONObject("_links")?.optString("self").orEmpty().trim() }
+                    .ifBlank { release.optObject("_links")?.optString("self").orEmpty().trim() }
                     .ifBlank { release.optString("url").trim() }
                     .ifBlank { buildReleaseUrl(sourceBaseUrl, tag) }
-                val author = release.optJSONObject("author")
+                val author = release.optObject("author")
                 val authorName = author?.optString("login").orEmpty().trim()
                     .ifBlank { author?.optString("username").orEmpty().trim() }
                     .ifBlank { author?.optString("name").orEmpty().trim() }
@@ -255,7 +262,7 @@ class GitRepositoryReleaseStrategy(
                     .ifBlank { author?.optString("avatar").orEmpty().trim() }
                 add(
                     GitHubAtomReleaseEntry(
-                        entryId = release.opt("id")?.toString().orEmpty().ifBlank { htmlUrl },
+                        entryId = release.optElementString("id").ifBlank { htmlUrl },
                         tag = tag,
                         title = title,
                         link = htmlUrl,
@@ -270,7 +277,7 @@ class GitRepositoryReleaseStrategy(
                             GitHubVersionCandidateSource.Tag to tag,
                             GitHubVersionCandidateSource.Title to title,
                             GitHubVersionCandidateSource.Link to htmlUrl,
-                            GitHubVersionCandidateSource.Id to release.opt("id")?.toString().orEmpty(),
+                            GitHubVersionCandidateSource.Id to release.optElementString("id"),
                             GitHubVersionCandidateSource.Content to contentPreview
                         ),
                         channel = channel,
@@ -282,13 +289,13 @@ class GitRepositoryReleaseStrategy(
     }
 
     private fun parseTagEntries(
-        tags: JSONArray,
+        tags: JsonArray,
         sourceBaseUrl: String
     ): List<GitHubAtomReleaseEntry> {
         return buildList {
-            for (index in 0 until tags.length()) {
-                val tag = tags.optJSONObject(index) ?: continue
-                val release = tag.optJSONObject("release")
+            for (element in tags) {
+                val tag = element as? JsonObject ?: continue
+                val release = tag.optObject("release")
                 val tagName = tag.optString("name").trim()
                     .ifBlank { release?.optString("tag_name").orEmpty().trim() }
                 if (tagName.isBlank()) continue
@@ -303,10 +310,10 @@ class GitRepositoryReleaseStrategy(
                     contentPreview = contentPreview
                 )
                 val htmlUrl = release?.optString("html_url").orEmpty().trim()
-                    .ifBlank { release?.optJSONObject("_links")?.optString("self").orEmpty().trim() }
+                    .ifBlank { release?.optObject("_links")?.optString("self").orEmpty().trim() }
                     .ifBlank { buildTagUrl(sourceBaseUrl, tagName) }
-                val commit = tag.optJSONObject("commit")
-                val tagger = tag.optJSONObject("tagger")
+                val commit = tag.optObject("commit")
+                val tagger = tag.optObject("tagger")
                 add(
                     GitHubAtomReleaseEntry(
                         entryId = tag.optString("target").trim()
@@ -383,8 +390,10 @@ class GitRepositoryReleaseStrategy(
         return entriesByTag.values.toList()
     }
 
-    private fun fetchJsonArray(url: String): Result<JSONArray> {
-        return fetchText(url).mapCatching { body -> JSONArray(body) }
+    private fun fetchJsonArray(url: String): Result<JsonArray> {
+        return fetchText(url).mapCatching { body ->
+            body.parseJsonArrayOrNull() ?: error("Git repository response is not a JSON array")
+        }
     }
 
     private fun fetchText(url: String): Result<String> = runCatching {
@@ -405,9 +414,15 @@ class GitRepositoryReleaseStrategy(
 
     private fun buildErrorMessage(response: Response, bodyText: String): String {
         val apiMessage = runCatching {
-            JSONObject(bodyText).optString("message").trim()
+            bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
         }.getOrDefault("")
         return "Git repository request failed (HTTP ${response.code}${apiMessage.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""})"
+    }
+
+    private fun JsonObject.optElementString(key: String): String {
+        val value = this[key] ?: return ""
+        return value.jsonPrimitiveOrNull()?.contentOrNull?.trim()
+            ?: value.toString().trim()
     }
 
     private fun GitHubAtomReleaseEntry.toReleaseSignal(): GitHubReleaseVersionSignals {

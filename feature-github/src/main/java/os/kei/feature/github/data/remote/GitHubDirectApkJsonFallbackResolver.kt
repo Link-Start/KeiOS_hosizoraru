@@ -1,10 +1,17 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.core.json.optArray
+import os.kei.core.json.optObject
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
@@ -86,43 +93,45 @@ class GitHubDirectApkJsonFallbackResolver(
         return "$value.json"
     }
 
-    private fun parseJsonFeedObject(raw: String): JSONObject? {
+    private fun parseJsonFeedObject(raw: String): JsonObject? {
         val trimmed = raw.trim()
         return when {
             trimmed.startsWith("{") -> {
-                val root = JSONObject(trimmed)
+                val root = trimmed.parseJsonObjectOrNull() ?: return null
                 root.findFeedObject() ?: root
             }
 
-            trimmed.startsWith("[") -> JSONArray(trimmed).firstFeedObject()
+            trimmed.startsWith("[") -> trimmed.parseJsonArrayOrNull()?.firstFeedObject()
             else -> null
         }
     }
 
-    private fun JSONObject.findFeedObject(): JSONObject? {
+    private fun JsonObject.findFeedObject(): JsonObject? {
         if (firstNonBlankString("file_url", "download_url", "apk_url", "url").isNotBlank()) {
             return this
         }
         arrayOf("releases", "items", "assets", "downloads", "versions").forEach { key ->
-            optJSONArray(key)?.firstFeedObject()?.let { return it }
+            optArray(key)?.firstFeedObject()?.let { return it }
         }
         arrayOf("release", "latest", "android").forEach { key ->
-            optJSONObject(key)?.findFeedObject()?.let { return it }
+            optObject(key)?.findFeedObject()?.let { return it }
         }
         return null
     }
 
-    private fun JSONArray.firstFeedObject(): JSONObject? {
-        for (index in 0 until length()) {
-            val obj = optJSONObject(index) ?: continue
+    private fun JsonArray.firstFeedObject(): JsonObject? {
+        for (element in this) {
+            val obj = element as? JsonObject ?: continue
             obj.findFeedObject()?.let { return it }
         }
         return null
     }
 
-    private fun JSONObject.firstNonBlankString(vararg keys: String): String {
+    private fun JsonObject.firstNonBlankString(vararg keys: String): String {
         keys.forEach { key ->
-            val value = opt(key)?.toString()?.trim().orEmpty()
+            val element = this[key]?.takeUnless { it is JsonNull } ?: return@forEach
+            val value = element.jsonPrimitiveOrNull()?.contentOrNull?.trim()
+                ?: element.toString().trim()
             if (value.isNotBlank() && value != "null") return value
         }
         return ""

@@ -1,7 +1,13 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsRepositoryInfo
 import os.kei.feature.github.model.GitHubActionsWorkflow
@@ -10,11 +16,11 @@ import java.time.Instant
 
 object GitHubActionsJsonParser {
     fun parseWorkflows(json: String): List<GitHubActionsWorkflow> {
-        val root = JSONObject(json)
-        val array = root.optJSONArray("workflows") ?: JSONArray()
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid workflows payload")
+        val array = root.optArray("workflows").orEmpty()
         return buildList {
-            for (index in 0 until array.length()) {
-                val workflow = array.optJSONObject(index) ?: continue
+            for (element in array) {
+                val workflow = element as? JsonObject ?: continue
                 val id = workflow.optLong("id", 0L).takeIf { it > 0L } ?: continue
                 add(
                     GitHubActionsWorkflow(
@@ -42,9 +48,9 @@ object GitHubActionsJsonParser {
         fallbackOwner: String,
         fallbackRepo: String
     ): GitHubActionsRepositoryInfo {
-        val root = JSONObject(json)
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid repository payload")
         return GitHubActionsRepositoryInfo(
-            owner = root.optJSONObject("owner")
+            owner = root.optObject("owner")
                 ?.optString("login")
                 ?.trim()
                 .orEmpty()
@@ -56,11 +62,11 @@ object GitHubActionsJsonParser {
     }
 
     fun parseWorkflowRuns(json: String): List<GitHubActionsWorkflowRun> {
-        val root = JSONObject(json)
-        val array = root.optJSONArray("workflow_runs") ?: JSONArray()
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid workflow runs payload")
+        val array = root.optArray("workflow_runs").orEmpty()
         return buildList {
-            for (index in 0 until array.length()) {
-                val run = array.optJSONObject(index) ?: continue
+            for (element in array) {
+                val run = element as? JsonObject ?: continue
                 parseWorkflowRunObject(run)?.let(::add)
             }
         }.sortedWith(
@@ -70,7 +76,7 @@ object GitHubActionsJsonParser {
     }
 
     fun parseWorkflowRun(json: String): GitHubActionsWorkflowRun {
-        val root = JSONObject(json)
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid workflow run payload")
         return parseWorkflowRunObject(root)
             ?: throw IllegalArgumentException("workflow run payload missing id")
     }
@@ -79,13 +85,13 @@ object GitHubActionsJsonParser {
         json: String,
         fallbackWorkflowRunId: Long = 0L
     ): List<GitHubActionsArtifact> {
-        val root = JSONObject(json)
-        val array = root.optJSONArray("artifacts") ?: JSONArray()
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid artifacts payload")
+        val array = root.optArray("artifacts").orEmpty()
         return buildList {
-            for (index in 0 until array.length()) {
-                val artifact = array.optJSONObject(index) ?: continue
+            for (element in array) {
+                val artifact = element as? JsonObject ?: continue
                 val id = artifact.optLong("id", 0L).takeIf { it > 0L } ?: continue
-                val workflowRun = artifact.optJSONObject("workflow_run")
+                val workflowRun = artifact.optObject("workflow_run")
                 add(
                     GitHubActionsArtifact(
                         id = id,
@@ -114,13 +120,13 @@ object GitHubActionsJsonParser {
         )
     }
 
-    private fun parseWorkflowRunObject(run: JSONObject): GitHubActionsWorkflowRun? {
+    private fun parseWorkflowRunObject(run: JsonObject): GitHubActionsWorkflowRun? {
         val id = run.optLong("id", 0L).takeIf { it > 0L } ?: return null
-        val actor = run.optJSONObject("actor")
-        val triggeringActor = run.optJSONObject("triggering_actor")
-        val repository = run.optJSONObject("repository")
-        val headRepository = run.optJSONObject("head_repository")
-        val pullRequests = run.optJSONArray("pull_requests")
+        val actor = run.optObject("actor")
+        val triggeringActor = run.optObject("triggering_actor")
+        val repository = run.optObject("repository")
+        val headRepository = run.optObject("head_repository")
+        val pullRequests = run.optArray("pull_requests")
         return GitHubActionsWorkflowRun(
             id = id,
             name = run.optString("name").trim(),
@@ -141,7 +147,7 @@ object GitHubActionsJsonParser {
             repositoryFullName = repository?.optString("full_name").orEmpty().trim(),
             headRepositoryFullName = headRepository?.optString("full_name").orEmpty().trim(),
             headRepositoryFork = headRepository?.optBoolean("fork", false) ?: false,
-            pullRequestCount = pullRequests?.length() ?: 0,
+            pullRequestCount = pullRequests?.size ?: 0,
             checkSuiteId = run.optLong("check_suite_id", 0L),
             createdAtMillis = run.optString("created_at").parseIsoInstantOrNull(),
             runStartedAtMillis = run.optString("run_started_at").parseIsoInstantOrNull(),

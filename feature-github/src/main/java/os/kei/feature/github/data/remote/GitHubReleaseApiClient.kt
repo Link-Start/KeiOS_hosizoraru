@@ -2,12 +2,16 @@ package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.GitHubExecution
 import java.io.IOException
 import java.net.URLEncoder
@@ -75,11 +79,12 @@ class GitHubReleaseApiClient(
         repo: String,
         rawTag: String,
         apiToken: String
-    ): Result<JSONObject> = withContext(ioDispatcher) {
+    ): Result<JsonObject> = withContext(ioDispatcher) {
         cancellableResult {
             val encodedTag = urlEncode(rawTag)
             val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases/tags/$encodedTag"
-            JSONObject(fetchJsonAsync(url, apiToken))
+            fetchJsonAsync(url, apiToken).parseJsonObjectOrNull()
+                ?: error("GitHub release response is not a JSON object")
         }
     }
 
@@ -87,10 +92,11 @@ class GitHubReleaseApiClient(
         owner: String,
         repo: String,
         apiToken: String
-    ): Result<JSONArray> = withContext(ioDispatcher) {
+    ): Result<JsonArray> = withContext(ioDispatcher) {
         cancellableResult {
             val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
-            JSONArray(fetchJsonAsync(url, apiToken))
+            fetchJsonAsync(url, apiToken).parseJsonArrayOrNull()
+                ?: error("GitHub releases response is not a JSON array")
         }
     }
 
@@ -98,10 +104,11 @@ class GitHubReleaseApiClient(
         owner: String,
         repo: String,
         apiToken: String
-    ): Result<JSONObject> = withContext(ioDispatcher) {
+    ): Result<JsonObject> = withContext(ioDispatcher) {
         cancellableResult {
             val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases/latest"
-            JSONObject(fetchJsonAsync(url, apiToken, noStore = true))
+            fetchJsonAsync(url, apiToken, noStore = true).parseJsonObjectOrNull()
+                ?: error("GitHub latest release response is not a JSON object")
         }
     }
 
@@ -113,7 +120,7 @@ class GitHubReleaseApiClient(
     ): String {
         val encodedTag = urlEncode(rawTag)
         val refUrl = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/git/ref/tags/$encodedTag"
-        val refObject = JSONObject(fetchJsonAsync(refUrl, apiToken)).optJSONObject("object")
+        val refObject = fetchJsonAsync(refUrl, apiToken).parseJsonObjectOrNull()?.optObject("object")
             ?: error("Git tag ref response is missing object")
         val refType = refObject.optString("type").trim()
         val refSha = refObject.optString("sha").trim()
@@ -121,7 +128,7 @@ class GitHubReleaseApiClient(
             refType.equals("commit", ignoreCase = true) -> refSha
             refType.equals("tag", ignoreCase = true) && refSha.isNotBlank() -> {
                 val tagUrl = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/git/tags/$refSha"
-                val tagObject = JSONObject(fetchJsonAsync(tagUrl, apiToken)).optJSONObject("object")
+                val tagObject = fetchJsonAsync(tagUrl, apiToken).parseJsonObjectOrNull()?.optObject("object")
                     ?: error("Annotated tag response is missing object")
                 if (tagObject.optString("type").trim().equals("commit", ignoreCase = true)) {
                     tagObject.optString("sha").trim()
@@ -163,7 +170,7 @@ class GitHubReleaseApiClient(
                 val bodyText = response.body.string()
                 if (!response.isSuccessful) {
                     val apiMessage = runCatching {
-                        JSONObject(bodyText).optString("message").trim()
+                        bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
                     }.getOrDefault("")
                     error(buildJsonErrorMessage(response, token, apiMessage))
                 }

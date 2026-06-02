@@ -15,10 +15,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import os.kei.core.json.optArray
+import os.kei.core.json.optObject
+import os.kei.core.json.parseJsonObjectOrNull
 import java.net.ServerSocket
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -66,10 +68,13 @@ class McpKtorEndpointHostTest {
             body = """{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}"""
         )
         val body = tools.body.string()
-        val toolArray = JSONObject(body).getJSONObject("result").getJSONArray("tools")
+        val toolArray = body.parseJsonObjectOrNull()
+            ?.optObject("result")
+            ?.optArray("tools")
+            ?: error("tools/list response should include tools")
 
         assertEquals(200, tools.code)
-        assertEquals(1, toolArray.length())
+        assertEquals(1, toolArray.size)
         assertTrue(body.contains("keios.health.ping"))
         tools.close()
 

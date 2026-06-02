@@ -1,5 +1,9 @@
 package os.kei.feature.github.data.local
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Test
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
@@ -201,43 +205,50 @@ class GitHubRepositoryProfileCacheJsonTest {
         )
     }
 
-    private fun snapshotJsonWithoutCapabilities(): org.json.JSONObject {
-        return org.json.JSONObject()
-            .put("owner", "demo")
-            .put("repo", "app")
-            .put("sourceConfigSignature", "check-v2|old")
-            .put("fetchedAtMillis", FETCHED_AT)
-            .put(
+    private fun snapshotJsonWithoutCapabilities(): JsonObject {
+        return buildJsonObject {
+            put("owner", "demo")
+            put("repo", "app")
+            put("sourceConfigSignature", "check-v2|old")
+            put("fetchedAtMillis", FETCHED_AT)
+            put(
                 "traffic",
-                org.json.JSONObject().put(
-                    "viewCount",
-                    field(3).toJsonField()
-                )
+                buildJsonObject {
+                    put("viewCount", field(3).toJsonField())
+                }
             )
-            .put(
+            put(
                 "security",
-                org.json.JSONObject().put(
-                    "dependabotAlertsAvailable",
-                    field(true).toJsonField()
-                )
+                buildJsonObject {
+                    put("dependabotAlertsAvailable", field(true).toJsonField())
+                }
             )
-            .put(
+            put(
                 "sourceAvailability",
-                org.json.JSONArray().put(
-                    org.json.JSONObject()
-                        .put("source", GitHubRepositoryProfileSource.TrafficViewsApi.name)
-                        .put("status", GitHubRepositoryProfileAvailabilityStatus.Loaded.name)
-                        .put("fetchedAtMillis", FETCHED_AT)
-                )
+                buildJsonArray {
+                    add(
+                        buildJsonObject {
+                            put("source", GitHubRepositoryProfileSource.TrafficViewsApi.name)
+                            put("status", GitHubRepositoryProfileAvailabilityStatus.Loaded.name)
+                            put("fetchedAtMillis", FETCHED_AT)
+                        }
+                    )
+                }
             )
+        }
     }
 
-    private fun GitHubProfileField<*>.toJsonField(): org.json.JSONObject {
-        return org.json.JSONObject()
-            .put("value", value)
-            .put("source", source.name)
-            .put("fetchedAtMillis", fetchedAtMillis)
-            .put("confidence", confidence.name)
+    private fun GitHubProfileField<*>.toJsonField(): JsonObject {
+        return buildJsonObject {
+            when (val raw = value) {
+                is Boolean -> put("value", raw)
+                is Number -> put("value", raw.toLong())
+                else -> put("value", raw.toString())
+            }
+            put("source", source.name)
+            put("fetchedAtMillis", fetchedAtMillis)
+            put("confidence", confidence.name)
+        }
     }
 
     private companion object {

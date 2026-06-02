@@ -1,6 +1,13 @@
 package os.kei.ui.page.main.os.transfer
 
-import org.json.JSONObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.KeiJson
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optInt
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCardImportMergeResult
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
@@ -27,17 +34,21 @@ internal object OsCardTransferService {
         shellCards: List<OsShellCommandCard>,
         defaults: OsGoogleSystemServiceConfig,
     ): String =
-        JSONObject()
-            .apply {
-                put("schema", OS_CARD_BUNDLE_EXPORT_SCHEMA)
-                put("schemaVersion", OS_CARD_EXPORT_SCHEMA_VERSION)
-                put("exportedAtMillis", System.currentTimeMillis())
-                put(
-                    "activity",
-                    JSONObject(buildActivityCardsExportJson(activityCards, defaults)),
-                )
-                put("shell", JSONObject(buildShellCardsExportJson(shellCards)))
-            }.toString(2)
+        buildJsonObject {
+            put("schema", OS_CARD_BUNDLE_EXPORT_SCHEMA)
+            put("schemaVersion", OS_CARD_EXPORT_SCHEMA_VERSION)
+            put("exportedAtMillis", System.currentTimeMillis())
+            put(
+                "activity",
+                buildActivityCardsExportJson(activityCards, defaults).parseJsonObjectOrNull()
+                    ?: error("activity card export payload is invalid"),
+            )
+            put(
+                "shell",
+                buildShellCardsExportJson(shellCards).parseJsonObjectOrNull()
+                    ?: error("shell card export payload is invalid"),
+            )
+        }.encodeCompact(KeiJson.pretty)
 
     fun parseBundleImportPayload(
         raw: String,
@@ -45,23 +56,24 @@ internal object OsCardTransferService {
         builtInSampleDefaults: OsGoogleSystemServiceConfig,
         builtInActivityShortcutCards: List<OsActivityShortcutCard> = emptyList(),
     ): OsCardBundleImportPayload {
-        val root = JSONObject(raw)
+        val root = raw.parseJsonObjectOrNull()
+            ?: throw OsCardImportException(OsCardImportError.MissingData)
         val schemaVersion =
             root
                 .optInt("schemaVersion", OS_CARD_EXPORT_SCHEMA_VERSION)
                 .coerceAtLeast(OS_CARD_LEGACY_SCHEMA_VERSION)
         val activityPayload =
-            root.optJSONObject("activity")?.let { activityRoot ->
+            root.optObject("activity")?.let { activityRoot ->
                 OsActivityShortcutCardStore.parseCardsImport(
-                    root = parseOsCardImportRoot(activityRoot.toString()),
+                    root = parseOsCardImportRoot(activityRoot.encodeCompact()),
                     defaults = defaults,
                     builtInSampleDefaults = builtInSampleDefaults,
                     builtInActivityShortcutCards = builtInActivityShortcutCards,
                 )
             }
         val shellPayload =
-            root.optJSONObject("shell")?.let { shellRoot ->
-                OsShellCommandCardStore.parseCardsImport(parseOsCardImportRoot(shellRoot.toString()))
+            root.optObject("shell")?.let { shellRoot ->
+                OsShellCommandCardStore.parseCardsImport(parseOsCardImportRoot(shellRoot.encodeCompact()))
             }
         return OsCardBundleImportPayload(
             activityPayload = activityPayload,

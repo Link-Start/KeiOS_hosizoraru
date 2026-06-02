@@ -7,9 +7,12 @@ import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.shizuku.ShizukuApiUtils
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.KeiJson
+import os.kei.core.json.encodeCompact
 import os.kei.core.system.getAllJavaPropertiesSnapshot
 import os.kei.core.system.getAllJavaPropertiesSnapshotAsync
 import os.kei.core.system.getAllSystemPropertiesSnapshot
@@ -477,7 +480,7 @@ internal fun buildOsCardJson(
     cardTitle: String,
     rows: List<InfoRow>
 ): String {
-    return JSONObject().apply {
+    return buildJsonObject {
         put("schema", "keios.os.card.v1")
         put("generatedAt", generatedAt)
         put("shizukuStatus", shizukuStatus)
@@ -485,10 +488,10 @@ internal fun buildOsCardJson(
         put("rowCount", rows.size)
         put(
             "rows",
-            JSONArray().apply {
+            buildJsonArray {
                 rows.forEach { row ->
-                    put(
-                        JSONObject().apply {
+                    add(
+                        buildJsonObject {
                             put("key", row.key)
                             put("value", row.value)
                         }
@@ -496,5 +499,5 @@ internal fun buildOsCardJson(
                 }
             }
         )
-    }.toString(2)
+    }.encodeCompact(KeiJson.pretty)
 }

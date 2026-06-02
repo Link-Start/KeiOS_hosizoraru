@@ -3,9 +3,14 @@ package os.kei.ui.page.main.os.transfer
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.R
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import os.kei.core.json.optArray
+import os.kei.core.json.optInt
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.state.OsCardImportTarget
@@ -44,7 +49,7 @@ internal fun Throwable.localizedOsCardImportMessage(context: Context): String {
 }
 
 internal data class OsCardImportRoot(
-    val items: JSONArray,
+    val items: JsonArray,
     val sourceCount: Int,
     val fileKind: OsCardImportFileKind,
     val schemaVersion: Int,
@@ -182,17 +187,19 @@ internal fun parseOsCardImportRoot(raw: String): OsCardImportRoot {
         throw OsCardImportException(OsCardImportError.EmptyFile)
     }
     if (normalizedRaw.startsWith("[")) {
-        val items = JSONArray(normalizedRaw)
+        val items = normalizedRaw.parseJsonArrayOrNull()
+            ?: throw OsCardImportException(OsCardImportError.MissingData)
         return OsCardImportRoot(
             items = items,
-            sourceCount = items.length(),
+            sourceCount = items.size,
             fileKind = detectCardImportFileKind(items),
             schemaVersion = OS_CARD_LEGACY_SCHEMA_VERSION,
             isLegacyFormat = true
         )
     }
-    val root = JSONObject(normalizedRaw)
-    val items = root.optJSONArray("items")
+    val root = normalizedRaw.parseJsonObjectOrNull()
+        ?: throw OsCardImportException(OsCardImportError.MissingData)
+    val items = root.optArray("items")
         ?: throw OsCardImportException(OsCardImportError.MissingData)
     val declaredSchema = root.optString("schema").trim().ifBlank {
         root.optString("format").trim()
@@ -208,10 +215,10 @@ internal fun parseOsCardImportRoot(raw: String): OsCardImportRoot {
     ).coerceAtLeast(OS_CARD_LEGACY_SCHEMA_VERSION)
     return OsCardImportRoot(
         items = items,
-        sourceCount = if (root.has("itemCount")) {
-            root.optInt("itemCount", items.length()).coerceAtLeast(0)
+        sourceCount = if (root.containsKey("itemCount")) {
+            root.optInt("itemCount", items.size).coerceAtLeast(0)
         } else {
-            items.length()
+            items.size
         },
         fileKind = if (declaredKind != OsCardImportFileKind.Unknown) {
             declaredKind
@@ -232,17 +239,17 @@ private fun defaultSchemaVersionFor(schema: String): Int {
     }
 }
 
-private fun detectCardImportFileKind(items: JSONArray): OsCardImportFileKind {
+private fun detectCardImportFileKind(items: JsonArray): OsCardImportFileKind {
     var activityScore = 0
     var shellScore = 0
-    val inspectedCount = minOf(items.length(), 12)
+    val inspectedCount = minOf(items.size, 12)
     repeat(inspectedCount) { index ->
-        val item = items.optJSONObject(index) ?: return@repeat
+        val item = items.getOrNull(index) as? JsonObject ?: return@repeat
         ACTIVITY_SIGNATURE_KEYS.forEach { key ->
-            if (item.has(key)) activityScore += 1
+            if (item.containsKey(key)) activityScore += 1
         }
         SHELL_SIGNATURE_KEYS.forEach { key ->
-            if (item.has(key)) shellScore += 1
+            if (item.containsKey(key)) shellScore += 1
         }
     }
     return when {

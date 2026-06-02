@@ -5,10 +5,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import os.kei.R
+import os.kei.core.json.KeiJson
+import os.kei.core.json.encodeCompact
 import os.kei.mcp.server.McpServerUiState
-import org.json.JSONArray
-import org.json.JSONObject
 
 @Composable
 internal fun formatMcpUptimeText(durationMs: Long): String {
@@ -34,7 +37,7 @@ internal fun buildMcpLogsExportJson(
     generatedAt: String,
     state: McpServerUiState
 ): String {
-    return JSONObject().apply {
+    return buildJsonObject {
         put("schema", "keios.mcp.logs.v1")
         put("generatedAt", generatedAt)
         put("serverName", state.serverName)
@@ -46,10 +49,10 @@ internal fun buildMcpLogsExportJson(
         put("logCount", state.logs.size)
         put(
             "logs",
-            JSONArray().apply {
+            buildJsonArray {
                 state.logs.forEach { log ->
-                    put(
-                        JSONObject().apply {
+                    add(
+                        buildJsonObject {
                             put("time", log.time)
                             put("level", log.level)
                             put("message", log.message)
@@ -58,5 +61,5 @@ internal fun buildMcpLogsExportJson(
                 }
             }
         )
-    }.toString(2)
+    }.encodeCompact(KeiJson.pretty)
 }

@@ -1,6 +1,12 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
 import os.kei.feature.github.model.GitHubRepositoryCommunityProfile
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
@@ -37,11 +43,11 @@ class GitHubApiRepositoryProfileSource(
         fetchedAtMillis: Long,
         sourceConfigSignature: String
     ): GitHubRepositoryProfileSnapshot {
-        val root = JSONObject(json)
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid repository profile payload")
         val source = GitHubRepositoryProfileSource.GitHubApiRepository
-        val license = root.optJSONObject("license")
-        val owner = root.optJSONObject("owner")
-        val parent = root.optJSONObject("parent") ?: root.optJSONObject("source")
+        val license = root.optObject("license")
+        val owner = root.optObject("owner")
+        val parent = root.optObject("parent") ?: root.optObject("source")
         val identity = GitHubRepositoryIdentityProfile(
             owner = stringField(
                 owner?.optString("login").orEmpty().ifBlank { fallbackOwner },
@@ -72,7 +78,7 @@ class GitHubApiRepositoryProfileSource(
                 source,
                 fetchedAtMillis
             ),
-            topics = listField(root.optJSONArray("topics").toStringList(), source, fetchedAtMillis)
+            topics = listField(root.optArray("topics").toStringList(), source, fetchedAtMillis)
         )
         val lifecycle = GitHubRepositoryLifecycleProfile(
             archived = booleanField(root.optBoolean("archived", false), source, fetchedAtMillis),
@@ -138,7 +144,7 @@ class GitHubApiRepositoryProfileSource(
         )
     }
 
-    private fun JSONObject.toUpstreamProfile(
+    private fun JsonObject.toUpstreamProfile(
         source: GitHubRepositoryProfileSource,
         fetchedAtMillis: Long
     ): GitHubRepositoryUpstreamProfile {

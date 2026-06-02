@@ -1,6 +1,9 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
 
 internal data class GitHubTrackedRepoSnapshotItem(
     val repoUrl: String,
@@ -20,19 +23,23 @@ internal object GitHubTrackedRepoDeviceSnapshot {
         val raw = checkNotNull(javaClass.getResourceAsStream(RESOURCE_PATH)) {
             "Missing test resource: $RESOURCE_PATH"
         }.bufferedReader().use { it.readText() }
-        val array = JSONArray(raw)
+        val array = raw.parseJsonArrayOrNull()
+            ?: error("tracked repo device snapshot should parse")
         buildList {
-            for (index in 0 until array.length()) {
-                val item = array.getJSONObject(index)
+            for (index in array.indices) {
+                val item = array.optObject(index) ?: continue
                 add(
                     GitHubTrackedRepoSnapshotItem(
-                        repoUrl = item.getString("repoUrl"),
-                        owner = item.getString("owner"),
-                        repo = item.getString("repo"),
-                        packageName = item.getString("packageName"),
+                        repoUrl = item.optString("repoUrl"),
+                        owner = item.optString("owner"),
+                        repo = item.optString("repo"),
+                        packageName = item.optString("packageName"),
                         appLabel = item.optString("appLabel"),
                         preferPreRelease = when {
-                            item.has("preferPreRelease") -> item.optBoolean("preferPreRelease", false)
+                            item.containsKey("preferPreRelease") -> item.optBoolean(
+                                "preferPreRelease",
+                                false
+                            )
                             else -> item.optBoolean("checkPreRelease", false)
                         }
                     )

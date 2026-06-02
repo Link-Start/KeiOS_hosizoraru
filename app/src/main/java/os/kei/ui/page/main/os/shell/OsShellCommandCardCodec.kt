@@ -1,7 +1,14 @@
 package os.kei.ui.page.main.os.shell
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optLong
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
 
 internal object OsShellCommandCardCodec {
     private const val MAX_OUTPUT_LENGTH = 24_000
@@ -28,10 +35,10 @@ internal object OsShellCommandCardCodec {
     }
 
     fun encodeCards(cards: List<OsShellCommandCard>): String {
-        val array = JSONArray()
-        cards.forEach { card ->
-            array.put(
-                JSONObject().apply {
+        val array = buildJsonArray {
+            cards.forEach { card ->
+                add(
+                    buildJsonObject {
                     put(OS_SHELL_CARD_KEY_ID, card.id)
                     put(OS_SHELL_CARD_KEY_VISIBLE, card.visible)
                     put(OS_SHELL_CARD_KEY_TITLE, card.title)
@@ -43,8 +50,9 @@ internal object OsShellCommandCardCodec {
                     put(OS_SHELL_CARD_KEY_UPDATED_AT, card.updatedAtMillis)
                 },
             )
+            }
         }
-        return array.toString()
+        return array.encodeCompact()
     }
 
     fun decodeCards(
@@ -52,20 +60,20 @@ internal object OsShellCommandCardCodec {
         nowMs: Long = OsShellCommandCardSystemClock.nowMs(),
     ): List<OsShellCommandCard> =
         runCatching {
-            val array = JSONArray(raw)
+            val array = raw.parseJsonArrayOrNull() ?: return@runCatching emptyList()
             buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.optJSONObject(index) ?: continue
+                for (element in array) {
+                    val item = element as? JsonObject ?: continue
                     decodeCard(item, nowMs)?.let(::add)
                 }
             }
         }.getOrDefault(emptyList())
 
     fun decodeCard(
-        item: JSONObject,
+        item: JsonObject,
         nowMs: Long = OsShellCommandCardSystemClock.nowMs(),
     ): OsShellCommandCard? {
-        if (!item.has(OS_SHELL_CARD_KEY_COMMAND)) return null
+        if (!item.containsKey(OS_SHELL_CARD_KEY_COMMAND)) return null
         return normalizeCard(
             card =
                 OsShellCommandCard(

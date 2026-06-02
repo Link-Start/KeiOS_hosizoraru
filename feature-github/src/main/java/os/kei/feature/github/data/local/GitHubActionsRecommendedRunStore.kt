@@ -1,8 +1,17 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.core.json.toMutableJsonMap
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONObject
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 
 object GitHubActionsRecommendedRunStore {
@@ -15,17 +24,16 @@ object GitHubActionsRecommendedRunStore {
         val normalizedTrackId = trackId.trim()
         if (normalizedTrackId.isBlank()) return null
         val root = loadRoot()
-        return decodeSnapshot(root.optJSONObject(normalizedTrackId))
+        return decodeSnapshot(root.optObject(normalizedTrackId))
     }
 
     fun loadAll(): Map<String, GitHubActionsRecommendedRunSnapshot> {
         val root = loadRoot()
         return buildMap {
-            val keys = root.keys()
-            while (keys.hasNext()) {
-                val trackId = keys.next().trim()
+            for (key in root.keys) {
+                val trackId = key.trim()
                 if (trackId.isBlank()) continue
-                decodeSnapshot(root.optJSONObject(trackId))?.let { snapshot ->
+                decodeSnapshot(root.optObject(trackId))?.let { snapshot ->
                     put(trackId, snapshot)
                 }
             }
@@ -35,59 +43,61 @@ object GitHubActionsRecommendedRunStore {
     fun save(snapshot: GitHubActionsRecommendedRunSnapshot) {
         if (snapshot.trackId.isBlank() || snapshot.runId <= 0L) return
         val root = loadRoot()
-        root.put(snapshot.trackId, encodeSnapshot(snapshot))
-        store.encode(KEY_SNAPSHOTS, root.toString())
+        val map = root.toMutableJsonMap()
+        map[snapshot.trackId] = encodeSnapshot(snapshot)
+        store.encode(KEY_SNAPSHOTS, JsonObject(map).encodeCompact())
     }
 
     fun remove(trackId: String) {
         val normalizedTrackId = trackId.trim()
         if (normalizedTrackId.isBlank()) return
         val root = loadRoot()
-        root.remove(normalizedTrackId)
-        store.encode(KEY_SNAPSHOTS, root.toString())
+        val map = root.toMutableJsonMap()
+        map.remove(normalizedTrackId)
+        store.encode(KEY_SNAPSHOTS, JsonObject(map).encodeCompact())
     }
 
     fun retain(trackIds: Set<String>) {
         val keep = trackIds.map { it.trim() }.filter { it.isNotBlank() }.toSet()
         val root = loadRoot()
-        val keys = root.keys().asSequence().toList()
-        keys.filter { it !in keep }.forEach(root::remove)
-        store.encode(KEY_SNAPSHOTS, root.toString())
+        val map = root.toMutableJsonMap()
+        map.keys.filter { it !in keep }.forEach(map::remove)
+        store.encode(KEY_SNAPSHOTS, JsonObject(map).encodeCompact())
     }
 
-    private fun loadRoot(): JSONObject {
+    private fun loadRoot(): JsonObject {
         val raw = store.decodeString(KEY_SNAPSHOTS).orEmpty()
-        if (raw.isBlank()) return JSONObject()
-        return runCatching { JSONObject(raw) }.getOrDefault(JSONObject())
+        return raw.parseJsonObjectOrNull() ?: JsonObject(emptyMap())
     }
 
-    private fun encodeSnapshot(snapshot: GitHubActionsRecommendedRunSnapshot): JSONObject {
-        return JSONObject()
-            .put("trackId", snapshot.trackId)
-            .put("owner", snapshot.owner)
-            .put("repo", snapshot.repo)
-            .put("appLabel", snapshot.appLabel)
-            .put("workflowId", snapshot.workflowId)
-            .put("workflowName", snapshot.workflowName)
-            .put("workflowPath", snapshot.workflowPath)
-            .put("runId", snapshot.runId)
-            .put("runNumber", snapshot.runNumber)
-            .put("runAttempt", snapshot.runAttempt)
-            .put("runDisplayName", snapshot.runDisplayName)
-            .put("headBranch", snapshot.headBranch)
-            .put("headSha", snapshot.headSha)
-            .put("event", snapshot.event)
-            .put("status", snapshot.status)
-            .put("conclusion", snapshot.conclusion)
-            .put("htmlUrl", snapshot.htmlUrl)
-            .put("artifactCount", snapshot.artifactCount)
-            .put("androidArtifactCount", snapshot.androidArtifactCount)
-            .put("createdAtMillis", snapshot.createdAtMillis)
-            .put("updatedAtMillis", snapshot.updatedAtMillis)
-            .put("checkedAtMillis", snapshot.checkedAtMillis)
+    private fun encodeSnapshot(snapshot: GitHubActionsRecommendedRunSnapshot): JsonObject {
+        return buildJsonObject {
+            put("trackId", snapshot.trackId)
+            put("owner", snapshot.owner)
+            put("repo", snapshot.repo)
+            put("appLabel", snapshot.appLabel)
+            put("workflowId", snapshot.workflowId)
+            put("workflowName", snapshot.workflowName)
+            put("workflowPath", snapshot.workflowPath)
+            put("runId", snapshot.runId)
+            put("runNumber", snapshot.runNumber)
+            put("runAttempt", snapshot.runAttempt)
+            put("runDisplayName", snapshot.runDisplayName)
+            put("headBranch", snapshot.headBranch)
+            put("headSha", snapshot.headSha)
+            put("event", snapshot.event)
+            put("status", snapshot.status)
+            put("conclusion", snapshot.conclusion)
+            put("htmlUrl", snapshot.htmlUrl)
+            put("artifactCount", snapshot.artifactCount)
+            put("androidArtifactCount", snapshot.androidArtifactCount)
+            put("createdAtMillis", snapshot.createdAtMillis)
+            put("updatedAtMillis", snapshot.updatedAtMillis)
+            put("checkedAtMillis", snapshot.checkedAtMillis)
+        }
     }
 
-    private fun decodeSnapshot(obj: JSONObject?): GitHubActionsRecommendedRunSnapshot? {
+    private fun decodeSnapshot(obj: JsonObject?): GitHubActionsRecommendedRunSnapshot? {
         obj ?: return null
         val trackId = obj.optString("trackId").trim()
         val runId = obj.optLong("runId", 0L)

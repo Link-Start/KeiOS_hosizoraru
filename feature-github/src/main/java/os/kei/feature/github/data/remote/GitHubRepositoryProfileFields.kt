@@ -1,6 +1,8 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONArray
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.contentOrNull
+import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
@@ -131,12 +133,13 @@ fun failed(
     )
 }
 
-fun JSONArray?.toStringList(): List<String> {
+fun JsonArray?.toStringList(): List<String> {
     this ?: return emptyList()
-    return buildList {
-        for (index in 0 until length()) {
-            optString(index).trim().takeIf { it.isNotBlank() }?.let(::add)
-        }
+    return mapNotNull { element ->
+        element.jsonPrimitiveOrNull()
+            ?.contentOrNull
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
     }
 }
 

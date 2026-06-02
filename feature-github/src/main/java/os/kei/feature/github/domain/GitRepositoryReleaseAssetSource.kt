@@ -1,11 +1,19 @@
 package os.kei.feature.github.domain
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.GitHubSingleFlight
 import os.kei.feature.github.data.remote.GitHubAtomHeuristics
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
@@ -222,7 +230,7 @@ internal class GitRepositoryReleaseAssetSource(
     }
 
     private fun parsePlatformReleaseBundle(
-        release: JSONObject,
+        release: JsonObject,
         fallbackTag: String,
         fallbackReleaseUrl: String,
         fetchSource: String,
@@ -249,7 +257,7 @@ internal class GitRepositoryReleaseAssetSource(
     }
 
     private fun parseGitLabReleaseBundle(
-        release: JSONObject,
+        release: JsonObject,
         fallbackTag: String,
         fallbackReleaseUrl: String,
         sourceConfigSignature: String,
@@ -261,12 +269,12 @@ internal class GitRepositoryReleaseAssetSource(
         val htmlUrl = releaseWebUrl(release, tagName)
             .ifBlank { fallbackReleaseUrl.trim() }
             .ifBlank { buildGitLabReleasePageUrl(tagName) }
-        val links = release.optJSONObject("assets")
-            ?.optJSONArray("links")
-            ?: JSONArray()
+        val links = release.optObject("assets")
+            ?.optArray("links")
+            .orEmpty()
         val assets = buildList {
-            for (index in 0 until links.length()) {
-                val link = links.optJSONObject(index) ?: continue
+            for (element in links) {
+                val link = element as? JsonObject ?: continue
                 val downloadUrl = link.optString("direct_asset_url").trim()
                     .ifBlank { link.optString("url").trim() }
                     .let(::resolvePlatformUrl)
@@ -295,7 +303,7 @@ internal class GitRepositoryReleaseAssetSource(
             releaseUpdatedAtMillis = releaseUpdatedAtMillis(release),
             releaseNotesBody = releaseBody(release),
             assets = assets,
-            shortCommitSha = release.optJSONObject("commit")?.optString("short_id").orEmpty(),
+            shortCommitSha = release.optObject("commit")?.optString("short_id").orEmpty(),
             fetchSource = GITLAB_FETCH_SOURCE,
             sourceConfigSignature = sourceConfigSignature
         ).selectDisplayAssets(
@@ -305,13 +313,13 @@ internal class GitRepositoryReleaseAssetSource(
     }
 
     private fun buildReleaseNotesTargets(
-        releases: JSONArray,
+        releases: JsonArray,
         stableLimit: Int,
         prereleaseLimit: Int,
     ): List<GitHubReleaseNotesTarget> {
         val targets = buildList {
-            for (index in 0 until releases.length()) {
-                val release = releases.optJSONObject(index) ?: continue
+            for (element in releases) {
+                val release = element as? JsonObject ?: continue
                 if (release.optBoolean("draft", false)) continue
                 val tagName = releaseTagName(release)
                 if (tagName.isBlank()) continue
@@ -351,20 +359,20 @@ internal class GitRepositoryReleaseAssetSource(
             .sortedByDescending { it.updatedAtMillis ?: 0L }
     }
 
-    private fun fetchGiteeReleaseList(limit: Int): Result<JSONArray> {
+    private fun fetchGiteeReleaseList(limit: Int): Result<JsonArray> {
         val url =
             "${giteeApiBaseUrl.trimEnd('/')}/repos/${repositoryApiPath()}/releases?per_page=${limit.coerceIn(1, 100)}&direction=desc"
         return fetchJsonArray(url)
     }
 
-    private fun fetchGitLabReleaseList(limit: Int): Result<JSONArray> {
+    private fun fetchGitLabReleaseList(limit: Int): Result<JsonArray> {
         val projectId = urlEncode("${identity.namespace}/${identity.repo}")
         val url =
             "${gitLabApiBaseUrl.trimEnd('/')}/projects/$projectId/releases?per_page=${limit.coerceIn(1, 100)}"
         return fetchJsonArray(url)
     }
 
-    private fun fetchGiteaReleaseList(limit: Int): Result<JSONArray> {
+    private fun fetchGiteaReleaseList(limit: Int): Result<JsonArray> {
         val url =
             "${giteaApiBaseUrl.trimEnd('/')}/repos/${repositoryApiPath()}/releases?limit=${limit.coerceIn(1, 100)}"
         return fetchJsonArray(url)
@@ -413,12 +421,16 @@ internal class GitRepositoryReleaseAssetSource(
         return "https://${identity.host}/${identity.namespace}/${identity.repo}/releases/tag/${rawTag.urlEncodePathSegment()}"
     }
 
-    private fun fetchJsonObject(url: String): Result<JSONObject> {
-        return fetchText(url).mapCatching { body -> JSONObject(body) }
+    private fun fetchJsonObject(url: String): Result<JsonObject> {
+        return fetchText(url).mapCatching { body ->
+            body.parseJsonObjectOrNull() ?: error("Git release response is not a JSON object")
+        }
     }
 
-    private fun fetchJsonArray(url: String): Result<JSONArray> {
-        return fetchText(url).mapCatching { body -> JSONArray(body) }
+    private fun fetchJsonArray(url: String): Result<JsonArray> {
+        return fetchText(url).mapCatching { body ->
+            body.parseJsonArrayOrNull() ?: error("Git release response is not a JSON array")
+        }
     }
 
     private fun fetchText(url: String): Result<String> = runCatching {
@@ -439,15 +451,15 @@ internal class GitRepositoryReleaseAssetSource(
 
     private fun buildErrorMessage(response: Response, bodyText: String): String {
         val apiMessage = runCatching {
-            JSONObject(bodyText).optString("message").trim()
+            bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
         }.getOrDefault("")
         return "Git release asset request failed (HTTP ${response.code}${apiMessage.takeIf { it.isNotBlank() }?.let { ", $it" } ?: ""})"
     }
 
-    private fun JSONArray.firstReleaseMatchingTag(rawTag: String): JSONObject? {
+    private fun JsonArray.firstReleaseMatchingTag(rawTag: String): JsonObject? {
         val normalized = rawTag.normalizedReleaseTag()
-        for (index in 0 until length()) {
-            val release = optJSONObject(index) ?: continue
+        for (element in this) {
+            val release = element as? JsonObject ?: continue
             val tag = releaseTagName(release)
             if (tag.equals(rawTag, ignoreCase = true) || tag.normalizedReleaseTag() == normalized) {
                 return release
@@ -456,18 +468,18 @@ internal class GitRepositoryReleaseAssetSource(
         return null
     }
 
-    private fun releaseTagName(release: JSONObject): String {
+    private fun releaseTagName(release: JsonObject): String {
         return release.optString("tag_name").trim()
             .ifBlank { release.optString("tag").trim() }
             .ifBlank { release.optString("name").trim() }
     }
 
-    private fun releaseBody(release: JSONObject): String {
+    private fun releaseBody(release: JsonObject): String {
         return release.optString("body").trim()
             .ifBlank { release.optString("description").trim() }
     }
 
-    private fun releaseWebUrl(release: JSONObject, tagName: String): String {
+    private fun releaseWebUrl(release: JsonObject, tagName: String): String {
         val direct = release.optString("html_url").trim()
             .ifBlank { release.optString("web_url").trim() }
         if (direct.isNotBlank()) return direct
@@ -477,13 +489,13 @@ internal class GitRepositoryReleaseAssetSource(
             GitRepositoryPlatform.Gitea -> buildGiteaReleasePageUrl(tagName)
             GitRepositoryPlatform.GitHub,
             GitRepositoryPlatform.Generic -> {
-                release.optJSONObject("_links")?.optString("self").orEmpty().trim()
+                release.optObject("_links")?.optString("self").orEmpty().trim()
                     .ifBlank { release.optString("url").trim() }
             }
         }
     }
 
-    private fun releaseUpdatedAtMillis(release: JSONObject): Long? {
+    private fun releaseUpdatedAtMillis(release: JsonObject): Long? {
         return release.optString("released_at").parseIsoInstantOrNull()
             ?: release.optString("published_at").parseIsoInstantOrNull()
             ?: release.optString("created_at").parseIsoInstantOrNull()

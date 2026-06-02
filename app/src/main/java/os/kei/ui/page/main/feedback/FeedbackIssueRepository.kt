@@ -8,15 +8,20 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.BuildConfig
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.log.AppLogStore
 import os.kei.feature.github.domain.GitHubTrackService
 import java.text.SimpleDateFormat
@@ -135,11 +140,16 @@ internal class FeedbackIssueRepository(
             val token = githubTrackService.loadApiToken().trim()
             if (token.isBlank()) return@withContext FeedbackIssueSubmitResult.MissingToken
             val payload =
-                JSONObject()
-                    .put("title", title.trim())
-                    .put("body", body.trim())
-                    .put("labels", JSONArray().put("bug"))
-                    .toString()
+                buildJsonObject {
+                    put("title", title.trim())
+                    put("body", body.trim())
+                    put(
+                        "labels",
+                        buildJsonArray {
+                            add(JsonPrimitive("bug"))
+                        },
+                    )
+                }.encodeCompact()
             val request =
                 Request
                     .Builder()
@@ -155,15 +165,16 @@ internal class FeedbackIssueRepository(
                     val responseText = response.body.string()
                     if (response.isSuccessful) {
                         val issueUrl =
-                            JSONObject(responseText)
-                                .optString("html_url")
+                            responseText.parseJsonObjectOrNull()
+                                ?.optString("html_url")
+                                .orEmpty()
                                 .trim()
                                 .ifBlank { "https://github.com/hosizoraru/KeiOS/issues" }
                         FeedbackIssueSubmitResult.Success(issueUrl)
                     } else {
                         val message =
                             runCatching {
-                                JSONObject(responseText).optString("message")
+                                responseText.parseJsonObjectOrNull()?.optString("message").orEmpty()
                             }.getOrNull().orEmpty().ifBlank { response.message }
                         FeedbackIssueSubmitResult.Failure(
                             statusCode = response.code,

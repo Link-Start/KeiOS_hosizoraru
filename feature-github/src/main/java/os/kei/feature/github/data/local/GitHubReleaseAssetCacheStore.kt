@@ -1,9 +1,19 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import java.security.MessageDigest
@@ -77,7 +87,7 @@ object GitHubReleaseAssetCacheStore {
         val id = keyId(normalizedKey)
         val raw = kv().decodeString(entryStoreKey(id), "").orEmpty()
         if (raw.isBlank()) return null
-        val root = runCatching { JSONObject(raw) }.getOrNull() ?: return null
+        val root = raw.parseJsonObjectOrNull() ?: return null
         if (root.optString("cacheKey").trim() != normalizedKey) return null
         val syncedAtMs = root.optLong("syncedAtMs", 0L).coerceAtLeast(0L)
         val intervalMs = refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
@@ -87,7 +97,7 @@ object GitHubReleaseAssetCacheStore {
             removeIndex(id)
             return null
         }
-        return decodeBundle(root.optJSONObject("bundle")) ?: run {
+        return decodeBundle(root.optObject("bundle")) ?: run {
             kv().removeValueForKey(entryStoreKey(id))
             removeIndex(id)
             null
@@ -102,11 +112,11 @@ object GitHubReleaseAssetCacheStore {
         val normalizedKey = cacheKey.trim()
         if (normalizedKey.isBlank()) return
         val id = keyId(normalizedKey)
-        val payload = JSONObject().apply {
+        val payload = buildJsonObject {
             put("cacheKey", normalizedKey)
             put("syncedAtMs", syncedAtMs.coerceAtLeast(0L))
             put("bundle", encodeBundle(bundle))
-        }.toString()
+        }.encodeCompact()
         kv().encode(entryStoreKey(id), payload)
         addIndex(id)
     }
@@ -130,8 +140,8 @@ object GitHubReleaseAssetCacheStore {
 
     fun cachedEntryCount(): Int = loadIndex().size
 
-    private fun encodeBundle(bundle: GitHubReleaseAssetBundle): JSONObject {
-        return JSONObject().apply {
+    private fun encodeBundle(bundle: GitHubReleaseAssetBundle): JsonObject {
+        return buildJsonObject {
             put("releaseName", bundle.releaseName)
             put("tagName", bundle.tagName)
             put("htmlUrl", bundle.htmlUrl)
@@ -143,10 +153,10 @@ object GitHubReleaseAssetCacheStore {
             put("sourceConfigSignature", bundle.sourceConfigSignature)
             put(
                 "assets",
-                JSONArray().apply {
+                buildJsonArray {
                     bundle.assets.forEach { asset ->
-                        put(
-                            JSONObject().apply {
+                        add(
+                            buildJsonObject {
                                 put("name", asset.name)
                                 put("downloadUrl", asset.downloadUrl)
                                 put("apiAssetUrl", asset.apiAssetUrl)
@@ -154,6 +164,7 @@ object GitHubReleaseAssetCacheStore {
                                 put("downloadCount", asset.downloadCount)
                                 put("contentType", asset.contentType)
                                 put("updatedAtMillis", asset.updatedAtMillis ?: 0L)
+                                put("digest", asset.digest)
                             }
                         )
                     }
@@ -162,14 +173,14 @@ object GitHubReleaseAssetCacheStore {
         }
     }
 
-    private fun decodeBundle(obj: JSONObject?): GitHubReleaseAssetBundle? {
+    private fun decodeBundle(obj: JsonObject?): GitHubReleaseAssetBundle? {
         obj ?: return null
         val tagName = obj.optString("tagName").trim()
         if (tagName.isBlank()) return null
-        val assetsArray = obj.optJSONArray("assets") ?: JSONArray()
+        val assetsArray = obj.optArray("assets").orEmpty()
         val assets = buildList {
-            for (index in 0 until assetsArray.length()) {
-                val assetObj = assetsArray.optJSONObject(index) ?: continue
+            for (element in assetsArray) {
+                val assetObj = element as? JsonObject ?: continue
                 val name = assetObj.optString("name").trim()
                 val downloadUrl = assetObj.optString("downloadUrl").trim()
                 if (name.isBlank() || downloadUrl.isBlank()) continue
@@ -182,7 +193,8 @@ object GitHubReleaseAssetCacheStore {
                         downloadCount = assetObj.optInt("downloadCount", 0),
                         contentType = assetObj.optString("contentType").trim(),
                         updatedAtMillis = assetObj.optLong("updatedAtMillis", 0L)
-                            .takeIf { it > 0L }
+                            .takeIf { it > 0L },
+                        digest = assetObj.optString("digest").trim()
                     )
                 )
             }

@@ -493,6 +493,7 @@ dependencies {
     implementation(project(":core-concurrency"))
     implementation(project(":core-log"))
     implementation(project(":core-io"))
+    implementation(project(":core-json"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
     implementation(project(":ui-liquid-glass"))

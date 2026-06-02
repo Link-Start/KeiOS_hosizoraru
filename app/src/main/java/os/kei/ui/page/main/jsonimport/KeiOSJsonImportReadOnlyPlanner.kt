@@ -3,8 +3,10 @@ package os.kei.ui.page.main.jsonimport
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import os.kei.R
+import os.kei.core.json.optArray
+import os.kei.core.json.optInt
+import os.kei.core.json.parseJsonObjectOrNull
 
 internal class KeiOSJsonImportReadOnlyPlanner(
     private val defaultDispatcher: CoroutineDispatcher
@@ -15,16 +17,17 @@ internal class KeiOSJsonImportReadOnlyPlanner(
         header: KeiOSJsonImportHeader
     ): KeiOSJsonImportPlan {
         return withContext(defaultDispatcher) {
-            val root = JSONObject(file.raw)
+            val root = file.raw.parseJsonObjectOrNull()
+                ?: throw KeiOSJsonImportException(KeiOSJsonImportFailureReason.ParseFailed)
             val count = when (header.kind) {
                 KeiOSJsonImportKind.McpLogs -> root.optInt(
                     "logCount",
-                    root.optJSONArray("logs")?.length() ?: 0
+                    root.optArray("logs")?.size ?: 0
                 )
 
                 KeiOSJsonImportKind.OsInfoCard -> root.optInt(
                     "rowCount",
-                    root.optJSONArray("rows")?.length() ?: 0
+                    root.optArray("rows")?.size ?: 0
                 )
 
                 else -> 0

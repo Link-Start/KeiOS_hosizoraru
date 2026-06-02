@@ -1,9 +1,22 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.put
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 
 data class GitHubPendingShareImportPreviewRecord(
@@ -104,7 +117,7 @@ object GitHubShareImportFlowStore {
         val raw = store.decodeString(KEY_ACTIVE_PREVIEW).orEmpty()
         if (raw.isBlank()) return null
         val record = runCatching {
-            parsePreview(JSONObject(raw))
+            raw.parseJsonObjectOrNull()?.let(::parsePreview)
         }.getOrNull()
         if (record == null || record.isExpired(nowMillis)) {
             clearActivePreview()
@@ -118,7 +131,7 @@ object GitHubShareImportFlowStore {
             clearActivePreview()
             return
         }
-        store.encode(KEY_ACTIVE_PREVIEW, previewToJson(record).toString())
+        store.encode(KEY_ACTIVE_PREVIEW, previewToJson(record).encodeCompact())
     }
 
     fun clearActivePreview() {
@@ -131,7 +144,7 @@ object GitHubShareImportFlowStore {
         val raw = store.decodeString(KEY_ACTIVE_ATTACH_CANDIDATE).orEmpty()
         if (raw.isBlank()) return null
         val record = runCatching {
-            parseAttachCandidate(JSONObject(raw))
+            raw.parseJsonObjectOrNull()?.let(::parseAttachCandidate)
         }.getOrNull()
         if (record == null || record.isExpired(nowMillis)) {
             clearActiveAttachCandidate()
@@ -145,7 +158,7 @@ object GitHubShareImportFlowStore {
             clearActiveAttachCandidate()
             return
         }
-        store.encode(KEY_ACTIVE_ATTACH_CANDIDATE, attachCandidateToJson(record).toString())
+        store.encode(KEY_ACTIVE_ATTACH_CANDIDATE, attachCandidateToJson(record).encodeCompact())
     }
 
     fun clearActiveAttachCandidate() {
@@ -158,7 +171,7 @@ object GitHubShareImportFlowStore {
         val raw = store.decodeString(KEY_ACTIVE_MANAGED_INSTALL).orEmpty()
         if (raw.isBlank()) return null
         val record = runCatching {
-            parseManagedInstall(JSONObject(raw))
+            raw.parseJsonObjectOrNull()?.let(::parseManagedInstall)
         }.getOrNull()
         if (record == null || record.isExpired(nowMillis)) {
             clearActiveManagedInstall()
@@ -172,7 +185,7 @@ object GitHubShareImportFlowStore {
             clearActiveManagedInstall()
             return
         }
-        store.encode(KEY_ACTIVE_MANAGED_INSTALL, managedInstallToJson(record).toString())
+        store.encode(KEY_ACTIVE_MANAGED_INSTALL, managedInstallToJson(record).encodeCompact())
     }
 
     fun clearActiveManagedInstall() {
@@ -183,7 +196,7 @@ object GitHubShareImportFlowStore {
         val raw = store.decodeString(KEY_ACTIVE_RESULT).orEmpty()
         if (raw.isBlank()) return null
         val record = runCatching {
-            parseResult(JSONObject(raw))
+            raw.parseJsonObjectOrNull()?.let(::parseResult)
         }.getOrNull()
         if (record == null || record.isExpired(nowMillis)) {
             clearActiveResult()
@@ -197,7 +210,7 @@ object GitHubShareImportFlowStore {
             clearActiveResult()
             return
         }
-        store.encode(KEY_ACTIVE_RESULT, resultToJson(record).toString())
+        store.encode(KEY_ACTIVE_RESULT, resultToJson(record).encodeCompact())
     }
 
     fun clearActiveResult() {
@@ -227,12 +240,12 @@ object GitHubShareImportFlowStore {
         return isGitHubShareImportResultExpired(completedAtMillis, nowMillis)
     }
 
-    private fun parsePreview(obj: JSONObject): GitHubPendingShareImportPreviewRecord? {
+    private fun parsePreview(obj: JsonObject): GitHubPendingShareImportPreviewRecord? {
         val sourceUrl = obj.optString("sourceUrl").trim()
         val projectUrl = obj.optString("projectUrl").trim()
         val owner = obj.optString("owner").trim()
         val repo = obj.optString("repo").trim()
-        val assets = obj.optJSONArray("assets")?.let(::parseAssets).orEmpty()
+        val assets = obj.optArray("assets")?.let(::parseAssets).orEmpty()
         if (sourceUrl.isBlank() || projectUrl.isBlank() || owner.isBlank() || repo.isBlank() || assets.isEmpty()) {
             return null
         }
@@ -253,10 +266,10 @@ object GitHubShareImportFlowStore {
         )
     }
 
-    private fun parseAssets(array: JSONArray): List<GitHubReleaseAssetFile> {
+    private fun parseAssets(array: JsonArray): List<GitHubReleaseAssetFile> {
         return buildList {
-            for (index in 0 until array.length()) {
-                val obj = array.optJSONObject(index) ?: continue
+            for (element in array) {
+                val obj = element as? JsonObject ?: continue
                 val name = obj.optString("name").trim()
                 val downloadUrl = obj.optString("downloadUrl").trim()
                 if (name.isBlank() || downloadUrl.isBlank()) continue
@@ -269,67 +282,71 @@ object GitHubShareImportFlowStore {
                         downloadCount = obj.optInt("downloadCount", 0).coerceAtLeast(0),
                         contentType = obj.optString("contentType").trim(),
                         updatedAtMillis = obj.optLong("updatedAtMillis", -1L)
-                            .takeIf { it > 0L }
+                            .takeIf { it > 0L },
+                        digest = obj.optString("digest").trim()
                     )
                 )
             }
         }
     }
 
-    private fun parseStringArray(array: JSONArray): List<String> {
+    private fun parseStringArray(array: JsonArray): List<String> {
         return buildList {
-            for (index in 0 until array.length()) {
-                val value = array.optString(index).trim()
+            for (element in array) {
+                val value = element.jsonPrimitiveOrNull()?.contentOrNull?.trim().orEmpty()
                 if (value.isNotBlank()) add(value)
             }
         }
     }
 
-    private fun List<String>.toJsonArray(): JSONArray {
-        return JSONArray().apply {
+    private fun List<String>.toJsonArray(): JsonArray {
+        return buildJsonArray {
             this@toJsonArray.forEach { value ->
                 val normalized = value.trim()
-                if (normalized.isNotBlank()) put(normalized)
+                if (normalized.isNotBlank()) add(JsonPrimitive(normalized))
             }
         }
     }
 
-    private fun previewToJson(record: GitHubPendingShareImportPreviewRecord): JSONObject {
-        return JSONObject()
-            .put("sourceUrl", record.sourceUrl)
-            .put("projectUrl", record.projectUrl)
-            .put("owner", record.owner)
-            .put("repo", record.repo)
-            .put("releaseTag", record.releaseTag)
-            .put("releaseUrl", record.releaseUrl)
-            .put("strategyLabel", record.strategyLabel)
-            .put("preferredAssetName", record.preferredAssetName)
-            .put("targetDisplayName", record.targetDisplayName)
-            .put("selectedAssetName", record.selectedAssetName)
-            .put("sendInstallActionEnabled", record.sendInstallActionEnabled)
-            .put("createdAtMillis", record.createdAtMillis)
-            .put(
+    private fun previewToJson(record: GitHubPendingShareImportPreviewRecord): JsonObject {
+        return buildJsonObject {
+            put("sourceUrl", record.sourceUrl)
+            put("projectUrl", record.projectUrl)
+            put("owner", record.owner)
+            put("repo", record.repo)
+            put("releaseTag", record.releaseTag)
+            put("releaseUrl", record.releaseUrl)
+            put("strategyLabel", record.strategyLabel)
+            put("preferredAssetName", record.preferredAssetName)
+            put("targetDisplayName", record.targetDisplayName)
+            put("selectedAssetName", record.selectedAssetName)
+            put("sendInstallActionEnabled", record.sendInstallActionEnabled)
+            put("createdAtMillis", record.createdAtMillis)
+            put(
                 "assets",
-                JSONArray().apply {
+                buildJsonArray {
                     record.assets.forEach { asset ->
-                        put(assetToJson(asset))
+                        add(assetToJson(asset))
                     }
                 }
             )
+        }
     }
 
-    private fun assetToJson(asset: GitHubReleaseAssetFile): JSONObject {
-        return JSONObject()
-            .put("name", asset.name)
-            .put("downloadUrl", asset.downloadUrl)
-            .put("apiAssetUrl", asset.apiAssetUrl)
-            .put("sizeBytes", asset.sizeBytes)
-            .put("downloadCount", asset.downloadCount)
-            .put("contentType", asset.contentType)
-            .put("updatedAtMillis", asset.updatedAtMillis ?: -1L)
+    private fun assetToJson(asset: GitHubReleaseAssetFile): JsonObject {
+        return buildJsonObject {
+            put("name", asset.name)
+            put("downloadUrl", asset.downloadUrl)
+            put("apiAssetUrl", asset.apiAssetUrl)
+            put("sizeBytes", asset.sizeBytes)
+            put("downloadCount", asset.downloadCount)
+            put("contentType", asset.contentType)
+            put("updatedAtMillis", asset.updatedAtMillis ?: -1L)
+            put("digest", asset.digest)
+        }
     }
 
-    private fun parseAttachCandidate(obj: JSONObject): GitHubPendingShareImportAttachCandidateRecord? {
+    private fun parseAttachCandidate(obj: JsonObject): GitHubPendingShareImportAttachCandidateRecord? {
         val projectUrl = obj.optString("projectUrl").trim()
         val owner = obj.optString("owner").trim()
         val repo = obj.optString("repo").trim()
@@ -352,21 +369,22 @@ object GitHubShareImportFlowStore {
         )
     }
 
-    private fun attachCandidateToJson(record: GitHubPendingShareImportAttachCandidateRecord): JSONObject {
-        return JSONObject()
-            .put("projectUrl", record.projectUrl)
-            .put("owner", record.owner)
-            .put("repo", record.repo)
-            .put("packageName", record.packageName)
-            .put("appLabel", record.appLabel)
-            .put("versionName", record.versionName)
-            .put("versionCode", record.versionCode)
-            .put("eventAction", record.eventAction)
-            .put("detectedAtMillis", record.detectedAtMillis)
-            .put("firstInstallTimeMs", record.firstInstallTimeMs)
+    private fun attachCandidateToJson(record: GitHubPendingShareImportAttachCandidateRecord): JsonObject {
+        return buildJsonObject {
+            put("projectUrl", record.projectUrl)
+            put("owner", record.owner)
+            put("repo", record.repo)
+            put("packageName", record.packageName)
+            put("appLabel", record.appLabel)
+            put("versionName", record.versionName)
+            put("versionCode", record.versionCode)
+            put("eventAction", record.eventAction)
+            put("detectedAtMillis", record.detectedAtMillis)
+            put("firstInstallTimeMs", record.firstInstallTimeMs)
+        }
     }
 
-    private fun parseManagedInstall(obj: JSONObject): GitHubPendingShareImportManagedInstallRecord? {
+    private fun parseManagedInstall(obj: JsonObject): GitHubPendingShareImportManagedInstallRecord? {
         val requestId = obj.optString("requestId").trim()
         val projectUrl = obj.optString("projectUrl").trim()
         val owner = obj.optString("owner").trim()
@@ -396,7 +414,7 @@ object GitHubShareImportFlowStore {
             versionCode = obj.optString("versionCode").trim(),
             minSdk = obj.optString("minSdk").trim(),
             targetSdk = obj.optString("targetSdk").trim(),
-            nativeAbis = obj.optJSONArray("nativeAbis")?.let(::parseStringArray).orEmpty(),
+            nativeAbis = obj.optArray("nativeAbis")?.let(::parseStringArray).orEmpty(),
             targetDisplayName = obj.optString("targetDisplayName").trim(),
             sessionId = obj.optInt("sessionId", -1),
             progressPhase = obj.optString("progressPhase").trim(),
@@ -409,31 +427,32 @@ object GitHubShareImportFlowStore {
 
     private fun managedInstallToJson(
         record: GitHubPendingShareImportManagedInstallRecord
-    ): JSONObject {
-        return JSONObject()
-            .put("requestId", record.requestId)
-            .put("projectUrl", record.projectUrl)
-            .put("owner", record.owner)
-            .put("repo", record.repo)
-            .put("releaseTag", record.releaseTag)
-            .put("assetName", record.assetName)
-            .put("appLabel", record.appLabel)
-            .put("packageName", record.packageName)
-            .put("versionName", record.versionName)
-            .put("versionCode", record.versionCode)
-            .put("minSdk", record.minSdk)
-            .put("targetSdk", record.targetSdk)
-            .put("nativeAbis", record.nativeAbis.toJsonArray())
-            .put("targetDisplayName", record.targetDisplayName)
-            .put("sessionId", record.sessionId)
-            .put("progressPhase", record.progressPhase)
-            .put("progressPercent", record.progressPercent)
-            .put("downloadedBytes", record.downloadedBytes)
-            .put("totalBytes", record.totalBytes)
-            .put("startedAtMillis", record.startedAtMillis)
+    ): JsonObject {
+        return buildJsonObject {
+            put("requestId", record.requestId)
+            put("projectUrl", record.projectUrl)
+            put("owner", record.owner)
+            put("repo", record.repo)
+            put("releaseTag", record.releaseTag)
+            put("assetName", record.assetName)
+            put("appLabel", record.appLabel)
+            put("packageName", record.packageName)
+            put("versionName", record.versionName)
+            put("versionCode", record.versionCode)
+            put("minSdk", record.minSdk)
+            put("targetSdk", record.targetSdk)
+            put("nativeAbis", record.nativeAbis.toJsonArray())
+            put("targetDisplayName", record.targetDisplayName)
+            put("sessionId", record.sessionId)
+            put("progressPhase", record.progressPhase)
+            put("progressPercent", record.progressPercent)
+            put("downloadedBytes", record.downloadedBytes)
+            put("totalBytes", record.totalBytes)
+            put("startedAtMillis", record.startedAtMillis)
+        }
     }
 
-    private fun parseResult(obj: JSONObject): GitHubShareImportResultRecord? {
+    private fun parseResult(obj: JsonObject): GitHubShareImportResultRecord? {
         val status = obj.optString("status").trim()
         if (status !in activeResultStatuses) return null
         val completedAtMillis = obj.optLong("completedAtMillis", 0L)
@@ -469,18 +488,19 @@ object GitHubShareImportFlowStore {
         )
     }
 
-    private fun resultToJson(record: GitHubShareImportResultRecord): JSONObject {
-        return JSONObject()
-            .put("status", record.status)
-            .put("projectUrl", record.projectUrl)
-            .put("owner", record.owner)
-            .put("repo", record.repo)
-            .put("appLabel", record.appLabel)
-            .put("packageName", record.packageName)
-            .put("versionName", record.versionName)
-            .put("targetDisplayName", record.targetDisplayName)
-            .put("message", record.message)
-            .put("completedAtMillis", record.completedAtMillis)
+    private fun resultToJson(record: GitHubShareImportResultRecord): JsonObject {
+        return buildJsonObject {
+            put("status", record.status)
+            put("projectUrl", record.projectUrl)
+            put("owner", record.owner)
+            put("repo", record.repo)
+            put("appLabel", record.appLabel)
+            put("packageName", record.packageName)
+            put("versionName", record.versionName)
+            put("targetDisplayName", record.targetDisplayName)
+            put("message", record.message)
+            put("completedAtMillis", record.completedAtMillis)
+        }
     }
 
     private val activeResultStatuses = setOf(

@@ -1,35 +1,35 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONObject
 import org.junit.Test
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import kotlin.test.assertEquals
 
 class GitHubReleaseAssetJsonMapperTest {
     @Test
     fun `release body maps into asset bundle notes`() {
-        val release = JSONObject(
-            """
+        val release = """
+        {
+          "name": "Version 1.0",
+          "tag_name": "v1.0",
+          "html_url": "https://github.com/demo/app/releases/tag/v1.0",
+          "body": "Added installer flow\nFixed cache refresh",
+          "published_at": "2026-05-01T10:00:00Z",
+          "assets": [
             {
-              "name": "Version 1.0",
-              "tag_name": "v1.0",
-              "html_url": "https://github.com/demo/app/releases/tag/v1.0",
-              "body": "Added installer flow\nFixed cache refresh",
-              "published_at": "2026-05-01T10:00:00Z",
-              "assets": [
-                {
-                  "name": "demo-arm64.apk",
-                  "browser_download_url": "https://example.com/demo-arm64.apk",
-                  "url": "https://api.github.com/assets/1",
-                  "size": 1024,
-                  "download_count": 3,
-                  "content_type": "application/vnd.android.package-archive",
-                  "digest": "sha256:abc123",
-                  "updated_at": "2026-05-01T10:05:00Z"
-                }
-              ]
+              "name": "demo-arm64.apk",
+              "browser_download_url": "https://example.com/demo-arm64.apk",
+              "url": "https://api.github.com/assets/1",
+              "size": 1024,
+              "download_count": 3,
+              "content_type": "application/vnd.android.package-archive",
+              "digest": "sha256:abc123",
+              "updated_at": "2026-05-01T10:05:00Z"
             }
-            """.trimIndent()
-        )
+          ]
+        }
+        """.trimIndent().parseJsonObjectOrNull()
+            ?: error("release json should parse")
 
         val bundle = GitHubReleaseAssetJsonMapper.parseReleaseBundle(release)
 

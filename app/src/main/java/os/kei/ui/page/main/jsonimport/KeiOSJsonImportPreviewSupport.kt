@@ -2,7 +2,12 @@ package os.kei.ui.page.main.jsonimport
 
 import android.content.Context
 import android.content.Intent
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import os.kei.core.json.optArray
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.transfer.OsCardBundleImportPayload
@@ -203,17 +208,17 @@ internal fun buildJsonImportOsBundleSamples(
 }
 
 internal fun buildJsonImportReadOnlySamples(
-    root: JSONObject,
+    root: JsonObject,
     kind: KeiOSJsonImportKind
 ): List<KeiOSJsonImportSample> {
     val array = when (kind) {
-        KeiOSJsonImportKind.McpLogs -> root.optJSONArray("logs")
-        KeiOSJsonImportKind.OsInfoCard -> root.optJSONArray("rows")
+        KeiOSJsonImportKind.McpLogs -> root.optArray("logs")
+        KeiOSJsonImportKind.OsInfoCard -> root.optArray("rows")
         else -> null
     } ?: return emptyList()
     return buildList {
-        repeat(minOf(array.length(), KEIOS_JSON_IMPORT_SAMPLE_LIMIT)) { index ->
-            val item = array.optJSONObject(index) ?: return@repeat
+        repeat(minOf(array.size, KEIOS_JSON_IMPORT_SAMPLE_LIMIT)) { index ->
+            val item = array.getOrNull(index) as? JsonObject ?: return@repeat
             add(
                 when (kind) {
                     KeiOSJsonImportKind.McpLogs -> KeiOSJsonImportSample(
@@ -236,17 +241,19 @@ internal fun buildJsonImportReadOnlySamples(
 internal fun buildJsonImportBgmSamples(raw: String): List<KeiOSJsonImportSample> {
     return runCatching {
         val trimmed = raw.trim()
-        val array = if (trimmed.startsWith("[")) {
-            org.json.JSONArray(trimmed)
+        val array: JsonArray = if (trimmed.startsWith("[")) {
+            trimmed.parseJsonArrayOrNull()
+                ?: return@runCatching emptyList()
         } else {
-            val root = JSONObject(trimmed)
-            root.optJSONArray("favorites")
-                ?: root.optJSONArray("bgmFavorites")
-                ?: org.json.JSONArray()
+            val root = trimmed.parseJsonObjectOrNull()
+                ?: return@runCatching emptyList()
+            root.optArray("favorites")
+                ?: root.optArray("bgmFavorites")
+                ?: JsonArray(emptyList())
         }
         buildList {
-            repeat(minOf(array.length(), KEIOS_JSON_IMPORT_SAMPLE_LIMIT)) { index ->
-                val item = array.optJSONObject(index) ?: return@repeat
+            repeat(minOf(array.size, KEIOS_JSON_IMPORT_SAMPLE_LIMIT)) { index ->
+                val item = array.getOrNull(index) as? JsonObject ?: return@repeat
                 add(
                     KeiOSJsonImportSample(
                         title = item.optString("title").ifBlank { item.optString("audioUrl") },

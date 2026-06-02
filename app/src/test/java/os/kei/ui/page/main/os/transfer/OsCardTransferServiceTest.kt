@@ -1,7 +1,9 @@
 package os.kei.ui.page.main.os.transfer
 
-import org.json.JSONObject
 import org.junit.Test
+import os.kei.core.json.optInt
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.BUILTIN_EXTRA_DIM_CARD_ID
@@ -68,21 +70,17 @@ class OsCardTransferServiceTest {
 
     @Test
     fun `activity and bundle exports include schema version`() {
-        val activityJson =
-            JSONObject(
-                OsCardTransferService.buildActivityCardsExportJson(
-                    cards = emptyList(),
-                    defaults = OsGoogleSystemServiceConfig(),
-                ),
-            )
-        val bundleJson =
-            JSONObject(
-                OsCardTransferService.buildCardsBundleExportJson(
-                    activityCards = emptyList(),
-                    shellCards = emptyList(),
-                    defaults = OsGoogleSystemServiceConfig(),
-                ),
-            )
+        val activityJson = OsCardTransferService.buildActivityCardsExportJson(
+            cards = emptyList(),
+            defaults = OsGoogleSystemServiceConfig(),
+        ).parseJsonObjectOrNull()
+            ?: error("activity export should parse")
+        val bundleJson = OsCardTransferService.buildCardsBundleExportJson(
+            activityCards = emptyList(),
+            shellCards = emptyList(),
+            defaults = OsGoogleSystemServiceConfig(),
+        ).parseJsonObjectOrNull()
+            ?: error("card bundle export should parse")
 
         assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, activityJson.optInt("schemaVersion"))
         assertEquals(OS_CARD_EXPORT_SCHEMA_VERSION, bundleJson.optInt("schemaVersion"))

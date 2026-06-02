@@ -1,11 +1,19 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -165,7 +173,7 @@ class GitHubApiTokenReleaseStrategy(
         }
 
         val result = fetch(buildLatestApiUrl(owner, repo)).mapCatching { body ->
-            val release = JSONObject(body)
+            val release = body.parseJsonObjectOrNull() ?: error("latest release response is not a JSON object")
             val entry = parseReleaseEntry(
                 release = release,
                 owner = owner,
@@ -246,10 +254,10 @@ class GitHubApiTokenReleaseStrategy(
         owner: String,
         repo: String
     ): List<GitHubAtomReleaseEntry> {
-        val array = JSONArray(json)
+        val array = json.parseJsonArrayOrNull() ?: throw IllegalArgumentException("release entries payload is not a JSON array")
         val entries = buildList {
-            for (index in 0 until array.length()) {
-                val release = array.optJSONObject(index) ?: continue
+            for (element in array) {
+                val release = element as? JsonObject ?: continue
                 val entry = parseReleaseEntry(release, owner, repo) ?: continue
                 add(entry)
             }
@@ -274,7 +282,7 @@ class GitHubApiTokenReleaseStrategy(
     }
 
     private fun parseReleaseEntry(
-        release: JSONObject,
+        release: JsonObject,
         owner: String,
         repo: String
     ): GitHubAtomReleaseEntry? {
@@ -287,7 +295,7 @@ class GitHubApiTokenReleaseStrategy(
         val htmlUrl = release.optString("html_url").trim().ifBlank {
             GitHubVersionUtils.buildReleaseUrl(owner, repo)
         }
-        val releaseId = release.opt("id")?.toString().orEmpty()
+        val releaseId = release.optElementString("id")
         val body = release.optString("body")
         val contentPreview = GitHubAtomHeuristics.buildContentPreview(body)
         val prereleaseFlag = release.optBoolean("prerelease", false)
@@ -301,7 +309,7 @@ class GitHubApiTokenReleaseStrategy(
             prereleaseFlag -> heuristicsChannel
             else -> GitHubReleaseChannel.STABLE
         }
-        val author = release.optJSONObject("author")
+        val author = release.optObject("author")
         val authorName = author?.optString("login").orEmpty().trim()
         val authorAvatarUrl = author?.optString("avatar_url").orEmpty().trim()
         val publishedAtMillis = release.optString("published_at").parseIsoInstantOrNull()
@@ -344,7 +352,7 @@ class GitHubApiTokenReleaseStrategy(
     private fun buildErrorMessage(response: Response, bodyText: String): String {
         val code = response.code
         val apiMessage = runCatching {
-            JSONObject(bodyText).optString("message").trim()
+            bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
         }.getOrDefault("")
         val rateRemaining = response.header("X-RateLimit-Remaining").orEmpty()
         val rateResetEpochSeconds = response.header("X-RateLimit-Reset").orEmpty().toLongOrNull()
@@ -373,10 +381,16 @@ class GitHubApiTokenReleaseStrategy(
         }
     }
 
+    private fun JsonObject.optElementString(key: String): String {
+        val value = this[key] ?: return ""
+        return value.jsonPrimitiveOrNull()?.contentOrNull?.trim()
+            ?: value.toString().trim()
+    }
+
     internal fun parseCredentialStatus(json: String): GitHubApiCredentialStatus {
-        val root = JSONObject(json)
-        val core = root.optJSONObject("resources")
-            ?.optJSONObject("core")
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("rate limit payload is not a JSON object")
+        val core = root.optObject("resources")
+            ?.optObject("core")
         val limit = core?.optInt("limit", 0) ?: 0
         val remaining = core?.optInt("remaining", 0) ?: 0
         val used = core?.optInt("used", 0) ?: 0

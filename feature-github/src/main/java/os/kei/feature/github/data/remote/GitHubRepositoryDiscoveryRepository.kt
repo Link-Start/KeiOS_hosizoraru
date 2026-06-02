@@ -1,11 +1,19 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
 import os.kei.feature.github.model.GitHubRepositoryCandidate
 import os.kei.feature.github.model.GitHubRepositoryCandidateMatchReason
@@ -61,8 +69,9 @@ class GitHubRepositoryDiscoveryRepository(
             "/search/repositories?q=${normalizedQuery.urlEncode()}&per_page=$perPage"
         )
         val response = fetch(url)
-        val json = JSONObject(response.bodyText)
-        json.optJSONArray("items")
+        val json = response.bodyText.parseJsonObjectOrNull()
+            ?: throw IllegalArgumentException("repository search response is not a JSON object")
+        json.optArray("items")
             .mapNotNullRepositories()
             .mapNotNull { item ->
                 item.toRepositoryCandidate(
@@ -119,7 +128,7 @@ class GitHubRepositoryDiscoveryRepository(
         while (candidates.size < cappedLimit && hasNextPage) {
             val url = buildUrl("$firstPagePath?per_page=$perPage&page=$page")
             val response = fetch(url)
-            val pageItems = JSONArray(response.bodyText)
+            val pageItems = response.bodyText.parseJsonArrayOrNull()
                 .mapNotNullRepositories()
                 .mapNotNull { item ->
                     item.toRepositoryCandidate(
@@ -339,15 +348,15 @@ class GitHubRepositoryDiscoveryRepository(
         return owner to repo.removeSuffix(".git")
     }
 
-    private fun Any?.toRepositoryCandidate(
+    private fun JsonElement?.toRepositoryCandidate(
         sourceType: GitHubRepositoryDiscoverySourceType,
         matchReason: GitHubRepositoryCandidateMatchReason
     ): GitHubRepositoryCandidate? {
-        val json = this as? JSONObject ?: return null
+        val json = this as? JsonObject ?: return null
         val fullName = json.optString("full_name").trim()
         val ownerFromFullName = fullName.substringBefore('/', missingDelimiterValue = "")
         val repoFromFullName = fullName.substringAfter('/', missingDelimiterValue = "")
-        val owner = json.optJSONObject("owner")
+        val owner = json.optObject("owner")
             ?.optString("login")
             ?.trim()
             .orEmpty()
@@ -381,7 +390,7 @@ class GitHubRepositoryDiscoveryRepository(
 
     private fun Response.buildErrorMessage(bodyText: String): String {
         val message = runCatching {
-            JSONObject(bodyText).optString("message")
+            bodyText.parseJsonObjectOrNull()?.optString("message")
         }.getOrNull()
             .orEmpty()
             .ifBlank { bodyText.take(160) }
@@ -398,13 +407,9 @@ class GitHubRepositoryDiscoveryRepository(
         return runCatching { Instant.parse(value).toEpochMilli() }.getOrDefault(-1L)
     }
 
-    private fun JSONArray?.mapNotNullRepositories(): List<Any?> {
+    private fun JsonArray?.mapNotNullRepositories(): List<JsonElement> {
         val array = this ?: return emptyList()
-        return buildList {
-            for (index in 0 until array.length()) {
-                add(array.opt(index))
-            }
-        }
+        return array.toList()
     }
 
     private data class GitHubDiscoveryResponse(

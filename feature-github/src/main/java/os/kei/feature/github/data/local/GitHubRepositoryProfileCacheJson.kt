@@ -1,7 +1,26 @@
 package os.kei.feature.github.data.local
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.put
+import os.kei.core.json.jsonArrayOrNull
+import os.kei.core.json.jsonObjectOrNull
+import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
 import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubRepositoryActionsProfile
 import os.kei.feature.github.model.GitHubRepositoryActivityProfile
@@ -23,53 +42,55 @@ import os.kei.feature.github.model.GitHubRepositorySecurityProfile
 import os.kei.feature.github.model.GitHubRepositoryTrafficProfile
 import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 
-fun GitHubRepositoryProfileSnapshot.toCacheJson(): JSONObject {
-    return JSONObject()
-        .put("owner", owner)
-        .put("repo", repo)
-        .put("sourceConfigSignature", sourceConfigSignature)
-        .put("fetchedAtMillis", fetchedAtMillis)
-        .put("purpose", purpose.name)
-        .put(
+fun GitHubRepositoryProfileSnapshot.toCacheJson(): JsonObject {
+    return buildJsonObject {
+        put("owner", owner)
+        put("repo", repo)
+        put("sourceConfigSignature", sourceConfigSignature)
+        put("fetchedAtMillis", fetchedAtMillis)
+        put("purpose", purpose.name)
+        put(
             "capabilities",
-            JSONArray().apply {
+            buildJsonArray {
                 capabilities.sortedBy { it.name }.forEach { capability ->
-                    put(capability.name)
+                    add(JsonPrimitive(capability.name))
                 }
             }
         )
-        .put("identity", identity.toCacheJson())
-        .put("lifecycle", lifecycle.toCacheJson())
-        .put("activity", activity.toCacheJson())
-        .put("releases", releases.toCacheJson())
-        .put("distribution", distribution.toCacheJson())
-        .put("actions", actions.toCacheJson())
-        .put("community", community.toCacheJson())
-        .put("traffic", traffic.toCacheJson())
-        .put("forkSync", forkSync.toCacheJson())
-        .put("security", security.toCacheJson())
-        .put("localFit", localFit.toCacheJson())
-        .put(
+        put("identity", identity.toCacheJson())
+        put("lifecycle", lifecycle.toCacheJson())
+        put("activity", activity.toCacheJson())
+        put("releases", releases.toCacheJson())
+        put("distribution", distribution.toCacheJson())
+        put("actions", actions.toCacheJson())
+        put("community", community.toCacheJson())
+        put("traffic", traffic.toCacheJson())
+        put("forkSync", forkSync.toCacheJson())
+        put("security", security.toCacheJson())
+        put("localFit", localFit.toCacheJson())
+        put(
             "sourceAvailability",
-            JSONArray().apply {
+            buildJsonArray {
                 sourceAvailability.forEach { state ->
-                    put(
-                        JSONObject()
-                            .put("source", state.source.name)
-                            .put("status", state.status.name)
-                            .put("fetchedAtMillis", state.fetchedAtMillis)
-                            .put("message", state.message)
-                            .put("elapsedMs", state.elapsedMs)
-                            .put("fromCache", state.fromCache)
-                            .put("required", state.required)
+                    add(
+                        buildJsonObject {
+                            put("source", state.source.name)
+                            put("status", state.status.name)
+                            put("fetchedAtMillis", state.fetchedAtMillis)
+                            put("message", state.message)
+                            put("elapsedMs", state.elapsedMs)
+                            put("fromCache", state.fromCache)
+                            put("required", state.required)
+                        }
                     )
                 }
             }
         )
+    }
 }
 
 fun parseGitHubRepositoryProfileSnapshot(
-    obj: JSONObject?
+    obj: JsonObject?
 ): GitHubRepositoryProfileSnapshot? {
     obj ?: return null
     val owner = obj.optString("owner").trim()
@@ -79,7 +100,7 @@ fun parseGitHubRepositoryProfileSnapshot(
     if (owner.isBlank() || repo.isBlank() || signature.isBlank() || fetchedAtMillis <= 0L) {
         return null
     }
-    val explicitCapabilities = parseCapabilities(obj.optJSONArray("capabilities"))
+    val explicitCapabilities = parseCapabilities(obj.optArray("capabilities"))
     val snapshot = GitHubRepositoryProfileSnapshot(
         owner = owner,
         repo = repo,
@@ -88,18 +109,18 @@ fun parseGitHubRepositoryProfileSnapshot(
         purpose = enumValueOrNull<GitHubRepositoryProfilePurpose>(obj.optString("purpose"))
             ?: GitHubRepositoryProfilePurpose.VersionCheckFast,
         capabilities = explicitCapabilities,
-        identity = parseIdentity(obj.optJSONObject("identity")),
-        lifecycle = parseLifecycle(obj.optJSONObject("lifecycle")),
-        activity = parseActivity(obj.optJSONObject("activity")),
-        releases = parseReleases(obj.optJSONObject("releases")),
-        distribution = parseDistribution(obj.optJSONObject("distribution")),
-        actions = parseActions(obj.optJSONObject("actions")),
-        community = parseCommunity(obj.optJSONObject("community")),
-        traffic = parseTraffic(obj.optJSONObject("traffic")),
-        forkSync = parseForkSync(obj.optJSONObject("forkSync")),
-        security = parseSecurity(obj.optJSONObject("security")),
-        localFit = parseLocalFit(obj.optJSONObject("localFit")),
-        sourceAvailability = parseSourceAvailability(obj.optJSONArray("sourceAvailability"))
+        identity = parseIdentity(obj.optObject("identity")),
+        lifecycle = parseLifecycle(obj.optObject("lifecycle")),
+        activity = parseActivity(obj.optObject("activity")),
+        releases = parseReleases(obj.optObject("releases")),
+        distribution = parseDistribution(obj.optObject("distribution")),
+        actions = parseActions(obj.optObject("actions")),
+        community = parseCommunity(obj.optObject("community")),
+        traffic = parseTraffic(obj.optObject("traffic")),
+        forkSync = parseForkSync(obj.optObject("forkSync")),
+        security = parseSecurity(obj.optObject("security")),
+        localFit = parseLocalFit(obj.optObject("localFit")),
+        sourceAvailability = parseSourceAvailability(obj.optArray("sourceAvailability"))
     )
     return if (explicitCapabilities.isEmpty()) {
         snapshot.copy(capabilities = inferCapabilities(snapshot))
@@ -108,135 +129,147 @@ fun parseGitHubRepositoryProfileSnapshot(
     }
 }
 
-private fun GitHubRepositoryIdentityProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("owner", owner)
-        .putField("name", name)
-        .putField("fullName", fullName)
-        .putField("htmlUrl", htmlUrl)
-        .putField("ownerAvatarUrl", ownerAvatarUrl)
-        .putField("defaultBranch", defaultBranch)
-        .putField("ownerType", ownerType)
-        .putField("visibility", visibility)
-        .putField("privateRepository", privateRepository)
-        .putField("topics", topics)
+private fun GitHubRepositoryIdentityProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("owner", owner)
+        putField("name", name)
+        putField("fullName", fullName)
+        putField("htmlUrl", htmlUrl)
+        putField("ownerAvatarUrl", ownerAvatarUrl)
+        putField("defaultBranch", defaultBranch)
+        putField("ownerType", ownerType)
+        putField("visibility", visibility)
+        putField("privateRepository", privateRepository)
+        putField("topics", topics)
+    }
 
-private fun GitHubRepositoryLifecycleProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("archived", archived)
-        .putField("disabled", disabled)
-        .putField("fork", fork)
-        .putField("mirrorUrl", mirrorUrl)
-        .put("upstream", upstream?.toCacheJson())
+private fun GitHubRepositoryLifecycleProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("archived", archived)
+        putField("disabled", disabled)
+        putField("fork", fork)
+        putField("mirrorUrl", mirrorUrl)
+        upstream?.toCacheJson()?.let { put("upstream", it) }
+    }
 
-private fun GitHubRepositoryUpstreamProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("fullName", fullName)
-        .putField("htmlUrl", htmlUrl)
-        .putField("archived", archived)
-        .putField("disabled", disabled)
-        .putField("pushedAtMillis", pushedAtMillis)
-        .putField("defaultBranch", defaultBranch)
+private fun GitHubRepositoryUpstreamProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("fullName", fullName)
+        putField("htmlUrl", htmlUrl)
+        putField("archived", archived)
+        putField("disabled", disabled)
+        putField("pushedAtMillis", pushedAtMillis)
+        putField("defaultBranch", defaultBranch)
+    }
 
-private fun GitHubRepositoryActivityProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("createdAtMillis", createdAtMillis)
-        .putField("updatedAtMillis", updatedAtMillis)
-        .putField("pushedAtMillis", pushedAtMillis)
-        .putField("stargazersCount", stargazersCount)
-        .putField("forksCount", forksCount)
-        .putField("watchersCount", watchersCount)
-        .putField("subscribersCount", subscribersCount)
-        .putField("openIssuesCount", openIssuesCount)
-        .putField("sizeKb", sizeKb)
+private fun GitHubRepositoryActivityProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("createdAtMillis", createdAtMillis)
+        putField("updatedAtMillis", updatedAtMillis)
+        putField("pushedAtMillis", pushedAtMillis)
+        putField("stargazersCount", stargazersCount)
+        putField("forksCount", forksCount)
+        putField("watchersCount", watchersCount)
+        putField("subscribersCount", subscribersCount)
+        putField("openIssuesCount", openIssuesCount)
+        putField("sizeKb", sizeKb)
+    }
 
-private fun GitHubRepositoryReleasesProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("releaseCount", releaseCount)
-        .putField("hasStableRelease", hasStableRelease)
-        .putField("latestStableTag", latestStableTag)
-        .putField("latestStableName", latestStableName)
-        .putField("latestStablePublishedAtMillis", latestStablePublishedAtMillis)
-        .putField("latestStableAuthor", latestStableAuthor)
-        .putField("latestPreReleaseTag", latestPreReleaseTag)
-        .putField("latestPreReleaseName", latestPreReleaseName)
-        .putField("latestPreReleasePublishedAtMillis", latestPreReleasePublishedAtMillis)
-        .putField("latestPreReleaseAuthor", latestPreReleaseAuthor)
+private fun GitHubRepositoryReleasesProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("releaseCount", releaseCount)
+        putField("hasStableRelease", hasStableRelease)
+        putField("latestStableTag", latestStableTag)
+        putField("latestStableName", latestStableName)
+        putField("latestStablePublishedAtMillis", latestStablePublishedAtMillis)
+        putField("latestStableAuthor", latestStableAuthor)
+        putField("latestPreReleaseTag", latestPreReleaseTag)
+        putField("latestPreReleaseName", latestPreReleaseName)
+        putField("latestPreReleasePublishedAtMillis", latestPreReleasePublishedAtMillis)
+        putField("latestPreReleaseAuthor", latestPreReleaseAuthor)
+    }
 
-private fun GitHubRepositoryDistributionProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("latestAssetCount", latestAssetCount)
-        .putField("apkLikeAssetCount", apkLikeAssetCount)
-        .putField("androidBundleAssetCount", androidBundleAssetCount)
-        .putField("totalDownloadCount", totalDownloadCount)
-        .putField("assetDigestCount", assetDigestCount)
-        .putField("hasInstallableAndroidAsset", hasInstallableAndroidAsset)
-        .putField("latestStableApkPackageName", latestStableApkPackageName)
-        .putField("latestStableApkVersionName", latestStableApkVersionName)
-        .putField("latestStableApkVersionCode", latestStableApkVersionCode)
+private fun GitHubRepositoryDistributionProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("latestAssetCount", latestAssetCount)
+        putField("apkLikeAssetCount", apkLikeAssetCount)
+        putField("androidBundleAssetCount", androidBundleAssetCount)
+        putField("totalDownloadCount", totalDownloadCount)
+        putField("assetDigestCount", assetDigestCount)
+        putField("hasInstallableAndroidAsset", hasInstallableAndroidAsset)
+        putField("latestStableApkPackageName", latestStableApkPackageName)
+        putField("latestStableApkVersionName", latestStableApkVersionName)
+        putField("latestStableApkVersionCode", latestStableApkVersionCode)
+    }
 
-private fun GitHubRepositoryActionsProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("workflowRunCount", workflowRunCount)
-        .putField("successfulRunCount", successfulRunCount)
-        .putField("failedRunCount", failedRunCount)
-        .putField("latestRunStatus", latestRunStatus)
-        .putField("latestRunConclusion", latestRunConclusion)
-        .putField("latestRunUpdatedAtMillis", latestRunUpdatedAtMillis)
-        .putField("artifactCount", artifactCount)
-        .putField("nonExpiredArtifactCount", nonExpiredArtifactCount)
-        .putField("androidArtifactCount", androidArtifactCount)
+private fun GitHubRepositoryActionsProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("workflowRunCount", workflowRunCount)
+        putField("successfulRunCount", successfulRunCount)
+        putField("failedRunCount", failedRunCount)
+        putField("latestRunStatus", latestRunStatus)
+        putField("latestRunConclusion", latestRunConclusion)
+        putField("latestRunUpdatedAtMillis", latestRunUpdatedAtMillis)
+        putField("artifactCount", artifactCount)
+        putField("nonExpiredArtifactCount", nonExpiredArtifactCount)
+        putField("androidArtifactCount", androidArtifactCount)
+    }
 
-private fun GitHubRepositoryCommunityProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("healthPercentage", healthPercentage)
-        .putField("hasReadme", hasReadme)
-        .putField("hasLicense", hasLicense)
-        .putField("licenseName", licenseName)
-        .putField("licenseSpdxId", licenseSpdxId)
-        .putField("hasContributing", hasContributing)
-        .putField("hasCodeOfConduct", hasCodeOfConduct)
-        .putField("hasIssueTemplate", hasIssueTemplate)
-        .putField("hasPullRequestTemplate", hasPullRequestTemplate)
+private fun GitHubRepositoryCommunityProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("healthPercentage", healthPercentage)
+        putField("hasReadme", hasReadme)
+        putField("hasLicense", hasLicense)
+        putField("licenseName", licenseName)
+        putField("licenseSpdxId", licenseSpdxId)
+        putField("hasContributing", hasContributing)
+        putField("hasCodeOfConduct", hasCodeOfConduct)
+        putField("hasIssueTemplate", hasIssueTemplate)
+        putField("hasPullRequestTemplate", hasPullRequestTemplate)
+    }
 
-private fun GitHubRepositoryTrafficProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("viewCount", viewCount)
-        .putField("viewUniques", viewUniques)
-        .putField("cloneCount", cloneCount)
-        .putField("cloneUniques", cloneUniques)
-        .putField("latestViewBucketAtMillis", latestViewBucketAtMillis)
-        .putField("latestCloneBucketAtMillis", latestCloneBucketAtMillis)
+private fun GitHubRepositoryTrafficProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("viewCount", viewCount)
+        putField("viewUniques", viewUniques)
+        putField("cloneCount", cloneCount)
+        putField("cloneUniques", cloneUniques)
+        putField("latestViewBucketAtMillis", latestViewBucketAtMillis)
+        putField("latestCloneBucketAtMillis", latestCloneBucketAtMillis)
+    }
 
-private fun GitHubRepositoryForkSyncProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("baseFullName", baseFullName)
-        .putField("headFullName", headFullName)
-        .putField("aheadBy", aheadBy)
-        .putField("behindBy", behindBy)
-        .putField("status", status)
-        .putField("totalCommits", totalCommits)
-        .putField("comparedAtMillis", comparedAtMillis)
+private fun GitHubRepositoryForkSyncProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("baseFullName", baseFullName)
+        putField("headFullName", headFullName)
+        putField("aheadBy", aheadBy)
+        putField("behindBy", behindBy)
+        putField("status", status)
+        putField("totalCommits", totalCommits)
+        putField("comparedAtMillis", comparedAtMillis)
+    }
 
-private fun GitHubRepositorySecurityProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("dependabotAlertsAvailable", dependabotAlertsAvailable)
-        .putField("openDependabotAlertsCount", openDependabotAlertsCount)
-        .putField("codeScanningAvailable", codeScanningAvailable)
-        .putField("openCodeScanningAlertsCount", openCodeScanningAlertsCount)
-        .putField("secretScanningAvailable", secretScanningAvailable)
+private fun GitHubRepositorySecurityProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("dependabotAlertsAvailable", dependabotAlertsAvailable)
+        putField("openDependabotAlertsCount", openDependabotAlertsCount)
+        putField("codeScanningAvailable", codeScanningAvailable)
+        putField("openCodeScanningAlertsCount", openCodeScanningAlertsCount)
+        putField("secretScanningAvailable", secretScanningAvailable)
+    }
 
-private fun GitHubRepositoryLocalFitProfile.toCacheJson(): JSONObject =
-    JSONObject()
-        .putField("localPackageName", localPackageName)
-        .putField("remotePackageName", remotePackageName)
-        .putField("packageNameMatched", packageNameMatched)
-        .putField("localVersionName", localVersionName)
-        .putField("remoteVersionName", remoteVersionName)
-        .putField("localVersionCode", localVersionCode)
-        .putField("remoteVersionCode", remoteVersionCode)
+private fun GitHubRepositoryLocalFitProfile.toCacheJson(): JsonObject =
+    buildJsonObject {
+        putField("localPackageName", localPackageName)
+        putField("remotePackageName", remotePackageName)
+        putField("packageNameMatched", packageNameMatched)
+        putField("localVersionName", localVersionName)
+        putField("remoteVersionName", remoteVersionName)
+        putField("localVersionCode", localVersionCode)
+        putField("remoteVersionCode", remoteVersionCode)
+    }
 
-private fun parseIdentity(obj: JSONObject?): GitHubRepositoryIdentityProfile {
+private fun parseIdentity(obj: JsonObject?): GitHubRepositoryIdentityProfile {
     obj ?: return GitHubRepositoryIdentityProfile()
     return GitHubRepositoryIdentityProfile(
         owner = obj.stringField("owner"),
@@ -252,18 +285,18 @@ private fun parseIdentity(obj: JSONObject?): GitHubRepositoryIdentityProfile {
     )
 }
 
-private fun parseLifecycle(obj: JSONObject?): GitHubRepositoryLifecycleProfile {
+private fun parseLifecycle(obj: JsonObject?): GitHubRepositoryLifecycleProfile {
     obj ?: return GitHubRepositoryLifecycleProfile()
     return GitHubRepositoryLifecycleProfile(
         archived = obj.booleanField("archived"),
         disabled = obj.booleanField("disabled"),
         fork = obj.booleanField("fork"),
         mirrorUrl = obj.stringField("mirrorUrl"),
-        upstream = parseUpstream(obj.optJSONObject("upstream"))
+        upstream = parseUpstream(obj.optObject("upstream"))
     )
 }
 
-private fun parseUpstream(obj: JSONObject?): GitHubRepositoryUpstreamProfile? {
+private fun parseUpstream(obj: JsonObject?): GitHubRepositoryUpstreamProfile? {
     obj ?: return null
     val upstream = GitHubRepositoryUpstreamProfile(
         fullName = obj.stringField("fullName"),
@@ -282,7 +315,7 @@ private fun parseUpstream(obj: JSONObject?): GitHubRepositoryUpstreamProfile? {
     }
 }
 
-private fun parseActivity(obj: JSONObject?): GitHubRepositoryActivityProfile {
+private fun parseActivity(obj: JsonObject?): GitHubRepositoryActivityProfile {
     obj ?: return GitHubRepositoryActivityProfile()
     return GitHubRepositoryActivityProfile(
         createdAtMillis = obj.longField("createdAtMillis"),
@@ -297,7 +330,7 @@ private fun parseActivity(obj: JSONObject?): GitHubRepositoryActivityProfile {
     )
 }
 
-private fun parseReleases(obj: JSONObject?): GitHubRepositoryReleasesProfile {
+private fun parseReleases(obj: JsonObject?): GitHubRepositoryReleasesProfile {
     obj ?: return GitHubRepositoryReleasesProfile()
     return GitHubRepositoryReleasesProfile(
         releaseCount = obj.intField("releaseCount"),
@@ -313,7 +346,7 @@ private fun parseReleases(obj: JSONObject?): GitHubRepositoryReleasesProfile {
     )
 }
 
-private fun parseDistribution(obj: JSONObject?): GitHubRepositoryDistributionProfile {
+private fun parseDistribution(obj: JsonObject?): GitHubRepositoryDistributionProfile {
     obj ?: return GitHubRepositoryDistributionProfile()
     return GitHubRepositoryDistributionProfile(
         latestAssetCount = obj.intField("latestAssetCount"),
@@ -328,7 +361,7 @@ private fun parseDistribution(obj: JSONObject?): GitHubRepositoryDistributionPro
     )
 }
 
-private fun parseActions(obj: JSONObject?): GitHubRepositoryActionsProfile {
+private fun parseActions(obj: JsonObject?): GitHubRepositoryActionsProfile {
     obj ?: return GitHubRepositoryActionsProfile()
     return GitHubRepositoryActionsProfile(
         workflowRunCount = obj.intField("workflowRunCount"),
@@ -343,7 +376,7 @@ private fun parseActions(obj: JSONObject?): GitHubRepositoryActionsProfile {
     )
 }
 
-private fun parseCommunity(obj: JSONObject?): GitHubRepositoryCommunityProfile {
+private fun parseCommunity(obj: JsonObject?): GitHubRepositoryCommunityProfile {
     obj ?: return GitHubRepositoryCommunityProfile()
     return GitHubRepositoryCommunityProfile(
         healthPercentage = obj.intField("healthPercentage"),
@@ -358,7 +391,7 @@ private fun parseCommunity(obj: JSONObject?): GitHubRepositoryCommunityProfile {
     )
 }
 
-private fun parseTraffic(obj: JSONObject?): GitHubRepositoryTrafficProfile {
+private fun parseTraffic(obj: JsonObject?): GitHubRepositoryTrafficProfile {
     obj ?: return GitHubRepositoryTrafficProfile()
     return GitHubRepositoryTrafficProfile(
         viewCount = obj.intField("viewCount"),
@@ -370,7 +403,7 @@ private fun parseTraffic(obj: JSONObject?): GitHubRepositoryTrafficProfile {
     )
 }
 
-private fun parseForkSync(obj: JSONObject?): GitHubRepositoryForkSyncProfile {
+private fun parseForkSync(obj: JsonObject?): GitHubRepositoryForkSyncProfile {
     obj ?: return GitHubRepositoryForkSyncProfile()
     return GitHubRepositoryForkSyncProfile(
         baseFullName = obj.stringField("baseFullName"),
@@ -383,7 +416,7 @@ private fun parseForkSync(obj: JSONObject?): GitHubRepositoryForkSyncProfile {
     )
 }
 
-private fun parseSecurity(obj: JSONObject?): GitHubRepositorySecurityProfile {
+private fun parseSecurity(obj: JsonObject?): GitHubRepositorySecurityProfile {
     obj ?: return GitHubRepositorySecurityProfile()
     return GitHubRepositorySecurityProfile(
         dependabotAlertsAvailable = obj.booleanField("dependabotAlertsAvailable"),
@@ -394,7 +427,7 @@ private fun parseSecurity(obj: JSONObject?): GitHubRepositorySecurityProfile {
     )
 }
 
-private fun parseLocalFit(obj: JSONObject?): GitHubRepositoryLocalFitProfile {
+private fun parseLocalFit(obj: JsonObject?): GitHubRepositoryLocalFitProfile {
     obj ?: return GitHubRepositoryLocalFitProfile()
     return GitHubRepositoryLocalFitProfile(
         localPackageName = obj.stringField("localPackageName"),
@@ -407,11 +440,11 @@ private fun parseLocalFit(obj: JSONObject?): GitHubRepositoryLocalFitProfile {
     )
 }
 
-private fun parseSourceAvailability(array: JSONArray?): List<GitHubRepositoryProfileSourceState> {
+private fun parseSourceAvailability(array: JsonArray?): List<GitHubRepositoryProfileSourceState> {
     array ?: return emptyList()
     return buildList {
-        for (index in 0 until array.length()) {
-            val obj = array.optJSONObject(index) ?: continue
+        for (element in array) {
+            val obj = element.jsonObjectOrNull() ?: continue
             val source =
                 enumValueOrNull<GitHubRepositoryProfileSource>(obj.optString("source")) ?: continue
             add(
@@ -432,12 +465,14 @@ private fun parseSourceAvailability(array: JSONArray?): List<GitHubRepositoryPro
 }
 
 private fun parseCapabilities(
-    array: JSONArray?
+    array: JsonArray?
 ): Set<GitHubRepositoryProfileCapability> {
     array ?: return emptySet()
     return buildSet {
-        for (index in 0 until array.length()) {
-            enumValueOrNull<GitHubRepositoryProfileCapability>(array.optString(index))
+        for (element in array) {
+            enumValueOrNull<GitHubRepositoryProfileCapability>(
+                element.jsonPrimitiveOrNull()?.contentOrNull.orEmpty()
+            )
                 ?.let(::add)
         }
     }
@@ -524,79 +559,86 @@ private fun inferCapabilities(
     }
 }
 
-private fun JSONObject.putField(
+private fun JsonObjectBuilder.putField(
     key: String,
     field: GitHubProfileField<*>?
-): JSONObject {
+): JsonObjectBuilder {
     field ?: return this
-    val value = when (val raw = field.value) {
-        is List<*> -> JSONArray(raw)
-        else -> raw
-    }
     put(
         key,
-        JSONObject()
-            .put("value", value)
-            .put("source", field.source.name)
-            .put("fetchedAtMillis", field.fetchedAtMillis)
-            .put("confidence", field.confidence.name)
+        buildJsonObject {
+            put("value", profileValueToJsonElement(field.value))
+            put("source", field.source.name)
+            put("fetchedAtMillis", field.fetchedAtMillis)
+            put("confidence", field.confidence.name)
+        }
     )
     return this
 }
 
-private fun JSONObject.stringField(key: String): GitHubProfileField<String>? {
-    return parseField(key) { value ->
-        value.toString().trim().takeIf { it.isNotBlank() }
-    }
-}
-
-private fun JSONObject.intField(key: String): GitHubProfileField<Int>? {
-    return parseField(key) { value ->
-        when (value) {
-            is Number -> value.toInt()
-            is String -> value.toIntOrNull()
-            else -> null
-        }
-    }
-}
-
-private fun JSONObject.longField(key: String): GitHubProfileField<Long>? {
-    return parseField(key) { value ->
-        when (value) {
-            is Number -> value.toLong()
-            is String -> value.toLongOrNull()
-            else -> null
-        }
-    }
-}
-
-private fun JSONObject.booleanField(key: String): GitHubProfileField<Boolean>? {
-    return parseField(key) { value ->
-        when (value) {
-            is Boolean -> value
-            is String -> value.toBooleanStrictOrNull()
-            else -> null
-        }
-    }
-}
-
-private fun JSONObject.stringListField(key: String): GitHubProfileField<List<String>>? {
-    return parseField(key) { value ->
-        val array = value as? JSONArray ?: return@parseField null
-        buildList {
-            for (index in 0 until array.length()) {
-                array.optString(index).trim().takeIf { it.isNotBlank() }?.let(::add)
+private fun profileValueToJsonElement(raw: Any?): JsonElement {
+    return when (raw) {
+        null -> JsonNull
+        is String -> JsonPrimitive(raw)
+        is Number -> JsonPrimitive(raw)
+        is Boolean -> JsonPrimitive(raw)
+        is List<*> -> buildJsonArray {
+            raw.forEach { value ->
+                add(profileValueToJsonElement(value))
             }
         }
+        else -> JsonPrimitive(raw.toString())
     }
 }
 
-private fun <T> JSONObject.parseField(
+private fun JsonObject.stringField(key: String): GitHubProfileField<String>? {
+    return parseField(key) { value ->
+        value.jsonPrimitiveOrNull()
+            ?.contentOrNull
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+    }
+}
+
+private fun JsonObject.intField(key: String): GitHubProfileField<Int>? {
+    return parseField(key) { value ->
+        val primitive = value.jsonPrimitiveOrNull() ?: return@parseField null
+        primitive.intOrNull ?: primitive.contentOrNull?.toIntOrNull()
+    }
+}
+
+private fun JsonObject.longField(key: String): GitHubProfileField<Long>? {
+    return parseField(key) { value ->
+        val primitive = value.jsonPrimitiveOrNull() ?: return@parseField null
+        primitive.longOrNull ?: primitive.contentOrNull?.toLongOrNull()
+    }
+}
+
+private fun JsonObject.booleanField(key: String): GitHubProfileField<Boolean>? {
+    return parseField(key) { value ->
+        val primitive = value.jsonPrimitiveOrNull() ?: return@parseField null
+        primitive.booleanOrNull ?: primitive.contentOrNull?.toBooleanStrictOrNull()
+    }
+}
+
+private fun JsonObject.stringListField(key: String): GitHubProfileField<List<String>>? {
+    return parseField(key) { value ->
+        val array = value.jsonArrayOrNull() ?: return@parseField null
+        array.mapNotNull { element ->
+            element.jsonPrimitiveOrNull()
+                ?.contentOrNull
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+        }
+    }
+}
+
+private fun <T> JsonObject.parseField(
     key: String,
-    valueReader: (Any) -> T?
+    valueReader: (JsonElement) -> T?
 ): GitHubProfileField<T>? {
-    val field = optJSONObject(key) ?: return null
-    val rawValue = field.opt("value") ?: return null
+    val field = optObject(key) ?: return null
+    val rawValue = field["value"] ?: return null
     val value = valueReader(rawValue) ?: return null
     val source = enumValueOrNull<GitHubRepositoryProfileSource>(field.optString("source"))
         ?: GitHubRepositoryProfileSource.Cache

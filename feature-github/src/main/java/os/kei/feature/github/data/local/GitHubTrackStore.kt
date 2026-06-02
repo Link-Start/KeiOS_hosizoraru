@@ -1,9 +1,27 @@
 package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.put
 import os.kei.core.prefs.KeiMmkv
-import org.json.JSONArray
-import org.json.JSONObject
+import os.kei.core.json.KeiJson
+import os.kei.core.json.encodeCompact
+import os.kei.core.json.hasNonNull
+import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
+import os.kei.core.json.optLong
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonElementOrNull
+import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.core.json.jsonObjectOrNull
+import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -135,15 +153,13 @@ object GitHubTrackStore {
         }
         val raw = store.decodeString(KEY_ITEMS).orEmpty()
         if (raw.isBlank()) return emptyList()
-        return runCatching {
-            val array = JSONArray(raw)
-            buildList {
-                for (i in 0 until array.length()) {
-                    val obj = array.optJSONObject(i) ?: continue
-                    parseTrackedItem(obj)?.let(::add)
-                }
+        val array = raw.parseJsonArrayOrNull() ?: return emptyList()
+        return buildList {
+            array.forEach { element ->
+                val obj = element.jsonObjectOrNull() ?: return@forEach
+                parseTrackedItem(obj)?.let(::add)
             }
-        }.getOrDefault(emptyList())
+        }
     }
 
     private fun seedDefaultTrackedItems(): List<GitHubTrackedApp> {
@@ -153,18 +169,19 @@ object GitHubTrackStore {
     }
 
     fun save(items: List<GitHubTrackedApp>) {
-        val array = JSONArray()
-        items.forEach { item ->
-            array.put(trackedItemToJson(item))
+        val array = buildJsonArray {
+            items.forEach { item ->
+                add(trackedItemToJson(item))
+            }
         }
-        kv().encode(KEY_ITEMS, array.toString())
+        kv().encode(KEY_ITEMS, array.encodeCompact())
     }
 
     fun loadPendingShareImportTrack(): GitHubPendingShareImportTrackRecord? {
         val raw = kv().decodeString(KEY_PENDING_SHARE_IMPORT_TRACK).orEmpty()
         if (raw.isBlank()) return null
         return runCatching {
-            val obj = JSONObject(raw)
+            val obj = raw.parseJsonObjectOrNull() ?: return@runCatching null
             val projectUrl = obj.optString("projectUrl").trim()
             val owner = obj.optString("owner").trim()
             val repo = obj.optString("repo").trim()
@@ -191,17 +208,18 @@ object GitHubTrackStore {
             kv().removeValueForKey(KEY_PENDING_SHARE_IMPORT_TRACK)
             return
         }
-        val payload = JSONObject()
-            .put("projectUrl", record.projectUrl)
-            .put("owner", record.owner)
-            .put("repo", record.repo)
-            .put("releaseTag", record.releaseTag)
-            .put("assetName", record.assetName)
-            .put("packageName", record.packageName)
-            .put("versionName", record.versionName)
-            .put("targetDisplayName", record.targetDisplayName)
-            .put("armedAtMillis", record.armedAtMillis)
-        kv().encode(KEY_PENDING_SHARE_IMPORT_TRACK, payload.toString())
+        val payload = buildJsonObject {
+            put("projectUrl", record.projectUrl)
+            put("owner", record.owner)
+            put("repo", record.repo)
+            put("releaseTag", record.releaseTag)
+            put("assetName", record.assetName)
+            put("packageName", record.packageName)
+            put("versionName", record.versionName)
+            put("targetDisplayName", record.targetDisplayName)
+            put("armedAtMillis", record.armedAtMillis)
+        }
+        kv().encode(KEY_PENDING_SHARE_IMPORT_TRACK, payload.encodeCompact())
     }
 
     fun loadAppPickerPreferences(): GitHubAppPickerPreferences {
@@ -228,135 +246,85 @@ object GitHubTrackStore {
     }
 
     fun loadTrackedFirstInstallAtByPackage(): Map<String, Long> {
-        val raw = kv().decodeString(KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE).orEmpty()
-        if (raw.isBlank()) return emptyMap()
-        return runCatching {
-            val obj = JSONObject(raw)
-            buildMap {
-                val keys = obj.keys()
-                while (keys.hasNext()) {
-                    val packageName = keys.next().trim()
-                    if (packageName.isBlank()) continue
-                    val firstInstallAtMillis = obj.optLong(packageName, -1L)
-                    if (firstInstallAtMillis > 0L) {
-                        put(packageName, firstInstallAtMillis)
-                    }
-                }
-            }
-        }.getOrDefault(emptyMap())
+        return loadPositiveLongMap(KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE)
     }
 
     fun saveTrackedFirstInstallAtByPackage(values: Map<String, Long>) {
-        if (values.isEmpty()) {
-            kv().removeValueForKey(KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE)
-            return
-        }
-        val payload = JSONObject()
-        values.forEach { (packageName, firstInstallAtMillis) ->
-            val normalizedPackageName = packageName.trim()
-            if (normalizedPackageName.isBlank() || firstInstallAtMillis <= 0L) return@forEach
-            payload.put(normalizedPackageName, firstInstallAtMillis)
-        }
-        if (payload.length() == 0) {
-            kv().removeValueForKey(KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE)
-            return
-        }
-        kv().encode(KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE, payload.toString())
+        savePositiveLongMap(KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE, values)
     }
 
     fun loadTrackedAddedAtById(): Map<String, Long> {
-        val raw = kv().decodeString(KEY_TRACKED_ADDED_AT_BY_ID).orEmpty()
-        if (raw.isBlank()) return emptyMap()
-        return runCatching {
-            val obj = JSONObject(raw)
-            buildMap {
-                val keys = obj.keys()
-                while (keys.hasNext()) {
-                    val trackId = keys.next().trim()
-                    if (trackId.isBlank()) continue
-                    val addedAtMillis = obj.optLong(trackId, -1L)
-                    if (addedAtMillis > 0L) {
-                        put(trackId, addedAtMillis)
-                    }
-                }
-            }
-        }.getOrDefault(emptyMap())
+        return loadPositiveLongMap(KEY_TRACKED_ADDED_AT_BY_ID)
     }
 
     fun saveTrackedAddedAtById(values: Map<String, Long>) {
-        if (values.isEmpty()) {
-            kv().removeValueForKey(KEY_TRACKED_ADDED_AT_BY_ID)
-            return
-        }
-        val payload = JSONObject()
-        values.forEach { (trackId, addedAtMillis) ->
-            val normalizedTrackId = trackId.trim()
-            if (normalizedTrackId.isBlank() || addedAtMillis <= 0L) return@forEach
-            payload.put(normalizedTrackId, addedAtMillis)
-        }
-        if (payload.length() == 0) {
-            kv().removeValueForKey(KEY_TRACKED_ADDED_AT_BY_ID)
-            return
-        }
-        kv().encode(KEY_TRACKED_ADDED_AT_BY_ID, payload.toString())
+        savePositiveLongMap(KEY_TRACKED_ADDED_AT_BY_ID, values)
     }
 
     fun loadTrackedModifiedAtById(): Map<String, Long> {
-        val raw = kv().decodeString(KEY_TRACKED_MODIFIED_AT_BY_ID).orEmpty()
-        if (raw.isBlank()) return emptyMap()
-        return runCatching {
-            val obj = JSONObject(raw)
-            buildMap {
-                val keys = obj.keys()
-                while (keys.hasNext()) {
-                    val trackId = keys.next().trim()
-                    if (trackId.isBlank()) continue
-                    val modifiedAtMillis = obj.optLong(trackId, -1L)
-                    if (modifiedAtMillis > 0L) {
-                        put(trackId, modifiedAtMillis)
-                    }
-                }
-            }
-        }.getOrDefault(emptyMap())
+        return loadPositiveLongMap(KEY_TRACKED_MODIFIED_AT_BY_ID)
     }
 
     fun saveTrackedModifiedAtById(values: Map<String, Long>) {
+        savePositiveLongMap(KEY_TRACKED_MODIFIED_AT_BY_ID, values)
+    }
+
+    private fun loadPositiveLongMap(key: String): Map<String, Long> {
+        val raw = kv().decodeString(key).orEmpty()
+        if (raw.isBlank()) return emptyMap()
+        val obj = raw.parseJsonObjectOrNull() ?: return emptyMap()
+        return buildMap {
+            obj.forEach { (rawName, element) ->
+                val name = rawName.trim()
+                if (name.isBlank()) return@forEach
+                val value = element.jsonPrimitiveOrNull()?.longOrNull ?: return@forEach
+                if (value > 0L) {
+                    put(name, value)
+                }
+            }
+        }
+    }
+
+    private fun savePositiveLongMap(key: String, values: Map<String, Long>) {
         if (values.isEmpty()) {
-            kv().removeValueForKey(KEY_TRACKED_MODIFIED_AT_BY_ID)
+            kv().removeValueForKey(key)
             return
         }
-        val payload = JSONObject()
-        values.forEach { (trackId, modifiedAtMillis) ->
-            val normalizedTrackId = trackId.trim()
-            if (normalizedTrackId.isBlank() || modifiedAtMillis <= 0L) return@forEach
-            payload.put(normalizedTrackId, modifiedAtMillis)
+        val payload = buildJsonObject {
+            values.forEach { (rawName, rawValue) ->
+                val name = rawName.trim()
+                if (name.isBlank() || rawValue <= 0L) return@forEach
+                put(name, rawValue)
+            }
         }
-        if (payload.length() == 0) {
-            kv().removeValueForKey(KEY_TRACKED_MODIFIED_AT_BY_ID)
+        if (payload.isEmpty()) {
+            kv().removeValueForKey(key)
             return
         }
-        kv().encode(KEY_TRACKED_MODIFIED_AT_BY_ID, payload.toString())
+        kv().encode(key, payload.encodeCompact())
     }
 
     fun buildTrackedItemsExportJson(
         items: List<GitHubTrackedApp>,
         exportedAtMillis: Long = System.currentTimeMillis()
     ): String {
-        val array = JSONArray()
-        items.forEach { item ->
-            array.put(trackedItemToJson(item))
+        val array = buildJsonArray {
+            items.forEach { item ->
+                add(trackedItemToJson(item))
+            }
         }
         val optionCounts = calculateTrackedItemsOptionCounts(items)
         val sourceCounts = calculateTrackedItemsSourceCounts(items)
-        return JSONObject()
-            .put("format", TRACK_EXPORT_FORMAT)
-            .put("schemaVersion", TRACK_EXPORT_SCHEMA_VERSION)
-            .put("exportedAtMillis", exportedAtMillis)
-            .put("itemCount", items.size)
-            .put("sourceCounts", sourceCounts.toJson())
-            .put("optionCounts", optionCounts.toJson())
-            .put("items", array)
-            .toString(2)
+        val payload = buildJsonObject {
+            put("format", TRACK_EXPORT_FORMAT)
+            put("schemaVersion", TRACK_EXPORT_SCHEMA_VERSION)
+            put("exportedAtMillis", exportedAtMillis)
+            put("itemCount", items.size)
+            put("sourceCounts", sourceCounts.toJson())
+            put("optionCounts", optionCounts.toJson())
+            put("items", array)
+        }
+        return KeiJson.pretty.encodeToString(JsonObject.serializer(), payload)
     }
 
     fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload {
@@ -367,30 +335,30 @@ object GitHubTrackStore {
         var schemaVersion = 0
         var format = ""
         var exportedAtMillis = 0L
-        val rootArray = when (normalized.firstOrNull()) {
-            '{' -> {
-                val root = JSONObject(normalized)
+        val rootArray = when (val rootElement = normalized.parseJsonElementOrNull()) {
+            is JsonObject -> {
+                val root = rootElement
                 schemaVersion = root.optInt("schemaVersion", 0)
                 format = root.optString("format").trim()
                 exportedAtMillis = root.optLong("exportedAtMillis", 0L)
                 when {
-                    root.has("items") -> root.optJSONArray("items")
-                    root.has("trackedItems") -> root.optJSONArray("trackedItems")
+                    root.hasNonNull("items") -> root.optArray("items")
+                    root.hasNonNull("trackedItems") -> root.optArray("trackedItems")
                     else -> null
-                } ?: JSONArray()
+                } ?: JsonArray(emptyList())
             }
-            '[' -> JSONArray(normalized)
+            is JsonArray -> rootElement
             else -> throw IllegalArgumentException("unsupported github track import format")
         }
         val deduplicated = linkedMapOf<String, GitHubTrackedApp>()
         var invalidCount = 0
         var duplicateCount = 0
-        for (index in 0 until rootArray.length()) {
-            val itemObject = rootArray.optJSONObject(index)
+        rootArray.forEach { element ->
+            val itemObject = element.jsonObjectOrNull()
             val item = itemObject?.let(::parseTrackedItem)
             if (item == null) {
                 invalidCount += 1
-                continue
+                return@forEach
             }
             if (deduplicated.containsKey(item.id)) {
                 duplicateCount += 1
@@ -399,7 +367,7 @@ object GitHubTrackStore {
         }
         return GitHubTrackedItemsImportPayload(
             items = deduplicated.values.toList(),
-            sourceCount = rootArray.length(),
+            sourceCount = rootArray.size,
             invalidCount = invalidCount,
             duplicateCount = duplicateCount,
             schemaVersion = schemaVersion,
@@ -444,13 +412,12 @@ object GitHubTrackStore {
         val ts = kv().decodeLong(KEY_LAST_REFRESH_MS, 0L)
         val profileCache = loadProfileCache()
         if (raw.isBlank()) return emptyMap<String, GitHubCheckCacheEntry>() to 0L
-        val map = runCatching {
-            val obj = JSONObject(raw)
-            buildMap {
-                val keys = obj.keys()
-                while (keys.hasNext()) {
-                    val id = keys.next()
-                    val item = obj.optJSONObject(id) ?: continue
+        val map =
+            raw.parseJsonObjectOrNull()
+                ?.let { obj ->
+                    buildMap {
+                        obj.forEach { (id, element) ->
+                            val item = element.jsonObjectOrNull() ?: return@forEach
                     put(
                         id,
                         GitHubCheckCacheEntry(
@@ -476,12 +443,12 @@ object GitHubTrackStore {
                                 "latestPreAuthorAvatarUrl"
                             ),
                             latestPreUpdatedAtMillis = item.optLong("latestPreUpdatedAtMillis", -1L),
-                            hasStableRelease = if (item.has("hasStableRelease")) {
+                            hasStableRelease = if (item.hasNonNull("hasStableRelease")) {
                                 item.optBoolean("hasStableRelease", true)
                             } else {
                                 item.optString("latestStableRawTag").isNotBlank() || item.optString("latestTag").isNotBlank()
                             },
-                            hasUpdate = if (item.has("hasUpdate")) item.optBoolean("hasUpdate") else null,
+                            hasUpdate = if (item.hasNonNull("hasUpdate")) item.optBoolean("hasUpdate") else null,
                             message = item.optString("message"),
                             isPreRelease = item.optBoolean("isPreRelease", false),
                             preReleaseInfo = item.optString("preReleaseInfo"),
@@ -499,15 +466,15 @@ object GitHubTrackStore {
                             upstreamArchived = item.optBoolean("upstreamArchived", false),
                             upstreamPushedAtMillis = item.optLong("upstreamPushedAtMillis", -1L),
                             repositoryProfile = parseGitHubRepositoryProfileSnapshot(
-                                item.optJSONObject("repositoryProfile")
+                                item.optObject("repositoryProfile")
                             ) ?: profileCache[id],
                             sourceStrategyId = item.optString("sourceStrategyId"),
                             sourceConfigSignature = item.optString("sourceConfigSignature"),
                             latestStableApkVersion = parseRemoteApkVersionInfo(
-                                item.optJSONObject("latestStableApkVersion")
+                                item.optObject("latestStableApkVersion")
                             ),
                             latestPreApkVersion = parseRemoteApkVersionInfo(
-                                item.optJSONObject("latestPreApkVersion")
+                                item.optObject("latestPreApkVersion")
                             ),
                             directApkRemoteHealth = parseDirectApkRemoteHealth(
                                 item.optString("directApkRemoteHealth")
@@ -520,7 +487,7 @@ object GitHubTrackStore {
                                 -1L
                             ),
                             checkedAtMillis =
-                                if (item.has("checkedAtMillis")) {
+                                if (item.hasNonNull("checkedAtMillis")) {
                                     item.optLong("checkedAtMillis", -1L)
                                 } else {
                                     ts
@@ -529,25 +496,23 @@ object GitHubTrackStore {
                     )
                 }
             }
-        }.getOrDefault(emptyMap())
+        } ?: emptyMap()
         return map to map.resolvedRefreshTimestamp(ts)
     }
 
     fun loadProfileCache(): Map<String, GitHubRepositoryProfileSnapshot> {
         val raw = kv().decodeString(KEY_PROFILE_CACHE).orEmpty()
         if (raw.isBlank()) return emptyMap()
-        return runCatching {
-            val obj = JSONObject(raw)
-            buildMap {
-                val keys = obj.keys()
-                while (keys.hasNext()) {
-                    val id = keys.next()
-                    val profile = parseGitHubRepositoryProfileSnapshot(obj.optJSONObject(id))
-                        ?: continue
+        return raw.parseJsonObjectOrNull()
+            ?.let { obj ->
+                buildMap {
+                    obj.forEach { (id, element) ->
+                        val profile = parseGitHubRepositoryProfileSnapshot(element.jsonObjectOrNull())
+                            ?: return@forEach
                     put(id, profile)
                 }
             }
-        }.getOrDefault(emptyMap())
+        } ?: emptyMap()
     }
 
     fun loadSnapshot(): GitHubTrackSnapshot {
@@ -599,70 +564,65 @@ object GitHubTrackStore {
             store.removeValueForKey(KEY_LAST_REFRESH_MS)
             return
         }
-        val obj = JSONObject()
-        val profileObj = JSONObject()
         val resolvedLastRefreshMs = states.resolvedRefreshTimestamp(lastRefreshMs)
-        states.forEach { (id, state) ->
-            obj.put(
-                id,
-                JSONObject()
-                    .put("localVersion", state.localVersion)
-                    .put("localVersionCode", state.localVersionCode)
-                    .put("latestTag", state.latestTag)
-                    .put("latestStableName", state.latestStableName)
-                    .put("latestStableRawTag", state.latestStableRawTag)
-                    .put("latestStableUrl", state.latestStableUrl)
-                    .put("latestStableAuthorAvatarUrl", state.latestStableAuthorAvatarUrl)
-                    .put("latestStableUpdatedAtMillis", state.latestStableUpdatedAtMillis)
-                    .put("latestPreName", state.latestPreName)
-                    .put("latestPreRawTag", state.latestPreRawTag)
-                    .put("latestPreUrl", state.latestPreUrl)
-                    .put("latestPreAuthorAvatarUrl", state.latestPreAuthorAvatarUrl)
-                    .put("latestPreUpdatedAtMillis", state.latestPreUpdatedAtMillis)
-                    .put("hasStableRelease", state.hasStableRelease)
-                    .put("hasUpdate", state.hasUpdate)
-                    .put("message", state.message)
-                    .put("isPreRelease", state.isPreRelease)
-                    .put("preReleaseInfo", state.preReleaseInfo)
-                    .put("showPreReleaseInfo", state.showPreReleaseInfo)
-                    .put("hasPreReleaseUpdate", state.hasPreReleaseUpdate)
-                    .put("recommendsPreRelease", state.recommendsPreRelease)
-                    .put("releaseHint", state.releaseHint)
-                    .put("repositoryArchived", state.repositoryArchived)
-                    .put("repositoryFork", state.repositoryFork)
-                    .put("repositoryPushedAtMillis", state.repositoryPushedAtMillis)
-                    .put("upstreamFullName", state.upstreamFullName)
-                    .put("upstreamArchived", state.upstreamArchived)
-                    .put("upstreamPushedAtMillis", state.upstreamPushedAtMillis)
-                    .put("repositoryProfile", state.repositoryProfile?.toCacheJson())
-                    .put("sourceStrategyId", state.sourceStrategyId)
-                    .put("sourceConfigSignature", state.sourceConfigSignature)
-                    .put(
-                        "latestStableApkVersion",
+        val obj = buildJsonObject {
+            states.forEach { (id, state) ->
+                put(
+                    id,
+                    buildJsonObject {
+                        put("localVersion", state.localVersion)
+                        put("localVersionCode", state.localVersionCode)
+                        put("latestTag", state.latestTag)
+                        put("latestStableName", state.latestStableName)
+                        put("latestStableRawTag", state.latestStableRawTag)
+                        put("latestStableUrl", state.latestStableUrl)
+                        put("latestStableAuthorAvatarUrl", state.latestStableAuthorAvatarUrl)
+                        put("latestStableUpdatedAtMillis", state.latestStableUpdatedAtMillis)
+                        put("latestPreName", state.latestPreName)
+                        put("latestPreRawTag", state.latestPreRawTag)
+                        put("latestPreUrl", state.latestPreUrl)
+                        put("latestPreAuthorAvatarUrl", state.latestPreAuthorAvatarUrl)
+                        put("latestPreUpdatedAtMillis", state.latestPreUpdatedAtMillis)
+                        put("hasStableRelease", state.hasStableRelease)
+                        state.hasUpdate?.let { put("hasUpdate", it) }
+                        put("message", state.message)
+                        put("isPreRelease", state.isPreRelease)
+                        put("preReleaseInfo", state.preReleaseInfo)
+                        put("showPreReleaseInfo", state.showPreReleaseInfo)
+                        put("hasPreReleaseUpdate", state.hasPreReleaseUpdate)
+                        put("recommendsPreRelease", state.recommendsPreRelease)
+                        put("releaseHint", state.releaseHint)
+                        put("repositoryArchived", state.repositoryArchived)
+                        put("repositoryFork", state.repositoryFork)
+                        put("repositoryPushedAtMillis", state.repositoryPushedAtMillis)
+                        put("upstreamFullName", state.upstreamFullName)
+                        put("upstreamArchived", state.upstreamArchived)
+                        put("upstreamPushedAtMillis", state.upstreamPushedAtMillis)
+                        state.repositoryProfile?.toCacheJson()?.let { put("repositoryProfile", it) }
+                        put("sourceStrategyId", state.sourceStrategyId)
+                        put("sourceConfigSignature", state.sourceConfigSignature)
                         remoteApkVersionInfoToJson(state.latestStableApkVersion)
-                    )
-                    .put(
-                        "latestPreApkVersion",
+                            ?.let { put("latestStableApkVersion", it) }
                         remoteApkVersionInfoToJson(state.latestPreApkVersion)
-                    )
-                    .put("directApkRemoteHealth", state.directApkRemoteHealth.name)
-                    .put(
-                        "directApkRemoteHealthMessage",
-                        state.directApkRemoteHealthMessage
-                    )
-                    .put(
-                        "directApkRemoteCheckedAtMillis",
-                        state.directApkRemoteCheckedAtMillis
-                    )
-                    .put("checkedAtMillis", state.checkedAtMillis)
-            )
-            state.repositoryProfile?.let { profile ->
-                profileObj.put(id, profile.toCacheJson())
+                            ?.let { put("latestPreApkVersion", it) }
+                        put("directApkRemoteHealth", state.directApkRemoteHealth.name)
+                        put("directApkRemoteHealthMessage", state.directApkRemoteHealthMessage)
+                        put("directApkRemoteCheckedAtMillis", state.directApkRemoteCheckedAtMillis)
+                        put("checkedAtMillis", state.checkedAtMillis)
+                    }
+                )
             }
         }
-        kv().encode(KEY_CHECK_CACHE, obj.toString())
-        if (profileObj.length() > 0) {
-            kv().encode(KEY_PROFILE_CACHE, profileObj.toString())
+        val profileObj = buildJsonObject {
+            states.forEach { (id, state) ->
+                state.repositoryProfile?.let { profile ->
+                    put(id, profile.toCacheJson())
+                }
+            }
+        }
+        kv().encode(KEY_CHECK_CACHE, obj.encodeCompact())
+        if (profileObj.isNotEmpty()) {
+            kv().encode(KEY_PROFILE_CACHE, profileObj.encodeCompact())
         } else {
             kv().removeValueForKey(KEY_PROFILE_CACHE)
         }
@@ -712,7 +672,7 @@ object GitHubTrackStore {
             ).sumOf { it.length.toLong() * 2 } + 64L
         }
         val profileJsonBytes = snapshot.profileCache.values.sumOf { profile ->
-            profile.toCacheJson().toString().length.toLong() * 2
+            profile.toCacheJson().encodeCompact().length.toLong() * 2
         }
         return cacheJsonBytes + profileJsonBytes + 16L
     }

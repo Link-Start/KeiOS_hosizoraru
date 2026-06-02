@@ -1,8 +1,9 @@
 package os.kei.ui.page.main.os.shell.util
 
+import kotlinx.serialization.json.JsonElement
+import os.kei.core.json.KeiJson
+import os.kei.core.json.parseJsonElementOrNull
 import os.kei.ui.page.main.os.shell.ShellOutputDisplayEntry
-import org.json.JSONArray
-import org.json.JSONObject
 
 private val shellAnsiEscapeRegex = Regex("""\u001B\[[;\d]*[ -/]*[@-~]""")
 private val shellKeyValueRegex = Regex("""\b[^\s=]+=[^\s=]+\b""")
@@ -77,8 +78,14 @@ private fun tryFormatShellOutputAsJson(raw: String): String? {
     if (trimmed.isBlank()) return null
     return runCatching {
         when {
-            trimmed.startsWith("{") && trimmed.endsWith("}") -> JSONObject(trimmed).toString(2)
-            trimmed.startsWith("[") && trimmed.endsWith("]") -> JSONArray(trimmed).toString(2)
+            trimmed.startsWith("{") && trimmed.endsWith("}") ->
+                trimmed.parseJsonElementOrNull()?.let { element ->
+                    KeiJson.pretty.encodeToString(JsonElement.serializer(), element)
+                }
+            trimmed.startsWith("[") && trimmed.endsWith("]") ->
+                trimmed.parseJsonElementOrNull()?.let { element ->
+                    KeiJson.pretty.encodeToString(JsonElement.serializer(), element)
+                }
             else -> null
         }
     }.getOrNull()

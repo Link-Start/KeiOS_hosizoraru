@@ -1,6 +1,9 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONObject
+import os.kei.core.json.optInt
+import os.kei.core.json.optObject
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubRepositoryCommunityProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
@@ -33,9 +36,9 @@ class GitHubCommunityProfileSource(
         fetchedAtMillis: Long,
         sourceConfigSignature: String
     ): GitHubRepositoryProfileSnapshot {
-        val root = JSONObject(json)
-        val files = root.optJSONObject("files")
-        val license = files?.optJSONObject("license") ?: root.optJSONObject("license")
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid community profile payload")
+        val files = root.optObject("files")
+        val license = files?.optObject("license") ?: root.optObject("license")
         val source = GitHubRepositoryProfileSource.CommunityProfileApi
         val community = GitHubRepositoryCommunityProfile(
             healthPercentage = intField(
@@ -44,7 +47,7 @@ class GitHubCommunityProfileSource(
                 fetchedAtMillis
             ),
             hasReadme = booleanField(
-                files?.optJSONObject("readme") != null,
+                files?.optObject("readme") != null,
                 source,
                 fetchedAtMillis
             ),
@@ -60,22 +63,22 @@ class GitHubCommunityProfileSource(
                 fetchedAtMillis
             ),
             hasContributing = booleanField(
-                files?.optJSONObject("contributing") != null,
+                files?.optObject("contributing") != null,
                 source,
                 fetchedAtMillis
             ),
             hasCodeOfConduct = booleanField(
-                files?.optJSONObject("code_of_conduct") != null,
+                files?.optObject("code_of_conduct") != null,
                 source,
                 fetchedAtMillis
             ),
             hasIssueTemplate = booleanField(
-                files?.optJSONObject("issue_template") != null,
+                files?.optObject("issue_template") != null,
                 source,
                 fetchedAtMillis
             ),
             hasPullRequestTemplate = booleanField(
-                files?.optJSONObject("pull_request_template") != null,
+                files?.optObject("pull_request_template") != null,
                 source,
                 fetchedAtMillis
             )

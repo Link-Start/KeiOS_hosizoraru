@@ -1,7 +1,12 @@
 package os.kei.feature.github.data.remote
 
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import os.kei.core.json.optArray
+import os.kei.core.json.optInt
+import os.kei.core.json.optString
+import os.kei.core.json.parseJsonArrayOrNull
+import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.model.GitHubRepositoryForkSyncProfile
 import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
@@ -63,7 +68,7 @@ class GitHubDeepRepositoryProfileSource(
         json: String,
         fetchedAtMillis: Long
     ): GitHubRepositoryTrafficProfile {
-        val root = JSONObject(json)
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid traffic views payload")
         val source = GitHubRepositoryProfileSource.TrafficViewsApi
         return GitHubRepositoryTrafficProfile(
             viewCount = intField(
@@ -79,7 +84,7 @@ class GitHubDeepRepositoryProfileSource(
                 GitHubRepositoryProfileConfidence.Medium
             ),
             latestViewBucketAtMillis = longField(
-                root.optJSONArray("views").latestTrafficBucketAtMillis(),
+                root.optArray("views").latestTrafficBucketAtMillis(),
                 source,
                 fetchedAtMillis,
                 GitHubRepositoryProfileConfidence.Medium
@@ -91,7 +96,7 @@ class GitHubDeepRepositoryProfileSource(
         json: String,
         fetchedAtMillis: Long
     ): GitHubRepositoryTrafficProfile {
-        val root = JSONObject(json)
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid traffic clones payload")
         val source = GitHubRepositoryProfileSource.TrafficClonesApi
         return GitHubRepositoryTrafficProfile(
             cloneCount = intField(
@@ -107,7 +112,7 @@ class GitHubDeepRepositoryProfileSource(
                 GitHubRepositoryProfileConfidence.Medium
             ),
             latestCloneBucketAtMillis = longField(
-                root.optJSONArray("clones").latestTrafficBucketAtMillis(),
+                root.optArray("clones").latestTrafficBucketAtMillis(),
                 source,
                 fetchedAtMillis,
                 GitHubRepositoryProfileConfidence.Medium
@@ -123,7 +128,7 @@ class GitHubDeepRepositoryProfileSource(
         fetchedAtMillis: Long
     ): GitHubRepositoryForkSyncProfile {
         val source = GitHubRepositoryProfileSource.ForkCompareApi
-        val root = JSONObject(json)
+        val root = json.parseJsonObjectOrNull() ?: throw IllegalArgumentException("invalid compare payload")
         return GitHubRepositoryForkSyncProfile(
             baseFullName = stringField(
                 upstreamFullName,
@@ -183,7 +188,7 @@ class GitHubDeepRepositoryProfileSource(
                 GitHubRepositoryProfileConfidence.Medium
             ),
             openDependabotAlertsCount = intField(
-                JSONArray(json).length(),
+                (json.parseJsonArrayOrNull() ?: throw IllegalArgumentException("invalid dependabot alerts payload")).size,
                 source,
                 fetchedAtMillis,
                 GitHubRepositoryProfileConfidence.Medium
@@ -204,7 +209,7 @@ class GitHubDeepRepositoryProfileSource(
                 GitHubRepositoryProfileConfidence.Medium
             ),
             openCodeScanningAlertsCount = intField(
-                JSONArray(json).length(),
+                (json.parseJsonArrayOrNull() ?: throw IllegalArgumentException("invalid code scanning alerts payload")).size,
                 source,
                 fetchedAtMillis,
                 GitHubRepositoryProfileConfidence.Medium
@@ -483,11 +488,11 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun JSONArray?.latestTrafficBucketAtMillis(): Long {
+    private fun JsonArray?.latestTrafficBucketAtMillis(): Long {
         this ?: return -1L
         var latest = -1L
-        for (index in 0 until length()) {
-            val bucket = optJSONObject(index) ?: continue
+        for (element in this) {
+            val bucket = element as? JsonObject ?: continue
             latest = maxOf(latest, bucket.optString("timestamp").parseIsoInstantOrDefault())
         }
         return latest

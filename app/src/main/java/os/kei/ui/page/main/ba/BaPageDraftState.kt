@@ -9,7 +9,6 @@ internal data class BaPageSettingsDraftState(
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
-    val idIndependentByServer: Boolean,
 )
 
 @Stable
@@ -34,7 +33,6 @@ internal fun BaPageSnapshot.toSettingsDraftState(): BaPageSettingsDraftState =
         mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
-        idIndependentByServer = idIndependentByServer,
     )
 
 internal fun BaPageSnapshot.toNotificationDraftState(): BaPageNotificationDraftState =

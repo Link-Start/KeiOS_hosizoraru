@@ -27,7 +27,6 @@ internal data class BaPageRouteState(
     val showSettingsSheet: Boolean,
     val showAccountManagementSheet: Boolean,
     val showNotificationSettingsSheet: Boolean,
-    val showDebugSheet: Boolean,
     val popupState: BaPagePopupState,
     val accountUiState: BaOfficeAccountUiState,
     val serverIndex: Int,
@@ -41,7 +40,6 @@ internal data class BaPageRouteState(
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
-    val idIndependentByServer: Boolean,
     val calendarRefreshIntervalHours: Int,
     val calendarHydrationReady: Boolean,
     val poolHydrationReady: Boolean,
@@ -66,7 +64,6 @@ internal fun buildBaPageRouteState(
         showSettingsSheet = chromeUiState.showSettingsSheet,
         showAccountManagementSheet = chromeUiState.showAccountManagementSheet,
         showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
-        showDebugSheet = chromeUiState.showDebugSheet,
         popupState =
             BaPagePopupState(
                 showOverviewServerPopup = chromeUiState.showOverviewServerPopup,
@@ -86,7 +83,6 @@ internal fun buildBaPageRouteState(
         mediaAdaptiveRotationEnabled = runtimeUiState.mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = runtimeUiState.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = runtimeUiState.mediaSaveFixedTreeUri,
-        idIndependentByServer = runtimeUiState.idIndependentByServer,
         calendarRefreshIntervalHours = runtimeUiState.calendarRefreshIntervalHours,
         calendarHydrationReady = syncUiState.calendarHydrationReady,
         poolHydrationReady = syncUiState.poolHydrationReady,

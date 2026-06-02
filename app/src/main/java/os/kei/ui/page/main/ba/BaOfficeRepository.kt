@@ -8,11 +8,6 @@ import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
-internal data class BaOfficeIdentity(
-    val nickname: String,
-    val friendCode: String,
-)
-
 internal object BaOfficeRepository {
     fun loadSnapshot(): BaPageSnapshot = BASettingsStore.loadSnapshot()
 
@@ -95,28 +90,6 @@ internal object BaOfficeRepository {
     suspend fun clearListScrollStateAsync() {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.clearListScrollState()
-        }
-    }
-
-    fun loadIdNickname(serverIndex: Int): String = BASettingsStore.loadIdNickname(serverIndex)
-
-    fun loadIdFriendCode(serverIndex: Int): String = BASettingsStore.loadIdFriendCode(serverIndex)
-
-    suspend fun loadIdentityForServer(serverIndex: Int): BaOfficeIdentity =
-        withContext(AppDispatchers.baFetch) {
-            BaOfficeIdentity(
-                nickname = BASettingsStore.loadIdNickname(serverIndex),
-                friendCode = BASettingsStore.loadIdFriendCode(serverIndex),
-            )
-        }
-
-    fun saveIdIndependentByServerEnabled(enabled: Boolean) {
-        BASettingsStore.saveIdIndependentByServerEnabled(enabled)
-    }
-
-    suspend fun saveIdIndependentByServerEnabledAsync(enabled: Boolean) {
-        withContext(AppDispatchers.baFetch) {
-            BASettingsStore.saveIdIndependentByServerEnabled(enabled)
         }
     }
 

@@ -35,7 +35,6 @@ internal fun BaPageSheetHost(
     onSelectAccount: (BaAccountId) -> Unit,
     onDismissNotificationSettings: () -> Unit,
     onSaveNotificationSettings: () -> Unit,
-    onDismissDebug: () -> Unit,
 ) {
     BaSettingsSheet(
         show = routeState.showSettingsSheet,
@@ -50,8 +49,19 @@ internal fun BaPageSheetHost(
         onMediaSaveFixedTreeUriChange = { uri ->
             viewModel.updateSettingsDraft { draft -> draft.copy(mediaSaveFixedTreeUri = uri) }
         },
-        onIdIndependentByServerChange = { enabled ->
-            viewModel.updateSettingsDraft { draft -> draft.copy(idIndependentByServer = enabled) }
+        debugContent = {
+            BaDebugControlsHost(
+                backdrop = backdrop,
+                context = context,
+                office = office,
+                runtimePersistenceCoordinator = runtimePersistenceCoordinator,
+                uiNowMsProvider = uiNowMsProvider,
+                routeState = routeState,
+                calendarUiState = calendarUiState,
+                poolUiState = poolUiState,
+                accountUiState = accountUiState,
+                onUseRealCalendarPoolDataChange = viewModel::updateDebugUseRealCalendarPoolData,
+            )
         },
         hasUnsavedChanges = settingsSheetState != savedSettingsSheetState,
         onDismissRequest = onDismissSettings,
@@ -123,23 +133,10 @@ internal fun BaPageSheetHost(
         onDismissRequest = onDismissNotificationSettings,
         onSaveRequest = onSaveNotificationSettings,
     )
-    BaDebugSheetHost(
-        backdrop = backdrop,
-        context = context,
-        office = office,
-        runtimePersistenceCoordinator = runtimePersistenceCoordinator,
-        uiNowMsProvider = uiNowMsProvider,
-        routeState = routeState,
-        calendarUiState = calendarUiState,
-        poolUiState = poolUiState,
-        accountUiState = accountUiState,
-        onUseRealCalendarPoolDataChange = viewModel::updateDebugUseRealCalendarPoolData,
-        onDismissRequest = onDismissDebug,
-    )
 }
 
 @Composable
-private fun BaDebugSheetHost(
+private fun BaDebugControlsHost(
     backdrop: Backdrop?,
     context: Context,
     office: BaOfficeController,
@@ -150,11 +147,9 @@ private fun BaDebugSheetHost(
     poolUiState: BaPoolUiState,
     accountUiState: BaOfficeAccountUiState,
     onUseRealCalendarPoolDataChange: (Boolean) -> Unit,
-    onDismissRequest: () -> Unit,
 ) {
     val accountNotificationContext = accountUiState.activeNotificationContext()
-    BaDebugSheet(
-        show = routeState.showDebugSheet,
+    BaDebugControlsContent(
         backdrop = backdrop,
         onSendApTestNotification = {
             office.sendApTestNotification(
@@ -204,7 +199,7 @@ private fun BaDebugSheetHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = true,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
+                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -224,7 +219,7 @@ private fun BaDebugSheetHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = false,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
+                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -244,7 +239,7 @@ private fun BaDebugSheetHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = true,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
+                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -264,7 +259,7 @@ private fun BaDebugSheetHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = false,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
+                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -284,7 +279,7 @@ private fun BaDebugSheetHost(
                         poolEntries = poolUiState.entries,
                         nowMs = uiNowMs,
                     ).takeIf { it.isNotBlank() }
-                        ?: return@BaDebugSheet showBaDebugRealDataMissingToast(context)
+                        ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
                 } else {
                     context.resolveString(R.string.ba_debug_sample_change_detail)
                 }
@@ -305,7 +300,6 @@ private fun BaDebugSheetHost(
         onTestCafePlus3Hours = {
             runtimePersistenceCoordinator.submit(office.testCafePlus3Hours(context))
         },
-        onDismissRequest = onDismissRequest,
     )
 }
 

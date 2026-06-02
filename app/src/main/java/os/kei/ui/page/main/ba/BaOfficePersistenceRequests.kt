@@ -1,13 +1,11 @@
 package os.kei.ui.page.main.ba
 
 internal data class BaOfficeIdentityPersistenceUpdate(
-    val idIndependentByServer: Boolean? = null,
     val nickname: String? = null,
     val friendCode: String? = null,
     val serverIndex: Int? = null,
 ) {
     suspend fun persistAsync() {
-        idIndependentByServer?.let { BaOfficeRepository.saveIdIndependentByServerEnabledAsync(it) }
         nickname?.let { BaOfficeRepository.saveIdNicknameAsync(it, serverIndex) }
         friendCode?.let { BaOfficeRepository.saveIdFriendCodeAsync(it, serverIndex) }
     }

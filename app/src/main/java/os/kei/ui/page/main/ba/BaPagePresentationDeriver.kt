@@ -87,5 +87,4 @@ internal fun buildBaSavedSettingsDraftState(
         mediaAdaptiveRotationEnabled = routeState.mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = routeState.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = routeState.mediaSaveFixedTreeUri,
-        idIndependentByServer = routeState.idIndependentByServer,
     )

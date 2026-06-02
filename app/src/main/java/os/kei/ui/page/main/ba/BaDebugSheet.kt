@@ -10,21 +10,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
-import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
 
 @Composable
-internal fun BaDebugSheet(
-    show: Boolean,
+internal fun BaDebugControlsContent(
     backdrop: Backdrop?,
     onSendApTestNotification: () -> Unit,
     onSendCafeApTestNotification: () -> Unit,
@@ -38,59 +32,42 @@ internal fun BaDebugSheet(
     useRealCalendarPoolData: Boolean,
     onUseRealCalendarPoolDataChange: (Boolean) -> Unit,
     onTestCafePlus3Hours: () -> Unit,
-    onDismissRequest: () -> Unit,
 ) {
-    SnapshotWindowBottomSheet(
-        show = show,
-        title = stringResource(R.string.ba_debug_title),
-        onDismissRequest = onDismissRequest,
-        startAction = {
-            AppLiquidIconButton(
-                backdrop = backdrop,
-                icon = MiuixIcons.Regular.Close,
-                contentDescription = stringResource(R.string.common_close),
-                variant = GlassVariant.Bar,
-                onClick = onDismissRequest,
+    SheetSectionTitle(stringResource(R.string.ba_debug_title))
+    SheetSectionCard {
+        SheetSectionTitle(stringResource(R.string.ba_debug_section_daily))
+        BaDebugActionGrid(
+            backdrop = backdrop,
+            actions =
+                listOf(
+                    stringResource(R.string.ba_debug_action_ap_notification) to onSendApTestNotification,
+                    stringResource(R.string.ba_debug_action_cafe_ap_notification) to onSendCafeApTestNotification,
+                    stringResource(R.string.ba_debug_action_arena_refresh_notification) to onSendArenaRefreshTestNotification,
+                    stringResource(R.string.ba_debug_action_cafe_visit_notification) to onSendCafeVisitTestNotification,
+                    stringResource(R.string.ba_debug_action_cafe_plus_3h_ap) to onTestCafePlus3Hours,
+                )
+        )
+        SheetSectionTitle(stringResource(R.string.ba_debug_section_calendar_pool))
+        SheetControlRow(
+            label = stringResource(R.string.ba_debug_label_use_real_calendar_pool_data),
+            summary = stringResource(R.string.ba_debug_summary_use_real_calendar_pool_data),
+        ) {
+            AppSwitch(
+                checked = useRealCalendarPoolData,
+                onCheckedChange = onUseRealCalendarPoolDataChange,
             )
-        },
-    ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.ba_debug_section_daily))
-            SheetSectionCard {
-                BaDebugActionGrid(
-                    backdrop = backdrop,
-                    actions = listOf(
-                        stringResource(R.string.ba_debug_action_ap_notification) to onSendApTestNotification,
-                        stringResource(R.string.ba_debug_action_cafe_ap_notification) to onSendCafeApTestNotification,
-                        stringResource(R.string.ba_debug_action_arena_refresh_notification) to onSendArenaRefreshTestNotification,
-                        stringResource(R.string.ba_debug_action_cafe_visit_notification) to onSendCafeVisitTestNotification,
-                        stringResource(R.string.ba_debug_action_cafe_plus_3h_ap) to onTestCafePlus3Hours,
-                    )
-                )
-            }
-            SheetSectionTitle(stringResource(R.string.ba_debug_section_calendar_pool))
-            SheetSectionCard {
-                SheetControlRow(
-                    label = stringResource(R.string.ba_debug_label_use_real_calendar_pool_data),
-                    summary = stringResource(R.string.ba_debug_summary_use_real_calendar_pool_data),
-                ) {
-                    AppSwitch(
-                        checked = useRealCalendarPoolData,
-                        onCheckedChange = onUseRealCalendarPoolDataChange,
-                    )
-                }
-                BaDebugActionGrid(
-                    backdrop = backdrop,
-                    actions = listOf(
-                        stringResource(R.string.ba_debug_action_calendar_upcoming_notification) to onSendCalendarUpcomingTestNotification,
-                        stringResource(R.string.ba_debug_action_calendar_ending_notification) to onSendCalendarEndingTestNotification,
-                        stringResource(R.string.ba_debug_action_pool_upcoming_notification) to onSendPoolUpcomingTestNotification,
-                        stringResource(R.string.ba_debug_action_pool_ending_notification) to onSendPoolEndingTestNotification,
-                        stringResource(R.string.ba_debug_action_calendar_pool_change_notification) to onSendCalendarPoolChangeTestNotification,
-                    )
-                )
-            }
         }
+        BaDebugActionGrid(
+            backdrop = backdrop,
+            actions =
+                listOf(
+                    stringResource(R.string.ba_debug_action_calendar_upcoming_notification) to onSendCalendarUpcomingTestNotification,
+                    stringResource(R.string.ba_debug_action_calendar_ending_notification) to onSendCalendarEndingTestNotification,
+                    stringResource(R.string.ba_debug_action_pool_upcoming_notification) to onSendPoolUpcomingTestNotification,
+                    stringResource(R.string.ba_debug_action_pool_ending_notification) to onSendPoolEndingTestNotification,
+                    stringResource(R.string.ba_debug_action_calendar_pool_change_notification) to onSendCalendarPoolChangeTestNotification,
+                )
+        )
     }
 }
 

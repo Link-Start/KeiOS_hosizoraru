@@ -49,7 +49,6 @@ internal fun loadBaSettingsSnapshot(store: MMKV): BaPageSnapshot {
                 ).coerceIn(-1, BA_AP_MAX),
         idNickname = idSettings.loadNickname(serverIndex),
         idFriendCode = idSettings.loadFriendCode(serverIndex),
-        idIndependentByServer = idSettings.loadIndependentByServerEnabled(),
         apLimit = store.decodeInt(KEY_AP_LIMIT, DEFAULT_AP_LIMIT).coerceIn(0, BA_AP_LIMIT_MAX),
         apCurrent = normalizeAp(apCurrent.coerceIn(0.0, BA_AP_MAX.toDouble())),
         apRegenBaseMs = store.decodeLong(KEY_AP_REGEN_BASE_MS, 0L),

@@ -177,20 +177,6 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun showDebugSheet() {
-        _chromeUiState.update { state ->
-            state
-                .withoutFloatingPopups()
-                .copy(showDebugSheet = true)
-        }
-    }
-
-    fun hideDebugSheet() {
-        _chromeUiState.update { state ->
-            state.copy(showDebugSheet = false)
-        }
-    }
-
     fun updateDebugUseRealCalendarPoolData(enabled: Boolean) {
         _chromeUiState.update { state ->
             if (state.debugUseRealCalendarPoolData == enabled) {
@@ -341,11 +327,9 @@ internal class BaOfficeViewModel(
             val persisted =
                 repository.persistServerSelection(
                     requestedIndex = selected,
-                    idIndependentByServer = office.idIndependentByServer,
                     cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
                     arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
                 )
-            persisted.identity?.let(office::applyIdentity)
             persisted.cafeVisitLastNotifiedSlotMs?.let { slotMs ->
                 office.cafeVisitLastNotifiedSlotMs = slotMs
             }
@@ -361,9 +345,7 @@ internal class BaOfficeViewModel(
             val restored =
                 repository.restoreServerSelection(
                     currentServerIndex = _serverUiState.value.serverIndex,
-                    idIndependentByServer = office.idIndependentByServer,
                 ) ?: return@launch
-            restored.identity?.let(office::applyIdentity)
             _serverUiState.update { state ->
                 state.copy(serverIndex = restored.serverIndex)
             }
@@ -385,7 +367,6 @@ internal class BaOfficeViewModel(
                     mediaAdaptiveRotationEnabled = snapshot.mediaAdaptiveRotationEnabled,
                     mediaSaveCustomEnabled = snapshot.mediaSaveCustomEnabled,
                     mediaSaveFixedTreeUri = snapshot.mediaSaveFixedTreeUri,
-                    idIndependentByServer = snapshot.idIndependentByServer,
                     calendarRefreshIntervalHours = snapshot.calendarRefreshIntervalHours,
                 )
             }
@@ -517,10 +498,7 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun saveSettings(
-        sheetState: BaSettingsSheetState,
-        serverIndex: Int,
-    ) {
+    fun saveSettings(sheetState: BaSettingsSheetState) {
         viewModelScope.launch {
             try {
                 val saveResult =
@@ -528,17 +506,11 @@ internal class BaOfficeViewModel(
                 val persisted = saveResult.persisted
                 office.cafeLevel = persisted.savedCafeLevel
                 val clampUpdate = office.clampCafeStoredToCapUpdate()
-                office
-                    .applyIdIndependentByServer(
-                        serverIndex = serverIndex,
-                        enabled = persisted.idIndependentByServer,
-                    ).persistAsync()
                 _runtimeUiState.update { state ->
                     state.copy(
                         mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled,
                         mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled,
                         mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri,
-                        idIndependentByServer = persisted.idIndependentByServer,
                     )
                 }
                 _settingsDraftUiState.value =
@@ -548,7 +520,6 @@ internal class BaOfficeViewModel(
                             mediaAdaptiveRotationEnabled = persisted.mediaAdaptiveRotationEnabled,
                             mediaSaveCustomEnabled = persisted.mediaSaveCustomEnabled,
                             mediaSaveFixedTreeUri = persisted.mediaSaveFixedTreeUri,
-                            idIndependentByServer = persisted.idIndependentByServer,
                         ),
                     )
 

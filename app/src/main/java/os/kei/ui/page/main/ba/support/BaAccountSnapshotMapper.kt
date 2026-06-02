@@ -32,7 +32,6 @@ internal fun BaPageSnapshot.withBaAccount(
         cafeApLastNotifiedLevel = reminderRuntime.cafeApLastNotifiedLevel,
         idNickname = account.profile.nickname,
         idFriendCode = account.profile.friendCode,
-        idIndependentByServer = false,
         apLimit = runtime.apLimit,
         apCurrent = runtime.apCurrent,
         apRegenBaseMs = runtime.apRegenBaseMs,

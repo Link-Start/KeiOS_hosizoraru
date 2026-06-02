@@ -3,7 +3,6 @@
     <string name="ba_cd_account_management">Account management</string>
     <string name="ba_cd_edit">Edit</string>
     <string name="ba_cd_notification_settings">Notification settings</string>
-    <string name="ba_cd_debug_tools">Debug tools</string>
     <string name="ba_cd_refresh_interval">Refresh interval</string>
     <string name="ba_cd_copy_friend_code">Copy friend code</string>
     <string name="ba_cd_refresh">Refresh</string>
@@ -38,7 +37,6 @@
     <string name="ba_ap_card_title">AP</string>
     <string name="ba_metric_ap_sync">AP Sync</string>
     <string name="ba_metric_ap_full">Full AP</string>
-    <string name="ba_id_card_title">ID Card</string>
     <string name="ba_id_label_nickname">Nickname</string>
     <string name="ba_id_nickname_suffix">Sensei</string>
     <string name="ba_id_label_friend_code">Friend Code</string>
@@ -166,8 +164,6 @@
     <string name="ba_settings_summary_media_save_fixed_uri_ready">Folder selected. Future saves will use it by default.</string>
     <string name="ba_settings_action_pick_media_save_location">Choose folder</string>
     <string name="ba_settings_hint_media_save_fixed_uri">content://…/tree/…</string>
-    <string name="ba_settings_label_id_independent_by_server">Server-specific ID card</string>
-    <string name="ba_settings_summary_id_independent_by_server">When enabled, nickname and friend code are saved and switched per server.</string>
     <string name="ba_settings_label_show_ended_activity">Show ended events</string>
     <string name="ba_settings_label_show_ended_pool">Show ended recruitment banners</string>
     <string name="ba_settings_label_show_images">Show event/banner images</string>

@@ -12,7 +12,6 @@ internal data class BaSettingsPersistenceResult(
     val mediaAdaptiveRotationEnabled: Boolean,
     val mediaSaveCustomEnabled: Boolean,
     val mediaSaveFixedTreeUri: String,
-    val idIndependentByServer: Boolean,
 )
 
 internal data class BaNotificationSettingsPersistenceResult(
@@ -106,14 +105,12 @@ internal object BaSettingsPersistenceRepository {
         BASettingsStore.saveMediaAdaptiveRotationEnabled(sheetState.mediaAdaptiveRotationEnabled)
         BASettingsStore.saveMediaSaveCustomEnabled(sheetState.mediaSaveCustomEnabled)
         BASettingsStore.saveMediaSaveFixedTreeUri(sheetState.mediaSaveFixedTreeUri)
-        BASettingsStore.saveIdIndependentByServerEnabled(sheetState.idIndependentByServer)
 
         return BaSettingsPersistenceResult(
             savedCafeLevel = savedCafeLevel,
             mediaAdaptiveRotationEnabled = sheetState.mediaAdaptiveRotationEnabled,
             mediaSaveCustomEnabled = sheetState.mediaSaveCustomEnabled,
             mediaSaveFixedTreeUri = sheetState.mediaSaveFixedTreeUri,
-            idIndependentByServer = sheetState.idIndependentByServer,
         )
     }
 

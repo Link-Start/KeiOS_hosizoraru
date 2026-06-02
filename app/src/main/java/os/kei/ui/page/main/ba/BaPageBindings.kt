@@ -13,7 +13,6 @@ internal fun buildBaSettingsSheetState(
         mediaAdaptiveRotationEnabled = draft.mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = draft.mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = draft.mediaSaveFixedTreeUri,
-        idIndependentByServer = draft.idIndependentByServer,
     )
 
 internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraftState): BaNotificationSettingsSheetState =

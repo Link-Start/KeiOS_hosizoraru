@@ -67,7 +67,6 @@ internal class BaOfficeController(
     var cafeApLastNotifiedLevel by mutableIntStateOf(snapshot.cafeApLastNotifiedLevel)
     var idNickname by mutableStateOf(snapshot.idNickname)
     var idFriendCode by mutableStateOf(snapshot.idFriendCode)
-    var idIndependentByServer by mutableStateOf(snapshot.idIndependentByServer)
     var apLimit by mutableIntStateOf(snapshot.apLimit)
     var apCurrent by mutableStateOf(snapshot.apCurrent.coerceAtLeast(0.0))
     var apRegenBaseMs by mutableLongStateOf(snapshot.apRegenBaseMs)
@@ -99,7 +98,6 @@ internal class BaOfficeController(
             cafeApLastNotifiedLevel == snapshot.cafeApLastNotifiedLevel &&
             idNickname == snapshot.idNickname &&
             idFriendCode == snapshot.idFriendCode &&
-            idIndependentByServer == snapshot.idIndependentByServer &&
             apLimit == snapshot.apLimit &&
             apCurrent == snapshot.apCurrent.coerceAtLeast(0.0) &&
             apRegenBaseMs == snapshot.apRegenBaseMs &&
@@ -128,7 +126,6 @@ internal class BaOfficeController(
         cafeApLastNotifiedLevel = snapshot.cafeApLastNotifiedLevel
         idNickname = snapshot.idNickname
         idFriendCode = snapshot.idFriendCode
-        idIndependentByServer = snapshot.idIndependentByServer
         apLimit = snapshot.apLimit
         apCurrent = snapshot.apCurrent.coerceAtLeast(0.0)
         apRegenBaseMs = snapshot.apRegenBaseMs
@@ -228,34 +225,6 @@ internal class BaOfficeController(
             update = update?.mergedWith(clampUpdate) ?: clampUpdate
         }
         return update
-    }
-
-    fun applyIdentity(identity: BaOfficeIdentity) {
-        idNickname = identity.nickname
-        idFriendCode = identity.friendCode
-        idNicknameInput = identity.nickname
-        idFriendCodeInput = identity.friendCode
-    }
-
-    fun applyIdIndependentByServer(
-        serverIndex: Int,
-        enabled: Boolean,
-    ): BaOfficeIdentityPersistenceUpdate {
-        idIndependentByServer = enabled
-        return if (enabled) {
-            BaOfficeIdentityPersistenceUpdate(
-                idIndependentByServer = enabled,
-                nickname = idNickname,
-                friendCode = idFriendCode,
-                serverIndex = serverIndex,
-            )
-        } else {
-            BaOfficeIdentityPersistenceUpdate(
-                idIndependentByServer = enabled,
-                nickname = idNickname,
-                friendCode = idFriendCode,
-            )
-        }
     }
 
     fun saveIdNicknameFromInput(serverIndex: Int): BaOfficeIdentityPersistenceUpdate {

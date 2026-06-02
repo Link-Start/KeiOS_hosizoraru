@@ -373,13 +373,6 @@ internal object BASettingsStore {
         notifyChanged(notifyHomeOverview = false)
     }
 
-    fun loadIdIndependentByServerEnabled(): Boolean = idSettings().loadIndependentByServerEnabled()
-
-    fun saveIdIndependentByServerEnabled(enabled: Boolean) {
-        idSettings().saveIndependentByServerEnabled(enabled)
-        notifyChanged()
-    }
-
     fun loadIdNickname(serverIndex: Int? = null): String = idSettings().loadNickname(serverIndex)
 
     fun saveIdNickname(
@@ -804,18 +797,20 @@ internal object BASettingsStore {
 
     fun configBytesEstimated(): Long {
         val snapshot = loadSnapshot()
-        var bytes =
+        val accountBytes =
+            loadAccountState().accounts.sumOf { account ->
+                listOf(
+                    account.profile.id.value,
+                    account.profile.displayName,
+                    account.profile.nickname,
+                    account.profile.friendCode,
+                ).sumOf { it.length.toLong() * 2 } + 120L
+            }
+        return accountBytes +
             listOf(
                 snapshot.idNickname,
                 snapshot.idFriendCode,
             ).sumOf { it.length.toLong() * 2 } + 160L
-        if (snapshot.idIndependentByServer) {
-            for (serverIndex in 0..2) {
-                bytes += loadIdNickname(serverIndex).length.toLong() * 2
-                bytes += loadIdFriendCode(serverIndex).length.toLong() * 2
-            }
-        }
-        return bytes
     }
 
     fun clearListScrollState() {

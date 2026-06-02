@@ -11,14 +11,12 @@ import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
 internal data class BaOfficeServerSelectionPersistenceResult(
     val serverIndex: Int,
-    val identity: BaOfficeIdentity?,
     val cafeVisitLastNotifiedSlotMs: Long?,
     val arenaRefreshLastNotifiedSlotMs: Long?,
 )
 
 internal data class BaOfficeServerRestorePersistenceResult(
     val serverIndex: Int,
-    val identity: BaOfficeIdentity?,
 )
 
 internal data class BaOfficeSettingsSavePersistenceResult(
@@ -82,22 +80,12 @@ internal class BaOfficePageRepository(
 
     suspend fun persistServerSelection(
         requestedIndex: Int,
-        idIndependentByServer: Boolean,
         cafeVisitNotifyEnabled: Boolean,
         arenaRefreshNotifyEnabled: Boolean,
     ): BaOfficeServerSelectionPersistenceResult =
         withContext(AppDispatchers.baFetch) {
             val selected = requestedIndex.coerceIn(0, 2)
             BaOfficeRepository.saveServerIndex(selected)
-            val identity =
-                if (idIndependentByServer) {
-                    BaOfficeIdentity(
-                        nickname = BaOfficeRepository.loadIdNickname(selected),
-                        friendCode = BaOfficeRepository.loadIdFriendCode(selected),
-                    )
-                } else {
-                    null
-                }
             val nowMs = clock.nowMs()
             val cafeVisitSlot =
                 if (cafeVisitNotifyEnabled) {
@@ -119,33 +107,19 @@ internal class BaOfficePageRepository(
                 }
             BaOfficeServerSelectionPersistenceResult(
                 serverIndex = selected,
-                identity = identity,
                 cafeVisitLastNotifiedSlotMs = cafeVisitSlot,
                 arenaRefreshLastNotifiedSlotMs = arenaRefreshSlot,
             )
         }
 
-    suspend fun restoreServerSelection(
-        currentServerIndex: Int,
-        idIndependentByServer: Boolean,
-    ): BaOfficeServerRestorePersistenceResult? =
+    suspend fun restoreServerSelection(currentServerIndex: Int): BaOfficeServerRestorePersistenceResult? =
         withContext(AppDispatchers.baFetch) {
             val savedServerIndex = BaOfficeRepository.loadServerIndex()
             if (savedServerIndex == currentServerIndex) {
                 return@withContext null
             }
-            val identity =
-                if (idIndependentByServer) {
-                    BaOfficeIdentity(
-                        nickname = BaOfficeRepository.loadIdNickname(savedServerIndex),
-                        friendCode = BaOfficeRepository.loadIdFriendCode(savedServerIndex),
-                    )
-                } else {
-                    null
-                }
             BaOfficeServerRestorePersistenceResult(
                 serverIndex = savedServerIndex,
-                identity = identity,
             )
         }
 

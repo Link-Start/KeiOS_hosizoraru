@@ -170,14 +170,6 @@ fun BAPage(
         officeViewModel.hideNotificationSettingsSheet()
     }
 
-    fun openDebugSheet() {
-        officeViewModel.showDebugSheet()
-    }
-
-    fun closeDebugSheet() {
-        officeViewModel.hideDebugSheet()
-    }
-
     fun refreshCalendar(force: Boolean = false) {
         officeViewModel.refreshCalendar(force)
     }
@@ -204,7 +196,6 @@ fun BAPage(
                             mediaAdaptiveRotationEnabled = event.persisted.mediaAdaptiveRotationEnabled,
                             mediaSaveCustomEnabled = event.persisted.mediaSaveCustomEnabled,
                             mediaSaveFixedTreeUri = event.persisted.mediaSaveFixedTreeUri,
-                            idIndependentByServer = event.persisted.idIndependentByServer,
                         ),
                     )
                 }
@@ -241,7 +232,6 @@ fun BAPage(
         runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         officeViewModel.saveSettings(
             sheetState = settingsSheetState,
-            serverIndex = baRouteState.serverIndex,
         )
     }
 
@@ -347,7 +337,6 @@ fun BAPage(
                     onShowAccountManagement = ::openAccountManagementSheet,
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,
-                    onShowDebug = ::openDebugSheet,
                     onInteractionChanged = onActionBarInteractingChanged,
                 )
             }
@@ -390,7 +379,6 @@ fun BAPage(
             },
             onDismissNotificationSettings = ::closeNotificationSettingsSheet,
             onSaveNotificationSettings = ::saveNotificationSettings,
-            onDismissDebug = ::closeDebugSheet,
         )
     }
 }

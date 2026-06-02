@@ -38,7 +38,6 @@ internal data class BaOfficeChromeUiState(
     val showSettingsSheet: Boolean = false,
     val showAccountManagementSheet: Boolean = false,
     val showNotificationSettingsSheet: Boolean = false,
-    val showDebugSheet: Boolean = false,
     val showOverviewServerPopup: Boolean = false,
     val showCafeLevelPopup: Boolean = false,
     val overviewServerPopupAnchorBounds: IntRect? = null,
@@ -63,7 +62,6 @@ internal data class BaOfficeRuntimeUiState(
     val mediaAdaptiveRotationEnabled: Boolean = BaPageSnapshot().mediaAdaptiveRotationEnabled,
     val mediaSaveCustomEnabled: Boolean = BaPageSnapshot().mediaSaveCustomEnabled,
     val mediaSaveFixedTreeUri: String = BaPageSnapshot().mediaSaveFixedTreeUri,
-    val idIndependentByServer: Boolean = BaPageSnapshot().idIndependentByServer,
     val calendarRefreshIntervalHours: Int = BaPageSnapshot().calendarRefreshIntervalHours,
 )
 
@@ -111,7 +109,6 @@ internal fun BaPageSnapshot.toRuntimeUiState(): BaOfficeRuntimeUiState =
         mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
         mediaSaveCustomEnabled = mediaSaveCustomEnabled,
         mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
-        idIndependentByServer = idIndependentByServer,
         calendarRefreshIntervalHours = calendarRefreshIntervalHours,
     )
 

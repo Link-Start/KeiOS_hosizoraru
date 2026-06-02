@@ -18,6 +18,7 @@ internal class BaAccountMigration(
     fun migrateLegacyIfNeeded(): BaAccountMigrationResult {
         val existingAccounts = accountStore.loadAccounts()
         if (existingAccounts.isNotEmpty()) {
+            disableLegacyIndependentIdMode()
             return BaAccountMigrationResult(
                 status = BaAccountMigrationStatus.AlreadyInitialized,
                 accountCount = existingAccounts.size,
@@ -51,6 +52,7 @@ internal class BaAccountMigration(
             activeAccountId = activeAccountId,
         )
         accountStore.saveAllAccountsFollowGlobalNotificationSettings(true)
+        disableLegacyIndependentIdMode()
 
         return BaAccountMigrationResult(
             status = BaAccountMigrationStatus.Migrated,
@@ -164,6 +166,13 @@ internal class BaAccountMigration(
             cafeVisitLastNotifiedSlotMs =
                 keyValueStore.decodeLong(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, 0L),
         ).normalized()
+
+    private fun disableLegacyIndependentIdMode() {
+        val idSettings = BaIdSettingsAccessor(keyValueStore)
+        if (idSettings.loadIndependentByServerEnabled()) {
+            idSettings.saveIndependentByServerEnabled(false)
+        }
+    }
 
     private data class BaLegacyAccountSnapshot(
         val serverIndex: Int,

@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba.support
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class BaAccountMigrationTest {
     @Test
@@ -89,12 +90,13 @@ class BaAccountMigrationTest {
         assertEquals(90.25, accounts[1].runtime.cafeStoredAp)
         assertEquals(150, accounts[1].reminderRuntime.apLastNotifiedLevel)
         assertEquals(DEFAULT_AP_LIMIT, accounts[2].runtime.apLimit)
+        assertFalse(idSettings.loadIndependentByServerEnabled())
     }
 
     @Test
     fun `legacy migration is idempotent`() {
         val backingStore = InMemoryBaAccountKeyValueStore()
-        BaIdSettingsAccessor(backingStore).apply {
+        val idSettings = BaIdSettingsAccessor(backingStore).apply {
             saveIndependentByServerEnabled(true)
             saveNickname("Shared")
             saveFriendCode("ABCDEFGH")
@@ -109,5 +111,35 @@ class BaAccountMigrationTest {
         assertEquals(BaAccountMigrationStatus.AlreadyInitialized, second.status)
         assertEquals(first.accountCount, second.accountCount)
         assertEquals(accountStore.loadAccounts().map { it.profile.id.value }.distinct().size, accountStore.loadAccounts().size)
+        assertFalse(idSettings.loadIndependentByServerEnabled())
+    }
+
+    @Test
+    fun `already initialized accounts clear lingering legacy server id mode`() {
+        val backingStore = InMemoryBaAccountKeyValueStore()
+        val idSettings = BaIdSettingsAccessor(backingStore).apply {
+            saveIndependentByServerEnabled(true)
+            saveNickname("Shared")
+            saveFriendCode("ABCDEFGH")
+        }
+        val accountStore = BaAccountStore(backingStore)
+        accountStore.addAccount(
+            BaAccountRecord(
+                profile =
+                    BaAccountProfile(
+                        id = BaAccountId("manual-1"),
+                        serverIndex = 2,
+                        displayName = "JP",
+                        nickname = "JP",
+                        friendCode = "JPFriend",
+                    ),
+            ),
+        )
+
+        val result = BaAccountMigration(accountStore, backingStore).migrateLegacyIfNeeded()
+
+        assertEquals(BaAccountMigrationStatus.AlreadyInitialized, result.status)
+        assertEquals(1, result.accountCount)
+        assertFalse(idSettings.loadIndependentByServerEnabled())
     }
 }

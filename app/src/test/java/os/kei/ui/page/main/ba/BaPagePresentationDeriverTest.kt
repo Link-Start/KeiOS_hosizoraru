@@ -30,7 +30,6 @@ class BaPagePresentationDeriverTest {
                         mediaAdaptiveRotationEnabled = false,
                         mediaSaveCustomEnabled = true,
                         mediaSaveFixedTreeUri = "content://ba-media",
-                        idIndependentByServer = true,
                         showEndedActivities = true,
                         showEndedPools = true,
                         showCalendarPoolImages = false,
@@ -48,6 +47,5 @@ class BaPagePresentationDeriverTest {
         assertEquals(7, draft.cafeLevel)
         assertTrue(draft.mediaSaveCustomEnabled)
         assertEquals("content://ba-media", draft.mediaSaveFixedTreeUri)
-        assertTrue(draft.idIndependentByServer)
     }
 }

@@ -44,7 +44,6 @@ class BaAccountSnapshotMapperTest {
                 serverIndex = 2,
                 idNickname = "Base",
                 idFriendCode = "ABCDEFGH",
-                idIndependentByServer = true,
                 showEndedActivities = true,
                 showCalendarPoolImages = false,
                 calendarUpcomingNotifyEnabled = true,
@@ -70,7 +69,6 @@ class BaAccountSnapshotMapperTest {
         assertEquals(1, snapshot.serverIndex)
         assertEquals("Global", snapshot.idNickname)
         assertEquals("GLFRIEND", snapshot.idFriendCode)
-        assertFalse(snapshot.idIndependentByServer)
         assertEquals(180, snapshot.apLimit)
         assertEquals(87.5, snapshot.apCurrent)
         assertEquals(8, snapshot.cafeLevel)

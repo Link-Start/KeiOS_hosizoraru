@@ -258,12 +258,14 @@ object AppForegroundInfoHandler {
         nowMs: Long,
     ) {
         val accountId = reminderSnapshot.accountId
+        val accountDisplayName = reminderSnapshot.displayName
         val snapshot = reminderSnapshot.snapshot
 
         if (snapshot.apNotifyEnabled) {
             handleBaApThresholdTick(
                 context = context,
                 accountId = accountId,
+                accountDisplayName = accountDisplayName,
                 snapshot = snapshot,
                 nowMs = nowMs,
             )
@@ -277,6 +279,7 @@ object AppForegroundInfoHandler {
             handleBaCafeApThresholdTick(
                 context = context,
                 accountId = accountId,
+                accountDisplayName = accountDisplayName,
                 snapshot = snapshot,
                 nowMs = nowMs,
             )
@@ -290,6 +293,7 @@ object AppForegroundInfoHandler {
             handleBaArenaRefreshTick(
                 context = context,
                 accountId = accountId,
+                accountDisplayName = accountDisplayName,
                 snapshot = snapshot,
                 nowMs = nowMs,
             )
@@ -303,6 +307,7 @@ object AppForegroundInfoHandler {
             handleBaCafeVisitTick(
                 context = context,
                 accountId = accountId,
+                accountDisplayName = accountDisplayName,
                 snapshot = snapshot,
                 nowMs = nowMs,
             )
@@ -316,6 +321,7 @@ object AppForegroundInfoHandler {
     private suspend fun handleBaCafeApThresholdTick(
         context: Context,
         accountId: BaAccountId,
+        accountDisplayName: String,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
@@ -328,6 +334,7 @@ object AppForegroundInfoHandler {
             limitDisplay = notification.limitDisplay,
             thresholdDisplay = notification.thresholdDisplay,
             notificationId = BaAccountNotificationKind.CafeAp.notificationId(accountId),
+            accountDisplayName = accountDisplayName,
         )
         if (sent) {
             withContext(AppDispatchers.mcpServer) {
@@ -366,6 +373,7 @@ object AppForegroundInfoHandler {
     private suspend fun handleBaApThresholdTick(
         context: Context,
         accountId: BaAccountId,
+        accountDisplayName: String,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
@@ -378,6 +386,7 @@ object AppForegroundInfoHandler {
             limitDisplay = notification.limitDisplay,
             thresholdDisplay = notification.thresholdDisplay,
             notificationId = BaAccountNotificationKind.Ap.notificationId(accountId),
+            accountDisplayName = accountDisplayName,
         )
         if (sent) {
             withContext(AppDispatchers.mcpServer) {
@@ -416,6 +425,7 @@ object AppForegroundInfoHandler {
     private suspend fun handleBaCafeVisitTick(
         context: Context,
         accountId: BaAccountId,
+        accountDisplayName: String,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
@@ -439,6 +449,7 @@ object AppForegroundInfoHandler {
                     serverIndex = snapshot.serverIndex,
                     slotMs = plan.slotMs,
                     notificationId = BaAccountNotificationKind.CafeVisit.notificationId(accountId),
+                    accountDisplayName = accountDisplayName,
                 )
                 if (sent) {
                     withContext(AppDispatchers.mcpServer) {
@@ -452,6 +463,7 @@ object AppForegroundInfoHandler {
     private suspend fun handleBaArenaRefreshTick(
         context: Context,
         accountId: BaAccountId,
+        accountDisplayName: String,
         snapshot: BaPageSnapshot,
         nowMs: Long,
     ) {
@@ -475,6 +487,7 @@ object AppForegroundInfoHandler {
                     serverIndex = snapshot.serverIndex,
                     slotMs = plan.slotMs,
                     notificationId = BaAccountNotificationKind.ArenaRefresh.notificationId(accountId),
+                    accountDisplayName = accountDisplayName,
                 )
                 if (sent) {
                     withContext(AppDispatchers.mcpServer) {

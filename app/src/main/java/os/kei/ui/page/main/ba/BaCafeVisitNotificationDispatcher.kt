@@ -15,6 +15,7 @@ internal object BaCafeVisitNotificationDispatcher {
         serverIndex: Int,
         slotMs: Long,
         notificationId: Int = McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID,
+        accountDisplayName: String = "",
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -34,9 +35,14 @@ internal object BaCafeVisitNotificationDispatcher {
                 running = true,
                 port = 0,
                 path = detailLine,
-                clients = 0
+                clients = 0,
+                overrideContent = baAccountNotificationContent(
+                    context = context,
+                    accountDisplayName = accountDisplayName,
+                    content = detailLine,
+                ),
             )
-        }.isSuccess
+        }.getOrDefault(false)
     }
 
     private fun buildVisitDetailLine(

@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.pm.PackageManager
+import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 
@@ -12,6 +13,7 @@ internal object BaApNotificationDispatcher {
         limitDisplay: Int,
         thresholdDisplay: Int,
         notificationId: Int = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
+        accountDisplayName: String = "",
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -19,6 +21,12 @@ internal object BaApNotificationDispatcher {
         if (!notificationsGranted) return false
 
         return runCatching {
+            val content = context.getString(
+                R.string.mcp_notification_content_ap,
+                currentDisplay,
+                thresholdDisplay.toString(),
+                limitDisplay,
+            )
             McpNotificationHelper.notifyStandaloneEvent(
                 context = context,
                 notificationId = notificationId,
@@ -26,9 +34,15 @@ internal object BaApNotificationDispatcher {
                 running = true,
                 port = currentDisplay,
                 path = thresholdDisplay.toString(),
-                clients = limitDisplay
+                clients = limitDisplay,
+                overrideTitle = context.getString(R.string.ba_ap_notification_title),
+                overrideContent = baAccountNotificationContent(
+                    context = context,
+                    accountDisplayName = accountDisplayName,
+                    content = content,
+                ),
             )
-        }.isSuccess
+        }.getOrDefault(false)
     }
 
     fun refreshIfActive(
@@ -37,6 +51,7 @@ internal object BaApNotificationDispatcher {
         limitDisplay: Int,
         thresholdDisplay: Int,
         notificationId: Int = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
+        accountDisplayName: String = "",
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -44,6 +59,12 @@ internal object BaApNotificationDispatcher {
         if (!notificationsGranted) return false
 
         return runCatching {
+            val content = context.getString(
+                R.string.mcp_notification_content_ap,
+                currentDisplay,
+                thresholdDisplay.toString(),
+                limitDisplay,
+            )
             McpNotificationHelper.refreshStandaloneEventIfActive(
                 context = context,
                 notificationId = notificationId,
@@ -53,7 +74,13 @@ internal object BaApNotificationDispatcher {
                 path = thresholdDisplay.toString(),
                 clients = limitDisplay,
                 ongoing = true,
-                onlyAlertOnce = true
+                onlyAlertOnce = true,
+                overrideTitle = context.getString(R.string.ba_ap_notification_title),
+                overrideContent = baAccountNotificationContent(
+                    context = context,
+                    accountDisplayName = accountDisplayName,
+                    content = content,
+                ),
             )
         }.getOrDefault(false)
     }

@@ -14,6 +14,7 @@ internal object BaArenaRefreshNotificationDispatcher {
         serverIndex: Int,
         slotMs: Long,
         notificationId: Int = McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID,
+        accountDisplayName: String = "",
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -34,9 +35,14 @@ internal object BaArenaRefreshNotificationDispatcher {
                 running = true,
                 port = 0,
                 path = detailLine,
-                clients = 0
+                clients = 0,
+                overrideContent = baAccountNotificationContent(
+                    context = context,
+                    accountDisplayName = accountDisplayName,
+                    content = detailLine,
+                ),
             )
-        }.isSuccess
+        }.getOrDefault(false)
     }
 
     private fun buildRefreshDetailLine(

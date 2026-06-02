@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.pm.PackageManager
+import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
 
@@ -12,6 +13,7 @@ internal object BaCafeApNotificationDispatcher {
         limitDisplay: Int,
         thresholdDisplay: Int,
         notificationId: Int = McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID,
+        accountDisplayName: String = "",
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -19,6 +21,12 @@ internal object BaCafeApNotificationDispatcher {
         if (!notificationsGranted) return false
 
         return runCatching {
+            val content = context.getString(
+                R.string.ba_cafe_ap_notification_content,
+                currentDisplay,
+                thresholdDisplay.toString(),
+                limitDisplay,
+            )
             McpNotificationHelper.notifyStandaloneEvent(
                 context = context,
                 notificationId = notificationId,
@@ -26,8 +34,13 @@ internal object BaCafeApNotificationDispatcher {
                 running = true,
                 port = currentDisplay,
                 path = thresholdDisplay.toString(),
-                clients = limitDisplay
+                clients = limitDisplay,
+                overrideContent = baAccountNotificationContent(
+                    context = context,
+                    accountDisplayName = accountDisplayName,
+                    content = content,
+                ),
             )
-        }.isSuccess
+        }.getOrDefault(false)
     }
 }

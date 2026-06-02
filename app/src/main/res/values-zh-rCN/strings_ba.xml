@@ -203,6 +203,8 @@
     <string name="ba_toast_calendar_pool_notification_sent">已发送活动与卡池提醒</string>
     <string name="ba_toast_calendar_pool_real_data_missing">当前服务器暂无可用于测试的真实活动或卡池数据，请先刷新</string>
     <string name="ba_notification_ap_island_text">AP</string>
+    <string name="ba_ap_notification_title">AP 可领取</string>
+    <string name="ba_account_notification_content">%1$s · %2$s</string>
     <string name="ba_cafe_ap_notification_title">咖啡厅 AP 可领取</string>
     <string name="ba_cafe_ap_notification_content">当前 %1$d AP，阈值 %2$s，上限 %3$d</string>
     <string name="ba_cafe_ap_notification_island_text">咖啡厅 AP</string>

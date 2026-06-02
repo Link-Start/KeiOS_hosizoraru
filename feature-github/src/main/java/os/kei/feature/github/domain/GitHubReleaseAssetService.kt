@@ -9,6 +9,8 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitRepositoryTrackIdentity
 
 class GitHubReleaseAssetService(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
@@ -103,6 +105,43 @@ class GitHubReleaseAssetService(
                 owner = owner,
                 repo = repo,
                 apiToken = apiToken,
+            )
+        }
+
+    fun buildGitRepositoryAssetCacheKey(
+        identity: GitRepositoryTrackIdentity,
+        rawTag: String,
+        releaseUrl: String,
+        lookupConfig: GitHubLookupConfig,
+        includeAllAssets: Boolean,
+    ): String =
+        GitRepositoryReleaseAssetSource(identity = identity).buildAssetCacheKey(
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            lookupConfig = lookupConfig,
+            includeAllAssets = includeAllAssets,
+        )
+
+    suspend fun fetchGitRepositoryReleaseNotesTargets(
+        identity: GitRepositoryTrackIdentity,
+    ): Result<List<GitHubReleaseNotesTarget>> =
+        withContext(ioDispatcher) {
+            GitRepositoryReleaseAssetSource(identity = identity).fetchReleaseNotesTargets()
+        }
+
+    suspend fun fetchGitRepositoryReleaseAssetBundle(
+        identity: GitRepositoryTrackIdentity,
+        rawTag: String,
+        releaseUrl: String,
+        lookupConfig: GitHubLookupConfig,
+        includeAllAssets: Boolean,
+    ): Result<GitHubReleaseAssetBundle> =
+        withContext(ioDispatcher) {
+            GitRepositoryReleaseAssetSource(identity = identity).loadReleaseAssetBundle(
+                rawTag = rawTag,
+                releaseUrl = releaseUrl,
+                lookupConfig = lookupConfig,
+                includeAllAssets = includeAllAssets,
             )
         }
 

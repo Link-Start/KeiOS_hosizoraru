@@ -35,6 +35,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
+import os.kei.feature.github.model.GitRepositoryTrackIdentity
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.domain.GitHubReleaseAssetService
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
@@ -518,6 +519,41 @@ internal class GitHubPageRepository(
         repo: String,
         apiToken: String,
     ): Result<List<GitHubReleaseNotesTarget>> = assetBridge.fetchReleaseNotesTargets(owner, repo, apiToken)
+
+    fun buildGitRepositoryAssetCacheKey(
+        identity: GitRepositoryTrackIdentity,
+        rawTag: String,
+        releaseUrl: String,
+        lookupConfig: GitHubLookupConfig,
+        includeAllAssets: Boolean,
+    ): String =
+        assetBridge.buildGitRepositoryAssetCacheKey(
+            identity = identity,
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            lookupConfig = lookupConfig,
+            includeAllAssets = includeAllAssets,
+        )
+
+    suspend fun fetchGitRepositoryReleaseNotesTargets(
+        identity: GitRepositoryTrackIdentity,
+    ): Result<List<GitHubReleaseNotesTarget>> =
+        assetBridge.fetchGitRepositoryReleaseNotesTargets(identity)
+
+    suspend fun fetchGitRepositoryReleaseAssetBundle(
+        identity: GitRepositoryTrackIdentity,
+        rawTag: String,
+        releaseUrl: String,
+        lookupConfig: GitHubLookupConfig,
+        includeAllAssets: Boolean,
+    ): Result<GitHubReleaseAssetBundle> =
+        assetBridge.fetchGitRepositoryReleaseAssetBundle(
+            identity = identity,
+            rawTag = rawTag,
+            releaseUrl = releaseUrl,
+            lookupConfig = lookupConfig,
+            includeAllAssets = includeAllAssets,
+        )
 
     suspend fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,

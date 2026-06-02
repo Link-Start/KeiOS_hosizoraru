@@ -71,6 +71,7 @@ enum class GitRepositoryPlatform(val storageId: String) {
     GitHub("github"),
     Gitee("gitee"),
     GitLab("gitlab"),
+    Gitea("gitea"),
     Generic("generic")
 }
 
@@ -281,6 +282,7 @@ private fun gitRepositoryPlatform(host: String): GitRepositoryPlatform {
         normalized == "github.com" -> GitRepositoryPlatform.GitHub
         normalized == "gitee.com" -> GitRepositoryPlatform.Gitee
         normalized == "gitlab.com" || normalized.endsWith(".gitlab.com") -> GitRepositoryPlatform.GitLab
+        normalized == "gitea.com" || normalized.endsWith(".gitea.com") -> GitRepositoryPlatform.Gitea
         else -> GitRepositoryPlatform.Generic
     }
 }

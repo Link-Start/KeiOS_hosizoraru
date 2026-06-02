@@ -12,8 +12,12 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitRepositoryTrackIdentity
+import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.githubReleaseLookupItemOrNull
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.page.releaseNotesApkVersionKey
 import os.kei.ui.page.main.github.statusActionUrl
@@ -96,20 +100,25 @@ internal class GitHubReleaseNotesActions(
         state.releaseNotesErrors.remove(item.id)
         scope.launch {
             val lookupConfig = state.lookupConfig.forTrackedItem(item)
+            val gitIdentity = gitRepositoryReleaseIdentityOrNull(item)
+            val repositoryItem = item.githubReleaseLookupItemOrNull() ?: item
             val remoteTargets =
-                repository
-                    .fetchReleaseNotesTargets(
-                        owner = item.owner,
-                        repo = item.repo,
+                if (gitIdentity != null) {
+                    repository.fetchGitRepositoryReleaseNotesTargets(gitIdentity)
+                } else {
+                    repository.fetchReleaseNotesTargets(
+                        owner = repositoryItem.owner,
+                        repo = repositoryItem.repo,
                         apiToken = lookupConfig.apiToken,
-                    ).getOrElse { error ->
-                        fallbackReleaseNotesTargets(item, itemState).ifEmpty {
-                            state.releaseNotesLoading[item.id] = false
-                            state.releaseNotesErrors[item.id] = error.message
-                                ?: context.getString(R.string.github_error_load_apk_assets_failed)
-                            return@launch
-                        }
+                    )
+                }.getOrElse { error ->
+                    fallbackReleaseNotesTargets(item, itemState).ifEmpty {
+                        state.releaseNotesLoading[item.id] = false
+                        state.releaseNotesErrors[item.id] = error.message
+                            ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                        return@launch
                     }
+                }
             val selectedTarget =
                 selectRefreshedReleaseNotesTarget(
                     previousTarget = cachedSelected,
@@ -189,18 +198,30 @@ internal class GitHubReleaseNotesActions(
         state.releaseNotesLoading[item.id] = true
         state.releaseNotesErrors.remove(item.id)
         scope.launch {
+            val gitIdentity = gitRepositoryReleaseIdentityOrNull(item)
+            val repositoryItem = item.githubReleaseLookupItemOrNull() ?: item
             val preferHtml = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.AtomFeed
             val cacheKey =
-                repository.buildAssetCacheKey(
-                    owner = item.owner,
-                    repo = item.repo,
-                    rawTag = target.tagName,
-                    releaseUrl = target.htmlUrl,
-                    preferHtml = preferHtml,
-                    aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                    includeAllAssets = true,
-                    hasApiToken = lookupConfig.apiToken.isNotBlank(),
-                )
+                if (gitIdentity != null) {
+                    repository.buildGitRepositoryAssetCacheKey(
+                        identity = gitIdentity,
+                        rawTag = target.tagName,
+                        releaseUrl = target.htmlUrl,
+                        lookupConfig = lookupConfig,
+                        includeAllAssets = true,
+                    )
+                } else {
+                    repository.buildAssetCacheKey(
+                        owner = repositoryItem.owner,
+                        repo = repositoryItem.repo,
+                        rawTag = target.tagName,
+                        releaseUrl = target.htmlUrl,
+                        preferHtml = preferHtml,
+                        aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                        includeAllAssets = true,
+                        hasApiToken = lookupConfig.apiToken.isNotBlank(),
+                    )
+                }
             if (clearCache) {
                 repository.clearAssetCache(cacheKey)
             }
@@ -231,39 +252,50 @@ internal class GitHubReleaseNotesActions(
             } else if (persistedBundle != null) {
                 repository.clearAssetCache(cacheKey)
             }
-            repository
-                .fetchApkAssets(
-                    owner = item.owner,
-                    repo = item.repo,
-                    rawTag = target.tagName,
-                    releaseUrl = target.htmlUrl,
-                    preferHtml = preferHtml,
-                    aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                    includeAllAssets = true,
-                    apiToken = lookupConfig.apiToken,
-                ).onSuccess { bundle ->
-                    if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onSuccess
-                    val persisted =
-                        bundle.copy(
-                            sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig),
-                        )
-                    state.releaseNotesLoading[item.id] = false
-                    state.releaseNotesBundles[item.id] = persisted
-                    state.releaseNotesBundleLoadedAtMs[item.id] = clock.nowMs()
-                    repository.saveAssetBundle(cacheKey, persisted)
-                    resolveReleaseNotesApkVersionIfNeeded(
-                        item = item,
-                        target = target,
-                        bundle = persisted,
+            val bundleResult =
+                if (gitIdentity != null) {
+                    repository.fetchGitRepositoryReleaseAssetBundle(
+                        identity = gitIdentity,
+                        rawTag = target.tagName,
+                        releaseUrl = target.htmlUrl,
                         lookupConfig = lookupConfig,
-                        forceRefresh = true,
+                        includeAllAssets = true,
                     )
-                }.onFailure { error ->
-                    if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
-                    state.releaseNotesLoading[item.id] = false
-                    state.releaseNotesErrors[item.id] = error.message
-                        ?: context.getString(R.string.github_error_load_apk_assets_failed)
+                } else {
+                    repository.fetchApkAssets(
+                        owner = repositoryItem.owner,
+                        repo = repositoryItem.repo,
+                        rawTag = target.tagName,
+                        releaseUrl = target.htmlUrl,
+                        preferHtml = preferHtml,
+                        aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                        includeAllAssets = true,
+                        apiToken = lookupConfig.apiToken,
+                    )
                 }
+            bundleResult.onSuccess { bundle ->
+                if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onSuccess
+                val persisted =
+                    bundle.copy(
+                        sourceConfigSignature = state.buildAssetSourceSignature(lookupConfig),
+                    )
+                state.releaseNotesLoading[item.id] = false
+                state.releaseNotesBundles[item.id] = persisted
+                state.releaseNotesBundleLoadedAtMs[item.id] = clock.nowMs()
+                repository.saveAssetBundle(cacheKey, persisted)
+                resolveReleaseNotesApkVersionIfNeeded(
+                    item = item,
+                    target = target,
+                    bundle = persisted,
+                    lookupConfig = lookupConfig,
+                    forceRefresh = true,
+                )
+            }.onFailure { error ->
+                if (state.releaseNotesSelectedTargets[item.id]?.id != target.id) return@onFailure
+                state.releaseNotesLoading[item.id] = false
+                state.releaseNotesErrors[item.id] = error.message
+                    ?: context.getString(R.string.github_error_load_apk_assets_failed)
+            }
         }
     }
 
@@ -275,6 +307,14 @@ internal class GitHubReleaseNotesActions(
         if (loadedAt <= 0L) return false
         val intervalMs = state.refreshIntervalHours.coerceAtLeast(1) * 60L * 60L * 1000L
         return (nowMs - loadedAt).coerceAtLeast(0L) < intervalMs
+    }
+
+    private fun gitRepositoryReleaseIdentityOrNull(
+        item: GitHubTrackedApp,
+    ): GitRepositoryTrackIdentity? {
+        if (!item.isGitRepositoryTrack()) return null
+        if (item.githubReleaseLookupItemOrNull() != null) return null
+        return buildGitRepositoryTrackIdentity(item.repoUrl)
     }
 
     private fun fallbackReleaseNotesTargets(

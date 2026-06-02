@@ -125,6 +125,46 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
+    fun `gitea release api builds stable and prerelease snapshot`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody(giteaReleasesJson())
+            )
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody("[]")
+            )
+            val identity = assertNotNull(
+                buildGitRepositoryTrackIdentity("https://gitea.com/gitea/tea")
+            )
+            val strategy = GitRepositoryReleaseStrategy(
+                identity = identity,
+                giteaApiBaseUrl = server.url("/api/v1").toString()
+            )
+
+            val snapshot = strategy.loadSnapshot(identity.owner, identity.repo).getOrThrow()
+
+            assertEquals("git_repository_gitea", snapshot.strategyId)
+            assertEquals(GitRepositoryPlatform.Gitea, identity.platform)
+            assertEquals(true, snapshot.hasStableRelease)
+            assertEquals("v0.14.1", snapshot.latestStable.rawTag)
+            assertEquals("v0.15.0-rc1", snapshot.latestPreRelease?.rawTag)
+            assertEquals(2, snapshot.feed.entries.size)
+            assertTrue(
+                server.takeRequest().path.orEmpty()
+                    .contains("/api/v1/repos/gitea/tea/releases?limit=30")
+            )
+            assertTrue(
+                server.takeRequest().path.orEmpty()
+                    .contains("/api/v1/repos/gitea/tea/tags?limit=30")
+            )
+        }
+    }
+
+    @Test
     fun `generic strategy parses smart http tag refs`() {
         MockWebServer().use { server ->
             server.enqueue(
@@ -262,6 +302,33 @@ class GitRepositoryReleaseStrategyTest {
                   "id": "def",
                   "committed_date": "2026-05-21T08:00:00Z"
                 }
+              }
+            ]
+        """.trimIndent()
+    }
+
+    private fun giteaReleasesJson(): String {
+        return """
+            [
+              {
+                "id": 869127,
+                "name": "v0.15.0-rc1",
+                "tag_name": "v0.15.0-rc1",
+                "body": "Release candidate build",
+                "html_url": "https://gitea.com/gitea/tea/releases/tag/v0.15.0-rc1",
+                "prerelease": true,
+                "draft": false,
+                "published_at": "2026-05-23T09:00:00Z"
+              },
+              {
+                "id": 869126,
+                "name": "v0.14.1",
+                "tag_name": "v0.14.1",
+                "body": "Stable release notes",
+                "html_url": "https://gitea.com/gitea/tea/releases/tag/v0.14.1",
+                "prerelease": false,
+                "draft": false,
+                "published_at": "2026-05-22T09:00:00Z"
               }
             ]
         """.trimIndent()

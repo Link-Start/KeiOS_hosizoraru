@@ -31,12 +31,13 @@ class GitRepositoryReleaseStrategy(
     private val client: OkHttpClient = defaultClient,
     private val gitLabApiBaseUrl: String = "https://${identity.host}/api/v4",
     private val giteeApiBaseUrl: String = "https://gitee.com/api/v5",
+    private val giteaApiBaseUrl: String = "https://${identity.host}/api/v1",
     private val genericRepositoryBaseUrl: String = buildGenericRepositoryBaseUrl(identity)
 ) : GitHubReleaseLookupStrategy {
     override val id: String = "git_repository_${identity.platform.storageId}"
 
     override fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
-        val key = "${identity.platform.storageId}|${identity.displayName}|$gitLabApiBaseUrl|$giteeApiBaseUrl|$genericRepositoryBaseUrl"
+        val key = "${identity.platform.storageId}|${identity.displayName}|$gitLabApiBaseUrl|$giteeApiBaseUrl|$giteaApiBaseUrl|$genericRepositoryBaseUrl"
         val now = System.currentTimeMillis()
         snapshotCache[key]?.takeIf { now - it.timestamp < CACHE_TTL_MS }?.let { return it.value }
 
@@ -51,6 +52,10 @@ class GitRepositoryReleaseStrategy(
 
             GitRepositoryPlatform.Gitee -> {
                 loadGiteeSnapshot()
+            }
+
+            GitRepositoryPlatform.Gitea -> {
+                loadGiteaSnapshot()
             }
 
             GitRepositoryPlatform.Generic -> {
@@ -114,6 +119,34 @@ class GitRepositoryReleaseStrategy(
             .getOrElse { emptyList() }
         val tagEntries = fetchJsonArray(tagsUrl)
             .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = giteeWebBaseUrl()) }
+            .getOrDefault(emptyList())
+        val entries = mergeReleaseAndTagEntries(
+            releaseEntries = releaseEntries,
+            tagEntries = tagEntries
+        )
+        return buildSnapshot(entries, feedUrl = releasesUrl)
+    }
+
+    private fun loadGiteaSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
+        val ownerPath = identity.namespace
+            .split('/')
+            .joinToString("/") { it.urlEncodePathSegment() }
+        val repoPath = identity.repo.urlEncodePathSegment()
+        val releasesUrl =
+            "${giteaApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/releases?limit=30"
+        val tagsUrl =
+            "${giteaApiBaseUrl.trimEnd('/')}/repos/$ownerPath/$repoPath/tags?limit=30"
+        val releaseEntries = fetchJsonArray(releasesUrl)
+            .map { releases ->
+                parseReleaseEntries(
+                    releases = releases,
+                    releaseBodyKey = "body",
+                    sourceBaseUrl = giteaWebBaseUrl()
+                )
+            }
+            .getOrElse { emptyList() }
+        val tagEntries = fetchJsonArray(tagsUrl)
+            .map { tags -> parseTagEntries(tags = tags, sourceBaseUrl = giteaWebBaseUrl()) }
             .getOrDefault(emptyList())
         val entries = mergeReleaseAndTagEntries(
             releaseEntries = releaseEntries,
@@ -400,6 +433,10 @@ class GitRepositoryReleaseStrategy(
         return "https://gitee.com/${identity.namespace}/${identity.repo}"
     }
 
+    private fun giteaWebBaseUrl(): String {
+        return "https://${identity.host}/${identity.namespace}/${identity.repo}"
+    }
+
     private fun buildReleaseUrl(sourceBaseUrl: String, tag: String): String {
         val base = sourceBaseUrl.trimEnd('/')
         val encodedTag = urlEncode(tag)
@@ -414,6 +451,7 @@ class GitRepositoryReleaseStrategy(
         val encodedTag = urlEncode(tag)
         return when (identity.platform) {
             GitRepositoryPlatform.GitLab -> "$base/-/tags/$encodedTag"
+            GitRepositoryPlatform.Gitea -> "$base/src/tag/$encodedTag"
             else -> "$base/releases/tag/$encodedTag"
         }
     }

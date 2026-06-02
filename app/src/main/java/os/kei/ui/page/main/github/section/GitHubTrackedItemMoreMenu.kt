@@ -16,8 +16,11 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitRepositoryPlatform
+import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.os.appLucideBranchIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
@@ -40,6 +43,12 @@ private val GitHubTrackedItemMoreMenuMinWidth = 148.dp
 private val GitHubTrackedItemMoreMenuMaxWidth = 170.dp
 private val GitHubTrackedItemMoreMenuMaxHeight = 232.dp
 private const val GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION = 0.40f
+private val releaseNotesSupportedGitPlatforms = setOf(
+    GitRepositoryPlatform.GitHub,
+    GitRepositoryPlatform.Gitee,
+    GitRepositoryPlatform.GitLab,
+    GitRepositoryPlatform.Gitea,
+)
 
 @Suppress("FunctionName")
 @Composable
@@ -56,9 +65,12 @@ internal fun GitHubTrackedItemMoreActions(
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
     val showActionsAction = item.isGitHubRepositoryTrack()
+    val gitRepositoryReleaseNotesSupported =
+        item.isGitRepositoryTrack() &&
+            buildGitRepositoryTrackIdentity(item.repoUrl)?.platform in releaseNotesSupportedGitPlatforms
     val normalizedShowReleaseNotesAction =
         when {
-            item.isGitHubRepositoryTrack() -> {
+            item.isGitHubRepositoryTrack() || gitRepositoryReleaseNotesSupported -> {
                 showReleaseNotesAction
             }
 
@@ -79,12 +91,8 @@ internal fun GitHubTrackedItemMoreActions(
         }
     val optionSize =
         2 +
-            if (showActionsAction) {
-                1
-            } else {
-                0 +
-                    if (normalizedShowReleaseNotesAction) 1 else 0
-            }
+            (if (showActionsAction) 1 else 0) +
+            (if (normalizedShowReleaseNotesAction) 1 else 0)
     val refreshIcon = appLucideRefreshIcon()
     val actionsIcon = appLucideBranchIcon()
     val releaseNotesIcon = appLucideNotesIcon()

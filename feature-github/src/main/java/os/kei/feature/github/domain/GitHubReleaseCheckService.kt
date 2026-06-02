@@ -441,7 +441,8 @@ object GitHubReleaseCheckService {
     ): GitHubPreciseApkVersionResolver? {
         return when (identity.platform) {
             GitRepositoryPlatform.Gitee,
-            GitRepositoryPlatform.GitLab -> {
+            GitRepositoryPlatform.GitLab,
+            GitRepositoryPlatform.Gitea -> {
                 GitHubPreciseApkVersionResolver(
                     GitRepositoryPreciseApkVersionSource(identity = identity)
                 )

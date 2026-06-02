@@ -671,6 +671,9 @@ private fun releaseNotesSourceLabel(source: String): String =
         "api" -> stringResource(R.string.github_release_notes_source_api)
         "html" -> stringResource(R.string.github_release_notes_source_atom)
         "subscription" -> stringResource(R.string.github_release_notes_source_subscription)
+        "gitee-api" -> stringResource(R.string.github_release_notes_source_gitee_api)
+        "gitlab-api" -> stringResource(R.string.github_release_notes_source_gitlab_api)
+        "gitea-api" -> stringResource(R.string.github_release_notes_source_gitea_api)
         else -> stringResource(R.string.common_unknown)
     }
 

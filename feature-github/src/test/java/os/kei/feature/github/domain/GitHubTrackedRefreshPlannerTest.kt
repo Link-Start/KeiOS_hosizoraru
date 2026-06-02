@@ -7,6 +7,20 @@ import kotlin.test.assertEquals
 
 class GitHubTrackedRefreshPlannerTest {
     @Test
+    fun `background refresh concurrency stays below interactive batch concurrency`() {
+        assertEquals(2, GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(4))
+        assertEquals(4, GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(16))
+        assertEquals(6, GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(75))
+    }
+
+    @Test
+    fun `interactive refresh concurrency still scales for large user requested batches`() {
+        assertEquals(4, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(4))
+        assertEquals(6, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16))
+        assertEquals(8, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(75))
+    }
+
+    @Test
     fun `partial missing check states refresh only missing items`() {
         val github = tracked(1)
         val direct = tracked(2, sourceMode = GitHubTrackedSourceMode.DirectApk)

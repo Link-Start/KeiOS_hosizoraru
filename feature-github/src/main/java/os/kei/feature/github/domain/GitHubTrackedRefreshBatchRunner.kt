@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -107,6 +108,7 @@ object GitHubTrackedRefreshBatchRunner {
                     while (true) {
                         val index = nextIndex.getAndIncrement()
                         if (index >= workItems.size) break
+                        ensureActive()
                         val workItem = workItems[index]
                         val item = workItem.item
                         val itemStartNs = System.nanoTime()
@@ -125,21 +127,20 @@ object GitHubTrackedRefreshBatchRunner {
                             check = check,
                             elapsedMs = elapsedMsSince(itemStartNs)
                         )
-                        progressMutex.withLock {
+                        val progress = progressMutex.withLock {
                             if (check.hasUpdate == true) updatableCount += 1
                             if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
                             if (check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
                             completedCount += 1
-                            onProgress(
-                                GitHubTrackedRefreshBatchProgress(
-                                    current = completedCount,
-                                    total = trackedItems.size,
-                                    updatableCount = updatableCount,
-                                    preReleaseUpdateCount = preReleaseUpdateCount,
-                                    failedCount = failedCount
-                                )
+                            GitHubTrackedRefreshBatchProgress(
+                                current = completedCount,
+                                total = trackedItems.size,
+                                updatableCount = updatableCount,
+                                preReleaseUpdateCount = preReleaseUpdateCount,
+                                failedCount = failedCount
                             )
                         }
+                        onProgress(progress)
                         yield()
                     }
                 }

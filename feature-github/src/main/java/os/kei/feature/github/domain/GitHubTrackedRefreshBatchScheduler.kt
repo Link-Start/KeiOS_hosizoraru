@@ -5,6 +5,9 @@ import os.kei.feature.github.model.isGitBackedRepositoryTrack
 import os.kei.feature.github.model.isDirectApkTrack
 
 private const val DEFAULT_DIRECT_APK_REFRESH_CONCURRENCY = 2
+private const val BACKGROUND_SMALL_BATCH_REFRESH_CONCURRENCY = 2
+private const val BACKGROUND_MEDIUM_BATCH_REFRESH_CONCURRENCY = 4
+private const val BACKGROUND_LARGE_BATCH_REFRESH_CONCURRENCY = 6
 private const val SMALL_BATCH_REFRESH_CONCURRENCY = 4
 private const val MEDIUM_BATCH_REFRESH_CONCURRENCY = 6
 private const val LARGE_BATCH_REFRESH_CONCURRENCY = 8
@@ -66,6 +69,16 @@ object GitHubTrackedRefreshBatchScheduler {
             itemCount >= LARGE_BATCH_THRESHOLD -> LARGE_BATCH_REFRESH_CONCURRENCY
             itemCount >= MEDIUM_BATCH_THRESHOLD -> MEDIUM_BATCH_REFRESH_CONCURRENCY
             else -> SMALL_BATCH_REFRESH_CONCURRENCY
+        }
+        return target.coerceAtMost(itemCount)
+    }
+
+    fun backgroundRefreshConcurrency(itemCount: Int): Int {
+        if (itemCount <= 0) return 1
+        val target = when {
+            itemCount >= LARGE_BATCH_THRESHOLD -> BACKGROUND_LARGE_BATCH_REFRESH_CONCURRENCY
+            itemCount >= MEDIUM_BATCH_THRESHOLD -> BACKGROUND_MEDIUM_BATCH_REFRESH_CONCURRENCY
+            else -> BACKGROUND_SMALL_BATCH_REFRESH_CONCURRENCY
         }
         return target.coerceAtMost(itemCount)
     }

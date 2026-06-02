@@ -15,6 +15,7 @@ import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.model.updateIntervalMs
@@ -40,6 +41,8 @@ class GitHubBackgroundRefreshService {
 
     suspend fun runDueRefresh(
         context: Context,
+        onRefreshStart: (Int) -> Unit = {},
+        onRefreshProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
     ): GitHubBackgroundTickResult =
         mutex.withLock {
@@ -64,12 +67,20 @@ class GitHubBackgroundRefreshService {
 
             val refreshResult =
                 if (trackedUpdateTargetItems.isNotEmpty()) {
+                    onRefreshStart(trackedUpdateTargetItems.size)
                     GitHubTrackedRefreshBatchRunner
                         .run(
                             trackedItems = trackedUpdateTargetItems,
                             refreshTimestampMs = nowMs,
+                            maxConcurrency = GitHubTrackedRefreshBatchScheduler
+                                .backgroundRefreshConcurrency(trackedUpdateTargetItems.size),
+                            onProgress = onRefreshProgress,
                         ) { item ->
-                            GitHubReleaseCheckService.evaluateTrackedApp(context, item)
+                            GitHubReleaseCheckService.evaluateTrackedApp(
+                                context = context,
+                                item = item,
+                                profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast,
+                            )
                         }
                         .also { result ->
                             AppLogger.d(

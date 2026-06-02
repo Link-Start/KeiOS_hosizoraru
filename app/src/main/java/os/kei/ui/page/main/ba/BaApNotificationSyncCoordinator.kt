@@ -12,6 +12,8 @@ internal data class BaApNotificationSyncRequest(
     val thresholdDisplay: Int,
     val notifyEnabled: Boolean,
     val lastNotifiedLevel: Int,
+    val notificationId: Int = BaAccountNotificationKind.Ap.legacyId,
+    val accountDisplayName: String = "",
 )
 
 internal data class BaApNotificationSyncResult(
@@ -65,6 +67,8 @@ internal object BaApNotificationSyncCoordinator {
                 currentDisplay = request.currentDisplay,
                 limitDisplay = request.limitDisplay,
                 thresholdDisplay = request.thresholdDisplay,
+                notificationId = request.notificationId,
+                accountDisplayName = request.accountDisplayName,
             )
         }
     }
@@ -79,6 +83,8 @@ internal object BaApNotificationSyncCoordinator {
                 currentDisplay = request.currentDisplay,
                 limitDisplay = request.limitDisplay,
                 thresholdDisplay = request.thresholdDisplay,
+                notificationId = request.notificationId,
+                accountDisplayName = request.accountDisplayName,
             )
         }
     }

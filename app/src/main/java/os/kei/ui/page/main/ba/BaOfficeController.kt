@@ -555,6 +555,8 @@ internal class BaOfficeController(
         context: Context,
         showToast: Boolean = true,
         thresholdTriggered: Boolean = false,
+        notificationId: Int = BaAccountNotificationKind.Ap.legacyId,
+        accountDisplayName: String = "",
     ): Boolean {
         val currentDisplay = displayAp(apCurrent)
         val limitDisplay = apLimit.coerceIn(0, BA_AP_MAX)
@@ -565,6 +567,8 @@ internal class BaOfficeController(
                 currentDisplay = currentDisplay,
                 limitDisplay = limitDisplay,
                 thresholdDisplay = thresholdDisplay,
+                notificationId = notificationId,
+                accountDisplayName = accountDisplayName,
             )
         if (!sent) {
             if (showToast) {
@@ -589,6 +593,8 @@ internal class BaOfficeController(
     fun sendCafeApTestNotification(
         context: Context,
         showToast: Boolean = true,
+        notificationId: Int = BaAccountNotificationKind.CafeAp.legacyId,
+        accountDisplayName: String = "",
         onRuntimeUpdate: (BaRuntimePersistenceUpdate?) -> Unit = {},
     ): Boolean {
         onRuntimeUpdate(applyCafeStorageUpdate())
@@ -601,6 +607,8 @@ internal class BaOfficeController(
                 currentDisplay = currentDisplay,
                 limitDisplay = limitDisplay,
                 thresholdDisplay = thresholdDisplay,
+                notificationId = notificationId,
+                accountDisplayName = accountDisplayName,
             )
         if (!sent) {
             if (showToast) {
@@ -618,6 +626,8 @@ internal class BaOfficeController(
         context: Context,
         serverIndex: Int,
         showToast: Boolean = true,
+        notificationId: Int = BaAccountNotificationKind.CafeVisit.legacyId,
+        accountDisplayName: String = "",
     ): Boolean {
         val slotMs =
             currentCafeStudentRefreshSlotMs(
@@ -629,6 +639,8 @@ internal class BaOfficeController(
                 context = context,
                 serverIndex = serverIndex,
                 slotMs = slotMs,
+                notificationId = notificationId,
+                accountDisplayName = accountDisplayName,
             )
         if (!sent) {
             if (showToast) {
@@ -646,6 +658,8 @@ internal class BaOfficeController(
         context: Context,
         serverIndex: Int,
         showToast: Boolean = true,
+        notificationId: Int = BaAccountNotificationKind.ArenaRefresh.legacyId,
+        accountDisplayName: String = "",
     ): Boolean {
         val slotMs =
             currentArenaRefreshSlotMs(
@@ -657,6 +671,8 @@ internal class BaOfficeController(
                 context = context,
                 serverIndex = serverIndex,
                 slotMs = slotMs,
+                notificationId = notificationId,
+                accountDisplayName = accountDisplayName,
             )
         if (!sent) {
             if (showToast) {

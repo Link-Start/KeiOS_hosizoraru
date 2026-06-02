@@ -248,7 +248,10 @@ internal object BASettingsStore {
         )
 
     fun loadSnapshot(): BaPageSnapshot =
-        loadBaSettingsSnapshot(kv()).withActiveBaAccount(loadAccountState())
+        loadSnapshot(accountState = loadAccountState())
+
+    fun loadSnapshot(accountState: BaAccountStoreSnapshot): BaPageSnapshot =
+        loadBaSettingsSnapshot(kv()).withActiveBaAccount(accountState)
 
     fun loadCalendarPoolSnapshot(): BaPageSnapshot =
         loadSnapshot().copy(serverIndex = loadCalendarPoolServerIndex())

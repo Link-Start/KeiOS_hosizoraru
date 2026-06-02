@@ -78,6 +78,7 @@ class BaPageActionsTest {
 
     @Test
     fun `ap notification plan sends threshold only for a new reached level`() {
+        val accountId = BaAccountId("cn-main")
         val plan = planBaApNotificationSync(
             BaApNotificationSyncRequest(
                 currentDisplay = 120,
@@ -85,12 +86,16 @@ class BaPageActionsTest {
                 thresholdDisplay = 120,
                 notifyEnabled = true,
                 lastNotifiedLevel = 119,
+                notificationId = BaAccountNotificationKind.Ap.notificationId(accountId),
+                accountDisplayName = "国服主号",
             )
         )
 
         assertTrue(plan.shouldSendThresholdNotification)
         assertFalse(plan.shouldRefreshActiveNotification)
         assertNull(plan.nextLastNotifiedLevel)
+        assertEquals(BaAccountNotificationKind.Ap.notificationId(accountId), plan.request.notificationId)
+        assertEquals("国服主号", plan.request.accountDisplayName)
     }
 
     @Test

@@ -132,6 +132,7 @@ internal fun BaPageSheetHost(
         routeState = routeState,
         calendarUiState = calendarUiState,
         poolUiState = poolUiState,
+        accountUiState = accountUiState,
         onUseRealCalendarPoolDataChange = viewModel::updateDebugUseRealCalendarPoolData,
         onDismissRequest = onDismissDebug,
     )
@@ -147,19 +148,30 @@ private fun BaDebugSheetHost(
     routeState: BaPageRouteState,
     calendarUiState: BaCalendarUiState,
     poolUiState: BaPoolUiState,
+    accountUiState: BaOfficeAccountUiState,
     onUseRealCalendarPoolDataChange: (Boolean) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
+    val accountNotificationContext = accountUiState.activeNotificationContext()
     BaDebugSheet(
         show = routeState.showDebugSheet,
         backdrop = backdrop,
         onSendApTestNotification = {
-            office.sendApTestNotification(context = context, showToast = true)
+            office.sendApTestNotification(
+                context = context,
+                showToast = true,
+                notificationId =
+                    accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
+                accountDisplayName = accountNotificationContext.accountDisplayName,
+            )
         },
         onSendCafeApTestNotification = {
             office.sendCafeApTestNotification(
                 context = context,
                 showToast = true,
+                notificationId =
+                    accountNotificationContext.notificationId(BaAccountNotificationKind.CafeAp),
+                accountDisplayName = accountNotificationContext.accountDisplayName,
                 onRuntimeUpdate = runtimePersistenceCoordinator::submit,
             )
         },
@@ -168,6 +180,9 @@ private fun BaDebugSheetHost(
                 context = context,
                 serverIndex = routeState.serverIndex,
                 showToast = true,
+                notificationId =
+                    accountNotificationContext.notificationId(BaAccountNotificationKind.CafeVisit),
+                accountDisplayName = accountNotificationContext.accountDisplayName,
             )
         },
         onSendArenaRefreshTestNotification = {
@@ -175,6 +190,9 @@ private fun BaDebugSheetHost(
                 context = context,
                 serverIndex = routeState.serverIndex,
                 showToast = true,
+                notificationId =
+                    accountNotificationContext.notificationId(BaAccountNotificationKind.ArenaRefresh),
+                accountDisplayName = accountNotificationContext.accountDisplayName,
             )
         },
         onSendCalendarUpcomingTestNotification = {

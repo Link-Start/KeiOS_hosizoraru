@@ -67,20 +67,28 @@ internal data class BaApIslandShortcutNotificationPlan(
 
 internal object BaApIslandShortcutNotificationCoordinator {
     fun send(context: Context): Boolean {
-        val snapshot = BASettingsStore.loadSnapshot()
+        val accountState = BASettingsStore.loadAccountState()
+        val accountNotificationContext = accountState.activeNotificationContext()
+        val snapshot = BASettingsStore.loadSnapshot(accountState = accountState)
         val plan = BaApIslandShortcutNotificationPlan.fromSnapshot(snapshot)
         persistPlan(plan)
         val apSent = BaApNotificationDispatcher.send(
             context = context,
             currentDisplay = plan.ap.currentDisplay,
             limitDisplay = plan.ap.limitDisplay,
-            thresholdDisplay = plan.ap.thresholdDisplay
+            thresholdDisplay = plan.ap.thresholdDisplay,
+            notificationId =
+                accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
+            accountDisplayName = accountNotificationContext.accountDisplayName,
         )
         val cafeApSent = BaCafeApNotificationDispatcher.send(
             context = context,
             currentDisplay = plan.cafeAp.currentDisplay,
             limitDisplay = plan.cafeAp.limitDisplay,
-            thresholdDisplay = plan.cafeAp.thresholdDisplay
+            thresholdDisplay = plan.cafeAp.thresholdDisplay,
+            notificationId =
+                accountNotificationContext.notificationId(BaAccountNotificationKind.CafeAp),
+            accountDisplayName = accountNotificationContext.accountDisplayName,
         )
         return apSent || cafeApSent
     }

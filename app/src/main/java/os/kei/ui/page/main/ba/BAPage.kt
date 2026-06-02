@@ -309,6 +309,7 @@ fun BAPage(
             officeViewModel.markCalendarPoolHydrationReady()
         },
         context = context,
+        accountUiState = accountUiState,
     )
 
     BaCalendarPoolSyncEffects(

@@ -39,6 +39,7 @@ internal fun BaPageCommonEffects(
     serverIndex: Int,
     onServerChanged: suspend () -> Unit,
     context: Context,
+    accountUiState: BaOfficeAccountUiState,
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
@@ -146,15 +147,19 @@ internal fun BaPageCommonEffects(
         onServerChanged()
     }
 
-    LaunchedEffect(context, office) {
+    LaunchedEffect(context, office, accountUiState) {
         val notificationContext = context.applicationContext
         snapshotFlow {
+            val accountNotificationContext = accountUiState.activeNotificationContext()
             BaApNotificationSyncRequest(
                 currentDisplay = displayAp(office.apCurrent),
                 limitDisplay = office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX),
                 thresholdDisplay = office.apNotifyThreshold.coerceIn(0, BA_AP_MAX),
                 notifyEnabled = office.apNotifyEnabled,
                 lastNotifiedLevel = office.apLastNotifiedLevel,
+                notificationId =
+                    accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
+                accountDisplayName = accountNotificationContext.accountDisplayName,
             )
         }.distinctUntilChanged()
             .collectLatest { request ->

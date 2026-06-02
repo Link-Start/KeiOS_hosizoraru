@@ -26,7 +26,6 @@ internal class BaOfficeActionCoordinator(
     private val onRefreshPool: () -> Unit,
     private val onOpenCalendarLink: (String) -> Unit,
     private val onOpenPoolStudentGuide: (String) -> Unit,
-    private val onOpenGuideCatalog: () -> Unit,
 ) {
     fun buildContentActions(): BaPageContentActions =
         BaPageContentActions(
@@ -52,7 +51,6 @@ internal class BaOfficeActionCoordinator(
             onOpenCalendarLink = onOpenCalendarLink,
             onRefreshPool = onRefreshPool,
             onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-            onOpenGuideCatalog = onOpenGuideCatalog,
             onIdNicknameInputChange = { office.idNicknameInput = it },
             onSaveIdNickname = { persistIdentity(office.saveIdNicknameFromInput(serverIndexProvider())) },
             onIdFriendCodeInputChange = { office.idFriendCodeInput = it },

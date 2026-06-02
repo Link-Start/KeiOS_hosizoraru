@@ -26,7 +26,6 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BASessionState
-import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
@@ -261,7 +260,6 @@ fun BAPage(
             pageScope,
             officeViewModel,
             onOpenPoolStudentGuide,
-            onOpenGuideCatalog,
         ) {
             buildBaPageContentActions(
                 context = context,
@@ -290,7 +288,6 @@ fun BAPage(
                 onRefreshPool = { refreshPool(force = true) },
                 onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
                 onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-                onOpenGuideCatalog = onOpenGuideCatalog,
             )
         }
 
@@ -319,8 +316,6 @@ fun BAPage(
         syncPageActive = settledWorkActive,
         routeState = baRouteState,
     )
-    val friendCodeActivated = pageContentState.officeState.idFriendCode != BA_DEFAULT_FRIEND_CODE
-
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppScaffold(
@@ -358,10 +353,9 @@ fun BAPage(
             BaPageFloatingDock(
                 backdrop = backdrops.content,
                 runtime = runtime,
-                friendCodeActivated = friendCodeActivated,
-                onCopyFriendCode = { office.copyFriendCodeToClipboard(context) },
                 onOpenCalendar = { BaActivityCalendarActivity.launch(context) },
                 onOpenPool = { BaPoolActivity.launch(context) },
+                onOpenGuideCatalog = onOpenGuideCatalog,
             )
         }
 

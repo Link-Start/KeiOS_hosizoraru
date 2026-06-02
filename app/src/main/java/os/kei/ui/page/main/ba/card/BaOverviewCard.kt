@@ -5,7 +5,6 @@ package os.kei.ui.page.main.ba.card
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +32,6 @@ import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
 import os.kei.ui.page.main.ba.support.BA_DEFAULT_NICKNAME
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -59,7 +56,6 @@ internal fun BaOverviewCard(
     onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onOverviewServerPopupChange: (Boolean) -> Unit,
     onServerSelected: (Int) -> Unit,
-    onOpenGuideCatalog: () -> Unit,
 ) {
     val isWorkActivated = idFriendCode != BA_DEFAULT_FRIEND_CODE
     val accentBlue = AppStatusColors.Cached
@@ -163,71 +159,39 @@ internal fun BaOverviewCard(
             backdrop = backdrop,
             accentColor = stateAccent,
         ) {
-            Column(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
+                    modifier = Modifier.heightIn(min = 40.dp),
+                    contentAlignment = Alignment.CenterStart,
                 ) {
-                    Box(
-                        modifier = Modifier.heightIn(min = 40.dp),
-                        contentAlignment = Alignment.CenterStart,
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(stringResource(R.string.ba_overview_catalog_title), color = MiuixTheme.colorScheme.onBackground)
+                        Text(stringResource(R.string.ba_overview_server_label), color = MiuixTheme.colorScheme.onBackground)
+                        Image(
+                            painter = painterResource(id = R.drawable.lobby_icon_work_small),
+                            contentDescription = stringResource(R.string.ba_overview_cd_server_icon),
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
-                    AppLiquidIconButton(
-                        backdrop = backdrop,
-                        painter = painterResource(id = R.drawable.common_icon_dailyreward_small),
-                        contentDescription = stringResource(R.string.ba_overview_cd_open_catalog),
-                        variant = GlassVariant.Content,
-                        onClick = onOpenGuideCatalog,
-                        width = 48.dp,
-                        height = 34.dp,
-                        iconTint = Color.Unspecified,
-                        iconModifier =
-                            Modifier
-                                .width(26.dp)
-                                .height(26.dp),
-                    )
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier.heightIn(min = 40.dp),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(stringResource(R.string.ba_overview_server_label), color = MiuixTheme.colorScheme.onBackground)
-                            Image(
-                                painter = painterResource(id = R.drawable.lobby_icon_work_small),
-                                contentDescription = stringResource(R.string.ba_overview_cd_server_icon),
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                    AppDropdownSelector(
-                        selectedText = serverOptions[serverIndex],
-                        options = serverOptions,
-                        selectedIndex = serverIndex,
-                        expanded = showOverviewServerPopup,
-                        anchorBounds = overviewServerPopupAnchorBounds,
-                        onExpandedChange = onOverviewServerPopupChange,
-                        onSelectedIndexChange = onServerSelected,
-                        onAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
-                        backdrop = backdrop,
-                        variant = GlassVariant.Content,
-                    )
-                }
+                AppDropdownSelector(
+                    selectedText = serverOptions[serverIndex],
+                    options = serverOptions,
+                    selectedIndex = serverIndex,
+                    expanded = showOverviewServerPopup,
+                    anchorBounds = overviewServerPopupAnchorBounds,
+                    onExpandedChange = onOverviewServerPopupChange,
+                    onSelectedIndexChange = onServerSelected,
+                    onAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
+                    backdrop = backdrop,
+                    variant = GlassVariant.Content,
+                )
             }
         }
     }

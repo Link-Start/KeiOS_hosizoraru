@@ -16,8 +16,8 @@ import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.appLucideCalendarIcon
+import os.kei.ui.page.main.os.appLucideLibraryIcon
 import os.kei.ui.page.main.os.appLucideMailIcon
-import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
@@ -28,10 +28,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun BoxScope.BaPageFloatingDock(
     backdrop: Backdrop?,
     runtime: MainPageRuntime,
-    friendCodeActivated: Boolean,
-    onCopyFriendCode: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenPool: () -> Unit,
+    onOpenGuideCatalog: () -> Unit,
 ) {
     val dockAlignment =
         if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
@@ -47,40 +46,27 @@ internal fun BoxScope.BaPageFloatingDock(
             bottomBarVisible = runtime.bottomBarVisible,
             label = "ba_floating_action_dock_bottom",
         )
-    val copyFriendCodeIconTint =
-        if (friendCodeActivated) {
-            MiuixTheme.colorScheme.primary
-        } else {
-            MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.62f)
-        }
-    val copyFriendCodeIcon = osLucideCopyIcon()
     val calendarIcon = appLucideCalendarIcon()
     val poolIcon = appLucideMailIcon()
-    val copyFriendCodeDescription = stringResource(R.string.ba_cd_copy_friend_code)
+    val catalogIcon = appLucideLibraryIcon()
     val calendarDescription = stringResource(R.string.ba_calendar_cd_open_activity)
     val poolDescription = stringResource(R.string.ba_pool_cd_open_activity)
+    val catalogDescription = stringResource(R.string.ba_overview_cd_open_catalog)
     val primaryIconTint = MiuixTheme.colorScheme.primary
     val actions =
         remember(
-            copyFriendCodeIcon,
-            copyFriendCodeDescription,
-            copyFriendCodeIconTint,
-            onCopyFriendCode,
             calendarIcon,
             calendarDescription,
             onOpenCalendar,
             poolIcon,
             poolDescription,
             onOpenPool,
+            catalogIcon,
+            catalogDescription,
+            onOpenGuideCatalog,
             primaryIconTint,
         ) {
             listOf(
-                AppFloatingDockAction(
-                    icon = copyFriendCodeIcon,
-                    contentDescription = copyFriendCodeDescription,
-                    iconTint = copyFriendCodeIconTint,
-                    onClick = onCopyFriendCode,
-                ),
                 AppFloatingDockAction(
                     icon = calendarIcon,
                     contentDescription = calendarDescription,
@@ -92,6 +78,12 @@ internal fun BoxScope.BaPageFloatingDock(
                     contentDescription = poolDescription,
                     iconTint = primaryIconTint,
                     onClick = onOpenPool,
+                ),
+                AppFloatingDockAction(
+                    icon = catalogIcon,
+                    contentDescription = catalogDescription,
+                    iconTint = primaryIconTint,
+                    onClick = onOpenGuideCatalog,
                 ),
             )
         }

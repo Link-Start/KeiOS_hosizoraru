@@ -513,13 +513,6 @@ internal class BaOfficeController(
         return update
     }
 
-    fun copyFriendCodeToClipboard(context: Context) {
-        copyBaFriendCodeToClipboard(
-            context = context,
-            friendCode = idFriendCode.ifBlank { BA_DEFAULT_FRIEND_CODE },
-        )
-    }
-
     fun touchHead(serverIndex: Int): BaOfficeCooldownPersistenceUpdate? {
         val consumedAt =
             consumeBaHeadpat(

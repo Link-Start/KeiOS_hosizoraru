@@ -88,7 +88,6 @@ internal fun buildBaPageContentActions(
     onRefreshPool: () -> Unit,
     onOpenCalendarLink: (String) -> Unit,
     onOpenPoolStudentGuide: (String) -> Unit,
-    onOpenGuideCatalog: () -> Unit,
 ): BaPageContentActions =
     BaOfficeActionCoordinator(
         context = context,
@@ -107,5 +106,4 @@ internal fun buildBaPageContentActions(
         onRefreshPool = onRefreshPool,
         onOpenCalendarLink = onOpenCalendarLink,
         onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-        onOpenGuideCatalog = onOpenGuideCatalog,
     ).buildContentActions()

@@ -108,6 +108,12 @@ object McpNotificationHelper {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = serverName,
+                notificationId = notificationId,
+                miFocusOrderId = null,
+            )
         val payload = McpNotificationPayload(
             serverName = serverName,
             running = running,
@@ -222,6 +228,12 @@ object McpNotificationHelper {
         }
         val effectiveSecondaryActionLabel =
             secondaryActionLabelOverride?.takeIf { it.isNotBlank() } ?: resolvedSecondaryActionLabel
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = serverName,
+                notificationId = notificationId,
+                miFocusOrderId = miFocusOrderId,
+            )
 
         val payload = McpNotificationPayload(
             serverName = serverName,
@@ -245,7 +257,7 @@ object McpNotificationHelper {
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
             notificationId = notificationId,
-            miFocusOrderId = miFocusOrderId ?: buildMiFocusOrderId(serverName, notificationId)
+            miFocusOrderId = resolvedMiFocusOrderId
         )
         val notifier = SessionNotifierImpl(NotificationHelper(context))
         return notifier.build(payload)
@@ -310,6 +322,12 @@ object McpNotificationHelper {
         miFocusOrderId: String? = null
     ): Boolean {
         ensureChannel(context)
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = serverName,
+                notificationId = notificationId,
+                miFocusOrderId = miFocusOrderId,
+            )
         val buildResult = buildForegroundNotificationResult(
             context = context,
             serverName = serverName,
@@ -331,7 +349,7 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = miFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -353,7 +371,7 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = miFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId
         )
         val manager = context.getSystemService(NotificationManager::class.java)
         if (
@@ -400,6 +418,12 @@ object McpNotificationHelper {
         ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
         if (!isNotificationActive(manager, notificationId)) return false
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = serverName,
+                notificationId = notificationId,
+                miFocusOrderId = miFocusOrderId,
+            )
         val buildResult = buildForegroundNotificationResult(
             context = context,
             serverName = serverName,
@@ -421,7 +445,7 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = miFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -443,7 +467,7 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = miFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId
         )
         if (McpNotificationSnapshotStore.get(notificationId) == snapshot) return true
         val dispatched = notifyWithResolvedDispatcher(
@@ -469,6 +493,12 @@ object McpNotificationHelper {
         onlyAlertOnce: Boolean = true
     ) {
         ensureChannel(context)
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = serverName,
+                notificationId = notificationId,
+                miFocusOrderId = null,
+            )
         val buildResult = buildForegroundNotificationResult(
             context = context,
             serverName = serverName,
@@ -478,7 +508,8 @@ object McpNotificationHelper {
             clients = clients,
             ongoing = true,
             onlyAlertOnce = onlyAlertOnce,
-            notificationId = notificationId
+            notificationId = notificationId,
+            miFocusOrderId = resolvedMiFocusOrderId,
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -489,7 +520,8 @@ object McpNotificationHelper {
             ongoing = true,
             onlyAlertOnce = onlyAlertOnce,
             style = buildResult.style,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            miFocusOrderId = resolvedMiFocusOrderId,
         )
         val dispatched = notifyWithResolvedDispatcher(
             context = context,
@@ -512,6 +544,12 @@ object McpNotificationHelper {
         clients: Int
     ) {
         ensureChannel(context)
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = serverName,
+                notificationId = notificationId,
+                miFocusOrderId = null,
+            )
         val buildResult = buildForegroundNotificationResult(
             context = context,
             serverName = serverName,
@@ -521,7 +559,8 @@ object McpNotificationHelper {
             clients = clients,
             ongoing = true,
             onlyAlertOnce = true,
-            notificationId = notificationId
+            notificationId = notificationId,
+            miFocusOrderId = resolvedMiFocusOrderId,
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -532,7 +571,8 @@ object McpNotificationHelper {
             ongoing = true,
             onlyAlertOnce = true,
             style = buildResult.style,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            miFocusOrderId = resolvedMiFocusOrderId,
         )
         val dispatched = notifyWithResolvedDispatcher(
             context = context,
@@ -555,7 +595,22 @@ object McpNotificationHelper {
         notificationId: Int,
         snapshot: McpNotificationSnapshot?
     ) {
-        if (snapshot == null || !isNotificationActive(manager, notificationId)) return
+        if (snapshot == null) {
+            McpNotificationSnapshotStore.clear(notificationId)
+            McpNotificationActiveStateCache.clear(notificationId)
+            return
+        }
+        if (!isNotificationActive(manager, notificationId)) {
+            McpNotificationSnapshotStore.clear(notificationId)
+            McpNotificationActiveStateCache.clear(notificationId)
+            return
+        }
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = snapshot.serverName,
+                notificationId = notificationId,
+                miFocusOrderId = snapshot.miFocusOrderId,
+            )
         val buildResult = buildForegroundNotificationResult(
             context = context,
             serverName = snapshot.serverName,
@@ -581,11 +636,12 @@ object McpNotificationHelper {
             overrideShortText = snapshot.overrideShortText,
             overrideProgressPercent = snapshot.overrideProgressPercent,
             deadlineAtMs = snapshot.deadlineAtMs,
-            miFocusOrderId = snapshot.miFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId
         )
         val nextSnapshot = snapshot.copy(
             style = buildResult.style,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            miFocusOrderId = resolvedMiFocusOrderId,
         )
         if (snapshot == nextSnapshot) return
         val dispatched = notifyWithResolvedDispatcher(
@@ -617,6 +673,14 @@ object McpNotificationHelper {
             else -> SecondaryActionMode.DEFAULT
         }
     }
+
+    internal fun resolveMiFocusOrderId(
+        serverName: String,
+        notificationId: Int,
+        miFocusOrderId: String?,
+    ): String =
+        miFocusOrderId?.trim()?.takeIf { it.isNotBlank() }
+            ?: buildMiFocusOrderId(serverName, notificationId)
 
     private fun buildMiFocusOrderId(serverName: String, notificationId: Int): String {
         val normalizedServerName = serverName.trim().ifBlank { "keios" }

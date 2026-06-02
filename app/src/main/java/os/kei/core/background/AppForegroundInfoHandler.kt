@@ -1,9 +1,11 @@
 package os.kei.core.background
 
 import android.content.Context
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubBackgroundRefreshService
@@ -24,6 +26,7 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountReminderSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import kotlin.coroutines.coroutineContext
 
 object AppForegroundInfoHandler {
     private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL = 4
@@ -237,11 +240,13 @@ object AppForegroundInfoHandler {
 
             val nowMs = System.currentTimeMillis()
             reminderSnapshots.forEach { reminderSnapshot ->
+                coroutineContext.ensureActive()
                 handleBaReminderTick(
                     context = context,
                     reminderSnapshot = reminderSnapshot,
                     nowMs = nowMs,
                 )
+                yield()
             }
         }
     }
@@ -261,6 +266,7 @@ object AppForegroundInfoHandler {
         val accountDisplayName = reminderSnapshot.displayName
         val snapshot = reminderSnapshot.snapshot
 
+        coroutineContext.ensureActive()
         if (snapshot.apNotifyEnabled) {
             handleBaApThresholdTick(
                 context = context,
@@ -275,6 +281,7 @@ object AppForegroundInfoHandler {
             }
         }
 
+        coroutineContext.ensureActive()
         if (snapshot.cafeApNotifyEnabled) {
             handleBaCafeApThresholdTick(
                 context = context,
@@ -289,6 +296,7 @@ object AppForegroundInfoHandler {
             }
         }
 
+        coroutineContext.ensureActive()
         if (snapshot.arenaRefreshNotifyEnabled) {
             handleBaArenaRefreshTick(
                 context = context,
@@ -303,6 +311,7 @@ object AppForegroundInfoHandler {
             }
         }
 
+        coroutineContext.ensureActive()
         if (snapshot.cafeVisitNotifyEnabled) {
             handleBaCafeVisitTick(
                 context = context,

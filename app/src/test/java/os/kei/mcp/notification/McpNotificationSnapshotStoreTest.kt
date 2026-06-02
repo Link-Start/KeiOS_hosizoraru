@@ -65,6 +65,30 @@ class McpNotificationSnapshotStoreTest {
         assertEquals(2, probeCount)
     }
 
+    @Test
+    fun `mi focus order id keeps explicit value`() {
+        assertEquals(
+            "ba-ap-cn-main",
+            McpNotificationHelper.resolveMiFocusOrderId(
+                serverName = "BlueArchive AP",
+                notificationId = ACCOUNT_SCOPED_ID,
+                miFocusOrderId = " ba-ap-cn-main ",
+            ),
+        )
+    }
+
+    @Test
+    fun `mi focus order id falls back to normalized server and notification id`() {
+        assertEquals(
+            "bluearchive_ap-$ACCOUNT_SCOPED_ID",
+            McpNotificationHelper.resolveMiFocusOrderId(
+                serverName = "BlueArchive AP",
+                notificationId = ACCOUNT_SCOPED_ID,
+                miFocusOrderId = " ",
+            ),
+        )
+    }
+
     private fun snapshot(port: Int): McpNotificationSnapshot {
         return McpNotificationSnapshot(
             serverName = "KeiOS MCP",

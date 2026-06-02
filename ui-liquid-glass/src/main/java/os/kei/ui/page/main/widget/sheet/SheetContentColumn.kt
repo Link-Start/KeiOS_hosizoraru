@@ -12,9 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 
 @Composable
@@ -26,6 +28,7 @@ fun SheetContentColumn(
 ) {
     val scrollState = rememberScrollState()
     val overflowReporter by rememberUpdatedState(LocalLiquidSheetContentOverflowReporter.current)
+    val scrollStateReporter by rememberUpdatedState(LocalLiquidSheetContentScrollStateReporter.current)
     val scrollModifier =
         if (scrollable) {
             Modifier.verticalScroll(scrollState)
@@ -34,6 +37,13 @@ fun SheetContentColumn(
         }
     LaunchedEffect(scrollable, scrollState.maxValue) {
         overflowReporter(scrollable && scrollState.maxValue > 0)
+    }
+    LaunchedEffect(scrollable, scrollState) {
+        snapshotFlow { scrollable && scrollState.value > 0 }
+            .distinctUntilChanged()
+            .collect { canScrollUp ->
+                scrollStateReporter(canScrollUp)
+            }
     }
     Column(
         modifier =

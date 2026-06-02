@@ -31,6 +31,7 @@ import kotlin.test.assertTrue
 
 private const val SHEET_TAG = "liquid-sheet"
 private const val FIRST_CONTENT_TAG = "liquid-sheet-first-content"
+private const val SCROLL_CONTENT_TAG = "liquid-sheet-scroll-content"
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -314,6 +315,74 @@ class LiquidGlassBottomSheetTest {
         assertTrue(
             sheetHeight() >= heightBefore - 2.dp,
             "Expected floating sheet to retain content height, got ${sheetHeight()}"
+        )
+    }
+
+    @Test
+    fun contentDownwardDragWhileScrolledDoesNotMoveSheet() {
+        var dismissRequests = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Full,
+                    onDismissRequest = { dismissRequests++ },
+                ) {
+                    SheetContentColumn(
+                        modifier = Modifier.testTag(SCROLL_CONTENT_TAG),
+                        verticalSpacing = 0.dp,
+                    ) {
+                        repeat(48) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val contentScrollDistance = rootHeight() * 0.42f
+
+        composeRule.onNodeWithTag(SCROLL_CONTENT_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = height * 0.76f)
+            down(start)
+            moveBy(Offset(x = 0f, y = -contentScrollDistance.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(1_000)
+        composeRule.waitForIdle()
+        val offsetBefore = sheetFloatingOffset()
+        assertTrue(
+            offsetBefore < 2.dp,
+            "Expected content scrolling to leave sheet fixed, got $offsetBefore"
+        )
+
+        val downwardDrag = rootHeight() * 0.72f
+        composeRule.onNodeWithTag(SCROLL_CONTENT_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = height * 0.34f)
+            down(start)
+            moveBy(Offset(x = 0f, y = downwardDrag.toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        assertEquals(0, dismissRequests)
+        val offsetAfter = sheetFloatingOffset()
+        assertTrue(
+            offsetAfter < 8.dp,
+            "Expected downward content drag to stay with content, got $offsetAfter"
         )
     }
 

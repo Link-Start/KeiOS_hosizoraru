@@ -131,6 +131,7 @@ internal fun LiquidDetentWindowBottomSheet(
     minimumFloatingHeight: Dp,
     dismissDragThreshold: Dp,
     onBlockedDismissRequest: (() -> Unit)?,
+    contentCanScrollUp: () -> Boolean = { false },
     content: @Composable () -> Unit,
 ) {
     val statusBarsPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -184,6 +185,7 @@ internal fun LiquidDetentWindowBottomSheet(
         minimumFloatingHeight = minimumFloatingHeight,
         dismissDragThreshold = dismissDragThreshold,
         onBlockedDismissRequest = onBlockedDismissRequest,
+        contentCanScrollUp = contentCanScrollUp,
         content = {
             CompositionLocalProvider(
                 LocalDismissState provides requestDismiss,
@@ -219,6 +221,7 @@ private fun LiquidDetentBottomSheetContentLayout(
     minimumFloatingHeight: Dp,
     dismissDragThreshold: Dp,
     onBlockedDismissRequest: (() -> Unit)?,
+    contentCanScrollUp: () -> Boolean,
     content: @Composable () -> Unit,
 ) {
     val animationProgress = remember { Animatable(0f, visibilityThreshold = 0.0001f) }
@@ -369,6 +372,7 @@ private fun LiquidDetentBottomSheetContentLayout(
                 minimumFloatingHeight = minimumFloatingHeight,
                 dismissDragThreshold = dismissDragThreshold,
                 onBlockedDismissRequest = onBlockedDismissRequest,
+                contentCanScrollUp = contentCanScrollUp,
                 startAction = startAction?.let { action ->
                     { CompositionLocalProvider(LocalDismissState provides { currentOnDismissRequest?.invoke() }) { action() } }
                 },
@@ -444,6 +448,7 @@ private fun LiquidDetentBottomSheetColumn(
     minimumFloatingHeight: Dp,
     dismissDragThreshold: Dp,
     onBlockedDismissRequest: (() -> Unit)?,
+    contentCanScrollUp: () -> Boolean,
     startAction: @Composable (() -> Unit)? = null,
     endAction: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -455,6 +460,7 @@ private fun LiquidDetentBottomSheetColumn(
     val coroutineScope = rememberCoroutineScope()
     val settlingJob = remember { mutableStateOf<Job?>(null) }
     val isSettling = remember { mutableStateOf(false) }
+    val currentContentCanScrollUp = rememberUpdatedState(contentCanScrollUp)
     val minimumFloatingHeightPx = with(density) { minimumFloatingHeight.toPx() }
     val dismissDragThresholdPx = with(density) { dismissDragThreshold.toPx() }
 
@@ -563,6 +569,7 @@ private fun LiquidDetentBottomSheetColumn(
         dismissDragThreshold,
         settle
     ) {
+        var downwardGestureStartedInScrollableContent = false
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (!enableNestedScroll) return Offset.Zero
@@ -572,6 +579,17 @@ private fun LiquidDetentBottomSheetColumn(
                 }
 
                 val delta = available.y
+                if (source == NestedScrollSource.UserInput) {
+                    when {
+                        delta > 0f && currentContentCanScrollUp.value() -> {
+                            downwardGestureStartedInScrollableContent = true
+                        }
+
+                        delta < 0f -> {
+                            downwardGestureStartedInScrollableContent = false
+                        }
+                    }
+                }
                 if (delta < 0f && dragOffsetY.floatValue > 0f) {
                     val newOffset =
                         calculateNewOffset(dragOffsetY.floatValue, delta).coerceAtLeast(0f)
@@ -593,6 +611,12 @@ private fun LiquidDetentBottomSheetColumn(
                 if (!enableNestedScroll) return Offset.Zero
                 val delta = available.y
                 if (delta > 0f) {
+                    if (
+                        source == NestedScrollSource.UserInput &&
+                        (downwardGestureStartedInScrollableContent || currentContentCanScrollUp.value())
+                    ) {
+                        return Offset.Zero
+                    }
                     if (isSettling.value) {
                         settlingJob.value?.cancel()
                         isSettling.value = false
@@ -607,6 +631,13 @@ private fun LiquidDetentBottomSheetColumn(
 
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (!enableNestedScroll || isSettling.value) return Velocity.Zero
+                if (
+                    available.y > 0f &&
+                    (downwardGestureStartedInScrollableContent || currentContentCanScrollUp.value())
+                ) {
+                    downwardGestureStartedInScrollableContent = true
+                    return Velocity.Zero
+                }
                 if (dragOffsetY.floatValue != 0f || available.y > 0f) {
                     settle(available.y)
                     return available
@@ -616,6 +647,10 @@ private fun LiquidDetentBottomSheetColumn(
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 if (!enableNestedScroll || isSettling.value) return Velocity.Zero
+                if (downwardGestureStartedInScrollableContent) {
+                    downwardGestureStartedInScrollableContent = false
+                    return Velocity.Zero
+                }
                 if (dragOffsetY.floatValue != 0f || available.y > 0f) {
                     settle(available.y)
                     return available

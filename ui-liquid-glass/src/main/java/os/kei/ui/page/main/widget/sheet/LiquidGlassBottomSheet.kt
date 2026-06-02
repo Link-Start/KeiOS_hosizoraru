@@ -72,6 +72,8 @@ enum class LiquidSheetInitialDetent(
 
 val LocalLiquidSheetContentOverflowReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
+val LocalLiquidSheetContentScrollStateReporter =
+    compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetEnabled = compositionLocalOf { true }
 
 /**
@@ -120,6 +122,7 @@ fun LiquidGlassBottomSheet(
                 glassRuntime.lensScaleFor(GlassVariant.Floating)
 
     var contentOverflowsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
+    var contentCanScrollUp by remember(show) { mutableStateOf(false) }
     val adaptedInitialDetent =
         liquidSheetAdaptedInitialDetent(
             initialDetent = initialDetent,
@@ -220,6 +223,7 @@ fun LiquidGlassBottomSheet(
         minimumFloatingHeight = minimumFloatingHeight,
         dismissDragThreshold = LiquidSheetDetentDragThreshold,
         onBlockedDismissRequest = onBlockedDismissRequest,
+        contentCanScrollUp = { contentCanScrollUp },
     ) {
         Box(
             modifier =
@@ -246,6 +250,9 @@ fun LiquidGlassBottomSheet(
             CompositionLocalProvider(
                 LocalLiquidSheetContentOverflowReporter provides { overflows ->
                     if (overflows) contentOverflowsOpeningDetent = true
+                },
+                LocalLiquidSheetContentScrollStateReporter provides { canScrollUp ->
+                    contentCanScrollUp = canScrollUp
                 },
                 LocalLiquidParentBackdrop provides if (useLiquidBackdropSurface) sheetBackdrop else null,
             ) {

@@ -47,36 +47,14 @@ object McpNotificationHelper {
     fun refreshCurrentNotificationStyle(context: Context) {
         ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        refreshCachedNotificationIfActive(
-            context = context,
-            manager = manager,
-            notificationId = KEEPALIVE_NOTIFICATION_ID,
-            snapshot = McpNotificationSnapshotStore.get(KEEPALIVE_NOTIFICATION_ID)
-        )
-        refreshCachedNotificationIfActive(
-            context = context,
-            manager = manager,
-            notificationId = BA_AP_NOTIFICATION_ID,
-            snapshot = McpNotificationSnapshotStore.get(BA_AP_NOTIFICATION_ID)
-        )
-        refreshCachedNotificationIfActive(
-            context = context,
-            manager = manager,
-            notificationId = BA_CAFE_VISIT_NOTIFICATION_ID,
-            snapshot = McpNotificationSnapshotStore.get(BA_CAFE_VISIT_NOTIFICATION_ID)
-        )
-        refreshCachedNotificationIfActive(
-            context = context,
-            manager = manager,
-            notificationId = BA_CAFE_AP_NOTIFICATION_ID,
-            snapshot = McpNotificationSnapshotStore.get(BA_CAFE_AP_NOTIFICATION_ID)
-        )
-        refreshCachedNotificationIfActive(
-            context = context,
-            manager = manager,
-            notificationId = BA_ARENA_REFRESH_NOTIFICATION_ID,
-            snapshot = McpNotificationSnapshotStore.get(BA_ARENA_REFRESH_NOTIFICATION_ID)
-        )
+        McpNotificationSnapshotStore.entries().forEach { (notificationId, snapshot) ->
+            refreshCachedNotificationIfActive(
+                context = context,
+                manager = manager,
+                notificationId = notificationId,
+                snapshot = snapshot
+            )
+        }
     }
 
     fun buildForegroundNotification(
@@ -166,7 +144,18 @@ object McpNotificationHelper {
         ongoing: Boolean,
         onlyAlertOnce: Boolean,
         secondaryActionMode: SecondaryActionMode = SecondaryActionMode.DEFAULT,
-        notificationId: Int = KEEPALIVE_NOTIFICATION_ID
+        notificationId: Int = KEEPALIVE_NOTIFICATION_ID,
+        primaryActionLabel: String? = null,
+        secondaryActionLabelOverride: String? = null,
+        showSecondaryActionWhenStopped: Boolean = false,
+        outerGlow: Boolean = true,
+        overrideTitle: String? = null,
+        overrideContent: String? = null,
+        overrideOnlineText: String? = null,
+        overrideShortText: String? = null,
+        overrideProgressPercent: Int? = null,
+        deadlineAtMs: Long? = null,
+        miFocusOrderId: String? = null
     ): SessionNotifier.NotificationBuildResult {
         val isBlueArchiveNotification =
             McpNotificationPayload.isBaNotificationServerName(serverName)
@@ -196,7 +185,7 @@ object McpNotificationHelper {
             openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val (stopPendingIntent, secondaryActionLabel) = if (secondaryActionMode == SecondaryActionMode.MARK_READ) {
+        val (stopPendingIntent, resolvedSecondaryActionLabel) = if (secondaryActionMode == SecondaryActionMode.MARK_READ) {
             MiFocusNotificationActions.markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
@@ -231,6 +220,8 @@ object McpNotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ) to context.getString(R.string.mcp_action_stop_service)
         }
+        val effectiveSecondaryActionLabel =
+            secondaryActionLabelOverride?.takeIf { it.isNotBlank() } ?: resolvedSecondaryActionLabel
 
         val payload = McpNotificationPayload(
             serverName = serverName,
@@ -243,9 +234,18 @@ object McpNotificationHelper {
             openPendingIntent = openPendingIntent,
             stopPendingIntent = stopPendingIntent,
             focusOpenPendingIntent = focusOpenPendingIntent,
-            secondaryActionLabel = secondaryActionLabel,
+            primaryActionLabel = primaryActionLabel,
+            secondaryActionLabel = effectiveSecondaryActionLabel,
+            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
+            outerGlow = outerGlow,
+            overrideTitle = overrideTitle,
+            overrideContent = overrideContent,
+            overrideOnlineText = overrideOnlineText,
+            overrideShortText = overrideShortText,
+            overrideProgressPercent = overrideProgressPercent,
+            deadlineAtMs = deadlineAtMs,
             notificationId = notificationId,
-            miFocusOrderId = buildMiFocusOrderId(serverName, notificationId)
+            miFocusOrderId = miFocusOrderId ?: buildMiFocusOrderId(serverName, notificationId)
         )
         val notifier = SessionNotifierImpl(NotificationHelper(context))
         return notifier.build(payload)
@@ -296,8 +296,19 @@ object McpNotificationHelper {
         path: String,
         clients: Int,
         ongoing: Boolean = running,
-        onlyAlertOnce: Boolean = false
-    ) {
+        onlyAlertOnce: Boolean = false,
+        primaryActionLabel: String? = null,
+        secondaryActionLabel: String? = null,
+        showSecondaryActionWhenStopped: Boolean = false,
+        outerGlow: Boolean = true,
+        overrideTitle: String? = null,
+        overrideContent: String? = null,
+        overrideOnlineText: String? = null,
+        overrideShortText: String? = null,
+        overrideProgressPercent: Int? = null,
+        deadlineAtMs: Long? = null,
+        miFocusOrderId: String? = null
+    ): Boolean {
         ensureChannel(context)
         val buildResult = buildForegroundNotificationResult(
             context = context,
@@ -309,7 +320,18 @@ object McpNotificationHelper {
             ongoing = ongoing,
             onlyAlertOnce = onlyAlertOnce,
             secondaryActionMode = SecondaryActionMode.MARK_READ,
-            notificationId = notificationId
+            notificationId = notificationId,
+            primaryActionLabel = primaryActionLabel,
+            secondaryActionLabelOverride = secondaryActionLabel,
+            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
+            outerGlow = outerGlow,
+            overrideTitle = overrideTitle,
+            overrideContent = overrideContent,
+            overrideOnlineText = overrideOnlineText,
+            overrideShortText = overrideShortText,
+            overrideProgressPercent = overrideProgressPercent,
+            deadlineAtMs = deadlineAtMs,
+            miFocusOrderId = miFocusOrderId
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -320,15 +342,37 @@ object McpNotificationHelper {
             ongoing = ongoing,
             onlyAlertOnce = onlyAlertOnce,
             style = buildResult.style,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            primaryActionLabel = primaryActionLabel,
+            secondaryActionLabel = secondaryActionLabel,
+            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
+            outerGlow = outerGlow,
+            overrideTitle = overrideTitle,
+            overrideContent = overrideContent,
+            overrideOnlineText = overrideOnlineText,
+            overrideShortText = overrideShortText,
+            overrideProgressPercent = overrideProgressPercent,
+            deadlineAtMs = deadlineAtMs,
+            miFocusOrderId = miFocusOrderId
         )
-        McpNotificationSnapshotStore.putIfChanged(notificationId, snapshot)
-        notifyWithResolvedDispatcher(
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (
+            McpNotificationSnapshotStore.get(notificationId) == snapshot &&
+            manager != null &&
+            isNotificationActive(manager, notificationId)
+        ) {
+            return true
+        }
+        val dispatched = notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
+        if (dispatched) {
+            McpNotificationSnapshotStore.put(notificationId, snapshot)
+        }
+        return dispatched
     }
 
     fun refreshStandaloneEventIfActive(
@@ -340,7 +384,18 @@ object McpNotificationHelper {
         path: String,
         clients: Int,
         ongoing: Boolean = running,
-        onlyAlertOnce: Boolean = true
+        onlyAlertOnce: Boolean = true,
+        primaryActionLabel: String? = null,
+        secondaryActionLabel: String? = null,
+        showSecondaryActionWhenStopped: Boolean = false,
+        outerGlow: Boolean = true,
+        overrideTitle: String? = null,
+        overrideContent: String? = null,
+        overrideOnlineText: String? = null,
+        overrideShortText: String? = null,
+        overrideProgressPercent: Int? = null,
+        deadlineAtMs: Long? = null,
+        miFocusOrderId: String? = null
     ): Boolean {
         ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
@@ -355,7 +410,18 @@ object McpNotificationHelper {
             ongoing = ongoing,
             onlyAlertOnce = onlyAlertOnce,
             secondaryActionMode = SecondaryActionMode.MARK_READ,
-            notificationId = notificationId
+            notificationId = notificationId,
+            primaryActionLabel = primaryActionLabel,
+            secondaryActionLabelOverride = secondaryActionLabel,
+            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
+            outerGlow = outerGlow,
+            overrideTitle = overrideTitle,
+            overrideContent = overrideContent,
+            overrideOnlineText = overrideOnlineText,
+            overrideShortText = overrideShortText,
+            overrideProgressPercent = overrideProgressPercent,
+            deadlineAtMs = deadlineAtMs,
+            miFocusOrderId = miFocusOrderId
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -366,17 +432,30 @@ object McpNotificationHelper {
             ongoing = ongoing,
             onlyAlertOnce = onlyAlertOnce,
             style = buildResult.style,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            primaryActionLabel = primaryActionLabel,
+            secondaryActionLabel = secondaryActionLabel,
+            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
+            outerGlow = outerGlow,
+            overrideTitle = overrideTitle,
+            overrideContent = overrideContent,
+            overrideOnlineText = overrideOnlineText,
+            overrideShortText = overrideShortText,
+            overrideProgressPercent = overrideProgressPercent,
+            deadlineAtMs = deadlineAtMs,
+            miFocusOrderId = miFocusOrderId
         )
-        val changed = McpNotificationSnapshotStore.putIfChanged(notificationId, snapshot)
-        if (!changed) return true
-        notifyWithResolvedDispatcher(
+        if (McpNotificationSnapshotStore.get(notificationId) == snapshot) return true
+        val dispatched = notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        return true
+        if (dispatched) {
+            McpNotificationSnapshotStore.put(notificationId, snapshot)
+        }
+        return dispatched
     }
 
     fun refreshForegroundAsIsland(
@@ -412,13 +491,15 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        McpNotificationSnapshotStore.put(notificationId, snapshot)
-        notifyWithResolvedDispatcher(
+        val dispatched = notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
+        if (dispatched) {
+            McpNotificationSnapshotStore.put(notificationId, snapshot)
+        }
     }
 
     fun refreshForegroundPulse(
@@ -453,13 +534,15 @@ object McpNotificationHelper {
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        McpNotificationSnapshotStore.put(notificationId, snapshot)
-        notifyWithResolvedDispatcher(
+        val dispatched = notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
+        if (dispatched) {
+            McpNotificationSnapshotStore.put(notificationId, snapshot)
+        }
     }
 
     fun restoreXiaomiNetworkIfNeeded(context: Context) {
@@ -482,24 +565,38 @@ object McpNotificationHelper {
             clients = snapshot.clients,
             ongoing = snapshot.ongoing,
             onlyAlertOnce = snapshot.onlyAlertOnce,
-            secondaryActionMode = secondaryActionModeFor(notificationId),
-            notificationId = notificationId
+            secondaryActionMode = if (McpNotificationPayload.isBaNotificationServerName(snapshot.serverName)) {
+                SecondaryActionMode.MARK_READ
+            } else {
+                secondaryActionModeFor(notificationId)
+            },
+            notificationId = notificationId,
+            primaryActionLabel = snapshot.primaryActionLabel,
+            secondaryActionLabelOverride = snapshot.secondaryActionLabel,
+            showSecondaryActionWhenStopped = snapshot.showSecondaryActionWhenStopped,
+            outerGlow = snapshot.outerGlow,
+            overrideTitle = snapshot.overrideTitle,
+            overrideContent = snapshot.overrideContent,
+            overrideOnlineText = snapshot.overrideOnlineText,
+            overrideShortText = snapshot.overrideShortText,
+            overrideProgressPercent = snapshot.overrideProgressPercent,
+            deadlineAtMs = snapshot.deadlineAtMs,
+            miFocusOrderId = snapshot.miFocusOrderId
         )
         val nextSnapshot = snapshot.copy(
             style = buildResult.style,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        val changed = McpNotificationSnapshotStore.putIfChanged(
-            notificationId = notificationId,
-            snapshot = nextSnapshot
-        )
-        if (!changed) return
-        notifyWithResolvedDispatcher(
+        if (snapshot == nextSnapshot) return
+        val dispatched = notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
+        if (dispatched) {
+            McpNotificationSnapshotStore.put(notificationId, nextSnapshot)
+        }
     }
 
     private fun isNotificationActive(manager: NotificationManager, notificationId: Int): Boolean {

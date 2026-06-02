@@ -381,6 +381,7 @@ class MiIslandNotificationBuilder(
                             ).build()
                             action = createAction(actionItem.key, nativeAction)
                             actionTitle = actionItem.title
+                            clickWithCollapse = true
                             applyIslandActionStyle(actionItem.style)
                         }
                     }

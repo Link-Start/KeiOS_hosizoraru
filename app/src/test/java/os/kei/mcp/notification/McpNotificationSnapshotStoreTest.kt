@@ -11,7 +11,9 @@ class McpNotificationSnapshotStoreTest {
     @After
     fun tearDown() {
         McpNotificationSnapshotStore.clear(TEST_ID)
+        McpNotificationSnapshotStore.clear(ACCOUNT_SCOPED_ID)
         McpNotificationActiveStateCache.clear(TEST_ID)
+        McpNotificationActiveStateCache.clear(ACCOUNT_SCOPED_ID)
     }
 
     @Test
@@ -21,6 +23,20 @@ class McpNotificationSnapshotStoreTest {
         assertTrue(McpNotificationSnapshotStore.putIfChanged(TEST_ID, snapshot))
         assertFalse(McpNotificationSnapshotStore.putIfChanged(TEST_ID, snapshot))
         assertTrue(McpNotificationSnapshotStore.putIfChanged(TEST_ID, snapshot(port = 38889)))
+    }
+
+    @Test
+    fun `snapshot store keeps account scoped notification ids`() {
+        val snapshot = snapshot(port = 120)
+
+        McpNotificationSnapshotStore.put(ACCOUNT_SCOPED_ID, snapshot)
+
+        assertEquals(snapshot, McpNotificationSnapshotStore.get(ACCOUNT_SCOPED_ID))
+        assertTrue(
+            McpNotificationSnapshotStore.entries().any { (notificationId, storedSnapshot) ->
+                notificationId == ACCOUNT_SCOPED_ID && storedSnapshot == snapshot
+            }
+        )
     }
 
     @Test
@@ -65,5 +81,6 @@ class McpNotificationSnapshotStoreTest {
 
     private companion object {
         const val TEST_ID = McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID
+        const val ACCOUNT_SCOPED_ID = 243_001
     }
 }

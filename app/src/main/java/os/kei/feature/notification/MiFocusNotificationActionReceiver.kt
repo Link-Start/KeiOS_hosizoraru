@@ -3,7 +3,7 @@ package os.kei.feature.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationManagerCompat
+import os.kei.mcp.notification.McpNotificationHelper
 
 class MiFocusNotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -13,7 +13,7 @@ class MiFocusNotificationActionReceiver : BroadcastReceiver() {
         if (intent?.action != ACTION_MARK_READ) return
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, Int.MIN_VALUE)
         if (notificationId == Int.MIN_VALUE) return
-        NotificationManagerCompat.from(context).cancel(notificationId)
+        McpNotificationHelper.cancelNotification(context, notificationId)
     }
 
     companion object {

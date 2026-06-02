@@ -11,61 +11,57 @@ internal data class McpNotificationSnapshot(
     val ongoing: Boolean,
     val onlyAlertOnce: Boolean,
     val style: NotificationRenderStyle,
-    val useXiaomiMagic: Boolean
+    val useXiaomiMagic: Boolean,
+    val primaryActionLabel: String? = null,
+    val secondaryActionLabel: String? = null,
+    val showSecondaryActionWhenStopped: Boolean = false,
+    val outerGlow: Boolean = true,
+    val overrideTitle: String? = null,
+    val overrideContent: String? = null,
+    val overrideOnlineText: String? = null,
+    val overrideShortText: String? = null,
+    val overrideProgressPercent: Int? = null,
+    val deadlineAtMs: Long? = null,
+    val miFocusOrderId: String? = null
 )
 
 internal object McpNotificationSnapshotStore {
-    @Volatile
-    private var keepAliveSnapshot: McpNotificationSnapshot? = null
-
-    @Volatile
-    private var baApSnapshot: McpNotificationSnapshot? = null
-
-    @Volatile
-    private var baCafeVisitSnapshot: McpNotificationSnapshot? = null
-
-    @Volatile
-    private var baCafeApSnapshot: McpNotificationSnapshot? = null
-
-    @Volatile
-    private var baArenaRefreshSnapshot: McpNotificationSnapshot? = null
+    private val lock = Any()
+    private val snapshotsById = mutableMapOf<Int, McpNotificationSnapshot>()
 
     fun get(notificationId: Int): McpNotificationSnapshot? {
-        return when (notificationId) {
-            McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot
-            McpNotificationHelper.BA_AP_NOTIFICATION_ID -> baApSnapshot
-            McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot
-            McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID -> baCafeApSnapshot
-            McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot
-            else -> null
+        return synchronized(lock) {
+            snapshotsById[notificationId]
         }
     }
 
     fun put(notificationId: Int, snapshot: McpNotificationSnapshot) {
-        when (notificationId) {
-            McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = snapshot
-            McpNotificationHelper.BA_AP_NOTIFICATION_ID -> baApSnapshot = snapshot
-            McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot = snapshot
-            McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID -> baCafeApSnapshot = snapshot
-            McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot =
-                snapshot
+        synchronized(lock) {
+            snapshotsById[notificationId] = snapshot
         }
     }
 
     fun putIfChanged(notificationId: Int, snapshot: McpNotificationSnapshot): Boolean {
-        val previous = get(notificationId)
-        if (previous == snapshot) return false
-        put(notificationId, snapshot)
-        return true
+        return synchronized(lock) {
+            val previous = snapshotsById[notificationId]
+            if (previous == snapshot) {
+                false
+            } else {
+                snapshotsById[notificationId] = snapshot
+                true
+            }
+        }
+    }
+
+    fun entries(): List<Pair<Int, McpNotificationSnapshot>> {
+        return synchronized(lock) {
+            snapshotsById.entries.map { it.key to it.value }
+        }
     }
 
     fun clear(notificationId: Int) {
-        when (notificationId) {
-            McpNotificationHelper.KEEPALIVE_NOTIFICATION_ID -> keepAliveSnapshot = null
-            McpNotificationHelper.BA_AP_NOTIFICATION_ID -> baApSnapshot = null
-            McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID -> baCafeVisitSnapshot = null
-            McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID -> baCafeApSnapshot = null
-            McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID -> baArenaRefreshSnapshot = null
+        synchronized(lock) {
+            snapshotsById.remove(notificationId)
         }
     }
 }

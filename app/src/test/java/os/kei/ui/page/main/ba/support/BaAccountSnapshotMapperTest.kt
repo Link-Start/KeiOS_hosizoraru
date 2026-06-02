@@ -101,4 +101,11 @@ class BaAccountSnapshotMapperTest {
 
         assertEquals(base, base.withActiveBaAccount(state))
     }
+
+    @Test
+    fun `friend code sanitizer keeps uppercase letters and digits`() {
+        assertEquals("A1B2C3D4", normalizeBaAccountFriendCodeInput("a1-b2 c3_d4"))
+        assertEquals("A1B2C3D4", sanitizeBaAccountFriendCode("a1-b2 c3_d4"))
+        assertEquals(BA_DEFAULT_FRIEND_CODE, sanitizeBaAccountFriendCode("A1B2"))
+    }
 }

@@ -20,7 +20,6 @@
     <string name="ba_office_name_cn">シャーレ（中国版）</string>
     <string name="ba_office_name_global">シャーレ（グローバル版）</string>
     <string name="ba_office_name_jp">シャーレ（日本版）</string>
-    <string name="ba_office_overview_title">%1$s 概要</string>
     <string name="ba_state_not_synced">未同期</string>
     <string name="ba_syncing">同期中…</string>
     <string name="ba_status_running">開催中</string>
@@ -29,7 +28,6 @@
     <string name="ba_overview_catalog_title">生徒 / NPC / 実装予定</string>
     <string name="ba_overview_cd_open_catalog">生徒名簿を開く</string>
     <string name="ba_overview_server_label">サーバー</string>
-    <string name="ba_overview_cd_server_icon">サーバーアイコン</string>
     <string name="ba_overview_cd_ap_icon">AP アイコン</string>
     <string name="ba_overview_ap_regen_status">AP +1 %1$s | AP 全回復 %2$s</string>
     <string name="ba_overview_cafe_ap_title">カフェ AP</string>
@@ -119,6 +117,9 @@
     <string name="ba_account_management_delete_title">アカウントを削除</string>
     <string name="ba_account_management_delete_summary">「%1$s」の AP、カフェ、リマインダー状態を削除します。</string>
     <string name="ba_account_management_delete_confirm">削除</string>
+    <string name="ba_account_card_count">%1$d/%2$d</string>
+    <string name="ba_account_card_teacher_name">%1$s %2$s</string>
+    <string name="ba_account_disabled_badge">無効</string>
     <string name="ba_settings_section_basic">基本</string>
     <string name="ba_settings_section_sync">同期</string>
     <string name="ba_settings_section_notifications">通知</string>
@@ -168,7 +169,7 @@
     <string name="ba_settings_label_show_ended_pool">終了した募集を表示</string>
     <string name="ba_settings_label_show_images">イベント/募集画像を表示</string>
     <string name="ba_settings_note_timezone">サーバーごとに時刻が異なります。実際に遊んでいるサーバーを選んでください。</string>
-    <string name="ba_toast_friend_code_invalid">フレンドコードは 8 文字の大文字英字で入力してください。</string>
+    <string name="ba_toast_friend_code_invalid">フレンドコードは 8 文字の大文字英字または数字で入力してください。</string>
     <string name="ba_toast_cafe_no_ap">受け取れるカフェ AP はありません。</string>
     <string name="ba_toast_cafe_claimed_ap">%1$d AP を受け取りました。</string>
     <string name="ba_toast_cafe_debug_added">カフェ AP +3h を追加しました（+%1$d）。</string>

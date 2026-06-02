@@ -20,7 +20,6 @@
     <string name="ba_office_name_cn">Schale Office (China)</string>
     <string name="ba_office_name_global">Schale Office (Global)</string>
     <string name="ba_office_name_jp">Schale Office (Japan)</string>
-    <string name="ba_office_overview_title">%1$s Overview</string>
     <string name="ba_state_not_synced">Not synced</string>
     <string name="ba_syncing">Syncing…</string>
     <string name="ba_status_running">Active</string>
@@ -29,7 +28,6 @@
     <string name="ba_overview_catalog_title">Student / NPC / Upcoming Roster</string>
     <string name="ba_overview_cd_open_catalog">Open student roster</string>
     <string name="ba_overview_server_label">Server</string>
-    <string name="ba_overview_cd_server_icon">Server icon</string>
     <string name="ba_overview_cd_ap_icon">AP icon</string>
     <string name="ba_overview_ap_regen_status">AP +1 %1$s | Full AP %2$s</string>
     <string name="ba_overview_cafe_ap_title">Cafe AP</string>
@@ -119,6 +117,9 @@
     <string name="ba_account_management_delete_title">Delete account</string>
     <string name="ba_account_management_delete_summary">This will delete AP, Cafe, and reminder runtime for %1$s.</string>
     <string name="ba_account_management_delete_confirm">Delete</string>
+    <string name="ba_account_card_count">%1$d/%2$d</string>
+    <string name="ba_account_card_teacher_name">%1$s %2$s</string>
+    <string name="ba_account_disabled_badge">Disabled</string>
     <string name="ba_settings_section_basic">Basic</string>
     <string name="ba_settings_section_sync">Sync</string>
     <string name="ba_settings_section_notifications">Notifications</string>
@@ -168,7 +169,7 @@
     <string name="ba_settings_label_show_ended_pool">Show ended recruitment banners</string>
     <string name="ba_settings_label_show_images">Show event/banner images</string>
     <string name="ba_settings_note_timezone">Server time zones differ. Pick the server you actually play on.</string>
-    <string name="ba_toast_friend_code_invalid">Friend code must be 8 uppercase letters.</string>
+    <string name="ba_toast_friend_code_invalid">Friend code must be 8 uppercase letters or digits.</string>
     <string name="ba_toast_cafe_no_ap">No Cafe AP to claim.</string>
     <string name="ba_toast_cafe_claimed_ap">Claimed %1$d AP.</string>
     <string name="ba_toast_cafe_debug_added">Added +3h Cafe AP (+%1$d).</string>

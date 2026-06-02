@@ -35,6 +35,7 @@ internal fun BaCardHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
+            modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

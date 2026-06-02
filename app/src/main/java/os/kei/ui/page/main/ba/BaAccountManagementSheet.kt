@@ -30,6 +30,7 @@ import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
+import os.kei.ui.page.main.ba.support.normalizeBaAccountFriendCodeInput
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -272,7 +273,9 @@ private fun BaAccountEditorCard(
         )
         AppLiquidSearchField(
             value = draft.friendCode,
-            onValueChange = { onDraftChange(draft.copy(friendCode = it)) },
+            onValueChange = { value ->
+                onDraftChange(draft.copy(friendCode = normalizeBaAccountFriendCodeInput(value)))
+            },
             label = stringResource(R.string.ba_account_management_editor_friend_code),
             backdrop = backdrop,
             variant = GlassVariant.SheetInput,

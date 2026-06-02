@@ -115,13 +115,15 @@ internal data class BaAccountReminderSnapshot(
 internal fun sanitizeBaAccountNickname(name: String): String =
     name.trim().take(10).ifEmpty { BA_DEFAULT_NICKNAME }
 
+internal fun normalizeBaAccountFriendCodeInput(code: String): String =
+    code
+        .trim()
+        .uppercase(Locale.ROOT)
+        .filter { it in 'A'..'Z' || it in '0'..'9' }
+        .take(8)
+
 internal fun sanitizeBaAccountFriendCode(code: String): String {
-    val normalized =
-        code
-            .trim()
-            .uppercase(Locale.ROOT)
-            .filter { it in 'A'..'Z' }
-            .take(8)
+    val normalized = normalizeBaAccountFriendCodeInput(code)
     return if (normalized.length == 8) normalized else BA_DEFAULT_FRIEND_CODE
 }
 

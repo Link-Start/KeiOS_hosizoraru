@@ -19,8 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -240,41 +243,65 @@ internal fun BaLiquidMetricPanel(
     secondary: String? = null,
     valueColor: Color = accentColor,
     valueMaxLines: Int = 1,
+    valueFontFamily: FontFamily? = null,
+    labelFontSize: TextUnit = TextUnit.Unspecified,
+    labelLineHeight: TextUnit = TextUnit.Unspecified,
+    labelFontWeight: FontWeight = FontWeight.Normal,
+    valueFontSize: TextUnit = TextUnit.Unspecified,
+    valueLineHeight: TextUnit = TextUnit.Unspecified,
+    valueFontWeight: FontWeight = FontWeight.Bold,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 9.dp),
     trailing: (@Composable RowScope.() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    pressFeedback: Boolean = true,
 ) {
     BaLiquidPanel(
         backdrop = backdrop,
         modifier = modifier,
         accentColor = accentColor,
+        contentPadding = contentPadding,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        pressFeedback = pressFeedback,
     ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
+                Text(
+                    text = label,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.92f),
+                    fontSize = labelFontSize,
+                    lineHeight = labelLineHeight,
+                    fontWeight = labelFontWeight,
+                    maxLines = 1,
+                )
+                Text(
+                    text = value,
+                    color = valueColor,
+                    fontSize = valueFontSize,
+                    lineHeight = valueLineHeight,
+                    fontWeight = valueFontWeight,
+                    fontFamily = valueFontFamily,
+                    maxLines = valueMaxLines.coerceAtLeast(1),
+                    overflow = TextOverflow.Ellipsis,
+                )
+                secondary?.takeIf { it.isNotBlank() }?.let { text ->
                     Text(
-                        text = label,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.92f),
+                        text = text,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.88f),
+                        fontSize = labelFontSize,
+                        lineHeight = labelLineHeight,
                         maxLines = 1,
                     )
-                    Text(
-                        text = value,
-                        color = valueColor,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = valueMaxLines.coerceAtLeast(1),
-                    )
-                    secondary?.takeIf { it.isNotBlank() }?.let { text ->
-                        Text(
-                            text = text,
-                            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.88f),
-                            maxLines = 1,
-                        )
-                    }
                 }
+            }
             trailing?.invoke(this)
         }
     }

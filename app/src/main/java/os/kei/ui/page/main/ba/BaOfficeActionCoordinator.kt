@@ -15,10 +15,7 @@ internal class BaOfficeActionCoordinator(
     private val scope: CoroutineScope,
     private val serverIndexProvider: () -> Int,
     private val accountIdProvider: () -> BaAccountId?,
-    private val onServerSelected: (Int) -> Unit,
     private val onSettingsCafeLevelChange: (Int) -> Unit,
-    private val onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    private val onOverviewServerPopupChange: (Boolean) -> Unit,
     private val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     private val onCafeLevelPopupChange: (Boolean) -> Unit,
     private val onAccountSelected: (BaAccountId) -> Unit,
@@ -33,13 +30,10 @@ internal class BaOfficeActionCoordinator(
             onApCurrentDone = ::saveApCurrentInput,
             onApLimitInputChange = { office.apLimitInput = it },
             onApLimitDone = ::saveApLimitInput,
-            onOverviewServerPopupAnchorBoundsChange = onOverviewServerPopupAnchorBoundsChange,
-            onOverviewServerPopupChange = onOverviewServerPopupChange,
             onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
             onCafeLevelPopupChange = onCafeLevelPopupChange,
             onAccountSelected = onAccountSelected,
             onCafeLevelChange = ::selectCafeLevel,
-            onServerSelected = ::selectServer,
             onClaimCafeStoredAp = ::claimCafeStoredAp,
             onTouchHead = { persistCooldown(office.touchHead(serverIndexProvider())) },
             onForceResetHeadpatCooldown = { persistCooldown(office.forceResetHeadpatCooldown()) },
@@ -51,10 +45,6 @@ internal class BaOfficeActionCoordinator(
             onOpenCalendarLink = onOpenCalendarLink,
             onRefreshPool = onRefreshPool,
             onOpenPoolStudentGuide = onOpenPoolStudentGuide,
-            onIdNicknameInputChange = { office.idNicknameInput = it },
-            onSaveIdNickname = { persistIdentity(office.saveIdNicknameFromInput(serverIndexProvider())) },
-            onIdFriendCodeInputChange = { office.idFriendCodeInput = it },
-            onSaveIdFriendCode = { persistIdentity(office.saveIdFriendCodeFromInput(context, serverIndexProvider())) },
         )
 
     private fun saveApCurrentInput() {
@@ -92,11 +82,6 @@ internal class BaOfficeActionCoordinator(
         onCafeLevelPopupChange(false)
     }
 
-    private fun selectServer(selected: Int) {
-        onServerSelected(selected)
-        onOverviewServerPopupChange(false)
-    }
-
     private fun claimCafeStoredAp() {
         persistRuntime(office.claimCafeStoredAp(context))
         AppBackgroundScheduler.scheduleBaApThreshold(context)
@@ -111,13 +96,6 @@ internal class BaOfficeActionCoordinator(
 
     private fun BaRuntimePersistenceUpdate.withCurrentAccount(): BaRuntimePersistenceUpdate =
         withAccountId(accountIdProvider())
-
-    private fun persistIdentity(update: BaOfficeIdentityPersistenceUpdate?) {
-        if (update == null) return
-        scope.launch {
-            update.persistAsync()
-        }
-    }
 
     private fun persistCooldown(update: BaOfficeCooldownPersistenceUpdate?) {
         if (update == null) return

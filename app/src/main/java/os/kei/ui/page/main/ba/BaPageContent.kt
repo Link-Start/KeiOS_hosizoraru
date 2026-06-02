@@ -19,7 +19,6 @@ import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.ba.card.BaAccountPagerCard
 import os.kei.ui.page.main.ba.card.BaApCard
 import os.kei.ui.page.main.ba.card.BaCafeCard
-import os.kei.ui.page.main.ba.card.BaOverviewCard
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
@@ -28,16 +27,13 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 @Immutable
 internal data class BaPageContentState(
     val isPageActive: Boolean,
-    val officeOverviewTitle: String,
     val officeState: BaOfficeState,
     val clockState: BaPageClockState,
     val accountUiState: BaOfficeAccountUiState,
     val serverOptions: List<String>,
     val cafeLevelOptions: List<Int>,
     val serverIndex: Int,
-    val showOverviewServerPopup: Boolean,
     val showCafeLevelPopup: Boolean,
-    val overviewServerPopupAnchorBounds: IntRect?,
     val cafeLevelPopupAnchorBounds: IntRect?,
     val baCalendarEntries: List<BaCalendarEntry>,
     val baCalendarLoading: Boolean,
@@ -60,13 +56,10 @@ internal data class BaPageContentActions(
     val onApCurrentDone: () -> Unit,
     val onApLimitInputChange: (String) -> Unit,
     val onApLimitDone: () -> Unit,
-    val onOverviewServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
-    val onOverviewServerPopupChange: (Boolean) -> Unit,
     val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     val onCafeLevelPopupChange: (Boolean) -> Unit,
     val onAccountSelected: (BaAccountId) -> Unit,
     val onCafeLevelChange: (Int) -> Unit,
-    val onServerSelected: (Int) -> Unit,
     val onClaimCafeStoredAp: () -> Unit,
     val onTouchHead: () -> Unit,
     val onForceResetHeadpatCooldown: () -> Unit,
@@ -78,15 +71,10 @@ internal data class BaPageContentActions(
     val onOpenCalendarLink: (String) -> Unit,
     val onRefreshPool: () -> Unit,
     val onOpenPoolStudentGuide: (String) -> Unit,
-    val onIdNicknameInputChange: (String) -> Unit,
-    val onSaveIdNickname: () -> Unit,
-    val onIdFriendCodeInputChange: (String) -> Unit,
-    val onSaveIdFriendCode: () -> Unit,
 )
 
 internal enum class BaPageContentType {
     Account,
-    Overview,
     Ap,
     Cafe,
 }
@@ -127,27 +115,6 @@ internal fun BaPageContent(
                 activeAccountId = state.accountUiState.activeAccountId,
                 serverOptions = state.serverOptions,
                 onAccountSelected = actions.onAccountSelected,
-            )
-        }
-
-        item(key = "ba-overview", contentType = BaPageContentType.Overview) {
-            BaOverviewCard(
-                backdrop = backdrop,
-                overviewTitle = state.officeOverviewTitle,
-                idFriendCode = state.officeState.idFriendCode,
-                idNicknameInput = state.officeState.idNicknameInput,
-                onIdNicknameInputChange = actions.onIdNicknameInputChange,
-                onSaveIdNickname = actions.onSaveIdNickname,
-                idFriendCodeInput = state.officeState.idFriendCodeInput,
-                onIdFriendCodeInputChange = actions.onIdFriendCodeInputChange,
-                onSaveIdFriendCode = actions.onSaveIdFriendCode,
-                serverOptions = state.serverOptions,
-                serverIndex = state.serverIndex,
-                showOverviewServerPopup = state.showOverviewServerPopup,
-                overviewServerPopupAnchorBounds = state.overviewServerPopupAnchorBounds,
-                onOverviewServerPopupAnchorBoundsChange = actions.onOverviewServerPopupAnchorBoundsChange,
-                onOverviewServerPopupChange = actions.onOverviewServerPopupChange,
-                onServerSelected = actions.onServerSelected,
             )
         }
 

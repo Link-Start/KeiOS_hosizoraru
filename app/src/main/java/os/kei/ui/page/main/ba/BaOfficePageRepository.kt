@@ -9,12 +9,6 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 
-internal data class BaOfficeServerSelectionPersistenceResult(
-    val serverIndex: Int,
-    val cafeVisitLastNotifiedSlotMs: Long?,
-    val arenaRefreshLastNotifiedSlotMs: Long?,
-)
-
 internal data class BaOfficeServerRestorePersistenceResult(
     val serverIndex: Int,
 )
@@ -77,40 +71,6 @@ internal class BaOfficePageRepository(
     suspend fun clearListScrollState() {
         BaOfficeRepository.clearListScrollStateAsync()
     }
-
-    suspend fun persistServerSelection(
-        requestedIndex: Int,
-        cafeVisitNotifyEnabled: Boolean,
-        arenaRefreshNotifyEnabled: Boolean,
-    ): BaOfficeServerSelectionPersistenceResult =
-        withContext(AppDispatchers.baFetch) {
-            val selected = requestedIndex.coerceIn(0, 2)
-            BaOfficeRepository.saveServerIndex(selected)
-            val nowMs = clock.nowMs()
-            val cafeVisitSlot =
-                if (cafeVisitNotifyEnabled) {
-                    currentCafeStudentRefreshSlotMs(
-                        nowMs = nowMs,
-                        serverIndex = selected,
-                    ).also(BaOfficeRepository::saveCafeVisitLastNotifiedSlotMs)
-                } else {
-                    null
-                }
-            val arenaRefreshSlot =
-                if (arenaRefreshNotifyEnabled) {
-                    currentArenaRefreshSlotMs(
-                        nowMs = nowMs,
-                        serverIndex = selected,
-                    ).also(BaOfficeRepository::saveArenaRefreshLastNotifiedSlotMs)
-                } else {
-                    null
-                }
-            BaOfficeServerSelectionPersistenceResult(
-                serverIndex = selected,
-                cafeVisitLastNotifiedSlotMs = cafeVisitSlot,
-                arenaRefreshLastNotifiedSlotMs = arenaRefreshSlot,
-            )
-        }
 
     suspend fun restoreServerSelection(currentServerIndex: Int): BaOfficeServerRestorePersistenceResult? =
         withContext(AppDispatchers.baFetch) {

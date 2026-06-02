@@ -16,9 +16,7 @@ internal data class BaPageClockState(
 
 @Stable
 internal data class BaPagePopupState(
-    val showOverviewServerPopup: Boolean,
     val showCafeLevelPopup: Boolean,
-    val overviewServerPopupAnchorBounds: IntRect?,
     val cafeLevelPopupAnchorBounds: IntRect?,
 )
 
@@ -66,9 +64,7 @@ internal fun buildBaPageRouteState(
         showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
         popupState =
             BaPagePopupState(
-                showOverviewServerPopup = chromeUiState.showOverviewServerPopup,
                 showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
-                overviewServerPopupAnchorBounds = chromeUiState.overviewServerPopupAnchorBounds,
                 cafeLevelPopupAnchorBounds = chromeUiState.cafeLevelPopupAnchorBounds,
             ),
         accountUiState = accountUiState,

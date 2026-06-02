@@ -93,19 +93,9 @@ fun BAPage(
     val calendarUiState = calendarPoolRouteState.calendarUiState
     val poolUiState = calendarPoolRouteState.poolUiState
     val baClockState = ui.clockState()
-    val currentServerIndex = officePageUiState.serverUiState.serverIndex
-
-    val officeName =
-        when (currentServerIndex) {
-            0 -> stringResource(R.string.ba_office_name_cn)
-            1 -> stringResource(R.string.ba_office_name_global)
-            else -> stringResource(R.string.ba_office_name_jp)
-        }
-    val officeOverviewTitle = stringResource(R.string.ba_office_overview_title, officeName)
     val pagePresentationState =
         remember(
             runtime.isPageActive,
-            officeOverviewTitle,
             officeState,
             calendarUiState,
             poolUiState,
@@ -116,7 +106,6 @@ fun BAPage(
         ) {
             buildBaPagePresentationState(
                 isPageActive = runtime.isPageActive,
-                officeOverviewTitle = officeOverviewTitle,
                 officeState = officeState,
                 calendarUiState = calendarUiState,
                 poolUiState = poolUiState,
@@ -135,6 +124,7 @@ fun BAPage(
     val savedNotificationSettingsSheetState = pagePresentationState.savedNotificationSettingsSheetState
     val pageContentState = pagePresentationState.pageContentState
     val currentServerIndexState = rememberUpdatedState(baRouteState.serverIndex)
+    val currentActiveAccountIdState = rememberUpdatedState(accountUiState.activeAccountId)
     val uiNowMsProvider = remember(ui) { { ui.uiNowMs } }
     val settledWorkActive =
         rememberBaPageSettledWorkActive(
@@ -143,7 +133,7 @@ fun BAPage(
     val baGlassRuntime = LocalGlassEffectRuntime.current
     val runtimePersistenceCoordinator =
         rememberBaRuntimePersistenceCoordinator(
-            accountIdProvider = { accountUiState.activeAccountId },
+            accountIdProvider = { currentActiveAccountIdState.value },
         )
 
     fun openSettingsSheet() {
@@ -256,13 +246,10 @@ fun BAPage(
                 office = office,
                 scope = pageScope,
                 serverIndexProvider = { currentServerIndexState.value },
-                accountIdProvider = { accountUiState.activeAccountId },
-                onServerSelected = officeViewModel::selectServer,
+                accountIdProvider = { currentActiveAccountIdState.value },
                 onSettingsCafeLevelChange = { level ->
                     officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
                 },
-                onOverviewServerPopupAnchorBoundsChange = officeViewModel::updateOverviewServerPopupAnchorBounds,
-                onOverviewServerPopupChange = officeViewModel::updateOverviewServerPopupExpanded,
                 onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
                 onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
                 onAccountSelected = { accountId ->
@@ -271,7 +258,7 @@ fun BAPage(
                         currentRuntimeUpdate =
                             office
                                 .applyRuntimeTick()
-                                ?.withAccountId(accountUiState.activeAccountId),
+                                ?.withAccountId(currentActiveAccountIdState.value),
                     )
                 },
                 onRefreshCalendar = { refreshCalendar(force = true) },

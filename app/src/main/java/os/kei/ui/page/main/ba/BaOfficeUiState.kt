@@ -38,9 +38,7 @@ internal data class BaOfficeChromeUiState(
     val showSettingsSheet: Boolean = false,
     val showAccountManagementSheet: Boolean = false,
     val showNotificationSettingsSheet: Boolean = false,
-    val showOverviewServerPopup: Boolean = false,
     val showCafeLevelPopup: Boolean = false,
-    val overviewServerPopupAnchorBounds: IntRect? = null,
     val cafeLevelPopupAnchorBounds: IntRect? = null,
     val notificationLeadDropdownExpanded: Boolean = false,
     val notificationLeadDropdownAnchorBounds: IntRect? = null,
@@ -145,7 +143,6 @@ internal fun BaAccountStoreSnapshot.toOfficeAccountUiState(): BaOfficeAccountUiS
 
 internal fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiState =
     copy(
-        showOverviewServerPopup = false,
         showCafeLevelPopup = false,
         notificationLeadDropdownExpanded = false,
         notificationLeadDropdownAnchorBounds = null,

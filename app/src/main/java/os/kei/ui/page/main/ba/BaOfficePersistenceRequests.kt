@@ -1,16 +1,5 @@
 package os.kei.ui.page.main.ba
 
-internal data class BaOfficeIdentityPersistenceUpdate(
-    val nickname: String? = null,
-    val friendCode: String? = null,
-    val serverIndex: Int? = null,
-) {
-    suspend fun persistAsync() {
-        nickname?.let { BaOfficeRepository.saveIdNicknameAsync(it, serverIndex) }
-        friendCode?.let { BaOfficeRepository.saveIdFriendCodeAsync(it, serverIndex) }
-    }
-}
-
 internal data class BaOfficeApLimitUpdate(
     val limit: Int,
     val runtimeUpdate: BaRuntimePersistenceUpdate?,

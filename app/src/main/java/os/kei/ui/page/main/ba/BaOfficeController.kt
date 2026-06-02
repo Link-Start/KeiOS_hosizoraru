@@ -13,8 +13,6 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
-import os.kei.ui.page.main.ba.support.BA_DEFAULT_FRIEND_CODE
-import os.kei.ui.page.main.ba.support.BA_DEFAULT_NICKNAME
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
@@ -49,8 +47,6 @@ internal data class BaOfficeState(
     val coffeeInvite2UsedMs: Long,
     val apCurrentInput: String,
     val apLimitInput: String,
-    val idNicknameInput: String,
-    val idFriendCodeInput: String,
     val apLastNotifiedLevel: Int,
 )
 
@@ -83,8 +79,6 @@ internal class BaOfficeController(
 
     var apCurrentInput by mutableStateOf(displayAp(apCurrent).toString())
     var apLimitInput by mutableStateOf(apLimit.toString())
-    var idNicknameInput by mutableStateOf(idNickname)
-    var idFriendCodeInput by mutableStateOf(idFriendCode)
     var apLastNotifiedLevel by mutableIntStateOf(snapshot.apLastNotifiedLevel)
 
     fun displayApInputText(): String = displayAp(apCurrent).toString()
@@ -113,8 +107,6 @@ internal class BaOfficeController(
             coffeeInvite2UsedMs == snapshot.coffeeInvite2UsedMs &&
             apCurrentInput == displayAp(snapshot.apCurrent.coerceAtLeast(0.0)).toString() &&
             apLimitInput == snapshot.apLimit.toString() &&
-            idNicknameInput == snapshot.idNickname &&
-            idFriendCodeInput == snapshot.idFriendCode &&
             apLastNotifiedLevel == snapshot.apLastNotifiedLevel
 
     fun applySnapshot(snapshot: BaPageSnapshot) {
@@ -141,8 +133,6 @@ internal class BaOfficeController(
         coffeeInvite2UsedMs = snapshot.coffeeInvite2UsedMs
         apCurrentInput = displayAp(apCurrent).toString()
         apLimitInput = apLimit.toString()
-        idNicknameInput = idNickname
-        idFriendCodeInput = idFriendCode
         apLastNotifiedLevel = snapshot.apLastNotifiedLevel
     }
 
@@ -171,8 +161,6 @@ internal class BaOfficeController(
             coffeeInvite2UsedMs = coffeeInvite2UsedMs,
             apCurrentInput = apCurrentInput,
             apLimitInput = apLimitInput,
-            idNicknameInput = idNicknameInput,
-            idFriendCodeInput = idFriendCodeInput,
             apLastNotifiedLevel = apLastNotifiedLevel,
         )
 
@@ -225,34 +213,6 @@ internal class BaOfficeController(
             update = update?.mergedWith(clampUpdate) ?: clampUpdate
         }
         return update
-    }
-
-    fun saveIdNicknameFromInput(serverIndex: Int): BaOfficeIdentityPersistenceUpdate {
-        val sanitized = idNicknameInput.take(10).ifEmpty { BA_DEFAULT_NICKNAME }
-        idNickname = sanitized
-        idNicknameInput = sanitized
-        return BaOfficeIdentityPersistenceUpdate(
-            nickname = sanitized,
-            serverIndex = serverIndex,
-        )
-    }
-
-    fun saveIdFriendCodeFromInput(
-        context: Context,
-        serverIndex: Int,
-    ): BaOfficeIdentityPersistenceUpdate? {
-        val sanitized = sanitizeBaFriendCodeInput(idFriendCodeInput)
-        if (sanitized.length != 8) {
-            context.showToast(R.string.ba_toast_friend_code_invalid)
-            idFriendCodeInput = idFriendCode
-            return null
-        }
-        idFriendCode = sanitized
-        idFriendCodeInput = sanitized
-        return BaOfficeIdentityPersistenceUpdate(
-            friendCode = sanitized,
-            serverIndex = serverIndex,
-        )
     }
 
     fun updateCurrentAp(

@@ -27,8 +27,6 @@ internal fun openBaExternalLink(
     }
 }
 
-internal fun sanitizeBaFriendCodeInput(raw: String): String = raw.uppercase().filter { it in 'A'..'Z' }.take(8)
-
 internal fun applyBaCurrentApUpdate(
     currentAp: Double,
     newValue: Int,

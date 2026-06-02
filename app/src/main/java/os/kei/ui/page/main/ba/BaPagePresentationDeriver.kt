@@ -15,7 +15,6 @@ internal data class BaPagePresentationState(
 
 internal fun buildBaPagePresentationState(
     isPageActive: Boolean,
-    officeOverviewTitle: String,
     officeState: BaOfficeState,
     calendarUiState: BaCalendarUiState,
     poolUiState: BaPoolUiState,
@@ -60,7 +59,6 @@ internal fun buildBaPagePresentationState(
     val pageContentState =
         buildBaPageContentState(
             isPageActive = isPageActive,
-            officeOverviewTitle = officeOverviewTitle,
             officeState = officeState,
             routeState = routeState,
             clockState = clockState,

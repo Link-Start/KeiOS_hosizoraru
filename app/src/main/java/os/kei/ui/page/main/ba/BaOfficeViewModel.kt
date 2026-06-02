@@ -187,26 +187,6 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun updateOverviewServerPopupExpanded(expanded: Boolean) {
-        _chromeUiState.update { state ->
-            if (state.showOverviewServerPopup == expanded) {
-                state
-            } else {
-                state.copy(showOverviewServerPopup = expanded)
-            }
-        }
-    }
-
-    fun updateOverviewServerPopupAnchorBounds(bounds: IntRect?) {
-        _chromeUiState.update { state ->
-            if (state.overviewServerPopupAnchorBounds == bounds) {
-                state
-            } else {
-                state.copy(overviewServerPopupAnchorBounds = bounds)
-            }
-        }
-    }
-
     fun updateCafeLevelPopupExpanded(expanded: Boolean) {
         _chromeUiState.update { state ->
             if (state.showCafeLevelPopup == expanded) {
@@ -309,34 +289,6 @@ internal class BaOfficeViewModel(
                     poolHydrationReady = true,
                 )
             }
-        }
-    }
-
-    fun selectServer(index: Int) {
-        val selected = index.coerceIn(0, 2)
-        _serverUiState.update { state ->
-            if (state.serverIndex == selected) {
-                state
-            } else {
-                state.copy(serverIndex = selected)
-            }
-        }
-        refreshCalendar(force = true)
-        refreshPool(force = true)
-        viewModelScope.launch {
-            val persisted =
-                repository.persistServerSelection(
-                    requestedIndex = selected,
-                    cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
-                    arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
-                )
-            persisted.cafeVisitLastNotifiedSlotMs?.let { slotMs ->
-                office.cafeVisitLastNotifiedSlotMs = slotMs
-            }
-            persisted.arenaRefreshLastNotifiedSlotMs?.let { slotMs ->
-                office.arenaRefreshLastNotifiedSlotMs = slotMs
-            }
-            AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
         }
     }
 

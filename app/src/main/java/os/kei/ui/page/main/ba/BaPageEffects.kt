@@ -135,14 +135,6 @@ internal fun BaPageCommonEffects(
         if (office.apLimitInput != target) office.apLimitInput = target
     }
 
-    LaunchedEffect(office.idNickname) {
-        if (office.idNicknameInput != office.idNickname) office.idNicknameInput = office.idNickname
-    }
-
-    LaunchedEffect(office.idFriendCode) {
-        if (office.idFriendCodeInput != office.idFriendCode) office.idFriendCodeInput = office.idFriendCode
-    }
-
     LaunchedEffect(serverIndex) {
         onServerChanged()
     }

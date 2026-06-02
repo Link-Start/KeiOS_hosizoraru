@@ -131,8 +131,8 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | P3 Account-scoped runtime writes | Done | Runtime persistence update carries account id, AP/cafe/cooldown writes target active account | Runtime tests |
 | P4 Multi-account reminders | Done | Background reminder service scans all enabled accounts, uses scoped notification ids | Reminder service tests and scheduler tests |
 | P5 Server-scoped calendar/pool sync cleanup | Done | Distinct server sync for enabled accounts, server-scoped notified keys | Calendar/pool notification tests |
-| P6 Settings migration | Pending | BA settings sheet becomes global reminder/media settings; data sync/display moved to data pages | UI compile and targeted tests |
-| P7 Account UI bridge | Pending | Account pager card, account management sheet, AP card split | AVD navigation and state checks |
+| P6 Settings migration | Done | Data sync/display moved to Activity Calendar and Pool pages; BA settings no longer owns those page-specific fields | `09b5dfda`, targeted BA tests |
+| P7 Account UI bridge | In Progress | Account pager card and active-account switching bridge landed; account management sheet and AP card split remain | `3a9f91e0`, targeted BA tests |
 | P8 Dock cleanup | Pending | Vertical dock only has Calendar, Pool, Catalog icons | AVD visual/navigation check |
 | P9 Release verification | Pending | Release build, R8 path, AVD smoke | `:app:assembleRelease`, AVD only |
 
@@ -146,7 +146,8 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | 4 | Move runtime persistence to account scope |
 | 5 | Add multi-account reminder backend |
 | 6 | Move calendar/pool settings into data-page backend paths |
-| 7 | Add account pager/AP card/account management UI bridge |
+| 7a | Add account pager and active-account switching bridge |
+| 7b | Add account management sheet and AP card split |
 | 8 | Simplify vertical dock and move catalog entry |
 | 9 | Final release/AVD cleanup |
 

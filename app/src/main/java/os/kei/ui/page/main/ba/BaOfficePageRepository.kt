@@ -3,6 +3,7 @@ package os.kei.ui.page.main.ba
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
@@ -54,32 +55,16 @@ internal class BaOfficePageRepository(
             enabled = enabled,
         )
 
-    suspend fun addAccount(
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
-    ): BaAccountStoreSnapshot =
-        BaOfficeRepository.addAccountAsync(
-            serverIndex = serverIndex,
-            displayName = displayName,
-            nickname = nickname,
-            friendCode = friendCode,
-        )
+    suspend fun addAccount(input: BaAccountProfileInput): BaAccountStoreSnapshot =
+        BaOfficeRepository.addAccountAsync(input)
 
     suspend fun updateAccountProfile(
         accountId: BaAccountId,
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
+        input: BaAccountProfileInput,
     ): BaAccountStoreSnapshot =
         BaOfficeRepository.updateAccountProfileAsync(
             accountId = accountId,
-            serverIndex = serverIndex,
-            displayName = displayName,
-            nickname = nickname,
-            friendCode = friendCode,
+            input = input,
         )
 
     suspend fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot =

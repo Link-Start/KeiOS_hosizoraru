@@ -136,6 +136,7 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | P8 Dock cleanup | Done | Vertical dock only has Calendar, Pool, Catalog icons; old copy-friend-code dock path removed | Targeted BA tests; AVD visual/navigation check remains in P9 |
 | P9 Release verification | Done | Release build, R8 path, baseline profile collection, AVD smoke | `:app:assembleRelease`; `:baselineprofile:collectNonMinifiedReleaseBaselineProfile`; AVD `emulator-5554` |
 | P10 Account management CRUD | Done | Account management sheet can add, edit, delete, and reorder accounts through store/repository/viewmodel bridge | Targeted BA tests; `:app:compileDebugKotlin` |
+| P11 Account reminder overrides | Done | Account management sheet edits per-account reminder enablement, follow-global/custom mode, and AP/cafe/arena/cafe-visit overrides | Targeted BA tests; `:app:compileDebugKotlin` |
 
 ## Commit Plan
 
@@ -153,6 +154,7 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | 8 | Simplify vertical dock and move catalog entry |
 | 9 | Final release/AVD cleanup |
 | 10 | Complete account management CRUD and reorder bridge |
+| 11 | Add account-level reminder override controls |
 
 ## UI Phases
 
@@ -161,7 +163,7 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | UI-1 | `BaAccountPagerCard` | Horizontal account switching; `activeAccountId` drives page state |
 | UI-2 | `BaApCard` | AP left old overview card and follows active account |
 | UI-3 | `BaCafeCard` binding | Cafe state and cafe AP follow active account |
-| UI-4 | Account management sheet | Follow-global controls, account list, add/edit/delete, active account, and reorder controls landed |
+| UI-4 | Account management sheet | Follow-global controls, account list, add/edit/delete, active account, reorder controls, and account reminder overrides landed |
 | UI-5 | BA settings sheet | Global reminders and media settings |
 | UI-6 | Data-page settings | Activity/pool sync and display settings move to their pages |
 | UI-7 | Dock cleanup | Only Calendar, Pool, Catalog navigation icons remain |
@@ -197,3 +199,4 @@ Migration should run idempotently. Re-running must keep account ids stable and a
 | Baseline profile BA journey remains collectable | `ANDROID_SERIAL=emulator-5554 ./gradlew :baselineprofile:collectNonMinifiedReleaseBaselineProfile -Pandroid.injected.test.device.serial=emulator-5554` |
 | Account management sheet opens from BA action bar | AVD smoke |
 | Account management sheet can add, edit, delete, and reorder accounts | Targeted BA tests plus debug Kotlin compile |
+| Account management sheet can save account-level reminder overrides | Targeted BA tests plus debug Kotlin compile |

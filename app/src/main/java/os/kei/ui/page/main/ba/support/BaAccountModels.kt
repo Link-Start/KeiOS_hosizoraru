@@ -65,6 +65,16 @@ internal data class BaAccountReminderOverride(
     val cafeVisitNotifyEnabled: Boolean = false,
 )
 
+internal data class BaAccountProfileInput(
+    val serverIndex: Int,
+    val displayName: String,
+    val nickname: String,
+    val friendCode: String,
+    val notificationMode: BaAccountNotificationMode = BaAccountNotificationMode.FollowGlobal,
+    val remindersEnabled: Boolean = true,
+    val customReminderSettings: BaGlobalReminderSettings = BaGlobalReminderSettings(),
+)
+
 @Serializable
 internal data class BaAccountReminderRuntime(
     val apLastNotifiedLevel: Int = -1,
@@ -200,4 +210,17 @@ internal fun BaAccountRecord.effectiveReminderSettings(
                 )
             } ?: normalizedGlobal
     }
+}
+
+internal fun BaGlobalReminderSettings.toAccountReminderOverride(accountId: BaAccountId): BaAccountReminderOverride {
+    val normalized = normalized()
+    return BaAccountReminderOverride(
+        accountId = accountId,
+        apNotifyEnabled = normalized.apNotifyEnabled,
+        apNotifyThreshold = normalized.apNotifyThreshold,
+        cafeApNotifyEnabled = normalized.cafeApNotifyEnabled,
+        cafeApNotifyThreshold = normalized.cafeApNotifyThreshold,
+        arenaRefreshNotifyEnabled = normalized.arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = normalized.cafeVisitNotifyEnabled,
+    )
 }

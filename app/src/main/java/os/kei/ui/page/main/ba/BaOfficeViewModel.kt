@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
@@ -458,21 +459,10 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun addAccount(
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
-    ) {
+    fun addAccount(input: BaAccountProfileInput) {
         viewModelScope.launch {
             try {
-                val accountState =
-                    repository.addAccount(
-                        serverIndex = serverIndex,
-                        displayName = displayName,
-                        nickname = nickname,
-                        friendCode = friendCode,
-                    )
+                val accountState = repository.addAccount(input)
                 applyAccountMutationState(accountState)
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
@@ -483,20 +473,14 @@ internal class BaOfficeViewModel(
 
     fun updateAccountProfile(
         accountId: BaAccountId,
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
+        input: BaAccountProfileInput,
     ) {
         viewModelScope.launch {
             try {
                 val accountState =
                     repository.updateAccountProfile(
                         accountId = accountId,
-                        serverIndex = serverIndex,
-                        displayName = displayName,
-                        nickname = nickname,
-                        friendCode = friendCode,
+                        input = input,
                     )
                 applyAccountMutationState(accountState)
             } catch (error: Throwable) {

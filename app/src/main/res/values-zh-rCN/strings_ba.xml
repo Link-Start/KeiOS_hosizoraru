@@ -109,6 +109,15 @@
     <string name="ba_account_management_editor_server">服务器</string>
     <string name="ba_account_management_editor_cancel">取消</string>
     <string name="ba_account_management_editor_save">保存</string>
+    <string name="ba_account_management_reminder_section">账号提醒</string>
+    <string name="ba_account_management_reminders_enabled">启用此账号提醒</string>
+    <string name="ba_account_management_reminders_enabled_summary">关闭后，此账号的 AP、咖啡厅和竞技场提醒都会跳过。</string>
+    <string name="ba_account_management_notification_mode">提醒设置</string>
+    <string name="ba_account_management_notification_mode_follow_global">跟随全局</string>
+    <string name="ba_account_management_notification_mode_custom">自定义</string>
+    <string name="ba_account_management_global_follow_locked_summary">当前全部账号跟随 BA 通知设置。关闭全局跟随后，可为单个账号设置自定义提醒。</string>
+    <string name="ba_account_management_custom_reminder_summary">这些设置只影响当前账号；活动日历和卡池提醒依旧按服务器去重。</string>
+    <string name="ba_account_management_threshold_hint">120</string>
     <string name="ba_account_management_delete_title">删除账号</string>
     <string name="ba_account_management_delete_summary">将删除“%1$s”的 AP、咖啡厅和提醒运行状态。</string>
     <string name="ba_account_management_delete_confirm">确认删除</string>

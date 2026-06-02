@@ -4,6 +4,7 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
@@ -51,35 +52,19 @@ internal object BaOfficeRepository {
             BASettingsStore.loadAccountState()
         }
 
-    suspend fun addAccountAsync(
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
-    ): BaAccountStoreSnapshot =
+    suspend fun addAccountAsync(input: BaAccountProfileInput): BaAccountStoreSnapshot =
         withContext(AppDispatchers.baFetch) {
-            BASettingsStore.addAccount(
-                serverIndex = serverIndex,
-                displayName = displayName,
-                nickname = nickname,
-                friendCode = friendCode,
-            )
+            BASettingsStore.addAccount(input)
         }
 
     suspend fun updateAccountProfileAsync(
         accountId: BaAccountId,
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
+        input: BaAccountProfileInput,
     ): BaAccountStoreSnapshot =
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.updateAccountProfile(
                 accountId = accountId,
-                serverIndex = serverIndex,
-                displayName = displayName,
-                nickname = nickname,
-                friendCode = friendCode,
+                input = input,
             )
         }
 

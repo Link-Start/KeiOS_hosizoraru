@@ -3,7 +3,9 @@ package os.kei.ui.page.main.ba
 import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CancellationException
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
+import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 internal data class BaOfficeAccountCardUiState(
@@ -13,12 +15,16 @@ internal data class BaOfficeAccountCardUiState(
     val friendCode: String,
     val serverIndex: Int,
     val enabled: Boolean,
+    val notificationMode: BaAccountNotificationMode,
+    val remindersEnabled: Boolean,
+    val customReminderSettings: BaGlobalReminderSettings,
 )
 
 internal data class BaOfficeAccountUiState(
     val accounts: List<BaOfficeAccountCardUiState> = emptyList(),
     val activeAccountId: BaAccountId? = null,
     val allAccountsFollowGlobalNotificationSettings: Boolean = true,
+    val globalReminderSettings: BaGlobalReminderSettings = BaGlobalReminderSettings(),
 ) {
     val activeIndex: Int
         get() = accounts.indexOfFirst { it.id == activeAccountId }.coerceAtLeast(0)
@@ -120,10 +126,24 @@ internal fun BaAccountStoreSnapshot.toOfficeAccountUiState(): BaOfficeAccountUiS
                     friendCode = account.profile.friendCode,
                     serverIndex = account.profile.serverIndex.coerceIn(0, 2),
                     enabled = account.profile.enabled,
+                    notificationMode = account.profile.notificationMode,
+                    remindersEnabled = account.profile.remindersEnabled,
+                    customReminderSettings =
+                        account.reminderOverride?.let { override ->
+                            BaGlobalReminderSettings(
+                                apNotifyEnabled = override.apNotifyEnabled,
+                                apNotifyThreshold = override.apNotifyThreshold,
+                                cafeApNotifyEnabled = override.cafeApNotifyEnabled,
+                                cafeApNotifyThreshold = override.cafeApNotifyThreshold,
+                                arenaRefreshNotifyEnabled = override.arenaRefreshNotifyEnabled,
+                                cafeVisitNotifyEnabled = override.cafeVisitNotifyEnabled,
+                            )
+                        } ?: globalReminderSettings,
                 )
             },
         activeAccountId = activeAccountId,
         allAccountsFollowGlobalNotificationSettings = allAccountsFollowGlobalNotificationSettings,
+        globalReminderSettings = globalReminderSettings,
     )
 
 internal fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiState =

@@ -109,6 +109,15 @@
     <string name="ba_account_management_editor_server">Server</string>
     <string name="ba_account_management_editor_cancel">Cancel</string>
     <string name="ba_account_management_editor_save">Save</string>
+    <string name="ba_account_management_reminder_section">Account reminders</string>
+    <string name="ba_account_management_reminders_enabled">Enable reminders for this account</string>
+    <string name="ba_account_management_reminders_enabled_summary">When disabled, AP, Cafe, and Tactical Challenge reminders skip this account.</string>
+    <string name="ba_account_management_notification_mode">Reminder settings</string>
+    <string name="ba_account_management_notification_mode_follow_global">Follow global</string>
+    <string name="ba_account_management_notification_mode_custom">Custom</string>
+    <string name="ba_account_management_global_follow_locked_summary">All accounts currently follow Blue Archive notification settings. Disable global follow to customize one account.</string>
+    <string name="ba_account_management_custom_reminder_summary">These settings affect only this account. Event calendar and recruitment banner reminders still deduplicate by server.</string>
+    <string name="ba_account_management_threshold_hint">120</string>
     <string name="ba_account_management_delete_title">Delete account</string>
     <string name="ba_account_management_delete_summary">This will delete AP, Cafe, and reminder runtime for %1$s.</string>
     <string name="ba_account_management_delete_confirm">Delete</string>

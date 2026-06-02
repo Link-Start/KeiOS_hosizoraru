@@ -320,6 +320,29 @@ class BaAccountStoreTest {
         assertTrue(effective.cafeVisitNotifyEnabled)
     }
 
+    @Test
+    fun `global reminder settings convert to account reminder override with normalized thresholds`() {
+        val accountId = BaAccountId("custom")
+
+        val override =
+            BaGlobalReminderSettings(
+                apNotifyEnabled = true,
+                apNotifyThreshold = BA_AP_MAX + 1,
+                cafeApNotifyEnabled = true,
+                cafeApNotifyThreshold = -1,
+                arenaRefreshNotifyEnabled = true,
+                cafeVisitNotifyEnabled = true,
+            ).toAccountReminderOverride(accountId)
+
+        assertEquals(accountId, override.accountId)
+        assertTrue(override.apNotifyEnabled)
+        assertEquals(BA_AP_MAX, override.apNotifyThreshold)
+        assertTrue(override.cafeApNotifyEnabled)
+        assertEquals(0, override.cafeApNotifyThreshold)
+        assertTrue(override.arenaRefreshNotifyEnabled)
+        assertTrue(override.cafeVisitNotifyEnabled)
+    }
+
     private fun testAccount(
         id: String,
         serverIndex: Int,

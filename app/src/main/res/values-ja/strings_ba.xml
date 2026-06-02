@@ -109,6 +109,15 @@
     <string name="ba_account_management_editor_server">サーバー</string>
     <string name="ba_account_management_editor_cancel">キャンセル</string>
     <string name="ba_account_management_editor_save">保存</string>
+    <string name="ba_account_management_reminder_section">アカウント別リマインダー</string>
+    <string name="ba_account_management_reminders_enabled">このアカウントのリマインダーを有効化</string>
+    <string name="ba_account_management_reminders_enabled_summary">オフにすると、このアカウントの AP、カフェ、戦術対抗戦リマインダーをスキップします。</string>
+    <string name="ba_account_management_notification_mode">リマインダー設定</string>
+    <string name="ba_account_management_notification_mode_follow_global">全体設定に従う</string>
+    <string name="ba_account_management_notification_mode_custom">カスタム</string>
+    <string name="ba_account_management_global_follow_locked_summary">現在は全アカウントがブルーアーカイブ通知設定に従います。全体追従をオフにすると、個別設定を編集できます。</string>
+    <string name="ba_account_management_custom_reminder_summary">これらの設定はこのアカウントだけに適用されます。イベントと募集の通知はサーバー単位で重複排除されます。</string>
+    <string name="ba_account_management_threshold_hint">120</string>
     <string name="ba_account_management_delete_title">アカウントを削除</string>
     <string name="ba_account_management_delete_summary">「%1$s」の AP、カフェ、リマインダー状態を削除します。</string>
     <string name="ba_account_management_delete_confirm">削除</string>

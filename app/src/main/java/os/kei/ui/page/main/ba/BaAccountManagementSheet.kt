@@ -25,7 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
+import os.kei.ui.page.main.ba.support.BaAccountProfileInput
+import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -52,8 +56,8 @@ internal fun BaAccountManagementSheet(
     onAllAccountsFollowGlobalNotificationSettingsChange: (Boolean) -> Unit,
     onAccountEnabledChange: (BaAccountId, Boolean) -> Unit,
     onSelectAccount: (BaAccountId) -> Unit,
-    onAddAccount: (Int, String, String, String) -> Unit,
-    onUpdateAccount: (BaAccountId, Int, String, String, String) -> Unit,
+    onAddAccount: (BaAccountProfileInput) -> Unit,
+    onUpdateAccount: (BaAccountId, BaAccountProfileInput) -> Unit,
     onDeleteAccount: (BaAccountId) -> Unit,
     onMoveAccount: (BaAccountId, Int) -> Unit,
     onDismissRequest: () -> Unit,
@@ -90,6 +94,9 @@ internal fun BaAccountManagementSheet(
                 nickname = defaultAccountName,
                 friendCode = "ARISUKEI",
                 serverIndex = defaultServerIndex,
+                notificationMode = BaAccountNotificationMode.FollowGlobal,
+                remindersEnabled = true,
+                customReminderSettings = state.globalReminderSettings,
             )
         pendingDeleteAccountId = null
     }
@@ -97,19 +104,11 @@ internal fun BaAccountManagementSheet(
     fun saveDraft(draft: BaAccountEditorDraft) {
         val accountId = draft.editingAccountId
         if (accountId == null) {
-            onAddAccount(
-                draft.serverIndex,
-                draft.displayName,
-                draft.nickname,
-                draft.friendCode,
-            )
+            onAddAccount(draft.toInput())
         } else {
             onUpdateAccount(
                 accountId,
-                draft.serverIndex,
-                draft.displayName,
-                draft.nickname,
-                draft.friendCode,
+                draft.toInput(),
             )
         }
         editorDraft = null
@@ -165,6 +164,7 @@ internal fun BaAccountManagementSheet(
                     backdrop = backdrop,
                     draft = draft,
                     serverOptions = serverOptions,
+                    allAccountsFollowGlobalNotificationSettings = state.allAccountsFollowGlobalNotificationSettings,
                     settingsAccent = settingsAccent,
                     onDraftChange = { editorDraft = it },
                     onCancel = { editorDraft = null },
@@ -228,6 +228,7 @@ private fun BaAccountEditorCard(
     backdrop: Backdrop?,
     draft: BaAccountEditorDraft,
     serverOptions: List<String>,
+    allAccountsFollowGlobalNotificationSettings: Boolean,
     settingsAccent: Color,
     onDraftChange: (BaAccountEditorDraft) -> Unit,
     onCancel: () -> Unit,
@@ -235,7 +236,14 @@ private fun BaAccountEditorCard(
 ) {
     var serverDropdownExpanded by remember(draft.editingAccountId) { mutableStateOf(false) }
     var serverDropdownAnchorBounds by remember(draft.editingAccountId) { mutableStateOf<IntRect?>(null) }
+    var reminderModeDropdownExpanded by remember(draft.editingAccountId) { mutableStateOf(false) }
+    var reminderModeDropdownAnchorBounds by remember(draft.editingAccountId) { mutableStateOf<IntRect?>(null) }
     val canSave = draft.displayName.isNotBlank() || draft.nickname.isNotBlank()
+    val reminderModeOptions =
+        listOf(
+            stringResource(R.string.ba_account_management_notification_mode_follow_global),
+            stringResource(R.string.ba_account_management_notification_mode_custom),
+        )
 
     SheetSectionCard {
         SheetInputTitle(
@@ -292,6 +300,72 @@ private fun BaAccountEditorCard(
                 anchorAlignment = Alignment.CenterEnd,
             )
         }
+        SheetInputTitle(stringResource(R.string.ba_account_management_reminder_section))
+        SheetControlRow(
+            label = stringResource(R.string.ba_account_management_reminders_enabled),
+            summary = stringResource(R.string.ba_account_management_reminders_enabled_summary),
+        ) {
+            AppSwitch(
+                checked = draft.remindersEnabled,
+                onCheckedChange = { enabled -> onDraftChange(draft.copy(remindersEnabled = enabled)) },
+            )
+        }
+        if (allAccountsFollowGlobalNotificationSettings) {
+            SheetDescriptionText(stringResource(R.string.ba_account_management_global_follow_locked_summary))
+        } else {
+            SheetControlRow(
+                label = stringResource(R.string.ba_account_management_notification_mode),
+            ) {
+                AppDropdownSelector(
+                    modifier = Modifier.width(156.dp),
+                    selectedText =
+                        reminderModeOptions[
+                            when (draft.notificationMode) {
+                                BaAccountNotificationMode.FollowGlobal -> 0
+                                BaAccountNotificationMode.Custom -> 1
+                            },
+                        ],
+                    options = reminderModeOptions,
+                    selectedIndex =
+                        when (draft.notificationMode) {
+                            BaAccountNotificationMode.FollowGlobal -> 0
+                            BaAccountNotificationMode.Custom -> 1
+                        },
+                    expanded = reminderModeDropdownExpanded,
+                    anchorBounds = reminderModeDropdownAnchorBounds,
+                    onExpandedChange = { reminderModeDropdownExpanded = it },
+                    onSelectedIndexChange = { index ->
+                        onDraftChange(
+                            draft.copy(
+                                notificationMode =
+                                    if (index == 1) {
+                                        BaAccountNotificationMode.Custom
+                                    } else {
+                                        BaAccountNotificationMode.FollowGlobal
+                                    },
+                            ),
+                        )
+                        reminderModeDropdownExpanded = false
+                    },
+                    onAnchorBoundsChange = { reminderModeDropdownAnchorBounds = it },
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    textColor = settingsAccent,
+                    anchorAlignment = Alignment.CenterEnd,
+                )
+            }
+            if (draft.notificationMode == BaAccountNotificationMode.Custom && draft.remindersEnabled) {
+                SheetDescriptionText(stringResource(R.string.ba_account_management_custom_reminder_summary))
+                BaAccountCustomReminderEditor(
+                    backdrop = backdrop,
+                    settings = draft.customReminderSettings,
+                    settingsAccent = settingsAccent,
+                    onSettingsChange = { settings ->
+                        onDraftChange(draft.copy(customReminderSettings = settings))
+                    },
+                )
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -316,6 +390,99 @@ private fun BaAccountEditorCard(
                 onClick = { onSave(draft) },
             )
         }
+    }
+}
+
+@Composable
+private fun BaAccountCustomReminderEditor(
+    backdrop: Backdrop?,
+    settings: BaGlobalReminderSettings,
+    settingsAccent: Color,
+    onSettingsChange: (BaGlobalReminderSettings) -> Unit,
+) {
+    SheetControlRow(label = stringResource(R.string.ba_settings_label_ap_notify)) {
+        AppSwitch(
+            checked = settings.apNotifyEnabled,
+            onCheckedChange = { enabled -> onSettingsChange(settings.copy(apNotifyEnabled = enabled)) },
+        )
+    }
+    if (settings.apNotifyEnabled) {
+        BaAccountReminderThresholdRow(
+            backdrop = backdrop,
+            label = stringResource(R.string.ba_settings_label_ap_threshold),
+            threshold = settings.apNotifyThreshold,
+            settingsAccent = settingsAccent,
+            onThresholdChange = { threshold ->
+                onSettingsChange(settings.copy(apNotifyThreshold = threshold))
+            },
+        )
+    }
+    SheetControlRow(
+        label = stringResource(R.string.ba_settings_label_cafe_ap_notify),
+        summary = stringResource(R.string.ba_settings_summary_cafe_ap_notify),
+    ) {
+        AppSwitch(
+            checked = settings.cafeApNotifyEnabled,
+            onCheckedChange = { enabled -> onSettingsChange(settings.copy(cafeApNotifyEnabled = enabled)) },
+        )
+    }
+    if (settings.cafeApNotifyEnabled) {
+        BaAccountReminderThresholdRow(
+            backdrop = backdrop,
+            label = stringResource(R.string.ba_settings_label_cafe_ap_threshold),
+            threshold = settings.cafeApNotifyThreshold,
+            settingsAccent = settingsAccent,
+            onThresholdChange = { threshold ->
+                onSettingsChange(settings.copy(cafeApNotifyThreshold = threshold))
+            },
+        )
+    }
+    SheetControlRow(
+        label = stringResource(R.string.ba_settings_label_arena_refresh_notify),
+        summary = stringResource(R.string.ba_settings_summary_arena_refresh_notify),
+    ) {
+        AppSwitch(
+            checked = settings.arenaRefreshNotifyEnabled,
+            onCheckedChange = { enabled ->
+                onSettingsChange(settings.copy(arenaRefreshNotifyEnabled = enabled))
+            },
+        )
+    }
+    SheetControlRow(
+        label = stringResource(R.string.ba_settings_label_cafe_visit_notify),
+        summary = stringResource(R.string.ba_settings_summary_cafe_visit_notify),
+    ) {
+        AppSwitch(
+            checked = settings.cafeVisitNotifyEnabled,
+            onCheckedChange = { enabled ->
+                onSettingsChange(settings.copy(cafeVisitNotifyEnabled = enabled))
+            },
+        )
+    }
+}
+
+@Composable
+private fun BaAccountReminderThresholdRow(
+    backdrop: Backdrop?,
+    label: String,
+    threshold: Int,
+    settingsAccent: Color,
+    onThresholdChange: (Int) -> Unit,
+) {
+    SheetControlRow(label = label) {
+        AppLiquidSearchField(
+            modifier = Modifier.width(70.dp),
+            value = threshold.coerceIn(0, BA_AP_MAX).toString(),
+            onValueChange = { input ->
+                normalizeAccountReminderThresholdInput(input)?.let(onThresholdChange)
+            },
+            label = stringResource(R.string.ba_account_management_threshold_hint),
+            backdrop = backdrop,
+            variant = GlassVariant.SheetInput,
+            singleLine = true,
+            textColor = settingsAccent,
+            fontSize = 18.sp,
+        )
     }
 }
 
@@ -523,7 +690,21 @@ private data class BaAccountEditorDraft(
     val nickname: String,
     val friendCode: String,
     val serverIndex: Int,
+    val notificationMode: BaAccountNotificationMode,
+    val remindersEnabled: Boolean,
+    val customReminderSettings: BaGlobalReminderSettings,
 )
+
+private fun BaAccountEditorDraft.toInput(): BaAccountProfileInput =
+    BaAccountProfileInput(
+        serverIndex = serverIndex,
+        displayName = displayName,
+        nickname = nickname,
+        friendCode = friendCode,
+        notificationMode = notificationMode,
+        remindersEnabled = remindersEnabled,
+        customReminderSettings = customReminderSettings,
+    )
 
 private fun BaOfficeAccountCardUiState.toEditorDraft(): BaAccountEditorDraft =
     BaAccountEditorDraft(
@@ -532,4 +713,13 @@ private fun BaOfficeAccountCardUiState.toEditorDraft(): BaAccountEditorDraft =
         nickname = nickname,
         friendCode = friendCode,
         serverIndex = serverIndex,
+        notificationMode = notificationMode,
+        remindersEnabled = remindersEnabled,
+        customReminderSettings = customReminderSettings,
     )
+
+private fun normalizeAccountReminderThresholdInput(input: String): Int? {
+    val digits = input.filter { it.isDigit() }.take(3)
+    if (digits.isBlank()) return null
+    return digits.toIntOrNull()?.coerceIn(0, BA_AP_MAX)
+}

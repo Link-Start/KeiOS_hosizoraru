@@ -152,24 +152,29 @@ internal object BASettingsStore {
         return updated
     }
 
-    fun addAccount(
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
-    ): BaAccountStoreSnapshot {
+    fun addAccount(input: BaAccountProfileInput): BaAccountStoreSnapshot {
         val store = migratedAccountStore()
+        val accountId = newManualAccountId(input.serverIndex)
+        val nextNickname = sanitizeBaAccountNickname(input.nickname)
         val account =
             BaAccountRecord(
                 profile =
                     BaAccountProfile(
-                        id = newManualAccountId(serverIndex),
-                        serverIndex = serverIndex.coerceIn(0, 2),
-                        displayName = sanitizeBaAccountDisplayName(displayName, nickname),
-                        nickname = sanitizeBaAccountNickname(nickname),
-                        friendCode = sanitizeBaAccountFriendCode(friendCode),
+                        id = accountId,
+                        serverIndex = input.serverIndex.coerceIn(0, 2),
+                        displayName = sanitizeBaAccountDisplayName(input.displayName, nextNickname),
+                        nickname = nextNickname,
+                        friendCode = sanitizeBaAccountFriendCode(input.friendCode),
+                        notificationMode = input.notificationMode,
+                        remindersEnabled = input.remindersEnabled,
                         sortOrder = store.loadAccounts().size,
                     ),
+                reminderOverride =
+                    if (input.notificationMode == BaAccountNotificationMode.Custom) {
+                        input.customReminderSettings.toAccountReminderOverride(accountId)
+                    } else {
+                        null
+                    },
             )
         store.addAccount(account)
         store.selectActiveAccount(account.profile.id)
@@ -179,24 +184,29 @@ internal object BASettingsStore {
 
     fun updateAccountProfile(
         accountId: BaAccountId,
-        serverIndex: Int,
-        displayName: String,
-        nickname: String,
-        friendCode: String,
+        input: BaAccountProfileInput,
     ): BaAccountStoreSnapshot {
         val store = migratedAccountStore()
         val account = store.loadAccounts().firstOrNull { it.profile.id == accountId }
         if (account != null) {
-            val nextNickname = sanitizeBaAccountNickname(nickname)
+            val nextNickname = sanitizeBaAccountNickname(input.nickname)
             store.updateAccount(
                 account.copy(
                     profile =
                         account.profile.copy(
-                            serverIndex = serverIndex.coerceIn(0, 2),
-                            displayName = sanitizeBaAccountDisplayName(displayName, nextNickname),
+                            serverIndex = input.serverIndex.coerceIn(0, 2),
+                            displayName = sanitizeBaAccountDisplayName(input.displayName, nextNickname),
                             nickname = nextNickname,
-                            friendCode = sanitizeBaAccountFriendCode(friendCode),
+                            friendCode = sanitizeBaAccountFriendCode(input.friendCode),
+                            notificationMode = input.notificationMode,
+                            remindersEnabled = input.remindersEnabled,
                         ),
+                    reminderOverride =
+                        if (input.notificationMode == BaAccountNotificationMode.Custom) {
+                            input.customReminderSettings.toAccountReminderOverride(accountId)
+                        } else {
+                            null
+                        },
                 ),
             )
             notifyChanged()

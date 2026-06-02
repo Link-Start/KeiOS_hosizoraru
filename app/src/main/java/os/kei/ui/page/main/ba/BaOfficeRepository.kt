@@ -3,6 +3,8 @@ package os.kei.ui.page.main.ba
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 internal data class BaOfficeIdentity(
@@ -16,6 +18,22 @@ internal object BaOfficeRepository {
     suspend fun loadSnapshotAsync(): BaPageSnapshot =
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.loadSnapshot()
+        }
+
+    fun loadAccountState(): BaAccountStoreSnapshot = BASettingsStore.loadAccountState()
+
+    suspend fun loadAccountStateAsync(): BaAccountStoreSnapshot =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.loadAccountState()
+        }
+
+    suspend fun selectActiveAccountAsync(accountId: BaAccountId): BaPageSnapshot? =
+        withContext(AppDispatchers.baFetch) {
+            if (BASettingsStore.selectActiveAccount(accountId)) {
+                BASettingsStore.loadSnapshot()
+            } else {
+                null
+            }
         }
 
     fun loadServerIndex(): Int = BASettingsStore.loadServerIndex()
@@ -105,8 +123,22 @@ internal object BaOfficeRepository {
         BASettingsStore.saveCafeApLastNotifiedLevel(level)
     }
 
+    fun saveAccountCafeApLastNotifiedLevel(
+        accountId: BaAccountId,
+        level: Int,
+    ) {
+        BASettingsStore.saveAccountCafeApLastNotifiedLevel(accountId, level)
+    }
+
     fun saveApLastNotifiedLevel(level: Int) {
         BASettingsStore.saveApLastNotifiedLevel(level)
+    }
+
+    fun saveAccountApLastNotifiedLevel(
+        accountId: BaAccountId,
+        level: Int,
+    ) {
+        BASettingsStore.saveAccountApLastNotifiedLevel(accountId, level)
     }
 
     fun saveApLimit(limit: Int) {
@@ -190,6 +222,7 @@ internal object BaOfficeRepository {
     }
 
     fun saveRuntimeState(
+        accountId: BaAccountId? = null,
         apCurrent: Double? = null,
         apRegenBaseMs: Long? = null,
         apSyncMs: Long? = null,
@@ -197,13 +230,25 @@ internal object BaOfficeRepository {
         cafeLastHourMs: Long? = null,
         notifyHomeOverview: Boolean = true,
     ) {
-        BASettingsStore.saveBaRuntimeState(
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            apSyncMs = apSyncMs,
-            cafeStoredAp = cafeStoredAp,
-            cafeLastHourMs = cafeLastHourMs,
-            notifyHomeOverview = notifyHomeOverview,
-        )
+        if (accountId == null) {
+            BASettingsStore.saveBaRuntimeState(
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
+                apSyncMs = apSyncMs,
+                cafeStoredAp = cafeStoredAp,
+                cafeLastHourMs = cafeLastHourMs,
+                notifyHomeOverview = notifyHomeOverview,
+            )
+        } else {
+            BASettingsStore.saveAccountBaRuntimeState(
+                accountId = accountId,
+                apCurrent = apCurrent,
+                apRegenBaseMs = apRegenBaseMs,
+                apSyncMs = apSyncMs,
+                cafeStoredAp = cafeStoredAp,
+                cafeLastHourMs = cafeLastHourMs,
+                notifyHomeOverview = notifyHomeOverview,
+            )
+        }
     }
 }

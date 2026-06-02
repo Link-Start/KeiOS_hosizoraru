@@ -30,6 +30,7 @@ internal fun buildBaPagePresentationState(
             poolUiState = poolUiState,
             chromeUiState = officePageUiState.chromeUiState,
             syncUiState = officePageUiState.syncUiState,
+            accountUiState = officePageUiState.accountUiState,
             serverUiState = officePageUiState.serverUiState,
             runtimeUiState = officePageUiState.runtimeUiState,
             settingsDraftUiState = officePageUiState.settingsDraftUiState,

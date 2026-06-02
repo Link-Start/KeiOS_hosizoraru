@@ -125,6 +125,14 @@ internal object BASettingsStore {
         return migratedAccountStore().loadState()
     }
 
+    fun selectActiveAccount(accountId: BaAccountId): Boolean {
+        val selected = migratedAccountStore().selectActiveAccount(accountId)
+        if (selected) {
+            notifyChanged()
+        }
+        return selected
+    }
+
     fun migrateAccountsIfNeeded(): BaAccountMigrationResult {
         val keyValueStore = accountKeyValueStore()
         val store = accountStore(keyValueStore)

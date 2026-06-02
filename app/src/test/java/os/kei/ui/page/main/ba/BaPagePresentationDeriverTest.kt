@@ -23,6 +23,7 @@ class BaPagePresentationDeriverTest {
                 poolUiState = BaPoolUiState(),
                 chromeUiState = BaOfficeChromeUiState(),
                 syncUiState = BaOfficeSyncUiState(),
+                accountUiState = BaOfficeAccountUiState(),
                 serverUiState = BaOfficeServerUiState(),
                 runtimeUiState =
                     BaOfficeRuntimeUiState(

@@ -2,7 +2,26 @@ package os.kei.ui.page.main.ba
 
 import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CancellationException
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+
+internal data class BaOfficeAccountCardUiState(
+    val id: BaAccountId,
+    val displayName: String,
+    val nickname: String,
+    val friendCode: String,
+    val serverIndex: Int,
+    val enabled: Boolean,
+)
+
+internal data class BaOfficeAccountUiState(
+    val accounts: List<BaOfficeAccountCardUiState> = emptyList(),
+    val activeAccountId: BaAccountId? = null,
+) {
+    val activeIndex: Int
+        get() = accounts.indexOfFirst { it.id == activeAccountId }.coerceAtLeast(0)
+}
 
 internal data class BaOfficeServerUiState(
     val serverIndex: Int = BaPageSnapshot().serverIndex,
@@ -51,6 +70,7 @@ internal data class BaOfficeNotificationDraftUiState(
 
 internal data class BaOfficePageUiState(
     val chromeUiState: BaOfficeChromeUiState = BaOfficeChromeUiState(),
+    val accountUiState: BaOfficeAccountUiState = BaOfficeAccountUiState(),
     val syncUiState: BaOfficeSyncUiState = BaOfficeSyncUiState(),
     val serverUiState: BaOfficeServerUiState = BaOfficeServerUiState(),
     val runtimeUiState: BaOfficeRuntimeUiState = BaOfficeRuntimeUiState(),
@@ -85,6 +105,22 @@ internal fun BaPageSnapshot.toRuntimeUiState(): BaOfficeRuntimeUiState =
         mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
         idIndependentByServer = idIndependentByServer,
         calendarRefreshIntervalHours = calendarRefreshIntervalHours,
+    )
+
+internal fun BaAccountStoreSnapshot.toOfficeAccountUiState(): BaOfficeAccountUiState =
+    BaOfficeAccountUiState(
+        accounts =
+            accounts.map { account ->
+                BaOfficeAccountCardUiState(
+                    id = account.profile.id,
+                    displayName = account.profile.displayName,
+                    nickname = account.profile.nickname,
+                    friendCode = account.profile.friendCode,
+                    serverIndex = account.profile.serverIndex.coerceIn(0, 2),
+                    enabled = account.profile.enabled,
+                )
+            },
+        activeAccountId = activeAccountId,
     )
 
 internal fun BaOfficeChromeUiState.withoutFloatingPopups(): BaOfficeChromeUiState =

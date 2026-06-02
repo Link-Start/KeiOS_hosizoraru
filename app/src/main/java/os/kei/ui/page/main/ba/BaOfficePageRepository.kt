@@ -2,6 +2,8 @@ package os.kei.ui.page.main.ba
 
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
@@ -34,6 +36,11 @@ internal class BaOfficePageRepository(
     private val clock: BaOfficeClock = BaSystemOfficeClock,
 ) {
     suspend fun loadInitialSnapshot(): BaPageSnapshot = BaOfficeRepository.loadSnapshotAsync()
+
+    suspend fun loadAccountState(): BaAccountStoreSnapshot = BaOfficeRepository.loadAccountStateAsync()
+
+    suspend fun selectActiveAccount(accountId: BaAccountId): BaPageSnapshot? =
+        BaOfficeRepository.selectActiveAccountAsync(accountId)
 
     suspend fun clearListScrollState() {
         BaOfficeRepository.clearListScrollStateAsync()

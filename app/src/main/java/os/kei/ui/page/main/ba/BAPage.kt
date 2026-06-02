@@ -128,6 +128,7 @@ fun BAPage(
             )
         }
     val baRouteState = pagePresentationState.routeState
+    val accountUiState = officePageUiState.accountUiState
     val settingsSheetState = pagePresentationState.settingsSheetState
     val notificationSettingsSheetState = pagePresentationState.notificationSettingsSheetState
     val savedSettingsDraftState = pagePresentationState.savedSettingsDraftState
@@ -141,7 +142,10 @@ fun BAPage(
             active = runtime.isSettledDataActive,
         )
     val baGlassRuntime = LocalGlassEffectRuntime.current
-    val runtimePersistenceCoordinator = rememberBaRuntimePersistenceCoordinator()
+    val runtimePersistenceCoordinator =
+        rememberBaRuntimePersistenceCoordinator(
+            accountIdProvider = { accountUiState.activeAccountId },
+        )
 
     fun openSettingsSheet() {
         officeViewModel.showSettingsSheet(savedSettingsDraftState)
@@ -256,6 +260,7 @@ fun BAPage(
                 office = office,
                 scope = pageScope,
                 serverIndexProvider = { currentServerIndexState.value },
+                accountIdProvider = { accountUiState.activeAccountId },
                 onServerSelected = officeViewModel::selectServer,
                 onSettingsCafeLevelChange = { level ->
                     officeViewModel.updateSettingsDraft { draft -> draft.copy(cafeLevel = level) }
@@ -264,6 +269,15 @@ fun BAPage(
                 onOverviewServerPopupChange = officeViewModel::updateOverviewServerPopupExpanded,
                 onCafeLevelPopupAnchorBoundsChange = officeViewModel::updateCafeLevelPopupAnchorBounds,
                 onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
+                onAccountSelected = { accountId ->
+                    officeViewModel.selectActiveAccount(
+                        accountId = accountId,
+                        currentRuntimeUpdate =
+                            office
+                                .applyRuntimeTick()
+                                ?.withAccountId(accountUiState.activeAccountId),
+                    )
+                },
                 onRefreshCalendar = { refreshCalendar(force = true) },
                 onRefreshPool = { refreshPool(force = true) },
                 onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },

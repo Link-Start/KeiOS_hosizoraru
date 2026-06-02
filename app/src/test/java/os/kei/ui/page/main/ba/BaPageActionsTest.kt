@@ -2,6 +2,7 @@ package os.kei.ui.page.main.ba
 
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BaAccountId
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -59,6 +60,20 @@ class BaPageActionsTest {
         assertEquals(1_000L, merged.apRegenBaseMs)
         assertEquals(30.0, merged.cafeStoredAp)
         assertTrue(merged.notifyHomeOverview)
+    }
+
+    @Test
+    fun `runtime persistence update keeps submitted account id`() {
+        val accountId = BaAccountId("cn-main")
+
+        val update =
+            BaRuntimePersistenceUpdate(apCurrent = 120.0)
+                .withAccountId(accountId)
+                .mergedWith(BaRuntimePersistenceUpdate(cafeStoredAp = 30.0).withAccountId(accountId))
+
+        assertEquals(accountId, update.accountId)
+        assertEquals(120.0, update.apCurrent)
+        assertEquals(30.0, update.cafeStoredAp)
     }
 
     @Test

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 internal class BaOfficeViewModel(
@@ -27,6 +28,8 @@ internal class BaOfficeViewModel(
     private val repository = BaOfficePageRepository(clock)
     private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
     val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
+    private val _accountUiState = MutableStateFlow(BaOfficeAccountUiState())
+    val accountUiState: StateFlow<BaOfficeAccountUiState> = _accountUiState.asStateFlow()
     private val _syncUiState = MutableStateFlow(BaOfficeSyncUiState())
     val syncUiState: StateFlow<BaOfficeSyncUiState> = _syncUiState.asStateFlow()
     private val _serverUiState = MutableStateFlow(BaOfficeServerUiState(defaultSnapshot.serverIndex))
@@ -46,6 +49,7 @@ internal class BaOfficeViewModel(
     val pageUiState: StateFlow<BaOfficePageUiState> =
         combine(
             chromeUiState,
+            accountUiState,
             syncUiState,
             serverUiState,
             runtimeUiState,
@@ -54,13 +58,15 @@ internal class BaOfficeViewModel(
         ) { values ->
             @Suppress("UNCHECKED_CAST")
             val chrome = values[0] as BaOfficeChromeUiState
-            val sync = values[1] as BaOfficeSyncUiState
-            val server = values[2] as BaOfficeServerUiState
-            val runtime = values[3] as BaOfficeRuntimeUiState
-            val settingsDraft = values[4] as BaOfficeSettingsDraftUiState
-            val notificationDraft = values[5] as BaOfficeNotificationDraftUiState
+            val account = values[1] as BaOfficeAccountUiState
+            val sync = values[2] as BaOfficeSyncUiState
+            val server = values[3] as BaOfficeServerUiState
+            val runtime = values[4] as BaOfficeRuntimeUiState
+            val settingsDraft = values[5] as BaOfficeSettingsDraftUiState
+            val notificationDraft = values[6] as BaOfficeNotificationDraftUiState
             BaOfficePageUiState(
                 chromeUiState = chrome,
+                accountUiState = account,
                 syncUiState = sync,
                 serverUiState = server,
                 runtimeUiState = runtime,
@@ -73,6 +79,7 @@ internal class BaOfficeViewModel(
             initialValue =
                 BaOfficePageUiState(
                     chromeUiState = _chromeUiState.value,
+                    accountUiState = _accountUiState.value,
                     syncUiState = _syncUiState.value,
                     serverUiState = _serverUiState.value,
                     runtimeUiState = _runtimeUiState.value,
@@ -87,9 +94,11 @@ internal class BaOfficeViewModel(
     init {
         viewModelScope.launch {
             val snapshot = repository.loadInitialSnapshot()
+            val accountState = repository.loadAccountState()
             if (office.matchesSnapshot(defaultSnapshot)) {
                 office.applySnapshot(snapshot)
             }
+            _accountUiState.value = accountState.toOfficeAccountUiState()
             _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
             _runtimeUiState.value = snapshot.toRuntimeUiState()
             _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
@@ -350,6 +359,8 @@ internal class BaOfficeViewModel(
     fun refreshRuntimeSettingsFromStore() {
         viewModelScope.launch {
             val snapshot = repository.loadInitialSnapshot()
+            val accountState = repository.loadAccountState()
+            _accountUiState.value = accountState.toOfficeAccountUiState()
             _runtimeUiState.update { state ->
                 state.copy(
                     showEndedPools = snapshot.showEndedPools,
@@ -364,6 +375,37 @@ internal class BaOfficeViewModel(
             }
             if (!_chromeUiState.value.showSettingsSheet) {
                 _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
+            }
+        }
+    }
+
+    fun selectActiveAccount(
+        accountId: BaAccountId,
+        currentRuntimeUpdate: BaRuntimePersistenceUpdate?,
+    ) {
+        if (_accountUiState.value.activeAccountId == accountId) return
+        viewModelScope.launch {
+            try {
+                currentRuntimeUpdate?.persistAsync()
+                val snapshot = repository.selectActiveAccount(accountId) ?: return@launch
+                val accountState = repository.loadAccountState()
+                office.applySnapshot(snapshot)
+                _accountUiState.value = accountState.toOfficeAccountUiState()
+                _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
+                _runtimeUiState.value = snapshot.toRuntimeUiState()
+                _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
+                val notificationDraft = snapshot.toNotificationDraftState()
+                _notificationDraftUiState.value =
+                    BaOfficeNotificationDraftUiState(
+                        draft = notificationDraft,
+                        savedDraft = notificationDraft,
+                    )
+                refreshCalendar(force = true)
+                refreshPool(force = true)
+                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(BaOfficeEvent.OperationFailed(error))
             }
         }
     }

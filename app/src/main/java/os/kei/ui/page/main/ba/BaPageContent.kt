@@ -16,8 +16,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.ba.card.BaAccountPagerCard
 import os.kei.ui.page.main.ba.card.BaCafeCard
 import os.kei.ui.page.main.ba.card.BaOverviewCard
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -28,6 +30,7 @@ internal data class BaPageContentState(
     val officeOverviewTitle: String,
     val officeState: BaOfficeState,
     val clockState: BaPageClockState,
+    val accountUiState: BaOfficeAccountUiState,
     val serverOptions: List<String>,
     val cafeLevelOptions: List<Int>,
     val serverIndex: Int,
@@ -60,6 +63,7 @@ internal data class BaPageContentActions(
     val onOverviewServerPopupChange: (Boolean) -> Unit,
     val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     val onCafeLevelPopupChange: (Boolean) -> Unit,
+    val onAccountSelected: (BaAccountId) -> Unit,
     val onCafeLevelChange: (Int) -> Unit,
     val onServerSelected: (Int) -> Unit,
     val onClaimCafeStoredAp: () -> Unit,
@@ -81,6 +85,7 @@ internal data class BaPageContentActions(
 )
 
 internal enum class BaPageContentType {
+    Account,
     Overview,
     Cafe,
 }
@@ -114,6 +119,18 @@ internal fun BaPageContent(
             ),
         verticalArrangement = Arrangement.spacedBy(pageGap),
     ) {
+        if (state.accountUiState.accounts.isNotEmpty()) {
+            item(key = "ba-account", contentType = BaPageContentType.Account) {
+                BaAccountPagerCard(
+                    backdrop = backdrop,
+                    accounts = state.accountUiState.accounts,
+                    activeAccountId = state.accountUiState.activeAccountId,
+                    serverOptions = state.serverOptions,
+                    onAccountSelected = actions.onAccountSelected,
+                )
+            }
+        }
+
         item(key = "ba-overview", contentType = BaPageContentType.Overview) {
             BaOverviewCard(
                 backdrop = backdrop,

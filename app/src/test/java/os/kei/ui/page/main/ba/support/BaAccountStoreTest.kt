@@ -64,6 +64,105 @@ class BaAccountStoreTest {
     }
 
     @Test
+    fun `runtime updates only active account`() {
+        val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
+        store.saveAccounts(
+            listOf(
+                testAccount(id = "cn-main", serverIndex = 0, sortOrder = 0),
+                testAccount(id = "cn-alt", serverIndex = 0, sortOrder = 1),
+            ),
+        )
+        assertTrue(store.selectActiveAccount(BaAccountId("cn-alt")))
+
+        assertTrue(
+            store.updateActiveAccountRuntime { runtime ->
+                runtime.copy(
+                    apLimit = 180,
+                    apCurrent = 77.5,
+                    cafeLevel = 8,
+                    cafeStoredAp = 90.25,
+                    coffeeHeadpatMs = 10_000L,
+                )
+            },
+        )
+
+        val accounts = store.loadAccounts()
+        assertEquals(DEFAULT_AP_LIMIT, accounts[0].runtime.apLimit)
+        assertEquals(DEFAULT_CAFE_LEVEL, accounts[0].runtime.cafeLevel)
+        assertEquals(180, accounts[1].runtime.apLimit)
+        assertEquals(77.5, accounts[1].runtime.apCurrent)
+        assertEquals(8, accounts[1].runtime.cafeLevel)
+        assertEquals(90.25, accounts[1].runtime.cafeStoredAp)
+        assertEquals(10_000L, accounts[1].runtime.coffeeHeadpatMs)
+    }
+
+    @Test
+    fun `profile updates only active account and keeps account id stable`() {
+        val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
+        store.saveAccounts(
+            listOf(
+                testAccount(id = "jp-main", serverIndex = 2, nickname = "Main", sortOrder = 0),
+                testAccount(id = "jp-alt", serverIndex = 2, nickname = "Alt", sortOrder = 1),
+            ),
+        )
+        assertTrue(store.selectActiveAccount(BaAccountId("jp-alt")))
+
+        assertTrue(
+            store.updateActiveAccountProfile { profile ->
+                profile.copy(
+                    id = BaAccountId("should-not-win"),
+                    serverIndex = 1,
+                    displayName = "Renamed",
+                    nickname = "Global",
+                    friendCode = "GLFriend",
+                )
+            },
+        )
+
+        val accounts = store.loadAccounts()
+        assertEquals(BaAccountId("jp-main"), accounts[0].profile.id)
+        assertEquals(2, accounts[0].profile.serverIndex)
+        assertEquals("Main", accounts[0].profile.nickname)
+        assertEquals(BaAccountId("jp-alt"), accounts[1].profile.id)
+        assertEquals(1, accounts[1].profile.serverIndex)
+        assertEquals("Renamed", accounts[1].profile.displayName)
+        assertEquals("Global", accounts[1].profile.nickname)
+        assertEquals("GLFRIEND", accounts[1].profile.friendCode)
+    }
+
+    @Test
+    fun `reminder runtime updates only active account`() {
+        val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
+        store.saveAccounts(
+            listOf(
+                testAccount(id = "global-main", serverIndex = 1, sortOrder = 0),
+                testAccount(id = "global-alt", serverIndex = 1, sortOrder = 1),
+            ),
+        )
+        assertTrue(store.selectActiveAccount(BaAccountId("global-alt")))
+
+        assertTrue(
+            store.updateActiveAccountReminderRuntime { runtime ->
+                runtime.copy(
+                    apLastNotifiedLevel = 120,
+                    cafeApLastNotifiedLevel = 130,
+                    arenaRefreshLastNotifiedSlotMs = 4000L,
+                    cafeVisitLastNotifiedSlotMs = 5000L,
+                )
+            },
+        )
+
+        val accounts = store.loadAccounts()
+        assertEquals(-1, accounts[0].reminderRuntime.apLastNotifiedLevel)
+        assertEquals(-1, accounts[0].reminderRuntime.cafeApLastNotifiedLevel)
+        assertEquals(0L, accounts[0].reminderRuntime.arenaRefreshLastNotifiedSlotMs)
+        assertEquals(120, accounts[1].reminderRuntime.apLastNotifiedLevel)
+        assertEquals(130, accounts[1].reminderRuntime.cafeApLastNotifiedLevel)
+        assertEquals(4000L, accounts[1].reminderRuntime.arenaRefreshLastNotifiedSlotMs)
+        assertEquals(5000L, accounts[1].reminderRuntime.cafeVisitLastNotifiedSlotMs)
+    }
+
+    @Test
     fun `custom reminder settings are ignored while all accounts follow global`() {
         val account =
             testAccount(

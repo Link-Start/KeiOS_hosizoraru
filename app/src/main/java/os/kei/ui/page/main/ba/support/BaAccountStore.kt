@@ -86,6 +86,28 @@ internal class BaAccountStore(
         return true
     }
 
+    fun updateActiveAccountProfile(transform: (BaAccountProfile) -> BaAccountProfile): Boolean =
+        updateActiveAccountRecord { account ->
+            account.copy(
+                profile =
+                    transform(account.profile).copy(
+                        id = account.profile.id,
+                    ),
+            )
+        }
+
+    fun updateActiveAccountRuntime(transform: (BaAccountRuntime) -> BaAccountRuntime): Boolean =
+        updateActiveAccountRecord { account ->
+            account.copy(runtime = transform(account.runtime).normalized())
+        }
+
+    fun updateActiveAccountReminderRuntime(
+        transform: (BaAccountReminderRuntime) -> BaAccountReminderRuntime,
+    ): Boolean =
+        updateActiveAccountRecord { account ->
+            account.copy(reminderRuntime = transform(account.reminderRuntime).normalized())
+        }
+
     fun deleteAccount(accountId: BaAccountId): Boolean {
         val current = loadAccounts()
         val updated = current.filterNot { it.profile.id == accountId }
@@ -159,6 +181,30 @@ internal class BaAccountStore(
         val active = loadActiveAccountId()
         if (active != null && accounts.any { it.profile.id == active }) return active
         return accounts.firstOrNull()?.profile?.id
+    }
+
+    private fun updateActiveAccountRecord(transform: (BaAccountRecord) -> BaAccountRecord): Boolean {
+        val current = loadAccounts()
+        val activeAccountId = resolveActiveAccountId(current) ?: return false
+        var changed = false
+        val updated =
+            current.map { account ->
+                if (account.profile.id != activeAccountId) {
+                    account
+                } else {
+                    changed = true
+                    val transformed = transform(account)
+                    transformed.copy(
+                        profile =
+                            transformed.profile.copy(
+                                id = activeAccountId,
+                            ),
+                    )
+                }
+            }
+        if (!changed) return false
+        saveAccounts(updated)
+        return true
     }
 }
 

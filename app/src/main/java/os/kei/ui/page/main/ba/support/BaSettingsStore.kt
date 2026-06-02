@@ -22,6 +22,16 @@ internal object BASettingsStore {
     private fun accountStore(keyValueStore: MmkvBaSettingsKeyValueStore = accountKeyValueStore()): BaAccountStore =
         BaAccountStore(keyValueStore)
 
+    private fun migratedAccountStore(): BaAccountStore {
+        val keyValueStore = accountKeyValueStore()
+        val store = accountStore(keyValueStore)
+        BaAccountMigration(
+            accountStore = store,
+            keyValueStore = keyValueStore,
+        ).migrateLegacyIfNeeded()
+        return store
+    }
+
     private fun cacheStore(): BaSettingsCacheStore = BaSettingsCacheStore(kv()) { notifyChanged() }
 
     fun loadCalendarCache(serverIndex: Int): Pair<String, Long> = cacheStore().loadCalendarCache(serverIndex)
@@ -112,13 +122,7 @@ internal object BASettingsStore {
     }
 
     fun loadAccountState(): BaAccountStoreSnapshot {
-        val keyValueStore = accountKeyValueStore()
-        val store = accountStore(keyValueStore)
-        BaAccountMigration(
-            accountStore = store,
-            keyValueStore = keyValueStore,
-        ).migrateLegacyIfNeeded()
-        return store.loadState()
+        return migratedAccountStore().loadState()
     }
 
     fun migrateAccountsIfNeeded(): BaAccountMigrationResult {
@@ -137,10 +141,22 @@ internal object BASettingsStore {
 
     fun loadPoolCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadPoolCacheSnapshot(serverIndex)
 
-    fun loadServerIndex(): Int = kv().decodeInt(KEY_SERVER_INDEX, DEFAULT_SERVER_INDEX).coerceIn(0, 2)
+    fun loadServerIndex(): Int {
+        val accountState = loadAccountState()
+        return accountState
+            .accounts
+            .firstOrNull { it.profile.id == accountState.activeAccountId }
+            ?.profile
+            ?.serverIndex
+            ?: kv().decodeInt(KEY_SERVER_INDEX, DEFAULT_SERVER_INDEX).coerceIn(0, 2)
+    }
 
     fun saveServerIndex(index: Int) {
-        kv().encode(KEY_SERVER_INDEX, index.coerceIn(0, 2))
+        val normalized = index.coerceIn(0, 2)
+        kv().encode(KEY_SERVER_INDEX, normalized)
+        migratedAccountStore().updateActiveAccountProfile { profile ->
+            profile.copy(serverIndex = normalized)
+        }
         pruneCalendarPoolNotifiedKeysForCurrentPolicy()
         notifyChanged()
     }
@@ -148,7 +164,11 @@ internal object BASettingsStore {
     fun loadCafeLevel(): Int = kv().decodeInt(KEY_CAFE_LEVEL, DEFAULT_CAFE_LEVEL).coerceIn(1, 10)
 
     fun saveCafeLevel(level: Int) {
-        kv().encode(KEY_CAFE_LEVEL, level.coerceIn(1, 10))
+        val normalized = level.coerceIn(1, 10)
+        kv().encode(KEY_CAFE_LEVEL, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(cafeLevel = normalized)
+        }
         notifyChanged()
     }
 
@@ -193,7 +213,11 @@ internal object BASettingsStore {
     fun loadCafeApLastNotifiedLevel(): Int = kv().decodeInt(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, -1).coerceIn(-1, BA_AP_MAX)
 
     fun saveCafeApLastNotifiedLevel(level: Int) {
-        kv().encode(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        kv().encode(KEY_CAFE_AP_LAST_NOTIFIED_LEVEL, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(cafeApLastNotifiedLevel = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
@@ -211,6 +235,11 @@ internal object BASettingsStore {
         serverIndex: Int? = null,
     ) {
         idSettings().saveNickname(name, serverIndex)
+        updateActiveAccountIdentity(
+            serverIndex = serverIndex,
+            nickname = name,
+            friendCode = null,
+        )
         notifyChanged()
     }
 
@@ -221,6 +250,11 @@ internal object BASettingsStore {
         serverIndex: Int? = null,
     ) {
         idSettings().saveFriendCode(code, serverIndex)
+        updateActiveAccountIdentity(
+            serverIndex = serverIndex,
+            nickname = null,
+            friendCode = code,
+        )
         notifyChanged()
     }
 
@@ -231,7 +265,11 @@ internal object BASettingsStore {
         )
 
     fun saveApLimit(limit: Int) {
-        kv().encode(KEY_AP_LIMIT, limit.coerceIn(0, BA_AP_LIMIT_MAX))
+        val normalized = limit.coerceIn(0, BA_AP_LIMIT_MAX)
+        kv().encode(KEY_AP_LIMIT, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(apLimit = normalized)
+        }
         notifyChanged()
     }
 
@@ -252,7 +290,11 @@ internal object BASettingsStore {
     fun loadApLastNotifiedLevel(): Int = kv().decodeInt(KEY_AP_LAST_NOTIFIED_LEVEL, -1).coerceIn(-1, BA_AP_MAX)
 
     fun saveApLastNotifiedLevel(level: Int) {
-        kv().encode(KEY_AP_LAST_NOTIFIED_LEVEL, level.coerceIn(-1, BA_AP_MAX))
+        val normalized = level.coerceIn(-1, BA_AP_MAX)
+        kv().encode(KEY_AP_LAST_NOTIFIED_LEVEL, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(apLastNotifiedLevel = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
@@ -266,7 +308,11 @@ internal object BASettingsStore {
     fun loadArenaRefreshLastNotifiedSlotMs(): Long = kv().decodeLong(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, 0L).coerceAtLeast(0L)
 
     fun saveArenaRefreshLastNotifiedSlotMs(slotMs: Long) {
-        kv().encode(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+        val normalized = slotMs.coerceAtLeast(0L)
+        kv().encode(KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(arenaRefreshLastNotifiedSlotMs = normalized)
+        }
         notifyChanged()
     }
 
@@ -280,7 +326,11 @@ internal object BASettingsStore {
     fun loadCafeVisitLastNotifiedSlotMs(): Long = kv().decodeLong(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, 0L).coerceAtLeast(0L)
 
     fun saveCafeVisitLastNotifiedSlotMs(slotMs: Long) {
-        kv().encode(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, slotMs.coerceAtLeast(0L))
+        val normalized = slotMs.coerceAtLeast(0L)
+        kv().encode(KEY_CAFE_VISIT_LAST_NOTIFIED_SLOT_MS, normalized)
+        migratedAccountStore().updateActiveAccountReminderRuntime { runtime ->
+            runtime.copy(cafeVisitLastNotifiedSlotMs = normalized)
+        }
         notifyChanged()
     }
 
@@ -464,27 +514,52 @@ internal object BASettingsStore {
         cafeLastHourMs?.let { epochMs ->
             store.encode(KEY_CAFE_LAST_HOUR_MS, floorToHourMs(epochMs.coerceAtLeast(0L)))
         }
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(
+                apCurrent = apCurrent?.let(::normalizeAp) ?: runtime.apCurrent,
+                apRegenBaseMs = apRegenBaseMs?.coerceAtLeast(0L) ?: runtime.apRegenBaseMs,
+                apSyncMs = apSyncMs?.coerceAtLeast(0L) ?: runtime.apSyncMs,
+                cafeStoredAp = cafeStoredAp?.let(::normalizeAp) ?: runtime.cafeStoredAp,
+                cafeLastHourMs =
+                    cafeLastHourMs
+                        ?.coerceAtLeast(0L)
+                        ?.let(::floorToHourMs)
+                        ?: runtime.cafeLastHourMs,
+            )
+        }
         notifyChanged(notifyHomeOverview = notifyHomeOverview)
     }
 
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)
 
     fun saveCoffeeHeadpatMs(epochMs: Long) {
-        kv().encode(KEY_COFFEE_HEADPAT_MS, epochMs.coerceAtLeast(0L))
+        val normalized = epochMs.coerceAtLeast(0L)
+        kv().encode(KEY_COFFEE_HEADPAT_MS, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(coffeeHeadpatMs = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeInvite1UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE1_USED_MS, 0L)
 
     fun saveCoffeeInvite1UsedMs(epochMs: Long) {
-        kv().encode(KEY_COFFEE_INVITE1_USED_MS, epochMs.coerceAtLeast(0L))
+        val normalized = epochMs.coerceAtLeast(0L)
+        kv().encode(KEY_COFFEE_INVITE1_USED_MS, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(coffeeInvite1UsedMs = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
     fun loadCoffeeInvite2UsedMs(): Long = kv().decodeLong(KEY_COFFEE_INVITE2_USED_MS, 0L)
 
     fun saveCoffeeInvite2UsedMs(epochMs: Long) {
-        kv().encode(KEY_COFFEE_INVITE2_USED_MS, epochMs.coerceAtLeast(0L))
+        val normalized = epochMs.coerceAtLeast(0L)
+        kv().encode(KEY_COFFEE_INVITE2_USED_MS, normalized)
+        migratedAccountStore().updateActiveAccountRuntime { runtime ->
+            runtime.copy(coffeeInvite2UsedMs = normalized)
+        }
         notifyChanged(notifyHomeOverview = false)
     }
 
@@ -516,5 +591,29 @@ internal object BASettingsStore {
         val store = kv()
         store.removeValueForKey(KEY_LIST_SCROLL_INDEX)
         store.removeValueForKey(KEY_LIST_SCROLL_OFFSET)
+    }
+
+    private fun updateActiveAccountIdentity(
+        serverIndex: Int?,
+        nickname: String?,
+        friendCode: String?,
+    ) {
+        migratedAccountStore().updateActiveAccountProfile { profile ->
+            if (serverIndex != null && serverIndex.coerceIn(0, 2) != profile.serverIndex) {
+                return@updateActiveAccountProfile profile
+            }
+            val nextNickname = nickname?.let(::sanitizeBaAccountNickname) ?: profile.nickname
+            val nextFriendCode = friendCode?.let(::sanitizeBaAccountFriendCode) ?: profile.friendCode
+            profile.copy(
+                displayName =
+                    if (nickname != null && profile.displayName == profile.nickname) {
+                        nextNickname
+                    } else {
+                        profile.displayName
+                    },
+                nickname = nextNickname,
+                friendCode = nextFriendCode,
+            )
+        }
     }
 }

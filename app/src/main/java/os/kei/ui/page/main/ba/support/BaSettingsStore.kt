@@ -17,6 +17,11 @@ internal object BASettingsStore {
 
     private fun idSettings(): BaIdSettingsAccessor = BaIdSettingsAccessor(MmkvBaSettingsKeyValueStore(kv()))
 
+    private fun accountKeyValueStore(): MmkvBaSettingsKeyValueStore = MmkvBaSettingsKeyValueStore(kv())
+
+    private fun accountStore(keyValueStore: MmkvBaSettingsKeyValueStore = accountKeyValueStore()): BaAccountStore =
+        BaAccountStore(keyValueStore)
+
     private fun cacheStore(): BaSettingsCacheStore = BaSettingsCacheStore(kv()) { notifyChanged() }
 
     fun loadCalendarCache(serverIndex: Int): Pair<String, Long> = cacheStore().loadCalendarCache(serverIndex)
@@ -106,7 +111,27 @@ internal object BASettingsStore {
         notifyChanged()
     }
 
-    fun loadSnapshot(): BaPageSnapshot = loadBaSettingsSnapshot(kv())
+    fun loadAccountState(): BaAccountStoreSnapshot {
+        val keyValueStore = accountKeyValueStore()
+        val store = accountStore(keyValueStore)
+        BaAccountMigration(
+            accountStore = store,
+            keyValueStore = keyValueStore,
+        ).migrateLegacyIfNeeded()
+        return store.loadState()
+    }
+
+    fun migrateAccountsIfNeeded(): BaAccountMigrationResult {
+        val keyValueStore = accountKeyValueStore()
+        val store = accountStore(keyValueStore)
+        return BaAccountMigration(
+            accountStore = store,
+            keyValueStore = keyValueStore,
+        ).migrateLegacyIfNeeded()
+    }
+
+    fun loadSnapshot(): BaPageSnapshot =
+        loadBaSettingsSnapshot(kv()).withActiveBaAccount(loadAccountState())
 
     fun loadCalendarCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadCalendarCacheSnapshot(serverIndex)
 

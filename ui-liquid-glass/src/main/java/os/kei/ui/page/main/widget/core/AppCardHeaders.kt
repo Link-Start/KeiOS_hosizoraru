@@ -65,9 +65,9 @@ fun AppCardHeader(
     } else {
         stringResource(R.string.common_expand)
     }
-    val headerModifier = if (onClick != null || onLongClick != null) {
+    val clickModifier = if (onClick != null || onLongClick != null) {
         val interactionSource = remember { MutableInteractionSource() }
-        modifier.combinedClickable(
+        Modifier.combinedClickable(
             interactionSource = interactionSource,
             indication = null,
             role = Role.Button,
@@ -75,13 +75,14 @@ fun AppCardHeader(
             onLongClick = onLongClick
         )
     } else {
-        modifier
+        Modifier
     }
 
     Row(
-        modifier = headerModifier
+        modifier = modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = minHeight)
+            .then(clickModifier)
             .padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
         verticalAlignment = Alignment.CenterVertically

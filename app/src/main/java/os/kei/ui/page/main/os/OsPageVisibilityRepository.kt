@@ -4,12 +4,14 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
+import os.kei.ui.page.main.os.shell.OsShellCommandCardDataSource
+import os.kei.ui.page.main.os.shell.OsShellCommandCardStoreDataSource
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 
 internal class OsPageVisibilityRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.osOperations,
+    private val shellCommandCards: OsShellCommandCardDataSource = OsShellCommandCardStoreDataSource,
 ) {
     fun updatedVisibleCards(
         currentVisibleCards: Set<OsSectionCard>,
@@ -57,8 +59,10 @@ internal class OsPageVisibilityRepository(
     suspend fun setShellCommandCardVisible(
         cardId: String,
         visible: Boolean,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ): List<OsShellCommandCard> =
         withContext(ioDispatcher) {
-            OsShellCommandCardStore.setCardVisible(cardId = cardId, visible = visible)
+            shellCommandCards.setCardVisible(cardId = cardId, visible = visible)
+            shellCommandCards.loadCards(builtInShellCommandCards)
         }
 }

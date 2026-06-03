@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.os.state
 
 import android.content.Context
+import os.kei.R
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
@@ -25,6 +26,7 @@ internal fun createOsPageActionState(
     osPageViewModel: OsPageViewModel,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     shellRunNoOutputText: String,
+    builtInShellCommandCards: List<OsShellCommandCard>,
 ): OsPageActionState {
     val ensureLoad: suspend (SectionKind, Boolean) -> Unit = { section, forceRefresh ->
         osPageViewModel.ensureSectionLoaded(
@@ -56,6 +58,7 @@ internal fun createOsPageActionState(
         osPageViewModel.applyShellCommandCardVisibility(
             cardId = cardId,
             visible = visible,
+            builtInShellCommandCards = builtInShellCommandCards,
         )
     }
 
@@ -64,6 +67,10 @@ internal fun createOsPageActionState(
             card = card,
             shizukuApiUtils = shizukuApiUtils,
             shellRunNoOutputText = shellRunNoOutputText,
+            shellRunFailedOutput = { reason ->
+                context.getString(R.string.os_shell_card_toast_run_failed, reason)
+            },
+            builtInShellCommandCards = builtInShellCommandCards,
         )
     }
 

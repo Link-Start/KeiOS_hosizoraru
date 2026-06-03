@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
+import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.createDefaultShellCommandCardDraft
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
@@ -45,6 +46,7 @@ internal fun rememberOsPageOverlayEditorActions(
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     googleSystemServiceDefaultIntentFlags: String,
     shellCardCommandRequiredToast: String,
+    builtInShellCommandCards: List<OsShellCommandCard>,
 ): OsPageOverlayEditorActions {
     return remember(
         context,
@@ -54,6 +56,7 @@ internal fun rememberOsPageOverlayEditorActions(
         googleSystemServiceDefaults,
         googleSystemServiceDefaultIntentFlags,
         shellCardCommandRequiredToast,
+        builtInShellCommandCards,
     ) {
         OsPageOverlayEditorActions(
             onDeleteShellCommandCard = {
@@ -89,6 +92,7 @@ internal fun rememberOsPageOverlayEditorActions(
                     title = draft.title,
                     subtitle = draft.subtitle,
                     command = draft.command,
+                    builtInShellCommandCards = builtInShellCommandCards,
                 )
             },
             onOpenActivitySuggestionSheet = { target ->
@@ -175,7 +179,10 @@ internal fun rememberOsPageOverlayEditorActions(
                 val targetId = overlayState.editingShellCommandCardId.orEmpty().trim()
                 overlayState.onShowShellCardDeleteConfirmChange(false)
                 if (targetId.isBlank()) return@OsPageOverlayEditorActions
-                osPageViewModel.deleteShellCommandCard(targetId)
+                osPageViewModel.deleteShellCommandCard(
+                    cardId = targetId,
+                    builtInShellCommandCards = builtInShellCommandCards,
+                )
             },
             onDismissActivityCardDeleteConfirm = {
                 overlayState.onShowActivityCardDeleteConfirmChange(false)

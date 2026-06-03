@@ -47,6 +47,7 @@ internal fun OsPageOverlayHost(
     visibleShellCardsDesc: String,
     shellRunnerVisible: Boolean,
     shellCommandCards: List<OsShellCommandCard>,
+    builtInShellCommandCards: List<OsShellCommandCard>,
     onExportAllShellCards: () -> Unit,
     onImportAllShellCards: () -> Unit,
     applyShellCommandCardVisibility: (String, Boolean) -> Unit,
@@ -73,6 +74,7 @@ internal fun OsPageOverlayHost(
             googleSystemServiceDefaults = googleSystemServiceDefaults,
             googleSystemServiceDefaultIntentFlags = googleSystemServiceDefaultIntentFlags,
             shellCardCommandRequiredToast = shellCardCommandRequiredToast,
+            builtInShellCommandCards = builtInShellCommandCards,
         )
     val editedShellCommandCard =
         shellCommandCards.firstOrNull { card ->

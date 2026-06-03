@@ -36,6 +36,7 @@ internal fun OsPageOverlayCoordinator(
     actionState: OsPageActionState,
     overlayTransferActions: OsPageOverlayTransferActions,
     cardTransferState: OsPageCardTransferState,
+    builtInShellCommandCards: List<OsShellCommandCard>,
     osPageViewModel: OsPageViewModel,
 ) {
     OsPageOverlayHost(
@@ -61,6 +62,7 @@ internal fun OsPageOverlayCoordinator(
         visibleShellCardsDesc = textBundle.visibleShellCardsDesc,
         shellRunnerVisible = visibleCards.contains(OsSectionCard.SHELL_RUNNER),
         shellCommandCards = shellCommandCards,
+        builtInShellCommandCards = builtInShellCommandCards,
         onExportAllShellCards = overlayTransferActions.onExportAllShellCards,
         onImportAllShellCards = overlayTransferActions.onImportAllShellCards,
         applyShellCommandCardVisibility = actionState.applyShellCommandCardVisibility,

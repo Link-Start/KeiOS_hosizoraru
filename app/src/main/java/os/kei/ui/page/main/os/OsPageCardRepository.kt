@@ -4,7 +4,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellCommandCardStore
+import os.kei.ui.page.main.os.shell.OsShellCommandCardDataSource
+import os.kei.ui.page.main.os.shell.OsShellCommandCardStoreDataSource
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
@@ -13,26 +14,32 @@ import os.kei.ui.page.main.os.shortcut.normalizeActivityShortcutConfig
 
 internal class OsPageCardRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.osOperations,
+    private val shellCommandCards: OsShellCommandCardDataSource = OsShellCommandCardStoreDataSource,
 ) {
     suspend fun saveShellCommandCardEdit(
         cardId: String,
         title: String,
         subtitle: String,
         command: String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ): List<OsShellCommandCard>? =
         withContext(ioDispatcher) {
-            OsShellCommandCardStore.updateCard(
+            shellCommandCards.updateCard(
                 cardId = cardId,
                 title = title,
                 subtitle = subtitle,
                 command = command,
             ) ?: return@withContext null
-            OsShellCommandCardStore.loadCards()
+            shellCommandCards.loadCards(builtInShellCommandCards)
         }
 
-    suspend fun deleteShellCommandCard(cardId: String): List<OsShellCommandCard> =
+    suspend fun deleteShellCommandCard(
+        cardId: String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
+    ): List<OsShellCommandCard> =
         withContext(ioDispatcher) {
-            OsShellCommandCardStore.deleteCard(cardId)
+            shellCommandCards.deleteCard(cardId)
+            shellCommandCards.loadCards(builtInShellCommandCards)
         }
 
     suspend fun saveActivityShortcutCard(

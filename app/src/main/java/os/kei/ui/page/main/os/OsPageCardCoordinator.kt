@@ -47,6 +47,7 @@ internal class OsPageCardCoordinator(
     fun applyShellCommandCardVisibility(
         cardId: String,
         visible: Boolean,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) {
         scope.launch {
             try {
@@ -54,6 +55,7 @@ internal class OsPageCardCoordinator(
                     visibilityRepository.setShellCommandCardVisible(
                         cardId = cardId,
                         visible = visible,
+                        builtInShellCommandCards = builtInShellCommandCards,
                     )
                 repository.updateShellCommandCards(updatedCards)
             } catch (error: Throwable) {
@@ -67,6 +69,8 @@ internal class OsPageCardCoordinator(
         card: OsShellCommandCard,
         shizukuApiUtils: ShizukuApiUtils,
         shellRunNoOutputText: String,
+        shellRunFailedOutput: (String) -> String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) {
         val command = card.command.trim()
         if (command.isBlank()) {
@@ -96,11 +100,20 @@ internal class OsPageCardCoordinator(
                     shellCommandRepository.saveRunResult(
                         cardId = card.id,
                         output = output,
+                        builtInShellCommandCards = builtInShellCommandCards,
                     )
                 repository.updateShellCommandCards(updatedCards)
                 events.emit(OsPageEvent.ShellCommandCardRunCompleted)
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
+                val reason = error.javaClass.simpleName
+                val updatedCards =
+                    shellCommandRepository.saveRunResult(
+                        cardId = card.id,
+                        output = shellRunFailedOutput(reason).trim().ifBlank { reason },
+                        builtInShellCommandCards = builtInShellCommandCards,
+                    )
+                repository.updateShellCommandCards(updatedCards)
                 events.emit(OsPageEvent.ShellCommandCardRunFailed(error))
             } finally {
                 runtimeMutableState.update { state ->
@@ -115,6 +128,7 @@ internal class OsPageCardCoordinator(
         title: String,
         subtitle: String,
         command: String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) {
         scope.launch {
             try {
@@ -124,6 +138,7 @@ internal class OsPageCardCoordinator(
                         title = title,
                         subtitle = subtitle,
                         command = command,
+                        builtInShellCommandCards = builtInShellCommandCards,
                     )
                 if (updatedCards == null) {
                     events.emit(OsPageEvent.ShellCommandCardSaveFailed)
@@ -138,10 +153,17 @@ internal class OsPageCardCoordinator(
         }
     }
 
-    fun deleteShellCommandCard(cardId: String) {
+    fun deleteShellCommandCard(
+        cardId: String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
+    ) {
         scope.launch {
             try {
-                val updatedCards = cardRepository.deleteShellCommandCard(cardId)
+                val updatedCards =
+                    cardRepository.deleteShellCommandCard(
+                        cardId = cardId,
+                        builtInShellCommandCards = builtInShellCommandCards,
+                    )
                 repository.updateShellCommandCards(updatedCards)
                 events.emit(OsPageEvent.ShellCommandCardDeleted(cardId))
             } catch (error: Throwable) {

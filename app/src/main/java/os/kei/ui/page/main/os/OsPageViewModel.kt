@@ -505,19 +505,25 @@ internal class OsPageViewModel : ViewModel() {
     fun applyShellCommandCardVisibility(
         cardId: String,
         visible: Boolean,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) = cardCoordinator.applyShellCommandCardVisibility(
         cardId = cardId,
         visible = visible,
+        builtInShellCommandCards = builtInShellCommandCards,
     )
 
     fun runShellCommandCard(
         card: OsShellCommandCard,
         shizukuApiUtils: ShizukuApiUtils,
         shellRunNoOutputText: String,
+        shellRunFailedOutput: (String) -> String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) = cardCoordinator.runShellCommandCard(
         card = card,
         shizukuApiUtils = shizukuApiUtils,
         shellRunNoOutputText = shellRunNoOutputText,
+        shellRunFailedOutput = shellRunFailedOutput,
+        builtInShellCommandCards = builtInShellCommandCards,
     )
 
     fun refreshAllSections(ensureLoad: suspend (SectionKind, Boolean) -> Unit) {
@@ -585,14 +591,22 @@ internal class OsPageViewModel : ViewModel() {
         title: String,
         subtitle: String,
         command: String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
     ) = cardCoordinator.saveShellCommandCardEdit(
         cardId = cardId,
         title = title,
         subtitle = subtitle,
         command = command,
+        builtInShellCommandCards = builtInShellCommandCards,
     )
 
-    fun deleteShellCommandCard(cardId: String) = cardCoordinator.deleteShellCommandCard(cardId)
+    fun deleteShellCommandCard(
+        cardId: String,
+        builtInShellCommandCards: List<OsShellCommandCard>,
+    ) = cardCoordinator.deleteShellCommandCard(
+        cardId = cardId,
+        builtInShellCommandCards = builtInShellCommandCards,
+    )
 
     fun saveActivityShortcutCard(
         editMode: OsActivityCardEditMode,

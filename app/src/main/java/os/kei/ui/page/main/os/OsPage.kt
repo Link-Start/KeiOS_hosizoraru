@@ -338,6 +338,7 @@ fun OsPage(
             osPageViewModel = osPageViewModel,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             shellRunNoOutputText = textBundle.shellRunNoOutputText,
+            builtInShellCommandCards = textBundle.builtInShellCommandCards,
         )
 
     BindOsCardExpandedStateMaps(
@@ -515,6 +516,7 @@ fun OsPage(
                 overlayTransferActions = overlayTransferActions,
                 cardTransferState = cardTransferState,
                 textBundle = textBundle,
+                builtInShellCommandCards = textBundle.builtInShellCommandCards,
                 osPageViewModel = osPageViewModel,
             )
             OsPageMainList(

@@ -74,6 +74,7 @@ fun LiquidSurface(
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
+    shadowAlpha: Float = 0.10f,
     exportedBackdrop: LayerBackdrop? = null,
     interactionSource: MutableInteractionSource? = null,
     consumeDragChanges: Boolean = false,
@@ -157,8 +158,9 @@ fun LiquidSurface(
                     Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
                 },
                 shadow = {
-                    if (shadow) {
-                        Shadow.Default.copy(color = Color.Black.copy(alpha = 0.10f))
+                    val resolvedShadowAlpha = if (shadow) shadowAlpha.coerceIn(0f, 1f) else 0f
+                    if (resolvedShadowAlpha > 0f) {
+                        Shadow.Default.copy(color = Color.Black.copy(alpha = resolvedShadowAlpha))
                     } else {
                         Shadow(alpha = 0f)
                     }

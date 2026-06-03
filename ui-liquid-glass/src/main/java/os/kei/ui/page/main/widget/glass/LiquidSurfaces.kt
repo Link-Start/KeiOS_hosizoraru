@@ -536,6 +536,7 @@ fun LiquidRoundedCard(
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
+    shadowAlpha: Float = 0.10f,
     content: @Composable BoxScope.() -> Unit,
 ) {
     LiquidSurface(
@@ -550,6 +551,7 @@ fun LiquidRoundedCard(
         chromaticAberration = chromaticAberration,
         depthEffect = depthEffect,
         shadow = shadow,
+        shadowAlpha = shadowAlpha,
     ) {
         Box(
             modifier = Modifier.padding(contentPadding),

@@ -181,6 +181,7 @@ internal fun GitHubInlineLiquidSurface(
     tint: Color,
     surfaceColor: Color,
     modifier: Modifier = Modifier.fillMaxWidth(),
+    shadowAlpha: Float = 0.05f,
     onClick: () -> Unit,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -202,6 +203,7 @@ internal fun GitHubInlineLiquidSurface(
             blurRadius = UiPerformanceBudget.backdropBlur,
             lensRadius = UiPerformanceBudget.backdropLens,
             effectVariant = GlassVariant.Content,
+            shadowAlpha = shadowAlpha,
             onClick = onClick,
             content = content,
         )

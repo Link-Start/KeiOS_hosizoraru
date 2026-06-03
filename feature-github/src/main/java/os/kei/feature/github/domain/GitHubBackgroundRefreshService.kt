@@ -129,6 +129,7 @@ class GitHubBackgroundRefreshService(
                                         "prerelease=${result.preReleaseUpdateCount} " +
                                         "failed=${result.failedCount}",
                                 )
+                                logTrackedRefreshFailures(result.failures)
                                 persistRefreshResult(
                                     snapshot = snapshot,
                                     result = result,
@@ -214,6 +215,7 @@ class GitHubBackgroundRefreshService(
                     "p50=${result.performance.p50ItemMs}ms p95=${result.performance.p95ItemMs}ms " +
                     "updatable=${result.updatableCount} prerelease=${result.preReleaseUpdateCount} failed=${result.failedCount}",
             )
+            logTrackedRefreshFailures(result.failures)
             persistRefreshResult(snapshot = snapshot, result = result)
             val actionsNotificationCount =
                 handleActionsUpdates(
@@ -274,6 +276,15 @@ class GitHubBackgroundRefreshService(
                 }
             GitHubTrackStoreSignals.notifyChanged(
                 resolvedRefreshTimestamp.takeIf { it > 0L } ?: result.refreshTimestampMs
+            )
+        }
+    }
+
+    private fun logTrackedRefreshFailures(failures: List<GitHubTrackedRefreshFailure>) {
+        failures.forEach { failure ->
+            AppLogger.w(
+                GITHUB_BACKGROUND_REFRESH_TAG,
+                "tracked refresh failed ${failure.logSummary()}",
             )
         }
     }

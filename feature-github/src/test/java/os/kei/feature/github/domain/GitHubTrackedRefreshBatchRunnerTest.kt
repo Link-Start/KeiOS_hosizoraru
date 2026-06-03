@@ -52,6 +52,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(2, result.updatableCount)
         assertEquals(1, result.preReleaseUpdateCount)
         assertEquals(1, result.failedCount)
+        assertEquals("demo/repo-3|demo.repo3", result.failures.single().trackId)
         assertTrue(result.performance.elapsedMs > 0L)
         assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
         assertTrue(result.hasNotifiableOutcome)
@@ -72,6 +73,10 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
         val entry = result.cacheEntries.getValue(item.id)
         assertEquals(1, result.failedCount)
+        assertEquals(item.id, result.failures.single().trackId)
+        assertEquals(item.owner, result.failures.single().owner)
+        assertEquals(item.repo, result.failures.single().repo)
+        assertTrue(result.failures.single().message.contains("network unavailable"))
         assertTrue(entry.message.contains("network unavailable"))
         assertTrue(result.hasNotifiableOutcome)
     }

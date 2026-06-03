@@ -1,22 +1,26 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import os.kei.R
+import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubRefreshBeginPolicy
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
 import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -41,6 +45,7 @@ internal class GitHubBackgroundRefreshCoordinator(
     private val scope get() = env.scope
     private val state get() = env.state
     private val repository get() = env.repository
+    private val clock get() = env.clock
     private val backgroundJobs = ConcurrentHashMap.newKeySet<Job>()
 
     fun cancel() {
@@ -126,6 +131,7 @@ internal class GitHubBackgroundRefreshCoordinator(
             var updatableCount = 0
             var preReleaseUpdateCount = 0
             var failedCount = 0
+            val failureSummaries = mutableListOf<GitHubTrackedRefreshFailure>()
             supervisorScope {
                 List(concurrency) {
                     launch {
@@ -133,24 +139,42 @@ internal class GitHubBackgroundRefreshCoordinator(
                             val workIndex = nextWorkIndex.getAndIncrement()
                             if (workIndex >= workItems.size) break
                             val item = workItems[workIndex].item
+                            val itemStartNs = System.nanoTime()
                             val request = GitHubItemRefreshRequest(
                                 item = item,
                                 forceRefresh = forceRefresh,
                                 profilePurposeOverride = profilePurposeOverride
                             )
-                            if (item.isDirectApkTrack()) {
-                                directApkSemaphore.withPermit {
-                                    refreshItem(request)
-                                }
-                            } else {
-                                refreshItem(request)
+                            val failureState =
+                                runCatching {
+                                    if (item.isDirectApkTrack()) {
+                                        directApkSemaphore.withPermit {
+                                            refreshItem(request)
+                                        }
+                                    } else {
+                                        refreshItem(request)
+                                    }
+                                }.exceptionOrNull()
+                                    ?.let { error ->
+                                        if (error is CancellationException) throw error
+                                        failedRefreshState(error)
+                                    }
+                            if (failureState != null) {
+                                state.checkStates[item.id] = failureState
                             }
                             if (runtimeSession != null) {
                                 progressMutex.withLock {
                                     val itemState = state.checkStates[item.id] ?: VersionCheckUi()
                                     if (itemState.hasUpdate == true) updatableCount += 1
                                     if (itemState.hasPreReleaseUpdate) preReleaseUpdateCount += 1
-                                    if (itemState.failed) failedCount += 1
+                                    if (itemState.failed) {
+                                        failedCount += 1
+                                        failureSummaries += GitHubTrackedRefreshFailure.from(
+                                            item = item,
+                                            message = itemState.message,
+                                            elapsedMs = elapsedMsSince(itemStartNs),
+                                        )
+                                    }
                                     completedCount += 1
                                     state.refreshProgress = completedCount.toFloat() / items.size.toFloat()
                                     GitHubRefreshRuntimeStore.progress(
@@ -176,6 +200,7 @@ internal class GitHubBackgroundRefreshCoordinator(
                     preReleaseUpdateCount = preReleaseUpdateCount,
                     failedCount = failedCount,
                 )
+                logTrackedRefreshFailures(failureSummaries)
                 state.overviewRefreshState =
                     if (failedCount > 0) {
                         OverviewRefreshState.Failed
@@ -217,5 +242,24 @@ internal class GitHubBackgroundRefreshCoordinator(
             loading = true,
             message = context.getString(R.string.github_msg_checking)
         )
+    }
+
+    private fun failedRefreshState(error: Throwable): VersionCheckUi {
+        val detail = error.message?.takeIf { it.isNotBlank() }
+            ?: error.javaClass.simpleName
+        return VersionCheckUi(
+            failed = true,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail),
+            checkedAtMillis = clock.nowMs(),
+        )
+    }
+
+    private fun logTrackedRefreshFailures(failures: List<GitHubTrackedRefreshFailure>) {
+        failures.forEach { failure ->
+            AppLogger.w(
+                "GitHubBackgroundRefresh",
+                "github page background refresh failed ${failure.logSummary()}",
+            )
+        }
     }
 }

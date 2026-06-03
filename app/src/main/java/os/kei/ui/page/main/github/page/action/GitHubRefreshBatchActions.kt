@@ -13,6 +13,7 @@ import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
@@ -127,6 +128,7 @@ internal class GitHubRefreshBatchActions(
                     val nextWorkIndex = AtomicInteger(0)
                     var lastProgressNotifyAtMs = clock.nowMs()
                     val pendingUiResults = mutableListOf<Pair<GitHubTrackedApp, VersionCheckUi>>()
+                    val failureSummaries = mutableListOf<GitHubTrackedRefreshFailure>()
                     supervisorScope {
                         List(concurrency) {
                             launch {
@@ -134,6 +136,7 @@ internal class GitHubRefreshBatchActions(
                                     val workIndex = nextWorkIndex.getAndIncrement()
                                     if (workIndex >= workItems.size) break
                                     val item = workItems[workIndex].item
+                                    val itemStartNs = System.nanoTime()
                                     val resolved =
                                         runCatching {
                                             if (item.isDirectApkTrack()) {
@@ -167,6 +170,7 @@ internal class GitHubRefreshBatchActions(
                                                 resolvedState = resolved,
                                                 previousState = previousState,
                                             ).copy(checkedAtMillis = clock.nowMs())
+                                    val itemElapsedMs = elapsedMsSince(itemStartNs)
                                     var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
                                     var failedToasts = emptyList<Pair<GitHubTrackedApp, VersionCheckUi>>()
                                     progressMutex.withLock {
@@ -178,6 +182,11 @@ internal class GitHubRefreshBatchActions(
                                         }
                                         if (itemState.failed) {
                                             failedCount += 1
+                                            failureSummaries += GitHubTrackedRefreshFailure.from(
+                                                item = item,
+                                                message = itemState.message,
+                                                elapsedMs = itemElapsedMs,
+                                            )
                                         }
                                         completedCount += 1
                                         GitHubRefreshRuntimeStore.progress(
@@ -310,6 +319,7 @@ internal class GitHubRefreshBatchActions(
                             "concurrency=$concurrency directConcurrency=$directApkConcurrency " +
                             "updatable=$updatableCount prerelease=$preReleaseUpdateCount failed=$failedCount",
                     )
+                    logTrackedRefreshFailures(failureSummaries)
                     actionsRunRefreshCoordinator.refreshItems(snapshot)
                     if (owner.consumeDeferredTrackStoreSyncAfterRefresh()) {
                         owner.syncSnapshotFromStore(forceRefreshApps = false)
@@ -331,5 +341,14 @@ internal class GitHubRefreshBatchActions(
                     }
                 }
             }
+    }
+
+    private fun logTrackedRefreshFailures(failures: List<GitHubTrackedRefreshFailure>) {
+        failures.forEach { failure ->
+            AppLogger.w(
+                "GitHubRefreshActions",
+                "github page refresh failed ${failure.logSummary()}",
+            )
+        }
     }
 }

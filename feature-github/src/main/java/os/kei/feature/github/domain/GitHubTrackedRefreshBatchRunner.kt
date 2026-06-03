@@ -27,6 +27,7 @@ data class GitHubTrackedRefreshBatchResult(
     val updatableCount: Int,
     val preReleaseUpdateCount: Int,
     val failedCount: Int,
+    val failures: List<GitHubTrackedRefreshFailure> = emptyList(),
     val performance: GitHubTrackedRefreshBatchPerformance = GitHubTrackedRefreshBatchPerformance()
 ) {
     val hasNotifiableOutcome: Boolean
@@ -85,6 +86,7 @@ object GitHubTrackedRefreshBatchRunner {
                 updatableCount = 0,
                 preReleaseUpdateCount = 0,
                 failedCount = 0,
+                failures = emptyList(),
                 performance = GitHubTrackedRefreshBatchPerformance()
             )
         }
@@ -158,6 +160,19 @@ object GitHubTrackedRefreshBatchRunner {
                 .run { check.toCacheEntry() }
                 .copy(checkedAtMillis = refreshTimestampMs)
         }
+        val failures =
+            checks.mapNotNull { result ->
+                val check = result.check
+                if (check.status == GitHubTrackedReleaseStatus.Failed) {
+                    GitHubTrackedRefreshFailure.from(
+                        item = result.item,
+                        message = check.message,
+                        elapsedMs = result.elapsedMs,
+                    )
+                } else {
+                    null
+                }
+            }
 
         return GitHubTrackedRefreshBatchResult(
             totalCount = trackedItems.size,
@@ -166,6 +181,7 @@ object GitHubTrackedRefreshBatchRunner {
             updatableCount = updatableCount,
             preReleaseUpdateCount = preReleaseUpdateCount,
             failedCount = failedCount,
+            failures = failures,
             performance = buildPerformance(
                 batchStartNs = batchStartNs,
                 itemElapsedMs = checks.map { it.elapsedMs }

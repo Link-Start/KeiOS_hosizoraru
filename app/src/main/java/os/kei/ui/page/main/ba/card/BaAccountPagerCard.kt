@@ -4,7 +4,8 @@ package os.kei.ui.page.main.ba.card
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,12 +17,12 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -174,6 +175,7 @@ private fun BaAccountPageCard(
         )
     val clipboardLabel = stringResource(R.string.ba_friend_code_clipboard_label)
     val copiedToastRes = R.string.ba_toast_friend_code_copied
+    val headerInteractionSource = remember { MutableInteractionSource() }
     fun copyFriendCode() {
         val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
         clipboard.setPrimaryClip(
@@ -190,18 +192,18 @@ private fun BaAccountPageCard(
         accentColor = accentColor,
         accentAlpha = 0f,
         effectsEnabled = effectsEnabled,
+        shadowEnabled = false,
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         verticalSpacing = 6.dp,
     ) {
         BaAccountOfficeHeader(
             modifier =
-                Modifier.pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = {
-                            currentOnEditAccount()
-                        },
-                    )
-                },
+                Modifier.combinedClickable(
+                    interactionSource = headerInteractionSource,
+                    indication = null,
+                    onClick = {},
+                    onLongClick = { currentOnEditAccount() },
+                ),
             title = officeTitle,
             displayName = account.displayName,
             serverName = serverName,
@@ -269,7 +271,9 @@ private fun BaAccountOfficeHeader(
     accentColor: Color,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(modifier),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

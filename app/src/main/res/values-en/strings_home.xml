@@ -26,8 +26,9 @@
     <string name="home_card_title_ba">BA</string>
     <string name="home_ba_status_active">Active</string>
     <string name="home_ba_status_inactive">Inactive</string>
-    <string name="home_webdav_status_configured">Configured</string>
     <string name="home_webdav_status_unconfigured">Unconfigured</string>
+    <string name="home_webdav_status_auto_sync">Auto sync</string>
+    <string name="home_webdav_status_manual_sync">Manual sync</string>
     <string name="home_webdav_last_sync_never">Never</string>
     <string name="home_time_just_now">Just now</string>
     <string name="home_mcp_status_running">Running</string>
@@ -67,9 +68,8 @@
     <string name="home_stat_strategy">Strategy</string>
     <string name="home_stat_api">API</string>
     <string name="home_stat_last_update">Refresh</string>
-    <string name="home_stat_auto_sync">Auto sync</string>
-    <string name="home_stat_sync_items">Datasets</string>
-    <string name="home_stat_last_full_sync">Full sync</string>
+    <string name="home_stat_sync_items">Data</string>
+    <string name="home_stat_last_full_sync">Full</string>
     <string name="home_stat_ap">AP</string>
     <string name="home_stat_cafe_ap">Cafe</string>
     <string name="home_stat_ap_remaining">Left</string>

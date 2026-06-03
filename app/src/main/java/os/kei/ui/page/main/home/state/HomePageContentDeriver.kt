@@ -114,10 +114,12 @@ internal fun deriveHomePageContentState(
             githubOverview.shareImportLinkageEnabled -> text.valueOn
             else -> text.valueOff
         }
-    val webDavConfiguredLine =
-        if (webDavOverview.configured) text.webDavConfigured else text.webDavUnconfigured
-    val webDavAutoSyncLine =
-        if (webDavOverview.autoSyncEnabled) text.valueOn else text.valueOff
+    val webDavStatusLine =
+        when {
+            !webDavOverview.configured -> text.webDavUnconfigured
+            webDavOverview.autoSyncEnabled -> text.webDavAutoSync
+            else -> text.webDavManualSync
+        }
     val webDavSyncItemsLine =
         text.fraction(webDavOverview.enabledItemCount, webDavOverview.totalItemCount)
     val webDavLastFullSyncLine =
@@ -226,11 +228,9 @@ internal fun deriveHomePageContentState(
         githubShareLine = githubShareLine,
         homeStatLastUpdate = text.statLastUpdate,
         githubLastUpdateLine = githubLastUpdateLine,
-        webDavConfiguredLine = webDavConfiguredLine,
-        webDavAutoSyncLine = webDavAutoSyncLine,
+        webDavStatusLine = webDavStatusLine,
         webDavSyncItemsLine = webDavSyncItemsLine,
         webDavLastFullSyncLine = webDavLastFullSyncLine,
-        homeStatAutoSync = text.statAutoSync,
         homeStatSyncItems = text.statSyncItems,
         homeStatLastFullSync = text.statLastFullSync,
         baActivationLine = baActivationLine,

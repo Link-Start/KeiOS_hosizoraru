@@ -283,9 +283,7 @@ internal fun rememberHomePageOverviewCardState(
     githubPendingShareImport: Boolean,
     homeStatLastUpdate: String,
     githubLastUpdateLine: String,
-    webDavConfiguredLine: String,
-    homeStatAutoSync: String,
-    webDavAutoSyncLine: String,
+    webDavStatusLine: String,
     homeStatSyncItems: String,
     webDavSyncItemsLine: String,
     homeStatLastFullSync: String,
@@ -429,9 +427,7 @@ internal fun rememberHomePageOverviewCardState(
     val webDavOverviewStats =
         remember(
             homeStatStatus,
-            webDavConfiguredLine,
-            homeStatAutoSync,
-            webDavAutoSyncLine,
+            webDavStatusLine,
             homeStatSyncItems,
             webDavSyncItemsLine,
             homeStatLastFullSync,
@@ -440,12 +436,7 @@ internal fun rememberHomePageOverviewCardState(
             listOf(
                 HomeCardStatItem(
                     label = homeStatStatus,
-                    value = webDavConfiguredLine,
-                    emphasize = true
-                ),
-                HomeCardStatItem(
-                    label = homeStatAutoSync,
-                    value = webDavAutoSyncLine,
+                    value = webDavStatusLine,
                     emphasize = true
                 ),
                 HomeCardStatItem(label = homeStatSyncItems, value = webDavSyncItemsLine),

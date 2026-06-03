@@ -26,8 +26,9 @@
     <string name="home_card_title_ba">BA</string>
     <string name="home_ba_status_active">有効</string>
     <string name="home_ba_status_inactive">無効</string>
-    <string name="home_webdav_status_configured">設定済み</string>
     <string name="home_webdav_status_unconfigured">未設定</string>
+    <string name="home_webdav_status_auto_sync">自動同期</string>
+    <string name="home_webdav_status_manual_sync">手動同期</string>
     <string name="home_webdav_last_sync_never">未実行</string>
     <string name="home_time_just_now">たった今</string>
     <string name="home_mcp_status_running">実行中</string>
@@ -67,9 +68,8 @@
     <string name="home_stat_strategy">方式</string>
     <string name="home_stat_api">API</string>
     <string name="home_stat_last_update">更新</string>
-    <string name="home_stat_auto_sync">自動同期</string>
     <string name="home_stat_sync_items">データ</string>
-    <string name="home_stat_last_full_sync">全体同期</string>
+    <string name="home_stat_last_full_sync">全体</string>
     <string name="home_stat_ap">AP</string>
     <string name="home_stat_cafe_ap">カフェ</string>
     <string name="home_stat_ap_remaining">残り</string>

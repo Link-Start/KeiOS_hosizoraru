@@ -77,7 +77,7 @@ class HomePageContentDeriverTest {
         assertEquals("fresh", state.githubCacheFreshnessLine)
         assertEquals("3h 1h", state.githubLastUpdateLine)
         assertEquals("stale", state.baCacheFreshnessLine)
-        assertEquals("configured", state.webDavConfiguredLine)
+        assertEquals("auto sync", state.webDavStatusLine)
         assertEquals("4/5", state.webDavSyncItemsLine)
         assertEquals("v1.8.0 (80)", state.appVersionText)
     }
@@ -127,8 +127,9 @@ class HomePageContentDeriverTest {
             mcpRuntimePending = "pending runtime",
             baStatusActive = "active",
             baStatusInactive = "inactive",
-            webDavConfigured = "configured",
             webDavUnconfigured = "unconfigured",
+            webDavAutoSync = "auto sync",
+            webDavManualSync = "manual sync",
             webDavNeverSynced = "never",
             valueOn = "on",
             valueOff = "off",
@@ -157,7 +158,6 @@ class HomePageContentDeriverTest {
             statCacheState = "cache state",
             statShare = "share",
             statLastUpdate = "last",
-            statAutoSync = "auto",
             statSyncItems = "datasets",
             statLastFullSync = "full sync",
             statAp = "ap",

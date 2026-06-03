@@ -39,6 +39,7 @@ import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeController
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
 import os.kei.ui.page.main.host.pager.MainPagerLayout
+import os.kei.ui.page.main.github.history.GitHubActionsNotificationHistoryPage
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
@@ -70,6 +71,7 @@ internal fun MainScreenNavHost(
     appThemeMode: AppThemeMode,
     transientExternalLaunchActive: Boolean,
     onAppThemeModeChanged: (AppThemeMode) -> Unit,
+    onOpenGitHubActionsTrackFromHistory: (String) -> Unit,
 ) {
     val backCoordinator =
         rememberMainScreenBackCoordinator(
@@ -175,6 +177,12 @@ internal fun MainScreenNavHost(
                 McpSkillPage(
                     mcpServerManager = mcpServerManager,
                     onBack = onRouteBack,
+                )
+            }
+            entry<KeiosRoute.GitHubActionsNotificationHistory> {
+                GitHubActionsNotificationHistoryPage(
+                    onBack = onRouteBack,
+                    onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
                 )
             }
             entry<KeiosRoute.About> {

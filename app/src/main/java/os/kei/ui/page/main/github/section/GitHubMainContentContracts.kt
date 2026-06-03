@@ -104,6 +104,7 @@ internal data class GitHubMainContentActions(
     val onOpenStarImport: () -> Unit,
     val onOpenStrategySheet: () -> Unit,
     val onOpenCheckLogicSheet: () -> Unit,
+    val onOpenActionsNotificationHistory: () -> Unit,
     val onOverviewExpandedChange: (Boolean) -> Unit,
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     val onStableVersionExpandedChange: (String, Boolean) -> Unit,

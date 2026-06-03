@@ -18,6 +18,7 @@ import os.kei.R
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.os.appLucideAddIcon
+import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
@@ -25,6 +26,7 @@ import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
@@ -32,6 +34,7 @@ import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.testing.KeiOsTestTags
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Suppress("FunctionName")
 @Composable
@@ -78,6 +81,30 @@ internal fun GitHubMainContent(
             OverviewRefreshState.Failed -> AppFloatingRefreshStatus.Danger
             OverviewRefreshState.Cached -> AppFloatingRefreshStatus.Cached
             OverviewRefreshState.Idle -> AppFloatingRefreshStatus.Idle
+        }
+    val actionsHistoryIcon = appLucideHistoryIcon()
+    val actionsHistoryDescription = stringResource(R.string.github_actions_history_cd_open)
+    val actionsHistoryTint = MiuixTheme.colorScheme.primary
+    val dockExtraActions =
+        remember(
+            actionsHistoryIcon,
+            actionsHistoryDescription,
+            actionsHistoryTint,
+            actions.onSearchExpandedChange,
+            actions.onOpenActionsNotificationHistory,
+        ) {
+            listOf(
+                AppFloatingDockAction(
+                    icon = actionsHistoryIcon,
+                    contentDescription = actionsHistoryDescription,
+                    iconTint = actionsHistoryTint,
+                    testTag = KeiOsTestTags.GitHubActionsHistoryButton,
+                    onClick = {
+                        actions.onSearchExpandedChange(false)
+                        actions.onOpenActionsNotificationHistory()
+                    },
+                ),
+            )
         }
     Box(
         modifier =
@@ -264,6 +291,7 @@ internal fun GitHubMainContent(
                     showAddAction = true,
                     refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,
+                    extraActions = dockExtraActions,
                     dockSide = layout.floatingDockSide,
                     keyboardLiftProvider = floatingKeyboardLiftProvider,
                     modifier =

@@ -23,6 +23,8 @@ object KeiOsTestTags {
     const val GitHubShareImportAttachClose = "github_share_import_attach_close"
     const val GitHubShareImportAttachCancel = "github_share_import_attach_cancel"
     const val GitHubShareImportAttachConfirm = "github_share_import_attach_confirm"
+    const val GitHubActionsHistoryButton = "github_actions_history_button"
+    const val GitHubActionsHistoryPageRoot = "github_actions_history_page_root"
     const val GitHubShareImportAttachConfirmOpenGitHub =
         "github_share_import_attach_confirm_open_github"
 }

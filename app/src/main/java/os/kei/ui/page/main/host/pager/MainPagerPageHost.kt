@@ -79,6 +79,7 @@ internal data class MainPagerGitHubPageState(
     val requestedGitHubRefreshToken: Int,
     val requestedGitHubActionsTrackId: String?,
     val requestedGitHubActionsSheetToken: Int,
+    val onOpenActionsNotificationHistory: () -> Unit,
 )
 
 @Composable
@@ -192,6 +193,7 @@ internal fun MainPagerPageHost(
                         externalActionsTrackId = githubState.requestedGitHubActionsTrackId,
                         externalActionsSheetToken = githubState.requestedGitHubActionsSheetToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
+                        onOpenActionsNotificationHistory = githubState.onOpenActionsNotificationHistory,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }

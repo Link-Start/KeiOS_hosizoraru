@@ -45,7 +45,12 @@ fun MainScreen(
     val guideNavigationViewModel: MainScreenGuideNavigationViewModel = viewModel()
     var localRequestedBottomPage by rememberSaveable { mutableStateOf<String?>(null) }
     var localRequestedBottomPageToken by rememberSaveable { mutableIntStateOf(0) }
+    var localRequestedGitHubActionsTrackId by rememberSaveable { mutableStateOf<String?>(null) }
+    var localRequestedGitHubActionsSheetToken by rememberSaveable { mutableIntStateOf(0) }
     val externalBottomPageRequested = !hostState.requestedBottomPage.isNullOrBlank()
+    val externalGitHubActionsRequested =
+        hostState.requestedGitHubActionsSheetToken > 0 &&
+            !hostState.requestedGitHubActionsTrackId.isNullOrBlank()
     val effectiveRequestedBottomPage = if (externalBottomPageRequested) {
         hostState.requestedBottomPage
     } else {
@@ -55,6 +60,16 @@ fun MainScreen(
         hostState.requestedBottomPageToken
     } else {
         localRequestedBottomPageToken
+    }
+    val effectiveRequestedGitHubActionsTrackId = if (externalGitHubActionsRequested) {
+        hostState.requestedGitHubActionsTrackId
+    } else {
+        localRequestedGitHubActionsTrackId
+    }
+    val effectiveRequestedGitHubActionsSheetToken = if (externalGitHubActionsRequested) {
+        hostState.requestedGitHubActionsSheetToken
+    } else {
+        localRequestedGitHubActionsSheetToken
     }
     LaunchedEffect(prefsViewModel) {
         prefsViewModel.loadInitialSnapshot()
@@ -112,8 +127,8 @@ fun MainScreen(
             effectiveRequestedBottomPage,
             effectiveRequestedBottomPageToken,
             hostState.requestedGitHubRefreshToken,
-            hostState.requestedGitHubActionsTrackId,
-            hostState.requestedGitHubActionsSheetToken,
+            effectiveRequestedGitHubActionsTrackId,
+            effectiveRequestedGitHubActionsSheetToken,
             externalBottomPageRequested,
             hostCallbacks,
         ) {
@@ -127,8 +142,8 @@ fun MainScreen(
                 requestedBottomPage = effectiveRequestedBottomPage,
                 requestedBottomPageToken = effectiveRequestedBottomPageToken,
                 requestedGitHubRefreshToken = hostState.requestedGitHubRefreshToken,
-                requestedGitHubActionsTrackId = hostState.requestedGitHubActionsTrackId,
-                requestedGitHubActionsSheetToken = hostState.requestedGitHubActionsSheetToken,
+                requestedGitHubActionsTrackId = effectiveRequestedGitHubActionsTrackId,
+                requestedGitHubActionsSheetToken = effectiveRequestedGitHubActionsSheetToken,
                 onRequestedBottomPageConsumed = {
                     if (externalBottomPageRequested) {
                         hostCallbacks.onRequestedBottomPageConsumed()
@@ -158,5 +173,15 @@ fun MainScreen(
         appThemeMode = hostState.appThemeMode,
         transientExternalLaunchActive = hostState.transientExternalLaunchActive,
         onAppThemeModeChanged = currentOnAppThemeModeChanged,
+        onOpenGitHubActionsTrackFromHistory = { trackId ->
+            val normalizedTrackId = trackId.trim()
+            if (normalizedTrackId.isNotBlank()) {
+                localRequestedBottomPage = BottomPage.GitHub.name
+                localRequestedBottomPageToken += 1
+                localRequestedGitHubActionsTrackId = normalizedTrackId
+                localRequestedGitHubActionsSheetToken += 1
+                navigator.popUntil { route -> route == KeiosRoute.Main }
+            }
+        },
     )
 }

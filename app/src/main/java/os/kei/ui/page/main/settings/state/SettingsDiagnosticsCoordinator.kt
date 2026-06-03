@@ -20,6 +20,7 @@ internal class SettingsDiagnosticsCoordinator(
 ) {
     private var cacheLoadJob: Job? = null
     private var logStatsJob: Job? = null
+    private var boundCacheKey: SettingsCacheDiagnosticsBindKey? = null
     private var boundLogKey: SettingsLogStatsBindKey? = null
 
     fun bind(
@@ -105,15 +106,26 @@ internal class SettingsDiagnosticsCoordinator(
         enabled: Boolean,
     ) {
         val appContext = context.applicationContext
+        val key = SettingsCacheDiagnosticsBindKey(
+            active = active,
+            enabled = enabled,
+        )
         if (!enabled) {
+            boundCacheKey = key
             cacheLoadJob?.cancel()
             cacheState.value = SettingsCacheUiState()
             return
         }
         if (!active) {
+            boundCacheKey = key
             cacheLoadJob?.cancel()
             return
         }
+        val state = cacheState.value
+        if (boundCacheKey == key && (cacheLoadJob?.isActive == true || state.cacheEntries != null)) {
+            return
+        }
+        boundCacheKey = key
         reloadCacheEntries(appContext)
     }
 
@@ -146,4 +158,9 @@ internal class SettingsDiagnosticsCoordinator(
 private data class SettingsLogStatsBindKey(
     val active: Boolean,
     val logLevel: AppLogLevel,
+)
+
+private data class SettingsCacheDiagnosticsBindKey(
+    val active: Boolean,
+    val enabled: Boolean,
 )

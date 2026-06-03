@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubBackgroundScheduleSnapshot
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.actionsUpdateIntervalMs
@@ -22,24 +23,11 @@ object AppBackgroundScheduler {
     fun scheduleGitHubRefresh(context: Context) {
         val appContext = context.applicationContext
         val scheduleSnapshot = githubTrackService.loadBackgroundScheduleSnapshotBlocking()
-        val snapshot = scheduleSnapshot.trackSnapshot
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
         val pending = AppBackgroundTickReceiver.githubTickPendingIntent(appContext)
-        val nowMs = System.currentTimeMillis()
-        val schedule = AppBackgroundSchedulePolicy.nextGitHubRefreshSchedule(
-            trackedItemCount = snapshot.items.size,
-            lastRefreshMs = snapshot.lastRefreshMs,
-            refreshIntervalHours = snapshot.refreshIntervalHours,
-            nextTrackedUpdateDueAtMs = nextGitHubTrackedUpdateDueAtMs(
-                snapshot = snapshot,
-                nowMs = nowMs
-            ),
-            nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
-                snapshot = snapshot,
-                previousById = scheduleSnapshot.actionsRecommendedRunsByTrackId,
-                nowMs = nowMs
-            ),
-            nowMs = nowMs
+        val schedule = buildGitHubRefreshSchedule(
+            scheduleSnapshot = scheduleSnapshot,
+            nowMs = System.currentTimeMillis(),
         )
         if (schedule == null) {
             alarmManager.cancel(pending)
@@ -47,6 +35,28 @@ object AppBackgroundScheduler {
             return
         }
         scheduleWithAlarmManager(alarmManager, schedule, pending)
+    }
+
+    internal fun buildGitHubRefreshSchedule(
+        scheduleSnapshot: GitHubBackgroundScheduleSnapshot,
+        nowMs: Long,
+    ): BackgroundAlarmSchedule? {
+        val snapshot = scheduleSnapshot.trackSnapshot
+        return AppBackgroundSchedulePolicy.nextGitHubRefreshSchedule(
+            trackedItemCount = snapshot.items.size,
+            lastRefreshMs = snapshot.lastRefreshMs,
+            refreshIntervalHours = snapshot.refreshIntervalHours,
+            nextTrackedUpdateDueAtMs = nextGitHubTrackedUpdateDueAtMs(
+                snapshot = snapshot,
+                nowMs = nowMs,
+            ),
+            nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
+                snapshot = snapshot,
+                previousById = scheduleSnapshot.actionsRecommendedRunsByTrackId,
+                nowMs = nowMs,
+            ),
+            nowMs = nowMs,
+        )
     }
 
     private fun nextGitHubTrackedUpdateDueAtMs(

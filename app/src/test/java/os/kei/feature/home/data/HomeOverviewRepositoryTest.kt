@@ -15,7 +15,10 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.ui.page.main.ba.support.BaCacheSnapshot
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class HomeOverviewRepositoryTest {
     @Test
@@ -123,7 +126,62 @@ class HomeOverviewRepositoryTest {
         assertEquals(1, overview.failedCount)
         assertEquals(1_000L, overview.cachedRefreshMs)
     }
+
+    @Test
+    fun githubCacheFreshnessUsesSnapshotRefreshInterval() {
+        val snapshot =
+            GitHubTrackSnapshot(
+                checkCache = mapOf("tracked" to GitHubCheckCacheEntry(latestTag = "v1.0.0")),
+                lastRefreshMs = 1_000L,
+                refreshIntervalHours = 12,
+            )
+
+        val fresh =
+            buildHomeGitHubCacheFreshness(
+                snapshot = snapshot,
+                nowMs = 1_000L + 11 * HOUR_MS,
+            )
+        val stale =
+            buildHomeGitHubCacheFreshness(
+                snapshot = snapshot,
+                nowMs = 1_000L + 13 * HOUR_MS,
+            )
+
+        assertTrue(fresh.hasData)
+        assertTrue(fresh.fresh)
+        assertFalse(fresh.stale)
+        assertTrue(stale.hasData)
+        assertFalse(stale.fresh)
+        assertTrue(stale.stale)
+    }
+
+    @Test
+    fun baCalendarPoolFreshnessUsesCurrentServerSnapshots() {
+        val freshness =
+            buildHomeBaCalendarPoolCacheFreshness(
+                calendar = BaCacheSnapshot(raw = "[activity]", syncMs = 2_000L),
+                pool = BaCacheSnapshot(raw = "[pool]", syncMs = 1_000L),
+                refreshIntervalHours = 12,
+                nowMs = 2_000L + 6 * HOUR_MS,
+            )
+        val empty =
+            buildHomeBaCalendarPoolCacheFreshness(
+                calendar = BaCacheSnapshot(),
+                pool = BaCacheSnapshot(),
+                refreshIntervalHours = 12,
+                nowMs = 2_000L,
+            )
+
+        assertTrue(freshness.hasData)
+        assertTrue(freshness.fresh)
+        assertEquals(2_000L, freshness.lastUpdatedAtMs)
+        assertTrue(freshness.bytes > 0L)
+        assertFalse(empty.hasData)
+        assertEquals(0L, empty.bytes)
+    }
 }
+
+private const val HOUR_MS = 60L * 60L * 1000L
 
 private fun trackedApp(
     repoUrl: String,

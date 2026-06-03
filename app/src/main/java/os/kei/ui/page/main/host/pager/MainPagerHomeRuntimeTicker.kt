@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 
 private const val HOME_RUNTIME_TICK_INTERVAL_MS = 30_000L
@@ -16,11 +17,16 @@ private const val HOME_RUNTIME_TICK_INTERVAL_MS = 30_000L
 internal data class MainPagerHomeRuntimeTickerRequest(
     val running: Boolean,
     val runningSinceEpochMs: Long,
+    val githubCachedRefreshMs: Long,
+    val githubRefreshing: Boolean,
     val pageActive: Boolean,
     val dataActive: Boolean,
 ) {
     val shouldTick: Boolean
-        get() = pageActive && dataActive && running && runningSinceEpochMs > 0L
+        get() =
+            pageActive &&
+                dataActive &&
+                ((running && runningSinceEpochMs > 0L) || githubCachedRefreshMs > 0L || githubRefreshing)
 }
 
 internal class MainPagerHomeRuntimeTicker(
@@ -56,11 +62,14 @@ internal class MainPagerHomeRuntimeTicker(
 
 internal fun buildMainPagerHomeRuntimeTickerRequest(
     mcpOverview: HomeMcpOverview,
+    githubOverview: HomeGitHubOverview,
     runtime: MainPageRuntime,
 ): MainPagerHomeRuntimeTickerRequest =
     MainPagerHomeRuntimeTickerRequest(
         running = mcpOverview.running,
         runningSinceEpochMs = mcpOverview.runningSinceEpochMs,
+        githubCachedRefreshMs = githubOverview.cachedRefreshMs,
+        githubRefreshing = githubOverview.refreshing,
         pageActive = runtime.isPageActive,
         dataActive = runtime.isDataActive,
     )

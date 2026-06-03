@@ -174,11 +174,14 @@ internal fun rememberMainPagerHomeOverviewState(
     val runtimeTickerRequest =
         remember(
             uiState.mcpOverview,
+            uiState.githubOverview.cachedRefreshMs,
+            uiState.githubOverview.refreshing,
             homeRuntime.isPageActive,
             homeRuntime.isDataActive,
         ) {
             buildMainPagerHomeRuntimeTickerRequest(
                 mcpOverview = uiState.mcpOverview,
+                githubOverview = uiState.githubOverview,
                 runtime = homeRuntime,
             )
         }

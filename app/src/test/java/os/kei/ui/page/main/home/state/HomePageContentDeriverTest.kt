@@ -120,6 +120,38 @@ class HomePageContentDeriverTest {
         assertEquals(Color.Green, state.cacheStateColor)
     }
 
+    @Test
+    fun githubCacheAgeUsesRuntimeClock() {
+        val state =
+            deriveHomePageContentState(
+                shizukuStatus = "granted",
+                appOverview = HomeAppOverview(loaded = true),
+                mcpOverview = HomeMcpOverview(),
+                githubOverview =
+                    HomeGitHubOverview(
+                        loaded = true,
+                        trackedCount = 1,
+                        cacheHitCount = 1,
+                        cachedRefreshMs = 1_000L,
+                        cacheLabelNowMs = 1_000L,
+                        refreshIntervalHours = 3,
+                    ),
+                webDavOverview = HomeWebDavOverview(),
+                baOverview = HomeBaOverview(loaded = true),
+                runtimeNowMs = 121_000L,
+                text = testTextBundle(),
+                colors =
+                    HomePageContentColors(
+                        runningColor = Color.Green,
+                        stoppedColor = Color.Red,
+                        inactiveColor = Color.Gray,
+                        githubCacheColor = Color.Yellow,
+                    ),
+            )
+
+        assertEquals("3h 2m", state.githubLastUpdateLine)
+    }
+
     private fun freshCacheSnapshot(): CacheFreshnessSnapshot =
         CacheFreshnessSnapshot(
             hasData = true,

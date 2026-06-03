@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.host.pager
 
 import org.junit.Test
+import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import kotlin.test.assertEquals
@@ -29,13 +30,21 @@ class MainPagerHomeRuntimeTickerTest {
             )
 
         assertEquals(
-            buildMainPagerHomeRuntimeTickerRequest(overview, baseRuntime),
-            buildMainPagerHomeRuntimeTickerRequest(overview, visualChangedRuntime),
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = overview,
+                githubOverview = HomeGitHubOverview(),
+                runtime = baseRuntime,
+            ),
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = overview,
+                githubOverview = HomeGitHubOverview(),
+                runtime = visualChangedRuntime,
+            ),
         )
     }
 
     @Test
-    fun `ticker request only ticks for active running server`() {
+    fun `ticker request ticks for active runtime sources`() {
         val runningOverview =
             HomeMcpOverview(
                 running = true,
@@ -49,7 +58,33 @@ class MainPagerHomeRuntimeTickerTest {
         val activeRuntime =
             inactiveRuntime.copy(isDataActive = true)
 
-        assertFalse(buildMainPagerHomeRuntimeTickerRequest(runningOverview, inactiveRuntime).shouldTick)
-        assertTrue(buildMainPagerHomeRuntimeTickerRequest(runningOverview, activeRuntime).shouldTick)
+        assertFalse(
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = runningOverview,
+                githubOverview = HomeGitHubOverview(cachedRefreshMs = 1_000L),
+                runtime = inactiveRuntime,
+            ).shouldTick,
+        )
+        assertTrue(
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = runningOverview,
+                githubOverview = HomeGitHubOverview(),
+                runtime = activeRuntime,
+            ).shouldTick,
+        )
+        assertTrue(
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = HomeMcpOverview(),
+                githubOverview = HomeGitHubOverview(cachedRefreshMs = 1_000L),
+                runtime = activeRuntime,
+            ).shouldTick,
+        )
+        assertTrue(
+            buildMainPagerHomeRuntimeTickerRequest(
+                mcpOverview = HomeMcpOverview(),
+                githubOverview = HomeGitHubOverview(refreshing = true),
+                runtime = activeRuntime,
+            ).shouldTick,
+        )
     }
 }

@@ -150,6 +150,62 @@ class GitHubRefreshNotificationHelperTest {
     }
 
     @Test
+    fun `mi island due refresh summary uses tracked denominator`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = true,
+            current = 1,
+            total = 1,
+            preReleaseUpdateCount = 0,
+            updatableCount = 0,
+            displayProgressPercent = 50,
+            scope = GitHubRefreshScope.DueTracked,
+            source = GitHubRefreshSource.BackgroundTick,
+            totalTrackedCount = 75,
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1, 75)))
+        assertTrue(
+            focusParam.contains(
+                context.getString(os.kei.R.string.github_refresh_content_partial_compact, 1, 0, 0),
+            ),
+        )
+        assertTrue(focusParam.contains("\"content\":\"1/75\""))
+    }
+
+    @Test
+    fun `legacy due refresh summary uses scoped target text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = true,
+            current = 1,
+            total = 1,
+            preReleaseUpdateCount = 0,
+            updatableCount = 0,
+            displayProgressPercent = 50,
+            scope = GitHubRefreshScope.DueTracked,
+            source = GitHubRefreshSource.BackgroundTick,
+            totalTrackedCount = 75,
+        )
+        val notification = invokeLegacyLiveUpdateNotification(context, state)
+
+        assertEquals(
+            context.getString(
+                os.kei.R.string.github_refresh_content_scoped,
+                context.getString(os.kei.R.string.github_refresh_scope_due, 1, 75),
+                context.getString(os.kei.R.string.github_refresh_content_partial, 1, 0, 0),
+            ),
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+        assertEquals(
+            context.getString(os.kei.R.string.common_progress_with_value, "1/75"),
+            notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT).toString(),
+        )
+    }
+
+    @Test
     fun `stale session progress cannot overwrite active notification session`() {
         invokeResetNotificationRuntime()
 
@@ -235,6 +291,26 @@ class GitHubRefreshNotificationHelperTest {
     ): Notification {
         val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
             "buildMiIslandNotification",
+            Context::class.java,
+            refreshStateClass(),
+            Boolean::class.javaPrimitiveType
+        ).apply {
+            isAccessible = true
+        }
+        return method.invoke(
+            GitHubRefreshNotificationHelper,
+            context,
+            state,
+            true
+        ) as Notification
+    }
+
+    private fun invokeLegacyLiveUpdateNotification(
+        context: Context,
+        state: Any
+    ): Notification {
+        val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
+            "buildLegacyLiveUpdateNotification",
             Context::class.java,
             refreshStateClass(),
             Boolean::class.javaPrimitiveType

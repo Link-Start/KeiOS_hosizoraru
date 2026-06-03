@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.domain.GitHubRefreshRuntimeState
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -268,6 +269,9 @@ internal class GitHubPageActions(
     suspend fun initializePageActiveWork() = refreshActions.initializePageActiveWork()
 
     suspend fun syncTrackSnapshotFromStore(forceRefreshApps: Boolean = true) = refreshActions.syncSnapshotFromStore(forceRefreshApps)
+
+    fun applyRefreshRuntimeDisplay(runtime: GitHubRefreshRuntimeState) =
+        refreshActions.applyRefreshRuntimeDisplay(runtime)
 
     fun handleTrackMutationRefresh(
         affectedTrackIds: Set<String>,

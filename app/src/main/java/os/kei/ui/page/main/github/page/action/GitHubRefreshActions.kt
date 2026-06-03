@@ -7,6 +7,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
+import os.kei.feature.github.domain.GitHubRefreshRuntimeState
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
@@ -142,6 +143,31 @@ internal class GitHubRefreshActions(
         state.refreshTargetIds = emptySet()
         launchDeferredTrackStoreSyncIfNeeded()
         env.toast(reason)
+    }
+
+    fun applyRefreshRuntimeDisplay(runtime: GitHubRefreshRuntimeState) {
+        if (runtime.running) {
+            state.overviewRefreshState = OverviewRefreshState.Refreshing
+            state.refreshProgress = runtime.progressFraction.coerceIn(0f, 1f)
+            return
+        }
+        if (state.overviewRefreshState != OverviewRefreshState.Refreshing) return
+        if (state.refreshAllJob?.isActive == true || backgroundRefreshCoordinator.hasActiveJobs()) return
+        state.refreshProgress = 0f
+        state.overviewRefreshState = cachedOrIdleOverviewState()
+    }
+
+    private fun cachedOrIdleOverviewState(): OverviewRefreshState {
+        if (state.trackedItems.isEmpty()) return OverviewRefreshState.Idle
+        val hasCachedForTracked =
+            state.trackedItems.any { item ->
+                state.checkStates.containsKey(item.id)
+            }
+        return if (hasCachedForTracked) {
+            OverviewRefreshState.Cached
+        } else {
+            OverviewRefreshState.Idle
+        }
     }
 
     suspend fun reloadApps(

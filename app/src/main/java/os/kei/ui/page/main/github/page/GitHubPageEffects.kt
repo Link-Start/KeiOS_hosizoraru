@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvents
+import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
 import kotlin.time.Duration.Companion.milliseconds
@@ -101,6 +102,13 @@ internal fun BindGitHubPageLifecycleCoordinator(
             state.lastTrackStoreSignalVersion = version
             if (!state.hasInitialized) return@collect
             actions.syncTrackSnapshotFromStore(forceRefreshApps = isPageDataActive)
+        }
+    }
+
+    LaunchedEffect(isPageWarmActive, actions) {
+        if (!isPageWarmActive) return@LaunchedEffect
+        GitHubRefreshRuntimeStore.state.collect { runtime ->
+            actions.applyRefreshRuntimeDisplay(runtime)
         }
     }
 

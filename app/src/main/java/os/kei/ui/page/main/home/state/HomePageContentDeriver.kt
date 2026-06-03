@@ -73,7 +73,7 @@ internal fun deriveHomePageContentState(
             lastRefreshMs = githubOverview.cachedRefreshMs,
             notRefreshedText = text.githubNotRefreshed,
             justNowText = text.justNow,
-            nowMs = githubOverview.cacheLabelNowMs,
+            nowMs = maxOf(runtimeNowMs, githubOverview.cacheLabelNowMs),
         )
     val githubRefreshProgressLine =
         text.githubRefreshingProgress(

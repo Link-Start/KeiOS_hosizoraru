@@ -6,8 +6,12 @@
     <string name="github_refresh_title_completed">GitHub project tracking refresh completed</string>
     <string name="github_refresh_content">Checked %1$d/%2$d · pre-release updates %3$d · stable updates %4$d</string>
     <string name="github_refresh_content_with_failed">Checked %1$d/%2$d · pre-release updates %3$d · stable updates %4$d · failed %5$d</string>
+    <string name="github_refresh_content_partial">Checked %1$d items · pre-release updates %2$d · stable updates %3$d</string>
+    <string name="github_refresh_content_partial_with_failed">Checked %1$d items · pre-release updates %2$d · stable updates %3$d · failed %4$d</string>
     <string name="github_refresh_content_compact">Checked %1$d/%2$d · pre %3$d · stable %4$d</string>
     <string name="github_refresh_content_compact_with_failed">Checked %1$d/%2$d · pre %3$d · stable %4$d · failed %5$d</string>
+    <string name="github_refresh_content_partial_compact">Checked %1$d · pre %2$d · stable %3$d</string>
+    <string name="github_refresh_content_partial_compact_with_failed">Checked %1$d · pre %2$d · stable %3$d · failed %4$d</string>
     <string name="github_refresh_content_scoped">%1$s · %2$s</string>
     <string name="github_refresh_scope_all">All %1$d items</string>
     <string name="github_refresh_scope_all_compact">All %1$d</string>

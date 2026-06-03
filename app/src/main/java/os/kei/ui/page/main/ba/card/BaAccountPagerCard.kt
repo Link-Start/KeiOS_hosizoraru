@@ -4,6 +4,7 @@ package os.kei.ui.page.main.ba.card
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -49,6 +51,7 @@ internal fun BaAccountPagerCard(
     activeAccountId: BaAccountId?,
     serverOptions: List<String>,
     onAccountSelected: (BaAccountId) -> Unit,
+    onEditAccount: (BaAccountId) -> Unit,
 ) {
     if (accounts.isEmpty()) {
         BaAccountLoadingCard(backdrop = backdrop)
@@ -92,6 +95,7 @@ internal fun BaAccountPagerCard(
             page = page,
             pageCount = accounts.size,
             serverOptions = serverOptions,
+            onEditAccount = { onEditAccount(account.id) },
         )
     }
 }
@@ -139,11 +143,13 @@ private fun BaAccountPageCard(
     page: Int,
     pageCount: Int,
     serverOptions: List<String>,
+    onEditAccount: () -> Unit,
 ) {
     val context = LocalContext.current
     val accentColor = AppStatusColors.Cached
     val serverName = serverOptions.getOrElse(account.serverIndex) { serverOptions.lastOrNull().orEmpty() }
     val friendCode = sanitizeBaAccountFriendCode(account.friendCode)
+    val currentOnEditAccount by rememberUpdatedState(onEditAccount)
     val officeTitle =
         when (account.serverIndex.coerceIn(0, 2)) {
             0 -> stringResource(R.string.ba_office_name_cn)
@@ -177,6 +183,14 @@ private fun BaAccountPageCard(
         verticalSpacing = 6.dp,
     ) {
         BaAccountOfficeHeader(
+            modifier =
+                Modifier.pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            currentOnEditAccount()
+                        },
+                    )
+                },
             title = officeTitle,
             displayName = account.displayName,
             serverName = serverName,
@@ -233,6 +247,7 @@ private fun BaAccountPageCard(
 
 @Composable
 private fun BaAccountOfficeHeader(
+    modifier: Modifier = Modifier,
     title: String,
     displayName: String,
     serverName: String,
@@ -241,7 +256,7 @@ private fun BaAccountOfficeHeader(
     accentColor: Color,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

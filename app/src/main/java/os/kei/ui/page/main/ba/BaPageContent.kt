@@ -59,6 +59,7 @@ internal data class BaPageContentActions(
     val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     val onCafeLevelPopupChange: (Boolean) -> Unit,
     val onAccountSelected: (BaAccountId) -> Unit,
+    val onEditAccount: (BaAccountId) -> Unit,
     val onCafeLevelChange: (Int) -> Unit,
     val onClaimCafeStoredAp: () -> Unit,
     val onTouchHead: () -> Unit,
@@ -115,6 +116,7 @@ internal fun BaPageContent(
                 activeAccountId = state.accountUiState.activeAccountId,
                 serverOptions = state.serverOptions,
                 onAccountSelected = actions.onAccountSelected,
+                onEditAccount = actions.onEditAccount,
             )
         }
 

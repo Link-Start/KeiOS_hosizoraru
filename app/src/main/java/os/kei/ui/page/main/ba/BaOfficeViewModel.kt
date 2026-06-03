@@ -136,17 +136,23 @@ internal class BaOfficeViewModel(
         }
     }
 
-    fun showAccountManagementSheet() {
+    fun showAccountManagementSheet(initialEditAccountId: BaAccountId? = null) {
         _chromeUiState.update { state ->
             state
                 .withoutFloatingPopups()
-                .copy(showAccountManagementSheet = true)
+                .copy(
+                    showAccountManagementSheet = true,
+                    accountManagementInitialEditAccountId = initialEditAccountId,
+                )
         }
     }
 
     fun hideAccountManagementSheet() {
         _chromeUiState.update { state ->
-            state.copy(showAccountManagementSheet = false)
+            state.copy(
+                showAccountManagementSheet = false,
+                accountManagementInitialEditAccountId = null,
+            )
         }
     }
 

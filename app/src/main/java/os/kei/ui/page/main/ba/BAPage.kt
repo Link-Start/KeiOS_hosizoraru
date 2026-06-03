@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -143,8 +144,8 @@ fun BAPage(
         officeViewModel.hideSettingsSheet(savedSettingsDraftState)
     }
 
-    fun openAccountManagementSheet() {
-        officeViewModel.showAccountManagementSheet()
+    fun openAccountManagementSheet(initialEditAccountId: BaAccountId? = null) {
+        officeViewModel.showAccountManagementSheet(initialEditAccountId)
     }
 
     fun closeAccountManagementSheet() {
@@ -260,6 +261,7 @@ fun BAPage(
                                 ?.withAccountId(currentActiveAccountIdState.value),
                     )
                 },
+                onEditAccount = { accountId -> openAccountManagementSheet(accountId) },
                 onRefreshCalendar = { refreshCalendar(force = true) },
                 onRefreshPool = { refreshPool(force = true) },
                 onOpenCalendarLink = { url -> openBaExternalLink(context = context, url = url) },
@@ -324,7 +326,7 @@ fun BAPage(
                 BaTopBarActions(
                     backdrop = backdrops.topBar,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    onShowAccountManagement = ::openAccountManagementSheet,
+                    onShowAccountManagement = { openAccountManagementSheet() },
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,
                     onInteractionChanged = onActionBarInteractingChanged,

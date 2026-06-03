@@ -70,6 +70,7 @@ internal fun BaPageSheetHost(
     BaAccountManagementSheet(
         show = routeState.showAccountManagementSheet,
         backdrop = backdrop,
+        initialEditAccountId = routeState.accountManagementInitialEditAccountId,
         state = accountUiState,
         onAllAccountsFollowGlobalNotificationSettingsChange =
             viewModel::updateAllAccountsFollowGlobalNotificationSettings,

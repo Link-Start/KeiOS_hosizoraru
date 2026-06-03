@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.IntRect
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.state.PageRouteState
 
 @Stable
@@ -24,6 +25,7 @@ internal data class BaPagePopupState(
 internal data class BaPageRouteState(
     val showSettingsSheet: Boolean,
     val showAccountManagementSheet: Boolean,
+    val accountManagementInitialEditAccountId: BaAccountId?,
     val showNotificationSettingsSheet: Boolean,
     val popupState: BaPagePopupState,
     val accountUiState: BaOfficeAccountUiState,
@@ -61,6 +63,7 @@ internal fun buildBaPageRouteState(
     BaPageRouteState(
         showSettingsSheet = chromeUiState.showSettingsSheet,
         showAccountManagementSheet = chromeUiState.showAccountManagementSheet,
+        accountManagementInitialEditAccountId = chromeUiState.accountManagementInitialEditAccountId,
         showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
         popupState =
             BaPagePopupState(

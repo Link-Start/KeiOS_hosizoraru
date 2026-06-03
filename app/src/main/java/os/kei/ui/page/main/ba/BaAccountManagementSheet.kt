@@ -53,6 +53,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun BaAccountManagementSheet(
     show: Boolean,
     backdrop: Backdrop?,
+    initialEditAccountId: BaAccountId?,
     state: BaOfficeAccountUiState,
     onAllAccountsFollowGlobalNotificationSettingsChange: (Boolean) -> Unit,
     onAccountEnabledChange: (BaAccountId, Boolean) -> Unit,
@@ -73,12 +74,26 @@ internal fun BaAccountManagementSheet(
     val defaultAccountName = stringResource(R.string.ba_account_management_new_account_default_name)
     var editorDraft by remember { mutableStateOf<BaAccountEditorDraft?>(null) }
     var pendingDeleteAccountId by remember { mutableStateOf<BaAccountId?>(null) }
+    var consumedInitialEditAccountId by remember { mutableStateOf<BaAccountId?>(null) }
 
     LaunchedEffect(show) {
         if (!show) {
             editorDraft = null
             pendingDeleteAccountId = null
+            consumedInitialEditAccountId = null
         }
+    }
+
+    LaunchedEffect(show, initialEditAccountId, state.accounts) {
+        val accountId = initialEditAccountId ?: return@LaunchedEffect
+        if (!show || consumedInitialEditAccountId == accountId) return@LaunchedEffect
+        state.accounts
+            .firstOrNull { account -> account.id == accountId }
+            ?.let { account ->
+                editorDraft = account.toEditorDraft()
+                pendingDeleteAccountId = null
+                consumedInitialEditAccountId = accountId
+            }
     }
 
     fun startAddAccount() {

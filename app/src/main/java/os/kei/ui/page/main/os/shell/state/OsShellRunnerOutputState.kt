@@ -47,8 +47,7 @@ internal fun appendShellRunnerOutput(
     maxChars: Int,
 ): OsShellRunnerOutputState {
     val normalizedResult = result.trimEnd()
-    val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-    val timeLabel = "[$timestamp]"
+    val timeLabel = currentShellRunnerTimeLabel()
     val previousOutput =
         if (outputSaveMode == OsShellRunnerOutputSaveMode.LatestOnly) {
             ""
@@ -94,6 +93,96 @@ internal fun appendShellRunnerOutput(
         outputText = outputText,
         outputEntries = outputEntries,
         latestRunResultOutput = normalizedResult,
+    )
+}
+
+internal fun startStreamingShellRunnerOutput(
+    currentOutputEntries: List<ShellOutputDisplayEntry>,
+    command: String,
+    outputSaveMode: OsShellRunnerOutputSaveMode,
+    maxChars: Int,
+    timeLabel: String = currentShellRunnerTimeLabel(),
+): OsShellRunnerOutputState {
+    val previousEntries =
+        when (outputSaveMode) {
+            OsShellRunnerOutputSaveMode.FullHistory -> currentOutputEntries
+            OsShellRunnerOutputSaveMode.LatestOnly -> emptyList()
+        }
+    val entries =
+        trimShellOutputEntries(
+            entries =
+                previousEntries +
+                    ShellOutputDisplayEntry(
+                        command = command.trim(),
+                        result = "",
+                        isStopped = false,
+                        timeLabel = timeLabel,
+                    ),
+            maxChars = maxChars,
+        )
+    return OsShellRunnerOutputState(
+        outputText = buildShellOutputHistoryText(entries = entries, maxChars = maxChars),
+        outputEntries = entries,
+        latestRunResultOutput = "",
+    )
+}
+
+internal fun updateStreamingShellRunnerOutput(
+    currentOutputEntries: List<ShellOutputDisplayEntry>,
+    command: String,
+    result: String,
+    commandStoppedText: String,
+    outputSaveMode: OsShellRunnerOutputSaveMode,
+    maxChars: Int,
+): OsShellRunnerOutputState {
+    val normalizedResult = result.trimEnd()
+    val modeEntries =
+        when (outputSaveMode) {
+            OsShellRunnerOutputSaveMode.FullHistory -> currentOutputEntries
+            OsShellRunnerOutputSaveMode.LatestOnly -> currentOutputEntries.takeLast(1)
+        }
+    val updatedEntries =
+        if (modeEntries.isEmpty()) {
+            val seededEntries =
+                startStreamingShellRunnerOutput(
+                    currentOutputEntries = emptyList(),
+                    command = command,
+                    outputSaveMode = outputSaveMode,
+                    maxChars = maxChars,
+                ).outputEntries
+            val latest = seededEntries.lastOrNull()
+            if (latest == null) {
+                emptyList()
+            } else {
+                seededEntries.dropLast(1) +
+                    latest.copy(
+                        result = normalizedResult,
+                        isStopped = normalizedResult.trim() == commandStoppedText.trim(),
+                    )
+            }
+        } else {
+            val latest = modeEntries.last()
+            modeEntries.dropLast(1) +
+                latest.copy(
+                    command = latest.command.ifBlank { command.trim() },
+                    result = normalizedResult,
+                    isStopped = normalizedResult.trim() == commandStoppedText.trim(),
+                )
+        }
+    val trimmedEntries =
+        trimShellOutputEntries(
+            entries = updatedEntries,
+            maxChars = maxChars,
+        )
+    return OsShellRunnerOutputState(
+        outputText = buildShellOutputHistoryText(entries = trimmedEntries, maxChars = maxChars),
+        outputEntries = trimmedEntries,
+        latestRunResultOutput =
+            trimmedEntries
+                .lastOrNull()
+                ?.result
+                .orEmpty()
+                .trim(),
     )
 }
 
@@ -252,3 +341,8 @@ internal fun emptyShellRunnerOutputState(): OsShellRunnerOutputState =
         outputEntries = emptyList(),
         latestRunResultOutput = "",
     )
+
+private fun currentShellRunnerTimeLabel(): String {
+    val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+    return "[$timestamp]"
+}

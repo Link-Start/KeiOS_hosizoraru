@@ -5,6 +5,9 @@ import android.os.Handler
 import android.os.Looper
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -25,6 +28,13 @@ class ShizukuApiUtils(
     private val requestCode: Int = DEFAULT_REQUEST_CODE,
     private val commandDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+    data class AppCommandOutputSnapshot(
+        val stdout: String,
+        val stderr: String,
+    ) {
+        fun combinedOutput(): String = stdout.ifBlank { stderr }
+    }
+
     private enum class CommandIdentity(val label: String) {
         ROOT("root"),
         SHELL("shell"),
@@ -228,6 +238,67 @@ class ShizukuApiUtils(
         return executeProcessCancellable(process = process, timeoutMs = timeoutMs)
     }
 
+    suspend fun execCommandCancellableStreaming(
+        command: String,
+        timeoutMs: Long = 2000L,
+        onOutputSnapshot: suspend (String) -> Unit,
+    ): String? {
+        val result =
+            execCommandCancellableResultStreaming(
+                command = command,
+                timeoutMs = timeoutMs,
+                onOutputSnapshot = { snapshot ->
+                    val output = snapshot.combinedOutput()
+                    if (output.isNotBlank()) {
+                        onOutputSnapshot(output)
+                    }
+                },
+            )
+        if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
+        return result.combinedOutput().ifBlank { null }
+    }
+
+    suspend fun execCommandCancellableResultStreaming(
+        command: String,
+        timeoutMs: Long = 2000L,
+        onOutputSnapshot: suspend (AppCommandOutputSnapshot) -> Unit,
+    ): AppCommandResult {
+        val normalizedCommand = command.trim()
+        if (normalizedCommand.isBlank()) {
+            return AppCommandResult(
+                stdout = "",
+                stderr = "",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+        val state = resolveRuntimeState()
+        if (!state.commandReady) {
+            return AppCommandResult(
+                stdout = "",
+                stderr = state.statusText,
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+        }
+        val process = createShellProcess(normalizedCommand)
+            ?: return AppCommandResult(
+                stdout = "",
+                stderr = "Shizuku process unavailable",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false
+            )
+
+        return executeProcessCancellable(
+            process = process,
+            timeoutMs = timeoutMs,
+            onOutputSnapshot = onOutputSnapshot,
+        )
+    }
+
     suspend fun execCommandCancellable(command: String, timeoutMs: Long = 2000L): String? {
         val result = execCommandCancellableResult(command = command, timeoutMs = timeoutMs)
         if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
@@ -344,19 +415,47 @@ class ShizukuApiUtils(
 
     private suspend fun executeProcessCancellable(
         process: Process,
-        timeoutMs: Long
+        timeoutMs: Long,
+        onOutputSnapshot: (suspend (AppCommandOutputSnapshot) -> Unit)? = null,
     ): AppCommandResult = withContext(commandDispatcher) {
         val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
         val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
+        val snapshotCallback = onOutputSnapshot
+        val outputSnapshots =
+            snapshotCallback?.let { Channel<AppCommandOutputSnapshot>(Channel.CONFLATED) }
+        val outputSnapshotJob: Job? =
+            if (snapshotCallback != null && outputSnapshots != null) {
+                launch {
+                    for (snapshot in outputSnapshots) {
+                        snapshotCallback(snapshot)
+                    }
+                }
+            } else {
+                null
+            }
+        fun publishOutputSnapshot() {
+            outputSnapshots?.trySend(
+                AppCommandOutputSnapshot(
+                    stdout = stdout.text(),
+                    stderr = stderr.text(),
+                ),
+            )
+        }
+        suspend fun closeOutputSnapshots() {
+            outputSnapshots?.close()
+            outputSnapshotJob?.join()
+        }
         val stdoutReader = startStreamCollector(
             name = "KeiOS-ShizukuStdout",
             stream = process.inputStream,
-            sink = stdout
+            sink = stdout,
+            onCollected = ::publishOutputSnapshot,
         )
         val stderrReader = startStreamCollector(
             name = "KeiOS-ShizukuStderr",
             stream = process.errorStream,
-            sink = stderr
+            sink = stderr,
+            onCollected = ::publishOutputSnapshot,
         )
 
         try {
@@ -368,6 +467,8 @@ class ShizukuApiUtils(
                 terminateProcess(process)
                 stdoutReader.join(300)
                 stderrReader.join(300)
+                publishOutputSnapshot()
+                closeOutputSnapshots()
                 return@withContext AppCommandResult(
                     stdout = stdout.text().trim(),
                     stderr = stderr.text().trim(),
@@ -381,6 +482,8 @@ class ShizukuApiUtils(
 
             stdoutReader.join(600)
             stderrReader.join(600)
+            publishOutputSnapshot()
+            closeOutputSnapshots()
             AppCommandResult(
                 stdout = stdout.text().trim(),
                 stderr = stderr.text().trim(),
@@ -394,13 +497,18 @@ class ShizukuApiUtils(
             terminateProcess(process)
             stdoutReader.join(300)
             stderrReader.join(300)
+            publishOutputSnapshot()
+            closeOutputSnapshots()
             throw error
         } catch (error: Throwable) {
             terminateProcess(process)
             stdoutReader.join(300)
             stderrReader.join(300)
+            publishOutputSnapshot()
+            closeOutputSnapshots()
             throw error
         } finally {
+            outputSnapshots?.close()
             closeProcessStreams(process)
         }
     }
@@ -419,7 +527,8 @@ class ShizukuApiUtils(
     private fun startStreamCollector(
         name: String,
         stream: InputStream,
-        sink: BoundedCommandOutputSink
+        sink: BoundedCommandOutputSink,
+        onCollected: (() -> Unit)? = null,
     ): Thread {
         return Thread(
             {
@@ -430,6 +539,7 @@ class ShizukuApiUtils(
                             val read = input.read(buffer)
                             if (read < 0) break
                             sink.append(buffer, read)
+                            onCollected?.invoke()
                         }
                     }
                 }

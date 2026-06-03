@@ -13,6 +13,8 @@ import os.kei.ui.page.main.os.shell.state.appendShellRunnerOutput
 import os.kei.ui.page.main.os.shell.state.emptyShellRunnerOutputState
 import os.kei.ui.page.main.os.shell.state.formatShellRunnerOutput
 import os.kei.ui.page.main.os.shell.state.normalizeShellRunnerOutputState
+import os.kei.ui.page.main.os.shell.state.startStreamingShellRunnerOutput
+import os.kei.ui.page.main.os.shell.state.updateStreamingShellRunnerOutput
 import os.kei.core.concurrency.AppDispatchers
 
 internal data class OsShellRunnerChromePrefs(
@@ -147,6 +149,67 @@ internal class OsShellRunnerRepository(
             outputState
         }
         persistentState.update { current -> current.copy(outputState = next) }
+    }
+
+    suspend fun startStreamingOutput(
+        command: String,
+    ) {
+        val state = persistentState.value
+        val next = withContext(ioDispatcher) {
+            startStreamingShellRunnerOutput(
+                currentOutputEntries = state.outputState.outputEntries,
+                command = command,
+                outputSaveMode = state.settings.outputSaveMode,
+                maxChars = state.settings.outputLimitChars,
+            )
+        }
+        persistentState.update { current -> current.copy(outputState = next) }
+    }
+
+    suspend fun updateStreamingOutput(
+        command: String,
+        result: String,
+        commandStoppedText: String,
+    ) {
+        val state = persistentState.value
+        val next = withContext(ioDispatcher) {
+            updateStreamingShellRunnerOutput(
+                currentOutputEntries = state.outputState.outputEntries,
+                command = command,
+                result = result,
+                commandStoppedText = commandStoppedText,
+                outputSaveMode = state.settings.outputSaveMode,
+                maxChars = state.settings.outputLimitChars,
+            )
+        }
+        persistentState.update { current -> current.copy(outputState = next) }
+    }
+
+    suspend fun completeStreamingOutput(
+        command: String,
+        result: String,
+        commandStoppedText: String,
+        outputResultLabel: String,
+        outputTimeLabel: String,
+    ) {
+        updateStreamingOutput(
+            command = command,
+            result = result,
+            commandStoppedText = commandStoppedText,
+        )
+        val state = persistentState.value
+        if (!state.settings.autoFormatOutput) return
+        val formatted = withContext(ioDispatcher) {
+            formatShellRunnerOutput(
+                outputText = state.outputState.outputText,
+                outputEntries = state.outputState.outputEntries,
+                commandStoppedText = commandStoppedText,
+                outputResultLabel = outputResultLabel,
+                outputTimeLabel = outputTimeLabel,
+                maxChars = state.settings.outputLimitChars,
+            )
+        }
+        persistentState.update { current -> current.copy(outputState = formatted) }
     }
 
     suspend fun formatOutput(

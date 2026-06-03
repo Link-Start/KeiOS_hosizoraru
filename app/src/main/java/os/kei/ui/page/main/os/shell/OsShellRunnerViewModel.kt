@@ -291,7 +291,7 @@ internal class OsShellRunnerViewModel : ViewModel() {
         outputResultLabel: String,
         outputTimeLabel: String,
         completionToast: Boolean,
-        onRunShellCommand: suspend (String, Long) -> String?,
+        onRunShellCommand: OsShellRunnerCommandExecutor,
     ) = commandController.runShellCommand(
         command = command,
         timeoutMs = timeoutMs,

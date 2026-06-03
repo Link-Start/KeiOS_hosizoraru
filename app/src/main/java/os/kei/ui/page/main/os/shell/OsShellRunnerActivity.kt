@@ -65,11 +65,11 @@ class OsShellRunnerActivity : ComponentActivity() {
                             ) ||
                                     shizukuApiUtils.canUseCommand(),
                             onRequestShizukuPermission = { shizukuApiUtils.requestPermissionIfNeeded() },
-                            onRunShellCommand = { command, timeoutMs ->
-                                shizukuApiUtils.execCommandCancellable(
+                            onRunShellCommand = { command, timeoutMs, onOutput ->
+                                shizukuApiUtils.execCommandCancellableStreaming(
                                     command = command,
                                     timeoutMs = timeoutMs
-                                )
+                                ) { output -> onOutput(output) }
                             },
                             onClose = { finish() }
                         )

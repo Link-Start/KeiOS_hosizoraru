@@ -12,6 +12,8 @@ internal data class OsShellRunnerCommandSaveState(
     val savingCommandCard: Boolean = false,
 )
 
+internal typealias OsShellRunnerCommandExecutor = suspend (String, Long, suspend (String) -> Unit) -> String?
+
 internal sealed interface OsShellRunnerEvent {
     data class Toast(
         val message: String,

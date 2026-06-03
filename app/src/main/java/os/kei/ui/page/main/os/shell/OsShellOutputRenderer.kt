@@ -178,10 +178,6 @@ private fun ShellOutputDisplayEntry.stableShellOutputEntryBaseKey(): String =
         append(timeLabel)
         append(':')
         append(command.hashCode())
-        append(':')
-        append(result.hashCode())
-        append(':')
-        append(result.length)
     }
 
 internal fun trimShellOutputEntries(

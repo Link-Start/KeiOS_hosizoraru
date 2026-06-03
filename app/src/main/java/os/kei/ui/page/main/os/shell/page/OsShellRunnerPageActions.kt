@@ -10,6 +10,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutionState
+import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutor
 import os.kei.ui.page.main.os.shell.OsShellRunnerExitCleanupMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerOutputSaveMode
 import os.kei.ui.page.main.os.shell.OsShellRunnerPersistentUiState
@@ -58,7 +59,7 @@ internal fun rememberOsShellRunnerPageActions(
     textBundle: OsShellRunnerTextBundle,
     canRunShellCommand: Boolean,
     onRequestShizukuPermission: () -> Unit,
-    onRunShellCommand: suspend (String, Long) -> String?,
+    onRunShellCommand: OsShellRunnerCommandExecutor,
     onClose: () -> Unit,
 ): OsShellRunnerPageActions =
     rememberOsShellRunnerPageActionsInternal(
@@ -86,7 +87,7 @@ private fun rememberOsShellRunnerPageActionsInternal(
     textBundle: OsShellRunnerTextBundle,
     latestCanRunShellCommand: androidx.compose.runtime.State<Boolean>,
     onRequestShizukuPermission: () -> Unit,
-    onRunShellCommand: suspend (String, Long) -> String?,
+    onRunShellCommand: OsShellRunnerCommandExecutor,
     onClose: () -> Unit,
 ): OsShellRunnerPageActions =
     remember(

@@ -23,6 +23,7 @@ import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.osLucideClearAllIcon
+import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutor
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.state.rememberOsShellRunnerTextBundle
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
@@ -33,7 +34,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun OsShellRunnerPage(
     canRunShellCommand: Boolean,
     onRequestShizukuPermission: () -> Unit,
-    onRunShellCommand: suspend (String, Long) -> String?,
+    onRunShellCommand: OsShellRunnerCommandExecutor,
     onClose: () -> Unit,
 ) {
     val context = LocalContext.current

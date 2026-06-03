@@ -17,6 +17,10 @@ internal class OsShellRunnerCommandController(
     private val repository: OsShellRunnerRepository,
     private val events: MutableSharedFlow<OsShellRunnerEvent>,
 ) {
+    private companion object {
+        const val OUTPUT_STREAM_UPDATE_MIN_INTERVAL_MS = 160L
+    }
+
     private var commandJob: Job? = null
     private var suppressStopOutputAppend = false
     private val mutableExecutionState = MutableStateFlow(OsShellRunnerCommandExecutionState())
@@ -36,22 +40,44 @@ internal class OsShellRunnerCommandController(
         outputResultLabel: String,
         outputTimeLabel: String,
         completionToast: Boolean,
-        onRunShellCommand: suspend (String, Long) -> String?,
+        onRunShellCommand: OsShellRunnerCommandExecutor,
     ) {
         if (mutableExecutionState.value.runningCommand) return
         commandJob =
             scope.launch {
                 mutableExecutionState.update { it.copy(runningCommand = true) }
                 try {
+                    repository.startStreamingOutput(command)
+                    var latestStreamingOutput = ""
+                    var lastOutputDispatchMs = 0L
+                    suspend fun updateStreamingOutput(output: String) {
+                        val normalized = output.trimEnd()
+                        if (normalized.isBlank()) return
+                        latestStreamingOutput = normalized
+                        val nowMs = monotonicNowMs()
+                        if (nowMs - lastOutputDispatchMs >= OUTPUT_STREAM_UPDATE_MIN_INTERVAL_MS) {
+                            repository.updateStreamingOutput(
+                                command = command,
+                                result = normalized,
+                                commandStoppedText = commandStoppedText,
+                            )
+                            lastOutputDispatchMs = nowMs
+                        }
+                    }
                     val output =
-                        runCatching { onRunShellCommand(command, timeoutMs) }
+                        runCatching {
+                            onRunShellCommand(command, timeoutMs) { output ->
+                                updateStreamingOutput(output)
+                            }
+                        }
                             .getOrElse { throwable ->
                                 if (throwable is CancellationException) throw throwable
                                 throwable.localizedMessage?.takeIf { it.isNotBlank() }
                                     ?: throwable.javaClass.simpleName
                             }?.takeIf { it.isNotBlank() }
+                            ?: latestStreamingOutput.takeIf { it.isNotBlank() }
                             ?: noOutputText
-                    repository.appendOutput(
+                    repository.completeStreamingOutput(
                         command = command,
                         result = output,
                         commandStoppedText = commandStoppedText,
@@ -157,7 +183,7 @@ internal class OsShellRunnerCommandController(
             return
         }
         withContext(NonCancellable) {
-            repository.appendOutput(
+            repository.completeStreamingOutput(
                 command = command,
                 result = commandStoppedText,
                 commandStoppedText = commandStoppedText,
@@ -170,3 +196,5 @@ internal class OsShellRunnerCommandController(
         }
     }
 }
+
+private fun monotonicNowMs(): Long = System.nanoTime() / 1_000_000L

@@ -31,7 +31,8 @@ internal data class ModernNotificationSpec(
     val category: String,
     val shortCriticalMode: ModernShortCriticalMode,
     val ongoing: Boolean,
-    val requestPromotedOngoing: Boolean
+    val requestPromotedOngoing: Boolean,
+    val showProgressStyle: Boolean
 )
 
 internal object ModernNotificationSpecResolver {
@@ -57,6 +58,13 @@ internal object ModernNotificationSpecResolver {
     ): ModernNotificationSpec {
         val kind = resolveKind(state.serverName)
         val isRunning = state.running
+        val isCalendarPoolTerminal =
+            kind == ModernNotificationKind.BA_CALENDAR_POOL && state.deadlineAtMs == null
+        val ongoing = if (isCalendarPoolTerminal) {
+            state.ongoing
+        } else {
+            isRunning || state.ongoing
+        }
         return ModernNotificationSpec(
             kind = kind,
             iconResId = resolveIcon(kind, preferOemLiveIconLayout),
@@ -64,14 +72,15 @@ internal object ModernNotificationSpecResolver {
             trackerIconResId = resolveTrackerIcon(kind),
             progressPercent = resolveProgressPercent(state = state, kind = kind),
             progressColor = resolveProgressColor(kind = kind, isRunning = isRunning),
-            category = if (isRunning) {
+            category = if (isRunning && !isCalendarPoolTerminal) {
                 NotificationCompat.CATEGORY_PROGRESS
             } else {
                 NotificationCompat.CATEGORY_STATUS
             },
             shortCriticalMode = if (isRunning) resolveShortCriticalMode(kind) else ModernShortCriticalMode.NONE,
-            ongoing = isRunning || state.ongoing,
-            requestPromotedOngoing = isRunning || state.ongoing
+            ongoing = ongoing,
+            requestPromotedOngoing = ongoing,
+            showProgressStyle = !isCalendarPoolTerminal
         )
     }
 

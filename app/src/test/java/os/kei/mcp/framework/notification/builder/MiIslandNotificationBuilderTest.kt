@@ -163,8 +163,8 @@ class MiIslandNotificationBuilderTest {
                 secondaryActionLabel = "知道了",
                 overrideTitle = "活动即将开始",
                 overrideContent = "测试活动 将在 05-06 04:00 开始",
-                overrideOnlineText = "活动即将开始",
-                overrideShortText = "活动即将开始",
+                overrideOnlineText = "开始",
+                overrideShortText = "活动",
                 overrideProgressPercent = 72,
                 deadlineAtMs = 1778007600000L
             ),
@@ -180,11 +180,69 @@ class MiIslandNotificationBuilderTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals(stopPendingIntent, focusStopAction.actionIntent)
+        assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertTrue(focusParam.contains("sameWidthDigitInfo"))
+        assertTrue(focusParam.contains("\"content\":\"活动\""))
         assertTrue(focusParam.contains("\"timerType\":-1"))
         assertTrue(focusParam.contains("\"timerWhen\":1778007600000"))
         assertTrue(focusParam.contains("\"timerSystemCurrent\""))
         assertTrue(focusParam.contains("mcp_action_stop"))
+    }
+
+    @Test
+    fun `calendar pool changed island uses compact terminal text`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 711,
+            action = "os.kei.test.OPEN_BA_POOL_CHANGE"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            712,
+            Intent("os.kei.test.MARK_BA_POOL_CHANGE_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = McpNotificationPayload(
+                serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
+                running = true,
+                port = 0,
+                path = "卡池变动 1 项",
+                clients = 1,
+                ongoing = false,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                secondaryActionLabel = "知道了",
+                overrideTitle = "日服卡池已更新",
+                overrideContent = "卡池变动 1 项",
+                overrideOnlineText = "卡池",
+                overrideShortText = "更新",
+                overrideProgressPercent = 0,
+                deadlineAtMs = null
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertTrue(notification.flags and Notification.FLAG_AUTO_CANCEL != 0)
+        assertEquals(stopPendingIntent, notification.deleteIntent)
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"title\":\"更新\""))
+        assertTrue(focusParam.contains("\"content\":\"卡池\""))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertFalse(focusParam.contains("combinePicInfo"))
+        assertFalse(focusParam.contains("multiProgressInfo"))
     }
 
     @Test

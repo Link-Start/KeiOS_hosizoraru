@@ -139,6 +139,10 @@ class MiIslandNotificationBuilder(
             isGitHubShareImport = isGitHubShareImport,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
+        val isCalendarPoolCountdown =
+            isBlueArchiveCalendarPool && state.running && state.deadlineAtMs != null
+        val isCalendarPoolUpdate =
+            isBlueArchiveCalendarPool && state.running && state.deadlineAtMs == null
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(islandIconResId)
             .setContentTitle(state.title(context))
@@ -147,7 +151,7 @@ class MiIslandNotificationBuilder(
             .setCategory(
                 when {
                     isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isBlueArchiveCalendarPool && state.running -> NotificationCompat.CATEGORY_PROGRESS
+                    isCalendarPoolCountdown -> NotificationCompat.CATEGORY_PROGRESS
                     isGitHubShareImport && state.running -> NotificationCompat.CATEGORY_PROGRESS
                     !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
                     else -> NotificationCompat.CATEGORY_STATUS
@@ -156,7 +160,7 @@ class MiIslandNotificationBuilder(
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setOngoing(presentation.notificationOngoing)
             .setOnlyAlertOnce(state.onlyAlertOnce)
-            .setAutoCancel(false)
+            .setAutoCancel(isCalendarPoolUpdate && !presentation.notificationOngoing)
             .setRequestPromotedOngoing(presentation.requestPromotedOngoing)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .applyDeadline(state.deadlineAtMs)
@@ -457,20 +461,27 @@ class MiIslandNotificationBuilder(
                 bigTemplateKind = if (hasCountdown) {
                     IslandBigTemplateKind.COUNTDOWN_DIGIT
                 } else {
-                    IslandBigTemplateKind.PROGRESS_TEXT
+                    IslandBigTemplateKind.TEXT
                 },
-                smallTemplateKind = IslandSmallTemplateKind.PROGRESS_ICON,
+                smallTemplateKind = if (hasCountdown) {
+                    IslandSmallTemplateKind.PROGRESS_ICON
+                } else {
+                    IslandSmallTemplateKind.ICON
+                },
                 compactTitle = resolveCompactTitle(
                     raw = state.shortText,
                     fallback = context.getString(R.string.common_status_running)
                 ),
-                compactContent = state.onlineText(context).takeIf { it != state.shortText },
+                compactContent =
+                    state.onlineText(context).takeIf {
+                        !hasCountdown && it.isNotBlank() && it != state.shortText
+                    },
                 deadlineAtMs = state.deadlineAtMs,
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = true,
+                showExpandedProgress = hasCountdown,
                 progressPercent = progressPercent,
                 progressColor = BA_EVENT_ACCENT_COLOR,
                 notificationAccentColor = BA_EVENT_ACCENT_COLOR,

@@ -180,7 +180,8 @@ class ModernNotificationSpecResolverTest {
                 port = 0,
                 clients = 1,
                 ongoing = true,
-                overrideProgressPercent = 67
+                overrideProgressPercent = 67,
+                deadlineAtMs = 1_778_007_600_000L
             ),
             preferOemLiveIconLayout = true
         )
@@ -191,6 +192,31 @@ class ModernNotificationSpecResolverTest {
         assertEquals(R.drawable.ic_ba_calendar_live_update, spec.expandedIconResId)
         assertEquals(R.drawable.ic_ba_calendar_live_update, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+        assertEquals(true, spec.showProgressStyle)
+        assertEquals(true, spec.requestPromotedOngoing)
+    }
+
+    @Test
+    fun `calendar pool terminal update uses status presentation`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
+                running = true,
+                port = 0,
+                clients = 1,
+                ongoing = false,
+                overrideProgressPercent = 0,
+                deadlineAtMs = null
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.BA_CALENDAR_POOL, spec.kind)
+        assertEquals(0, spec.progressPercent)
+        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+        assertEquals(false, spec.ongoing)
+        assertEquals(false, spec.requestPromotedOngoing)
+        assertEquals(false, spec.showProgressStyle)
     }
 
     @Test
@@ -277,7 +303,8 @@ class ModernNotificationSpecResolverTest {
         port: Int,
         clients: Int,
         ongoing: Boolean,
-        overrideProgressPercent: Int? = null
+        overrideProgressPercent: Int? = null,
+        deadlineAtMs: Long? = null
     ): McpNotificationPayload {
         val pendingIntent = createFakePendingIntent()
         return McpNotificationPayload(
@@ -290,7 +317,8 @@ class ModernNotificationSpecResolverTest {
             onlyAlertOnce = true,
             openPendingIntent = pendingIntent,
             stopPendingIntent = pendingIntent,
-            overrideProgressPercent = overrideProgressPercent
+            overrideProgressPercent = overrideProgressPercent,
+            deadlineAtMs = deadlineAtMs
         )
     }
 

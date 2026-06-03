@@ -25,6 +25,10 @@ class ModernNotificationBuilder(
             state = state,
             preferOemLiveIconLayout = payload.environment.preferOemLiveIconLayout
         )
+        val isDismissibleCalendarPoolUpdate =
+            spec.kind == ModernNotificationKind.BA_CALENDAR_POOL &&
+                    !spec.showProgressStyle &&
+                    !spec.ongoing
         return baseNotificationBuilder
             .clearActions()
             // Prevent state leakage between updates.
@@ -42,9 +46,9 @@ class ModernNotificationBuilder(
             .setContentText(state.content(context).ifBlank { " " })
             .setContentIntent(state.openPendingIntent)
             .setCategory(spec.category)
-            .setAutoCancel(false)
+            .setAutoCancel(isDismissibleCalendarPoolUpdate)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .setStyle(buildProgressStyle(spec))
+            .setStyle(buildStyle(spec, state))
             .applyDeadline(state.deadlineAtMs)
             .also { builder ->
                 if (state.running) {
@@ -56,10 +60,7 @@ class ModernNotificationBuilder(
                 if (showSecondaryAction) {
                     builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
                 }
-                if (!state.ongoing &&
-                    state.showSecondaryActionWhenStopped &&
-                    state.stopPendingIntent != state.openPendingIntent
-                ) {
+                if (isDismissibleCalendarPoolUpdate && showSecondaryAction) {
                     builder.setDeleteIntent(state.stopPendingIntent)
                 }
             }
@@ -67,11 +68,26 @@ class ModernNotificationBuilder(
     }
 
     private fun NotificationCompat.Builder.applyDeadline(deadlineAtMs: Long?): NotificationCompat.Builder {
-        if (deadlineAtMs == null) return this
+        if (deadlineAtMs == null) {
+            return setShowWhen(true)
+                .setUsesChronometer(false)
+                .setChronometerCountDown(false)
+        }
         return setWhen(deadlineAtMs)
             .setShowWhen(true)
             .setUsesChronometer(true)
             .setChronometerCountDown(true)
+    }
+
+    private fun buildStyle(
+        spec: ModernNotificationSpec,
+        state: McpNotificationPayload
+    ): NotificationCompat.Style {
+        if (!spec.showProgressStyle) {
+            return NotificationCompat.BigTextStyle()
+                .bigText(state.content(context).ifBlank { " " })
+        }
+        return buildProgressStyle(spec)
     }
 
     private fun buildProgressStyle(spec: ModernNotificationSpec): NotificationCompat.ProgressStyle {

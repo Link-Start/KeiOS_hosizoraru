@@ -99,6 +99,10 @@ internal fun MainPagerLayout(
         remember(navigator) {
             { navigator.pushSingleTop(KeiosRoute.McpSkill) }
         }
+    val onOpenGitHubActionsNotificationHistory =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.GitHubActionsNotificationHistory) }
+        }
     val coordinator =
         rememberMainPagerCoordinator(
             settingsReturnToken = settingsReturnToken,
@@ -379,11 +383,13 @@ internal fun MainPagerLayout(
                                 requestedGitHubRefreshToken,
                                 requestedGitHubActionsTrackId,
                                 requestedGitHubActionsSheetToken,
+                                onOpenGitHubActionsNotificationHistory,
                             ) {
                                 MainPagerGitHubPageState(
                                     requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                                     requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
                                     requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
+                                    onOpenActionsNotificationHistory = onOpenGitHubActionsNotificationHistory,
                                 )
                             }
                         } else {

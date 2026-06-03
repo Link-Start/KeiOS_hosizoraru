@@ -17,6 +17,9 @@ sealed interface KeiosRoute : NavKey {
     data object McpSkill : KeiosRoute
 
     @Serializable
+    data object GitHubActionsNotificationHistory : KeiosRoute
+
+    @Serializable
     data object About : KeiosRoute
 
     @Serializable

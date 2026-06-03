@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -65,6 +66,7 @@ data class AppFloatingDockAction(
     val iconTint: Color,
     val enabled: Boolean = true,
     val rotating: Boolean = false,
+    val testTag: String = "",
     val onClick: () -> Unit,
 )
 
@@ -201,6 +203,7 @@ fun AppFloatingVerticalSearchActionDock(
     refreshContentDescription: String,
     onRefreshClick: () -> Unit,
     modifier: Modifier = Modifier,
+    extraActions: List<AppFloatingDockAction> = emptyList(),
     dockSide: AppFloatingDockSide = AppFloatingDockSide.End,
     showAddAction: Boolean = true,
     refreshEnabled: Boolean = true,
@@ -223,7 +226,7 @@ fun AppFloatingVerticalSearchActionDock(
             keyboardLift = keyboardLift,
             focusedLift = focusedLift,
         )
-    val visibleActionCount = if (showAddAction) 3 else 2
+    val visibleActionCount = (if (showAddAction) 1 else 0) + extraActions.size + 2
     val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
     val availableWidth = appWindowWidthDp() - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
@@ -307,6 +310,19 @@ fun AppFloatingVerticalSearchActionDock(
                         size = size,
                         iconSize = iconSize,
                         iconTint = accent,
+                    )
+                }
+                extraActions.forEach { action ->
+                    AppFloatingVerticalDockAction(
+                        icon = action.icon,
+                        contentDescription = action.contentDescription,
+                        onClick = action.onClick,
+                        size = size,
+                        iconSize = iconSize,
+                        iconTint = action.iconTint,
+                        enabled = action.enabled,
+                        rotating = action.rotating,
+                        testTag = action.testTag,
                     )
                 }
                 AppFloatingVerticalDockAction(
@@ -406,6 +422,7 @@ fun AppFloatingVerticalActionDock(
                         iconTint = action.iconTint,
                         enabled = action.enabled,
                         rotating = action.rotating,
+                        testTag = action.testTag,
                     )
                 }
             }
@@ -423,6 +440,7 @@ private fun AppFloatingVerticalDockAction(
     iconTint: Color,
     enabled: Boolean = true,
     rotating: Boolean = false,
+    testTag: String = "",
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -446,6 +464,13 @@ private fun AppFloatingVerticalDockAction(
         modifier =
             Modifier
                 .size(size)
+                .then(
+                    if (testTag.isBlank()) {
+                        Modifier
+                    } else {
+                        Modifier.testTag(testTag)
+                    },
+                )
                 .graphicsLayer {
                     alpha = if (enabled || rotating) 1f else AppInteractiveTokens.disabledContentAlpha
                 }.clickable(

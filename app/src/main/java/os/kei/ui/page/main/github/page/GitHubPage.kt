@@ -55,6 +55,7 @@ fun GitHubPage(
     externalActionsSheetToken: Int = 0,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
+    onOpenActionsNotificationHistory: () -> Unit = {},
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -375,6 +376,7 @@ fun GitHubPage(
                     onOpenStarImport = transferCallbacks.onOpenStarImport,
                     onOpenStrategySheet = actions::openStrategySheet,
                     onOpenCheckLogicSheet = actions::openCheckLogicSheet,
+                    onOpenActionsNotificationHistory = onOpenActionsNotificationHistory,
                     onOverviewExpandedChange = actions::setOverviewExpanded,
                     onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
                     onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,

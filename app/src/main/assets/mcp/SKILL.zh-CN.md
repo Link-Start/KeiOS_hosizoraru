@@ -78,8 +78,8 @@
 - 网络和深扫工具有超时与 limit，定时任务建议从 20 到 80 条开始。
 - Dev/Codex 工具保持只读，只返回本地开发接入、工程快照与验证计划文本。
 - `repoFilter` 支持 owner/repo、包名或应用名。
-- `sourceMode` 支持 `github_repository`、`direct_apk`，留空表示全部追踪来源。
-- `filterMode` 支持 `all`、`github_repository`、`direct_apk`、`pre_release_tracked`、`update_available`、
+- `sourceMode` 支持 `github_repository`、`git_repository`、`direct_apk`，留空表示全部追踪来源。
+- `filterMode` 支持 `all`、`github_repository`、`git_repository`、`direct_apk`、`pre_release_tracked`、`update_available`、
   `installed`、`failed_checks`、`actions_check_enabled`。
 - GitHub 追踪工具的 `sortMode` 支持 `update`、`name`、`pre_release`、`changed`、`added`；`sortDirection`
   支持 `forward`、`reverse`。

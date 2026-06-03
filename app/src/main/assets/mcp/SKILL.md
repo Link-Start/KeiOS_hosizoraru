@@ -82,8 +82,8 @@ a task fires.
   20 to 80 rows.
 - Dev/Codex tools are read-only and return onboarding or validation text for local development.
 - `repoFilter` accepts owner/repo, package name, or app label.
-- `sourceMode` accepts `github_repository`, `direct_apk`, or blank for all tracked sources.
-- `filterMode` accepts `all`, `github_repository`, `direct_apk`, `pre_release_tracked`,
+- `sourceMode` accepts `github_repository`, `git_repository`, `direct_apk`, or blank for all tracked sources.
+- `filterMode` accepts `all`, `github_repository`, `git_repository`, `direct_apk`, `pre_release_tracked`,
   `update_available`, `installed`, `failed_checks`, or `actions_check_enabled`.
 - GitHub tracking `sortMode` accepts `update`, `name`, `pre_release`, `changed`, or `added`;
   `sortDirection` accepts `forward` or `reverse`.

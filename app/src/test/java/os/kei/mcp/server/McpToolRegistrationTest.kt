@@ -38,10 +38,16 @@ class McpToolRegistrationTest {
 
         val listTool = server.tools.getValue("keios.github.tracks.list").tool
         val listProperties = listTool.inputSchema.properties.orEmpty()
+        assertTrue("sourceMode" in listProperties.keys)
         assertTrue("filterMode" in listProperties.keys)
         assertTrue("sortDirection" in listProperties.keys)
+        val sourceModeSchema = listProperties.getValue("sourceMode").toString()
+        assertTrue(sourceModeSchema.contains("github_repository"))
+        assertTrue(sourceModeSchema.contains("git_repository"))
+        assertTrue(sourceModeSchema.contains("direct_apk"))
         val filterModeSchema = listProperties.getValue("filterMode").toString()
         assertTrue(filterModeSchema.contains("pre_release_tracked"))
+        assertTrue(filterModeSchema.contains("git_repository"))
         assertTrue(filterModeSchema.contains("default"))
         assertTrue(listTool.meta.toString().contains("keios/group"))
         assertTrue(listTool.meta.toString().contains("keios/visibility"))
@@ -93,6 +99,7 @@ class McpToolRegistrationTest {
 
         assertTrue(markdown.contains("filterMode"))
         assertTrue(markdown.contains("pre_release"))
+        assertTrue(markdown.contains("git_repository"))
         assertTrue(markdown.contains("keios.github.tracked/v3"))
         assertTrue(markdown.contains("actionsUpdateIntervalMode"))
         assertTrue(markdown.contains("follow_global"))

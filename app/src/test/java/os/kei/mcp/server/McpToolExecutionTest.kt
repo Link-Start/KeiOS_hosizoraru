@@ -54,6 +54,14 @@ class McpToolExecutionTest {
         assertEquals(true, result.isError)
     }
 
+    @Test
+    fun businessErrorDetectorCoversKnownToolErrorShapes() {
+        assertEquals(true, McpToolBusinessErrors.isBusinessError("target=unknown\nmessage=no_target"))
+        assertEquals(true, McpToolBusinessErrors.isBusinessError("hasTarget=false\nmessage=missing"))
+        assertEquals(true, McpToolBusinessErrors.isBusinessError("ok=true\nmessage=repoUrls_required"))
+        assertEquals(false, McpToolBusinessErrors.isBusinessError("ok=true\nmessage=ready"))
+    }
+
     private fun testEnvironment(logs: MutableList<String>): McpToolEnvironment {
         return McpToolEnvironment(
             appContext = ApplicationProvider.getApplicationContext(),

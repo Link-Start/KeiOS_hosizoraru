@@ -167,7 +167,7 @@ internal suspend fun executeMcpTextTool(
         return CallToolResult.error(text)
     }
 
-    val businessError = output.isMcpBusinessErrorText()
+    val businessError = McpToolBusinessErrors.isBusinessError(output)
     environment.recordToolCall(
         name = name,
         profile = profile,
@@ -198,19 +198,6 @@ private fun buildMcpToolErrorText(name: String, reason: String): String {
         appendLine("tool=$name")
         appendLine("message=$reason")
     }.trim()
-}
-
-private fun String.isMcpBusinessErrorText(): Boolean {
-    val first = lineSequence().firstOrNull().orEmpty().trim()
-    return first == "ok=false" ||
-        first == "target=unknown" ||
-        first.startsWith("hasTarget=false") ||
-        contains("message=query_required") ||
-        contains("message=url_required") ||
-        contains("message=repoUrl_required") ||
-        contains("message=repoUrls_required") ||
-        contains("message=invalid_package_name") ||
-        contains("message=url_required_for_ba_guide_url")
 }
 
 private fun ToolSchema.withRequired(requiredArguments: List<String>): ToolSchema {

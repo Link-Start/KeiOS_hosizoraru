@@ -1,6 +1,11 @@
 package os.kei.core.background
 
 import org.junit.Test
+import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubBackgroundScheduleSnapshot
+import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
+import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
@@ -111,6 +116,64 @@ class AppBackgroundSchedulePolicyTest {
 
         assertNotNull(schedule)
         assertEquals(actionsDueAtMs, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
+        assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
+    }
+
+    @Test
+    fun `github scheduler uses actions cache timestamp when actions tracking is enabled`() {
+        val item = trackedApp(checkActionsUpdates = true)
+        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
+            scheduleSnapshot =
+                GitHubBackgroundScheduleSnapshot(
+                    trackSnapshot =
+                        GitHubTrackSnapshot(
+                            items = listOf(item),
+                            lastRefreshMs = NOW_MS,
+                            refreshIntervalHours = 12,
+                        ),
+                    actionsRecommendedRunsByTrackId =
+                        mapOf(
+                            item.id to actionsRecommendedRun(
+                                trackId = item.id,
+                                checkedAtMillis = NOW_MS - 30L * 60L * 1000L,
+                            ),
+                        ),
+                ),
+            nowMs = NOW_MS,
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS + 30L * 60L * 1000L, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
+        assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
+    }
+
+    @Test
+    fun `github scheduler ignores actions cache when actions tracking is disabled`() {
+        val item = trackedApp(checkActionsUpdates = false)
+        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
+            scheduleSnapshot =
+                GitHubBackgroundScheduleSnapshot(
+                    trackSnapshot =
+                        GitHubTrackSnapshot(
+                            items = listOf(item),
+                            lastRefreshMs = NOW_MS,
+                            refreshIntervalHours = 12,
+                        ),
+                    actionsRecommendedRunsByTrackId =
+                        mapOf(
+                            item.id to actionsRecommendedRun(
+                                trackId = item.id,
+                                checkedAtMillis = NOW_MS - 30L * 60L * 1000L,
+                            ),
+                        ),
+                ),
+            nowMs = NOW_MS,
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS + 12L * 60L * 60L * 1000L, schedule.triggerAtMillis)
         assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
         assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
     }
@@ -255,5 +318,45 @@ class AppBackgroundSchedulePolicyTest {
 
     private companion object {
         private const val NOW_MS = 1_777_392_000_000L
+
+        private fun trackedApp(checkActionsUpdates: Boolean): GitHubTrackedApp =
+            GitHubTrackedApp(
+                repoUrl = "https://github.com/owner/repo",
+                owner = "owner",
+                repo = "repo",
+                packageName = "os.kei.test",
+                appLabel = "Test",
+                checkActionsUpdates = checkActionsUpdates,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Hour1,
+            )
+
+        private fun actionsRecommendedRun(
+            trackId: String,
+            checkedAtMillis: Long,
+        ): GitHubActionsRecommendedRunSnapshot =
+            GitHubActionsRecommendedRunSnapshot(
+                trackId = trackId,
+                owner = "owner",
+                repo = "repo",
+                appLabel = "Test",
+                workflowId = 1L,
+                workflowName = "Build",
+                workflowPath = ".github/workflows/build.yml",
+                runId = 100L,
+                runNumber = 10L,
+                runAttempt = 1,
+                runDisplayName = "Build",
+                headBranch = "main",
+                headSha = "abc",
+                event = "push",
+                status = "completed",
+                conclusion = "success",
+                htmlUrl = "https://github.com/owner/repo/actions/runs/100",
+                artifactCount = 1,
+                androidArtifactCount = 1,
+                createdAtMillis = checkedAtMillis - 60_000L,
+                updatedAtMillis = checkedAtMillis - 30_000L,
+                checkedAtMillis = checkedAtMillis,
+            )
     }
 }

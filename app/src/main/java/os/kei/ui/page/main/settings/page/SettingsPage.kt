@@ -119,6 +119,7 @@ fun SettingsPage(
     val pageSnapshotState by settingsPageViewModel.pageSnapshotState.collectAsStateWithLifecycle()
     val diagnosticsUiState = pageSnapshotState.diagnosticsUiState
     val supportUiState = pageSnapshotState.supportUiState
+    val webDavSyncState = pageSnapshotState.webDavSyncState
     val chromeState = pageSnapshotState.chromeState
     val routeState =
         rememberSettingsPageRouteState(
@@ -380,6 +381,7 @@ fun SettingsPage(
             backgroundController = backgroundController,
             cacheState = routeState.cacheState,
             logState = routeState.logState,
+            webDavSyncState = webDavSyncState,
             cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
             onCacheDiagnosticsChanged = onCacheDiagnosticsChanged,
             logLevel = logLevel,

@@ -10,18 +10,16 @@ import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.SettingsNavigationItem
-import os.kei.ui.page.main.sync.WebDavSyncStore
+import os.kei.ui.page.main.settings.state.SettingsWebDavSyncUiState
 
 @Composable
 internal fun SettingsWebDavSyncSection(
+    state: SettingsWebDavSyncUiState,
     onClick: () -> Unit,
     enabledCardColor: Color,
     disabledCardColor: Color,
 ) {
-    val configured = WebDavSyncStore.hasConfig()
-    val presentation = deriveWebDavSyncPresentation(configured)
-    val autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled()
-    val lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime()
+    val presentation = deriveWebDavSyncPresentation(state.configured)
     SettingsGroupCard(
         header = stringResource(R.string.settings_category_data),
         title = stringResource(R.string.webdav_sync_title),
@@ -31,29 +29,28 @@ internal fun SettingsWebDavSyncSection(
         SettingsNavigationItem(
             title = stringResource(R.string.webdav_sync_title),
             summary =
-                if (configured) {
+                if (state.configured) {
                     stringResource(R.string.webdav_sync_configured_summary)
                 } else {
                     stringResource(R.string.webdav_sync_not_configured_summary)
                 },
             onClick = onClick,
         )
-        if (configured) {
-            val config = WebDavSyncStore.loadConfig()
+        if (state.configured) {
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_status_label),
                 value = stringResource(R.string.webdav_sync_status_active),
             )
-            if (config != null) {
+            if (state.username.isNotBlank()) {
                 SettingsInfoItem(
                     key = stringResource(R.string.webdav_sync_username),
-                    value = config.username,
+                    value = state.username,
                 )
             }
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_auto_sync_label),
                 value = stringResource(
-                    if (autoSyncEnabled) {
+                    if (state.autoSyncEnabled) {
                         R.string.webdav_sync_status_enabled
                     } else {
                         R.string.webdav_sync_status_disabled
@@ -62,8 +59,8 @@ internal fun SettingsWebDavSyncSection(
             )
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_last_sync_label),
-                value = if (lastFullSyncTimeMs > 0L) {
-                    webDavSettingsTime(lastFullSyncTimeMs)
+                value = if (state.lastFullSyncTimeMs > 0L) {
+                    webDavSettingsTime(state.lastFullSyncTimeMs)
                 } else {
                     stringResource(R.string.webdav_sync_last_sync_never)
                 },

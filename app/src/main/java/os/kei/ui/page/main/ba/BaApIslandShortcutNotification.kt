@@ -80,6 +80,7 @@ internal object BaApIslandShortcutNotificationCoordinator {
             notificationId =
                 accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
             accountDisplayName = accountNotificationContext.accountDisplayName,
+            accountId = accountNotificationContext.accountId,
         )
         val cafeApSent = BaCafeApNotificationDispatcher.send(
             context = context,
@@ -89,6 +90,7 @@ internal object BaApIslandShortcutNotificationCoordinator {
             notificationId =
                 accountNotificationContext.notificationId(BaAccountNotificationKind.CafeAp),
             accountDisplayName = accountNotificationContext.accountDisplayName,
+            accountId = accountNotificationContext.accountId,
         )
         return apSent || cafeApSent
     }

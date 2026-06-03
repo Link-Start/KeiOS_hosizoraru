@@ -129,6 +129,8 @@ fun MainScreen(
             hostState.requestedGitHubRefreshToken,
             effectiveRequestedGitHubActionsTrackId,
             effectiveRequestedGitHubActionsSheetToken,
+            hostState.requestedBaAccountId,
+            hostState.requestedBaAccountToken,
             externalBottomPageRequested,
             hostCallbacks,
         ) {
@@ -144,6 +146,8 @@ fun MainScreen(
                 requestedGitHubRefreshToken = hostState.requestedGitHubRefreshToken,
                 requestedGitHubActionsTrackId = effectiveRequestedGitHubActionsTrackId,
                 requestedGitHubActionsSheetToken = effectiveRequestedGitHubActionsSheetToken,
+                requestedBaAccountId = hostState.requestedBaAccountId,
+                requestedBaAccountToken = hostState.requestedBaAccountToken,
                 onRequestedBottomPageConsumed = {
                     if (externalBottomPageRequested) {
                         hostCallbacks.onRequestedBottomPageConsumed()

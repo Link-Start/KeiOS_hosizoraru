@@ -432,13 +432,20 @@ object GitHubTrackStore {
 
     fun loadCheckCache(): Pair<Map<String, GitHubCheckCacheEntry>, Long> =
         synchronized(checkCacheLock) {
-            loadCheckCacheLocked()
+            loadCheckCacheLocked(includeRepositoryProfiles = true)
         }
 
-    private fun loadCheckCacheLocked(): Pair<Map<String, GitHubCheckCacheEntry>, Long> {
+    private fun loadCheckCacheLocked(
+        includeRepositoryProfiles: Boolean,
+    ): Pair<Map<String, GitHubCheckCacheEntry>, Long> {
         val raw = kv().decodeString(KEY_CHECK_CACHE).orEmpty()
         val ts = kv().decodeLong(KEY_LAST_REFRESH_MS, 0L)
-        val profileCache = loadProfileCache()
+        val profileCache =
+            if (includeRepositoryProfiles) {
+                loadProfileCache()
+            } else {
+                emptyMap()
+            }
         if (raw.isBlank()) return emptyMap<String, GitHubCheckCacheEntry>() to 0L
         val map =
             raw.parseJsonObjectOrNull()
@@ -521,9 +528,14 @@ object GitHubTrackStore {
                                         "upstreamPushedAtMillis",
                                         -1L
                                     ),
-                                    repositoryProfile = parseGitHubRepositoryProfileSnapshot(
-                                        item.optObject("repositoryProfile")
-                                    ) ?: profileCache[id],
+                                    repositoryProfile =
+                                        if (includeRepositoryProfiles) {
+                                            parseGitHubRepositoryProfileSnapshot(
+                                                item.optObject("repositoryProfile")
+                                            ) ?: profileCache[id]
+                                        } else {
+                                            null
+                                        },
                                     sourceStrategyId = item.optString("sourceStrategyId"),
                                     sourceConfigSignature = item.optString(
                                         "sourceConfigSignature"
@@ -614,6 +626,22 @@ object GitHubTrackStore {
         )
     }
 
+    fun loadLocalSummarySnapshot(): GitHubTrackSnapshot {
+        val lookupConfig = loadLookupConfig()
+        val (checkCache, lastRefreshMs) =
+            synchronized(checkCacheLock) {
+                loadCheckCacheLocked(includeRepositoryProfiles = false)
+            }
+        return GitHubTrackSnapshot(
+            items = load(),
+            checkCache = checkCache,
+            lastRefreshMs = lastRefreshMs,
+            refreshIntervalHours = loadRefreshIntervalHours(),
+            lookupConfig = lookupConfig,
+            pendingShareImportTrack = loadPendingShareImportTrack(),
+        )
+    }
+
     fun saveCheckCache(states: Map<String, GitHubCheckCacheEntry>, lastRefreshMs: Long): Long =
         synchronized(checkCacheLock) {
             saveCheckCacheLocked(states, lastRefreshMs)
@@ -625,9 +653,10 @@ object GitHubTrackStore {
     ): Long =
         synchronized(checkCacheLock) {
             if (entries.isEmpty()) {
-                loadCheckCacheLocked().second
+                loadCheckCacheLocked(includeRepositoryProfiles = true).second
             } else {
-                val (currentCache, currentRefreshTimestamp) = loadCheckCacheLocked()
+                val (currentCache, currentRefreshTimestamp) =
+                    loadCheckCacheLocked(includeRepositoryProfiles = true)
                 saveCheckCacheLocked(
                     states = currentCache + entries,
                     lastRefreshMs = currentRefreshTimestamp.takeIf { it > 0L }
@@ -639,9 +668,10 @@ object GitHubTrackStore {
     fun removeCheckCacheEntries(trackIds: Set<String>, refreshTimestamp: Long = 0L): Long =
         synchronized(checkCacheLock) {
             if (trackIds.isEmpty()) {
-                loadCheckCacheLocked().second
+                loadCheckCacheLocked(includeRepositoryProfiles = true).second
             } else {
-                val (currentCache, currentRefreshTimestamp) = loadCheckCacheLocked()
+                val (currentCache, currentRefreshTimestamp) =
+                    loadCheckCacheLocked(includeRepositoryProfiles = true)
                 val nextCache = currentCache.filterKeys { it !in trackIds }
                 if (nextCache.size == currentCache.size) {
                     currentRefreshTimestamp

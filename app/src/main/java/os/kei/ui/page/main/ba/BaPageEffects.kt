@@ -152,6 +152,7 @@ internal fun BaPageCommonEffects(
                 notificationId =
                     accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
                 accountDisplayName = accountNotificationContext.accountDisplayName,
+                accountId = accountNotificationContext.accountId,
             )
         }.distinctUntilChanged()
             .collectLatest { request ->

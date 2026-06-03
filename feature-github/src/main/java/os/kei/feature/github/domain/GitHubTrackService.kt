@@ -32,6 +32,15 @@ data class GitHubBackgroundScheduleSnapshot(
     val actionsRecommendedRunsByTrackId: Map<String, GitHubActionsRecommendedRunSnapshot>,
 )
 
+private fun loadActionsRecommendedRunsForSchedule(
+    trackSnapshot: GitHubTrackSnapshot,
+): Map<String, GitHubActionsRecommendedRunSnapshot> {
+    if (trackSnapshot.items.none { it.checkActionsUpdates }) {
+        return emptyMap()
+    }
+    return GitHubActionsRecommendedRunStore.loadAll()
+}
+
 class GitHubTrackService(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
 ) {
@@ -40,22 +49,32 @@ class GitHubTrackService(
             GitHubTrackStore.loadSnapshot()
         }
 
+    suspend fun loadHomeOverviewTrackSnapshot(): GitHubTrackSnapshot =
+        withContext(ioDispatcher) {
+            GitHubTrackStore.loadLocalSummarySnapshot()
+        }
+
     fun loadTrackSnapshotBlocking(): GitHubTrackSnapshot =
         GitHubTrackStore.loadSnapshot()
 
     suspend fun loadBackgroundScheduleSnapshot(): GitHubBackgroundScheduleSnapshot =
         withContext(ioDispatcher) {
+            val trackSnapshot = GitHubTrackStore.loadLocalSummarySnapshot()
             GitHubBackgroundScheduleSnapshot(
-                trackSnapshot = GitHubTrackStore.loadSnapshot(),
-                actionsRecommendedRunsByTrackId = GitHubActionsRecommendedRunStore.loadAll(),
+                trackSnapshot = trackSnapshot,
+                actionsRecommendedRunsByTrackId =
+                    loadActionsRecommendedRunsForSchedule(trackSnapshot),
             )
         }
 
     fun loadBackgroundScheduleSnapshotBlocking(): GitHubBackgroundScheduleSnapshot =
-        GitHubBackgroundScheduleSnapshot(
-            trackSnapshot = GitHubTrackStore.loadSnapshot(),
-            actionsRecommendedRunsByTrackId = GitHubActionsRecommendedRunStore.loadAll(),
-        )
+        GitHubTrackStore.loadLocalSummarySnapshot().let { trackSnapshot ->
+            GitHubBackgroundScheduleSnapshot(
+                trackSnapshot = trackSnapshot,
+                actionsRecommendedRunsByTrackId =
+                    loadActionsRecommendedRunsForSchedule(trackSnapshot),
+            )
+        }
 
     suspend fun loadLookupConfig(): GitHubLookupConfig =
         withContext(ioDispatcher) {

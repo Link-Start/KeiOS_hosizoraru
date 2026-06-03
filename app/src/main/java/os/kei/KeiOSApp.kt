@@ -16,6 +16,7 @@ import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toOkioPath
 import os.kei.core.background.AppBackgroundScheduler
@@ -36,6 +37,7 @@ private const val COIL_DISK_CACHE_DEFAULT_BYTES = 96L * 1024L * 1024L
 private const val COIL_DISK_CACHE_MAX_BYTES = 192L * 1024L * 1024L
 private const val COIL_DISK_CACHE_FREE_SPACE_RATIO = 0.02
 private const val COIL_DISK_CACHE_DIR = "coil_image_cache"
+private const val DEFERRED_STARTUP_WORK_DELAY_MS = 2_000L
 
 class KeiOSApp : Application() {
     companion object {
@@ -131,6 +133,7 @@ class KeiOSApp : Application() {
         // background notification flows. Push them off the critical path so the first Compose frame
         // is not delayed by tracked-app fan-out work.
         applicationScope.launch {
+            delay(DEFERRED_STARTUP_WORK_DELAY_MS)
             runCatching { AppBackgroundScheduler.scheduleAll(this@KeiOSApp) }
             runCatching { GitHubShareImportPendingScheduler.scheduleNext(this@KeiOSApp) }
         }

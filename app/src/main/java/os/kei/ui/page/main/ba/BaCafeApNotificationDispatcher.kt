@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
+import os.kei.ui.page.main.ba.support.BaAccountId
 
 internal object BaCafeApNotificationDispatcher {
     fun send(
@@ -14,6 +15,7 @@ internal object BaCafeApNotificationDispatcher {
         thresholdDisplay: Int,
         notificationId: Int = McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID,
         accountDisplayName: String = "",
+        accountId: BaAccountId? = null,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -40,6 +42,7 @@ internal object BaCafeApNotificationDispatcher {
                     accountDisplayName = accountDisplayName,
                     content = content,
                 ),
+                targetBaAccountId = accountId?.value,
             )
         }.getOrDefault(false)
     }

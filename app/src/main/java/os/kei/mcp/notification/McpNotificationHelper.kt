@@ -67,6 +67,7 @@ object McpNotificationHelper {
         ongoing: Boolean,
         onlyAlertOnce: Boolean = true,
         notificationId: Int = KEEPALIVE_NOTIFICATION_ID,
+        targetBaAccountId: String? = null,
     ): Notification {
         return buildForegroundNotificationResult(
             context = context,
@@ -77,7 +78,8 @@ object McpNotificationHelper {
             clients = clients,
             ongoing = ongoing,
             onlyAlertOnce = onlyAlertOnce,
-            notificationId = notificationId
+            notificationId = notificationId,
+            targetBaAccountId = targetBaAccountId,
         ).notification
     }
 
@@ -88,20 +90,15 @@ object McpNotificationHelper {
         port: Int,
         path: String,
         clients: Int,
-        notificationId: Int = KEEPALIVE_NOTIFICATION_ID
+        notificationId: Int = KEEPALIVE_NOTIFICATION_ID,
+        targetBaAccountId: String? = null,
     ): Notification {
-        val isBlueArchiveNotification = McpNotificationPayload.isBaNotificationServerName(serverName)
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra(
-                MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
-                if (isBlueArchiveNotification) {
-                    MainActivity.TARGET_BOTTOM_PAGE_BA
-                } else {
-                    MainActivity.TARGET_BOTTOM_PAGE_MCP
-                }
+        val openIntent =
+            buildOpenIntent(
+                context = context,
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
             )
-        }
         val openPendingIntent = PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,
             310_100 + notificationId,
@@ -161,24 +158,20 @@ object McpNotificationHelper {
         overrideShortText: String? = null,
         overrideProgressPercent: Int? = null,
         deadlineAtMs: Long? = null,
-        miFocusOrderId: String? = null
+        miFocusOrderId: String? = null,
+        targetBaAccountId: String? = null,
     ): SessionNotifier.NotificationBuildResult {
         val isBlueArchiveNotification =
             McpNotificationPayload.isBaNotificationServerName(serverName)
         val openRequestCode = 110_100 + notificationId
         val focusOpenRequestCode = 410_100 + notificationId
         val secondaryRequestCode = 110_200 + notificationId
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            putExtra(
-                MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
-                if (isBlueArchiveNotification) {
-                    MainActivity.TARGET_BOTTOM_PAGE_BA
-                } else {
-                    MainActivity.TARGET_BOTTOM_PAGE_MCP
-                }
+        val openIntent =
+            buildOpenIntent(
+                context = context,
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
             )
-        }
         val focusOpenPendingIntent = PendingIntent.getActivity(
             context,
             focusOpenRequestCode,
@@ -319,9 +312,15 @@ object McpNotificationHelper {
         overrideShortText: String? = null,
         overrideProgressPercent: Int? = null,
         deadlineAtMs: Long? = null,
-        miFocusOrderId: String? = null
+        miFocusOrderId: String? = null,
+        targetBaAccountId: String? = null,
     ): Boolean {
         ensureChannel(context)
+        val resolvedTargetBaAccountId =
+            normalizeTargetBaAccountId(
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
+            )
         val resolvedMiFocusOrderId =
             resolveMiFocusOrderId(
                 serverName = serverName,
@@ -349,7 +348,8 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = resolvedTargetBaAccountId,
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -371,7 +371,8 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = resolvedTargetBaAccountId,
         )
         val manager = context.getSystemService(NotificationManager::class.java)
         if (
@@ -413,11 +414,17 @@ object McpNotificationHelper {
         overrideShortText: String? = null,
         overrideProgressPercent: Int? = null,
         deadlineAtMs: Long? = null,
-        miFocusOrderId: String? = null
+        miFocusOrderId: String? = null,
+        targetBaAccountId: String? = null,
     ): Boolean {
         ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
         if (!isNotificationActive(manager, notificationId)) return false
+        val resolvedTargetBaAccountId =
+            normalizeTargetBaAccountId(
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
+            )
         val resolvedMiFocusOrderId =
             resolveMiFocusOrderId(
                 serverName = serverName,
@@ -445,7 +452,8 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = resolvedTargetBaAccountId,
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -467,7 +475,8 @@ object McpNotificationHelper {
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
             deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = resolvedTargetBaAccountId,
         )
         if (McpNotificationSnapshotStore.get(notificationId) == snapshot) return true
         val dispatched = notifyWithResolvedDispatcher(
@@ -636,7 +645,8 @@ object McpNotificationHelper {
             overrideShortText = snapshot.overrideShortText,
             overrideProgressPercent = snapshot.overrideProgressPercent,
             deadlineAtMs = snapshot.deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = snapshot.targetBaAccountId,
         )
         val nextSnapshot = snapshot.copy(
             style = buildResult.style,
@@ -689,6 +699,48 @@ object McpNotificationHelper {
             .trim('_')
             .ifBlank { "notification" }
         return "$normalizedServerName-$notificationId"
+    }
+
+    internal fun buildOpenIntent(
+        context: Context,
+        serverName: String,
+        targetBaAccountId: String? = null,
+    ): Intent {
+        val isBlueArchiveNotification =
+            McpNotificationPayload.isBaNotificationServerName(serverName)
+        val resolvedTargetBaAccountId =
+            normalizeTargetBaAccountId(
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
+            )
+        return Intent(context, MainActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP,
+            )
+            putExtra(
+                MainActivity.EXTRA_TARGET_BOTTOM_PAGE,
+                if (isBlueArchiveNotification) {
+                    MainActivity.TARGET_BOTTOM_PAGE_BA
+                } else {
+                    MainActivity.TARGET_BOTTOM_PAGE_MCP
+                },
+            )
+            resolvedTargetBaAccountId?.let { accountId ->
+                putExtra(MainActivity.EXTRA_BA_ACCOUNT_ID, accountId)
+            }
+        }
+    }
+
+    private fun normalizeTargetBaAccountId(
+        serverName: String,
+        targetBaAccountId: String?,
+    ): String? {
+        if (!McpNotificationPayload.isBaNotificationServerName(serverName)) return null
+        return targetBaAccountId
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
     }
 
     private fun notifyWithResolvedDispatcher(

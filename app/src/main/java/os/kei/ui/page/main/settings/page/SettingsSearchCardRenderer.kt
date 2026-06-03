@@ -21,6 +21,7 @@ import os.kei.ui.page.main.settings.state.SettingsLogUiState
 import os.kei.ui.page.main.settings.state.SettingsPageChromeState
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
+import os.kei.ui.page.main.settings.state.SettingsWebDavSyncUiState
 
 internal fun LazyListScope.settingsCardItem(
     card: SettingsSearchCard,
@@ -137,6 +138,7 @@ internal fun LazyListScope.settingsCardItem(
 
             SettingsSearchCard.WebDavSync -> {
                 SettingsWebDavSyncSection(
+                    state = input.webDavSyncState,
                     onClick = input::openWebDavSync,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
@@ -196,6 +198,7 @@ internal data class SettingsSearchCardRenderInput(
     val backgroundController: SettingsBackgroundController,
     val cacheState: SettingsCacheUiState,
     val logState: SettingsLogUiState,
+    val webDavSyncState: SettingsWebDavSyncUiState,
     val cacheDiagnosticsEnabled: Boolean,
     val onCacheDiagnosticsChanged: (Boolean) -> Unit,
     val logLevel: AppLogLevel,

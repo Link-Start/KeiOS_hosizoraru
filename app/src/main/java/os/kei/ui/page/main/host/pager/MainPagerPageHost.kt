@@ -66,6 +66,8 @@ internal data class MainPagerBaPageState(
     val preloadingEnabled: Boolean,
     val onOpenPoolGuideDetail: (String) -> Unit,
     val onOpenBaGuideCatalog: () -> Unit,
+    val requestedAccountId: String?,
+    val requestedAccountToken: Int,
 )
 
 @Stable
@@ -104,6 +106,9 @@ internal fun MainPagerPageHost(
                     .fillMaxSize()
                     .testTag(pageType.pageRootTestTag()),
         ) {
+            if (!shouldRenderMainPagerPageContent(pageType, runtime)) {
+                return@Box
+            }
             when (pageType) {
                 BottomPage.Home -> {
                     val homeState =
@@ -164,6 +169,8 @@ internal fun MainPagerPageHost(
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenPoolStudentGuide = baState.onOpenPoolGuideDetail,
                         onOpenGuideCatalog = baState.onOpenBaGuideCatalog,
+                        requestedAccountId = baState.requestedAccountId,
+                        requestedAccountToken = baState.requestedAccountToken,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
@@ -201,6 +208,14 @@ internal fun MainPagerPageHost(
         }
     }
 }
+
+internal fun shouldRenderMainPagerPageContent(
+    pageType: BottomPage,
+    runtime: MainPageRuntime,
+): Boolean =
+    pageType == BottomPage.Home ||
+        runtime.hasActivated ||
+        runtime.isWarmActive
 
 private fun BottomPage.pageRootTestTag(): String =
     when (this) {

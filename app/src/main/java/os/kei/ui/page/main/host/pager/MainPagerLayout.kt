@@ -70,6 +70,8 @@ internal fun MainPagerLayout(
     requestedGitHubRefreshToken: Int,
     requestedGitHubActionsTrackId: String?,
     requestedGitHubActionsSheetToken: Int,
+    requestedBaAccountId: String?,
+    requestedBaAccountToken: Int,
     transientExternalLaunchActive: Boolean,
     onRequestedBottomPageConsumed: () -> Unit,
 ) {
@@ -356,11 +358,19 @@ internal fun MainPagerLayout(
                         }
                     val baPageState =
                         if (pageType == BottomPage.Ba) {
-                            remember(preloadingEnabled, onOpenGuideDetail, openBaGuideCatalog) {
+                            remember(
+                                preloadingEnabled,
+                                onOpenGuideDetail,
+                                openBaGuideCatalog,
+                                requestedBaAccountId,
+                                requestedBaAccountToken,
+                            ) {
                                 MainPagerBaPageState(
                                     preloadingEnabled = preloadingEnabled,
                                     onOpenPoolGuideDetail = onOpenGuideDetail,
                                     onOpenBaGuideCatalog = openBaGuideCatalog,
+                                    requestedAccountId = requestedBaAccountId,
+                                    requestedAccountToken = requestedBaAccountToken,
                                 )
                             }
                         } else {

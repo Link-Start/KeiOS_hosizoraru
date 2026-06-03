@@ -3,6 +3,8 @@ package os.kei.feature.home.data
 import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
@@ -38,12 +41,15 @@ import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
-import os.kei.ui.page.main.settings.cache.CacheStores
+import os.kei.ui.page.main.ba.support.BaCacheSnapshot
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.sync.WebDavSyncItem
 import os.kei.ui.page.main.sync.WebDavSyncStore
 import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
 
 private const val TAG = "HomeOverviewRepository"
+private const val INITIAL_OVERVIEW_LOAD_DELAY_MS = 500L
+private const val INITIAL_OVERVIEW_LOAD_REASON = "initial"
 
 internal fun interface HomeOverviewClock {
     fun nowMs(): Long
@@ -69,6 +75,7 @@ internal class HomeOverviewRepository(
     private val visibleOverviewCards = MutableStateFlow(defaultHomeOverviewCards())
     private val showCacheFreshnessInCards = MutableStateFlow(false)
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun observeOverview(): Flow<HomeOverviewSnapshot> {
         val storedOverviewFlow =
             buildHomeOverviewStoreRefreshFlow(
@@ -76,8 +83,11 @@ internal class HomeOverviewRepository(
                 githubVersions = githubTrackService.trackStoreSignalVersions(),
                 baHomeOverviewVersions = BASettingsStoreSignals.homeOverviewVersion,
                 webDavVersions = WebDavSyncStoreSignals.version,
-            ).onStart { emit("initial") }
-                .map { reason ->
+            ).onStart { emit(INITIAL_OVERVIEW_LOAD_REASON) }
+                .mapLatest { reason ->
+                    if (reason == INITIAL_OVERVIEW_LOAD_REASON) {
+                        delay(INITIAL_OVERVIEW_LOAD_DELAY_MS)
+                    }
                     loadStoredOverview(reason)
                 }
         return combine(
@@ -139,11 +149,22 @@ internal class HomeOverviewRepository(
                     }.getOrElse { defaultHomeOverviewCards() }
             visibleOverviewCards.value = visibleCards
             showCacheFreshnessInCards.value = HomeOverviewPrefs.loadCacheFreshnessVisibleInCards()
-            val cacheFreshnessById = loadHomeCacheFreshnessById(appContext)
+            val nowMs = clock.nowMs()
 
             val baOverview =
                 runCatching {
-                    loadHomeBaOverview(cacheFreshnessById["ba_calendar"] ?: CacheFreshnessSnapshot.Empty)
+                    val baSnapshot = BASettingsStore.loadSnapshot()
+                    val serverIndex = baSnapshot.serverIndex
+                    loadHomeBaOverview(
+                        snapshot = baSnapshot,
+                        cacheFreshness =
+                            buildHomeBaCalendarPoolCacheFreshness(
+                                calendar = BASettingsStore.loadCalendarCacheSnapshot(serverIndex),
+                                pool = BASettingsStore.loadPoolCacheSnapshot(serverIndex),
+                                refreshIntervalHours = baSnapshot.calendarRefreshIntervalHours,
+                                nowMs = nowMs,
+                            ),
+                    )
                 }.onFailure { error ->
                     AppLogger.w(
                         TAG,
@@ -153,11 +174,11 @@ internal class HomeOverviewRepository(
                 }.getOrElse { HomeBaOverview(loaded = true) }
             val githubOverview =
                 runCatching {
-                    val githubSnapshot = githubTrackService.loadTrackSnapshot()
+                    val githubSnapshot = githubTrackService.loadHomeOverviewTrackSnapshot()
                     loadHomeGitHubOverview(
                         snapshot = githubSnapshot,
-                        cacheFreshness = cacheFreshnessById["github"] ?: CacheFreshnessSnapshot.Empty,
-                        nowMs = clock.nowMs(),
+                        cacheFreshness = buildHomeGitHubCacheFreshness(githubSnapshot, nowMs),
+                        nowMs = nowMs,
                     )
                 }.onFailure { error ->
                     AppLogger.w(
@@ -299,8 +320,10 @@ internal fun loadHomeGitHubOverview(
     )
 }
 
-private fun loadHomeBaOverview(cacheFreshness: CacheFreshnessSnapshot): HomeBaOverview {
-    val snapshot = BASettingsStore.loadSnapshot()
+private fun loadHomeBaOverview(
+    snapshot: BaPageSnapshot,
+    cacheFreshness: CacheFreshnessSnapshot,
+): HomeBaOverview {
     val activated = snapshot.idFriendCode != HOME_BA_DEFAULT_FRIEND_CODE
     val apCurrent = snapshot.apCurrent.coerceIn(0.0, HOME_BA_AP_MAX.toDouble()).toInt()
     val cafeLevel = snapshot.cafeLevel.coerceIn(1, HOME_BA_CAFE_DAILY_AP_BY_LEVEL.size)
@@ -326,6 +349,76 @@ private fun loadHomeBaOverview(cacheFreshness: CacheFreshnessSnapshot): HomeBaOv
     )
 }
 
+internal fun buildHomeGitHubCacheFreshness(
+    snapshot: GitHubTrackSnapshot,
+    nowMs: Long = System.currentTimeMillis(),
+): CacheFreshnessSnapshot =
+    CacheFreshnessSnapshot.from(
+        lastUpdatedAtMs = snapshot.lastRefreshMs,
+        bytes = estimateHomeGitHubCacheBytes(snapshot),
+        rebuildable = true,
+        ttlMs = refreshIntervalMs(snapshot.refreshIntervalHours),
+        nowMs = nowMs,
+    )
+
+private fun estimateHomeGitHubCacheBytes(snapshot: GitHubTrackSnapshot): Long {
+    if (snapshot.checkCache.isEmpty() && snapshot.profileCache.isEmpty()) return 0L
+    val checkBytes =
+        snapshot.checkCache.values.sumOf { entry ->
+            listOf(
+                entry.localVersion,
+                entry.latestTag,
+                entry.latestStableName,
+                entry.latestStableRawTag,
+                entry.latestStableUrl,
+                entry.latestStableAuthorAvatarUrl,
+                entry.latestPreName,
+                entry.latestPreRawTag,
+                entry.latestPreUrl,
+                entry.latestPreAuthorAvatarUrl,
+                entry.message,
+                entry.preReleaseInfo,
+                entry.releaseHint,
+                entry.sourceStrategyId,
+                entry.sourceConfigSignature,
+                entry.repositoryProfile?.identity?.fullName?.value.orEmpty(),
+                entry.repositoryProfile?.sourceConfigSignature.orEmpty(),
+            ).sumOf { value -> value.length.toLong() * 2L } + 64L
+        }
+    val profileBytes =
+        snapshot.profileCache.values.sumOf { profile ->
+            listOf(
+                profile.identity.fullName?.value.orEmpty(),
+                profile.sourceConfigSignature,
+            ).sumOf { value -> value.length.toLong() * 2L } + 96L
+        }
+    return checkBytes + profileBytes + 16L
+}
+
+internal fun buildHomeBaCalendarPoolCacheFreshness(
+    calendar: BaCacheSnapshot,
+    pool: BaCacheSnapshot,
+    refreshIntervalHours: Int,
+    nowMs: Long = System.currentTimeMillis(),
+): CacheFreshnessSnapshot =
+    CacheFreshnessSnapshot.from(
+        lastUpdatedAtMs = maxOf(calendar.syncMs, pool.syncMs),
+        bytes = estimateHomeBaCalendarPoolCacheBytes(calendar, pool),
+        rebuildable = true,
+        ttlMs = refreshIntervalMs(refreshIntervalHours),
+        nowMs = nowMs,
+    )
+
+private fun estimateHomeBaCalendarPoolCacheBytes(
+    calendar: BaCacheSnapshot,
+    pool: BaCacheSnapshot,
+): Long {
+    val rawBytes = listOf(calendar.raw, pool.raw).sumOf { raw -> raw.length.toLong() * 2L }
+    return if (rawBytes > 0L) rawBytes + 32L else 0L
+}
+
+private fun refreshIntervalMs(hours: Int): Long = hours.coerceAtLeast(1) * 60L * 60L * 1000L
+
 private fun loadHomeWebDavOverview(): HomeWebDavOverview =
     HomeWebDavOverview(
         configured = WebDavSyncStore.hasConfig(),
@@ -334,8 +427,3 @@ private fun loadHomeWebDavOverview(): HomeWebDavOverview =
         totalItemCount = WebDavSyncItem.entries.size,
         lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
     )
-
-private fun loadHomeCacheFreshnessById(context: Context): Map<String, CacheFreshnessSnapshot> =
-    runCatching {
-        CacheStores.list(context).associate { entry -> entry.id to entry.freshness }
-    }.getOrNull().orEmpty()

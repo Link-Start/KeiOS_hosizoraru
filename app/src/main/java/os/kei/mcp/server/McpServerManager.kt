@@ -3,13 +3,14 @@ package os.kei.mcp.server
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.service.McpKeepAliveService
 import java.net.Inet4Address
@@ -42,7 +43,7 @@ data class McpServerUiState(
 class McpServerManager(
     private val appContext: Context,
     private val localMcpService: LocalMcpService,
-    monitorDispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
+    monitorDispatcher: CoroutineDispatcher = AppDispatchers.mcpServer
 ) {
     companion object {
         fun loadSavedCacheSummary(context: Context): String {
@@ -81,6 +82,19 @@ class McpServerManager(
     }
 
     private val scope = CoroutineScope(SupervisorJob() + monitorDispatcher)
+    private val prefsLoadLock = Any()
+    @Volatile
+    private var prefsLoaded = false
+    private val _uiState = MutableStateFlow(
+        McpServerUiState(
+            port = McpServerDefaults.PORT,
+            allowExternal = false,
+            tools = localMcpService.listLocalTools(),
+            authToken = "",
+            serverName = McpServerDefaults.SERVER_NAME
+        )
+    )
+    val uiState: StateFlow<McpServerUiState> = _uiState.asStateFlow()
     private val endpointController =
         McpEndpointController(
             endpointHost = McpKtorEndpointHost(::appendLog),
@@ -92,17 +106,6 @@ class McpServerManager(
             _uiState.update { state -> state.copy(logs = logs) }
         }
     }
-    private val initialPrefsSnapshot = McpServerPrefs.loadSnapshot()
-    private val _uiState = MutableStateFlow(
-        McpServerUiState(
-            port = initialPrefsSnapshot.port,
-            allowExternal = initialPrefsSnapshot.allowExternal,
-            tools = localMcpService.listLocalTools(),
-            authToken = initialPrefsSnapshot.authToken,
-            serverName = initialPrefsSnapshot.serverName
-        )
-    )
-    val uiState: StateFlow<McpServerUiState> = _uiState.asStateFlow()
 
     init {
         localMcpService.bindMcpStateProvider { _uiState.value }
@@ -114,10 +117,51 @@ class McpServerManager(
                 "Tool call $status: name=$name profile=${profile.name} elapsedMs=$elapsedMs$suffix"
             )
         }
+        loadPrefsAsync()
+    }
+
+    private fun loadPrefsAsync() {
+        scope.launch {
+            val snapshot = McpServerPrefs.loadSnapshot()
+            synchronized(prefsLoadLock) {
+                if (!prefsLoaded) {
+                    applyPrefsSnapshot(snapshot)
+                    prefsLoaded = true
+                }
+            }
+        }
+    }
+
+    private fun ensurePrefsLoadedForCommand() {
+        if (prefsLoaded) return
+        synchronized(prefsLoadLock) {
+            if (prefsLoaded) return
+            applyPrefsSnapshot(McpServerPrefs.loadSnapshot())
+            prefsLoaded = true
+        }
+    }
+
+    private fun applyPrefsSnapshot(snapshot: McpPrefsSnapshot) {
+        _uiState.update { state ->
+            if (state.running) {
+                state.copy(
+                    authToken = snapshot.authToken,
+                    serverName = snapshot.serverName,
+                )
+            } else {
+                state.copy(
+                    port = snapshot.port,
+                    allowExternal = snapshot.allowExternal,
+                    authToken = snapshot.authToken,
+                    serverName = snapshot.serverName,
+                )
+            }
+        }
     }
 
     @Synchronized
     fun start(port: Int, allowExternal: Boolean): Result<Unit> {
+        ensurePrefsLoadedForCommand()
         if (port !in 1..65535) {
             val message = "${appContext.getString(R.string.common_port_invalid)}: $port"
             _uiState.value = _uiState.value.copy(lastError = message)
@@ -177,6 +221,7 @@ class McpServerManager(
 
     @Synchronized
     fun regenerateAuthToken() {
+        ensurePrefsLoadedForCommand()
         val token = McpServerPrefs.regenerateToken()
         _uiState.value = _uiState.value.copy(authToken = token)
         appendLog("INFO", "Authorization token regenerated")
@@ -184,6 +229,7 @@ class McpServerManager(
 
     @Synchronized
     fun updateServerName(name: String) {
+        ensurePrefsLoadedForCommand()
         val fixed = name.trim().ifBlank { McpServerDefaults.SERVER_NAME }
         McpServerPrefs.saveServerName(fixed)
         _uiState.value = _uiState.value.copy(serverName = fixed)
@@ -191,6 +237,7 @@ class McpServerManager(
 
     @Synchronized
     fun resetServerConfigPreservingToken(): Boolean {
+        ensurePrefsLoadedForCommand()
         McpServerPrefs.saveServerName(McpServerDefaults.SERVER_NAME)
         McpServerPrefs.savePort(McpServerDefaults.PORT)
         McpServerPrefs.saveAllowExternal(false)
@@ -218,6 +265,7 @@ class McpServerManager(
 
     @Synchronized
     fun updatePort(port: Int): Result<Unit> {
+        ensurePrefsLoadedForCommand()
         if (port !in 1..65535) {
             val message = "${appContext.getString(R.string.common_port_invalid)}: $port"
             _uiState.value = _uiState.value.copy(lastError = message)
@@ -235,6 +283,7 @@ class McpServerManager(
 
     @Synchronized
     fun updateAllowExternal(allowExternal: Boolean): Result<Unit> {
+        ensurePrefsLoadedForCommand()
         McpServerPrefs.saveAllowExternal(allowExternal)
         val current = _uiState.value
         _uiState.value = if (current.running) {
@@ -251,16 +300,18 @@ class McpServerManager(
 
     fun buildConfigJson(
         url: String? = null,
-        includeJsonContentTypeHeader: Boolean = _uiState.value.allowExternal
+        includeJsonContentTypeHeader: Boolean? = null
     ): String {
+        ensurePrefsLoadedForCommand()
         val authToken = ensureAuthToken()
         val state = _uiState.value
         val endpoint = url ?: state.localEndpoint
+        val includeHeader = includeJsonContentTypeHeader ?: state.allowExternal
         return McpClientConfigBuilder.buildSingleServerConfig(
             serverName = state.serverName,
             endpoint = endpoint,
             authToken = authToken,
-            includeJsonContentTypeHeader = includeJsonContentTypeHeader
+            includeJsonContentTypeHeader = includeHeader
         )
     }
 
@@ -419,6 +470,7 @@ class McpServerManager(
 
     @Synchronized
     private fun ensureAuthToken(): String {
+        ensurePrefsLoadedForCommand()
         val current = _uiState.value.authToken
         val token = McpServerPrefs.ensureAuthToken(current)
         if (token != current) {

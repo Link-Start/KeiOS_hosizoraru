@@ -88,6 +88,7 @@ class BaPageActionsTest {
                 lastNotifiedLevel = 119,
                 notificationId = BaAccountNotificationKind.Ap.notificationId(accountId),
                 accountDisplayName = "国服主号",
+                accountId = accountId,
             )
         )
 
@@ -96,6 +97,7 @@ class BaPageActionsTest {
         assertNull(plan.nextLastNotifiedLevel)
         assertEquals(BaAccountNotificationKind.Ap.notificationId(accountId), plan.request.notificationId)
         assertEquals("国服主号", plan.request.accountDisplayName)
+        assertEquals(accountId, plan.request.accountId)
     }
 
     @Test

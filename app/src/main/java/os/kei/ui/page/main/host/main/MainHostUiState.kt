@@ -28,7 +28,9 @@ data class MainHostUiState(
     val requestedGitHubRefreshToken: Int,
     val requestedGitHubActionsTrackId: String?,
     val requestedGitHubActionsSheetToken: Int,
-    val requestedBaBgmPlaybackToken: Int
+    val requestedBaBgmPlaybackToken: Int,
+    val requestedBaAccountId: String?,
+    val requestedBaAccountToken: Int
 ) {
     companion object {
         val Initial: MainHostUiState = MainHostUiState(
@@ -41,7 +43,9 @@ data class MainHostUiState(
             requestedGitHubRefreshToken = 0,
             requestedGitHubActionsTrackId = null,
             requestedGitHubActionsSheetToken = 0,
-            requestedBaBgmPlaybackToken = 0
+            requestedBaBgmPlaybackToken = 0,
+            requestedBaAccountId = null,
+            requestedBaAccountToken = 0
         )
     }
 }

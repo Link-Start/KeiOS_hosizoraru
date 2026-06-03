@@ -30,6 +30,9 @@
     <string name="webdav_sync_item_github_tracked">GitHub Tracked</string>
     <string name="webdav_sync_item_github_tracked_desc">Tracked repositories and settings</string>
     <string name="webdav_sync_item_github_tracked_contract">JSON includes the built-in KeiOS app card and your tracked repositories.</string>
+    <string name="webdav_sync_item_ba_accounts">BA Accounts</string>
+    <string name="webdav_sync_item_ba_accounts_desc">Multi-account profiles, AP/cafe state, and reminder settings</string>
+    <string name="webdav_sync_item_ba_accounts_contract">JSON includes BA account cards, active account, AP/cafe runtime state, and reminder settings.</string>
     <string name="webdav_sync_item_ba_catalog_fav">BA Catalog Favorites</string>
     <string name="webdav_sync_item_ba_catalog_fav_desc">Student catalog favorites</string>
     <string name="webdav_sync_item_ba_bgm_fav">BA BGM Favorites</string>

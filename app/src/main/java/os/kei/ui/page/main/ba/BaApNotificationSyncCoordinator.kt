@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BaAccountId
 
 internal data class BaApNotificationSyncRequest(
     val currentDisplay: Int,
@@ -14,6 +15,7 @@ internal data class BaApNotificationSyncRequest(
     val lastNotifiedLevel: Int,
     val notificationId: Int = BaAccountNotificationKind.Ap.legacyId,
     val accountDisplayName: String = "",
+    val accountId: BaAccountId? = null,
 )
 
 internal data class BaApNotificationSyncResult(
@@ -69,6 +71,7 @@ internal object BaApNotificationSyncCoordinator {
                 thresholdDisplay = request.thresholdDisplay,
                 notificationId = request.notificationId,
                 accountDisplayName = request.accountDisplayName,
+                accountId = request.accountId,
             )
         }
     }
@@ -85,6 +88,7 @@ internal object BaApNotificationSyncCoordinator {
                 thresholdDisplay = request.thresholdDisplay,
                 notificationId = request.notificationId,
                 accountDisplayName = request.accountDisplayName,
+                accountId = request.accountId,
             )
         }
     }

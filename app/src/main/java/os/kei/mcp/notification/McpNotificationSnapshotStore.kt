@@ -22,7 +22,8 @@ internal data class McpNotificationSnapshot(
     val overrideShortText: String? = null,
     val overrideProgressPercent: Int? = null,
     val deadlineAtMs: Long? = null,
-    val miFocusOrderId: String? = null
+    val miFocusOrderId: String? = null,
+    val targetBaAccountId: String? = null,
 )
 
 internal object McpNotificationSnapshotStore {

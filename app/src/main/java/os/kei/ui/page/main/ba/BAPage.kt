@@ -10,6 +10,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -42,6 +43,8 @@ fun BAPage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
+    requestedAccountId: String? = null,
+    requestedAccountToken: Int = 0,
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -125,6 +128,7 @@ fun BAPage(
     val pageContentState = pagePresentationState.pageContentState
     val currentServerIndexState = rememberUpdatedState(baRouteState.serverIndex)
     val currentActiveAccountIdState = rememberUpdatedState(accountUiState.activeAccountId)
+    val handledRequestedAccountTokenState = remember { mutableIntStateOf(0) }
     val uiNowMsProvider = remember(ui) { { ui.uiNowMs } }
     val settledWorkActive =
         rememberBaPageSettledWorkActive(
@@ -172,6 +176,36 @@ fun BAPage(
         runtimePersistenceCoordinator.submit(office.applyRuntimeTick())
         refreshCalendar(force = true)
         refreshPool(force = true)
+    }
+
+    LaunchedEffect(
+        requestedAccountToken,
+        requestedAccountId,
+        accountUiState.accounts,
+    ) {
+        if (requestedAccountToken <= handledRequestedAccountTokenState.intValue) return@LaunchedEffect
+        val targetAccountId =
+            requestedAccountId
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?.let(::BaAccountId)
+                ?: run {
+                    handledRequestedAccountTokenState.intValue = requestedAccountToken
+                    return@LaunchedEffect
+                }
+        if (accountUiState.activeAccountId == targetAccountId) {
+            handledRequestedAccountTokenState.intValue = requestedAccountToken
+            return@LaunchedEffect
+        }
+        if (accountUiState.accounts.none { it.id == targetAccountId }) return@LaunchedEffect
+        handledRequestedAccountTokenState.intValue = requestedAccountToken
+        officeViewModel.selectActiveAccount(
+            accountId = targetAccountId,
+            currentRuntimeUpdate =
+                office
+                    .applyRuntimeTick()
+                    ?.withAccountId(currentActiveAccountIdState.value),
+        )
     }
 
     LaunchedEffect(officeViewModel, context) {

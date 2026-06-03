@@ -159,6 +159,7 @@ private fun BaDebugControlsHost(
                 notificationId =
                     accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
                 accountDisplayName = accountNotificationContext.accountDisplayName,
+                accountId = accountNotificationContext.accountId,
             )
         },
         onSendCafeApTestNotification = {
@@ -168,6 +169,7 @@ private fun BaDebugControlsHost(
                 notificationId =
                     accountNotificationContext.notificationId(BaAccountNotificationKind.CafeAp),
                 accountDisplayName = accountNotificationContext.accountDisplayName,
+                accountId = accountNotificationContext.accountId,
                 onRuntimeUpdate = runtimePersistenceCoordinator::submit,
             )
         },
@@ -179,6 +181,7 @@ private fun BaDebugControlsHost(
                 notificationId =
                     accountNotificationContext.notificationId(BaAccountNotificationKind.CafeVisit),
                 accountDisplayName = accountNotificationContext.accountDisplayName,
+                accountId = accountNotificationContext.accountId,
             )
         },
         onSendArenaRefreshTestNotification = {
@@ -189,6 +192,7 @@ private fun BaDebugControlsHost(
                 notificationId =
                     accountNotificationContext.notificationId(BaAccountNotificationKind.ArenaRefresh),
                 accountDisplayName = accountNotificationContext.accountDisplayName,
+                accountId = accountNotificationContext.accountId,
             )
         },
         onSendCalendarUpcomingTestNotification = {

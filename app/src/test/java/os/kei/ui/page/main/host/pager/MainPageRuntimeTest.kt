@@ -50,4 +50,32 @@ class MainPageRuntimeTest {
         assertFalse(runtime.isWarmDataActive)
         assertFalse(runtime.isDataActive)
     }
+
+    @Test
+    fun `main pager delays inactive non home page composition`() {
+        assertTrue(
+            shouldRenderMainPagerPageContent(
+                pageType = BottomPage.Home,
+                runtime = MainPageRuntime(hasActivated = false, isWarmActive = false),
+            ),
+        )
+        assertFalse(
+            shouldRenderMainPagerPageContent(
+                pageType = BottomPage.GitHub,
+                runtime = MainPageRuntime(hasActivated = false, isWarmActive = false),
+            ),
+        )
+        assertTrue(
+            shouldRenderMainPagerPageContent(
+                pageType = BottomPage.GitHub,
+                runtime = MainPageRuntime(hasActivated = false, isWarmActive = true),
+            ),
+        )
+        assertTrue(
+            shouldRenderMainPagerPageContent(
+                pageType = BottomPage.GitHub,
+                runtime = MainPageRuntime(hasActivated = true, isWarmActive = false),
+            ),
+        )
+    }
 }

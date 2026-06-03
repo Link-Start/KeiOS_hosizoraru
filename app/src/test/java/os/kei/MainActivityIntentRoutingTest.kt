@@ -85,6 +85,32 @@ class MainActivityIntentRoutingTest {
     }
 
     @Test
+    fun `ba account id is preserved only on ba target`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_BA,
+            rawMcpServerAction = null,
+            rawShortcutAction = null,
+            rawBaAccountId = "  cn-alt  "
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, route?.targetBottomPage)
+        assertEquals("cn-alt", route?.baAccountId)
+    }
+
+    @Test
+    fun `ba account id is dropped outside ba target`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,
+            rawMcpServerAction = null,
+            rawShortcutAction = null,
+            rawBaAccountId = "cn-alt"
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_MCP, route?.targetBottomPage)
+        assertNull(route?.baAccountId)
+    }
+
+    @Test
     fun `valid os target route is preserved`() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_OS,

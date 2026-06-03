@@ -4,7 +4,8 @@ internal data class MainActivityIntentRoute(
     val targetBottomPage: String,
     val mcpServerAction: String?,
     val shortcutAction: String?,
-    val githubActionsTrackId: String? = null
+    val githubActionsTrackId: String? = null,
+    val baAccountId: String? = null
 )
 
 internal object MainActivityIntentRouting {
@@ -12,7 +13,8 @@ internal object MainActivityIntentRouting {
         rawTargetBottomPage: String?,
         rawMcpServerAction: String?,
         rawShortcutAction: String?,
-        rawGitHubActionsTrackId: String? = null
+        rawGitHubActionsTrackId: String? = null,
+        rawBaAccountId: String? = null
     ): MainActivityIntentRoute? {
         val target = normalizeTargetBottomPage(rawTargetBottomPage) ?: return null
         val mcpServerAction = normalizeMcpServerAction(
@@ -27,11 +29,16 @@ internal object MainActivityIntentRouting {
             targetBottomPage = target,
             rawTrackId = rawGitHubActionsTrackId
         )
+        val baAccountId = normalizeBaAccountId(
+            targetBottomPage = target,
+            rawAccountId = rawBaAccountId,
+        )
         return MainActivityIntentRoute(
             targetBottomPage = target,
             mcpServerAction = mcpServerAction,
             shortcutAction = shortcutAction,
-            githubActionsTrackId = githubActionsTrackId
+            githubActionsTrackId = githubActionsTrackId,
+            baAccountId = baAccountId,
         )
     }
 
@@ -89,6 +96,16 @@ internal object MainActivityIntentRouting {
     ): String? {
         if (targetBottomPage != MainActivity.TARGET_BOTTOM_PAGE_GITHUB) return null
         return rawTrackId
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    private fun normalizeBaAccountId(
+        targetBottomPage: String,
+        rawAccountId: String?,
+    ): String? {
+        if (targetBottomPage != MainActivity.TARGET_BOTTOM_PAGE_BA) return null
+        return rawAccountId
             ?.trim()
             ?.takeIf { it.isNotBlank() }
     }

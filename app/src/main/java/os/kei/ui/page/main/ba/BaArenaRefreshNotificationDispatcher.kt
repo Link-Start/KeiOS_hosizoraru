@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.baServerLabelRes
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 
@@ -15,6 +16,7 @@ internal object BaArenaRefreshNotificationDispatcher {
         slotMs: Long,
         notificationId: Int = McpNotificationHelper.BA_ARENA_REFRESH_NOTIFICATION_ID,
         accountDisplayName: String = "",
+        accountId: BaAccountId? = null,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -41,6 +43,7 @@ internal object BaArenaRefreshNotificationDispatcher {
                     accountDisplayName = accountDisplayName,
                     content = detailLine,
                 ),
+                targetBaAccountId = accountId?.value,
             )
         }.getOrDefault(false)
     }

@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.debug.DebugFpsOverlay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -51,12 +52,15 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
+private const val DEFERRED_ACTIVITY_STARTUP_WORK_DELAY_MS = 2_000L
+
 class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_TARGET_BOTTOM_PAGE = "os.kei.extra.TARGET_BOTTOM_PAGE"
         const val EXTRA_MCP_SERVER_ACTION = "os.kei.extra.MCP_SERVER_ACTION"
         const val EXTRA_SHORTCUT_ACTION = "os.kei.extra.SHORTCUT_ACTION"
         const val EXTRA_GITHUB_ACTIONS_TRACK_ID = "os.kei.extra.GITHUB_ACTIONS_TRACK_ID"
+        const val EXTRA_BA_ACCOUNT_ID = "os.kei.extra.BA_ACCOUNT_ID"
         const val TARGET_BOTTOM_PAGE_OS = "Os"
         const val TARGET_BOTTOM_PAGE_GITHUB = "GitHub"
         const val TARGET_BOTTOM_PAGE_MCP = "Mcp"
@@ -152,6 +156,7 @@ class MainActivity : ComponentActivity() {
         // Defer non-first-frame work: shortcut sync writes to system storage, Xiaomi network
         // restoration may trigger system calls. Neither affects the first Compose frame.
         lifecycleScope.launch(AppDispatchers.fileIo) {
+            delay(DEFERRED_ACTIVITY_STARTUP_WORK_DELAY_MS)
             runCatching { McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this@MainActivity) }
             runCatching { AppShortcuts.sync(this@MainActivity) }
         }
@@ -290,6 +295,7 @@ class MainActivity : ComponentActivity() {
                 rawMcpServerAction = intent?.getStringExtra(EXTRA_MCP_SERVER_ACTION),
                 rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION),
                 rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID),
+                rawBaAccountId = intent?.getStringExtra(EXTRA_BA_ACCOUNT_ID),
             ) ?: return
         val previous = hostUiState
         val nextActionsTrackId = route.githubActionsTrackId ?: previous.requestedGitHubActionsTrackId
@@ -298,11 +304,18 @@ class MainActivity : ComponentActivity() {
         } else {
             previous.requestedGitHubActionsSheetToken
         }
+        val nextBaAccountToken = if (route.baAccountId != null) {
+            previous.requestedBaAccountToken + 1
+        } else {
+            previous.requestedBaAccountToken
+        }
         hostUiState = previous.copy(
             requestedBottomPage = route.targetBottomPage,
             requestedBottomPageToken = previous.requestedBottomPageToken + 1,
             requestedGitHubActionsTrackId = nextActionsTrackId,
-            requestedGitHubActionsSheetToken = nextActionsSheetToken
+            requestedGitHubActionsSheetToken = nextActionsSheetToken,
+            requestedBaAccountId = route.baAccountId ?: previous.requestedBaAccountId,
+            requestedBaAccountToken = nextBaAccountToken,
         )
         pendingMcpServerAction = route.mcpServerAction
         pendingShortcutAction = route.shortcutAction

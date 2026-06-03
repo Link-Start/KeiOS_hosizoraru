@@ -380,6 +380,7 @@ object AppForegroundInfoHandler {
             thresholdDisplay = notification.thresholdDisplay,
             notificationId = BaAccountNotificationKind.CafeAp.notificationId(accountId),
             accountDisplayName = accountDisplayName,
+            accountId = accountId,
         )
         if (sent) {
             withContext(AppDispatchers.mcpServer) {
@@ -432,6 +433,7 @@ object AppForegroundInfoHandler {
             thresholdDisplay = notification.thresholdDisplay,
             notificationId = BaAccountNotificationKind.Ap.notificationId(accountId),
             accountDisplayName = accountDisplayName,
+            accountId = accountId,
         )
         if (sent) {
             withContext(AppDispatchers.mcpServer) {
@@ -495,6 +497,7 @@ object AppForegroundInfoHandler {
                     slotMs = plan.slotMs,
                     notificationId = BaAccountNotificationKind.CafeVisit.notificationId(accountId),
                     accountDisplayName = accountDisplayName,
+                    accountId = accountId,
                 )
                 if (sent) {
                     withContext(AppDispatchers.mcpServer) {
@@ -533,6 +536,7 @@ object AppForegroundInfoHandler {
                     slotMs = plan.slotMs,
                     notificationId = BaAccountNotificationKind.ArenaRefresh.notificationId(accountId),
                     accountDisplayName = accountDisplayName,
+                    accountId = accountId,
                 )
                 if (sent) {
                     withContext(AppDispatchers.mcpServer) {

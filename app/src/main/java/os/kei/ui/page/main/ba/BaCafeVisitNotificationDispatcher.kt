@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.notification.McpNotificationPayload
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.baServerLabelRes
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import java.util.Calendar
@@ -16,6 +17,7 @@ internal object BaCafeVisitNotificationDispatcher {
         slotMs: Long,
         notificationId: Int = McpNotificationHelper.BA_CAFE_VISIT_NOTIFICATION_ID,
         accountDisplayName: String = "",
+        accountId: BaAccountId? = null,
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -41,6 +43,7 @@ internal object BaCafeVisitNotificationDispatcher {
                     accountDisplayName = accountDisplayName,
                     content = detailLine,
                 ),
+                targetBaAccountId = accountId?.value,
             )
         }.getOrDefault(false)
     }

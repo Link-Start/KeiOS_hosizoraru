@@ -30,6 +30,7 @@ internal fun deriveHomePageContentState(
     val failedCount = githubOverview.failedCount
     val cacheStateColor =
         when {
+            githubOverview.refreshing -> colors.runningColor
             !githubOverview.loaded -> colors.inactiveColor
             githubOverview.cacheFreshness.stale -> AppStatusColors.Failed
             githubOverview.cacheFreshness.fresh -> AppStatusColors.Fresh
@@ -74,9 +75,16 @@ internal fun deriveHomePageContentState(
             justNowText = text.justNow,
             nowMs = githubOverview.cacheLabelNowMs,
         )
+    val githubRefreshProgressLine =
+        text.githubRefreshingProgress(
+            completed = githubOverview.refreshCompletedCount,
+            target = githubOverview.refreshTargetCount.coerceAtLeast(1),
+            totalTracked = githubOverview.refreshTotalTrackedCount.coerceAtLeast(trackedCount),
+        )
     val githubLastUpdateLine =
         when {
             !githubOverview.loaded -> text.loading
+            githubOverview.refreshing -> githubRefreshProgressLine
             trackedCount == 0 -> text.githubUnconfigured
             cacheHitCount == 0 -> text.refreshPair(githubRefreshIntervalLine, text.githubNoCache)
             else -> text.refreshPair(githubRefreshIntervalLine, cacheRefreshLine)
@@ -101,6 +109,7 @@ internal fun deriveHomePageContentState(
     val githubFocusLine =
         when {
             !githubOverview.loaded -> text.loading
+            githubOverview.refreshing -> githubRefreshProgressLine
             githubOverview.pendingShareImport -> text.githubSharePending
             trackedCount == 0 -> text.githubUnconfigured
             cacheHitCount == 0 -> text.githubPendingRefresh

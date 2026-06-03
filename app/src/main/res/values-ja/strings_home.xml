@@ -42,6 +42,8 @@
     <string name="home_github_status_no_cache">キャッシュなし</string>
     <string name="home_github_status_pending_refresh">更新期限切れ</string>
     <string name="home_github_share_pending">インストール待ち</string>
+    <string name="home_github_status_refreshing">更新中</string>
+    <string name="home_github_refreshing_progress">更新中 %1$d/%2$d（追跡 %3$d）</string>
     <string name="home_github_line_last_update">最終更新: %1$s</string>
     <string name="home_github_line_track_update">追跡: %1$d   更新: %2$s</string>
     <string name="home_github_line_priority_primary">Stable 更新: %1$s   Pre-release 更新: %2$s</string>

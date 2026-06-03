@@ -18,6 +18,8 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.CacheFreshnessSnapshot
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubRefreshRuntimeState
+import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
@@ -80,13 +82,14 @@ internal class HomeOverviewRepository(
         return combine(
             mcpUiState,
             storedOverviewFlow,
+            GitHubRefreshRuntimeStore.state,
             visibleOverviewCards,
             showCacheFreshnessInCards,
-        ) { mcpState, storedOverview, visibleCards, showCacheFreshness ->
+        ) { mcpState, storedOverview, githubRefreshRuntime, visibleCards, showCacheFreshness ->
             HomeOverviewSnapshot(
                 appOverview = storedOverview.appOverview,
                 mcpOverview = mcpState.toHomeOverview(),
-                githubOverview = storedOverview.githubOverview,
+                githubOverview = storedOverview.githubOverview.withRefreshRuntime(githubRefreshRuntime),
                 webDavOverview = storedOverview.webDavOverview,
                 baOverview = storedOverview.baOverview,
                 visibleOverviewCards = visibleCards,
@@ -230,6 +233,29 @@ internal fun buildHomeOverviewStoreRefreshFlow(
             .drop(1)
             .map { version -> "webdav_store_$version" },
     )
+
+private fun HomeGitHubOverview.withRefreshRuntime(
+    runtime: GitHubRefreshRuntimeState,
+): HomeGitHubOverview {
+    if (!runtime.running) {
+        return copy(
+            refreshing = false,
+            refreshTargetCount = 0,
+            refreshTotalTrackedCount = 0,
+            refreshCompletedCount = 0,
+            refreshProgress = 0f,
+        )
+    }
+    return copy(
+        refreshing = true,
+        refreshScope = runtime.scope,
+        refreshSource = runtime.source,
+        refreshTargetCount = runtime.targetCount,
+        refreshTotalTrackedCount = runtime.totalTrackedCount,
+        refreshCompletedCount = runtime.completedCount,
+        refreshProgress = runtime.progressFraction,
+    )
+}
 
 private fun loadHomeGitHubOverview(
     snapshot: GitHubTrackSnapshot,

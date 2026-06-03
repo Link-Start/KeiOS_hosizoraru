@@ -5,6 +5,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 
 internal class GitHubPageRefreshNotificationBridge(
@@ -16,7 +18,11 @@ internal class GitHubPageRefreshNotificationBridge(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
     ): Boolean {
         return withContext(ioDispatcher) {
             runCatching {
@@ -26,7 +32,11 @@ internal class GitHubPageRefreshNotificationBridge(
                     total = total,
                     preReleaseUpdateCount = preReleaseUpdateCount,
                     updatableCount = updatableCount,
-                    failedCount = failedCount
+                    failedCount = failedCount,
+                    sessionId = sessionId,
+                    scope = scope,
+                    source = source,
+                    totalTrackedCount = totalTrackedCount
                 )
             }.getOrElse { error ->
                 AppLogger.w(TAG, "github refresh progress notification failed", error)
@@ -40,7 +50,11 @@ internal class GitHubPageRefreshNotificationBridge(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
     ): Boolean {
         return withContext(ioDispatcher) {
             val posted =
@@ -50,7 +64,11 @@ internal class GitHubPageRefreshNotificationBridge(
                         total = total,
                         preReleaseUpdateCount = preReleaseUpdateCount,
                         updatableCount = updatableCount,
-                        failedCount = failedCount
+                        failedCount = failedCount,
+                        sessionId = sessionId,
+                        scope = scope,
+                        source = source,
+                        totalTrackedCount = totalTrackedCount
                     )
                 }.getOrElse { error ->
                     AppLogger.w(TAG, "github refresh completed notification failed", error)
@@ -72,7 +90,11 @@ internal class GitHubPageRefreshNotificationBridge(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
     ): Boolean {
         return withContext(ioDispatcher) {
             val posted =
@@ -83,7 +105,11 @@ internal class GitHubPageRefreshNotificationBridge(
                         total = total,
                         preReleaseUpdateCount = preReleaseUpdateCount,
                         updatableCount = updatableCount,
-                        failedCount = failedCount
+                        failedCount = failedCount,
+                        sessionId = sessionId,
+                        scope = scope,
+                        source = source,
+                        totalTrackedCount = totalTrackedCount
                     )
                 }.getOrElse { error ->
                     AppLogger.w(TAG, "github refresh cancelled notification failed", error)

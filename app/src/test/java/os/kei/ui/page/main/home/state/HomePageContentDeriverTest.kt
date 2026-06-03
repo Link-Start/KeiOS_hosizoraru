@@ -82,6 +82,44 @@ class HomePageContentDeriverTest {
         assertEquals("v1.8.0 (80)", state.appVersionText)
     }
 
+    @Test
+    fun githubRuntimeRefreshOverridesCachedHomeLines() {
+        val state =
+            deriveHomePageContentState(
+                shizukuStatus = "granted",
+                appOverview = HomeAppOverview(loaded = true),
+                mcpOverview = HomeMcpOverview(),
+                githubOverview =
+                    HomeGitHubOverview(
+                        loaded = true,
+                        trackedCount = 75,
+                        cacheHitCount = 75,
+                        updatableCount = 3,
+                        cachedRefreshMs = 1_000L,
+                        cacheLabelNowMs = 10_000L,
+                        refreshing = true,
+                        refreshTargetCount = 1,
+                        refreshTotalTrackedCount = 75,
+                        refreshCompletedCount = 0,
+                    ),
+                webDavOverview = HomeWebDavOverview(),
+                baOverview = HomeBaOverview(loaded = true),
+                runtimeNowMs = 10_000L,
+                text = testTextBundle(),
+                colors =
+                    HomePageContentColors(
+                        runningColor = Color.Green,
+                        stoppedColor = Color.Red,
+                        inactiveColor = Color.Gray,
+                        githubCacheColor = Color.Yellow,
+                    ),
+            )
+
+        assertEquals("refreshing 0/1 tracked 75", state.githubFocusLine)
+        assertEquals("refreshing 0/1 tracked 75", state.githubLastUpdateLine)
+        assertEquals(Color.Green, state.cacheStateColor)
+    }
+
     private fun freshCacheSnapshot(): CacheFreshnessSnapshot =
         CacheFreshnessSnapshot(
             hasData = true,
@@ -120,6 +158,7 @@ class HomePageContentDeriverTest {
             githubNoCache = "no cache",
             githubPendingRefresh = "pending",
             githubSharePending = "share pending",
+            githubRefreshing = "refreshing",
             justNow = "just now",
             githubNotRefreshed = "never",
             commonFilled = "filled",
@@ -176,6 +215,7 @@ class HomePageContentDeriverTest {
             githubCountPattern = "%d",
             shortHoursPattern = "%dh",
             refreshPairPattern = "%s %s",
+            githubRefreshingProgressPattern = "refreshing %d/%d tracked %d",
             devicesCountPattern = "%d devices",
             failedCountPattern = "failed %d",
             fractionPattern = "%d/%d",

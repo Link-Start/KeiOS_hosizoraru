@@ -7,6 +7,8 @@ import android.content.Context
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -60,7 +62,12 @@ class GitHubRefreshNotificationHelperTest {
         assertFalse(focusParam.contains("textButton"))
         assertTrue(focusParam.contains("\"title\":\"50%\""))
         assertTrue(focusParam.contains("\"content\":\"2/4\""))
-        assertTrue(focusParam.contains("已查 2/4 · 预发 1 · 稳定 2"))
+        assertTrue(
+            focusParam.contains(
+                context.getString(os.kei.R.string.github_refresh_content_compact, 2, 4, 1, 2)
+            )
+        )
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
         assertFalse(focusParam.contains("预发可更新"))
         assertTrue(focusParam.contains("\"progress\":50"))
     }
@@ -83,7 +90,12 @@ class GitHubRefreshNotificationHelperTest {
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
-        assertTrue(focusParam.contains("已查 4/4 · 预发 1 · 稳定 2"))
+        assertTrue(
+            focusParam.contains(
+                context.getString(os.kei.R.string.github_refresh_content_compact, 4, 4, 1, 2)
+            )
+        )
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
         assertFalse(focusParam.contains("稳定可更新"))
         assertTrue(focusParam.contains("github_action_open"))
         assertTrue(focusParam.contains("github_action_read"))
@@ -129,8 +141,46 @@ class GitHubRefreshNotificationHelperTest {
             )
         )
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
-        assertTrue(focusParam.contains("已查 4/4 · 预发 1 · 稳定 2 · 失败 1"))
+        assertTrue(
+            focusParam.contains(
+                context.getString(os.kei.R.string.github_refresh_content_compact_with_failed, 4, 4, 1, 2, 1)
+            )
+        )
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
+    }
+
+    @Test
+    fun `stale session progress cannot overwrite active notification session`() {
+        invokeResetNotificationRuntime()
+
+        val firstProgress =
+            invokeResolveDisplayProgressPercent(
+                sessionId = 10L,
+                current = 0,
+                total = 1,
+                running = true,
+                cancelled = false,
+            )
+        val secondProgress =
+            invokeResolveDisplayProgressPercent(
+                sessionId = 11L,
+                current = 0,
+                total = 75,
+                running = true,
+                cancelled = false,
+            )
+        val staleProgress =
+            invokeResolveDisplayProgressPercent(
+                sessionId = 10L,
+                current = 1,
+                total = 1,
+                running = false,
+                cancelled = false,
+            )
+
+        assertNotNull(firstProgress)
+        assertNotNull(secondProgress)
+        assertEquals(null, staleProgress)
     }
 
     private fun createRefreshState(
@@ -141,7 +191,11 @@ class GitHubRefreshNotificationHelperTest {
         updatableCount: Int = 2,
         failedCount: Int = 0,
         cancelled: Boolean = false,
-        displayProgressPercent: Int = 100
+        displayProgressPercent: Int = 100,
+        sessionId: Long = 1L,
+        scope: GitHubRefreshScope = GitHubRefreshScope.AllTracked,
+        source: GitHubRefreshSource = GitHubRefreshSource.Page,
+        totalTrackedCount: Int = total
     ): Any {
         val stateClass = refreshStateClass()
         return stateClass.getDeclaredConstructor(
@@ -152,6 +206,10 @@ class GitHubRefreshNotificationHelperTest {
             Int::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
             Boolean::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            Long::class.javaPrimitiveType,
+            GitHubRefreshScope::class.java,
+            GitHubRefreshSource::class.java,
             Int::class.javaPrimitiveType
         ).apply {
             isAccessible = true
@@ -163,7 +221,11 @@ class GitHubRefreshNotificationHelperTest {
             failedCount,
             running,
             cancelled,
-            displayProgressPercent
+            displayProgressPercent,
+            sessionId,
+            scope,
+            source,
+            totalTrackedCount
         )
     }
 
@@ -198,6 +260,42 @@ class GitHubRefreshNotificationHelperTest {
             isAccessible = true
         }
         return method.invoke(GitHubRefreshNotificationHelper, context) as PendingIntent
+    }
+
+    private fun invokeResolveDisplayProgressPercent(
+        sessionId: Long,
+        current: Int,
+        total: Int,
+        running: Boolean,
+        cancelled: Boolean,
+    ): Int? {
+        val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
+            "resolveDisplayProgressPercent",
+            Long::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType,
+            Boolean::class.javaPrimitiveType,
+        ).apply {
+            isAccessible = true
+        }
+        return method.invoke(
+            GitHubRefreshNotificationHelper,
+            sessionId,
+            current,
+            total,
+            running,
+            cancelled,
+        ) as Int?
+    }
+
+    private fun invokeResetNotificationRuntime() {
+        val method = GitHubRefreshNotificationHelper::class.java.getDeclaredMethod(
+            "resetNotificationRuntime",
+        ).apply {
+            isAccessible = true
+        }
+        method.invoke(GitHubRefreshNotificationHelper)
     }
 
     private fun refreshStateClass(): Class<*> {

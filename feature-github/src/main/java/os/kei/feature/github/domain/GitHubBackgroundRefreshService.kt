@@ -41,8 +41,8 @@ class GitHubBackgroundRefreshService {
 
     suspend fun runDueRefresh(
         context: Context,
-        onRefreshStart: (Int) -> Unit = {},
-        onRefreshProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
+        onRefreshStart: (GitHubRefreshRuntimeSession, Int, Int) -> Unit = { _, _, _ -> },
+        onRefreshProgress: suspend (GitHubRefreshRuntimeSession, GitHubTrackedRefreshBatchProgress) -> Unit = { _, _ -> },
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
     ): GitHubBackgroundTickResult =
         mutex.withLock {
@@ -67,38 +67,75 @@ class GitHubBackgroundRefreshService {
 
             val refreshResult =
                 if (trackedUpdateTargetItems.isNotEmpty()) {
-                    onRefreshStart(trackedUpdateTargetItems.size)
-                    GitHubTrackedRefreshBatchRunner
-                        .run(
-                            trackedItems = trackedUpdateTargetItems,
-                            refreshTimestampMs = nowMs,
-                            maxConcurrency = GitHubTrackedRefreshBatchScheduler
-                                .backgroundRefreshConcurrency(trackedUpdateTargetItems.size),
-                            onProgress = onRefreshProgress,
-                        ) { item ->
-                            GitHubReleaseCheckService.evaluateTrackedApp(
-                                context = context,
-                                item = item,
-                                profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast,
-                            )
-                        }
-                        .also { result ->
-                            AppLogger.d(
-                                GITHUB_BACKGROUND_REFRESH_TAG,
-                                "tick refreshed total=${result.totalCount} " +
-                                    "elapsed=${result.performance.elapsedMs}ms " +
-                                    "p50=${result.performance.p50ItemMs}ms " +
-                                    "p95=${result.performance.p95ItemMs}ms " +
-                                    "updatable=${result.updatableCount} " +
-                                    "prerelease=${result.preReleaseUpdateCount} " +
-                                    "failed=${result.failedCount}",
-                            )
-                            persistRefreshResult(
-                                snapshot = snapshot,
-                                result = result,
-                                replaceCache = trackedUpdateTargetItems.size == tracked.size,
-                            )
-                        }
+                    val runtimeSession =
+                        GitHubRefreshRuntimeStore.begin(
+                            scope = GitHubRefreshScope.DueTracked,
+                            source = GitHubRefreshSource.BackgroundTick,
+                            totalTrackedCount = tracked.size,
+                            targetCount = trackedUpdateTargetItems.size,
+                            policy = GitHubRefreshBeginPolicy.SkipWhenRunning,
+                            nowMs = nowMs,
+                        )
+                    if (runtimeSession == null) {
+                        AppLogger.i(
+                            GITHUB_BACKGROUND_REFRESH_TAG,
+                            "skip due refresh because another github refresh session is running",
+                        )
+                        null
+                    } else {
+                        onRefreshStart(runtimeSession, trackedUpdateTargetItems.size, tracked.size)
+                        runCatching {
+                            GitHubTrackedRefreshBatchRunner
+                                .run(
+                                    trackedItems = trackedUpdateTargetItems,
+                                    refreshTimestampMs = nowMs,
+                                    maxConcurrency = GitHubTrackedRefreshBatchScheduler
+                                        .backgroundRefreshConcurrency(trackedUpdateTargetItems.size),
+                                    onProgress = { progress ->
+                                        GitHubRefreshRuntimeStore.progress(
+                                            sessionId = runtimeSession.id,
+                                            completedCount = progress.current,
+                                            updatableCount = progress.updatableCount,
+                                            preReleaseUpdateCount = progress.preReleaseUpdateCount,
+                                            failedCount = progress.failedCount,
+                                        )
+                                        onRefreshProgress(runtimeSession, progress)
+                                    },
+                                ) { item ->
+                                    GitHubReleaseCheckService.evaluateTrackedApp(
+                                        context = context,
+                                        item = item,
+                                        profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast,
+                                    )
+                                }
+                        }.onFailure {
+                            cancelRuntimeSession(runtimeSession)
+                        }.getOrThrow()
+                            .also { result ->
+                                GitHubRefreshRuntimeStore.complete(
+                                    sessionId = runtimeSession.id,
+                                    completedCount = result.totalCount,
+                                    updatableCount = result.updatableCount,
+                                    preReleaseUpdateCount = result.preReleaseUpdateCount,
+                                    failedCount = result.failedCount,
+                                )
+                                AppLogger.d(
+                                    GITHUB_BACKGROUND_REFRESH_TAG,
+                                    "tick refreshed target=${result.totalCount}/${tracked.size} " +
+                                        "elapsed=${result.performance.elapsedMs}ms " +
+                                        "p50=${result.performance.p50ItemMs}ms " +
+                                        "p95=${result.performance.p95ItemMs}ms " +
+                                        "updatable=${result.updatableCount} " +
+                                        "prerelease=${result.preReleaseUpdateCount} " +
+                                        "failed=${result.failedCount}",
+                                )
+                                persistRefreshResult(
+                                    snapshot = snapshot,
+                                    result = result,
+                                    replaceCache = trackedUpdateTargetItems.size == tracked.size,
+                                )
+                            }
+                    }
                 } else {
                     null
                 }
@@ -117,8 +154,8 @@ class GitHubBackgroundRefreshService {
 
     suspend fun runShortcutRefresh(
         context: Context,
-        onStart: (Int) -> Unit,
-        onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit,
+        onStart: (GitHubRefreshRuntimeSession, Int, Int) -> Unit,
+        onProgress: suspend (GitHubRefreshRuntimeSession, GitHubTrackedRefreshBatchProgress) -> Unit,
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
     ): GitHubShortcutRefreshExecution =
         mutex.withLock {
@@ -127,20 +164,50 @@ class GitHubBackgroundRefreshService {
             val tracked = snapshot.items
             if (tracked.isEmpty()) return@withLock GitHubShortcutRefreshExecution.NoTrackedItems
 
+            val runtimeSession =
+                checkNotNull(
+                    GitHubRefreshRuntimeStore.begin(
+                        scope = GitHubRefreshScope.ShortcutAllTracked,
+                        source = GitHubRefreshSource.Shortcut,
+                        totalTrackedCount = tracked.size,
+                        targetCount = tracked.size,
+                        nowMs = nowMs,
+                    ),
+                )
             prepareShortcutRefreshCaches()
-            onStart(tracked.size)
+            onStart(runtimeSession, tracked.size, tracked.size)
             val result =
-                GitHubTrackedRefreshBatchRunner.run(
-                    trackedItems = tracked,
-                    refreshTimestampMs = nowMs,
-                    onProgress = onProgress,
-                ) { item ->
-                    GitHubReleaseCheckService.evaluateTrackedApp(
-                        context = context,
-                        item = item,
-                        forceRefresh = true,
-                    )
-                }
+                runCatching {
+                    GitHubTrackedRefreshBatchRunner.run(
+                        trackedItems = tracked,
+                        refreshTimestampMs = nowMs,
+                        onProgress = { progress ->
+                            GitHubRefreshRuntimeStore.progress(
+                                sessionId = runtimeSession.id,
+                                completedCount = progress.current,
+                                updatableCount = progress.updatableCount,
+                                preReleaseUpdateCount = progress.preReleaseUpdateCount,
+                                failedCount = progress.failedCount,
+                            )
+                            onProgress(runtimeSession, progress)
+                        },
+                    ) { item ->
+                        GitHubReleaseCheckService.evaluateTrackedApp(
+                            context = context,
+                            item = item,
+                            forceRefresh = true,
+                        )
+                    }
+                }.onFailure {
+                    cancelRuntimeSession(runtimeSession)
+                }.getOrThrow()
+            GitHubRefreshRuntimeStore.complete(
+                sessionId = runtimeSession.id,
+                completedCount = result.totalCount,
+                updatableCount = result.updatableCount,
+                preReleaseUpdateCount = result.preReleaseUpdateCount,
+                failedCount = result.failedCount,
+            )
             AppLogger.i(
                 GITHUB_BACKGROUND_REFRESH_TAG,
                 "shortcut refreshed total=${result.totalCount} elapsed=${result.performance.elapsedMs}ms " +
@@ -160,6 +227,17 @@ class GitHubBackgroundRefreshService {
                 actionsNotificationCount = actionsNotificationCount,
             )
         }
+
+    private fun cancelRuntimeSession(session: GitHubRefreshRuntimeSession) {
+        val current = GitHubRefreshRuntimeStore.state.value
+        GitHubRefreshRuntimeStore.cancel(
+            sessionId = session.id,
+            completedCount = current.completedCount,
+            updatableCount = current.updatableCount,
+            preReleaseUpdateCount = current.preReleaseUpdateCount,
+            failedCount = current.failedCount,
+        )
+    }
 
     private suspend fun prepareShortcutRefreshCaches() {
         withContext(AppDispatchers.githubLocal) {

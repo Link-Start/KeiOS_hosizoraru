@@ -45,6 +45,8 @@
     <string name="home_github_status_no_cache">暂无缓存</string>
     <string name="home_github_status_pending_refresh">待刷新</string>
     <string name="home_github_share_pending">待装</string>
+    <string name="home_github_status_refreshing">刷新中</string>
+    <string name="home_github_refreshing_progress">刷新中 %1$d/%2$d（追踪 %3$d）</string>
     <string name="home_github_line_last_update">上次更新：%1$s</string>
     <string name="home_github_line_track_update">追踪：%1$d 项   可更新：%2$s</string>
     <string name="home_github_line_priority_primary">稳定可更新：%1$s   预发可更新：%2$s</string>

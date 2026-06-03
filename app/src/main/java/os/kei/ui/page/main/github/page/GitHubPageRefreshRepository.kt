@@ -4,6 +4,8 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
@@ -38,7 +40,11 @@ internal class GitHubPageRefreshRepository(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
     ): Boolean {
         return notificationBridge.notifyProgress(
             context = context,
@@ -46,7 +52,11 @@ internal class GitHubPageRefreshRepository(
             total = total,
             preReleaseUpdateCount = preReleaseUpdateCount,
             updatableCount = updatableCount,
-            failedCount = failedCount
+            failedCount = failedCount,
+            sessionId = sessionId,
+            scope = scope,
+            source = source,
+            totalTrackedCount = totalTrackedCount
         )
     }
 
@@ -55,14 +65,22 @@ internal class GitHubPageRefreshRepository(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
     ): Boolean {
         return notificationBridge.notifyCompleted(
             context = context,
             total = total,
             preReleaseUpdateCount = preReleaseUpdateCount,
             updatableCount = updatableCount,
-            failedCount = failedCount
+            failedCount = failedCount,
+            sessionId = sessionId,
+            scope = scope,
+            source = source,
+            totalTrackedCount = totalTrackedCount
         )
     }
 
@@ -72,7 +90,11 @@ internal class GitHubPageRefreshRepository(
         total: Int,
         preReleaseUpdateCount: Int,
         updatableCount: Int,
-        failedCount: Int
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
     ): Boolean {
         return notificationBridge.notifyCancelled(
             context = context,
@@ -80,7 +102,11 @@ internal class GitHubPageRefreshRepository(
             total = total,
             preReleaseUpdateCount = preReleaseUpdateCount,
             updatableCount = updatableCount,
-            failedCount = failedCount
+            failedCount = failedCount,
+            sessionId = sessionId,
+            scope = scope,
+            source = source,
+            totalTrackedCount = totalTrackedCount
         )
     }
 

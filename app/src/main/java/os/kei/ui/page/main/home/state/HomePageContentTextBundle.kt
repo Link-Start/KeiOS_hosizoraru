@@ -24,6 +24,7 @@ internal data class HomePageContentTextBundle(
     val githubNoCache: String,
     val githubPendingRefresh: String,
     val githubSharePending: String,
+    val githubRefreshing: String,
     val justNow: String,
     val githubNotRefreshed: String,
     val commonFilled: String,
@@ -80,6 +81,7 @@ internal data class HomePageContentTextBundle(
     private val githubCountPattern: String,
     private val shortHoursPattern: String,
     private val refreshPairPattern: String,
+    private val githubRefreshingProgressPattern: String,
     private val devicesCountPattern: String,
     private val failedCountPattern: String,
     private val fractionPattern: String,
@@ -94,6 +96,12 @@ internal data class HomePageContentTextBundle(
         interval: String,
         ago: String,
     ): String = refreshPairPattern.formatLocalized(interval, ago)
+
+    fun githubRefreshingProgress(
+        completed: Int,
+        target: Int,
+        totalTracked: Int,
+    ): String = githubRefreshingProgressPattern.formatLocalized(completed, target, totalTracked)
 
     fun devicesCount(count: Int): String = devicesCountPattern.formatLocalized(count)
 
@@ -146,6 +154,7 @@ internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle =
         githubNoCache = stringResource(R.string.home_github_status_no_cache),
         githubPendingRefresh = stringResource(R.string.home_github_status_pending_refresh),
         githubSharePending = stringResource(R.string.home_github_share_pending),
+        githubRefreshing = stringResource(R.string.home_github_status_refreshing),
         justNow = stringResource(R.string.home_time_just_now),
         githubNotRefreshed = stringResource(R.string.github_refresh_ago_not_refreshed),
         commonFilled = stringResource(R.string.common_filled),
@@ -202,6 +211,7 @@ internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle =
         githubCountPattern = stringResource(R.string.github_overview_value_count),
         shortHoursPattern = stringResource(R.string.home_value_short_hours),
         refreshPairPattern = stringResource(R.string.home_value_refresh_pair),
+        githubRefreshingProgressPattern = stringResource(R.string.home_github_refreshing_progress),
         devicesCountPattern = stringResource(R.string.home_value_devices_count),
         failedCountPattern = stringResource(R.string.home_value_failed_count),
         fractionPattern = stringResource(R.string.home_value_fraction),

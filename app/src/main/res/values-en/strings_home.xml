@@ -42,6 +42,8 @@
     <string name="home_github_status_no_cache">No cache</string>
     <string name="home_github_status_pending_refresh">Refresh due</string>
     <string name="home_github_share_pending">Install pending</string>
+    <string name="home_github_status_refreshing">Refreshing</string>
+    <string name="home_github_refreshing_progress">Refreshing %1$d/%2$d (tracked %3$d)</string>
     <string name="home_github_line_last_update">Last update: %1$s</string>
     <string name="home_github_line_track_update">Tracked: %1$d   Updates: %2$s</string>
     <string name="home_github_line_priority_primary">Stable updates: %1$s   Pre-release updates: %2$s</string>

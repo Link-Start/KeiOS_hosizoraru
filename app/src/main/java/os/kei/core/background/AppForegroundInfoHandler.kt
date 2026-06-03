@@ -9,6 +9,9 @@ import kotlinx.coroutines.yield
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubBackgroundRefreshService
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubRefreshRuntimeSession
 import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
@@ -62,6 +65,8 @@ object AppForegroundInfoHandler {
                 preReleaseUpdateCount = refreshResult.preReleaseUpdateCount,
                 updatableCount = refreshResult.updatableCount,
                 failedCount = refreshResult.failedCount,
+                session = progressNotifier.session,
+                totalTrackedCount = progressNotifier.totalTrackedCount,
             )
         } else if (progressNotifier.didNotify) {
             runCatching { GitHubRefreshNotificationHelper.cancel(context) }
@@ -106,13 +111,15 @@ object AppForegroundInfoHandler {
             is GitHubShortcutRefreshExecution.Completed -> {
                 val result = execution.result
                 notifyGitHubRefreshCompletedOrCancel(
-                    context = context,
-                    total = result.totalCount,
-                    preReleaseUpdateCount = result.preReleaseUpdateCount,
-                    updatableCount = result.updatableCount,
-                    failedCount = result.failedCount,
-                )
-                AppBackgroundScheduler.scheduleGitHubRefresh(context)
+                context = context,
+                total = result.totalCount,
+                preReleaseUpdateCount = result.preReleaseUpdateCount,
+                updatableCount = result.updatableCount,
+                failedCount = result.failedCount,
+                session = progressNotifier.session,
+                totalTrackedCount = progressNotifier.totalTrackedCount,
+            )
+            AppBackgroundScheduler.scheduleGitHubRefresh(context)
                 AppShortcutGitHubRefreshResult.Completed
             }
         }
@@ -124,6 +131,8 @@ object AppForegroundInfoHandler {
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int,
+        session: GitHubRefreshRuntimeSession?,
+        totalTrackedCount: Int,
     ) {
         val posted =
             runCatching {
@@ -133,6 +142,10 @@ object AppForegroundInfoHandler {
                     preReleaseUpdateCount = preReleaseUpdateCount,
                     updatableCount = updatableCount,
                     failedCount = failedCount,
+                    sessionId = session?.id ?: 0L,
+                    scope = session?.scope ?: GitHubRefreshScope.AllTracked,
+                    source = session?.source ?: GitHubRefreshSource.BackgroundTick,
+                    totalTrackedCount = totalTrackedCount.coerceAtLeast(total),
                 )
             }.getOrElse { error ->
                 AppLogger.w(
@@ -161,10 +174,22 @@ object AppForegroundInfoHandler {
         private val mutex = Mutex()
         private var lastNotifyAtMs = 0L
         @Volatile
+        var session: GitHubRefreshRuntimeSession? = null
+            private set
+        @Volatile
+        var totalTrackedCount: Int = 0
+            private set
+        @Volatile
         var didNotify: Boolean = false
             private set
 
-        fun notifyInitial(total: Int) {
+        fun notifyInitial(
+            session: GitHubRefreshRuntimeSession,
+            total: Int,
+            totalTrackedCount: Int,
+        ) {
+            this.session = session
+            this.totalTrackedCount = totalTrackedCount
             if (total < minTotalForInitialProgress) return
             lastNotifyAtMs = System.currentTimeMillis()
             runCatching {
@@ -174,7 +199,11 @@ object AppForegroundInfoHandler {
                     total = total,
                     preReleaseUpdateCount = 0,
                     updatableCount = 0,
-                    failedCount = 0
+                    failedCount = 0,
+                    sessionId = session.id,
+                    scope = session.scope,
+                    source = session.source,
+                    totalTrackedCount = totalTrackedCount
                 )
             }.onSuccess { posted ->
                 if (posted) didNotify = true
@@ -187,7 +216,10 @@ object AppForegroundInfoHandler {
             }
         }
 
-        suspend fun notifyProgress(progress: GitHubTrackedRefreshBatchProgress) {
+        suspend fun notifyProgress(
+            session: GitHubRefreshRuntimeSession,
+            progress: GitHubTrackedRefreshBatchProgress,
+        ) {
             if (progress.total < minTotalForInitialProgress) return
             val shouldNotify = mutex.withLock {
                 if (progress.current >= progress.total) return@withLock false
@@ -213,7 +245,11 @@ object AppForegroundInfoHandler {
                     total = progress.total,
                     preReleaseUpdateCount = progress.preReleaseUpdateCount,
                     updatableCount = progress.updatableCount,
-                    failedCount = progress.failedCount
+                    failedCount = progress.failedCount,
+                    sessionId = session.id,
+                    scope = session.scope,
+                    source = session.source,
+                    totalTrackedCount = totalTrackedCount.coerceAtLeast(progress.total),
                 )
             }.onSuccess { posted ->
                 if (posted) didNotify = true

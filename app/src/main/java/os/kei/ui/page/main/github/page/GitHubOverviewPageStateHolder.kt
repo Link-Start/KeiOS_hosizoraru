@@ -19,6 +19,7 @@ internal class GitHubOverviewPageStateHolder(
     var refreshIntervalHours by mutableStateOf(3)
     var refreshProgress by mutableStateOf(0f)
     var refreshAllJob by mutableStateOf<Job?>(null)
+    var refreshSessionId by mutableStateOf(0L)
     var refreshTargetIds by mutableStateOf<Set<String>>(emptySet())
     var deleteInProgress by mutableStateOf(false)
 }

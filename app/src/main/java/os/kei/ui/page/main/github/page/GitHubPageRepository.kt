@@ -38,6 +38,8 @@ import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.domain.GitHubReleaseAssetService
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
@@ -373,6 +375,10 @@ internal class GitHubPageRepository(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int,
     ) = refreshRepository.notifyRefreshProgress(
         context = context,
         current = current,
@@ -380,6 +386,10 @@ internal class GitHubPageRepository(
         preReleaseUpdateCount = preReleaseUpdateCount,
         updatableCount = updatableCount,
         failedCount = failedCount,
+        sessionId = sessionId,
+        scope = scope,
+        source = source,
+        totalTrackedCount = totalTrackedCount,
     )
 
     suspend fun notifyRefreshCompleted(
@@ -388,12 +398,20 @@ internal class GitHubPageRepository(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int,
     ) = refreshRepository.notifyRefreshCompleted(
         context = context,
         total = total,
         preReleaseUpdateCount = preReleaseUpdateCount,
         updatableCount = updatableCount,
         failedCount = failedCount,
+        sessionId = sessionId,
+        scope = scope,
+        source = source,
+        totalTrackedCount = totalTrackedCount,
     )
 
     suspend fun notifyRefreshCancelled(
@@ -403,6 +421,10 @@ internal class GitHubPageRepository(
         preReleaseUpdateCount: Int,
         updatableCount: Int,
         failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int,
     ) = refreshRepository.notifyRefreshCancelled(
         context = context,
         current = current,
@@ -410,6 +432,10 @@ internal class GitHubPageRepository(
         preReleaseUpdateCount = preReleaseUpdateCount,
         updatableCount = updatableCount,
         failedCount = failedCount,
+        sessionId = sessionId,
+        scope = scope,
+        source = source,
+        totalTrackedCount = totalTrackedCount,
     )
 
     fun cancelRefreshNotification(context: Context) = refreshRepository.cancelRefreshNotification(context)

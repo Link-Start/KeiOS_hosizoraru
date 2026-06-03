@@ -2,6 +2,8 @@ package os.kei.feature.home.model
 
 import androidx.compose.runtime.Immutable
 import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 
 @Immutable
@@ -32,6 +34,13 @@ data class HomeGitHubOverview(
     val cachedRefreshMs: Long = 0L,
     val cacheLabelNowMs: Long = 0L,
     val cacheFreshness: CacheFreshnessSnapshot = CacheFreshnessSnapshot.Empty,
+    val refreshing: Boolean = false,
+    val refreshScope: GitHubRefreshScope = GitHubRefreshScope.AllTracked,
+    val refreshSource: GitHubRefreshSource = GitHubRefreshSource.Page,
+    val refreshTargetCount: Int = 0,
+    val refreshTotalTrackedCount: Int = 0,
+    val refreshCompletedCount: Int = 0,
+    val refreshProgress: Float = 0f,
     val loaded: Boolean = false,
 )
 

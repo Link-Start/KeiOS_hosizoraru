@@ -6,6 +6,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.resolvedRefreshTimestamp
@@ -76,6 +79,13 @@ internal class GitHubRefreshActions(
             state.refreshTargetIds.takeIf { it.isNotEmpty() }
                 ?: state.trackedItems.mapTo(HashSet()) { it.id }
         val trackedCount = activeRefreshIds.size
+        val runtimeState =
+            GitHubRefreshRuntimeStore.state.value
+                .takeIf { it.sessionId == state.refreshSessionId && state.refreshSessionId > 0L }
+        val refreshSessionId = state.refreshSessionId
+        val refreshScope = runtimeState?.scope ?: GitHubRefreshScope.AllTracked
+        val refreshSource = runtimeState?.source ?: GitHubRefreshSource.Page
+        val totalTrackedCount = runtimeState?.totalTrackedCount ?: state.trackedItems.size
         if (trackedCount > 0) {
             val checkedCount =
                 (state.refreshProgress * trackedCount.toFloat())
@@ -93,6 +103,15 @@ internal class GitHubRefreshActions(
                 state.trackedItems.count {
                     it.id in activeRefreshIds && state.checkStates[it.id]?.failed == true
                 }
+            if (refreshSessionId > 0L) {
+                GitHubRefreshRuntimeStore.cancel(
+                    sessionId = refreshSessionId,
+                    completedCount = checkedCount,
+                    updatableCount = updatableCount,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    failedCount = failedCount,
+                )
+            }
             scope.launch {
                 repository.notifyRefreshCancelled(
                     context = context,
@@ -101,6 +120,10 @@ internal class GitHubRefreshActions(
                     preReleaseUpdateCount = preReleaseUpdateCount,
                     updatableCount = updatableCount,
                     failedCount = failedCount,
+                    sessionId = refreshSessionId,
+                    scope = refreshScope,
+                    source = refreshSource,
+                    totalTrackedCount = totalTrackedCount,
                 )
             }
         } else {
@@ -115,6 +138,7 @@ internal class GitHubRefreshActions(
                 OverviewRefreshState.Idle
             }
         state.refreshProgress = 0f
+        state.refreshSessionId = 0L
         state.refreshTargetIds = emptySet()
         launchDeferredTrackStoreSyncIfNeeded()
         env.toast(reason)
@@ -168,7 +192,11 @@ internal class GitHubRefreshActions(
             if (targets.size == state.trackedItems.size) {
                 refreshAllTracked(showToast = false)
             } else {
-                refreshTrackedBatch(targets = targets, showToast = false)
+                refreshTrackedBatch(
+                    targets = targets,
+                    showToast = false,
+                    refreshScope = GitHubRefreshScope.DueTracked,
+                )
             }
             return
         }
@@ -178,7 +206,7 @@ internal class GitHubRefreshActions(
             backgroundRefreshCoordinator.refreshPartialMissingCheckStatesIfNeeded()
         when {
             refreshedRequestedTracks || refreshedMissingTracks -> {
-                state.overviewRefreshState = OverviewRefreshState.Cached
+                state.overviewRefreshState = OverviewRefreshState.Refreshing
             }
 
             hasCachedForTracked -> {
@@ -218,6 +246,10 @@ internal class GitHubRefreshActions(
                 state.checkStates.containsKey(item.id)
             }
         when {
+            backgroundRefreshCoordinator.hasActiveJobs() -> {
+                state.overviewRefreshState = OverviewRefreshState.Refreshing
+            }
+
             !hasTracked -> {
                 state.overviewRefreshState = OverviewRefreshState.Idle
             }
@@ -366,6 +398,7 @@ internal class GitHubRefreshActions(
             forceRefresh = forceRefresh,
             clearAllCheckCache = true,
             updateGlobalRefreshTimestamp = true,
+            refreshScope = GitHubRefreshScope.AllTracked,
             onFinished = onFinished,
         )
     }
@@ -374,6 +407,7 @@ internal class GitHubRefreshActions(
         targets: List<GitHubTrackedApp>,
         showToast: Boolean = true,
         forceRefresh: Boolean = false,
+        refreshScope: GitHubRefreshScope = GitHubRefreshScope.VisibleTracked,
         onFinished: (() -> Unit)? = null,
     ) {
         batchActions.refreshTrackedBatchInternal(
@@ -382,6 +416,7 @@ internal class GitHubRefreshActions(
             forceRefresh = forceRefresh,
             clearAllCheckCache = false,
             updateGlobalRefreshTimestamp = false,
+            refreshScope = refreshScope,
             onFinished = onFinished,
         )
     }

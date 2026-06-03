@@ -133,6 +133,7 @@ internal class GitHubPageState(
     var lastRefreshMs by overviewState::lastRefreshMs
     var refreshIntervalHours by overviewState::refreshIntervalHours
     var refreshProgress by overviewState::refreshProgress
+    var refreshSessionId by overviewState::refreshSessionId
     var lookupConfig by strategyState::lookupConfig
     var selectedStrategyInput by strategyState::selectedStrategyInput
     var selectedActionsStrategyInput by strategyState::selectedActionsStrategyInput

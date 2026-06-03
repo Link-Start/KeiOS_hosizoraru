@@ -64,24 +64,54 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class BaPoolActivity : ComponentActivity() {
+    private var targetServerSelection by mutableStateOf(
+        BaCalendarPoolInitialServerSelection(serverIndex = null, token = 0L),
+    )
+    private var targetServerSelectionToken = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        consumeTargetIntent(intent)
 
         setContent {
             BaStandaloneActivityTheme {
-                BaPoolRoot(onClose = { finish() })
+                BaPoolRoot(
+                    targetServerSelection = targetServerSelection,
+                    onClose = { finish() },
+                )
             }
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        consumeTargetIntent(intent)
+    }
+
+    private fun consumeTargetIntent(intent: Intent?) {
+        targetServerSelectionToken += 1
+        targetServerSelection =
+            intent.toBaCalendarPoolInitialServerSelection(targetServerSelectionToken)
+    }
+
     companion object {
-        fun launch(context: Context) {
+        fun createIntent(
+            context: Context,
+            serverIndex: Int? = null,
+        ): Intent =
+            Intent(context, BaPoolActivity::class.java)
+                .withBaCalendarPoolServerIndex(serverIndex)
+
+        fun launch(
+            context: Context,
+            serverIndex: Int? = null,
+        ) {
             val hostActivity = context.findBaHostActivity()
-            val intent =
-                Intent(context, BaPoolActivity::class.java).apply {
-                    if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+            val intent = createIntent(context, serverIndex).apply {
+                if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             if (hostActivity != null) {
                 hostActivity.startActivity(intent)
             } else {
@@ -92,7 +122,10 @@ class BaPoolActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BaPoolRoot(onClose: () -> Unit) {
+private fun BaPoolRoot(
+    targetServerSelection: BaCalendarPoolInitialServerSelection,
+    onClose: () -> Unit,
+) {
     var guideOpen by remember { mutableStateOf(false) }
     var guideNonce by remember { mutableLongStateOf(0L) }
     KeiOSBackNavigationHandler(
@@ -111,6 +144,7 @@ private fun BaPoolRoot(onClose: () -> Unit) {
         }
     } else {
         BaPoolPage(
+            targetServerSelection = targetServerSelection,
             onClose = onClose,
             onOpenGuide = {
                 guideNonce = System.nanoTime()
@@ -122,6 +156,7 @@ private fun BaPoolRoot(onClose: () -> Unit) {
 
 @Composable
 private fun BaPoolPage(
+    targetServerSelection: BaCalendarPoolInitialServerSelection,
     onClose: () -> Unit,
     onOpenGuide: () -> Unit,
 ) {
@@ -173,6 +208,10 @@ private fun BaPoolPage(
 
     DisposableEffect(calendarPoolViewModel) {
         onDispose { calendarPoolViewModel.clearServerPopup() }
+    }
+
+    LaunchedEffect(targetServerSelection.token, calendarPoolViewModel) {
+        targetServerSelection.serverIndex?.let(calendarPoolViewModel::selectServer)
     }
 
     LaunchedEffect(

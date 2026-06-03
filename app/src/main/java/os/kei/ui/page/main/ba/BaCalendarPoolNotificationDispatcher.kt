@@ -17,6 +17,7 @@ import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
 import os.kei.ui.page.main.ba.support.baPoolTagLabel
+import os.kei.ui.page.main.ba.support.baServerLabelRes
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 
@@ -26,7 +27,9 @@ internal object BaCalendarPoolNotificationDispatcher {
     private const val POOL_UPCOMING_NOTIFICATION_ID_BASE = 391_100_000
     private const val POOL_ENDING_NOTIFICATION_ID_BASE = 392_100_000
     private const val CHANGE_NOTIFICATION_ID = 38914
-    private const val MAX_VISIBLE_NAMES = 3
+    private const val MAX_VISIBLE_NAMES = 1
+    private const val MAX_NOTIFICATION_NAME_CHARS = 16
+    private const val MAX_CHANGE_DETAIL_CHARS = 14
 
     fun sendCalendarUpcoming(
         context: Context,
@@ -41,6 +44,7 @@ internal object BaCalendarPoolNotificationDispatcher {
     ): Boolean {
         val normalizedEntries = entries.sortedBy { it.title }
         val notifyAtMs = normalizedEntries.firstOrNull()?.beginAtMs ?: return false
+        val serverLabel = context.getString(baServerLabelRes(serverIndex))
         return sendLiveUpdate(
             context = context,
             notificationId =
@@ -49,7 +53,13 @@ internal object BaCalendarPoolNotificationDispatcher {
                     serverIndex = serverIndex,
                     notifyAtMs = notifyAtMs,
                 ),
-            title = context.getString(R.string.ba_calendar_notify_upcoming_title),
+            destination = BaCalendarPoolNotificationDestination.Calendar,
+            serverIndex = serverIndex,
+            title =
+                context.getString(
+                    R.string.ba_calendar_notify_upcoming_title_with_server,
+                    serverLabel,
+                ),
             content =
                 context.getString(
                     R.string.ba_calendar_notify_upcoming_content,
@@ -59,7 +69,8 @@ internal object BaCalendarPoolNotificationDispatcher {
                         serverRefreshTimeZone(serverIndex),
                     ),
                 ),
-            shortText = context.getString(R.string.ba_debug_action_calendar_upcoming_notification),
+            shortText = context.getString(R.string.ba_calendar_pool_notify_short_calendar),
+            onlineText = context.getString(R.string.ba_calendar_pool_notify_phase_start),
             deadlineAtMs = notifyAtMs,
             progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
@@ -78,6 +89,7 @@ internal object BaCalendarPoolNotificationDispatcher {
     ): Boolean {
         val normalizedEntries = entries.sortedBy { it.title }
         val notifyAtMs = normalizedEntries.firstOrNull()?.endAtMs ?: return false
+        val serverLabel = context.getString(baServerLabelRes(serverIndex))
         return sendLiveUpdate(
             context = context,
             notificationId =
@@ -86,14 +98,21 @@ internal object BaCalendarPoolNotificationDispatcher {
                     serverIndex = serverIndex,
                     notifyAtMs = notifyAtMs,
                 ),
-            title = context.getString(R.string.ba_calendar_notify_ending_title),
+            destination = BaCalendarPoolNotificationDestination.Calendar,
+            serverIndex = serverIndex,
+            title =
+                context.getString(
+                    R.string.ba_calendar_notify_ending_title_with_server,
+                    serverLabel,
+                ),
             content =
                 context.getString(
                     R.string.ba_calendar_notify_ending_content,
                     summarizeCalendarEntries(context, normalizedEntries),
                     formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex)),
                 ),
-            shortText = context.getString(R.string.ba_debug_action_calendar_ending_notification),
+            shortText = context.getString(R.string.ba_calendar_pool_notify_short_calendar),
+            onlineText = context.getString(R.string.ba_calendar_pool_notify_phase_end),
             deadlineAtMs = notifyAtMs,
             progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
@@ -112,6 +131,7 @@ internal object BaCalendarPoolNotificationDispatcher {
     ): Boolean {
         val normalizedEntries = entries.sortedBy { it.name }
         val notifyAtMs = normalizedEntries.firstOrNull()?.startAtMs ?: return false
+        val serverLabel = context.getString(baServerLabelRes(serverIndex))
         return sendLiveUpdate(
             context = context,
             notificationId =
@@ -120,7 +140,13 @@ internal object BaCalendarPoolNotificationDispatcher {
                     serverIndex = serverIndex,
                     notifyAtMs = notifyAtMs,
                 ),
-            title = context.getString(R.string.ba_pool_notify_upcoming_title),
+            destination = BaCalendarPoolNotificationDestination.Pool,
+            serverIndex = serverIndex,
+            title =
+                context.getString(
+                    R.string.ba_pool_notify_upcoming_title_with_server,
+                    serverLabel,
+                ),
             content =
                 context.getString(
                     R.string.ba_pool_notify_upcoming_content,
@@ -130,7 +156,8 @@ internal object BaCalendarPoolNotificationDispatcher {
                         serverRefreshTimeZone(serverIndex),
                     ),
                 ),
-            shortText = context.getString(R.string.ba_debug_action_pool_upcoming_notification),
+            shortText = context.getString(R.string.ba_calendar_pool_notify_short_pool),
+            onlineText = context.getString(R.string.ba_calendar_pool_notify_phase_start),
             deadlineAtMs = notifyAtMs,
             progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
@@ -149,6 +176,7 @@ internal object BaCalendarPoolNotificationDispatcher {
     ): Boolean {
         val normalizedEntries = entries.sortedBy { it.name }
         val notifyAtMs = normalizedEntries.firstOrNull()?.endAtMs ?: return false
+        val serverLabel = context.getString(baServerLabelRes(serverIndex))
         return sendLiveUpdate(
             context = context,
             notificationId =
@@ -157,14 +185,21 @@ internal object BaCalendarPoolNotificationDispatcher {
                     serverIndex = serverIndex,
                     notifyAtMs = notifyAtMs,
                 ),
-            title = context.getString(R.string.ba_pool_notify_ending_title),
+            destination = BaCalendarPoolNotificationDestination.Pool,
+            serverIndex = serverIndex,
+            title =
+                context.getString(
+                    R.string.ba_pool_notify_ending_title_with_server,
+                    serverLabel,
+                ),
             content =
                 context.getString(
                     R.string.ba_pool_notify_ending_content,
                     summarizePoolEntries(context, normalizedEntries),
                     formatBaDateTimeNoYearInTimeZone(notifyAtMs, serverRefreshTimeZone(serverIndex)),
                 ),
-            shortText = context.getString(R.string.ba_debug_action_pool_ending_notification),
+            shortText = context.getString(R.string.ba_calendar_pool_notify_short_pool),
+            onlineText = context.getString(R.string.ba_calendar_pool_notify_phase_end),
             deadlineAtMs = notifyAtMs,
             progressPercent = resolveDeadlineProgressPercent(notifyAtMs),
         )
@@ -177,22 +212,25 @@ internal object BaCalendarPoolNotificationDispatcher {
         poolChangeCount: Int,
         detail: String = "",
     ): Boolean {
-        val baseContent =
-            context.getString(
-                R.string.ba_calendar_pool_notify_change_content,
-                calendarChangeCount.coerceAtLeast(0),
-                poolChangeCount.coerceAtLeast(0),
+        val copy =
+            buildDataChangedCopy(
+                context = context,
+                serverIndex = serverIndex,
+                calendarChangeCount = calendarChangeCount,
+                poolChangeCount = poolChangeCount,
+                detail = detail,
             )
         return sendLiveUpdate(
             context = context,
             notificationId = changeNotificationId(serverIndex),
-            title = context.getString(R.string.ba_calendar_pool_notify_change_title),
-            content =
-                detail.takeIf { it.isNotBlank() }?.let { "$baseContent · $it" }
-                    ?: baseContent,
-            shortText = context.getString(R.string.ba_debug_action_calendar_pool_change_notification),
+            destination = copy.destination,
+            serverIndex = serverIndex,
+            title = copy.title,
+            content = copy.content,
+            shortText = copy.shortText,
+            onlineText = copy.onlineText,
             deadlineAtMs = null,
-            progressPercent = 100,
+            progressPercent = 0,
         )
     }
 
@@ -204,18 +242,34 @@ internal object BaCalendarPoolNotificationDispatcher {
     private fun sendLiveUpdate(
         context: Context,
         notificationId: Int,
+        destination: BaCalendarPoolNotificationDestination,
+        serverIndex: Int,
         title: String,
         content: String,
         shortText: String,
+        onlineText: String,
         deadlineAtMs: Long?,
         progressPercent: Int,
     ): Boolean {
         if (!notificationsGranted(context)) return false
         McpNotificationHelper.ensureChannel(context)
         val helper = NotificationHelper(context)
-        val openPendingIntent = openBaPendingIntent(context, notificationId)
-        val focusOpenPendingIntent = focusOpenBaPendingIntent(context, notificationId)
+        val openPendingIntent =
+            openBaPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                destination = destination,
+                serverIndex = serverIndex,
+            )
+        val focusOpenPendingIntent =
+            focusOpenBaPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                destination = destination,
+                serverIndex = serverIndex,
+            )
         val acknowledgePendingIntent = acknowledgePendingIntent(context, notificationId)
+        val ongoing = deadlineAtMs != null
         val payload =
             McpNotificationPayload(
                 serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
@@ -223,7 +277,7 @@ internal object BaCalendarPoolNotificationDispatcher {
                 port = progressPercent.coerceIn(0, 100),
                 path = content,
                 clients = 1,
-                ongoing = true,
+                ongoing = ongoing,
                 onlyAlertOnce = false,
                 openPendingIntent = openPendingIntent,
                 stopPendingIntent = acknowledgePendingIntent,
@@ -231,7 +285,7 @@ internal object BaCalendarPoolNotificationDispatcher {
                 secondaryActionLabel = context.getString(R.string.common_acknowledge),
                 overrideTitle = title,
                 overrideContent = content,
-                overrideOnlineText = shortText,
+                overrideOnlineText = onlineText,
                 overrideShortText = shortText,
                 overrideProgressPercent = progressPercent.coerceIn(0, 100),
                 deadlineAtMs = deadlineAtMs,
@@ -245,6 +299,102 @@ internal object BaCalendarPoolNotificationDispatcher {
         )
         return true
     }
+
+    fun buildDataChangedCopy(
+        context: Context,
+        serverIndex: Int,
+        calendarChangeCount: Int,
+        poolChangeCount: Int,
+        detail: String,
+    ): BaCalendarPoolNotificationCopy {
+        val serverLabel = context.getString(baServerLabelRes(serverIndex))
+        val calendarCount = calendarChangeCount.coerceAtLeast(0)
+        val poolCount = poolChangeCount.coerceAtLeast(0)
+        val destination =
+            if (poolCount > 0 && calendarCount <= 0) {
+                BaCalendarPoolNotificationDestination.Pool
+            } else {
+                BaCalendarPoolNotificationDestination.Calendar
+            }
+        val title =
+            when {
+                calendarCount > 0 && poolCount > 0 ->
+                    context.getString(
+                        R.string.ba_calendar_pool_notify_change_title_with_server,
+                        serverLabel,
+                    )
+
+                poolCount > 0 ->
+                    context.getString(
+                        R.string.ba_pool_notify_change_title_with_server,
+                        serverLabel,
+                    )
+
+                else ->
+                    context.getString(
+                        R.string.ba_calendar_notify_change_title_with_server,
+                        serverLabel,
+                    )
+            }
+        val baseContent =
+            when {
+                calendarCount > 0 && poolCount > 0 ->
+                    context.getString(
+                        R.string.ba_calendar_pool_notify_change_content,
+                        calendarCount,
+                        poolCount,
+                    )
+
+                poolCount > 0 ->
+                    context.getString(R.string.ba_pool_notify_change_content, poolCount)
+
+                else ->
+                    context.getString(R.string.ba_calendar_notify_change_content, calendarCount)
+            }
+        val detailText =
+            detail.trim()
+                .takeIf { calendarCount + poolCount == 1 && it.isNotBlank() }
+                ?.takeNotificationDetailPrefix()
+        val content =
+            detailText?.let {
+                context.getString(
+                    R.string.ba_calendar_pool_notify_change_content_with_detail,
+                    baseContent,
+                    it,
+                )
+            } ?: baseContent
+        val onlineText =
+            when {
+                calendarCount > 0 && poolCount > 0 ->
+                    context.getString(R.string.ba_calendar_pool_notify_short_both)
+
+                poolCount > 0 ->
+                    context.getString(R.string.ba_calendar_pool_notify_short_pool)
+
+                else ->
+                    context.getString(R.string.ba_calendar_pool_notify_short_calendar)
+            }
+        return BaCalendarPoolNotificationCopy(
+            destination = destination,
+            title = title,
+            content = content,
+            shortText = context.getString(R.string.ba_calendar_pool_notify_short_change),
+            onlineText = onlineText,
+        )
+    }
+
+    private fun String.takeNotificationDetailPrefix(): String =
+        takeNotificationTextPrefix(MAX_CHANGE_DETAIL_CHARS)
+
+    private fun String.takeNotificationNamePrefix(): String =
+        takeNotificationTextPrefix(MAX_NOTIFICATION_NAME_CHARS)
+
+    private fun String.takeNotificationTextPrefix(maxChars: Int): String =
+        if (length <= maxChars) {
+            this
+        } else {
+            take(maxChars).trimEnd() + "…"
+        }
 
     private fun summarizeCalendarEntries(
         context: Context,
@@ -280,6 +430,7 @@ internal object BaCalendarPoolNotificationDispatcher {
             names
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
+                .map { it.takeNotificationNamePrefix() }
                 .take(MAX_VISIBLE_NAMES)
         val separator = context.getString(R.string.ba_calendar_pool_notify_name_separator)
         val visibleText = visibleNames.joinToString(separator = separator)
@@ -314,12 +465,10 @@ internal object BaCalendarPoolNotificationDispatcher {
     private fun openBaPendingIntent(
         context: Context,
         notificationId: Int,
+        destination: BaCalendarPoolNotificationDestination,
+        serverIndex: Int,
     ): PendingIntent {
-        val intent =
-            Intent(context, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
-            }
+        val intent = baCalendarPoolOpenIntent(context, destination, serverIndex)
         return PendingIntentLaunchOptionsCompat.getUserVisibleActivity(
             context,
             520_100 + notificationId,
@@ -331,12 +480,10 @@ internal object BaCalendarPoolNotificationDispatcher {
     private fun focusOpenBaPendingIntent(
         context: Context,
         notificationId: Int,
+        destination: BaCalendarPoolNotificationDestination,
+        serverIndex: Int,
     ): PendingIntent {
-        val intent =
-            Intent(context, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
-            }
+        val intent = baCalendarPoolOpenIntent(context, destination, serverIndex)
         return PendingIntent.getActivity(
             context,
             522_100 + notificationId,
@@ -354,6 +501,33 @@ internal object BaCalendarPoolNotificationDispatcher {
             notificationId = notificationId,
             requestCode = 521_100 + notificationId,
         )
+}
+
+internal data class BaCalendarPoolNotificationCopy(
+    val destination: BaCalendarPoolNotificationDestination,
+    val title: String,
+    val content: String,
+    val shortText: String,
+    val onlineText: String,
+)
+
+internal fun baCalendarPoolOpenIntent(
+    context: Context,
+    destination: BaCalendarPoolNotificationDestination,
+    serverIndex: Int,
+): Intent {
+    val intent =
+        when (destination) {
+            BaCalendarPoolNotificationDestination.Calendar ->
+                BaActivityCalendarActivity.createIntent(context, serverIndex)
+
+            BaCalendarPoolNotificationDestination.Pool ->
+                BaPoolActivity.createIntent(context, serverIndex)
+        }
+    return intent.apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
+    }
 }
 
 internal fun baCalendarPoolGroupedNotificationId(

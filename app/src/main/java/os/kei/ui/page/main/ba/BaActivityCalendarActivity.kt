@@ -23,7 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -52,24 +54,54 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class BaActivityCalendarActivity : ComponentActivity() {
+    private var targetServerSelection by mutableStateOf(
+        BaCalendarPoolInitialServerSelection(serverIndex = null, token = 0L),
+    )
+    private var targetServerSelectionToken = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        consumeTargetIntent(intent)
 
         setContent {
             BaStandaloneActivityTheme {
-                BaActivityCalendarPage(onClose = { finish() })
+                BaActivityCalendarPage(
+                    targetServerSelection = targetServerSelection,
+                    onClose = { finish() },
+                )
             }
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        consumeTargetIntent(intent)
+    }
+
+    private fun consumeTargetIntent(intent: Intent?) {
+        targetServerSelectionToken += 1
+        targetServerSelection =
+            intent.toBaCalendarPoolInitialServerSelection(targetServerSelectionToken)
+    }
+
     companion object {
-        fun launch(context: Context) {
+        fun createIntent(
+            context: Context,
+            serverIndex: Int? = null,
+        ): Intent =
+            Intent(context, BaActivityCalendarActivity::class.java)
+                .withBaCalendarPoolServerIndex(serverIndex)
+
+        fun launch(
+            context: Context,
+            serverIndex: Int? = null,
+        ) {
             val hostActivity = context.findBaHostActivity()
-            val intent =
-                Intent(context, BaActivityCalendarActivity::class.java).apply {
-                    if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+            val intent = createIntent(context, serverIndex).apply {
+                if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             if (hostActivity != null) {
                 hostActivity.startActivity(intent)
             } else {
@@ -80,7 +112,10 @@ class BaActivityCalendarActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BaActivityCalendarPage(onClose: () -> Unit) {
+private fun BaActivityCalendarPage(
+    targetServerSelection: BaCalendarPoolInitialServerSelection,
+    onClose: () -> Unit,
+) {
     KeiOSActivityRootBackHandler(
         needsInterception = false,
         onBack = onClose,
@@ -128,6 +163,10 @@ private fun BaActivityCalendarPage(onClose: () -> Unit) {
 
     DisposableEffect(calendarPoolViewModel) {
         onDispose { calendarPoolViewModel.clearServerPopup() }
+    }
+
+    LaunchedEffect(targetServerSelection.token, calendarPoolViewModel) {
+        targetServerSelection.serverIndex?.let(calendarPoolViewModel::selectServer)
     }
 
     LaunchedEffect(serverIndex, reloadSignal, snapshot.calendarRefreshIntervalHours, hydrationReady) {

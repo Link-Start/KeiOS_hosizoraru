@@ -4,13 +4,11 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
 import os.kei.R
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.service.McpKeepAliveService
@@ -18,7 +16,6 @@ import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
-import kotlin.time.Duration.Companion.milliseconds
 
 data class McpServerUiState(
     val running: Boolean = false,
@@ -48,9 +45,6 @@ class McpServerManager(
     monitorDispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 ) {
     companion object {
-        private val SESSION_MONITOR_SETTLE_DELAYS = longArrayOf(1_000L, 3_000L, 8_000L)
-        private val SESSION_MONITOR_CALIBRATION_DELAY = 60_000.milliseconds
-
         fun loadSavedCacheSummary(context: Context): String {
             val snapshot = McpServerPrefs.loadSnapshot()
             val tokenState = context.getString(
@@ -86,14 +80,16 @@ class McpServerManager(
         fun configBytesEstimated(): Long = McpServerPrefs.configBytesEstimated()
     }
 
-    private var endpointSession: McpEndpointSession? = null
-    private var monitorJob: Job? = null
-    private var lastConnectedCount: Int = 0
     private val scope = CoroutineScope(SupervisorJob() + monitorDispatcher)
-    private val endpointHost = McpKtorEndpointHost(::appendLog)
+    private val endpointController =
+        McpEndpointController(
+            endpointHost = McpKtorEndpointHost(::appendLog),
+            scope = scope,
+            onSessionCountChanged = ::handleSessionCountChanged
+        )
     private val logStore by lazy {
         McpRuntimeLogStore { logs ->
-        _uiState.value = _uiState.value.copy(logs = logs)
+            _uiState.update { state -> state.copy(logs = logs) }
         }
     }
     private val initialPrefsSnapshot = McpServerPrefs.loadSnapshot()
@@ -142,7 +138,7 @@ class McpServerManager(
             ensurePortAvailable(host, port)
 
             val addresses = if (allowExternal) ipv4Addresses() else emptyList()
-            val session = endpointHost.start(
+            endpointController.start(
                 host = host,
                 port = port,
                 path = McpServerDefaults.ENDPOINT_PATH,
@@ -150,13 +146,11 @@ class McpServerManager(
                 allowedHosts = buildAllowedHosts(port = port, allowExternal = allowExternal, addresses = addresses),
                 serverFactory = {
                     localMcpService.createRuntimeServer { server ->
-                        updateConnectedClientCountAsync(server)
+                        endpointController.updateConnectedClientCountAsync(server)
                     }
                 }
             )
-            endpointSession = session
             McpServerRuntimeRegistry.registerRunning(this)
-            lastConnectedCount = 0
             _uiState.value = _uiState.value.copy(
                 running = true,
                 runningSinceEpochMs = System.currentTimeMillis(),
@@ -295,15 +289,7 @@ class McpServerManager(
             _uiState.value = _uiState.value.copy(addresses = ipv4Addresses())
         }
         if (running) {
-            val currentSession = endpointSession
-            val sessions = if (currentSession != null) {
-                updateConnectedClientCount(currentSession.server)
-            } else {
-                0
-            }
-            if (sessions > 0 && currentSession != null) {
-                ensureActiveSessionMonitor(currentSession)
-            }
+            val sessions = endpointController.refreshClientCount()
             syncKeepAliveNotification(forceStart = false)
             appendLog("INFO", "Snapshot refreshed: clients=$sessions")
         } else {
@@ -343,68 +329,23 @@ class McpServerManager(
 
     @Synchronized
     private fun stopInternal() {
-        monitorJob?.cancel()
-        monitorJob = null
-        lastConnectedCount = 0
-        val current = endpointSession ?: return
-        endpointHost.stopEngine(current)
-        scope.launch {
-            endpointHost.closeServer(current)
-        }
-        localMcpService.clearRuntimeServer(current.server)
-        endpointSession = null
-        McpServerRuntimeRegistry.clearRunning(this)
-    }
-
-    @Synchronized
-    private fun ensureActiveSessionMonitor(session: McpEndpointSession) {
-        if (monitorJob?.isActive == true) return
-        val job = scope.launch {
-            try {
-                SESSION_MONITOR_SETTLE_DELAYS.forEach { delayMs ->
-                    delay(delayMs.milliseconds)
-                    val count = updateConnectedClientCount(session.server)
-                    if (count <= 0) return@launch
-                }
-                while (true) {
-                    delay(SESSION_MONITOR_CALIBRATION_DELAY)
-                    val count = updateConnectedClientCount(session.server)
-                    if (count <= 0) break
-                }
-            } finally {
-                synchronized(this@McpServerManager) {
-                    if (monitorJob === this.coroutineContext[Job]) {
-                        monitorJob = null
-                    }
-                }
+        val stopped =
+            endpointController.stop { server ->
+                localMcpService.clearRuntimeServer(server)
             }
-        }
-        monitorJob = job
-    }
-
-    private fun updateConnectedClientCountAsync(server: io.modelcontextprotocol.kotlin.sdk.server.Server) {
-        scope.launch {
-            val count = updateConnectedClientCount(server)
-            if (count > 0) {
-                endpointSession?.takeIf { it.server === server }?.let { ensureActiveSessionMonitor(it) }
-            }
+        if (stopped) {
+            McpServerRuntimeRegistry.clearRunning(this)
         }
     }
 
-    @Synchronized
-    private fun updateConnectedClientCount(server: io.modelcontextprotocol.kotlin.sdk.server.Server): Int {
-        val count = runCatching { server.sessions.size }.getOrDefault(0)
-        if (count == lastConnectedCount) return count
-        val old = lastConnectedCount
-        lastConnectedCount = count
-        _uiState.value = _uiState.value.copy(connectedClients = count)
+    private fun handleSessionCountChanged(change: McpClientSessionCountChange) {
+        _uiState.update { state -> state.copy(connectedClients = change.newCount) }
         syncKeepAliveNotification(forceStart = false)
-        if (count > old) {
-            appendLog("INFO", "Client connected, online=$count")
+        if (change.connected) {
+            appendLog("INFO", "Client connected, online=${change.newCount}")
         } else {
-            appendLog("INFO", "Client disconnected, online=$count")
+            appendLog("INFO", "Client disconnected, online=${change.newCount}")
         }
-        return count
     }
 
     private fun appendLog(level: String, message: String) {

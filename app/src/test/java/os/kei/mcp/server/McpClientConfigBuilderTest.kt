@@ -55,4 +55,29 @@ class McpClientConfigBuilderTest {
             lan.optObject("headers")?.optString("Content-Type")
         )
     }
+
+    @Test
+    fun singleServerConfigEscapesJsonFields() {
+        val raw = McpClientConfigBuilder.buildSingleServerConfig(
+            serverName = "KeiOS \"MCP\"",
+            endpoint = "http://127.0.0.1:38888/mcp?name=\"quoted\"",
+            authToken = "token\\with\"quotes",
+            includeJsonContentTypeHeader = true
+        )
+
+        val server = raw.parseJsonObjectOrNull()
+            ?.optObject("mcpServers")
+            ?.optObject("KeiOS \"MCP\"")
+            ?: error("single server config should keep escaped server name")
+
+        assertEquals("http://127.0.0.1:38888/mcp?name=\"quoted\"", server.optString("url"))
+        assertEquals(
+            "Bearer token\\with\"quotes",
+            server.optObject("headers")?.optString("Authorization")
+        )
+        assertEquals(
+            "application/json",
+            server.optObject("headers")?.optString("Content-Type")
+        )
+    }
 }

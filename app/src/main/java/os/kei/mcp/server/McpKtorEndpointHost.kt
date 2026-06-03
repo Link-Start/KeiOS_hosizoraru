@@ -69,7 +69,7 @@ internal fun Application.installMcpEndpoint(
     intercept(ApplicationCallPipeline.Plugins) {
         val appCall = context
         val requestPath = appCall.request.path()
-        if (!requestPath.startsWith(path)) return@intercept
+        if (!requestPath.isMcpEndpointPath(path)) return@intercept
 
         val authHeaderRaw = appCall.request.headers["Authorization"].orEmpty()
         val providedToken = McpEndpointAuth.extractBearerToken(authHeaderRaw)
@@ -89,4 +89,9 @@ internal fun Application.installMcpEndpoint(
     ) {
         serverFactory()
     }
+}
+
+private fun String.isMcpEndpointPath(basePath: String): Boolean {
+    val fixedBasePath = basePath.trimEnd('/')
+    return this == fixedBasePath || startsWith("$fixedBasePath/")
 }

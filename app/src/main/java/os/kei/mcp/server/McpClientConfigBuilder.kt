@@ -1,5 +1,10 @@
 package os.kei.mcp.server
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
+import os.kei.core.json.KeiJson
 import java.net.URI
 
 internal object McpClientConfigBuilder {
@@ -105,31 +110,24 @@ internal object McpClientConfigBuilder {
                 )
             )
         }
-        val fixedToken = jsonEscape(token)
-        return buildString {
-            appendLine("{")
-            appendLine("  \"mcpServers\": {")
-            fixedServers.forEachIndexed { index, server ->
-                val name = jsonEscape(server.name)
-                val endpoint = jsonEscape(server.endpoint.ifBlank { DEFAULT_ENDPOINT })
-                appendLine("    \"$name\": {")
-                appendLine("      \"type\": \"streamablehttp\",")
-                appendLine("      \"url\": \"$endpoint\",")
-                appendLine("      \"headers\": {")
-                if (server.includeJsonContentTypeHeader) {
-                    appendLine("        \"Authorization\": \"Bearer $fixedToken\",")
-                    appendLine("        \"Content-Type\": \"application/json\"")
-                } else {
-                    appendLine("        \"Authorization\": \"Bearer $fixedToken\"")
+        val payload =
+            buildJsonObject {
+                putJsonObject("mcpServers") {
+                    fixedServers.forEach { server ->
+                        putJsonObject(server.name) {
+                            put("type", "streamablehttp")
+                            put("url", server.endpoint.ifBlank { DEFAULT_ENDPOINT })
+                            putJsonObject("headers") {
+                                put("Authorization", "Bearer $token")
+                                if (server.includeJsonContentTypeHeader) {
+                                    put("Content-Type", "application/json")
+                                }
+                            }
+                        }
+                    }
                 }
-                appendLine("      }")
-                append("    }")
-                if (index != fixedServers.lastIndex) append(",")
-                appendLine()
             }
-            appendLine("  }")
-            append("}")
-        }
+        return KeiJson.pretty.encodeToString(payload)
     }
 
     private fun shouldIncludeJsonContentTypeHeader(endpoint: String, mode: String): Boolean {

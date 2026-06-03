@@ -52,6 +52,14 @@ class McpKtorEndpointHostTest {
     }
 
     @Test
+    fun nonMcpPathBypassesMcpAuthInterceptor() = withRunningEndpoint { port ->
+        val response = postMcp(port = port, token = null, path = "/mcp-extra")
+
+        assertEquals(404, response.code)
+        response.close()
+    }
+
+    @Test
     fun authorizedInitializeAndToolsListUseSdkSession() = withRunningEndpoint { port ->
         val initialized = postMcp(port = port, token = "secret")
         val sessionId = initialized.header("mcp-session-id")
@@ -161,6 +169,7 @@ class McpKtorEndpointHostTest {
     private fun postMcp(
         port: Int,
         token: String?,
+        path: String = "/mcp",
         host: String = "127.0.0.1:$port",
         sessionId: String? = null,
         protocolVersion: String? = null,
@@ -168,7 +177,7 @@ class McpKtorEndpointHostTest {
     ): okhttp3.Response {
         val requestBody = body.toRequestBody(jsonMediaType)
         val request = Request.Builder()
-            .url("http://127.0.0.1:$port/mcp")
+            .url("http://127.0.0.1:$port$path")
             .header("Host", host)
             .header("Accept", "application/json, text/event-stream")
             .apply {

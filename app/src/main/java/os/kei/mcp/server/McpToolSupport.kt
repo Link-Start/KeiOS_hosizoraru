@@ -50,12 +50,6 @@ internal fun callResource(uri: String, mimeType: String, text: String): ReadReso
     )
 }
 
-internal fun jsonEscape(raw: String): String {
-    return raw
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-}
-
 internal fun argString(value: Any?): String {
     return (value as? JsonPrimitive)?.contentOrNull.orEmpty()
 }

@@ -6,8 +6,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
-import os.kei.feature.github.GitHubExecution
-import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -36,7 +34,9 @@ sealed interface GitHubShortcutRefreshExecution {
     ) : GitHubShortcutRefreshExecution
 }
 
-class GitHubBackgroundRefreshService {
+class GitHubBackgroundRefreshService(
+    private val actionsService: GitHubActionsService = GitHubActionsService(),
+) {
     private val mutex = Mutex()
 
     suspend fun runDueRefresh(
@@ -285,49 +285,43 @@ class GitHubBackgroundRefreshService {
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
     ): Int {
         val enabledItems = snapshot.items.filter { it.checkActionsUpdates }
-        withContext(AppDispatchers.githubLocal) {
-            GitHubActionsRecommendedRunStore.retain(enabledItems.map { it.id }.toSet())
+        val refreshService = GitHubActionsRecommendedRunRefreshService(source = actionsService)
+        if (enabledItems.isEmpty() || targetItems.isEmpty()) {
+            refreshService.refreshItems(
+                items = emptyList(),
+                lookupConfig = snapshot.lookupConfig,
+                retainTrackIds = enabledItems.mapTo(HashSet()) { it.id },
+                nowMs = nowMs,
+            )
+            return 0
         }
-        if (enabledItems.isEmpty() || targetItems.isEmpty()) return 0
 
-        val service = GitHubActionsUpdateCheckService()
-        val previousById =
-            withContext(AppDispatchers.githubLocal) {
-                GitHubActionsRecommendedRunStore.loadAll()
+        val result =
+            refreshService.refreshItems(
+                items = targetItems,
+                lookupConfig = snapshot.lookupConfig,
+                maxConcurrency = 2,
+                retainTrackIds = enabledItems.mapTo(HashSet()) { it.id },
+                nowMs = nowMs,
+            )
+        result.outcomes
+            .filter { !it.succeeded }
+            .forEach { outcome ->
+                AppLogger.w(
+                    GITHUB_BACKGROUND_REFRESH_TAG,
+                    "actions update check failed item=${outcome.item.id}: ${outcome.errorMessage}",
+                )
             }
         val notifiedCount =
-            GitHubExecution
-                .mapOrderedBounded(
-                    items = targetItems,
-                    maxConcurrency = 2,
-                ) { item ->
-                    val previous = previousById[item.id]
-                    val current =
-                        service
-                            .fetchRecommendedRunSnapshot(
-                                item = item,
-                                lookupConfig = snapshot.lookupConfig,
-                                previousWorkflowId = previous?.workflowId,
-                                nowMs = nowMs,
-                            )
-                            .getOrElse { error ->
-                                AppLogger.w(
-                                    GITHUB_BACKGROUND_REFRESH_TAG,
-                                    "actions update check failed item=${item.id}: ${error.message}",
-                                )
-                                return@mapOrderedBounded false
-                            }
-                    withContext(AppDispatchers.githubLocal) {
-                        GitHubActionsRecommendedRunStore.save(current)
-                    }
-                    previous != null && current.isNewerThan(previous) && onActionsUpdateAvailable(current)
-                }
-                .count { it }
+            result.newerSnapshots.count { snapshot ->
+                onActionsUpdateAvailable(snapshot)
+            }
 
         if (notifiedCount > 0) {
             AppLogger.i(
                 GITHUB_BACKGROUND_REFRESH_TAG,
-                "actions update check notified=$notifiedCount checked=${targetItems.size} enabled=${enabledItems.size}",
+                "actions update check notified=$notifiedCount checked=${result.checkedCount} " +
+                    "succeeded=${result.succeededCount} failed=${result.failedCount} enabled=${enabledItems.size}",
             )
         }
         return notifiedCount
@@ -357,7 +351,7 @@ class GitHubBackgroundRefreshService {
         if (enabledItems.isEmpty()) return emptyList()
         val previousById =
             withContext(AppDispatchers.githubLocal) {
-                GitHubActionsRecommendedRunStore.loadAll()
+                actionsService.loadRecommendedRunSnapshots()
             }
         return enabledItems.filter { item ->
             shouldCheckActionsUpdate(

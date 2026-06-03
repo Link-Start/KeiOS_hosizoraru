@@ -1,7 +1,7 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.domain.GitHubActionsRecommendedRunRefreshService
 import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
@@ -50,38 +50,27 @@ internal class McpGitHubActionsTools(
         }
 
         val rows = if (refresh) {
-            GitHubExecution.mapOrderedBounded(
-                items = targets,
-                maxConcurrency = MAX_PARALLEL_ACTIONS_REFRESH
-            ) { item ->
-                val previous = actionsService.loadRecommendedRunSnapshot(item.id)
-                actionsService.fetchRecommendedRunSnapshot(
-                    item = item,
+            GitHubActionsRecommendedRunRefreshService(source = actionsService)
+                .refreshItems(
+                    items = targets,
                     lookupConfig = snapshot.lookupConfig,
-                    previousWorkflowId = previous?.workflowId
-                ).fold(
-                    onSuccess = { current ->
-                        actionsService.saveRecommendedRunSnapshot(current)
-                        ActionsRunRow(
-                            item = item,
-                            snapshot = current,
-                            globalRefreshIntervalHours = snapshot.refreshIntervalHours,
-                            cacheState = "refreshed",
-                            newerThanCache = previous?.let(current::isNewerThan) ?: false
-                        )
-                    },
-                    onFailure = { error ->
-                        ActionsRunRow(
-                            item = item,
-                            snapshot = previous,
-                            globalRefreshIntervalHours = snapshot.refreshIntervalHours,
-                            cacheState = if (previous != null) "stale" else "failed",
-                            errorMessage = error.message.orEmpty()
-                                .ifBlank { error.javaClass.simpleName }
-                        )
-                    }
+                    maxConcurrency = MAX_PARALLEL_ACTIONS_REFRESH,
                 )
-            }
+                .outcomes
+                .map { outcome ->
+                    ActionsRunRow(
+                        item = outcome.item,
+                        snapshot = outcome.current ?: outcome.previous,
+                        globalRefreshIntervalHours = snapshot.refreshIntervalHours,
+                        cacheState = when {
+                            outcome.current != null -> "refreshed"
+                            outcome.previous != null -> "stale"
+                            else -> "failed"
+                        },
+                        newerThanCache = outcome.newerThanPrevious,
+                        errorMessage = outcome.errorMessage,
+                    )
+                }
         } else {
             targets.map { item ->
                 val cached = actionsService.loadRecommendedRunSnapshot(item.id)

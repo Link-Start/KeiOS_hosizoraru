@@ -27,6 +27,7 @@ internal class GitHubDebugNotificationActionFacade(
                         item = target.lookupItem,
                         lookupConfig = env.state.lookupConfig,
                         previousWorkflowId = previous?.workflowId,
+                        nowMs = System.currentTimeMillis(),
                     ).getOrElse { error ->
                         env.toast(
                             R.string.github_actions_update_debug_toast_fetch_failed,

@@ -40,28 +40,32 @@ private const val tokenApiSignalBranchProbeLimit = 2
 class GitHubActionsService(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
-) {
+) : GitHubActionsRecommendedRunRefreshSource {
     private val artifactManifestProbe = GitHubActionsArtifactManifestProbe()
 
-    fun loadRecommendedRunSnapshot(trackId: String): GitHubActionsRecommendedRunSnapshot? =
+    override fun loadRecommendedRunSnapshot(trackId: String): GitHubActionsRecommendedRunSnapshot? =
         GitHubActionsRecommendedRunStore.load(trackId)
 
-    fun loadRecommendedRunSnapshots(): Map<String, GitHubActionsRecommendedRunSnapshot> =
+    override fun loadRecommendedRunSnapshots(): Map<String, GitHubActionsRecommendedRunSnapshot> =
         GitHubActionsRecommendedRunStore.loadAll()
 
-    fun saveRecommendedRunSnapshot(snapshot: GitHubActionsRecommendedRunSnapshot) {
+    override fun saveRecommendedRunSnapshot(snapshot: GitHubActionsRecommendedRunSnapshot) {
         GitHubActionsRecommendedRunStore.save(snapshot)
     }
 
-    fun removeRecommendedRunSnapshot(trackId: String) {
+    override fun removeRecommendedRunSnapshot(trackId: String) {
         GitHubActionsRecommendedRunStore.remove(trackId)
     }
 
-    suspend fun fetchRecommendedRunSnapshot(
+    override fun retainRecommendedRunSnapshots(trackIds: Set<String>) {
+        GitHubActionsRecommendedRunStore.retain(trackIds)
+    }
+
+    override suspend fun fetchRecommendedRunSnapshot(
         item: GitHubTrackedApp,
         lookupConfig: GitHubLookupConfig,
         previousWorkflowId: Long?,
-        nowMs: Long = System.currentTimeMillis(),
+        nowMs: Long,
     ): Result<GitHubActionsRecommendedRunSnapshot> =
         withContext(ioDispatcher) {
             GitHubActionsUpdateCheckService()

@@ -27,13 +27,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
 class OsShellRunnerActivity : ComponentActivity() {
-    private var shizukuStatus by mutableStateOf("Shizuku status: initializing...")
+    private var canRunShellCommand by mutableStateOf(false)
     private val shizukuApiUtils = ShizukuApiUtils()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        shizukuApiUtils.attach { status -> shizukuStatus = status }
+        shizukuApiUtils.attach { refreshShellCommandReadyState() }
 
         setContent {
             val shellRunnerViewModel: OsShellRunnerViewModel = viewModel()
@@ -59,12 +59,11 @@ class OsShellRunnerActivity : ComponentActivity() {
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
                     ) {
                         OsShellRunnerPage(
-                            canRunShellCommand = shizukuStatus.contains(
-                                "granted",
-                                ignoreCase = true
-                            ) ||
-                                    shizukuApiUtils.canUseCommand(),
-                            onRequestShizukuPermission = { shizukuApiUtils.requestPermissionIfNeeded() },
+                            canRunShellCommand = canRunShellCommand,
+                            onRequestShizukuPermission = {
+                                shizukuApiUtils.requestPermissionIfNeeded()
+                                refreshShellCommandReadyState()
+                            },
                             onRunShellCommand = { command, timeoutMs, onOutput ->
                                 shizukuApiUtils.execCommandCancellableStreaming(
                                     command = command,
@@ -82,6 +81,10 @@ class OsShellRunnerActivity : ComponentActivity() {
     override fun onDestroy() {
         shizukuApiUtils.detach()
         super.onDestroy()
+    }
+
+    private fun refreshShellCommandReadyState() {
+        canRunShellCommand = shizukuApiUtils.canUseCommand()
     }
 
     companion object {

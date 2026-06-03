@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import os.kei.core.shizuku.ShizukuApiUtils
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Immutable
@@ -48,8 +49,9 @@ internal fun rememberAboutPageColorPalette(shizukuStatus: String): AboutPageColo
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
     val readyColor = Color(0xFF2E7D32)
     val notReadyColor = Color(0xFFC62828)
+    val shizukuReady = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
     val runtimeCardColor =
-        if (shizukuStatus.contains("granted", ignoreCase = true)) {
+        if (shizukuReady) {
             Color(0x2222C55E)
         } else {
             Color(0x22EF4444)

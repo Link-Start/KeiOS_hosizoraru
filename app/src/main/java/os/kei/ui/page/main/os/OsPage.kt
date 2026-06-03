@@ -67,7 +67,7 @@ fun OsPage(
     val cachedColor = uiContext.cachedColor
     val refreshingColor = uiContext.refreshingColor
     val syncedColor = uiContext.syncedColor
-    val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
+    val shizukuReady = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
     val lifecycleOwner = LocalLifecycleOwner.current
     val osPageViewModel: OsPageViewModel = viewModel()
     LaunchedEffect(

@@ -129,7 +129,7 @@ fun AboutPage(
     val permissionEntries = detailsState.permissionEntries
     val componentEntries = detailsState.componentEntries
     val shizukuDetailMap = detailsState.shizukuDetailMap
-    val shizukuReady = shizukuStatus.contains("granted", ignoreCase = true)
+    val shizukuReady = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
     val openLinkFailed = stringResource(R.string.common_open_link_failed)
     val aboutSearchPlaceholder = stringResource(R.string.about_search_placeholder)
     val searchContentDescription = stringResource(R.string.about_search_placeholder)

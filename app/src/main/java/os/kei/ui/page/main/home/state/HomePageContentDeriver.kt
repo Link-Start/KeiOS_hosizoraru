@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.home.state
 
 import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -186,7 +187,7 @@ internal fun deriveHomePageContentState(
         } else {
             text.loading
         }
-    val shizukuGranted = shizukuStatus.contains("granted", ignoreCase = true)
+    val shizukuGranted = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
     return HomePageContentState(
         homeNa = text.commonNa,
         homeAppName = text.appName,

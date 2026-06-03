@@ -198,8 +198,7 @@ class ShizukuApiUtils(
 
     fun execCommand(command: String, timeoutMs: Long = 2000L): String? {
         val result = execCommandResult(command = command, timeoutMs = timeoutMs)
-        if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
-        return result.combinedOutput().ifBlank { null }
+        return shizukuCommandOutputOrNull(result)
     }
 
     suspend fun execCommandCancellableResult(
@@ -254,8 +253,7 @@ class ShizukuApiUtils(
                     }
                 },
             )
-        if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
-        return result.combinedOutput().ifBlank { null }
+        return shizukuCommandOutputOrNull(result)
     }
 
     suspend fun execCommandCancellableResultStreaming(
@@ -301,8 +299,7 @@ class ShizukuApiUtils(
 
     suspend fun execCommandCancellable(command: String, timeoutMs: Long = 2000L): String? {
         val result = execCommandCancellableResult(command = command, timeoutMs = timeoutMs)
-        if (result.exitCode == null && !result.timedOut && !result.cancelled) return null
-        return result.combinedOutput().ifBlank { null }
+        return shizukuCommandOutputOrNull(result)
     }
 
     private fun createShellProcess(command: String): Process? {
@@ -354,6 +351,7 @@ class ShizukuApiUtils(
     private fun executeProcess(process: Process, timeoutMs: Long): AppCommandResult {
         val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
         val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
+        closeProcessInput(process)
         val stdoutReader = startStreamCollector(
             name = "KeiOS-ShizukuStdout",
             stream = process.inputStream,
@@ -421,6 +419,7 @@ class ShizukuApiUtils(
         val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
         val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
         val snapshotCallback = onOutputSnapshot
+        closeProcessInput(process)
         val outputSnapshots =
             snapshotCallback?.let { Channel<AppCommandOutputSnapshot>(Channel.CONFLATED) }
         val outputSnapshotJob: Job? =
@@ -519,9 +518,13 @@ class ShizukuApiUtils(
     }
 
     private fun closeProcessStreams(process: Process) {
-        runCatching { process.outputStream.close() }
+        closeProcessInput(process)
         runCatching { process.inputStream.close() }
         runCatching { process.errorStream.close() }
+    }
+
+    private fun closeProcessInput(process: Process) {
+        runCatching { process.outputStream.close() }
     }
 
     private fun startStreamCollector(
@@ -759,5 +762,11 @@ class ShizukuApiUtils(
         private const val RUNTIME_STATE_CACHE_TTL_NANOS = 750_000_000L
         const val DEFAULT_REQUEST_CODE = 1001
         const val API_VERSION = "13.1.5"
+
+        fun isCommandReadyStatusText(status: String): Boolean =
+            status.trim().startsWith("Shizuku permission: granted (", ignoreCase = true)
     }
 }
+
+internal fun shizukuCommandOutputOrNull(result: AppCommandResult): String? =
+    result.combinedOutput().ifBlank { null }

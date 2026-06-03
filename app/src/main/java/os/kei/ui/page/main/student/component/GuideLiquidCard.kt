@@ -32,7 +32,6 @@ internal fun GuideLiquidCard(
     effectVariant: GlassVariant? = GlassVariant.Content,
     depthEffect: Boolean = true,
     shadow: Boolean = true,
-    shadowAlpha: Float = 0.10f,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -74,7 +73,6 @@ internal fun GuideLiquidCard(
             effectVariant = effectVariant,
             depthEffect = depthEffect,
             shadow = shadow,
-            shadowAlpha = shadowAlpha,
             onClick = onClick,
             content = content
         )

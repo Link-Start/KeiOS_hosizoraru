@@ -192,7 +192,6 @@ private fun BaAccountPageCard(
         accentColor = accentColor,
         accentAlpha = 0f,
         effectsEnabled = effectsEnabled,
-        shadowEnabled = false,
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         verticalSpacing = 6.dp,
     ) {

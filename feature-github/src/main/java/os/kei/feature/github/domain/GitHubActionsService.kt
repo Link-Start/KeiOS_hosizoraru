@@ -7,6 +7,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.feature.github.data.local.GitHubActionsDownloadHistoryStore
+import os.kei.feature.github.data.local.GitHubActionsNotificationHistoryStore
 import os.kei.feature.github.data.local.GitHubActionsRecommendedRunStore
 import os.kei.feature.github.data.remote.GitHubActionsArtifactManifestProbe
 import os.kei.feature.github.data.remote.GitHubActionsRepository
@@ -16,6 +17,7 @@ import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsArtifactSelectionOptions
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
+import os.kei.feature.github.model.GitHubActionsNotificationHistoryRecord
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubActionsRepositoryInfo
 import os.kei.feature.github.model.GitHubActionsRunArtifacts
@@ -334,6 +336,31 @@ class GitHubActionsService(
         }
     }
 
+    suspend fun loadGitHubActionsNotificationHistory(
+        owner: String = "",
+        repo: String = ""
+    ): List<GitHubActionsNotificationHistoryRecord> {
+        return withContext(ioDispatcher) {
+            GitHubActionsNotificationHistoryStore.load(owner = owner, repo = repo)
+        }
+    }
+
+    fun recordGitHubActionsUpdateNotification(
+        snapshot: GitHubActionsRecommendedRunSnapshot,
+        notificationTitle: String = "",
+        notificationContent: String = "",
+        notifiedAtMillis: Long = System.currentTimeMillis()
+    ) {
+        GitHubActionsNotificationHistoryStore.recordNotification(
+            buildGitHubActionsNotificationHistoryRecord(
+                snapshot = snapshot,
+                notificationTitle = notificationTitle,
+                notificationContent = notificationContent,
+                notifiedAtMillis = notifiedAtMillis,
+            )
+        )
+    }
+
     suspend fun recordGitHubActionsArtifactDownload(
         record: GitHubActionsDownloadRecord
     ) {
@@ -393,12 +420,54 @@ class GitHubActionsService(
         )
     }
 
+    fun buildGitHubActionsNotificationHistoryRecord(
+        snapshot: GitHubActionsRecommendedRunSnapshot,
+        notificationTitle: String = "",
+        notificationContent: String = "",
+        notifiedAtMillis: Long = System.currentTimeMillis()
+    ): GitHubActionsNotificationHistoryRecord {
+        return GitHubActionsNotificationHistoryRecord(
+            trackId = snapshot.trackId,
+            owner = snapshot.owner,
+            repo = snapshot.repo,
+            appLabel = snapshot.appLabel,
+            workflowId = snapshot.workflowId,
+            workflowName = snapshot.workflowName,
+            workflowPath = snapshot.workflowPath,
+            runId = snapshot.runId,
+            runNumber = snapshot.runNumber,
+            runAttempt = snapshot.runAttempt,
+            runDisplayName = snapshot.runDisplayName,
+            headBranch = snapshot.headBranch,
+            headSha = snapshot.headSha,
+            event = snapshot.event,
+            status = snapshot.status,
+            conclusion = snapshot.conclusion,
+            htmlUrl = snapshot.htmlUrl,
+            artifactCount = snapshot.artifactCount,
+            androidArtifactCount = snapshot.androidArtifactCount,
+            checkedAtMillis = snapshot.checkedAtMillis,
+            notifiedAtMillis = notifiedAtMillis,
+            notificationTitle = notificationTitle,
+            notificationContent = notificationContent,
+        )
+    }
+
     suspend fun clearGitHubActionsDownloadHistory(
         owner: String = "",
         repo: String = ""
     ) {
         withContext(ioDispatcher) {
             GitHubActionsDownloadHistoryStore.clear(owner = owner, repo = repo)
+        }
+    }
+
+    suspend fun clearGitHubActionsNotificationHistory(
+        owner: String = "",
+        repo: String = ""
+    ) {
+        withContext(ioDispatcher) {
+            GitHubActionsNotificationHistoryStore.clear(owner = owner, repo = repo)
         }
     }
 

@@ -23,6 +23,7 @@ import os.kei.core.notification.focus.MiFocusPictureRef
 import os.kei.core.notification.focus.MiFocusPictureSource
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.AppIconCache
+import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.notification.MiFocusNotificationActions
 import os.kei.mcp.framework.notification.NotificationHelper
@@ -50,6 +51,7 @@ object GitHubActionsUpdateNotificationHelper {
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic,
         )
+        recordNotificationHistory(context, snapshot)
         return true
     }
 
@@ -287,6 +289,19 @@ object GitHubActionsUpdateNotificationHelper {
         context: Context,
         notificationId: Int,
     ): PendingIntent = MiFocusNotificationActions.markReadPendingIntent(context, notificationId)
+
+    private fun recordNotificationHistory(
+        context: Context,
+        snapshot: GitHubActionsRecommendedRunSnapshot,
+    ) {
+        runCatching {
+            GitHubActionsService().recordGitHubActionsUpdateNotification(
+                snapshot = snapshot,
+                notificationTitle = title(context),
+                notificationContent = content(context, snapshot),
+            )
+        }
+    }
 
     @SuppressLint("InlinedApi")
     private fun notificationsGranted(context: Context): Boolean =

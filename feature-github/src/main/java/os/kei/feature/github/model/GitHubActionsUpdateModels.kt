@@ -38,3 +38,35 @@ data class GitHubActionsRecommendedRunSnapshot(
         return runId > previous.runId
     }
 }
+
+data class GitHubActionsNotificationHistoryRecord(
+    val trackId: String,
+    val owner: String,
+    val repo: String,
+    val appLabel: String,
+    val workflowId: Long,
+    val workflowName: String,
+    val workflowPath: String,
+    val runId: Long,
+    val runNumber: Long,
+    val runAttempt: Int,
+    val runDisplayName: String,
+    val headBranch: String,
+    val headSha: String,
+    val event: String,
+    val status: String,
+    val conclusion: String,
+    val htmlUrl: String,
+    val artifactCount: Int,
+    val androidArtifactCount: Int,
+    val checkedAtMillis: Long,
+    val notifiedAtMillis: Long,
+    val notificationTitle: String = "",
+    val notificationContent: String = "",
+) {
+    val runLabel: String
+        get() = if (runNumber > 0L) "#$runNumber" else "#$runId"
+
+    val repositoryLabel: String
+        get() = "${owner}/${repo}"
+}

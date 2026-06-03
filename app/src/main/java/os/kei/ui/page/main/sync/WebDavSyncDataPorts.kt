@@ -28,6 +28,7 @@ import os.kei.ui.page.main.student.GuideBgmFavoriteStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJson
 import os.kei.ui.page.main.student.catalog.page.parseCatalogFavoritesExport
+import os.kei.ui.page.main.ba.support.BASettingsStore
 
 /**
  * Builds the [WebDavSyncDataPort] for every [WebDavSyncItem].
@@ -111,6 +112,17 @@ private fun buildWebDavSyncDataPorts(
                     ).size
                 }
                     .getOrDefault(0)
+            },
+        ),
+        WebDavSyncItem.BaAccounts to WebDavSyncDataPort(
+            exportJson = { BASettingsStore.buildAccountsSyncExportJson() },
+            merge = { raw ->
+                BASettingsStore.mergeAccountsSyncJson(raw)
+                AppBackgroundScheduler.scheduleBaApThreshold(context)
+            },
+            localCount = { BASettingsStore.loadAccountState().accounts.size },
+            countRemoteItems = { raw ->
+                runCatching { BASettingsStore.countAccountsSyncJson(raw) }.getOrDefault(0)
             },
         ),
         WebDavSyncItem.BaCatalogFavorites to WebDavSyncDataPort(

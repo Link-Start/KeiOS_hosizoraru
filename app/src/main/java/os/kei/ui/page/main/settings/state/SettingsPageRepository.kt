@@ -19,6 +19,7 @@ import os.kei.ui.page.main.settings.cache.CacheStores
 import os.kei.ui.page.main.settings.page.SettingsSearchTarget
 import os.kei.ui.page.main.settings.page.buildSettingsSearchTargets
 import os.kei.ui.page.main.settings.page.deriveSettingsSearchTargets
+import os.kei.ui.page.main.sync.WebDavSyncStore
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -57,6 +58,21 @@ internal class SettingsPageRepository(
     suspend fun loadLogStats(context: Context): AppLogStore.Stats =
         withContext(ioDispatcher) {
             runCatching { AppLogStore.stats(context) }.getOrDefault(AppLogStore.Stats.Empty)
+        }
+
+    fun buildWebDavSyncState(): SettingsWebDavSyncUiState {
+        val config = WebDavSyncStore.loadConfig()
+        return SettingsWebDavSyncUiState(
+            configured = config != null,
+            username = config?.username.orEmpty(),
+            autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
+            lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
+        )
+    }
+
+    suspend fun loadWebDavSyncState(): SettingsWebDavSyncUiState =
+        withContext(ioDispatcher) {
+            buildWebDavSyncState()
         }
 
     suspend fun clearLogs(context: Context): Result<Unit> =

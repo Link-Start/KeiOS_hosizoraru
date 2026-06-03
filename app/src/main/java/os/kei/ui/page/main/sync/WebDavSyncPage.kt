@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -66,7 +67,7 @@ internal fun WebDavSyncPage(
     dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
     viewModel: WebDavSyncViewModel = viewModel(),
 ) {
-    val state = viewModel.uiState
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
@@ -942,6 +943,7 @@ private fun WebDavFieldLabel(text: String) {
 @Composable
 private fun itemContractSummary(item: WebDavSyncItem): String = when (item) {
     WebDavSyncItem.GitHubTracked -> stringResource(R.string.webdav_sync_item_github_tracked_contract)
+    WebDavSyncItem.BaAccounts -> stringResource(R.string.webdav_sync_item_ba_accounts_contract)
     WebDavSyncItem.BaCatalogFavorites -> stringResource(item.descriptionRes)
     WebDavSyncItem.BaBgmFavorites -> stringResource(item.descriptionRes)
     WebDavSyncItem.OsActivityCards -> stringResource(R.string.webdav_sync_item_os_activity_contract)

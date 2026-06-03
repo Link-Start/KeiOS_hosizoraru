@@ -15,6 +15,11 @@ internal enum class WebDavSyncItem(
         labelRes = R.string.webdav_sync_item_github_tracked,
         descriptionRes = R.string.webdav_sync_item_github_tracked_desc,
     ),
+    BaAccounts(
+        fileName = "ba_accounts.json",
+        labelRes = R.string.webdav_sync_item_ba_accounts,
+        descriptionRes = R.string.webdav_sync_item_ba_accounts_desc,
+    ),
     BaCatalogFavorites(
         fileName = "ba_catalog_favorites.json",
         labelRes = R.string.webdav_sync_item_ba_catalog_fav,

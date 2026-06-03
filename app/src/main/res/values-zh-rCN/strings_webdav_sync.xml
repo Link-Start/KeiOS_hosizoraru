@@ -30,6 +30,9 @@
     <string name="webdav_sync_item_github_tracked">GitHub 追踪</string>
     <string name="webdav_sync_item_github_tracked_desc">追踪仓库和设置</string>
     <string name="webdav_sync_item_github_tracked_contract">JSON 中包含内置的 KeiOS 应用卡片，以及你的追踪仓库。</string>
+    <string name="webdav_sync_item_ba_accounts">BA 账号</string>
+    <string name="webdav_sync_item_ba_accounts_desc">多账号资料、AP/咖啡厅状态和提醒设置</string>
+    <string name="webdav_sync_item_ba_accounts_contract">JSON 中包含 BA 账号卡、当前账号、AP/咖啡厅运行状态和提醒设置。</string>
     <string name="webdav_sync_item_ba_catalog_fav">BA 图鉴收藏</string>
     <string name="webdav_sync_item_ba_catalog_fav_desc">学生图鉴收藏</string>
     <string name="webdav_sync_item_ba_bgm_fav">BA BGM 收藏</string>

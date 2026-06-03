@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapLatest
@@ -32,10 +33,11 @@ import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationControlle
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveSnapshot
+import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
 
 @Immutable
 internal data class SettingsCacheUiState(
-    val cacheEntries: List<CacheEntrySummary>? = emptyList(),
+    val cacheEntries: List<CacheEntrySummary>? = null,
     val cacheEntriesLoading: Boolean = false,
     val clearingCacheId: String? = null,
     val clearingAllCaches: Boolean = false,
@@ -60,6 +62,14 @@ internal data class SettingsSupportUiState(
 )
 
 @Immutable
+internal data class SettingsWebDavSyncUiState(
+    val configured: Boolean = false,
+    val username: String = "",
+    val autoSyncEnabled: Boolean = false,
+    val lastFullSyncTimeMs: Long = 0L,
+)
+
+@Immutable
 internal data class SettingsSearchUiState(
     val matchingTargets: List<SettingsSearchTarget> = emptyList(),
 )
@@ -68,6 +78,7 @@ internal data class SettingsSearchUiState(
 internal data class SettingsPageSnapshotState(
     val diagnosticsUiState: SettingsDiagnosticsUiState = SettingsDiagnosticsUiState(),
     val supportUiState: SettingsSupportUiState = SettingsSupportUiState(),
+    val webDavSyncState: SettingsWebDavSyncUiState = SettingsWebDavSyncUiState(),
     val chromeState: SettingsPageChromeState = SettingsPageChromeState(),
     val searchUiState: SettingsSearchUiState = SettingsSearchUiState(),
 )
@@ -136,6 +147,8 @@ internal class SettingsPageViewModel : ViewModel() {
     private val _permissionKeepAliveState = MutableStateFlow(SettingsPermissionKeepAliveSnapshot())
     val permissionKeepAliveState: StateFlow<SettingsPermissionKeepAliveSnapshot> =
         _permissionKeepAliveState.asStateFlow()
+    private val _webDavSyncState = MutableStateFlow(repository.buildWebDavSyncState())
+    val webDavSyncState: StateFlow<SettingsWebDavSyncUiState> = _webDavSyncState.asStateFlow()
     private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<SettingsPageEvent> = _events.asSharedFlow()
     private val _backgroundEvents = MutableSharedFlow<SettingsBackgroundEvent>(replay = 0, extraBufferCapacity = 4)
@@ -182,10 +195,17 @@ internal class SettingsPageViewModel : ViewModel() {
             )
 
     val pageSnapshotState: StateFlow<SettingsPageSnapshotState> =
-        combine(diagnosticsUiState, supportUiState, chromeState, searchUiState) { diagnostics, support, chrome, search ->
+        combine(
+            diagnosticsUiState,
+            supportUiState,
+            webDavSyncState,
+            chromeState,
+            searchUiState,
+        ) { diagnostics, support, webDavSync, chrome, search ->
             SettingsPageSnapshotState(
                 diagnosticsUiState = diagnostics,
                 supportUiState = support,
+                webDavSyncState = webDavSync,
                 chromeState = chrome,
                 searchUiState = search,
             )
@@ -196,6 +216,7 @@ internal class SettingsPageViewModel : ViewModel() {
                 SettingsPageSnapshotState(
                     diagnosticsUiState = diagnosticsUiState.value,
                     supportUiState = supportUiState.value,
+                    webDavSyncState = webDavSyncState.value,
                     chromeState = chromeState.value,
                     searchUiState = searchUiState.value,
                 ),
@@ -208,6 +229,21 @@ internal class SettingsPageViewModel : ViewModel() {
             cacheState = _cacheState,
             logState = _logState,
         )
+
+    init {
+        observeWebDavSyncState()
+    }
+
+    private fun observeWebDavSyncState() {
+        viewModelScope.launch {
+            WebDavSyncStoreSignals.version.collect {
+                val snapshot = repository.loadWebDavSyncState()
+                _webDavSyncState.update { current ->
+                    if (current == snapshot) current else snapshot
+                }
+            }
+        }
+    }
 
     fun bindDiagnostics(
         context: Context,

@@ -126,6 +126,32 @@ internal object BASettingsStore {
         return migratedAccountStore().loadState()
     }
 
+    fun buildAccountsSyncExportJson(nowMs: Long = System.currentTimeMillis()): String =
+        buildBaAccountsExportJson(
+            snapshot = loadAccountState(),
+            nowMs = nowMs,
+        )
+
+    fun mergeAccountsSyncJson(raw: String) {
+        val store = migratedAccountStore()
+        val merged =
+            mergeBaAccountsForSync(
+                local = store.loadState(),
+                remote = parseBaAccountsExportJson(raw),
+            )
+        store.replaceAll(
+            accounts = merged.accounts,
+            activeAccountId = merged.activeAccountId,
+        )
+        store.saveAllAccountsFollowGlobalNotificationSettings(
+            merged.allAccountsFollowGlobalNotificationSettings,
+        )
+        store.saveGlobalReminderSettings(merged.globalReminderSettings)
+        notifyChanged()
+    }
+
+    fun countAccountsSyncJson(raw: String): Int = countBaAccountsExportJson(raw)
+
     fun selectActiveAccount(accountId: BaAccountId): Boolean {
         val selected = migratedAccountStore().selectActiveAccount(accountId)
         if (selected) {

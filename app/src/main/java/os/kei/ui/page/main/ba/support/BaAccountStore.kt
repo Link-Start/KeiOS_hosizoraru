@@ -267,7 +267,7 @@ internal class BaAccountStore(
     }
 }
 
-private fun List<BaAccountRecord>.normalizedAccounts(): List<BaAccountRecord> {
+internal fun List<BaAccountRecord>.normalizedAccounts(): List<BaAccountRecord> {
     val seen = LinkedHashSet<String>()
     return mapIndexedNotNull { index, account ->
         val normalized = account.normalized(defaultSortOrder = index) ?: return@mapIndexedNotNull null

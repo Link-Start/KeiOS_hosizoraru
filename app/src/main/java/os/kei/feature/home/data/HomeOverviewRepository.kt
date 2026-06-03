@@ -21,8 +21,9 @@ import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubRefreshRuntimeState
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubTrackService
-import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.isValidForTrackedItem
 import os.kei.feature.home.model.HOME_BA_AP_MAX
 import os.kei.feature.home.model.HOME_BA_CAFE_DAILY_AP_BY_LEVEL
 import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
@@ -257,7 +258,7 @@ private fun HomeGitHubOverview.withRefreshRuntime(
     )
 }
 
-private fun loadHomeGitHubOverview(
+internal fun loadHomeGitHubOverview(
     snapshot: GitHubTrackSnapshot,
     cacheFreshness: CacheFreshnessSnapshot,
     nowMs: Long,
@@ -268,7 +269,11 @@ private fun loadHomeGitHubOverview(
             val cache =
                 snapshot.checkCache[item.id]
                     ?.takeIf { entry ->
-                        entry.sourceStrategyId.ifBlank { GitHubLookupStrategyOption.AtomFeed.storageId } == activeStrategyId
+                        entry.isValidForTrackedItem(
+                            item = item,
+                            lookupConfig = snapshot.lookupConfig.forTrackedItem(item),
+                            activeStrategyId = activeStrategyId,
+                        )
                     }
             item.id to cache
         }

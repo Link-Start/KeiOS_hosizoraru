@@ -93,13 +93,13 @@ internal class McpPageRepository(
     }
 
     suspend fun refreshNow(manager: McpServerManager) {
-        withContext(defaultDispatcher) {
+        withContext(ioDispatcher) {
             manager.refreshNow()
         }
     }
 
     suspend fun clearLogs(manager: McpServerManager) {
-        withContext(defaultDispatcher) {
+        withContext(ioDispatcher) {
             manager.clearLogs()
         }
     }

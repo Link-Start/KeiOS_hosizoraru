@@ -253,17 +253,6 @@ fun McpPage(
             onLogsExpandedChange = mcpPageViewModel::updateLogsExpanded,
             onExportLogs = { generatedAt, fileName ->
                 mcpPageViewModel.beginLogsExport(generatedAt, fileName)
-                runCatching {
-                    logsExportLauncher.launch(fileName)
-                }.onFailure {
-                    mcpPageViewModel.finishLogsExport()
-                    context.showToast(
-                        context.resolveString(
-                            R.string.mcp_toast_logs_export_failed,
-                            it.javaClass.simpleName,
-                        ),
-                    )
-                }
             },
             onClearLogs = { mcpPageViewModel.requestClearLogs(mcpServerManager) },
             onCopyCurrentConfig = { mcpPageViewModel.requestCopyCurrentConfig(mcpServerManager, uiState) },

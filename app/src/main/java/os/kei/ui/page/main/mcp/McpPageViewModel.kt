@@ -270,10 +270,12 @@ internal class McpPageViewModel : ViewModel() {
                     McpLogsExportRequest(
                         generatedAt = generatedAt,
                         fileName = fileName,
-                    ),
+                ),
             )
         }
-        _events.tryEmit(McpPageEvent.LaunchLogsExport(fileName))
+        viewModelScope.launch {
+            _events.emit(McpPageEvent.LaunchLogsExport(fileName))
+        }
     }
 
     private fun consumePendingLogsExport(): McpLogsExportRequest? {

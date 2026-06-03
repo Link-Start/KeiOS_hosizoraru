@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -30,18 +31,17 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubOverviewMetricItem
-import os.kei.ui.page.main.os.InfoRow
+import os.kei.ui.page.main.os.OsPageCardListDerivedState
+import os.kei.ui.page.main.os.OsPageDerivedState
+import os.kei.ui.page.main.os.OsPageMainListActions
 import os.kei.ui.page.main.os.OsCardExportAction
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.SystemOverviewState
-import os.kei.ui.page.main.os.TopInfoRowsGroup
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
-import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
@@ -57,6 +57,71 @@ import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@Immutable
+internal data class OsPageMainListChromeState(
+    val isDark: Boolean,
+    val titleColor: Color,
+    val contentBottomPadding: Dp,
+    val bottomBarVisible: Boolean,
+    val floatingDockSide: AppFloatingDockSide,
+)
+
+@Immutable
+internal data class OsPageMainListOverviewState(
+    val refreshing: Boolean,
+    val overviewState: SystemOverviewState,
+    val indicatorProgress: Float,
+    val statusColor: Color,
+    val indicatorBg: Color,
+    val statusLabel: String,
+    val overviewCardColor: Color,
+    val overviewBorderColor: Color,
+    val overviewMetricRows: List<OsOverviewMetricRow>,
+)
+
+@Immutable
+internal data class OsPageMainListContentState(
+    val noMatchedResultsText: String,
+    val derivedState: OsPageDerivedState,
+    val cardListDerivedState: OsPageCardListDerivedState,
+    val runningShellCommandCardIds: Set<String>,
+    val activityIconBitmaps: Map<String, Bitmap>,
+    val defaultActivityCardTitle: String,
+    val exportingCard: OsSectionCard?,
+)
+
+@Immutable
+internal data class OsPageMainListExpansionState(
+    val topInfoExpanded: Boolean,
+    val shellRunnerExpanded: Boolean,
+    val shellCommandCardExpanded: Map<String, Boolean>,
+    val activityCardExpanded: Map<String, Boolean>,
+    val systemTableExpanded: Boolean,
+    val secureTableExpanded: Boolean,
+    val globalTableExpanded: Boolean,
+    val androidPropsExpanded: Boolean,
+    val javaPropsExpanded: Boolean,
+    val linuxEnvExpanded: Boolean,
+    val onTopInfoExpandedChange: (Boolean) -> Unit,
+    val onShellRunnerExpandedChange: (Boolean) -> Unit,
+    val onSystemTableExpandedChange: (Boolean) -> Unit,
+    val onSecureTableExpandedChange: (Boolean) -> Unit,
+    val onGlobalTableExpandedChange: (Boolean) -> Unit,
+    val onAndroidPropsExpandedChange: (Boolean) -> Unit,
+    val onJavaPropsExpandedChange: (Boolean) -> Unit,
+    val onLinuxEnvExpandedChange: (Boolean) -> Unit,
+)
+
+@Immutable
+internal data class OsPageMainListSearchDockState(
+    val showFloatingAddButton: Boolean,
+    val searchExpanded: Boolean,
+    val queryInput: String,
+    val searchLabel: String,
+    val onQueryInputChange: (String) -> Unit,
+    val onSearchExpandedChange: (Boolean) -> Unit,
+)
+
 @Composable
 internal fun OsPageMainList(
     context: Context,
@@ -64,80 +129,87 @@ internal fun OsPageMainList(
     innerPadding: PaddingValues,
     scrollBehaviorConnection: NestedScrollConnection,
     contentBackdrop: LayerBackdrop,
-    isDark: Boolean,
-    titleColor: Color,
-    refreshing: Boolean,
-    overviewState: SystemOverviewState,
-    indicatorProgress: Float,
-    statusColor: Color,
-    indicatorBg: Color,
-    statusLabel: String,
-    overviewCardColor: Color,
-    overviewBorderColor: Color,
-    overviewMetricRows: List<OsOverviewMetricRow>,
-    noMatchedResultsText: String,
-    query: String,
-    displayedTopInfoRows: List<InfoRow>,
-    groupedTopInfoRows: List<TopInfoRowsGroup>,
-    topInfoExpanded: Boolean,
-    onTopInfoExpandedChange: (Boolean) -> Unit,
-    shellRunnerRows: List<InfoRow>,
-    shellRunnerExpanded: Boolean,
-    onShellRunnerExpandedChange: (Boolean) -> Unit,
-    onOpenShellRunner: () -> Unit,
-    shellCommandCards: List<OsShellCommandCard>,
-    shellCommandCardExpanded: Map<String, Boolean>,
-    runningShellCommandCardIds: Set<String>,
-    onShellCommandCardExpandedChange: (String, Boolean) -> Unit,
-    onOpenShellCommandCardEditor: (OsShellCommandCard) -> Unit,
-    onRunShellCommandCard: (OsShellCommandCard) -> Unit,
-    activityShortcutCards: List<OsActivityShortcutCard>,
-    activityIconBitmaps: Map<String, Bitmap>,
-    defaultActivityCardTitle: String,
-    activityCardExpanded: Map<String, Boolean>,
-    onActivityCardExpandedChange: (String, Boolean) -> Unit,
-    onOpenActivityShortcutCard: (OsActivityShortcutCard) -> Unit,
-    onOpenActivityShortcutCardEditor: (OsActivityShortcutCard) -> Unit,
-    displayedSystemRows: List<InfoRow>,
-    displayedSecureRows: List<InfoRow>,
-    displayedGlobalRows: List<InfoRow>,
-    displayedAndroidRows: List<InfoRow>,
-    displayedJavaRows: List<InfoRow>,
-    displayedLinuxRows: List<InfoRow>,
-    prunedSystemRows: List<InfoRow>,
-    prunedSecureRows: List<InfoRow>,
-    prunedGlobalRows: List<InfoRow>,
-    prunedAndroidRows: List<InfoRow>,
-    prunedJavaRows: List<InfoRow>,
-    prunedLinuxRows: List<InfoRow>,
-    systemTableExpanded: Boolean,
-    onSystemTableExpandedChange: (Boolean) -> Unit,
-    secureTableExpanded: Boolean,
-    onSecureTableExpandedChange: (Boolean) -> Unit,
-    globalTableExpanded: Boolean,
-    onGlobalTableExpandedChange: (Boolean) -> Unit,
-    androidPropsExpanded: Boolean,
-    onAndroidPropsExpandedChange: (Boolean) -> Unit,
-    javaPropsExpanded: Boolean,
-    onJavaPropsExpandedChange: (Boolean) -> Unit,
-    linuxEnvExpanded: Boolean,
-    onLinuxEnvExpandedChange: (Boolean) -> Unit,
-    isCardVisible: (OsSectionCard) -> Boolean,
-    sectionSubtitle: (SectionKind, Int) -> String,
-    exportingCard: OsSectionCard?,
-    onExportCard: (OsSectionCard) -> Unit,
-    onRefreshAll: () -> Unit,
-    contentBottomPadding: Dp,
-    showFloatingAddButton: Boolean,
-    onOpenAddActivityShortcutCard: () -> Unit,
-    bottomBarVisible: Boolean,
-    searchExpanded: Boolean,
-    queryInput: String,
-    onQueryInputChange: (String) -> Unit,
-    onSearchExpandedChange: (Boolean) -> Unit,
-    searchLabel: String,
-    floatingDockSide: AppFloatingDockSide,
+    chromeState: OsPageMainListChromeState,
+    overviewState: OsPageMainListOverviewState,
+    contentState: OsPageMainListContentState,
+    expansionState: OsPageMainListExpansionState,
+    searchDockState: OsPageMainListSearchDockState,
+    actions: OsPageMainListActions,
 ) {
+    val isDark = chromeState.isDark
+    val titleColor = chromeState.titleColor
+    val contentBottomPadding = chromeState.contentBottomPadding
+    val bottomBarVisible = chromeState.bottomBarVisible
+    val floatingDockSide = chromeState.floatingDockSide
+    val refreshing = overviewState.refreshing
+    val systemOverviewState = overviewState.overviewState
+    val indicatorProgress = overviewState.indicatorProgress
+    val statusColor = overviewState.statusColor
+    val indicatorBg = overviewState.indicatorBg
+    val statusLabel = overviewState.statusLabel
+    val overviewCardColor = overviewState.overviewCardColor
+    val overviewBorderColor = overviewState.overviewBorderColor
+    val overviewMetricRows = overviewState.overviewMetricRows
+    val noMatchedResultsText = contentState.noMatchedResultsText
+    val derivedState = contentState.derivedState
+    val query = derivedState.query
+    val displayedTopInfoRows = derivedState.displayedTopInfoRows
+    val groupedTopInfoRows = derivedState.groupedTopInfoRows
+    val shellRunnerRows = derivedState.shellRunnerRows
+    val displayedSystemRows = derivedState.displayedSystemRows
+    val displayedSecureRows = derivedState.displayedSecureRows
+    val displayedGlobalRows = derivedState.displayedGlobalRows
+    val displayedAndroidRows = derivedState.displayedAndroidRows
+    val displayedJavaRows = derivedState.displayedJavaRows
+    val displayedLinuxRows = derivedState.displayedLinuxRows
+    val prunedSystemRows = derivedState.prunedSystemRows
+    val prunedSecureRows = derivedState.prunedSecureRows
+    val prunedGlobalRows = derivedState.prunedGlobalRows
+    val prunedAndroidRows = derivedState.prunedAndroidRows
+    val prunedJavaRows = derivedState.prunedJavaRows
+    val prunedLinuxRows = derivedState.prunedLinuxRows
+    val shellCommandCards = contentState.cardListDerivedState.visibleShellCommandCards
+    val activityShortcutCards = contentState.cardListDerivedState.visibleActivityShortcutCards
+    val runningShellCommandCardIds = contentState.runningShellCommandCardIds
+    val activityIconBitmaps = contentState.activityIconBitmaps
+    val defaultActivityCardTitle = contentState.defaultActivityCardTitle
+    val exportingCard = contentState.exportingCard
+    val topInfoExpanded = expansionState.topInfoExpanded
+    val shellRunnerExpanded = expansionState.shellRunnerExpanded
+    val shellCommandCardExpanded = expansionState.shellCommandCardExpanded
+    val activityCardExpanded = expansionState.activityCardExpanded
+    val systemTableExpanded = expansionState.systemTableExpanded
+    val secureTableExpanded = expansionState.secureTableExpanded
+    val globalTableExpanded = expansionState.globalTableExpanded
+    val androidPropsExpanded = expansionState.androidPropsExpanded
+    val javaPropsExpanded = expansionState.javaPropsExpanded
+    val linuxEnvExpanded = expansionState.linuxEnvExpanded
+    val showFloatingAddButton = searchDockState.showFloatingAddButton
+    val searchExpanded = searchDockState.searchExpanded
+    val queryInput = searchDockState.queryInput
+    val searchLabel = searchDockState.searchLabel
+    val onTopInfoExpandedChange = expansionState.onTopInfoExpandedChange
+    val onShellRunnerExpandedChange = expansionState.onShellRunnerExpandedChange
+    val onSystemTableExpandedChange = expansionState.onSystemTableExpandedChange
+    val onSecureTableExpandedChange = expansionState.onSecureTableExpandedChange
+    val onGlobalTableExpandedChange = expansionState.onGlobalTableExpandedChange
+    val onAndroidPropsExpandedChange = expansionState.onAndroidPropsExpandedChange
+    val onJavaPropsExpandedChange = expansionState.onJavaPropsExpandedChange
+    val onLinuxEnvExpandedChange = expansionState.onLinuxEnvExpandedChange
+    val onOpenShellRunner = actions.onOpenShellRunner
+    val onShellCommandCardExpandedChange = actions.onShellCommandCardExpandedChange
+    val onOpenShellCommandCardEditor = actions.onOpenShellCommandCardEditor
+    val onRunShellCommandCard = actions.onRunShellCommandCard
+    val onActivityCardExpandedChange = actions.onActivityCardExpandedChange
+    val onOpenActivityShortcutCard = actions.onOpenActivityShortcutCard
+    val onOpenActivityShortcutCardEditor = actions.onOpenActivityShortcutCardEditor
+    val isCardVisible = actions.isCardVisible
+    val sectionSubtitle = actions.sectionSubtitle
+    val onExportCard = actions.onExportCard
+    val onRefreshAll = actions.onRefreshAll
+    val onOpenAddActivityShortcutCard = actions.onOpenAddActivityShortcutCard
+    val onQueryInputChange = searchDockState.onQueryInputChange
+    val onSearchExpandedChange = searchDockState.onSearchExpandedChange
     val topMetricLabel = stringResource(R.string.os_overview_metric_top_info)
 
     fun metricLabelWeight(label: String): Float = if (label == topMetricLabel) 0.30f else 0.56f
@@ -169,7 +241,7 @@ internal fun OsPageMainList(
     val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
     val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
     val refreshStatus =
-        when (overviewState) {
+        when (systemOverviewState) {
             SystemOverviewState.Refreshing -> AppFloatingRefreshStatus.Refreshing
             SystemOverviewState.Completed -> AppFloatingRefreshStatus.Success
             SystemOverviewState.Failed -> AppFloatingRefreshStatus.Danger
@@ -202,7 +274,7 @@ internal fun OsPageMainList(
                         onRefreshAll()
                     },
                     headerEndActions = {
-                        if (overviewState != SystemOverviewState.Idle) {
+                        if (systemOverviewState != SystemOverviewState.Idle) {
                             LiquidCircularProgressBar(
                                 progress = { indicatorProgress },
                                 size = 16.dp,

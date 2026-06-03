@@ -19,6 +19,11 @@ import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
+import os.kei.ui.page.main.os.components.OsPageMainListChromeState
+import os.kei.ui.page.main.os.components.OsPageMainListContentState
+import os.kei.ui.page.main.os.components.OsPageMainListExpansionState
+import os.kei.ui.page.main.os.components.OsPageMainListOverviewState
+import os.kei.ui.page.main.os.components.OsPageMainListSearchDockState
 import os.kei.ui.page.main.os.components.OsPageOverlayCoordinator
 import os.kei.ui.page.main.os.shortcut.launchGoogleSystemServiceActivity
 import os.kei.ui.page.main.os.state.createOsPageActionState
@@ -479,6 +484,134 @@ fun OsPage(
                 osPageViewModel = osPageViewModel,
             )
         }
+    val mainListChromeState =
+        remember(
+            isDark,
+            titleColor,
+            runtime.contentBottomPadding,
+            runtime.bottomBarVisible,
+            runtime.floatingDockSide,
+        ) {
+            OsPageMainListChromeState(
+                isDark = isDark,
+                titleColor = titleColor,
+                contentBottomPadding = runtime.contentBottomPadding,
+                bottomBarVisible = runtime.bottomBarVisible,
+                floatingDockSide = runtime.floatingDockSide,
+            )
+        }
+    val mainListOverviewState =
+        remember(
+            runtimeState.refreshing,
+            overviewState,
+            indicatorProgress,
+            statusColor,
+            indicatorBg,
+            statusLabel,
+            overviewCardColor,
+            overviewBorderColor,
+            overviewMetricRows,
+        ) {
+            OsPageMainListOverviewState(
+                refreshing = runtimeState.refreshing,
+                overviewState = overviewState,
+                indicatorProgress = indicatorProgress,
+                statusColor = statusColor,
+                indicatorBg = indicatorBg,
+                statusLabel = statusLabel,
+                overviewCardColor = overviewCardColor,
+                overviewBorderColor = overviewBorderColor,
+                overviewMetricRows = overviewMetricRows,
+            )
+        }
+    val mainListContentState =
+        remember(
+            textBundle.noMatchedResultsText,
+            derivedState,
+            cardListDerivedState,
+            routeState.runningShellCommandCardIds,
+            activityIconState.bitmaps,
+            textBundle.googleSystemServiceDefaultTitle,
+            runtimeState.exportingCard,
+        ) {
+            OsPageMainListContentState(
+                noMatchedResultsText = textBundle.noMatchedResultsText,
+                derivedState = derivedState,
+                cardListDerivedState = cardListDerivedState,
+                runningShellCommandCardIds = routeState.runningShellCommandCardIds,
+                activityIconBitmaps = activityIconState.bitmaps,
+                defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
+                exportingCard = runtimeState.exportingCard,
+            )
+        }
+    val mainListExpansionState =
+        remember(
+            topInfoExpanded,
+            shellRunnerExpanded,
+            shellCommandCardExpanded,
+            activityCardExpanded,
+            systemTableExpanded,
+            secureTableExpanded,
+            globalTableExpanded,
+            androidPropsExpanded,
+            javaPropsExpanded,
+            linuxEnvExpanded,
+            osPageViewModel,
+        ) {
+            OsPageMainListExpansionState(
+                topInfoExpanded = topInfoExpanded,
+                shellRunnerExpanded = shellRunnerExpanded,
+                shellCommandCardExpanded = shellCommandCardExpanded,
+                activityCardExpanded = activityCardExpanded,
+                systemTableExpanded = systemTableExpanded,
+                secureTableExpanded = secureTableExpanded,
+                globalTableExpanded = globalTableExpanded,
+                androidPropsExpanded = androidPropsExpanded,
+                javaPropsExpanded = javaPropsExpanded,
+                linuxEnvExpanded = linuxEnvExpanded,
+                onTopInfoExpandedChange = osPageViewModel::updateTopInfoExpanded,
+                onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
+                onSystemTableExpandedChange = osPageViewModel::updateSystemTableExpanded,
+                onSecureTableExpandedChange = osPageViewModel::updateSecureTableExpanded,
+                onGlobalTableExpandedChange = osPageViewModel::updateGlobalTableExpanded,
+                onAndroidPropsExpandedChange = osPageViewModel::updateAndroidPropsExpanded,
+                onJavaPropsExpandedChange = osPageViewModel::updateJavaPropsExpanded,
+                onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
+            )
+        }
+    val mainListShowFloatingAddButton =
+        !activitySuggestionChromeState.showSheet &&
+            !overlayState.showShellCardVisibilityManager
+    val mainListSearchDockState =
+        remember(
+            mainListShowFloatingAddButton,
+            enableSearchBar,
+            chromeState.searchExpanded,
+            chromeState.overlaySearchSuppressed,
+            queryInput,
+            textBundle.searchLabel,
+            osPageViewModel,
+        ) {
+            OsPageMainListSearchDockState(
+                showFloatingAddButton = mainListShowFloatingAddButton,
+                searchExpanded =
+                    enableSearchBar &&
+                        chromeState.searchExpanded &&
+                        !chromeState.overlaySearchSuppressed,
+                queryInput = queryInput,
+                searchLabel = textBundle.searchLabel,
+                onQueryInputChange = { value ->
+                    if (!chromeState.overlaySearchSuppressed) {
+                        osPageViewModel.updateQueryInput(value)
+                    }
+                },
+                onSearchExpandedChange = { expanded ->
+                    osPageViewModel.updateSearchExpanded(
+                        enableSearchBar && expanded && !chromeState.overlaySearchSuppressed,
+                    )
+                },
+            )
+        }
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides osGlassRuntime) {
         OsPageScaffoldShell(
@@ -521,92 +654,17 @@ fun OsPage(
                 osPageViewModel = osPageViewModel,
             )
             OsPageMainList(
-                    context = context,
-                    listState = listState,
-                    innerPadding = innerPadding,
-                    scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
-                    contentBackdrop = backdrops.content,
-                    isDark = isDark,
-                    titleColor = titleColor,
-                    refreshing = runtimeState.refreshing,
-                    overviewState = overviewState,
-                    indicatorProgress = indicatorProgress,
-                    statusColor = statusColor,
-                    indicatorBg = indicatorBg,
-                    statusLabel = statusLabel,
-                    overviewCardColor = overviewCardColor,
-                    overviewBorderColor = overviewBorderColor,
-                    overviewMetricRows = overviewMetricRows,
-                    noMatchedResultsText = textBundle.noMatchedResultsText,
-                    query = derivedState.query,
-                    displayedTopInfoRows = derivedState.displayedTopInfoRows,
-                    groupedTopInfoRows = derivedState.groupedTopInfoRows,
-                    topInfoExpanded = topInfoExpanded,
-                    onTopInfoExpandedChange = osPageViewModel::updateTopInfoExpanded,
-                    shellRunnerRows = derivedState.shellRunnerRows,
-                    shellRunnerExpanded = shellRunnerExpanded,
-                    onShellRunnerExpandedChange = osPageViewModel::updateShellRunnerExpanded,
-                    onOpenShellRunner = mainListActions.onOpenShellRunner,
-                    shellCommandCards = cardListDerivedState.visibleShellCommandCards,
-                    shellCommandCardExpanded = shellCommandCardExpanded,
-                    runningShellCommandCardIds = routeState.runningShellCommandCardIds,
-                    onShellCommandCardExpandedChange = mainListActions.onShellCommandCardExpandedChange,
-                    onOpenShellCommandCardEditor = mainListActions.onOpenShellCommandCardEditor,
-                    onRunShellCommandCard = mainListActions.onRunShellCommandCard,
-                    activityShortcutCards = cardListDerivedState.visibleActivityShortcutCards,
-                    activityIconBitmaps = activityIconState.bitmaps,
-                    defaultActivityCardTitle = textBundle.googleSystemServiceDefaultTitle,
-                    activityCardExpanded = activityCardExpanded,
-                    onActivityCardExpandedChange = mainListActions.onActivityCardExpandedChange,
-                    onOpenActivityShortcutCard = mainListActions.onOpenActivityShortcutCard,
-                    onOpenActivityShortcutCardEditor = mainListActions.onOpenActivityShortcutCardEditor,
-                    displayedSystemRows = derivedState.displayedSystemRows,
-                    displayedSecureRows = derivedState.displayedSecureRows,
-                    displayedGlobalRows = derivedState.displayedGlobalRows,
-                    displayedAndroidRows = derivedState.displayedAndroidRows,
-                    displayedJavaRows = derivedState.displayedJavaRows,
-                    displayedLinuxRows = derivedState.displayedLinuxRows,
-                    prunedSystemRows = derivedState.prunedSystemRows,
-                    prunedSecureRows = derivedState.prunedSecureRows,
-                    prunedGlobalRows = derivedState.prunedGlobalRows,
-                    prunedAndroidRows = derivedState.prunedAndroidRows,
-                    prunedJavaRows = derivedState.prunedJavaRows,
-                    prunedLinuxRows = derivedState.prunedLinuxRows,
-                    systemTableExpanded = systemTableExpanded,
-                    onSystemTableExpandedChange = osPageViewModel::updateSystemTableExpanded,
-                    secureTableExpanded = secureTableExpanded,
-                    onSecureTableExpandedChange = osPageViewModel::updateSecureTableExpanded,
-                    globalTableExpanded = globalTableExpanded,
-                    onGlobalTableExpandedChange = osPageViewModel::updateGlobalTableExpanded,
-                    androidPropsExpanded = androidPropsExpanded,
-                    onAndroidPropsExpandedChange = osPageViewModel::updateAndroidPropsExpanded,
-                    javaPropsExpanded = javaPropsExpanded,
-                    onJavaPropsExpandedChange = osPageViewModel::updateJavaPropsExpanded,
-                    linuxEnvExpanded = linuxEnvExpanded,
-                    onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
-                    isCardVisible = mainListActions.isCardVisible,
-                    sectionSubtitle = mainListActions.sectionSubtitle,
-                    exportingCard = runtimeState.exportingCard,
-                    onExportCard = mainListActions.onExportCard,
-                    onRefreshAll = mainListActions.onRefreshAll,
-                    contentBottomPadding = runtime.contentBottomPadding,
-                    showFloatingAddButton =
-                        !activitySuggestionChromeState.showSheet &&
-                            !overlayState.showShellCardVisibilityManager,
-                    onOpenAddActivityShortcutCard = mainListActions.onOpenAddActivityShortcutCard,
-                    bottomBarVisible = runtime.bottomBarVisible,
-                    searchExpanded = enableSearchBar && chromeState.searchExpanded && !chromeState.overlaySearchSuppressed,
-                    queryInput = queryInput,
-                    onQueryInputChange = { value ->
-                        if (!chromeState.overlaySearchSuppressed) {
-                            osPageViewModel.updateQueryInput(value)
-                        }
-                    },
-                    onSearchExpandedChange = { expanded ->
-                        osPageViewModel.updateSearchExpanded(enableSearchBar && expanded && !chromeState.overlaySearchSuppressed)
-                    },
-                    searchLabel = textBundle.searchLabel,
-                    floatingDockSide = runtime.floatingDockSide,
+                context = context,
+                listState = listState,
+                innerPadding = innerPadding,
+                scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
+                contentBackdrop = backdrops.content,
+                chromeState = mainListChromeState,
+                overviewState = mainListOverviewState,
+                contentState = mainListContentState,
+                expansionState = mainListExpansionState,
+                searchDockState = mainListSearchDockState,
+                actions = mainListActions,
             )
         }
     }

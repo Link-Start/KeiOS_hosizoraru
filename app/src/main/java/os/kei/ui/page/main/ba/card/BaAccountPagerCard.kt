@@ -5,6 +5,7 @@ package os.kei.ui.page.main.ba.card
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -83,20 +85,30 @@ internal fun BaAccountPagerCard(
             }
     }
 
-    HorizontalPager(
-        state = pagerState,
-        userScrollEnabled = accounts.size > 1,
-        pageSpacing = 8.dp,
-    ) { page ->
-        val account = accounts[page]
-        BaAccountPageCard(
-            backdrop = backdrop,
-            account = account,
-            page = page,
-            pageCount = accounts.size,
-            serverOptions = serverOptions,
-            onEditAccount = { onEditAccount(account.id) },
-        )
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clipToBounds(),
+    ) {
+        HorizontalPager(
+            modifier = Modifier.clipToBounds(),
+            state = pagerState,
+            userScrollEnabled = accounts.size > 1,
+            pageSpacing = 16.dp,
+        ) { page ->
+            val account = accounts[page]
+            Box(modifier = Modifier.fillMaxWidth().clipToBounds()) {
+                BaAccountPageCard(
+                    backdrop = backdrop,
+                    account = account,
+                    page = page,
+                    pageCount = accounts.size,
+                    serverOptions = serverOptions,
+                    onEditAccount = { onEditAccount(account.id) },
+                )
+            }
+        }
     }
 }
 

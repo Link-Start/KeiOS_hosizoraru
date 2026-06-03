@@ -1,8 +1,11 @@
 package os.kei.ui.page.main.github.page.action
 
+import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.model.GitHubTrackedApp
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class GitHubRefreshActionsTest {
     @Test
@@ -111,6 +114,41 @@ class GitHubRefreshActionsTest {
         )
 
         assertEquals(listOf(beta, alpha), selected)
+    }
+
+    @Test
+    fun `visible refresh plan promotes full active coverage to all tracked`() {
+        val alpha = tracked("alpha")
+        val beta = tracked("beta")
+        val plan = planGitHubTrackedBatchRefresh(
+            requestedTargetIds = listOf(beta.id, "missing", alpha.id, beta.id),
+            activeItems = listOf(alpha, beta),
+            refreshScope = GitHubRefreshScope.VisibleTracked,
+            updateGlobalRefreshTimestamp = false,
+        )
+
+        assertEquals(listOf(beta, alpha), plan.targets)
+        assertEquals(listOf(beta.id, alpha.id), plan.targetIds)
+        assertTrue(plan.coversAllActiveItems)
+        assertEquals(GitHubRefreshScope.AllTracked, plan.refreshScope)
+        assertTrue(plan.updateGlobalRefreshTimestamp)
+    }
+
+    @Test
+    fun `visible refresh plan keeps partial active coverage scoped`() {
+        val alpha = tracked("alpha")
+        val beta = tracked("beta")
+        val plan = planGitHubTrackedBatchRefresh(
+            requestedTargetIds = listOf(alpha.id),
+            activeItems = listOf(alpha, beta),
+            refreshScope = GitHubRefreshScope.VisibleTracked,
+            updateGlobalRefreshTimestamp = false,
+        )
+
+        assertEquals(listOf(alpha), plan.targets)
+        assertFalse(plan.coversAllActiveItems)
+        assertEquals(GitHubRefreshScope.VisibleTracked, plan.refreshScope)
+        assertFalse(plan.updateGlobalRefreshTimestamp)
     }
 
     @Test

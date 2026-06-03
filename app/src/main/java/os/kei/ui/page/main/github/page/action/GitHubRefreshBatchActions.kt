@@ -42,11 +42,14 @@ internal class GitHubRefreshBatchActions(
         refreshScope: GitHubRefreshScope,
         onFinished: (() -> Unit)? = null,
     ) {
-        val snapshot = selectActiveTrackedRefreshTargets(
-            requestedTrackIds = requestedTargetIds,
+        val refreshPlan = planGitHubTrackedBatchRefresh(
+            requestedTargetIds = requestedTargetIds,
             activeItems = state.trackedItems.toList(),
+            refreshScope = refreshScope,
+            updateGlobalRefreshTimestamp = updateGlobalRefreshTimestamp,
         )
-        val targetIds = snapshot.map { it.id }
+        val snapshot = refreshPlan.targets
+        val targetIds = refreshPlan.targetIds
         if (snapshot.isEmpty()) {
             if (showToast) {
                 owner.env.toast(R.string.github_toast_no_checkable_item)
@@ -67,7 +70,7 @@ internal class GitHubRefreshBatchActions(
                 val runtimeSession =
                     checkNotNull(
                         GitHubRefreshRuntimeStore.begin(
-                            scope = refreshScope,
+                            scope = refreshPlan.refreshScope,
                             source = GitHubRefreshSource.Page,
                             totalTrackedCount = state.trackedItems.size,
                             targetCount = snapshot.size,
@@ -279,11 +282,11 @@ internal class GitHubRefreshBatchActions(
                         } else {
                             OverviewRefreshState.Completed
                         }
-                    if (updateGlobalRefreshTimestamp) {
+                    if (refreshPlan.updateGlobalRefreshTimestamp) {
                         state.lastRefreshMs = clock.nowMs()
                     }
                     state.refreshProgress = 1f
-                    if (clearAllCheckCache || updateGlobalRefreshTimestamp) {
+                    if (clearAllCheckCache || refreshPlan.updateGlobalRefreshTimestamp) {
                         owner.persistCheckCacheNow()
                     } else {
                         owner.mergeCheckCacheNow(targetIds = targetIds.toSet())

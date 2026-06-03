@@ -167,6 +167,7 @@ fun OsPage(
     LaunchedEffect(settledDataActive) {
         if (!settledDataActive) {
             osPageViewModel.closePersistentShell()
+            osPageViewModel.cancelActiveSectionRefreshes()
         }
     }
     BindOsShellCardReloadOnResume(

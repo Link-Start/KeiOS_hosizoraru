@@ -305,6 +305,10 @@ internal class OsPageViewModel : ViewModel() {
         repository.closePersistentShell()
     }
 
+    fun cancelActiveSectionRefreshes() {
+        sectionController.cancelActiveSectionRefreshes()
+    }
+
     fun openActivityShortcutCard(
         card: OsActivityShortcutCard,
         defaults: OsGoogleSystemServiceConfig,

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.shizuku.ShizukuApiUtils
+import kotlin.coroutines.coroutineContext
 
 internal class OsPageSectionController(
     private val scope: CoroutineScope,
@@ -23,7 +24,9 @@ internal class OsPageSectionController(
     private val runtimeMutableState: MutableStateFlow<OsPageRuntimeState>,
     private val events: MutableSharedFlow<OsPageEvent>,
 ) {
+    private val loadGeneration = OsPageSectionLoadGeneration()
     private var initialVisibleRefreshJob: Job? = null
+    private var refreshAllJob: Job? = null
 
     suspend fun hydrateInitialCache(
         isPageActive: Boolean,
@@ -53,6 +56,8 @@ internal class OsPageSectionController(
         }
         if (isPageActive) {
             scheduleInitialVisibleRefresh(visibleSections, ensureLoad)
+        } else {
+            cancelActiveSectionRefreshes()
         }
     }
 
@@ -82,6 +87,7 @@ internal class OsPageSectionController(
         val currentState = runtimeState.value.sectionStates[section] ?: SectionState()
         val visibleCards = persistentState.value.uiSnapshot.visibleCards
         if (!sectionLoadRepository.shouldLoad(section, forceRefresh, visibleCards, currentState)) return
+        val generation = loadGeneration.current()
         updateSection(section) { it.copy(loading = true, loadFailed = false) }
         try {
             when (
@@ -96,15 +102,22 @@ internal class OsPageSectionController(
                     )
             ) {
                 OsSectionLoadResult.Joined -> Unit
-                is OsSectionLoadResult.Loaded -> applyLoadedSection(section, result)
+                is OsSectionLoadResult.Loaded -> {
+                    if (loadGeneration.isCurrent(generation)) {
+                        applyLoadedSection(section, result)
+                    }
+                }
             }
         } catch (error: Throwable) {
             error.rethrowIfCancellation()
-            updateSection(section) { it.copy(loading = false, loadFailed = true) }
+            if (loadGeneration.isCurrent(generation)) {
+                updateSection(section) { it.copy(loading = false, loadFailed = true) }
+            }
         }
     }
 
     fun invalidateShizukuSections() {
+        advanceLoadGeneration(clearLoading = true)
         listOf(
             SectionKind.SYSTEM,
             SectionKind.SECURE,
@@ -120,6 +133,7 @@ internal class OsPageSectionController(
         visible: Boolean,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     ) {
+        cancelActiveSectionRefreshes()
         val updatedVisibleCards =
             visibilityRepository.updatedVisibleCards(
                 currentVisibleCards = persistentState.value.uiSnapshot.visibleCards,
@@ -150,34 +164,58 @@ internal class OsPageSectionController(
     }
 
     fun refreshAllSections(ensureLoad: suspend (SectionKind, Boolean) -> Unit) {
-        if (runtimeState.value.refreshing) return
-        scope.launch {
-            runtimeMutableState.update { state ->
-                state.copy(
-                    refreshing = true,
-                    refreshProgress = 0f,
-                )
-            }
-            try {
-                val targets =
-                    refreshRepository.refreshableSections(
-                        persistentState.value.uiSnapshot.visibleCards,
+        if (runtimeState.value.refreshing || refreshAllJob?.isActive == true) return
+        initialVisibleRefreshJob?.cancel()
+        initialVisibleRefreshJob = null
+        val generation = loadGeneration.advance()
+        refreshAllJob =
+            scope.launch {
+                runtimeMutableState.update { state ->
+                    state.copy(
+                        refreshing = true,
+                        refreshProgress = 0f,
                     )
-                val sectionCount = targets.size.coerceAtLeast(1)
-                targets.forEachIndexed { index, section ->
-                    ensureLoad(section, true)
-                    runtimeMutableState.update { state ->
-                        state.copy(refreshProgress = (index + 1).toFloat() / sectionCount.toFloat())
+                }
+                try {
+                    val targets =
+                        refreshRepository.refreshableSections(
+                            persistentState.value.uiSnapshot.visibleCards,
+                        )
+                    val sectionCount = targets.size.coerceAtLeast(1)
+                    targets.forEachIndexed { index, section ->
+                        if (!loadGeneration.isCurrent(generation)) return@launch
+                        ensureLoad(section, true)
+                        if (loadGeneration.isCurrent(generation)) {
+                            runtimeMutableState.update { state ->
+                                state.copy(refreshProgress = (index + 1).toFloat() / sectionCount.toFloat())
+                            }
+                        }
+                    }
+                    if (loadGeneration.isCurrent(generation)) {
+                        events.emit(OsPageEvent.RefreshCompleted(refreshed = targets.isNotEmpty()))
+                    }
+                } catch (error: Throwable) {
+                    error.rethrowIfCancellation()
+                    if (loadGeneration.isCurrent(generation)) {
+                        events.emit(OsPageEvent.OperationFailed(error))
+                    }
+                } finally {
+                    if (loadGeneration.isCurrent(generation)) {
+                        runtimeMutableState.update { state -> state.copy(refreshing = false) }
+                    }
+                    if (refreshAllJob === coroutineContext[Job]) {
+                        refreshAllJob = null
                     }
                 }
-                events.emit(OsPageEvent.RefreshCompleted(refreshed = targets.isNotEmpty()))
-            } catch (error: Throwable) {
-                error.rethrowIfCancellation()
-                events.emit(OsPageEvent.OperationFailed(error))
-            } finally {
-                runtimeMutableState.update { state -> state.copy(refreshing = false) }
             }
-        }
+    }
+
+    fun cancelActiveSectionRefreshes() {
+        initialVisibleRefreshJob?.cancel()
+        initialVisibleRefreshJob = null
+        refreshAllJob?.cancel()
+        refreshAllJob = null
+        advanceLoadGeneration(clearLoading = true)
     }
 
     private fun scheduleInitialVisibleRefresh(
@@ -185,6 +223,7 @@ internal class OsPageSectionController(
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     ) {
         if (initialVisibleRefreshJob?.isActive == true) return
+        val generation = loadGeneration.advance()
         val visibleCards = persistentState.value.uiSnapshot.visibleCards
         val sectionStates = runtimeState.value.sectionStates
         val sectionsToLoad =
@@ -210,20 +249,43 @@ internal class OsPageSectionController(
                 delay(OS_INITIAL_VISIBLE_REFRESH_DELAY_MS)
                 try {
                     sectionsToLoad.forEachIndexed { index, section ->
+                        if (!loadGeneration.isCurrent(generation)) return@launch
                         ensureLoad(section, false)
-                        if (index < sectionsToLoad.lastIndex) {
+                        if (loadGeneration.isCurrent(generation) && index < sectionsToLoad.lastIndex) {
                             delay(OS_INITIAL_SECTION_LOAD_SPACING_MS)
                         }
                     }
                 } catch (error: Throwable) {
                     error.rethrowIfCancellation()
-                    events.emit(OsPageEvent.OperationFailed(error))
+                    if (loadGeneration.isCurrent(generation)) {
+                        events.emit(OsPageEvent.OperationFailed(error))
+                    }
                 } finally {
-                    runtimeMutableState.update { state ->
-                        state.copy(initialVisibleRefreshComplete = true)
+                    if (loadGeneration.isCurrent(generation)) {
+                        runtimeMutableState.update { state ->
+                            state.copy(initialVisibleRefreshComplete = true)
+                        }
+                    }
+                    if (initialVisibleRefreshJob === coroutineContext[Job]) {
+                        initialVisibleRefreshJob = null
                     }
                 }
             }
+    }
+
+    private fun advanceLoadGeneration(clearLoading: Boolean) {
+        loadGeneration.advance()
+        if (!clearLoading) return
+        runtimeMutableState.update { state ->
+            state.copy(
+                refreshing = false,
+                initialVisibleRefreshComplete = true,
+                sectionStates =
+                    state.sectionStates.mapValues { (_, sectionState) ->
+                        sectionState.copy(loading = false)
+                    },
+            )
+        }
     }
 
     private fun applyLoadedSection(

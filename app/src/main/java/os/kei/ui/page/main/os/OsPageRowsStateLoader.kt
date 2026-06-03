@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.os
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +12,8 @@ import kotlinx.coroutines.launch
 internal class OsPageRowsStateLoader(
     private val scope: CoroutineScope,
     private val repository: OsPageRepository,
+    private val buildRowsDerivedState: suspend (OsPageRowsDerivationInput) -> OsPageRowsUiDerivedState =
+        repository::buildRowsDerivedState,
 ) {
     private val mutableState = MutableStateFlow(OsPageRowsUiDerivedState.Empty)
     private var rowsDerivationJob: Job? = null
@@ -28,7 +31,18 @@ internal class OsPageRowsStateLoader(
                         deriving = true,
                     )
                 }
-                mutableState.value = repository.buildRowsDerivedState(input)
+                try {
+                    mutableState.value = buildRowsDerivedState(input)
+                } catch (error: Throwable) {
+                    error.rethrowIfCancellation()
+                    mutableState.update { state ->
+                        if (state.input == input) {
+                            state.copy(deriving = false)
+                        } else {
+                            state
+                        }
+                    }
+                }
             }
     }
 
@@ -36,4 +50,8 @@ internal class OsPageRowsStateLoader(
         rowsDerivationJob?.cancel()
         rowsDerivationJob = null
     }
+}
+
+private fun Throwable.rethrowIfCancellation() {
+    if (this is CancellationException) throw this
 }

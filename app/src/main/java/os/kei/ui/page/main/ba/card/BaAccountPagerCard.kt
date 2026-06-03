@@ -5,7 +5,6 @@ package os.kei.ui.page.main.ba.card
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,7 +20,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +43,9 @@ import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
+
+private const val AccountPageLiquidActivationDistance = 0.99f
 
 @Composable
 internal fun BaAccountPagerCard(
@@ -85,30 +86,26 @@ internal fun BaAccountPagerCard(
             }
     }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clipToBounds(),
-    ) {
-        HorizontalPager(
-            modifier = Modifier.clipToBounds(),
-            state = pagerState,
-            userScrollEnabled = accounts.size > 1,
-            pageSpacing = 16.dp,
-        ) { page ->
-            val account = accounts[page]
-            Box(modifier = Modifier.fillMaxWidth().clipToBounds()) {
-                BaAccountPageCard(
-                    backdrop = backdrop,
-                    account = account,
-                    page = page,
-                    pageCount = accounts.size,
-                    serverOptions = serverOptions,
-                    onEditAccount = { onEditAccount(account.id) },
-                )
-            }
-        }
+    HorizontalPager(
+        state = pagerState,
+        userScrollEnabled = accounts.size > 1,
+        pageSpacing = 24.dp,
+    ) { page ->
+        val account = accounts[page]
+        val pageOffset =
+            abs(
+                (pagerState.currentPage - page) +
+                    pagerState.currentPageOffsetFraction,
+            )
+        BaAccountPageCard(
+            backdrop = backdrop,
+            account = account,
+            page = page,
+            pageCount = accounts.size,
+            serverOptions = serverOptions,
+            effectsEnabled = pageOffset < AccountPageLiquidActivationDistance,
+            onEditAccount = { onEditAccount(account.id) },
+        )
     }
 }
 
@@ -155,6 +152,7 @@ private fun BaAccountPageCard(
     page: Int,
     pageCount: Int,
     serverOptions: List<String>,
+    effectsEnabled: Boolean,
     onEditAccount: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -191,6 +189,7 @@ private fun BaAccountPageCard(
         backdrop = backdrop,
         accentColor = accentColor,
         accentAlpha = 0f,
+        effectsEnabled = effectsEnabled,
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp),
         verticalSpacing = 6.dp,
     ) {
@@ -234,6 +233,7 @@ private fun BaAccountPageCard(
                 valueLineHeight = AppTypographyTokens.CardHeader.lineHeight,
                 valueFontWeight = AppTypographyTokens.CardHeader.fontWeight,
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                effectsEnabled = effectsEnabled,
                 modifier = Modifier.weight(1f),
             )
             BaLiquidMetricPanel(
@@ -250,6 +250,7 @@ private fun BaAccountPageCard(
                 valueLineHeight = AppTypographyTokens.CardHeader.lineHeight,
                 valueFontWeight = AppTypographyTokens.CardHeader.fontWeight,
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                effectsEnabled = effectsEnabled,
                 modifier = Modifier.weight(1f),
                 onClick = ::copyFriendCode,
             )

@@ -255,11 +255,13 @@ internal fun BaLiquidMetricPanel(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     pressFeedback: Boolean = true,
+    effectsEnabled: Boolean = true,
 ) {
     BaLiquidPanel(
         backdrop = backdrop,
         modifier = modifier,
         accentColor = accentColor,
+        effectsEnabled = effectsEnabled,
         contentPadding = contentPadding,
         onClick = onClick,
         onLongClick = onLongClick,

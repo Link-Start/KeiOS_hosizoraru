@@ -280,6 +280,7 @@ val startupProfileRuleCount = countGeneratedProfileRules("startup-prof.txt")
 
 plugins {
     id("com.android.application")
+    id("androidx.baselineprofile")
     id("io.github.takahirom.roborazzi")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
@@ -382,6 +383,26 @@ android {
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 
+        create("nonMinifiedRelease") {
+            initWith(getByName("release"))
+            optimization.enable = false
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = false
+            isJniDebuggable = false
+            isProfileable = true
+            enableAndroidTestCoverage = false
+            enableUnitTestCoverage = false
+            signingConfig =
+                if (releaseSigningConfigured) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
+            matchingFallbacks += listOf("release")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
+        }
+
         create("benchmark") {
             initWith(getByName("release"))
             signingConfig =
@@ -430,6 +451,10 @@ android {
 }
 
 androidComponents {
+    beforeVariants(selector().withBuildType("nonMinifiedRelease")) { variant ->
+        variant.isMinifyEnabled = false
+        variant.shrinkResources = false
+    }
     onVariants { variant ->
         variant.buildConfigFields?.put(
             "BUILD_TIME_MILLIS",
@@ -441,9 +466,10 @@ androidComponents {
                 )
             },
         )
-        // dex-startup-optimization uses baseline profiles for dex layout optimization.
-        // Keep the property explicit for release-like builds so benchmark checks the same path.
-        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, true)
+        // Generated startup profiles include D8/R8 synthetic lambda rules that R8 reports as
+        // missing before minification. Keep ART baseline profiles enabled and skip dex layout
+        // optimization so release-like builds stay quiet and deterministic.
+        variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
     }
     onVariants(selector().withBuildType("benchmark")) { variant ->
         variant.sources.baselineProfiles?.addStaticSourceDirectory("src/release/generated/baselineProfiles")
@@ -455,6 +481,12 @@ androidComponents {
         }
     }
     onVariants(selector().withBuildType("debug")) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionName.set(nonReleaseVersionName)
+            output.versionCode.set(preReleaseVersionCode)
+        }
+    }
+    onVariants(selector().withBuildType("nonMinifiedRelease")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(nonReleaseVersionName)
             output.versionCode.set(preReleaseVersionCode)
@@ -490,6 +522,8 @@ configurations.configureEach {
 }
 
 dependencies {
+    baselineProfile(project(":baselineprofile"))
+
     implementation(project(":core-concurrency"))
     implementation(project(":core-log"))
     implementation(project(":core-io"))

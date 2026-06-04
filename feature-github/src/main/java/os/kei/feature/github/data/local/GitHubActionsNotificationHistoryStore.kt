@@ -85,6 +85,37 @@ object GitHubActionsNotificationHistoryStore {
         saveIndex(remaining, kv)
     }
 
+    fun pruneBefore(
+        cutoffMillis: Long,
+        owner: String = "",
+        repo: String = "",
+    ): Int {
+        if (cutoffMillis <= 0L) return 0
+        val normalizedOwner = owner.trim().lowercase(Locale.ROOT)
+        val normalizedRepo = repo.trim().lowercase(Locale.ROOT)
+        val kv = kv()
+        val remaining = mutableSetOf<String>()
+        var removedCount = 0
+        loadIndex(kv).forEach { id ->
+            val record = decodeRecord(kv.decodeString(entryStoreKey(id)).orEmpty())
+            val scoped =
+                record != null &&
+                    (normalizedOwner.isBlank() || record.owner.equals(normalizedOwner, ignoreCase = true)) &&
+                    (normalizedRepo.isBlank() || record.repo.equals(normalizedRepo, ignoreCase = true))
+            if (scoped && shouldPruneBefore(record, cutoffMillis)) {
+                kv.removeValueForKey(entryStoreKey(id))
+                removedCount += 1
+            } else {
+                remaining += id
+            }
+        }
+        saveIndex(remaining, kv)
+        if (removedCount > 0) {
+            kv.trim()
+        }
+        return removedCount
+    }
+
     fun cachedRecordCount(): Int = loadIndex().size
 
     internal fun encodeRecord(record: GitHubActionsNotificationHistoryRecord): JsonObject {
@@ -199,6 +230,13 @@ object GitHubActionsNotificationHistoryStore {
                 record.runNumber.toString(),
             ).joinToString("|"),
         )
+    }
+
+    internal fun shouldPruneBefore(
+        record: GitHubActionsNotificationHistoryRecord,
+        cutoffMillis: Long,
+    ): Boolean {
+        return cutoffMillis > 0L && record.notifiedAtMillis in 1 until cutoffMillis
     }
 
     private fun trimIndex(index: MutableSet<String>, kv: MMKV) {

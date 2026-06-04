@@ -471,6 +471,20 @@ class GitHubActionsService(
         }
     }
 
+    suspend fun pruneGitHubActionsNotificationHistoryBefore(
+        cutoffMillis: Long,
+        owner: String = "",
+        repo: String = ""
+    ): Int {
+        return withContext(ioDispatcher) {
+            GitHubActionsNotificationHistoryStore.pruneBefore(
+                cutoffMillis = cutoffMillis,
+                owner = owner,
+                repo = repo
+            )
+        }
+    }
+
     suspend fun selectGitHubActionsRuns(
         runs: List<GitHubActionsRunArtifacts>,
         options: GitHubActionsRunSelectionOptions,

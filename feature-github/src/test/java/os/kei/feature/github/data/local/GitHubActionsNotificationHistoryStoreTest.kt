@@ -46,6 +46,30 @@ class GitHubActionsNotificationHistoryStoreTest {
     }
 
     @Test
+    fun `notification history prune predicate uses notified time boundary`() {
+        val oldRecord = createRecord(notifiedAtMillis = 1000L)
+        val boundaryRecord = createRecord(notifiedAtMillis = 1500L)
+        val missingTimeRecord = createRecord(notifiedAtMillis = 0L)
+
+        assertEquals(
+            true,
+            GitHubActionsNotificationHistoryStore.shouldPruneBefore(oldRecord, cutoffMillis = 1500L),
+        )
+        assertEquals(
+            false,
+            GitHubActionsNotificationHistoryStore.shouldPruneBefore(boundaryRecord, cutoffMillis = 1500L),
+        )
+        assertEquals(
+            false,
+            GitHubActionsNotificationHistoryStore.shouldPruneBefore(missingTimeRecord, cutoffMillis = 1500L),
+        )
+        assertEquals(
+            false,
+            GitHubActionsNotificationHistoryStore.shouldPruneBefore(oldRecord, cutoffMillis = 0L),
+        )
+    }
+
+    @Test
     fun `service builds notification history from recommended run snapshot`() {
         val snapshot = createSnapshot()
         val record =

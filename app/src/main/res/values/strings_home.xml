@@ -19,7 +19,7 @@
     <string name="home_status_loading">读取中</string>
     <string name="home_app_version_unknown_fallback">unknown</string>
     <string name="home_app_version_unknown">版本未知</string>
-    <string name="home_header_tagline">OS · MCP · GitHub · WebDAV · BA · 图鉴 一体化工具台</string>
+    <string name="home_header_tagline">OS · MCP · GitHub · BA 一体化工具台</string>
     <string name="home_status_ba">BA</string>
     <string name="home_status_webdav">WebDAV</string>
     <string name="home_status_shizuku">Shizuku</string>
@@ -68,6 +68,9 @@
     <string name="home_stat_prerelease_updates">预发</string>
     <string name="home_stat_failed">失败</string>
     <string name="home_stat_tracked">追踪</string>
+    <string name="home_stat_github_sources">来源</string>
+    <string name="home_stat_actions">Actions</string>
+    <string name="home_stat_precise_version">精准</string>
     <string name="home_stat_cached">缓存</string>
     <string name="home_stat_cache_state">新鲜度</string>
     <string name="home_stat_share">分享</string>
@@ -79,6 +82,8 @@
     <string name="home_stat_ap">AP</string>
     <string name="home_stat_cafe_ap">咖啡</string>
     <string name="home_stat_ap_remaining">余量</string>
+    <string name="home_stat_ba_accounts">账号</string>
+    <string name="home_stat_ba_active_account">当前</string>
     <string name="home_stat_ba_server">服</string>
     <string name="home_stat_ba_notify">提醒</string>
     <string name="home_value_fraction">%1$d/%2$d</string>
@@ -91,6 +96,7 @@
     <string name="home_value_unauthorized">未授权</string>
     <string name="home_value_devices_count">%1$d 台</string>
     <string name="home_value_failed_count">%1$d 失败</string>
+    <string name="home_value_github_sources">GH%1$d Git%2$d 订%3$d</string>
     <string name="home_value_threshold_plus">%1$d+</string>
     <string name="home_cache_state_fresh">新鲜</string>
     <string name="home_cache_state_stale">过期</string>

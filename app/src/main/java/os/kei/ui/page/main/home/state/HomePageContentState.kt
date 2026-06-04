@@ -55,6 +55,12 @@ internal data class HomePageContentState(
     val githubFailedLine: String,
     val homeStatTracked: String,
     val trackedCountLine: String,
+    val homeStatGitHubSources: String,
+    val githubSourcesLine: String,
+    val homeStatActions: String,
+    val githubActionsLine: String,
+    val homeStatPreciseVersion: String,
+    val githubPreciseVersionLine: String,
     val homeStatCached: String,
     val cacheHitCountLine: String,
     val homeStatCacheState: String,
@@ -75,6 +81,10 @@ internal data class HomePageContentState(
     val baCafeApLine: String,
     val homeStatApRemaining: String,
     val baApRemainingLine: String,
+    val homeStatBaAccounts: String,
+    val baAccountsLine: String,
+    val homeStatBaActiveAccount: String,
+    val baActiveAccountLine: String,
     val homeStatBaServer: String,
     val baServerLine: String,
     val homeStatBaNotify: String,
@@ -101,13 +111,16 @@ internal fun rememberHomePageContentState(
     runtimeNowMs: Long,
 ): HomePageContentState {
     val text = rememberHomePageContentTextBundle()
+    val inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant
     val colors =
-        HomePageContentColors(
-            runningColor = AppStatusColors.Fresh,
-            stoppedColor = AppStatusColors.Failed,
-            inactiveColor = MiuixTheme.colorScheme.onBackgroundVariant,
-            githubCacheColor = AppStatusColors.Cached,
-        )
+        remember(inactiveColor) {
+            HomePageContentColors(
+                runningColor = AppStatusColors.Fresh,
+                stoppedColor = AppStatusColors.Failed,
+                inactiveColor = inactiveColor,
+                githubCacheColor = AppStatusColors.Cached,
+            )
+        }
     return remember(
         shizukuStatus,
         appOverview,
@@ -117,7 +130,7 @@ internal fun rememberHomePageContentState(
         baOverview,
         runtimeNowMs,
         text,
-        colors
+        colors,
     ) {
         deriveHomePageContentState(
             shizukuStatus = shizukuStatus,

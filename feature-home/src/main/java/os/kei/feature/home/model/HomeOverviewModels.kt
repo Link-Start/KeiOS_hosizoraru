@@ -22,6 +22,11 @@ data class HomeMcpOverview(
 @Immutable
 data class HomeGitHubOverview(
     val trackedCount: Int = 0,
+    val githubRepositoryCount: Int = 0,
+    val gitRepositoryCount: Int = 0,
+    val directApkCount: Int = 0,
+    val actionsTrackedCount: Int = 0,
+    val preciseApkVersionCount: Int = 0,
     val cacheHitCount: Int = 0,
     val updatableCount: Int = 0,
     val preReleaseUpdateCount: Int = 0,
@@ -47,6 +52,9 @@ data class HomeGitHubOverview(
 @Immutable
 data class HomeBaOverview(
     val activated: Boolean = false,
+    val accountCount: Int = 0,
+    val enabledAccountCount: Int = 0,
+    val activeAccountName: String = "",
     val serverIndex: Int = 2,
     val apCurrent: Int = 0,
     val apLimit: Int = HOME_BA_AP_LIMIT_MAX,

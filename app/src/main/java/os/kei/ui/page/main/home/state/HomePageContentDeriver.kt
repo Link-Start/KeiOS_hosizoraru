@@ -69,6 +69,14 @@ internal fun deriveHomePageContentState(
             text.commonNotUsed
         }
     val githubRefreshIntervalLine = text.shortHours(githubOverview.refreshIntervalHours.coerceAtLeast(1))
+    val githubSourcesLine =
+        text.githubSources(
+            github = githubOverview.githubRepositoryCount,
+            git = githubOverview.gitRepositoryCount,
+            directApk = githubOverview.directApkCount,
+        )
+    val githubActionsLine = text.githubCount(githubOverview.actionsTrackedCount)
+    val githubPreciseVersionLine = text.githubCount(githubOverview.preciseApkVersionCount)
     val cacheRefreshLine =
         formatGitHubCacheAgo(
             lastRefreshMs = githubOverview.cachedRefreshMs,
@@ -155,6 +163,18 @@ internal fun deriveHomePageContentState(
         } else {
             text.loading
         }
+    val baAccountsLine =
+        if (baOverview.loaded) {
+            text.fraction(baOverview.enabledAccountCount, baOverview.accountCount)
+        } else {
+            text.loading
+        }
+    val baActiveAccountLine =
+        if (baOverview.loaded) {
+            baOverview.activeAccountName.ifBlank { baActivationLine }
+        } else {
+            text.loading
+        }
     val baFocusLine =
         if (baOverview.loaded && baOverview.activated) {
             text.fraction(baOverview.apCurrent, baOverview.apLimit)
@@ -230,6 +250,12 @@ internal fun deriveHomePageContentState(
         githubFailedLine = githubFailedLine,
         homeStatTracked = text.statTracked,
         trackedCountLine = text.githubCount(trackedCount),
+        homeStatGitHubSources = text.statGitHubSources,
+        githubSourcesLine = githubSourcesLine,
+        homeStatActions = text.statActions,
+        githubActionsLine = githubActionsLine,
+        homeStatPreciseVersion = text.statPreciseVersion,
+        githubPreciseVersionLine = githubPreciseVersionLine,
         homeStatCached = text.statCached,
         cacheHitCountLine = text.githubCount(cacheHitCount),
         homeStatCacheState = text.statCacheState,
@@ -250,6 +276,10 @@ internal fun deriveHomePageContentState(
         baCafeApLine = baCafeApLine,
         homeStatApRemaining = text.statApRemaining,
         baApRemainingLine = baApRemainingLine,
+        homeStatBaAccounts = text.statBaAccounts,
+        baAccountsLine = baAccountsLine,
+        homeStatBaActiveAccount = text.statBaActiveAccount,
+        baActiveAccountLine = baActiveAccountLine,
         homeStatBaServer = text.statBaServer,
         baServerLine = baServerLine,
         homeStatBaNotify = text.statBaNotify,

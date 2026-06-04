@@ -36,6 +36,11 @@ class HomePageContentDeriverTest {
                     HomeGitHubOverview(
                         loaded = true,
                         trackedCount = 2,
+                        githubRepositoryCount = 1,
+                        gitRepositoryCount = 1,
+                        directApkCount = 0,
+                        actionsTrackedCount = 1,
+                        preciseApkVersionCount = 2,
                         cacheHitCount = 2,
                         updatableCount = 1,
                         preReleaseUpdateCount = 1,
@@ -55,6 +60,9 @@ class HomePageContentDeriverTest {
                     HomeBaOverview(
                         loaded = true,
                         activated = true,
+                        accountCount = 3,
+                        enabledAccountCount = 2,
+                        activeAccountName = "Hoshino",
                         apCurrent = 120,
                         apLimit = 240,
                         cacheFreshness = staleCacheSnapshot(),
@@ -73,7 +81,12 @@ class HomePageContentDeriverTest {
         assertEquals("1h", state.mcpRuntimeText)
         assertEquals("2 devices", state.mcpFocusLine)
         assertEquals("failed 1", state.githubFocusLine)
+        assertEquals("GH1 Git1 APK0", state.githubSourcesLine)
+        assertEquals("1", state.githubActionsLine)
+        assertEquals("2", state.githubPreciseVersionLine)
         assertEquals("120/240", state.baFocusLine)
+        assertEquals("2/3", state.baAccountsLine)
+        assertEquals("Hoshino", state.baActiveAccountLine)
         assertEquals("fresh", state.githubCacheFreshnessLine)
         assertEquals("3h 1h", state.githubLastUpdateLine)
         assertEquals("stale", state.baCacheFreshnessLine)
@@ -225,6 +238,9 @@ class HomePageContentDeriverTest {
             statPreReleaseUpdates = "pre",
             statFailed = "failed",
             statTracked = "tracked",
+            statGitHubSources = "sources",
+            statActions = "actions",
+            statPreciseVersion = "precise",
             statCached = "cached",
             statCacheState = "cache state",
             statShare = "share",
@@ -234,6 +250,8 @@ class HomePageContentDeriverTest {
             statAp = "ap",
             statCafeAp = "cafe",
             statApRemaining = "remaining",
+            statBaAccounts = "accounts",
+            statBaActiveAccount = "current",
             statBaServer = "server",
             statBaNotify = "notify",
             baServerCn = "CN",
@@ -250,6 +268,7 @@ class HomePageContentDeriverTest {
             githubRefreshingProgressPattern = "refreshing %d/%d tracked %d",
             devicesCountPattern = "%d devices",
             failedCountPattern = "failed %d",
+            githubSourcesPattern = "GH%d Git%d APK%d",
             fractionPattern = "%d/%d",
             cafeFractionPattern = "Lv.%d %d/%d",
             thresholdPlusPattern = "%d+",

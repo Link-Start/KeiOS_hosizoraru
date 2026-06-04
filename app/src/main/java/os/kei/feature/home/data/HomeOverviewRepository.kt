@@ -25,6 +25,7 @@ import os.kei.feature.github.domain.GitHubRefreshRuntimeState
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isValidForTrackedItem
 import os.kei.feature.home.model.HOME_BA_AP_MAX
@@ -41,6 +42,7 @@ import os.kei.feature.home.model.defaultHomeOverviewCards
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
+import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaCacheSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.sync.WebDavSyncItem
@@ -153,10 +155,12 @@ internal class HomeOverviewRepository(
 
             val baOverview =
                 runCatching {
-                    val baSnapshot = BASettingsStore.loadSnapshot()
+                    val accountState = BASettingsStore.loadAccountState()
+                    val baSnapshot = BASettingsStore.loadSnapshot(accountState)
                     val serverIndex = baSnapshot.serverIndex
                     loadHomeBaOverview(
                         snapshot = baSnapshot,
+                        accountState = accountState,
                         cacheFreshness =
                             buildHomeBaCalendarPoolCacheFreshness(
                                 calendar = BASettingsStore.loadCalendarCacheSnapshot(serverIndex),
@@ -285,29 +289,53 @@ internal fun loadHomeGitHubOverview(
     nowMs: Long,
 ): HomeGitHubOverview {
     val activeStrategyId = snapshot.lookupConfig.selectedStrategy.storageId
-    val matchedCacheByTrackId =
-        snapshot.items.associate { item ->
-            val cache =
-                snapshot.checkCache[item.id]
-                    ?.takeIf { entry ->
-                        entry.isValidForTrackedItem(
-                            item = item,
-                            lookupConfig = snapshot.lookupConfig.forTrackedItem(item),
-                            activeStrategyId = activeStrategyId,
-                        )
-                    }
-            item.id to cache
+    var githubRepositoryCount = 0
+    var gitRepositoryCount = 0
+    var directApkCount = 0
+    var actionsTrackedCount = 0
+    var preciseApkVersionCount = 0
+    var cacheHitCount = 0
+    var updatableCount = 0
+    var preReleaseUpdateCount = 0
+    var failedCount = 0
+    snapshot.items.forEach { item ->
+        when (item.sourceMode) {
+            GitHubTrackedSourceMode.GitHubRepository -> githubRepositoryCount += 1
+            GitHubTrackedSourceMode.GitRepository -> gitRepositoryCount += 1
+            GitHubTrackedSourceMode.DirectApk -> directApkCount += 1
         }
-    val cacheHitCount = matchedCacheByTrackId.count { it.value != null }
+        if (item.checkActionsUpdates) actionsTrackedCount += 1
+        val itemLookupConfig = snapshot.lookupConfig.forTrackedItem(item)
+        if (itemLookupConfig.preciseApkVersionEnabled) preciseApkVersionCount += 1
+        val cache =
+            snapshot.checkCache[item.id]
+                ?.takeIf { entry ->
+                    entry.isValidForTrackedItem(
+                        item = item,
+                        lookupConfig = itemLookupConfig,
+                        activeStrategyId = activeStrategyId,
+                    )
+        }
+        if (cache != null) {
+            cacheHitCount += 1
+            if (cache.hasUpdate == true) updatableCount += 1
+            if (cache.hasPreReleaseUpdate == true) preReleaseUpdateCount += 1
+            if (GitHubTrackedReleaseStatus.isFailureMessage(cache.message)) {
+                failedCount += 1
+            }
+        }
+    }
     return HomeGitHubOverview(
         trackedCount = snapshot.items.size,
+        githubRepositoryCount = githubRepositoryCount,
+        gitRepositoryCount = gitRepositoryCount,
+        directApkCount = directApkCount,
+        actionsTrackedCount = actionsTrackedCount,
+        preciseApkVersionCount = preciseApkVersionCount,
         cacheHitCount = cacheHitCount,
-        updatableCount = matchedCacheByTrackId.count { it.value?.hasUpdate == true },
-        preReleaseUpdateCount = matchedCacheByTrackId.count { it.value?.hasPreReleaseUpdate == true },
-        failedCount =
-            matchedCacheByTrackId.count { (_, entry) ->
-                entry?.message?.let(GitHubTrackedReleaseStatus::isFailureMessage) == true
-            },
+        updatableCount = updatableCount,
+        preReleaseUpdateCount = preReleaseUpdateCount,
+        failedCount = failedCount,
         strategy = snapshot.lookupConfig.selectedStrategy,
         apiTokenConfigured = snapshot.lookupConfig.apiToken.isNotBlank(),
         shareImportLinkageEnabled = snapshot.lookupConfig.shareImportLinkageEnabled,
@@ -322,9 +350,18 @@ internal fun loadHomeGitHubOverview(
 
 private fun loadHomeBaOverview(
     snapshot: BaPageSnapshot,
+    accountState: BaAccountStoreSnapshot,
     cacheFreshness: CacheFreshnessSnapshot,
 ): HomeBaOverview {
     val activated = snapshot.idFriendCode != HOME_BA_DEFAULT_FRIEND_CODE
+    var enabledAccountCount = 0
+    var activeAccountName = ""
+    accountState.accounts.forEach { account ->
+        if (account.profile.enabled) enabledAccountCount += 1
+        if (account.profile.id == accountState.activeAccountId) {
+            activeAccountName = account.profile.displayName
+        }
+    }
     val apCurrent = snapshot.apCurrent.coerceIn(0.0, HOME_BA_AP_MAX.toDouble()).toInt()
     val cafeLevel = snapshot.cafeLevel.coerceIn(1, HOME_BA_CAFE_DAILY_AP_BY_LEVEL.size)
     val cafeCap = HOME_BA_CAFE_DAILY_AP_BY_LEVEL[cafeLevel - 1]
@@ -336,6 +373,9 @@ private fun loadHomeBaOverview(
 
     return HomeBaOverview(
         activated = activated,
+        accountCount = accountState.accounts.size,
+        enabledAccountCount = enabledAccountCount,
+        activeAccountName = activeAccountName,
         serverIndex = snapshot.serverIndex,
         apCurrent = apCurrent,
         apLimit = snapshot.apLimit,

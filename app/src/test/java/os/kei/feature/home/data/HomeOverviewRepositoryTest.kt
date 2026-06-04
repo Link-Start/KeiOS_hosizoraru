@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.checkSourceSignature
@@ -49,6 +50,7 @@ class HomeOverviewRepositoryTest {
                 owner = "demo",
                 repo = "stable",
                 packageName = "demo.stable",
+                checkActionsUpdates = true,
             )
         val gitItem =
             trackedApp(
@@ -57,6 +59,7 @@ class HomeOverviewRepositoryTest {
                 repo = "Pronto",
                 packageName = "com.mt.pronto",
                 sourceMode = GitHubTrackedSourceMode.GitRepository,
+                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
             )
         val directApkItem =
             trackedApp(
@@ -120,6 +123,11 @@ class HomeOverviewRepositoryTest {
             )
 
         assertEquals(4, overview.trackedCount)
+        assertEquals(2, overview.githubRepositoryCount)
+        assertEquals(1, overview.gitRepositoryCount)
+        assertEquals(1, overview.directApkCount)
+        assertEquals(1, overview.actionsTrackedCount)
+        assertEquals(2, overview.preciseApkVersionCount)
         assertEquals(4, overview.cacheHitCount)
         assertEquals(1, overview.updatableCount)
         assertEquals(1, overview.preReleaseUpdateCount)
@@ -190,6 +198,8 @@ private fun trackedApp(
     packageName: String,
     sourceMode: GitHubTrackedSourceMode = GitHubTrackedSourceMode.GitHubRepository,
     preferPreRelease: Boolean = false,
+    checkActionsUpdates: Boolean = false,
+    preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
 ): GitHubTrackedApp =
     GitHubTrackedApp(
         repoUrl = repoUrl,
@@ -199,4 +209,6 @@ private fun trackedApp(
         appLabel = repo,
         sourceMode = sourceMode,
         preferPreRelease = preferPreRelease,
+        checkActionsUpdates = checkActionsUpdates,
+        preciseApkVersionMode = preciseApkVersionMode,
     )

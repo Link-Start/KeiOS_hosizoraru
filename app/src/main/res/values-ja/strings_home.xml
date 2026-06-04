@@ -16,7 +16,7 @@
     <string name="home_status_loading">読み込み中</string>
     <string name="home_app_version_unknown_fallback">不明</string>
     <string name="home_app_version_unknown">バージョン不明</string>
-    <string name="home_header_tagline">OS / MCP / GitHub / WebDAV / ブルーアーカイブ / ガイドツール</string>
+    <string name="home_header_tagline">OS / MCP / GitHub / ブルーアーカイブ ツール</string>
     <string name="home_status_ba">BA</string>
     <string name="home_status_webdav">WebDAV</string>
     <string name="home_status_shizuku">Shizuku</string>
@@ -65,6 +65,9 @@
     <string name="home_stat_prerelease_updates">Pre-rel</string>
     <string name="home_stat_failed">失敗</string>
     <string name="home_stat_tracked">追跡</string>
+    <string name="home_stat_github_sources">ソース</string>
+    <string name="home_stat_actions">Actions</string>
+    <string name="home_stat_precise_version">精密</string>
     <string name="home_stat_cached">キャッシュ</string>
     <string name="home_stat_share">共有</string>
     <string name="home_stat_strategy">方式</string>
@@ -75,6 +78,8 @@
     <string name="home_stat_ap">AP</string>
     <string name="home_stat_cafe_ap">カフェ</string>
     <string name="home_stat_ap_remaining">残り</string>
+    <string name="home_stat_ba_accounts">アカウント</string>
+    <string name="home_stat_ba_active_account">現在</string>
     <string name="home_stat_ba_server">サーバー</string>
     <string name="home_stat_ba_notify">通知</string>
     <string name="home_value_fraction">%1$d/%2$d</string>
@@ -87,6 +92,7 @@
     <string name="home_value_unauthorized">未許可</string>
     <string name="home_value_devices_count">%1$d台</string>
     <string name="home_value_failed_count">%1$d 失敗</string>
+    <string name="home_value_github_sources">GH%1$d Git%2$d APK%3$d</string>
     <string name="home_value_threshold_plus">%1$d+</string>
     <string name="home_sheet_debug_title">デバッグ</string>
     <string name="home_sheet_show_cache_freshness">キャッシュ鮮度を表示</string>

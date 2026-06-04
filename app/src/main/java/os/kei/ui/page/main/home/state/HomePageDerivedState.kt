@@ -273,6 +273,12 @@ internal fun rememberHomePageOverviewCardState(
     githubFailedLine: String,
     homeStatTracked: String,
     trackedCountLine: String,
+    homeStatGitHubSources: String,
+    githubSourcesLine: String,
+    homeStatActions: String,
+    githubActionsLine: String,
+    homeStatPreciseVersion: String,
+    githubPreciseVersionLine: String,
     homeStatCached: String,
     cacheHitCountLine: String,
     homeStatCacheState: String,
@@ -295,6 +301,10 @@ internal fun rememberHomePageOverviewCardState(
     baCafeApLine: String,
     homeStatApRemaining: String,
     baApRemainingLine: String,
+    homeStatBaAccounts: String,
+    baAccountsLine: String,
+    homeStatBaActiveAccount: String,
+    baActiveAccountLine: String,
     homeStatBaServer: String,
     baServerLine: String,
     homeStatBaNotify: String,
@@ -377,6 +387,12 @@ internal fun rememberHomePageOverviewCardState(
             githubFailedLine,
             homeStatTracked,
             trackedCountLine,
+            homeStatGitHubSources,
+            githubSourcesLine,
+            homeStatActions,
+            githubActionsLine,
+            homeStatPreciseVersion,
+            githubPreciseVersionLine,
             homeStatCached,
             cacheHitCountLine,
             homeStatCacheState,
@@ -410,8 +426,17 @@ internal fun rememberHomePageOverviewCardState(
                             emphasize = true,
                         ),
                     )
-                    add(HomeCardStatItem(label = homeStatFailed, value = githubFailedLine))
+                    add(HomeCardStatItem(label = homeStatActions, value = githubActionsLine))
                     add(HomeCardStatItem(label = homeStatTracked, value = trackedCountLine))
+                    add(
+                        HomeCardStatItem(
+                            label = homeStatGitHubSources,
+                            value = githubSourcesLine,
+                            valueMaxLines = 2,
+                        ),
+                    )
+                    add(HomeCardStatItem(label = homeStatPreciseVersion, value = githubPreciseVersionLine))
+                    add(HomeCardStatItem(label = homeStatFailed, value = githubFailedLine))
                     add(HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine))
                     if (showCacheFreshnessInCards) {
                         add(HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine))
@@ -421,7 +446,7 @@ internal fun rememberHomePageOverviewCardState(
             if (githubPendingShareImport) {
                 listOf(shareStat) + baseStats
             } else {
-                baseStats.take(5) + shareStat + baseStats.drop(5)
+                baseStats.take(6) + shareStat + baseStats.drop(6)
             }
         }
     val webDavOverviewStats =
@@ -453,6 +478,10 @@ internal fun rememberHomePageOverviewCardState(
             baCafeApLine,
             homeStatApRemaining,
             baApRemainingLine,
+            homeStatBaAccounts,
+            baAccountsLine,
+            homeStatBaActiveAccount,
+            baActiveAccountLine,
             homeStatBaServer,
             baServerLine,
             homeStatBaNotify,
@@ -462,18 +491,21 @@ internal fun rememberHomePageOverviewCardState(
             baCacheFreshnessLine,
         ) {
             buildList {
+                add(HomeCardStatItem(label = homeStatBaAccounts, value = baAccountsLine, emphasize = true))
                 add(
                     HomeCardStatItem(
-                        label = homeStatStatus,
-                        value = baActivationLine,
+                        label = homeStatBaActiveAccount,
+                        value = baActiveAccountLine,
                         emphasize = true,
+                        valueMaxLines = 2,
                     ),
                 )
                 add(HomeCardStatItem(label = homeStatAp, value = baApLine, emphasize = true))
-                add(HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine))
                 add(HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine))
+                add(HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine))
                 add(HomeCardStatItem(label = homeStatBaServer, value = baServerLine))
                 add(HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine))
+                add(HomeCardStatItem(label = homeStatStatus, value = baActivationLine))
                 if (showCacheFreshnessInCards) {
                     add(HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine))
                 }

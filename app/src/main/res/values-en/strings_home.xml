@@ -16,7 +16,7 @@
     <string name="home_status_loading">Loading</string>
     <string name="home_app_version_unknown_fallback">unknown</string>
     <string name="home_app_version_unknown">Unknown version</string>
-    <string name="home_header_tagline">OS / MCP / GitHub / WebDAV / Blue Archive / Guide toolkit</string>
+    <string name="home_header_tagline">OS / MCP / GitHub / Blue Archive toolkit</string>
     <string name="home_status_ba">BA</string>
     <string name="home_status_webdav">WebDAV</string>
     <string name="home_status_shizuku">Shizuku</string>
@@ -65,6 +65,9 @@
     <string name="home_stat_prerelease_updates">Pre-rel</string>
     <string name="home_stat_failed">Failed</string>
     <string name="home_stat_tracked">Tracked</string>
+    <string name="home_stat_github_sources">Sources</string>
+    <string name="home_stat_actions">Actions</string>
+    <string name="home_stat_precise_version">Precise</string>
     <string name="home_stat_cached">Cache</string>
     <string name="home_stat_share">Share</string>
     <string name="home_stat_strategy">Strategy</string>
@@ -75,6 +78,8 @@
     <string name="home_stat_ap">AP</string>
     <string name="home_stat_cafe_ap">Cafe</string>
     <string name="home_stat_ap_remaining">Left</string>
+    <string name="home_stat_ba_accounts">Accounts</string>
+    <string name="home_stat_ba_active_account">Current</string>
     <string name="home_stat_ba_server">Server</string>
     <string name="home_stat_ba_notify">Alert</string>
     <string name="home_value_fraction">%1$d/%2$d</string>
@@ -87,6 +92,7 @@
     <string name="home_value_unauthorized">Blocked</string>
     <string name="home_value_devices_count">%1$d dev</string>
     <string name="home_value_failed_count">%1$d failed</string>
+    <string name="home_value_github_sources">GH%1$d Git%2$d APK%3$d</string>
     <string name="home_value_threshold_plus">%1$d+</string>
     <string name="home_sheet_debug_title">Debug</string>
     <string name="home_sheet_show_cache_freshness">Show cache freshness</string>

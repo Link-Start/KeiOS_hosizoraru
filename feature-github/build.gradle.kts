@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":core-log"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
+    implementation(project(":feature-mcp"))
 
     implementation("androidx.core:core-ktx:1.18.0")
     implementation("dev.rikka.shizuku:api:13.1.5")

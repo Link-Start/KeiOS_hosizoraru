@@ -1,4 +1,4 @@
-package os.kei.mcp.server
+package os.kei.feature.github.mcp
 
 import android.content.Context
 import os.kei.feature.github.GitHubExecution
@@ -14,9 +14,6 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
-import os.kei.ui.page.main.github.GitHubSortDirection
-import os.kei.ui.page.main.github.GitHubSortMode
-import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import java.util.Locale
 
 private const val MCP_GITHUB_CHECK_PARALLELISM = 4

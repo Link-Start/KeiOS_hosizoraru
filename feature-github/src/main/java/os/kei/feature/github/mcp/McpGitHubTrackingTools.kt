@@ -1,7 +1,6 @@
-package os.kei.mcp.server
+package os.kei.feature.github.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubCacheService
 import os.kei.feature.github.domain.GitHubTrackService
@@ -13,13 +12,20 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
-import os.kei.ui.page.main.github.GitHubSortDirection
-import os.kei.ui.page.main.github.GitHubSortMode
-import os.kei.ui.page.main.github.GitHubTrackedFilterMode
+import os.kei.mcp.server.DEFAULT_ENTRY_LIMIT
+import os.kei.mcp.server.DEFAULT_TRACK_LIMIT
+import os.kei.mcp.server.MAX_ENTRY_LIMIT
+import os.kei.mcp.server.MAX_TRACK_LIMIT
+import os.kei.mcp.server.McpToolEnvironment
+import os.kei.mcp.server.addMcpTextTool
+import os.kei.mcp.server.argBoolean
+import os.kei.mcp.server.argInt
+import os.kei.mcp.server.argString
 import java.util.Locale
 
 internal class McpGitHubTrackingTools(
-    private val environment: McpToolEnvironment
+    private val environment: McpToolEnvironment,
+    private val refreshScheduler: McpGitHubRefreshScheduler
 ) {
     private val appContext get() = environment.appContext
     private val githubTrackService = GitHubTrackService()
@@ -337,7 +343,7 @@ internal class McpGitHubTrackingTools(
             if (apply && hasChanges) {
                 GitHubTrackedItemsTransferService.applyImport(
                     payload = payload,
-                    onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(appContext) },
+                    onRefreshNeeded = { refreshScheduler.scheduleGitHubRefresh(appContext) },
                     existingItems = existing,
                 )
             } else {

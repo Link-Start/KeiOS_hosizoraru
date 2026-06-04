@@ -1,7 +1,6 @@
-package os.kei.mcp.server
+package os.kei.feature.github.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.domain.GitHubDirectApkReleaseCheckSource
 import os.kei.feature.github.domain.GitHubPackageNameValidator
@@ -19,10 +18,17 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.mcp.server.DEFAULT_ENTRY_LIMIT
+import os.kei.mcp.server.McpToolEnvironment
+import os.kei.mcp.server.addMcpTextTool
+import os.kei.mcp.server.argBoolean
+import os.kei.mcp.server.argInt
+import os.kei.mcp.server.argString
 import java.util.Locale
 
 internal class McpGitHubDiscoveryTools(
-    private val environment: McpToolEnvironment
+    private val environment: McpToolEnvironment,
+    private val refreshScheduler: McpGitHubRefreshScheduler
 ) {
     private val appContext get() = environment.appContext
     private val discoveryFacade = GitHubRepositoryDiscoveryFacade()
@@ -436,7 +442,7 @@ internal class McpGitHubDiscoveryTools(
     private suspend fun applyGitHubStarImport(candidates: List<GitHubRepositoryImportCandidate>): Int {
         return starImportService.importCandidates(
             candidates = candidates,
-            onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(appContext) },
+            onRefreshNeeded = { refreshScheduler.scheduleGitHubRefresh(appContext) },
         ).changedCount
     }
 

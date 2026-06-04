@@ -1,4 +1,4 @@
-package os.kei.mcp.server
+package os.kei.feature.github.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import os.kei.feature.github.domain.GitHubActionsRecommendedRunRefreshService
@@ -8,6 +8,13 @@ import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.mcp.server.DEFAULT_ENTRY_LIMIT
+import os.kei.mcp.server.MAX_ENTRY_LIMIT
+import os.kei.mcp.server.McpToolEnvironment
+import os.kei.mcp.server.addMcpTextTool
+import os.kei.mcp.server.argBoolean
+import os.kei.mcp.server.argInt
+import os.kei.mcp.server.argString
 
 internal class McpGitHubActionsTools(
     private val environment: McpToolEnvironment

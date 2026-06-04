@@ -1,4 +1,4 @@
-package os.kei.mcp.server
+package os.kei.feature.github.mcp
 
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubStarImportClassifier

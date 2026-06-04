@@ -39,7 +39,7 @@ dependencies {
     implementation("dev.rikka.shizuku:api:13.1.5")
     implementation("dev.rikka.shizuku:provider:13.1.5")
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
-    implementation("io.modelcontextprotocol:kotlin-sdk:0.13.0")
+    api("io.modelcontextprotocol:kotlin-sdk:0.13.0")
     implementation("io.ktor:ktor-server-cio:3.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.xzakota.hyper.notification:focus-api:1.4")

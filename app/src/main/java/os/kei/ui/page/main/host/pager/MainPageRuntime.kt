@@ -30,6 +30,7 @@ data class MainPageRuntime(
     val isPagerScrollInProgress: Boolean = false,
     val bottomBarVisible: Boolean = true,
     val floatingDockSide: AppFloatingDockSide = AppFloatingDockSide.End,
+    val onShowBottomBar: () -> Unit = {},
     val onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit = { _, _ -> },
 ) {
     val isPageActive: Boolean
@@ -60,6 +61,7 @@ internal data class MainPagerRuntimeSnapshot(
         contentBottomPadding: Dp = 72.dp,
         bottomBarVisible: Boolean = true,
         floatingDockSide: AppFloatingDockSide = AppFloatingDockSide.End,
+        onShowBottomBar: () -> Unit = {},
         onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit = { _, _ -> },
         hasActivated: Boolean = true,
         contentReady: Boolean = true,
@@ -79,6 +81,7 @@ internal data class MainPagerRuntimeSnapshot(
             isPagerScrollInProgress = isPagerScrollInProgress,
             bottomBarVisible = bottomBarVisible,
             floatingDockSide = floatingDockSide,
+            onShowBottomBar = onShowBottomBar,
             onScrollBoundsChange = onScrollBoundsChange,
         )
 

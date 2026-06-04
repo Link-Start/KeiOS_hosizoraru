@@ -16,6 +16,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
+import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
@@ -51,10 +52,12 @@ internal fun BoxScope.McpPageFloatingActionDock(
     val copyIcon = osLucideCopyIcon()
     val refreshIcon = appLucideRefreshIcon()
     val toggleIcon = if (uiState.running) appLucidePauseIcon() else osLucideRunIcon()
+    val moreIcon = appLucideMoreIcon()
     val primaryColor = MiuixTheme.colorScheme.primary
     val errorColor = MiuixTheme.colorScheme.error
     val copyConfigContentDescription = stringResource(R.string.mcp_action_copy_current_config)
     val refreshContentDescription = stringResource(R.string.common_refresh)
+    val expandDescription = stringResource(R.string.common_expand)
     val toggleContentDescription =
         if (uiState.running) {
             stringResource(R.string.mcp_action_stop_service)
@@ -101,6 +104,10 @@ internal fun BoxScope.McpPageFloatingActionDock(
     AppFloatingVerticalActionDock(
         backdrop = backdrop,
         actions = dockActions,
+        compact = !runtime.bottomBarVisible,
+        compactIcon = moreIcon,
+        compactContentDescription = expandDescription,
+        onCompactClick = runtime.onShowBottomBar,
         modifier =
             Modifier
                 .align(dockAlignment)

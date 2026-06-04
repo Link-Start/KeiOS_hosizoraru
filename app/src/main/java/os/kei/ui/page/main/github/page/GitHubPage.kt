@@ -295,6 +295,7 @@ fun GitHubPage(
                     scrollBehavior = scrollBehavior,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
+                    onExpandFloatingDock = runtime.onShowBottomBar,
                     onTitleClick = {
                         scope.launch {
                             listState.animateScrollToItem(0)

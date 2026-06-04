@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDp
@@ -33,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
@@ -48,7 +50,9 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -208,6 +212,10 @@ fun AppFloatingVerticalSearchActionDock(
     showAddAction: Boolean = true,
     refreshEnabled: Boolean = true,
     refreshStatus: AppFloatingRefreshStatus = AppFloatingRefreshStatus.Idle,
+    compact: Boolean = false,
+    compactIcon: ImageVector = searchIcon,
+    compactContentDescription: String = searchContentDescription,
+    onCompactClick: (() -> Unit)? = null,
     horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
@@ -228,25 +236,26 @@ fun AppFloatingVerticalSearchActionDock(
         )
     val visibleActionCount = (if (showAddAction) 1 else 0) + extraActions.size + 2
     val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
+    val compactActive = compact && !expanded
     val availableWidth = appWindowWidthDp() - horizontalInset * 2
     val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
-    val transition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
+    val searchTransition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
     val fieldWidthState =
-        transition.animateDp(
+        searchTransition.animateDp(
             transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
             label = "app_vertical_floating_search_field_width",
         ) { targetExpanded ->
             if (targetExpanded) fieldTargetWidth else 0.dp
         }
     val totalWidthState =
-        transition.animateDp(
+        searchTransition.animateDp(
             transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
             label = "app_vertical_floating_search_total_width",
         ) { targetExpanded ->
             size + if (targetExpanded) gap + fieldTargetWidth else 0.dp
         }
     val fieldAlphaState =
-        transition.animateFloat(
+        searchTransition.animateFloat(
             transitionSpec = { tween(durationMillis = AppFloatingSearchDockFadeMotionMs) },
             label = "app_vertical_floating_search_field_alpha",
         ) { targetExpanded ->
@@ -255,6 +264,13 @@ fun AppFloatingVerticalSearchActionDock(
     val fieldWidthProvider = remember(fieldWidthState) { { fieldWidthState.value } }
     val totalWidthProvider = remember(totalWidthState) { { totalWidthState.value } }
     val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
+    val compactMotion =
+        rememberAppFloatingVerticalDockCompactMotion(
+            compact = compactActive,
+            expandedHeight = dockHeight,
+            compactHeight = size,
+            label = "app_vertical_floating_search_dock",
+        )
 
     LaunchedEffect(expanded) {
         if (!expanded) focusManager.clearFocus()
@@ -346,37 +362,73 @@ fun AppFloatingVerticalSearchActionDock(
             }
         }
     }
+    val compactContent: @Composable () -> Unit = {
+        AppFloatingLiquidActionButton(
+            backdrop = backdrop,
+            icon = compactIcon,
+            contentDescription = compactContentDescription,
+            onClick = onCompactClick ?: { onExpandedChange(true) },
+            size = size,
+            iconSize = iconSize,
+            iconTint = accent,
+        )
+    }
 
     Box(
         modifier =
             modifier
                 .appFloatingDockLift(resolvedKeyboardLiftProvider)
                 .appFloatingDockAnimatedWidth(totalWidthProvider)
-                .height(dockHeight),
+                .appFloatingDockAnimatedHeight(compactMotion.height),
     ) {
-        if (dockSide == AppFloatingDockSide.Start) {
-            Box(modifier = Modifier.align(Alignment.BottomStart)) {
-                dockContent()
+        if (compactMotion.showExpandedContent) {
+            if (dockSide == AppFloatingDockSide.Start) {
+                Box(
+                    modifier =
+                        compactMotion.expandedModifier
+                            .align(Alignment.BottomStart),
+                ) {
+                    dockContent()
+                }
+                Box(
+                    modifier =
+                        compactMotion.expandedModifier
+                            .align(Alignment.BottomStart)
+                            .offset(x = size + gap),
+                ) {
+                    fieldContent()
+                }
+            } else {
+                Box(
+                    modifier =
+                        compactMotion.expandedModifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = -(size + gap)),
+                ) {
+                    fieldContent()
+                }
+                Box(
+                    modifier =
+                        compactMotion.expandedModifier
+                            .align(Alignment.BottomEnd),
+                ) {
+                    dockContent()
+                }
             }
+        }
+        if (compactMotion.showCompactContent) {
             Box(
                 modifier =
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .offset(x = size + gap),
+                    compactMotion.compactModifier
+                        .align(
+                            if (dockSide == AppFloatingDockSide.Start) {
+                                Alignment.BottomStart
+                            } else {
+                                Alignment.BottomEnd
+                            },
+                        ),
             ) {
-                fieldContent()
-            }
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = -(size + gap)),
-            ) {
-                fieldContent()
-            }
-            Box(modifier = Modifier.align(Alignment.BottomEnd)) {
-                dockContent()
+                compactContent()
             }
         }
     }
@@ -387,48 +439,167 @@ fun AppFloatingVerticalActionDock(
     backdrop: Backdrop?,
     actions: List<AppFloatingDockAction>,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
+    compactIcon: ImageVector? = null,
+    compactContentDescription: String? = null,
+    onCompactClick: (() -> Unit)? = null,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
     gap: Dp = 8.dp,
 ) {
     if (actions.isEmpty()) return
-    Column(
+    val dockHeight = appFloatingVerticalDockHeight(size, actions.size)
+    val firstAction = actions.first()
+    val compactMotion =
+        rememberAppFloatingVerticalDockCompactMotion(
+            compact = compact,
+            expandedHeight = dockHeight,
+            compactHeight = size,
+            label = "app_vertical_floating_action_dock",
+        )
+    Box(
         modifier =
             modifier
                 .width(size)
-                .height(appFloatingVerticalDockHeight(size, actions.size)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+                .appFloatingDockAnimatedHeight(compactMotion.height),
     ) {
-        AppFloatingLiquidVerticalDockSurface(
-            backdrop = backdrop,
-            modifier =
-                Modifier
-                    .width(size)
-                    .height(appFloatingVerticalDockHeight(size, actions.size)),
-        ) {
-            Column(
-                modifier = Modifier.matchParentSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+        if (compactMotion.showExpandedContent) {
+            AppFloatingLiquidVerticalDockSurface(
+                backdrop = backdrop,
+                modifier =
+                    compactMotion.expandedModifier
+                        .align(Alignment.BottomCenter)
+                        .width(size)
+                        .height(dockHeight),
             ) {
-                actions.forEach { action ->
-                    AppFloatingVerticalDockAction(
-                        icon = action.icon,
-                        contentDescription = action.contentDescription,
-                        onClick = action.onClick,
-                        size = size,
-                        iconSize = iconSize,
-                        iconTint = action.iconTint,
-                        enabled = action.enabled,
-                        rotating = action.rotating,
-                        testTag = action.testTag,
-                    )
+                Column(
+                    modifier = Modifier.matchParentSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    actions.forEach { action ->
+                        AppFloatingVerticalDockAction(
+                            icon = action.icon,
+                            contentDescription = action.contentDescription,
+                            onClick = action.onClick,
+                            size = size,
+                            iconSize = iconSize,
+                            iconTint = action.iconTint,
+                            enabled = action.enabled,
+                            rotating = action.rotating,
+                            testTag = action.testTag,
+                        )
+                    }
                 }
             }
         }
+        if (compactMotion.showCompactContent) {
+            AppFloatingLiquidActionButton(
+                backdrop = backdrop,
+                icon = compactIcon ?: firstAction.icon,
+                contentDescription = compactContentDescription ?: firstAction.contentDescription,
+                onClick = onCompactClick ?: firstAction.onClick,
+                size = size,
+                iconSize = iconSize,
+                iconTint = firstAction.iconTint,
+                modifier =
+                    compactMotion.compactModifier
+                        .align(Alignment.BottomCenter),
+            )
+        }
     }
 }
+
+@Composable
+private fun rememberAppFloatingVerticalDockCompactMotion(
+    compact: Boolean,
+    expandedHeight: Dp,
+    compactHeight: Dp,
+    label: String,
+): AppFloatingVerticalDockCompactMotion {
+    val animationsEnabled = LocalTransitionAnimationsEnabled.current
+    val transition = updateTransition(targetState = compact, label = "${label}_compact")
+    val heightState =
+        transition.animateDp(
+            transitionSpec = {
+                tween(
+                    durationMillis =
+                        resolvedMotionDuration(
+                            AppFloatingVerticalDockCompactMotionMs,
+                            animationsEnabled,
+                        ),
+                    easing = FastOutSlowInEasing,
+                )
+            },
+            label = "${label}_height",
+        ) { compactTarget ->
+            if (compactTarget) compactHeight else expandedHeight
+        }
+    val progressState =
+        transition.animateFloat(
+            transitionSpec = {
+                tween(
+                    durationMillis =
+                        resolvedMotionDuration(
+                            AppFloatingVerticalDockCompactMotionMs,
+                            animationsEnabled,
+                        ),
+                    easing = FastOutSlowInEasing,
+                )
+            },
+            label = "${label}_progress",
+        ) { compactTarget ->
+            if (compactTarget) 0f else 1f
+        }
+    val heightProvider = remember(heightState) { { heightState.value } }
+    val progressProvider = remember(progressState) { { progressState.value } }
+    return AppFloatingVerticalDockCompactMotion(
+        height = heightProvider,
+        showExpandedContent = !transition.currentState || !transition.targetState,
+        showCompactContent = transition.currentState || transition.targetState,
+        expandedModifier =
+            Modifier.graphicsLayer {
+                val progress = progressProvider()
+                alpha = progress
+                transformOrigin = TransformOrigin(0.5f, 1f)
+                scaleX = 0.88f + 0.12f * progress
+                scaleY = 0.90f + 0.10f * progress
+            },
+        compactModifier =
+            Modifier.graphicsLayer {
+                val progress = 1f - progressProvider()
+                alpha = progress
+                transformOrigin = TransformOrigin(0.5f, 1f)
+                scaleX = 0.88f + 0.12f * progress
+                scaleY = 0.88f + 0.12f * progress
+            },
+    )
+}
+
+private data class AppFloatingVerticalDockCompactMotion(
+    val height: () -> Dp,
+    val showExpandedContent: Boolean,
+    val showCompactContent: Boolean,
+    val expandedModifier: Modifier,
+    val compactModifier: Modifier,
+)
+
+private fun Modifier.appFloatingDockAnimatedHeight(height: () -> Dp): Modifier =
+    layout { measurable, constraints ->
+        val heightPx = height().roundToPx().coerceAtLeast(0)
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minHeight = heightPx,
+                    maxHeight = heightPx,
+                ),
+            )
+        layout(placeable.width, heightPx) {
+            placeable.place(0, 0)
+        }
+    }
+
+private const val AppFloatingVerticalDockCompactMotionMs = 240
 
 @Composable
 private fun AppFloatingVerticalDockAction(

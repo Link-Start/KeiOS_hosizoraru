@@ -491,6 +491,7 @@ fun OsPage(
             runtime.contentBottomPadding,
             runtime.bottomBarVisible,
             runtime.floatingDockSide,
+            runtime.onShowBottomBar,
         ) {
             OsPageMainListChromeState(
                 isDark = isDark,
@@ -498,6 +499,7 @@ fun OsPage(
                 contentBottomPadding = runtime.contentBottomPadding,
                 bottomBarVisible = runtime.bottomBarVisible,
                 floatingDockSide = runtime.floatingDockSide,
+                onExpandFloatingDock = runtime.onShowBottomBar,
             )
         }
     val mainListOverviewState =

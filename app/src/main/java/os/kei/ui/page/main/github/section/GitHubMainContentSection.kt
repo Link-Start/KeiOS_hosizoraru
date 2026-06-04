@@ -19,6 +19,7 @@ import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideHistoryIcon
+import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
@@ -83,7 +84,9 @@ internal fun GitHubMainContent(
             OverviewRefreshState.Idle -> AppFloatingRefreshStatus.Idle
         }
     val actionsHistoryIcon = appLucideHistoryIcon()
+    val moreIcon = appLucideMoreIcon()
     val actionsHistoryDescription = stringResource(R.string.github_actions_history_cd_open)
+    val expandDockDescription = stringResource(R.string.common_expand)
     val actionsHistoryTint = MiuixTheme.colorScheme.primary
     val dockExtraActions =
         remember(
@@ -291,6 +294,10 @@ internal fun GitHubMainContent(
                     showAddAction = true,
                     refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,
+                    compact = !layout.bottomBarVisible,
+                    compactIcon = moreIcon,
+                    compactContentDescription = expandDockDescription,
+                    onCompactClick = layout.onExpandFloatingDock,
                     extraActions = dockExtraActions,
                     dockSide = layout.floatingDockSide,
                     keyboardLiftProvider = floatingKeyboardLiftProvider,

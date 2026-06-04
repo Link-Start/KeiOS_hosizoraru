@@ -39,6 +39,7 @@ import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.SystemOverviewState
 import os.kei.ui.page.main.os.appLucideAddIcon
+import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
@@ -64,6 +65,7 @@ internal data class OsPageMainListChromeState(
     val contentBottomPadding: Dp,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
+    val onExpandFloatingDock: () -> Unit,
 )
 
 @Immutable
@@ -210,6 +212,7 @@ internal fun OsPageMainList(
     val onOpenAddActivityShortcutCard = actions.onOpenAddActivityShortcutCard
     val onQueryInputChange = searchDockState.onQueryInputChange
     val onSearchExpandedChange = searchDockState.onSearchExpandedChange
+    val onExpandFloatingDock = chromeState.onExpandFloatingDock
     val topMetricLabel = stringResource(R.string.os_overview_metric_top_info)
 
     fun metricLabelWeight(label: String): Float = if (label == topMetricLabel) 0.30f else 0.56f
@@ -248,6 +251,8 @@ internal fun OsPageMainList(
             SystemOverviewState.Cached -> AppFloatingRefreshStatus.Cached
             SystemOverviewState.Idle -> AppFloatingRefreshStatus.Idle
         }
+    val moreIcon = appLucideMoreIcon()
+    val expandDockDescription = stringResource(R.string.common_expand)
 
     Box(modifier = Modifier.fillMaxSize()) {
         AppPageLazyColumn(
@@ -563,6 +568,10 @@ internal fun OsPageMainList(
             showAddAction = showFloatingAddButton,
             refreshEnabled = !refreshing,
             refreshStatus = refreshStatus,
+            compact = !bottomBarVisible,
+            compactIcon = moreIcon,
+            compactContentDescription = expandDockDescription,
+            onCompactClick = onExpandFloatingDock,
             dockSide = floatingDockSide,
             keyboardLiftProvider = floatingKeyboardLiftProvider,
             modifier =

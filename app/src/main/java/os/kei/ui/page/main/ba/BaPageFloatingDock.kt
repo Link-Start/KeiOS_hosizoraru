@@ -18,6 +18,7 @@ import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.os.appLucideLibraryIcon
 import os.kei.ui.page.main.os.appLucideMailIcon
+import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
@@ -49,9 +50,11 @@ internal fun BoxScope.BaPageFloatingDock(
     val calendarIcon = appLucideCalendarIcon()
     val poolIcon = appLucideMailIcon()
     val catalogIcon = appLucideLibraryIcon()
+    val moreIcon = appLucideMoreIcon()
     val calendarDescription = stringResource(R.string.ba_calendar_cd_open_activity)
     val poolDescription = stringResource(R.string.ba_pool_cd_open_activity)
     val catalogDescription = stringResource(R.string.ba_overview_cd_open_catalog)
+    val expandDescription = stringResource(R.string.common_expand)
     val primaryIconTint = MiuixTheme.colorScheme.primary
     val actions =
         remember(
@@ -91,6 +94,10 @@ internal fun BoxScope.BaPageFloatingDock(
     AppFloatingVerticalActionDock(
         backdrop = backdrop,
         actions = actions,
+        compact = !runtime.bottomBarVisible,
+        compactIcon = moreIcon,
+        compactContentDescription = expandDescription,
+        onCompactClick = runtime.onShowBottomBar,
         modifier =
             Modifier
                 .align(dockAlignment)

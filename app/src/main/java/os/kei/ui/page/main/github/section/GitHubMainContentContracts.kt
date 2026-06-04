@@ -29,6 +29,7 @@ internal data class GitHubMainContentLayout(
     val scrollBehavior: ScrollBehavior,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
+    val onExpandFloatingDock: () -> Unit,
     val onTitleClick: () -> Unit,
 )
 

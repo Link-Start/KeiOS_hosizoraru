@@ -10,7 +10,7 @@ import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
 
-internal object ShizukuConnectivityBridge {
+object ShizukuConnectivityBridge {
     private const val TAG = "ShizukuConnectivityBridge"
     private const val OEM_DENY_CHAIN = 9
     private const val FIREWALL_RULE_DEFAULT = 0

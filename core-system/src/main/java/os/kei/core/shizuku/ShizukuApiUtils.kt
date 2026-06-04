@@ -12,7 +12,6 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import os.kei.core.ext.userMessage
 import os.kei.core.log.AppLogger
 import os.kei.core.system.AppBuildEnv
 import os.kei.core.system.AppCommandExecutor
@@ -767,6 +766,8 @@ class ShizukuApiUtils(
             status.trim().startsWith("Shizuku permission: granted (", ignoreCase = true)
     }
 }
+
+private fun Throwable.userMessage(): String = message?.trim()?.ifBlank { null } ?: javaClass.simpleName
 
 internal fun shizukuCommandOutputOrNull(result: AppCommandResult): String? =
     result.combinedOutput().ifBlank { null }

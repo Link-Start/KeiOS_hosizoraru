@@ -227,6 +227,7 @@ fun AppFloatingVerticalSearchActionDock(
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
     val resolvedKeyboardLiftProvider =
         rememberAppFloatingKeyboardLiftProvider(
@@ -236,44 +237,37 @@ fun AppFloatingVerticalSearchActionDock(
         )
     val visibleActionCount = (if (showAddAction) 1 else 0) + extraActions.size + 2
     val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
-    val compactActive = compact && !expanded
+    val dockMode =
+        when {
+            compact && expanded -> AppFloatingVerticalSearchDockMode.CompactSearch
+            compact -> AppFloatingVerticalSearchDockMode.CompactButton
+            expanded -> AppFloatingVerticalSearchDockMode.FullSearch
+            else -> AppFloatingVerticalSearchDockMode.FullDock
+        }
     val availableWidth = appWindowWidthDp() - horizontalInset * 2
-    val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
-    val searchTransition = updateTransition(targetState = expanded, label = "app_vertical_floating_search")
-    val fieldWidthState =
-        searchTransition.animateDp(
-            transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
-            label = "app_vertical_floating_search_field_width",
-        ) { targetExpanded ->
-            if (targetExpanded) fieldTargetWidth else 0.dp
-        }
-    val totalWidthState =
-        searchTransition.animateDp(
-            transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
-            label = "app_vertical_floating_search_total_width",
-        ) { targetExpanded ->
-            size + if (targetExpanded) gap + fieldTargetWidth else 0.dp
-        }
-    val fieldAlphaState =
-        searchTransition.animateFloat(
-            transitionSpec = { tween(durationMillis = AppFloatingSearchDockFadeMotionMs) },
-            label = "app_vertical_floating_search_field_alpha",
-        ) { targetExpanded ->
-            if (targetExpanded) 1f else 0f
-        }
-    val fieldWidthProvider = remember(fieldWidthState) { { fieldWidthState.value } }
-    val totalWidthProvider = remember(totalWidthState) { { totalWidthState.value } }
-    val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
-    val compactMotion =
-        rememberAppFloatingVerticalDockCompactMotion(
-            compact = compactActive,
+    val compactSearchReservedWidth = size + gap
+    val fullSearchFieldWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
+    val compactSearchFieldWidth =
+        (availableWidth - compactSearchReservedWidth - size - gap).coerceAtLeast(0.dp)
+    val motion =
+        rememberAppFloatingVerticalSearchDockMotion(
+            mode = dockMode,
+            dockSide = dockSide,
             expandedHeight = dockHeight,
             compactHeight = size,
-            label = "app_vertical_floating_search_dock",
+            availableWidth = availableWidth,
+            fullSearchFieldWidth = fullSearchFieldWidth,
+            compactSearchFieldWidth = compactSearchFieldWidth,
+            compactSearchReservedWidth = compactSearchReservedWidth,
+            size = size,
+            gap = gap,
         )
 
-    LaunchedEffect(expanded) {
-        if (!expanded) focusManager.clearFocus()
+    LaunchedEffect(compact, expanded) {
+        if (!expanded || compact) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+        }
     }
 
     val fieldContent: @Composable () -> Unit = {
@@ -290,9 +284,9 @@ fun AppFloatingVerticalSearchActionDock(
             backdrop = backdrop,
             modifier =
                 Modifier
-                    .appFloatingDockAnimatedWidth(fieldWidthProvider)
+                    .appFloatingDockAnimatedWidth(motion.fieldWidth)
                     .height(size)
-                    .graphicsLayer { alpha = fieldAlphaProvider() },
+                    .graphicsLayer { alpha = motion.fieldAlpha() },
         )
     }
     val refreshTint =
@@ -373,53 +367,49 @@ fun AppFloatingVerticalSearchActionDock(
             iconTint = accent,
         )
     }
+    val compactSearchContent: @Composable () -> Unit = {
+        AppFloatingLiquidActionButton(
+            backdrop = backdrop,
+            icon = searchIcon,
+            contentDescription = searchContentDescription,
+            onClick = { onExpandedChange(false) },
+            size = size,
+            iconSize = iconSize,
+            iconTint = accent,
+        )
+    }
 
     Box(
         modifier =
             modifier
                 .appFloatingDockLift(resolvedKeyboardLiftProvider)
-                .appFloatingDockAnimatedWidth(totalWidthProvider)
-                .appFloatingDockAnimatedHeight(compactMotion.height),
+                .appFloatingDockAnimatedWidth(motion.width)
+                .appFloatingDockAnimatedHeight(motion.height),
     ) {
-        if (compactMotion.showExpandedContent) {
-            if (dockSide == AppFloatingDockSide.Start) {
-                Box(
-                    modifier =
-                        compactMotion.expandedModifier
-                            .align(Alignment.BottomStart),
-                ) {
-                    dockContent()
-                }
-                Box(
-                    modifier =
-                        compactMotion.expandedModifier
-                            .align(Alignment.BottomStart)
-                            .offset(x = size + gap),
-                ) {
-                    fieldContent()
-                }
-            } else {
-                Box(
-                    modifier =
-                        compactMotion.expandedModifier
-                            .align(Alignment.BottomEnd)
-                            .offset(x = -(size + gap)),
-                ) {
-                    fieldContent()
-                }
-                Box(
-                    modifier =
-                        compactMotion.expandedModifier
-                            .align(Alignment.BottomEnd),
-                ) {
-                    dockContent()
-                }
-            }
-        }
-        if (compactMotion.showCompactContent) {
+        if (motion.showFieldContent) {
             Box(
                 modifier =
-                    compactMotion.compactModifier
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .offset { IntOffset(x = motion.fieldX().roundToPx(), y = 0) },
+            ) {
+                fieldContent()
+            }
+        }
+        if (motion.showFullDockContent) {
+            Box(
+                modifier =
+                    motion.fullDockModifier
+                        .align(Alignment.BottomStart)
+                        .offset { IntOffset(x = motion.fullDockX().roundToPx(), y = 0) },
+            ) {
+                dockContent()
+            }
+        }
+        if (motion.showCompactButtonContent) {
+            Box(
+                modifier =
+                    motion.compactButtonModifier
                         .align(
                             if (dockSide == AppFloatingDockSide.Start) {
                                 Alignment.BottomStart
@@ -429,6 +419,15 @@ fun AppFloatingVerticalSearchActionDock(
                         ),
             ) {
                 compactContent()
+            }
+        }
+        if (motion.showCompactSearchButtonContent) {
+            Box(
+                modifier =
+                    motion.compactSearchButtonModifier
+                        .align(Alignment.BottomEnd),
+            ) {
+                compactSearchContent()
             }
         }
     }

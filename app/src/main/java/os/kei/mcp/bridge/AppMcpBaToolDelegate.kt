@@ -1,6 +1,8 @@
-package os.kei.mcp.server
+package os.kei.mcp.bridge
 
+import os.kei.feature.ba.mcp.McpBaToolDelegate
 import os.kei.feature.github.domain.GitHubCacheService
+import os.kei.mcp.server.McpToolEnvironment
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
 import os.kei.ui.page.main.ba.support.baPoolTagLabel
@@ -30,16 +32,21 @@ import org.json.JSONObject
 import java.util.Locale
 import kotlin.math.roundToInt
 
-internal class McpBaResponseBuilder(
+internal class AppMcpBaToolDelegate(
     private val environment: McpToolEnvironment
-) {
+) : McpBaToolDelegate {
     private val appContext get() = environment.appContext
     private val bgmFavoriteRepository = BaGuideBgmFavoriteRepository()
     private fun resolveServerIndex(requestedServerIndex: Int?): Int {
         return requestedServerIndex?.coerceIn(0, 2) ?: BASettingsStore.loadSnapshot().serverIndex
     }
 
-    fun buildBaSnapshotText(nowMs: Long = System.currentTimeMillis()): String {
+    override fun defaultGuideRefreshIntervalHours(): Int {
+        return BASettingsStore.loadCalendarRefreshIntervalHours()
+    }
+
+    override fun buildBaSnapshotText(): String {
+        val nowMs = System.currentTimeMillis()
         val snapshot = BASettingsStore.loadSnapshot()
         val serverIndex = snapshot.serverIndex.coerceIn(0, 2)
         val displayedAp = displayAp(snapshot.apCurrent)
@@ -108,7 +115,7 @@ internal class McpBaResponseBuilder(
         }.trim()
     }
 
-    fun buildBaCalendarCacheText(
+    override fun buildBaCalendarCacheText(
         requestedServerIndex: Int?,
         includeEntries: Boolean,
         limit: Int
@@ -142,7 +149,7 @@ internal class McpBaResponseBuilder(
         }.trim()
     }
 
-    fun buildBaPoolCacheText(
+    override fun buildBaPoolCacheText(
         requestedServerIndex: Int?,
         includeEntries: Boolean,
         limit: Int
@@ -185,7 +192,7 @@ internal class McpBaResponseBuilder(
         }
     }
 
-    fun buildGuideCatalogCacheText(
+    override fun buildGuideCatalogCacheText(
         tab: String,
         includeEntries: Boolean,
         limit: Int
@@ -234,7 +241,7 @@ internal class McpBaResponseBuilder(
         }.trim()
     }
 
-    fun buildGuideCacheOverviewText(): String {
+    override fun buildGuideCacheOverviewText(): String {
         return buildString {
             appendLine("currentUrl=${BaStudentGuideStore.loadCurrentUrl()}")
             appendLine("cachedEntryCount=${BaStudentGuideStore.cachedEntryCount()}")
@@ -261,7 +268,7 @@ internal class McpBaResponseBuilder(
         return 0L
     }
 
-    fun buildGuideCacheInspectText(
+    override fun buildGuideCacheInspectText(
         url: String,
         includeSections: Boolean,
         refreshIntervalHours: Int
@@ -313,7 +320,7 @@ internal class McpBaResponseBuilder(
         }.trim()
     }
 
-    fun buildGuideMediaListText(
+    override fun buildGuideMediaListText(
         url: String,
         kind: String,
         limit: Int
@@ -378,7 +385,7 @@ internal class McpBaResponseBuilder(
         }
     }
 
-    suspend fun buildGuideBgmFavoritesText(
+    override suspend fun buildGuideBgmFavoritesText(
         action: String,
         query: String,
         limit: Int,
@@ -468,7 +475,7 @@ internal class McpBaResponseBuilder(
         }
     }
 
-    fun buildCacheClearText(scope: String, url: String): String {
+    override fun buildCacheClearText(scope: String, url: String): String {
         val normalizedScope = normalizeCacheClearScope(scope)
         val cleared = mutableListOf<String>()
         var message = "ok"

@@ -1,17 +1,15 @@
-package os.kei.mcp.server
+package os.kei.feature.home.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.home.data.HomeOverviewPrefs
-import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
-import os.kei.ui.page.main.ba.support.BASettingsStore
-import os.kei.ui.page.main.ba.support.cafeStorageCap
-import os.kei.ui.page.main.ba.support.displayAp
-import java.util.Locale
+import os.kei.mcp.server.McpToolEnvironment
+import os.kei.mcp.server.addMcpTextTool
 
 internal class McpHomeTools(
-    private val environment: McpToolEnvironment
+    private val environment: McpToolEnvironment,
+    private val baSnapshotProvider: McpHomeBaSnapshotProvider,
 ) {
     private val githubTrackService = GitHubTrackService()
 
@@ -33,16 +31,7 @@ internal class McpHomeTools(
             item.id to cache
         }
         val cacheHitCount = matchedCacheByTrackId.count { it.value != null }
-
-        val baSnapshot = BASettingsStore.loadSnapshot()
-        val friendCode = baSnapshot.idFriendCode
-            .uppercase(Locale.ROOT)
-            .filter { it in 'A'..'Z' }
-            .take(8)
-            .let { if (it.length == 8) it else HOME_BA_DEFAULT_FRIEND_CODE }
-        val cafeLevel = baSnapshot.cafeLevel.coerceIn(1, 10)
-        val cafeCap = cafeStorageCap(cafeLevel)
-        val cafeStored = baSnapshot.cafeStoredAp.coerceIn(0.0, cafeCap)
+        val baSnapshot = baSnapshotProvider.loadSnapshot()
 
         return buildString {
             appendLine(
@@ -66,13 +55,12 @@ internal class McpHomeTools(
             appendLine("github.lastRefreshMs=${if (cacheHitCount > 0) githubSnapshot.lastRefreshMs else 0L}")
             appendLine("github.shareImportLinkageEnabled=${githubSnapshot.lookupConfig.shareImportLinkageEnabled}")
             appendLine("github.shareImportFlowMode=${githubSnapshot.lookupConfig.shareImportFlowMode.storageId}")
-            appendLine("ba.activated=${friendCode != HOME_BA_DEFAULT_FRIEND_CODE}")
-            appendLine("ba.apCurrent=${displayAp(baSnapshot.apCurrent)}")
+            appendLine("ba.activated=${baSnapshot.activated}")
+            appendLine("ba.apCurrent=${baSnapshot.apCurrent}")
             appendLine("ba.apLimit=${baSnapshot.apLimit}")
-            appendLine("ba.cafeLevel=$cafeLevel")
-            appendLine("ba.cafeStored=${cafeStored.toInt()}")
-            appendLine("ba.cafeCap=${cafeCap.toInt()}")
+            appendLine("ba.cafeLevel=${baSnapshot.cafeLevel}")
+            appendLine("ba.cafeStored=${baSnapshot.cafeStored}")
+            appendLine("ba.cafeCap=${baSnapshot.cafeCap}")
         }.trim()
     }
-
 }

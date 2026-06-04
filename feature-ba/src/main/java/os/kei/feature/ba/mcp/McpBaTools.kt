@@ -1,23 +1,29 @@
-package os.kei.mcp.server
+package os.kei.feature.ba.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.mcp.server.DEFAULT_ENTRY_LIMIT
+import os.kei.mcp.server.MAX_ENTRY_LIMIT
+import os.kei.mcp.server.McpToolEnvironment
+import os.kei.mcp.server.addMcpTextTool
+import os.kei.mcp.server.argBoolean
+import os.kei.mcp.server.argInt
+import os.kei.mcp.server.argIntOrNull
+import os.kei.mcp.server.argString
 
 internal class McpBaTools(
-    private val environment: McpToolEnvironment
+    private val environment: McpToolEnvironment,
+    private val delegate: McpBaToolDelegate,
 ) {
-    private val responseBuilder = McpBaResponseBuilder(environment)
-
     fun register(server: Server) {
         server.addMcpTextTool(environment, name = "keios.ba.snapshot") { _ ->
-            responseBuilder.buildBaSnapshotText()
+            delegate.buildBaSnapshotText()
         }
 
         server.addMcpTextTool(environment, name = "keios.ba.calendar.cache") { request ->
             val serverIndexArg = argIntOrNull(request.arguments?.get("serverIndex"))
             val includeEntries = argBoolean(request.arguments?.get("includeEntries"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, MAX_ENTRY_LIMIT)
-            responseBuilder.buildBaCalendarCacheText(
+            delegate.buildBaCalendarCacheText(
                 requestedServerIndex = serverIndexArg,
                 includeEntries = includeEntries,
                 limit = limit
@@ -28,7 +34,7 @@ internal class McpBaTools(
             val serverIndexArg = argIntOrNull(request.arguments?.get("serverIndex"))
             val includeEntries = argBoolean(request.arguments?.get("includeEntries"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, MAX_ENTRY_LIMIT)
-            responseBuilder.buildBaPoolCacheText(
+            delegate.buildBaPoolCacheText(
                 requestedServerIndex = serverIndexArg,
                 includeEntries = includeEntries,
                 limit = limit
@@ -39,11 +45,11 @@ internal class McpBaTools(
             val tab = argString(request.arguments?.get("tab")).trim()
             val includeEntries = argBoolean(request.arguments?.get("includeEntries"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, MAX_ENTRY_LIMIT)
-            responseBuilder.buildGuideCatalogCacheText(tab = tab, includeEntries = includeEntries, limit = limit)
+            delegate.buildGuideCatalogCacheText(tab = tab, includeEntries = includeEntries, limit = limit)
         }
 
         server.addMcpTextTool(environment, name = "keios.ba.guide.cache.overview") { _ ->
-            responseBuilder.buildGuideCacheOverviewText()
+            delegate.buildGuideCacheOverviewText()
         }
 
         server.addMcpTextTool(environment, name = "keios.ba.guide.cache.inspect") { request ->
@@ -51,9 +57,9 @@ internal class McpBaTools(
             val includeSections = argBoolean(request.arguments?.get("includeSections"), false)
             val refreshHours = argInt(
                 request.arguments?.get("refreshIntervalHours"),
-                BASettingsStore.loadCalendarRefreshIntervalHours()
+                delegate.defaultGuideRefreshIntervalHours()
             ).coerceAtLeast(1)
-            responseBuilder.buildGuideCacheInspectText(
+            delegate.buildGuideCacheInspectText(
                 url = url,
                 includeSections = includeSections,
                 refreshIntervalHours = refreshHours
@@ -64,7 +70,7 @@ internal class McpBaTools(
             val url = argString(request.arguments?.get("url")).trim()
             val kind = argString(request.arguments?.get("kind")).trim()
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, MAX_ENTRY_LIMIT)
-            responseBuilder.buildGuideMediaListText(url = url, kind = kind, limit = limit)
+            delegate.buildGuideMediaListText(url = url, kind = kind, limit = limit)
         }
 
         server.addMcpTextTool(environment, name = "keios.ba.guide.bgm.favorites") { request ->
@@ -73,7 +79,7 @@ internal class McpBaTools(
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_ENTRY_LIMIT).coerceIn(1, MAX_ENTRY_LIMIT)
             val rawJson = argString(request.arguments?.get("json"))
             val apply = argBoolean(request.arguments?.get("apply"), false)
-            responseBuilder.buildGuideBgmFavoritesText(
+            delegate.buildGuideBgmFavoritesText(
                 action = action,
                 query = query,
                 limit = limit,
@@ -85,7 +91,7 @@ internal class McpBaTools(
         server.addMcpTextTool(environment, name = "keios.ba.cache.clear") { request ->
             val scope = argString(request.arguments?.get("scope"))
             val url = argString(request.arguments?.get("url"))
-            responseBuilder.buildCacheClearText(scope = scope, url = url)
+            delegate.buildCacheClearText(scope = scope, url = url)
         }
     }
 }

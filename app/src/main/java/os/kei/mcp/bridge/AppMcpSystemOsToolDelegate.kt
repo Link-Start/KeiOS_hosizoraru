@@ -1,9 +1,11 @@
-package os.kei.mcp.server
+package os.kei.mcp.bridge
 
 import android.content.Intent
 import android.net.Uri
 import os.kei.R
 import os.kei.core.prefs.KeiMmkv
+import os.kei.feature.os.mcp.McpSystemOsToolDelegate
+import os.kei.mcp.server.McpToolEnvironment
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsInfoCache
 import os.kei.ui.page.main.os.OsSectionCard
@@ -15,9 +17,9 @@ import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
 import os.kei.ui.page.main.os.transfer.OsCardTransferService
 import java.util.Locale
 
-internal class McpSystemOsResponseBuilder(
+internal class AppMcpSystemOsToolDelegate(
     private val environment: McpToolEnvironment
-) {
+) : McpSystemOsToolDelegate {
     private data class InfoRow(
         val key: String,
         val value: String
@@ -25,7 +27,7 @@ internal class McpSystemOsResponseBuilder(
 
     private val appContext get() = environment.appContext
 
-    fun buildTopInfoText(query: String, limit: Int): String {
+    override fun buildTopInfoText(query: String, limit: Int): String {
         val rows = readSystemTopInfoRows(maxCount = limit, query = query)
         return if (rows.isEmpty()) {
             if (query.isBlank()) {
@@ -38,7 +40,7 @@ internal class McpSystemOsResponseBuilder(
         }
     }
 
-    fun buildOsCardsSnapshotText(): String {
+    override fun buildOsCardsSnapshotText(): String {
         val uiSnapshot = OsUiStateStore.loadSnapshot()
         val visibleCards = uiSnapshot.visibleCards
         val activityCards = loadOsActivityCards()
@@ -81,7 +83,7 @@ internal class McpSystemOsResponseBuilder(
         }.trim()
     }
 
-    fun buildOsActivityCardsText(
+    override fun buildOsActivityCardsText(
         query: String,
         onlyVisible: Boolean,
         limit: Int
@@ -106,7 +108,7 @@ internal class McpSystemOsResponseBuilder(
         }.trim()
     }
 
-    fun buildOsShellCardsText(
+    override fun buildOsShellCardsText(
         query: String,
         onlyVisible: Boolean,
         includeOutput: Boolean,
@@ -162,7 +164,7 @@ internal class McpSystemOsResponseBuilder(
         }.trim()
     }
 
-    fun buildOsCardsExportText(target: String): String {
+    override fun buildOsCardsExportText(target: String): String {
         val normalizedTarget = normalizeOsCardTransferTarget(target)
         val defaults = buildOsGoogleSystemDefaults()
         return when (normalizedTarget) {
@@ -179,7 +181,7 @@ internal class McpSystemOsResponseBuilder(
         }
     }
 
-    fun buildOsCardsImportText(
+    override fun buildOsCardsImportText(
         target: String,
         rawJson: String,
         apply: Boolean

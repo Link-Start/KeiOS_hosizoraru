@@ -5,7 +5,7 @@ import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.defaultHomeOverviewCards
 
-internal object HomeOverviewPrefs {
+object HomeOverviewPrefs {
     const val KV_ID = "home_page_prefs"
     private const val KEY_VISIBLE_OVERVIEW_CARDS = "home_visible_overview_cards"
     private const val KEY_WEBDAV_OVERVIEW_CARD_MIGRATED = "home_webdav_overview_card_migrated"
@@ -68,7 +68,7 @@ internal object HomeOverviewPrefs {
     }
 }
 
-internal interface HomeOverviewKeyValueStore {
+interface HomeOverviewKeyValueStore {
     fun contains(key: String): Boolean
     fun decodeString(key: String, defaultValue: String): String?
     fun encode(key: String, value: String)

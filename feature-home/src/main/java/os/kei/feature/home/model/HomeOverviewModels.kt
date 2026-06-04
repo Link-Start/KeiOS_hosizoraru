@@ -94,10 +94,10 @@ data class HomeOverviewSnapshot(
     val showCacheFreshnessInCards: Boolean = false,
 )
 
-internal const val HOME_BA_AP_LIMIT_MAX = 240
-internal const val HOME_BA_AP_MAX = 999
-internal const val HOME_BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
-internal val HOME_BA_CAFE_DAILY_AP_BY_LEVEL =
+const val HOME_BA_AP_LIMIT_MAX = 240
+const val HOME_BA_AP_MAX = 999
+const val HOME_BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
+val HOME_BA_CAFE_DAILY_AP_BY_LEVEL =
     intArrayOf(
         92,
         152,

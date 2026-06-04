@@ -88,7 +88,13 @@ fun appFloatingDockBottomTarget(
         } else {
             AppChromeTokens.floatingBottomBarOuterHeight
         }
-    return contentBottomPadding - bottomGap - bottomBarOffset
+    val compactBaselineAdjustment =
+        if (bottomBarVisible) {
+            0.dp
+        } else {
+            AppFloatingDockCompactBottomBaselineAdjustment
+        }
+    return contentBottomPadding - bottomGap - bottomBarOffset - compactBaselineAdjustment
 }
 
 fun appFloatingVerticalDockHeight(
@@ -119,3 +125,5 @@ fun appFloatingRefreshTint(
 
 private const val AppFloatingKeyboardLiftMotionMs = 160
 private val AppFloatingDockBottomGap = 24.dp
+// Keeps floating compact docks on the same visual baseline as MainPagerBottomBar compact content.
+private val AppFloatingDockCompactBottomBaselineAdjustment = 18.dp

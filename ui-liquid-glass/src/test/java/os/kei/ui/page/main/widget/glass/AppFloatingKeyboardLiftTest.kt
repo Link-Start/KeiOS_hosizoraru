@@ -52,4 +52,26 @@ class AppFloatingKeyboardLiftTest {
             )
         )
     }
+
+    @Test
+    fun floatingDockBottomTargetKeepsExpandedDockAboveFullBottomBar() {
+        assertEquals(
+            112.dp,
+            appFloatingDockBottomTarget(
+                contentBottomPadding = 136.dp,
+                bottomBarVisible = true
+            )
+        )
+    }
+
+    @Test
+    fun floatingDockBottomTargetAlignsCompactDockWithCompactBottomBar() {
+        assertEquals(
+            32.dp,
+            appFloatingDockBottomTarget(
+                contentBottomPadding = 136.dp,
+                bottomBarVisible = false
+            )
+        )
+    }
 }

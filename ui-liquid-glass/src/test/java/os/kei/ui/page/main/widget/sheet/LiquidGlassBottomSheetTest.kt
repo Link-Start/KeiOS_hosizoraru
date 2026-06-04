@@ -537,6 +537,26 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
+    fun backgroundBlurLayerExtendsBehindTopCorners() {
+        assertEquals(
+            504f,
+            liquidSheetBackgroundBlurLayerHeightPx(
+                sheetTopOffsetPx = 420f,
+                cornerRadiusPx = 84f,
+                windowHeightPx = 1_120f,
+            ),
+        )
+        assertEquals(
+            1_120f,
+            liquidSheetBackgroundBlurLayerHeightPx(
+                sheetTopOffsetPx = 1_080f,
+                cornerRadiusPx = 84f,
+                windowHeightPx = 1_120f,
+            ),
+        )
+    }
+
+    @Test
     fun topChromeDownwardDragClampsAtMinimumFloatingHeightBeforeDismiss() {
         var dismissRequests = 0
         composeRule.setContent {

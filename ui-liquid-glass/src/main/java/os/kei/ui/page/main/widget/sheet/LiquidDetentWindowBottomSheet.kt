@@ -333,7 +333,15 @@ private fun LiquidDetentBottomSheetContentLayout(
     fun backgroundBlurLayerHeightPx(): Float {
         if (sheetInteracting.value) return 0f
         val depth = liquidSheetSmoothStep(backgroundDepthProgress())
-        return if (depth > LIQUID_SHEET_BACKGROUND_BLUR_START_DEPTH) sheetTopOffsetPx() else 0f
+        return if (depth > LIQUID_SHEET_BACKGROUND_BLUR_START_DEPTH) {
+            liquidSheetBackgroundBlurLayerHeightPx(
+                sheetTopOffsetPx = sheetTopOffsetPx(),
+                cornerRadiusPx = with(density) { cornerRadius.toPx() },
+                windowHeightPx = windowHeightPx(),
+            )
+        } else {
+            0f
+        }
     }
 
     fun backgroundBlurLayerAlpha(): Float {
@@ -583,6 +591,14 @@ internal fun liquidSheetMaxVisibleHeightPx(
     topInsetPx: Float,
 ): Float =
     (windowHeightPx - topInsetPx).coerceAtLeast(0f)
+
+internal fun liquidSheetBackgroundBlurLayerHeightPx(
+    sheetTopOffsetPx: Float,
+    cornerRadiusPx: Float,
+    windowHeightPx: Float,
+): Float =
+    (sheetTopOffsetPx + cornerRadiusPx.coerceAtLeast(0f))
+        .coerceIn(0f, windowHeightPx.coerceAtLeast(0f))
 
 private fun Modifier.pointerInputDismissLayer(
     allowDismiss: Boolean,

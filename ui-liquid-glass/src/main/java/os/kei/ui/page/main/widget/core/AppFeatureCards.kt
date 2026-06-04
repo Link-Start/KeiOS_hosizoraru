@@ -215,6 +215,7 @@ fun AppFeatureCard(
     titleColor: Color = contentColor,
     subtitleColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
     sectionIcon: ImageVector? = null,
+    sectionStartAction: (@Composable () -> Unit)? = null,
     collapsible: Boolean = false,
     expanded: Boolean = true,
     onExpandedChange: (Boolean) -> Unit = {},
@@ -255,7 +256,7 @@ fun AppFeatureCard(
             titleColor = titleColor,
             subtitleColor = subtitleColor,
             startAction =
-                sectionIcon?.let { icon ->
+                sectionStartAction ?: sectionIcon?.let { icon ->
                     {
                         top.yukonga.miuix.kmp.basic.Icon(
                             imageVector = icon,

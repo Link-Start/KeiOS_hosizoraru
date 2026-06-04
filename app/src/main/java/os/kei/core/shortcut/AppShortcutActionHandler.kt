@@ -13,6 +13,7 @@ import os.kei.core.background.AppShortcutGitHubRefreshResult
 import os.kei.core.log.AppLogger
 import os.kei.core.platform.LocalNetworkPermissionCompat
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.mcp.server.KeiOsMcpToolPlugins
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerRuntimeRegistry
@@ -99,7 +100,8 @@ internal object AppShortcutActionHandler {
             appVersionName = packageInfo?.versionName ?: "unknown",
             appVersionCode = packageInfo?.longVersionCode ?: -1L,
             appPackageName = appContext.packageName,
-            appLabel = appLabel
+            appLabel = appLabel,
+            toolPlugins = KeiOsMcpToolPlugins.create(),
         )
         return McpServerManager(
             appContext = appContext,

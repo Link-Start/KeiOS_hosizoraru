@@ -531,6 +531,7 @@ dependencies {
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
     implementation(project(":ui-liquid-glass"))
+    implementation(project(":feature-mcp"))
     implementation(project(":feature-github"))
     implementation(project(":feature-webdav"))
     implementation("androidx.core:core-ktx:$coreKtxVersion")

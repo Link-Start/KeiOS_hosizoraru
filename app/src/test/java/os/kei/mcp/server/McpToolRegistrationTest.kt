@@ -121,7 +121,8 @@ class McpToolRegistrationTest {
             appVersionName = "test",
             appVersionCode = 1L,
             appPackageName = "os.kei.test",
-            appLabel = "KeiOS"
+            appLabel = "KeiOS",
+            toolPlugins = KeiOsMcpToolPlugins.create()
         ).also { service ->
             service.bindMcpStateProvider {
                 McpServerUiState(

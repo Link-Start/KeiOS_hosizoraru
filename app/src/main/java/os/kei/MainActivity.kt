@@ -41,6 +41,7 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.server.KeiOsMcpToolPlugins
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
@@ -146,6 +147,7 @@ class MainActivity : ComponentActivity() {
                 appVersionCode = packageInfo?.longVersionCode ?: -1L,
                 appPackageName = packageName,
                 appLabel = appLabel,
+                toolPlugins = KeiOsMcpToolPlugins.create(),
             )
         mcpServerManager =
             McpServerManager(

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KeiOS</string>
+    <string name="common_acknowledge">Acknowledge</string>
+    <string name="common_mark_read">Mark read</string>
+    <string name="common_open">Open</string>
+    <string name="common_port_invalid">Invalid port</string>
+    <string name="common_refresh">Refresh</string>
+    <string name="common_status_running">Running</string>
+
+    <string name="settings_cache_entry_mcp_detail">Port %1$d · %2$s · %3$s</string>
+    <string name="settings_cache_entry_mcp_network_lan">LAN</string>
+    <string name="settings_cache_entry_mcp_network_local">Local</string>
+    <string name="settings_cache_entry_mcp_token_empty">No token</string>
+    <string name="settings_cache_entry_mcp_token_saved">Token saved</string>
+
+    <string name="ba_arena_refresh_notification_content">Arena refresh is ready.</string>
+    <string name="ba_arena_refresh_notification_island_text">Arena</string>
+    <string name="ba_arena_refresh_notification_title">Arena Refresh</string>
+    <string name="ba_cafe_ap_notification_content">Cafe AP is ready.</string>
+    <string name="ba_cafe_ap_notification_island_text">Cafe</string>
+    <string name="ba_cafe_ap_notification_title">Cafe AP</string>
+    <string name="ba_cafe_visit_notification_content">Cafe visit is ready.</string>
+    <string name="ba_cafe_visit_notification_island_text">Cafe</string>
+    <string name="ba_cafe_visit_notification_title">Cafe Visit</string>
+    <string name="ba_notification_ap_island_text">AP</string>
+
+    <string name="github_page_install_confirm_action_install">Install</string>
+    <string name="github_share_import_notify_action_confirm_track">Track</string>
+    <string name="github_share_import_notify_action_continue_install">Continue install</string>
+    <string name="github_share_import_notify_action_send_install">Send install</string>
+    <string name="github_share_import_pending_action_cancel">Cancel linkage</string>
+
+    <string name="os_activity_builtin_google_settings_app_name">Settings</string>
+    <string name="os_activity_builtin_google_settings_class">com.android.settings.Settings</string>
+    <string name="os_activity_builtin_google_settings_package">com.android.settings</string>
+    <string name="os_activity_builtin_google_settings_subtitle">Open Android Settings.</string>
+    <string name="os_activity_builtin_google_settings_title">Android Settings</string>
+    <string name="os_google_system_service_default_app_name">Google Play services</string>
+    <string name="os_google_system_service_default_intent_flags">0x10000000</string>
+    <string name="os_google_system_service_default_subtitle">Open Google Play services details.</string>
+    <string name="os_section_google_system_service_title">Google system service</string>
+    <string name="os_shell_card_subtitle">Run a shell command through Shizuku.</string>
+    <string name="os_shell_card_title">Shell Runner</string>
+</resources>

@@ -211,17 +211,6 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <service
-            android:name=".mcp.service.McpKeepAliveService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="mcp_keepalive_realtime_notify" />
-        </service>
-
-        <service
             android:name=".ui.page.main.student.BaGuideBgmMediaSessionService"
             android:enabled="true"
             android:exported="false"

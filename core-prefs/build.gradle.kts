@@ -23,6 +23,6 @@ dependencies {
     api("com.tencent:mmkv:2.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
 
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("junit:junit:4.13.2")
 }

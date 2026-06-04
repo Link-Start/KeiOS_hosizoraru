@@ -23,6 +23,6 @@ android {
 dependencies {
     implementation(project(":feature-mcp"))
 
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("junit:junit:4.13.2")
 }

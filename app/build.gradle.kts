@@ -414,6 +414,13 @@ android {
             matchingFallbacks += listOf("release")
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
+
+        maybeCreate("benchmarkRelease").apply {
+            initWith(getByName("benchmark"))
+            matchingFallbacks.clear()
+            matchingFallbacks += listOf("release")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
+        }
     }
 
     compileOptions {
@@ -474,6 +481,9 @@ androidComponents {
     onVariants(selector().withBuildType("benchmark")) { variant ->
         variant.sources.baselineProfiles?.addStaticSourceDirectory("src/release/generated/baselineProfiles")
     }
+    onVariants(selector().withBuildType("benchmarkRelease")) { variant ->
+        variant.sources.baselineProfiles?.addStaticSourceDirectory("src/release/generated/baselineProfiles")
+    }
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(releaseVersionName)
@@ -493,6 +503,12 @@ androidComponents {
         }
     }
     onVariants(selector().withBuildType("benchmark")) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionName.set(nonReleaseVersionName)
+            output.versionCode.set(preReleaseVersionCode)
+        }
+    }
+    onVariants(selector().withBuildType("benchmarkRelease")) { variant ->
         variant.outputs.forEach { output ->
             output.versionName.set(nonReleaseVersionName)
             output.versionCode.set(preReleaseVersionCode)
@@ -581,8 +597,8 @@ dependencies {
     implementation("androidx.documentfile:documentfile:$documentFileVersion")
     implementation("com.xzakota.hyper.notification:focus-api:$focusApiVersion")
 
-    // Keep kotlin-test aligned with the applied Kotlin plugin version to avoid version skew.
-    testImplementation(kotlin("test"))
+    // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
     testImplementation("androidx.test.ext:junit:$androidTestExtJunitVersion")

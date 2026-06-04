@@ -30,6 +30,6 @@ dependencies {
     implementation("androidx.compose.runtime:runtime:$composeVersion")
     implementation("com.tencent:mmkv:2.4.0")
 
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("junit:junit:4.13.2")
 }

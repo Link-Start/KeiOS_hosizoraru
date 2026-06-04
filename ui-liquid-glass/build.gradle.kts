@@ -236,7 +236,7 @@ dependencies {
     api("io.github.kyant0:shapes:$shapesVersion")
     api("com.composables:icons-lucide-android:$lucideIconsVersion")
 
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
     testImplementation("androidx.test.ext:junit:1.3.0")

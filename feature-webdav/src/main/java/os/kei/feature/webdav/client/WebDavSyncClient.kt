@@ -208,7 +208,7 @@ class WebDavSyncClient(
             if (content.isNullOrBlank()) {
                 WebDavDownloadResult.Empty
             } else {
-                WebDavDownloadResult.Success(content!!, etag)
+                WebDavDownloadResult.Success(content, etag)
             }
         } catch (e: NotFoundException) {
             WebDavDownloadResult.Empty

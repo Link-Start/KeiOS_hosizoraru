@@ -29,12 +29,18 @@ fun SheetContentColumn(
     val scrollState = rememberScrollState()
     val overflowReporter by rememberUpdatedState(LocalLiquidSheetContentOverflowReporter.current)
     val scrollStateReporter by rememberUpdatedState(LocalLiquidSheetContentScrollStateReporter.current)
+    val managedScrollableContentReporter by rememberUpdatedState(
+        LocalLiquidSheetManagedScrollableContentReporter.current
+    )
     val scrollModifier =
         if (scrollable) {
             Modifier.verticalScroll(scrollState)
         } else {
             Modifier
         }
+    LaunchedEffect(scrollable) {
+        managedScrollableContentReporter(scrollable)
+    }
     LaunchedEffect(scrollable, scrollState.maxValue) {
         overflowReporter(scrollable && scrollState.maxValue > 0)
     }

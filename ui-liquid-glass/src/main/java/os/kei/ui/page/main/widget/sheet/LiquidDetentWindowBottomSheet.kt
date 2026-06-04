@@ -10,13 +10,13 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,7 +39,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.MutableIntState
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,6 +53,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -62,11 +62,9 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.semantics.SemanticsPropertyKey
-import androidx.compose.ui.semantics.SemanticsPropertyReceiver
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -76,6 +74,8 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.window.Dialog
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
 import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -87,10 +87,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
 import top.yukonga.miuix.kmp.utils.platformDialogProperties
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val LIQUID_SHEET_BACKGROUND_MIN_DEPTH = 0.10f
-private const val LIQUID_SHEET_UPWARD_RESISTANCE = 0.18f
+private const val LIQUID_SHEET_BACKGROUND_LOW_TINT_DEPTH = 0.22f
+private const val LIQUID_SHEET_BACKGROUND_BLUR_START_DEPTH = 0.34f
 private const val LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE = 0.35f
 private const val LIQUID_SHEET_OPEN_CLOSE_DAMPING = 0.90f
 private const val LIQUID_SHEET_OPEN_CLOSE_RESPONSE = 0.38f
@@ -103,10 +105,6 @@ private const val LIQUID_SHEET_HANDLE_PRESSED_WIDTH = 55f
 private const val LIQUID_SHEET_HANDLE_PRESSED_SCALE = 1.15f
 private const val LIQUID_SHEET_HANDLE_PRESS_DURATION_MS = 100
 private const val LIQUID_SHEET_HANDLE_RELEASE_DURATION_MS = 150
-
-internal val LiquidSheetFloatingOffsetYKey =
-    SemanticsPropertyKey<Float>("LiquidSheetFloatingOffsetY")
-internal var SemanticsPropertyReceiver.liquidSheetFloatingOffsetY by LiquidSheetFloatingOffsetYKey
 
 @Composable
 internal fun LiquidDetentWindowBottomSheet(
@@ -132,6 +130,7 @@ internal fun LiquidDetentWindowBottomSheet(
     dismissDragThreshold: Dp,
     onBlockedDismissRequest: (() -> Unit)?,
     contentCanScrollUp: () -> Boolean = { false },
+    backgroundDepthBlurRadius: Dp,
     content: @Composable () -> Unit,
 ) {
     val statusBarsPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -186,6 +185,7 @@ internal fun LiquidDetentWindowBottomSheet(
         dismissDragThreshold = dismissDragThreshold,
         onBlockedDismissRequest = onBlockedDismissRequest,
         contentCanScrollUp = contentCanScrollUp,
+        backgroundDepthBlurRadius = backgroundDepthBlurRadius,
         content = {
             CompositionLocalProvider(
                 LocalDismissState provides requestDismiss,
@@ -222,17 +222,23 @@ private fun LiquidDetentBottomSheetContentLayout(
     dismissDragThreshold: Dp,
     onBlockedDismissRequest: (() -> Unit)?,
     contentCanScrollUp: () -> Boolean,
+    backgroundDepthBlurRadius: Dp,
     content: @Composable () -> Unit,
 ) {
     val animationProgress = remember { Animatable(0f, visibilityThreshold = 0.0001f) }
-    val dragOffsetY = remember { mutableFloatStateOf(0f) }
+    val dismissOffsetY = remember { mutableFloatStateOf(0f) }
+    val visibleSheetHeightPx = remember { mutableFloatStateOf(0f) }
+    val userResizedSheet = remember { mutableStateOf(false) }
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
     val internalVisible = remember { mutableStateOf(false) }
+    val sheetInteracting = remember { mutableStateOf(false) }
 
     LaunchedEffect(show) {
         if (show) {
             internalVisible.value = true
-            dragOffsetY.floatValue = 0f
+            dismissOffsetY.floatValue = 0f
+            visibleSheetHeightPx.floatValue = 0f
+            userResizedSheet.value = false
             animationProgress.animateTo(
                 targetValue = 1f,
                 animationSpec = folmeSpring(
@@ -242,7 +248,7 @@ private fun LiquidDetentBottomSheetContentLayout(
             )
         } else {
             if (!internalVisible.value) return@LaunchedEffect
-            if (dragOffsetY.floatValue > 0f) {
+            if (dismissOffsetY.floatValue > 0f) {
                 animationProgress.snapTo(0f)
             } else {
                 animationProgress.animateTo(
@@ -268,44 +274,84 @@ private fun LiquidDetentBottomSheetContentLayout(
     val minimumFloatingHeightPx = with(density) { minimumFloatingHeight.toPx() }
     val dismissDragThresholdPx = with(density) { dismissDragThreshold.toPx() }
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
-    fun maxFloatingOffsetPx(): Float =
-        (sheetHeightPx.intValue.toFloat() - minimumFloatingHeightPx).coerceAtLeast(0f)
+    fun windowHeightPx(): Float = with(density) { windowInfo.containerDpSize.height.toPx() }
+
+    fun maxVisibleHeightPx(): Float =
+        liquidSheetMaxVisibleHeightPx(
+            windowHeightPx = windowHeightPx(),
+            topInsetPx = with(density) { topInset.toPx() },
+        )
+
+    fun visibleHeightPx(): Float {
+        val naturalHeight = sheetHeightPx.intValue.toFloat()
+        val requestedHeight =
+            when {
+                visibleSheetHeightPx.floatValue > 0f -> visibleSheetHeightPx.floatValue
+                naturalHeight > 0f -> naturalHeight
+                else -> maxVisibleHeightPx()
+            }
+        return requestedHeight.coerceIn(0f, maxVisibleHeightPx())
+    }
 
     fun sheetPlacementOffsetPx(): Float {
-        val currentHeight = sheetHeightPx.intValue.toFloat()
-        val windowHeightPx = with(density) { windowInfo.containerDpSize.height.toPx() }
-        val baseOffset = if (currentHeight > 0) currentHeight else windowHeightPx
-        return baseOffset * (1f - animationProgress.value) + dragOffsetY.floatValue
+        val currentHeight = visibleHeightPx()
+        val fallbackHeight = windowHeightPx()
+        val baseOffset = if (currentHeight > 0f) currentHeight else fallbackHeight
+        return baseOffset * (1f - animationProgress.value) + dismissOffsetY.floatValue
+    }
+
+    fun sheetTopOffsetPx(): Float {
+        val currentHeight = visibleHeightPx()
+        val windowHeightPx = windowHeightPx()
+        return if (currentHeight > 0f) {
+            (windowHeightPx - currentHeight + sheetPlacementOffsetPx()).coerceIn(0f, windowHeightPx)
+        } else {
+            windowHeightPx
+        }
     }
 
     fun backgroundDepthProgress(): Float {
-        val maxFloatingOffset = maxFloatingOffsetPx()
-        val floatingProgress =
-            if (maxFloatingOffset > 0f) {
-                (dragOffsetY.floatValue / maxFloatingOffset).coerceIn(0f, 1f)
+        val currentHeight = visibleHeightPx()
+        val windowHeightPx = windowHeightPx()
+        val visibleHeightFraction =
+            if (currentHeight > 0f && windowHeightPx > 0f) {
+                (currentHeight / windowHeightPx).coerceIn(0f, 1f)
             } else {
-                0f
+                1f
             }
+        val heightDepth =
+            (
+                (visibleHeightFraction - LIQUID_SHEET_BACKGROUND_MIN_DEPTH) /
+                    (1f - LIQUID_SHEET_BACKGROUND_MIN_DEPTH)
+            ).coerceIn(0f, 1f)
         val dismissProgress =
-            if (maxFloatingOffset > 0f) {
-                ((dragOffsetY.floatValue - maxFloatingOffset) / dismissDragThresholdPx.coerceAtLeast(
-                    1f
-                )).coerceIn(0f, 1f)
-            } else {
-                0f
-            }
-        val hoverDepth =
-            lerp(start = 1f, stop = LIQUID_SHEET_BACKGROUND_MIN_DEPTH, fraction = floatingProgress)
-        return animationProgress.value * hoverDepth * (1f - dismissProgress)
+            (dismissOffsetY.floatValue / dismissDragThresholdPx.coerceAtLeast(1f))
+                .coerceIn(0f, 1f)
+        return animationProgress.value * heightDepth * (1f - dismissProgress)
+    }
+
+    fun backgroundBlurLayerHeightPx(): Float {
+        if (sheetInteracting.value) return 0f
+        val depth = liquidSheetSmoothStep(backgroundDepthProgress())
+        return if (depth > LIQUID_SHEET_BACKGROUND_BLUR_START_DEPTH) sheetTopOffsetPx() else 0f
+    }
+
+    fun backgroundBlurLayerAlpha(): Float {
+        if (sheetInteracting.value) return 0f
+        val depth = liquidSheetSmoothStep(backgroundDepthProgress())
+        return (
+            (depth - LIQUID_SHEET_BACKGROUND_BLUR_START_DEPTH) /
+                (1f - LIQUID_SHEET_BACKGROUND_BLUR_START_DEPTH)
+            ).coerceIn(0f, 1f)
     }
 
     val resetGesture: suspend () -> Unit = {
         animate(
-            dragOffsetY.floatValue,
+            dismissOffsetY.floatValue,
             0f,
-            animationSpec = tween(durationMillis = LIQUID_SHEET_RESET_DURATION_MS)
+            animationSpec = tween(durationMillis = LIQUID_SHEET_RESET_DURATION_MS),
         ) { value, _ ->
-            dragOffsetY.floatValue = value
+            dismissOffsetY.floatValue = value
         }
         animate(
             dimAlpha.floatValue,
@@ -330,6 +376,9 @@ private fun LiquidDetentBottomSheetContentLayout(
             LiquidDetentBackgroundDimLayer(
                 dimAlpha = dimAlpha,
                 depthProgress = ::backgroundDepthProgress,
+                blurLayerHeightPx = ::backgroundBlurLayerHeightPx,
+                blurLayerAlpha = ::backgroundBlurLayerAlpha,
+                blurRadius = backgroundDepthBlurRadius,
             )
         }
 
@@ -347,40 +396,50 @@ private fun LiquidDetentBottomSheetContentLayout(
                 .liquidSheetFloatingPlacement {
                     sheetPlacementOffsetPx()
                 }
-                .semantics {
-                    liquidSheetFloatingOffsetY = dragOffsetY.floatValue
-                }
-
-            LiquidDetentBottomSheetColumn(
-                title = title,
-                backgroundColor = backgroundColor,
-                cornerRadius = cornerRadius,
-                sheetMaxWidth = sheetMaxWidth,
-                outsideMargin = outsideMargin,
-                insideMargin = insideMargin,
-                defaultWindowInsetsPadding = defaultWindowInsetsPadding,
-                dragHandleColor = dragHandleColor,
-                allowDismiss = allowDismiss,
-                sheetHeightPx = sheetHeightPx,
-                dragOffsetY = dragOffsetY,
-                dimAlpha = dimAlpha,
-                onDismissRequest = { currentOnDismissRequest?.invoke() },
-                modifier = sheetModifier,
-                surfaceModifier = surfaceModifier,
-                topInset = topInset,
-                enableNestedScroll = enableNestedScroll,
-                minimumFloatingHeight = minimumFloatingHeight,
-                dismissDragThreshold = dismissDragThreshold,
-                onBlockedDismissRequest = onBlockedDismissRequest,
-                contentCanScrollUp = contentCanScrollUp,
-                startAction = startAction?.let { action ->
-                    { CompositionLocalProvider(LocalDismissState provides { currentOnDismissRequest?.invoke() }) { action() } }
+            CompositionLocalProvider(
+                LocalLiquidSheetVisibleHeightPx provides {
+                    visibleHeightPx().roundToInt()
                 },
-                endAction = endAction?.let { action ->
-                    { CompositionLocalProvider(LocalDismissState provides { currentOnDismissRequest?.invoke() }) { action() } }
-                },
-                content = content,
-            )
+            ) {
+                LiquidDetentBottomSheetColumn(
+                    title = title,
+                    backgroundColor = backgroundColor,
+                    cornerRadius = cornerRadius,
+                    sheetMaxWidth = sheetMaxWidth,
+                    outsideMargin = outsideMargin,
+                    insideMargin = insideMargin,
+                    defaultWindowInsetsPadding = defaultWindowInsetsPadding,
+                    dragHandleColor = dragHandleColor,
+                    allowDismiss = allowDismiss,
+                    sheetHeightPx = sheetHeightPx,
+                    visibleSheetHeightPx = visibleSheetHeightPx,
+                    dismissOffsetY = dismissOffsetY,
+                    userResizedSheet = userResizedSheet,
+                    dimAlpha = dimAlpha,
+                    onDismissRequest = { currentOnDismissRequest?.invoke() },
+                    modifier = sheetModifier,
+                    surfaceModifier = surfaceModifier,
+                    topInset = topInset,
+                    enableNestedScroll = enableNestedScroll,
+                    minimumFloatingHeight = minimumFloatingHeight,
+                    onBlockedDismissRequest = onBlockedDismissRequest,
+                    contentCanScrollUp = contentCanScrollUp,
+                    dismissDragThresholdPx = dismissDragThresholdPx,
+                    onInteractionStarted = {
+                        sheetInteracting.value = true
+                    },
+                    onInteractionFinished = {
+                        sheetInteracting.value = false
+                    },
+                    startAction = startAction?.let { action ->
+                        { CompositionLocalProvider(LocalDismissState provides { currentOnDismissRequest?.invoke() }) { action() } }
+                    },
+                    endAction = endAction?.let { action ->
+                        { CompositionLocalProvider(LocalDismissState provides { currentOnDismissRequest?.invoke() }) { action() } }
+                    },
+                    content = content,
+                )
+            }
         }
     }
 }
@@ -389,18 +448,128 @@ private fun LiquidDetentBottomSheetContentLayout(
 private fun LiquidDetentBackgroundDimLayer(
     dimAlpha: MutableFloatState,
     depthProgress: () -> Float,
+    blurLayerHeightPx: () -> Float,
+    blurLayerAlpha: () -> Float,
+    blurRadius: Dp,
 ) {
     val baseColor = MiuixTheme.colorScheme.windowDimming
+    val sceneBackdrop = LocalSceneBackdrop.current
+    val isDark = isSystemInDarkTheme()
     Box(
         modifier = Modifier
             .fillMaxSize()
             .drawBehind {
+                val depth = liquidSheetSmoothStep(depthProgress())
+                val dimDepth =
+                    lerp(
+                        start = LIQUID_SHEET_BACKGROUND_LOW_TINT_DEPTH,
+                        stop = 1f,
+                        fraction = depth,
+                    )
                 drawRect(
-                    color = baseColor.copy(alpha = baseColor.alpha * dimAlpha.floatValue * depthProgress()),
+                    baseColor.copy(
+                        alpha = baseColor.alpha * dimAlpha.floatValue * dimDepth,
+                    )
                 )
             },
-    )
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .liquidSheetHeightPx {
+                    blurLayerHeightPx().roundToInt()
+                }
+                .graphicsLayer {
+                    alpha = blurLayerAlpha()
+                }
+                .drawBackdrop(
+                    backdrop = sceneBackdrop,
+                    shape = { RectangleShape },
+                    effects = {
+                        blur(blurRadius.toPx())
+                    },
+                    highlight = null,
+                    shadow = null,
+                    innerShadow = null,
+                    onDrawSurface = {
+                        val depth = liquidSheetSmoothStep(depthProgress())
+                        val depthTint =
+                            if (isDark) {
+                                Color.Black.copy(alpha = 0.04f * depth)
+                            } else {
+                                Color.White.copy(alpha = 0.025f * depth)
+                            }
+                        drawRect(depthTint)
+                    },
+                ),
+        )
+    }
 }
+
+private fun Modifier.liquidSheetHeightPx(
+    heightPx: () -> Int,
+): Modifier =
+    layout { measurable, constraints ->
+        val resolvedHeight = heightPx().coerceIn(0, constraints.maxHeight)
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minHeight = resolvedHeight,
+                    maxHeight = resolvedHeight,
+                )
+            )
+        layout(placeable.width, resolvedHeight) {
+            placeable.place(0, 0)
+        }
+    }
+
+private fun Modifier.liquidSheetOptionalHeightPx(
+    heightPx: () -> Int,
+): Modifier =
+    layout { measurable, constraints ->
+        val requestedHeight = heightPx()
+        if (requestedHeight <= 0) {
+            val placeable = measurable.measure(constraints)
+            layout(placeable.width, placeable.height) {
+                placeable.place(0, 0)
+            }
+        } else {
+            val resolvedHeight = requestedHeight.coerceIn(0, constraints.maxHeight)
+            val placeable =
+                measurable.measure(
+                    constraints.copy(
+                        minHeight = resolvedHeight,
+                        maxHeight = resolvedHeight,
+                    )
+                )
+            layout(placeable.width, resolvedHeight) {
+                placeable.place(0, 0)
+            }
+        }
+    }
+
+private fun liquidSheetSmoothStep(value: Float): Float {
+    val x = value.coerceIn(0f, 1f)
+    return x * x * (3f - 2f * x)
+}
+
+private fun Modifier.liquidSheetWidthPx(
+    widthPx: () -> Int,
+): Modifier =
+    layout { measurable, constraints ->
+        val resolvedWidth = widthPx().coerceIn(0, constraints.maxWidth)
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minWidth = resolvedWidth,
+                    maxWidth = resolvedWidth,
+                )
+            )
+        layout(resolvedWidth, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
 
 private fun Modifier.liquidSheetFloatingPlacement(
     offsetY: () -> Float,
@@ -408,6 +577,12 @@ private fun Modifier.liquidSheetFloatingPlacement(
     this.then(
         Modifier.offset { IntOffset(x = 0, y = offsetY().roundToInt()) },
     )
+
+internal fun liquidSheetMaxVisibleHeightPx(
+    windowHeightPx: Float,
+    topInsetPx: Float,
+): Float =
+    (windowHeightPx - topInsetPx).coerceAtLeast(0f)
 
 private fun Modifier.pointerInputDismissLayer(
     allowDismiss: Boolean,
@@ -438,7 +613,9 @@ private fun LiquidDetentBottomSheetColumn(
     dragHandleColor: Color,
     allowDismiss: Boolean,
     sheetHeightPx: MutableIntState,
-    dragOffsetY: MutableFloatState,
+    visibleSheetHeightPx: MutableFloatState,
+    dismissOffsetY: MutableFloatState,
+    userResizedSheet: MutableState<Boolean>,
     dimAlpha: MutableFloatState,
     onDismissRequest: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -446,9 +623,11 @@ private fun LiquidDetentBottomSheetColumn(
     topInset: Dp,
     enableNestedScroll: Boolean,
     minimumFloatingHeight: Dp,
-    dismissDragThreshold: Dp,
     onBlockedDismissRequest: (() -> Unit)?,
     contentCanScrollUp: () -> Boolean,
+    dismissDragThresholdPx: Float,
+    onInteractionStarted: () -> Unit,
+    onInteractionFinished: () -> Unit,
     startAction: @Composable (() -> Unit)? = null,
     endAction: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -462,70 +641,129 @@ private fun LiquidDetentBottomSheetColumn(
     val isSettling = remember { mutableStateOf(false) }
     val currentContentCanScrollUp = rememberUpdatedState(contentCanScrollUp)
     val minimumFloatingHeightPx = with(density) { minimumFloatingHeight.toPx() }
-    val dismissDragThresholdPx = with(density) { dismissDragThreshold.toPx() }
 
-    fun maxFloatingOffsetPx(): Float =
-        (sheetHeightPx.intValue.toFloat() - minimumFloatingHeightPx).coerceAtLeast(0f)
+    fun maxVisibleHeightPx(): Float {
+        val windowHeightPx = with(density) { currentWindowHeight.toPx() }
+        val topInsetPx = with(density) { topInset.toPx() }
+        return liquidSheetMaxVisibleHeightPx(
+            windowHeightPx = windowHeightPx,
+            topInsetPx = topInsetPx,
+        )
+    }
 
-    fun calculateNewOffset(current: Float, delta: Float): Float {
-        val maxFloatingOffset = maxFloatingOffsetPx()
-        val newOffset = current + delta
-        return when {
-            newOffset < 0f -> (current + delta * LIQUID_SHEET_UPWARD_RESISTANCE).coerceAtMost(0f)
-            newOffset <= maxFloatingOffset -> newOffset
-            allowDismiss -> newOffset
-            else -> {
-                val extraOffset = newOffset - maxFloatingOffset
-                (maxFloatingOffset + extraOffset * LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE).coerceAtLeast(
-                    0f
-                )
+    fun naturalHeightPx(): Float =
+        sheetHeightPx.intValue.toFloat().coerceAtLeast(0f)
+
+    fun currentVisibleHeightPx(): Float {
+        val requestedHeight =
+            when {
+                visibleSheetHeightPx.floatValue > 0f -> visibleSheetHeightPx.floatValue
+                naturalHeightPx() > 0f -> naturalHeightPx()
+                else -> maxVisibleHeightPx()
             }
+        return requestedHeight.coerceIn(0f, maxVisibleHeightPx())
+    }
+
+    fun minimumVisibleHeightPx(): Float {
+        val maxVisibleHeight = maxVisibleHeightPx()
+        val minimumResizableHeight = minimumFloatingHeightPx.coerceAtMost(maxVisibleHeight)
+        val naturalHeight = naturalHeightPx()
+        return if (naturalHeight in 1f..minimumResizableHeight) {
+            naturalHeight
+        } else {
+            minimumResizableHeight
         }
     }
 
     fun updateDimAlpha(offset: Float) {
-        val extraOffset = (offset - maxFloatingOffsetPx()).coerceAtLeast(0f)
         dimAlpha.floatValue =
-            if (allowDismiss && extraOffset > 0f) {
-                1f - (extraOffset / dismissDragThresholdPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
+            if (allowDismiss && offset > 0f) {
+                1f - (offset / dismissDragThresholdPx.coerceAtLeast(1f)).coerceIn(0f, 1f)
             } else {
                 1f
             }
     }
 
+    fun applyResizeDrag(delta: Float): Float {
+        if (delta == 0f) return 0f
+        userResizedSheet.value = true
+        val beforeHeight = currentVisibleHeightPx()
+        val beforeDismissOffset = dismissOffsetY.floatValue
+        var remainingDelta = delta
+
+        if (remainingDelta < 0f && dismissOffsetY.floatValue > 0f) {
+            val restoredOffset = minOf(dismissOffsetY.floatValue, -remainingDelta)
+            dismissOffsetY.floatValue -= restoredOffset
+            remainingDelta += restoredOffset
+        }
+
+        if (remainingDelta != 0f) {
+            val desiredHeight = currentVisibleHeightPx() - remainingDelta
+            val minimumVisibleHeight = minimumVisibleHeightPx()
+            val maximumVisibleHeight = maxVisibleHeightPx()
+            when {
+                desiredHeight >= maximumVisibleHeight -> {
+                    visibleSheetHeightPx.floatValue = maximumVisibleHeight
+                    dismissOffsetY.floatValue = 0f
+                }
+
+                desiredHeight >= minimumVisibleHeight -> {
+                    visibleSheetHeightPx.floatValue = desiredHeight
+                    dismissOffsetY.floatValue = 0f
+                }
+
+                else -> {
+                    visibleSheetHeightPx.floatValue = minimumVisibleHeight
+                    val extraOffset = minimumVisibleHeight - desiredHeight
+                    dismissOffsetY.floatValue =
+                        if (allowDismiss) {
+                            extraOffset
+                        } else {
+                            extraOffset * LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE
+                        }
+                }
+            }
+        }
+
+        updateDimAlpha(dismissOffsetY.floatValue)
+        return (beforeHeight - currentVisibleHeightPx()) +
+            (dismissOffsetY.floatValue - beforeDismissOffset)
+    }
+
     val settle: (Float) -> Unit = remember(
         allowDismiss,
         density,
-        dismissDragThreshold,
         minimumFloatingHeight,
         onBlockedDismissRequest,
     ) {
         { velocity ->
             settlingJob.value?.cancel()
             isSettling.value = true
+            onInteractionStarted()
             settlingJob.value = coroutineScope.launch {
-                val currentOffset = dragOffsetY.floatValue
+                val currentDismissOffset = dismissOffsetY.floatValue
                 val velocityThresholdPx =
                     with(density) { LiquidSheetDismissVelocityThreshold.toPx() }
                 val windowHeightPx = with(density) { currentWindowHeight.toPx() }
-                val maxFloatingOffset = maxFloatingOffsetPx()
-                val extraOffset = currentOffset - maxFloatingOffset
-                val shouldRequestDismiss =
-                    extraOffset > 0f &&
-                            (extraOffset > dismissDragThresholdPx || velocity > velocityThresholdPx)
-                val floatingTarget =
-                    when {
-                        currentOffset < 0f || velocity < -velocityThresholdPx -> 0f
-                        velocity > velocityThresholdPx -> maxFloatingOffset
-                        else -> currentOffset.coerceIn(0f, maxFloatingOffset)
+                val thresholdDismissOffset =
+                    if (allowDismiss) {
+                        currentDismissOffset
+                    } else {
+                        currentDismissOffset / LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE
                     }
+                val shouldRequestDismiss =
+                    thresholdDismissOffset > 0f &&
+                        (thresholdDismissOffset > dismissDragThresholdPx || velocity > velocityThresholdPx)
+                val targetHeight =
+                    currentVisibleHeightPx()
+                        .coerceIn(minimumVisibleHeightPx(), maxVisibleHeightPx())
 
                 try {
                     when {
                         shouldRequestDismiss && allowDismiss -> {
                             animateDismissOffScreen(
-                                dragOffsetY = dragOffsetY,
-                                sheetHeightPx = sheetHeightPx.intValue,
+                                dismissOffsetY = dismissOffsetY,
+                                visibleHeightPx = currentVisibleHeightPx(),
                                 windowHeightPx = windowHeightPx,
                                 dimAlpha = dimAlpha,
                                 velocity = velocity,
@@ -536,26 +774,38 @@ private fun LiquidDetentBottomSheetColumn(
 
                         shouldRequestDismiss -> {
                             onBlockedDismissRequest?.invoke()
-                            animateDragOffsetTo(
-                                dragOffsetY,
+                            animateDismissOffsetTo(
+                                dismissOffsetY,
                                 dimAlpha,
-                                targetValue = maxFloatingOffset,
+                                targetValue = 0f,
                                 initialVelocity = 0f
                             )
                         }
 
                         else -> {
-                            animateDragOffsetTo(
-                                dragOffsetY = dragOffsetY,
-                                dimAlpha = dimAlpha,
-                                targetValue = floatingTarget,
-                                initialVelocity = velocity,
-                            )
+                            if (abs(visibleSheetHeightPx.floatValue - targetHeight) > 0.5f) {
+                                animateSheetHeightTo(
+                                    visibleSheetHeightPx = visibleSheetHeightPx,
+                                    targetValue = targetHeight,
+                                    initialVelocity = -velocity,
+                                )
+                            }
+                            if (dismissOffsetY.floatValue != 0f) {
+                                animateDismissOffsetTo(
+                                    dismissOffsetY = dismissOffsetY,
+                                    dimAlpha = dimAlpha,
+                                    targetValue = 0f,
+                                    initialVelocity = velocity,
+                                )
+                            } else {
+                                dimAlpha.floatValue = 1f
+                            }
                         }
                     }
                 } catch (_: CancellationException) {
                 } finally {
                     isSettling.value = false
+                    onInteractionFinished()
                 }
             }
         }
@@ -566,10 +816,11 @@ private fun LiquidDetentBottomSheetColumn(
         allowDismiss,
         density,
         minimumFloatingHeight,
-        dismissDragThreshold,
+        dismissDragThresholdPx,
         settle
     ) {
         var downwardGestureStartedInScrollableContent = false
+        var sheetConsumedScroll = false
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (!enableNestedScroll) return Offset.Zero
@@ -590,14 +841,18 @@ private fun LiquidDetentBottomSheetColumn(
                         }
                     }
                 }
-                if (delta < 0f && dragOffsetY.floatValue > 0f) {
-                    val newOffset =
-                        calculateNewOffset(dragOffsetY.floatValue, delta).coerceAtLeast(0f)
-                    val consumedY = dragOffsetY.floatValue - newOffset
+                if (
+                    delta < 0f &&
+                    (
+                        dismissOffsetY.floatValue > 0f ||
+                            (!currentContentCanScrollUp.value() && currentVisibleHeightPx() < maxVisibleHeightPx())
+                        )
+                ) {
+                    val consumedY = applyResizeDrag(delta)
                     if (consumedY != 0f) {
-                        dragOffsetY.floatValue = newOffset
-                        updateDimAlpha(newOffset)
-                        return Offset(0f, -consumedY)
+                        onInteractionStarted()
+                        sheetConsumedScroll = true
+                        return Offset(0f, consumedY)
                     }
                 }
                 return Offset.Zero
@@ -621,10 +876,12 @@ private fun LiquidDetentBottomSheetColumn(
                         settlingJob.value?.cancel()
                         isSettling.value = false
                     }
-                    val newOffset = calculateNewOffset(dragOffsetY.floatValue, delta)
-                    dragOffsetY.floatValue = newOffset
-                    updateDimAlpha(newOffset)
-                    return available
+                    onInteractionStarted()
+                    val consumedY = applyResizeDrag(delta)
+                    if (consumedY != 0f) {
+                        sheetConsumedScroll = true
+                        return Offset(0f, consumedY)
+                    }
                 }
                 return Offset.Zero
             }
@@ -638,8 +895,9 @@ private fun LiquidDetentBottomSheetColumn(
                     downwardGestureStartedInScrollableContent = true
                     return Velocity.Zero
                 }
-                if (dragOffsetY.floatValue != 0f || available.y > 0f) {
+                if (sheetConsumedScroll || dismissOffsetY.floatValue != 0f) {
                     settle(available.y)
+                    sheetConsumedScroll = false
                     return available
                 }
                 return Velocity.Zero
@@ -651,8 +909,9 @@ private fun LiquidDetentBottomSheetColumn(
                     downwardGestureStartedInScrollableContent = false
                     return Velocity.Zero
                 }
-                if (dragOffsetY.floatValue != 0f || available.y > 0f) {
+                if (sheetConsumedScroll || dismissOffsetY.floatValue != 0f) {
                     settle(available.y)
+                    sheetConsumedScroll = false
                     return available
                 }
                 return Velocity.Zero
@@ -669,13 +928,6 @@ private fun LiquidDetentBottomSheetColumn(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        LiquidDetentOverscrollBackground(
-            dragOffsetY = dragOffsetY,
-            sheetMaxWidth = sheetMaxWidth,
-            outsideMargin = outsideMargin,
-            backgroundColor = backgroundColor,
-        )
-
         Column(
             modifier = modifier
                 .pointerInput(Unit) { detectTapGestures { } }
@@ -684,14 +936,24 @@ private fun LiquidDetentBottomSheetColumn(
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .heightIn(max = windowHeight - topInset)
+                .then(
+                    if (userResizedSheet.value) {
+                        Modifier.liquidSheetOptionalHeightPx {
+                            currentVisibleHeightPx().roundToInt()
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
                 .onGloballyPositioned { coordinates ->
-                    if (imeInsets.getBottom(density) == 0) {
+                    if (imeInsets.getBottom(density) == 0 && !userResizedSheet.value) {
                         sheetHeightPx.intValue = coordinates.size.height
+                        visibleSheetHeightPx.floatValue = coordinates.size.height.toFloat()
                     }
                 }
                 .padding(horizontal = outsideMargin.width)
-                .clip(sheetCornerShape)
                 .then(surfaceModifier)
+                .clip(sheetCornerShape)
                 .background(backgroundColor)
                 .then(if (defaultWindowInsetsPadding) Modifier.imePadding() else Modifier)
                 .padding(horizontal = insideMargin.width)
@@ -703,37 +965,18 @@ private fun LiquidDetentBottomSheetColumn(
                 endAction = endAction,
                 dragHandleColor = dragHandleColor,
                 coroutineScope = coroutineScope,
+                onDragStarted = onInteractionStarted,
                 onDrag = { dragAmount ->
-                    val finalOffset = calculateNewOffset(dragOffsetY.floatValue, dragAmount)
-                    dragOffsetY.floatValue = finalOffset
-                    updateDimAlpha(finalOffset)
+                    if (isSettling.value) {
+                        settlingJob.value?.cancel()
+                        isSettling.value = false
+                    }
+                    applyResizeDrag(dragAmount)
                 },
                 onSettle = settle,
             )
             content()
         }
-    }
-}
-
-@Composable
-private fun BoxScope.LiquidDetentOverscrollBackground(
-    dragOffsetY: MutableFloatState,
-    sheetMaxWidth: Dp,
-    outsideMargin: DpSize,
-    backgroundColor: Color,
-) {
-    val density = LocalDensity.current
-    val overscrollOffsetPx by remember { derivedStateOf { (-dragOffsetY.floatValue).coerceAtLeast(0f) } }
-    if (overscrollOffsetPx > 0f) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .widthIn(max = sheetMaxWidth)
-                .fillMaxWidth()
-                .height(with(density) { overscrollOffsetPx.toDp() } + 1.dp)
-                .padding(horizontal = outsideMargin.width)
-                .background(backgroundColor),
-        )
     }
 }
 
@@ -744,6 +987,7 @@ private fun LiquidDetentTopChrome(
     endAction: (@Composable () -> Unit)?,
     dragHandleColor: Color,
     coroutineScope: CoroutineScope,
+    onDragStarted: () -> Unit,
     onDrag: (Float) -> Unit,
     onSettle: (velocity: Float) -> Unit,
 ) {
@@ -751,6 +995,7 @@ private fun LiquidDetentTopChrome(
     val pressScale = remember { Animatable(1f) }
     val pressWidth = remember { Animatable(LIQUID_SHEET_HANDLE_REST_WIDTH) }
     val handleShape = remember { RoundedCornerShape(2.dp) }
+    val density = LocalDensity.current
 
     Column(
         modifier = Modifier
@@ -775,6 +1020,7 @@ private fun LiquidDetentTopChrome(
                     onDrag(dragAmount)
                 },
                 onDragStarted = {
+                    onDragStarted()
                     isPressing.floatValue = 1f
                     coroutineScope.animateHandlePressDown(pressScale, pressWidth)
                 },
@@ -793,7 +1039,9 @@ private fun LiquidDetentTopChrome(
         ) {
             Box(
                 modifier = Modifier
-                    .width(pressWidth.value.dp)
+                    .liquidSheetWidthPx {
+                        with(density) { pressWidth.value.dp.roundToPx() }
+                    }
                     .height(4.dp)
                     .graphicsLayer {
                         scaleY = pressScale.value
@@ -879,14 +1127,13 @@ private fun CoroutineScope.animateHandlePressRelease(
     }
 }
 
-private suspend fun animateDragOffsetTo(
-    dragOffsetY: MutableFloatState,
-    dimAlpha: MutableFloatState,
+private suspend fun animateSheetHeightTo(
+    visibleSheetHeightPx: MutableFloatState,
     targetValue: Float,
     initialVelocity: Float,
 ) {
     animate(
-        initialValue = dragOffsetY.floatValue,
+        initialValue = visibleSheetHeightPx.floatValue,
         targetValue = targetValue,
         animationSpec = folmeSpring(
             damping = LIQUID_SHEET_SETTLE_DAMPING,
@@ -894,26 +1141,46 @@ private suspend fun animateDragOffsetTo(
         ),
         initialVelocity = initialVelocity,
     ) { value, _ ->
-        dragOffsetY.floatValue = value
+        visibleSheetHeightPx.floatValue = value
+    }
+    visibleSheetHeightPx.floatValue = targetValue
+}
+
+private suspend fun animateDismissOffsetTo(
+    dismissOffsetY: MutableFloatState,
+    dimAlpha: MutableFloatState,
+    targetValue: Float,
+    initialVelocity: Float,
+) {
+    animate(
+        initialValue = dismissOffsetY.floatValue,
+        targetValue = targetValue,
+        animationSpec = folmeSpring(
+            damping = LIQUID_SHEET_SETTLE_DAMPING,
+            response = LIQUID_SHEET_SETTLE_RESPONSE
+        ),
+        initialVelocity = initialVelocity,
+    ) { value, _ ->
+        dismissOffsetY.floatValue = value
         dimAlpha.floatValue = 1f
     }
-    dragOffsetY.floatValue = targetValue
+    dismissOffsetY.floatValue = targetValue
     dimAlpha.floatValue = 1f
 }
 
 private suspend fun animateDismissOffScreen(
-    dragOffsetY: MutableFloatState,
-    sheetHeightPx: Int,
+    dismissOffsetY: MutableFloatState,
+    visibleHeightPx: Float,
     windowHeightPx: Float,
     dimAlpha: MutableFloatState,
     velocity: Float = 0f,
     onDismiss: () -> Unit,
 ) {
-    val sheetHeight = sheetHeightPx.toFloat()
+    val sheetHeight = visibleHeightPx
     val thresholdPx = if (sheetHeight > 0f) sheetHeight else 500f
     val targetValue = maxOf(sheetHeight, windowHeightPx)
     animate(
-        initialValue = dragOffsetY.floatValue,
+        initialValue = dismissOffsetY.floatValue,
         targetValue = targetValue,
         animationSpec = folmeSpring(
             damping = LIQUID_SHEET_SETTLE_DAMPING,
@@ -921,7 +1188,7 @@ private suspend fun animateDismissOffScreen(
         ),
         initialVelocity = velocity,
     ) { value, _ ->
-        dragOffsetY.floatValue = value
+        dismissOffsetY.floatValue = value
         dimAlpha.floatValue = 1f - (value / thresholdPx).coerceIn(0f, 1f)
     }
     onDismiss()

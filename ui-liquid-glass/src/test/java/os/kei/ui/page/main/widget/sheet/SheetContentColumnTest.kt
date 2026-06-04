@@ -86,6 +86,30 @@ class SheetContentColumnTest {
 
         assertFalse(overflows)
     }
+
+    @Test
+    fun reportsManagedScrollableContentState() {
+        var managedScrollable: Boolean? = null
+
+        composeRule.setContent {
+            CompositionLocalProvider(
+                LocalLiquidSheetManagedScrollableContentReporter provides {
+                    managedScrollable = it
+                }
+            ) {
+                SheetContentColumn(verticalSpacing = 0.dp) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .background(Color.Gray)
+                    )
+                }
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) { managedScrollable == true }
+    }
 }
 
 class SheetContentColumnTestApp : Application()

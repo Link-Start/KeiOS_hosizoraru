@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -20,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -43,6 +44,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
+import kotlin.math.roundToInt
 
 private val LiquidSheetCornerRadius = 28.dp
 private val LiquidSheetCompactMaxWidth = 480.dp
@@ -56,9 +58,10 @@ private const val DETENT_HALF = 0.50f
 private const val DETENT_THREE_QUARTER = 0.75f
 private const val DETENT_FULL = 1.0f
 private const val DETENT_SOLIDNESS_START = 0.75f
-private const val LIQUID_SHEET_BLUR_SCALE = 0.40f
-private const val LIQUID_SHEET_LENS_SCALE = 0.30f
-private const val LIQUID_SHEET_REFRACTION_AMOUNT_SCALE = 1.35f
+private const val LIQUID_SHEET_BLUR_SCALE = 0.56f
+private const val LIQUID_SHEET_LENS_SCALE = 0.28f
+private const val LIQUID_SHEET_REFRACTION_AMOUNT_SCALE = 1.32f
+private const val LIQUID_SHEET_BACKGROUND_DEPTH_BLUR_SCALE = 1.35f
 private val LiquidSheetDetentDragThreshold = 72.dp
 
 enum class LiquidSheetInitialDetent(
@@ -74,14 +77,18 @@ val LocalLiquidSheetContentOverflowReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetContentScrollStateReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
+val LocalLiquidSheetManagedScrollableContentReporter =
+    compositionLocalOf<(Boolean) -> Unit> { {} }
+val LocalLiquidSheetVisibleHeightPx =
+    compositionLocalOf<(() -> Int)?> { null }
 val LocalLiquidSheetEnabled = compositionLocalOf { true }
 
 /**
- * Floating liquid glass bottom sheet.
+ * Liquid glass bottom sheet.
  *
- * The sheet opens at a content-adaptive height. After opening, users can freely drag the top chrome
- * to a temporary hover position for peeking behind the sheet. The lowest hover position keeps one
- * third of the available window visible before an additional downward drag requests dismissal.
+ * The sheet opens at a content-adaptive height. Dragging the top chrome resizes the sheet while the
+ * bottom edge stays anchored, so users can temporarily reveal content behind the sheet. Long sheets
+ * stop at one third of the available window before an additional downward drag requests dismissal.
  */
 @Composable
 fun LiquidGlassBottomSheet(
@@ -120,13 +127,19 @@ fun LiquidGlassBottomSheet(
         UiPerformanceBudget.backdropLens *
                 LIQUID_SHEET_LENS_SCALE *
                 glassRuntime.lensScaleFor(GlassVariant.Floating)
+    val backgroundDepthBlurRadius =
+        UiPerformanceBudget.backdropBlur *
+                LIQUID_SHEET_BACKGROUND_DEPTH_BLUR_SCALE *
+                glassRuntime.blurScaleFor(GlassVariant.Floating)
 
-    var contentOverflowsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
+    var managedScrollableContent by remember(show) { mutableStateOf(false) }
+    var scrollableContentOverflowsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
+    var plainContentExceedsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
     var contentCanScrollUp by remember(show) { mutableStateOf(false) }
     val adaptedInitialDetent =
         liquidSheetAdaptedInitialDetent(
             initialDetent = initialDetent,
-            contentOverflowsOpeningDetent = contentOverflowsOpeningDetent,
+            contentOverflowsOpeningDetent = plainContentExceedsOpeningDetent,
         )
 
     val targetFraction = adaptedInitialDetent.fraction
@@ -138,10 +151,11 @@ fun LiquidGlassBottomSheet(
     val resolvedSheetMaxWidth = liquidSheetMaxWidth(sheetMaxWidth)
     val density = LocalDensity.current
 
-    val animatedContentDetentHeight by animateDpAsState(
+    val animatedContentDetentHeight = animateDpAsState(
         targetValue = contentDetentHeight,
         label = "liquid_sheet_detent_content_height",
     )
+    val shouldBoundManagedScrollableContent = managedScrollableContent && scrollableContentOverflowsOpeningDetent
     val sheetShape = RoundedRectangle(cornerRadius)
     val sheetGlassSurfaceColor =
         liquidSheetGlassSurfaceColor(
@@ -168,13 +182,34 @@ fun LiquidGlassBottomSheet(
                     Highlight.Default.copy(alpha = if (isDark) 0.72f else 0.86f)
                 },
                 shadow = {
-                    Shadow.Default.copy(color = Color.Black.copy(alpha = if (isDark) 0.22f else 0.12f))
+                    Shadow.Default.copy(
+                        color = Color.Black.copy(alpha = if (isDark) 0.20f else 0.13f)
+                    )
                 },
                 innerShadow = {
-                    InnerShadow(radius = 8.dp, alpha = if (isDark) 0.18f else 0.12f)
+                    InnerShadow(radius = 7.dp, alpha = if (isDark) 0.16f else 0.10f)
                 },
                 onDrawSurface = {
                     drawRect(sheetGlassSurfaceColor)
+                },
+                onDrawFront = {
+                    val topEdgeColor =
+                        if (isDark) {
+                            Color.White.copy(alpha = 0.12f)
+                        } else {
+                            Color.White.copy(alpha = 0.54f)
+                        }
+                    drawLine(
+                        color = topEdgeColor,
+                        start = Offset(x = cornerRadius.toPx(), y = 1.dp.toPx()),
+                        end = Offset(x = size.width - cornerRadius.toPx(), y = 1.dp.toPx()),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                    drawRect(
+                        Color.Black.copy(
+                            alpha = if (isDark) 0.018f else 0.012f,
+                        )
+                    )
                 },
             )
         } else {
@@ -224,6 +259,7 @@ fun LiquidGlassBottomSheet(
         dismissDragThreshold = LiquidSheetDetentDragThreshold,
         onBlockedDismissRequest = onBlockedDismissRequest,
         contentCanScrollUp = { contentCanScrollUp },
+        backgroundDepthBlurRadius = backgroundDepthBlurRadius,
     ) {
         Box(
             modifier =
@@ -231,10 +267,29 @@ fun LiquidGlassBottomSheet(
                     .fillMaxWidth()
                     // Short sheets keep their natural height. Overflowing opening content gets a
                     // bounded viewport so the sheet can scroll internally without forcing blank
-                    // space into compact sheets.
-                    .heightIn(
-                        min = 0.dp,
-                        max = if (contentOverflowsOpeningDetent) animatedContentDetentHeight else Dp.Unspecified,
+                    // space into compact sheets. After the user resizes the sheet, this viewport
+                    // follows the sheet height from the layout phase.
+                    .then(
+                        if (shouldBoundManagedScrollableContent) {
+                            val visibleHeightPxProvider = LocalLiquidSheetVisibleHeightPx.current
+                            val estimatedChromeHeightPx =
+                                with(density) { LiquidSheetEstimatedChromeHeight.toPx().roundToInt() }
+                            Modifier.liquidSheetContentMaxHeightPx {
+                                val openingContentHeightPx =
+                                    with(density) {
+                                        animatedContentDetentHeight.value.toPx().roundToInt()
+                                    }
+                                val resizedContentHeightPx =
+                                    visibleHeightPxProvider
+                                        ?.invoke()
+                                        ?.minus(estimatedChromeHeightPx)
+                                        ?.coerceAtLeast(0)
+                                        ?: 0
+                                maxOf(openingContentHeightPx, resizedContentHeightPx)
+                            }
+                        } else {
+                            Modifier
+                        }
                     )
                     .onSizeChanged { size ->
                         if (initialDetent != LiquidSheetInitialDetent.ThreeQuarter) return@onSizeChanged
@@ -243,16 +298,24 @@ fun LiquidGlassBottomSheet(
                                 openingContentMinHeight.toPx()
                             }
                         if (size.height > openingContentMinHeightPx + 1f) {
-                            contentOverflowsOpeningDetent = true
+                            if (managedScrollableContent) {
+                                scrollableContentOverflowsOpeningDetent = true
+                            } else {
+                                plainContentExceedsOpeningDetent = true
+                            }
                         }
                     },
         ) {
             CompositionLocalProvider(
                 LocalLiquidSheetContentOverflowReporter provides { overflows ->
-                    if (overflows) contentOverflowsOpeningDetent = true
+                    if (overflows) scrollableContentOverflowsOpeningDetent = true
                 },
                 LocalLiquidSheetContentScrollStateReporter provides { canScrollUp ->
                     contentCanScrollUp = canScrollUp
+                },
+                LocalLiquidSheetManagedScrollableContentReporter provides { managed ->
+                    managedScrollableContent = managed
+                    if (managed) plainContentExceedsOpeningDetent = false
                 },
                 LocalLiquidParentBackdrop provides if (useLiquidBackdropSurface) sheetBackdrop else null,
             ) {
@@ -261,6 +324,23 @@ fun LiquidGlassBottomSheet(
         }
     }
 }
+
+private fun Modifier.liquidSheetContentMaxHeightPx(
+    maxHeightPx: () -> Int,
+): Modifier =
+    layout { measurable, constraints ->
+        val resolvedMaxHeight = maxHeightPx().coerceIn(0, constraints.maxHeight)
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minHeight = constraints.minHeight.coerceAtMost(resolvedMaxHeight),
+                    maxHeight = resolvedMaxHeight,
+                )
+            )
+        layout(placeable.width, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
 
 @Composable
 private fun liquidSheetMinHeight(fraction: Float): Dp {

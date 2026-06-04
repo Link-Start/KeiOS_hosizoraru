@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -47,7 +48,7 @@ class LiquidGlassBottomSheetTest {
     @Test
     fun opensAtAdaptiveHeightForShortSheetContent() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -83,7 +84,7 @@ class LiquidGlassBottomSheetTest {
     @Test
     fun opensAtAdaptiveHeightForPlainShortContent() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -117,9 +118,9 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
-    fun expandsToFullDetentWhenOpeningDetentOverflows() {
+    fun boundsManagedScrollableOverflowAtOpeningDetent() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -144,13 +145,16 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         val height = sheetHeight()
-        assertTrue(height >= rootHeight() * 0.90f, "Expected full detent height, got $height")
+        assertTrue(
+            height in (rootHeight() * 0.66f)..(rootHeight() * 0.82f),
+            "Expected managed scrollable content to stay near opening detent, got $height"
+        )
     }
 
     @Test
     fun expandsToFullDetentWhenPlainContentExceedsOpeningDetent() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -184,7 +188,7 @@ class LiquidGlassBottomSheetTest {
     @Test
     fun keepsContentBelowTopChrome() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -232,7 +236,7 @@ class LiquidGlassBottomSheetTest {
     @Test
     fun respectsCustomMaxWidth() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -260,10 +264,10 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
-    fun topChromeDownwardDragKeepsFreeFloatingPositionWithoutDismiss() {
+    fun topChromeDownwardDragReducesLengthAndKeepsBottomAnchored() {
         var dismissRequests = 0
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -288,8 +292,8 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val offsetBefore = sheetFloatingOffset()
         val heightBefore = sheetHeight()
+        val bottomBefore = sheetBottom()
         assertTrue(
             heightBefore >= rootHeight() * 0.90f,
             "Expected tall sheet before drag, got $heightBefore"
@@ -307,14 +311,16 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         assertEquals(0, dismissRequests)
-        val offsetAfter = sheetFloatingOffset()
+        val heightAfter = sheetHeight()
         assertTrue(
-            offsetAfter > offsetBefore + dragDistance * 0.40f,
-            "Expected free floating offset to move down, before=$offsetBefore after=$offsetAfter",
+            heightAfter < heightBefore - dragDistance * 0.40f,
+            "Expected top chrome drag to reduce sheet length, before=$heightBefore after=$heightAfter",
         )
-        assertTrue(
-            sheetHeight() >= heightBefore - 2.dp,
-            "Expected floating sheet to retain content height, got ${sheetHeight()}"
+        assertDpNear(
+            actual = sheetBottom(),
+            expected = bottomBefore,
+            tolerance = 4.dp,
+            message = "Expected sheet bottom to stay anchored while resizing",
         )
     }
 
@@ -322,7 +328,7 @@ class LiquidGlassBottomSheetTest {
     fun contentDownwardDragWhileScrolledDoesNotMoveSheet() {
         var dismissRequests = 0
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -361,11 +367,8 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(1_000)
         composeRule.waitForIdle()
-        val offsetBefore = sheetFloatingOffset()
-        assertTrue(
-            offsetBefore < 2.dp,
-            "Expected content scrolling to leave sheet fixed, got $offsetBefore"
-        )
+        val heightBefore = sheetHeight()
+        val topBefore = sheetTop()
 
         val downwardDrag = rootHeight() * 0.72f
         composeRule.onNodeWithTag(SCROLL_CONTENT_TAG).performTouchInput {
@@ -379,17 +382,24 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         assertEquals(0, dismissRequests)
-        val offsetAfter = sheetFloatingOffset()
-        assertTrue(
-            offsetAfter < 8.dp,
-            "Expected downward content drag to stay with content, got $offsetAfter"
+        assertDpNear(
+            actual = sheetHeight(),
+            expected = heightBefore,
+            tolerance = 8.dp,
+            message = "Expected downward content drag to stay with scrolled content",
+        )
+        assertDpNear(
+            actual = sheetTop(),
+            expected = topBefore,
+            tolerance = 8.dp,
+            message = "Expected sheet top to stay fixed while scrolled content consumes drag",
         )
     }
 
     @Test
-    fun topChromeUpwardDragRestoresFreeFloatingPosition() {
+    fun topChromeMixedDragResizesFromCurrentLength() {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -413,6 +423,8 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
+        val heightBefore = sheetHeight()
+        val bottomBefore = sheetBottom()
         val downwardDrag = rootHeight() * 0.30f
         val upwardDrag = rootHeight() * 0.18f
 
@@ -427,15 +439,100 @@ class LiquidGlassBottomSheetTest {
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
 
-        val finalMovement = sheetFloatingOffset()
-        val downwardOnlyEquivalent = downwardDrag
+        val heightAfter = sheetHeight()
         assertTrue(
-            finalMovement < downwardOnlyEquivalent - upwardDrag * 0.30f,
-            "Expected upward drag to restore floating position, movement=$finalMovement",
+            heightAfter < heightBefore,
+            "Expected mixed drag to leave sheet shorter than initial height, before=$heightBefore after=$heightAfter",
         )
         assertTrue(
-            finalMovement > 0.dp,
-            "Expected mixed drag to keep a floating offset, movement=$finalMovement"
+            heightAfter > heightBefore - downwardDrag + upwardDrag * 0.45f,
+            "Expected upward drag to restore sheet length within the same gesture, after=$heightAfter",
+        )
+        assertDpNear(
+            actual = sheetBottom(),
+            expected = bottomBefore,
+            tolerance = 4.dp,
+            message = "Expected mixed resize drag to keep sheet bottom anchored",
+        )
+    }
+
+    @Test
+    fun topChromeUpwardDragExpandsLengthTowardSafeTop() {
+        composeRule.setContent {
+            LiquidSheetTestTheme {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Half,
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(6) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val topBefore = sheetTop()
+        val heightBefore = sheetHeight()
+        val bottomBefore = sheetBottom()
+
+        composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
+            val start = Offset(x = width / 2f, y = 12.dp.toPx())
+            down(start)
+            moveBy(Offset(x = 0f, y = -(rootHeight() * 0.80f).toPx()))
+            up()
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+
+        val topAfter = sheetTop()
+        assertTrue(
+            topBefore > rootHeight() * 0.30f,
+            "Expected sheet to start away from safe top, got $topBefore",
+        )
+        assertTrue(
+            topAfter < topBefore - rootHeight() * 0.20f,
+            "Expected upward drag to expand sheet length toward safe top, before=$topBefore after=$topAfter",
+        )
+        assertTrue(
+            sheetHeight() > heightBefore + rootHeight() * 0.20f,
+            "Expected upward drag to increase sheet height, before=$heightBefore after=${sheetHeight()}",
+        )
+        assertDpNear(
+            actual = sheetBottom(),
+            expected = bottomBefore,
+            tolerance = 4.dp,
+            message = "Expected expanded sheet to keep bottom anchored",
+        )
+    }
+
+    @Test
+    fun maxVisibleHeightLeavesSafeTopInset() {
+        assertEquals(
+            1_040f,
+            liquidSheetMaxVisibleHeightPx(
+                windowHeightPx = 1_120f,
+                topInsetPx = 80f,
+            ),
+        )
+        assertEquals(
+            1_024f,
+            liquidSheetMaxVisibleHeightPx(
+                windowHeightPx = 1_120f,
+                topInsetPx = 96f,
+            ),
         )
     }
 
@@ -443,7 +540,7 @@ class LiquidGlassBottomSheetTest {
     fun topChromeDownwardDragClampsAtMinimumFloatingHeightBeforeDismiss() {
         var dismissRequests = 0
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -468,7 +565,14 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val dragDistance = rootHeight() * 0.72f
+        val heightBefore = sheetHeight()
+        val oneThirdHeight = oneThirdRootHeight()
+        val dragDistance =
+            if (heightBefore > oneThirdHeight) {
+                heightBefore - oneThirdHeight + 24.dp
+            } else {
+                24.dp
+            }
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = 12.dp.toPx())
@@ -481,10 +585,9 @@ class LiquidGlassBottomSheetTest {
         composeRule.waitForIdle()
 
         assertEquals(0, dismissRequests)
-        val visibleHeight = sheetHeight() - sheetFloatingOffset()
         assertNearOneThirdRootHeight(
-            visibleHeight,
-            "Expected minimum floating height near 1/3, got $visibleHeight"
+            sheetHeight(),
+            "Expected minimum sheet height near 1/3, got ${sheetHeight()}"
         )
     }
 
@@ -493,7 +596,7 @@ class LiquidGlassBottomSheetTest {
         val show = mutableStateOf(true)
         var dismissRequests = 0
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = show.value,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -521,7 +624,14 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val dragDistance = rootHeight() * 1.02f
+        val heightBefore = sheetHeight()
+        val oneThirdHeight = oneThirdRootHeight()
+        val dragDistance =
+            if (heightBefore > oneThirdHeight) {
+                heightBefore - oneThirdHeight + 128.dp
+            } else {
+                rootHeight() * 0.40f
+            }
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = 12.dp.toPx())
@@ -541,7 +651,7 @@ class LiquidGlassBottomSheetTest {
         var dismissRequests = 0
         var blockedDismissRequests = 0
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+            LiquidSheetTestTheme {
                 LiquidGlassBottomSheet(
                     show = true,
                     modifier = Modifier.testTag(SHEET_TAG),
@@ -568,7 +678,14 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.mainClock.advanceTimeBy(2_000)
         composeRule.waitForIdle()
-        val dragDistance = rootHeight() * 1.02f
+        val heightBefore = sheetHeight()
+        val oneThirdHeight = oneThirdRootHeight()
+        val dragDistance =
+            if (heightBefore > oneThirdHeight) {
+                heightBefore - oneThirdHeight + 128.dp
+            } else {
+                rootHeight() * 0.40f
+            }
 
         composeRule.onNodeWithTag(SHEET_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = 12.dp.toPx())
@@ -582,10 +699,9 @@ class LiquidGlassBottomSheetTest {
 
         assertEquals(0, dismissRequests)
         assertEquals(1, blockedDismissRequests)
-        val visibleHeight = sheetHeight() - sheetFloatingOffset()
         assertNearOneThirdRootHeight(
-            visibleHeight,
-            "Expected blocked dismiss to keep minimum floating height, got $visibleHeight"
+            sheetHeight(),
+            "Expected blocked dismiss to keep minimum sheet height, got ${sheetHeight()}"
         )
     }
 
@@ -637,13 +753,14 @@ class LiquidGlassBottomSheetTest {
         return with(composeRule.density) { topPx.toDp() }
     }
 
-    private fun sheetFloatingOffset(): Dp {
-        val offsetPx =
+    private fun sheetBottom(): Dp {
+        val bottomPx =
             composeRule
                 .onNodeWithTag(SHEET_TAG)
                 .fetchSemanticsNode()
-                .config[LiquidSheetFloatingOffsetYKey]
-        return with(composeRule.density) { offsetPx.toDp() }
+                .boundsInRoot
+                .bottom
+        return with(composeRule.density) { bottomPx.toDp() }
     }
 
     private fun rootHeight(): Dp {
@@ -666,6 +783,25 @@ class LiquidGlassBottomSheetTest {
             actual in (expected * 0.86f)..(expected * 1.14f),
             message,
         )
+    }
+
+    private fun assertDpNear(
+        actual: Dp,
+        expected: Dp,
+        tolerance: Dp,
+        message: String,
+    ) {
+        assertTrue(
+            actual in (expected - tolerance)..(expected + tolerance),
+            "$message, expected=$expected actual=$actual tolerance=$tolerance",
+        )
+    }
+}
+
+@Composable
+private fun LiquidSheetTestTheme(content: @Composable () -> Unit) {
+    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+        content()
     }
 }
 

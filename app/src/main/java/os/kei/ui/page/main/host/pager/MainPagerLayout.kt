@@ -15,8 +15,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
@@ -31,8 +33,6 @@ import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
-import os.kei.ui.page.main.back.BackNavigationSource
-import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
 import os.kei.ui.page.main.back.MainBackNavigationAction
 import os.kei.ui.page.main.back.resolveMainBackNavigationAction
@@ -160,12 +160,14 @@ internal fun MainPagerLayout(
                 ),
             homePageIndex = homePageIndex,
         )
-    KeiOSBackNavigationHandler(
-        enabled = rootBackHandlersEnabled && mainBackAction == MainBackNavigationAction.NavigateHome,
-        source = BackNavigationSource.MainPager,
-    ) {
-        coordinator.onPageSelected(homePageIndex)
-    }
+    val mainPagerBackGestureState =
+        rememberMainPagerHomeBackGestureState(
+            enabled = rootBackHandlersEnabled && mainBackAction == MainBackNavigationAction.NavigateHome,
+            selectedPageIndex = coordinator.selectedPageIndex,
+            homePageIndex = homePageIndex,
+        ) {
+            coordinator.onPageSelected(homePageIndex)
+        }
 
     AppScaffold(
         modifier =
@@ -186,12 +188,13 @@ internal fun MainPagerLayout(
                 )
             val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
             val selectedPagePositionProvider =
-                remember(coordinator.pagerState, lastPagePosition) {
+                remember(coordinator.pagerState, mainPagerBackGestureState, lastPagePosition) {
                     {
-                        coordinator.pagerState.pagePosition.coerceIn(
-                            0f,
-                            lastPagePosition,
-                        )
+                        if (mainPagerBackGestureState.inProgress) {
+                            mainPagerBackGestureState.selectedPagePosition()
+                        } else {
+                            coordinator.pagerState.pagePosition
+                        }.coerceIn(0f, lastPagePosition)
                     }
                 }
             MainPagerBottomBar(
@@ -219,7 +222,17 @@ internal fun MainPagerLayout(
             val pagerModifier =
                 Modifier
                     .fillMaxSize()
-                    .graphicsLayer { alpha = coordinator.farJumpAlpha }
+                    .onSizeChanged { size ->
+                        mainPagerBackGestureState.onContainerSizeChanged(size.width, size.height)
+                    }
+                    .graphicsLayer {
+                        val backMotion = mainPagerBackGestureState.motionValues
+                        transformOrigin = TransformOrigin(backMotion.pivotX, backMotion.pivotY)
+                        translationX = backMotion.translationX
+                        scaleX = backMotion.scale
+                        scaleY = backMotion.scale
+                        alpha = coordinator.farJumpAlpha * backMotion.contentAlpha
+                    }
                     .layerBackdrop(coordinator.backdrop)
             val activationState =
                 rememberMainPageActivationState(

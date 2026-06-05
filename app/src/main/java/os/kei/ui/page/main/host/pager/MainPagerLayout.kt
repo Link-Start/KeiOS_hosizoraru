@@ -105,6 +105,10 @@ internal fun MainPagerLayout(
         remember(navigator) {
             { navigator.pushSingleTop(KeiosRoute.GitHubActionsNotificationHistory) }
         }
+    val onOpenWebDavSync =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.WebDavSync) }
+        }
     val coordinator =
         rememberMainPagerCoordinator(
             settingsReturnToken = settingsReturnToken,
@@ -119,15 +123,6 @@ internal fun MainPagerLayout(
             requestedBottomPageToken = requestedBottomPageToken,
             onRequestedBottomPageConsumed = onRequestedBottomPageConsumed,
         )
-    val onOpenGitHubPage =
-        remember(coordinator.tabs, coordinator.onPageSelected) {
-            {
-                val index = coordinator.tabs.indexOf(BottomPage.GitHub)
-                if (index >= 0) {
-                    coordinator.onPageSelected(index)
-                }
-            }
-        }
     // Keep HDR scoped to the settled, idle Home page so the Window color mode and
     // visual sweep follow one stable runtime gate.
     val homeIndex =
@@ -328,7 +323,7 @@ internal fun MainPagerLayout(
                                 coordinator.onCacheFreshnessVisibilityChange,
                                 coordinator.onHomeActionBarSelectedIndexChange,
                                 coordinator.onHomeBottomPageEditorVisibleChange,
-                                onOpenGitHubPage,
+                                onOpenWebDavSync,
                                 onOpenSettings,
                                 onOpenAbout,
                             ) {
@@ -352,7 +347,7 @@ internal fun MainPagerLayout(
                                     onCacheFreshnessVisibilityChange = coordinator.onCacheFreshnessVisibilityChange,
                                     onHomeActionBarSelectedIndexChange = coordinator.onHomeActionBarSelectedIndexChange,
                                     onHomeBottomPageEditorVisibleChange = coordinator.onHomeBottomPageEditorVisibleChange,
-                                    onOpenGitHubPage = onOpenGitHubPage,
+                                    onOpenWebDavSync = onOpenWebDavSync,
                                     onOpenSettings = onOpenSettings,
                                     onOpenAbout = onOpenAbout,
                                 )

@@ -647,7 +647,7 @@ internal fun HomePageOverviewCards(
     mcpStats: List<HomeCardStatItem>,
     homeCardGitHub: String,
     githubStats: List<HomeCardStatItem>,
-    onOpenGitHubPage: () -> Unit,
+    onOpenWebDavSync: () -> Unit,
     homeCardWebDav: String,
     webDavStats: List<HomeCardStatItem>,
     homeCardBa: String,
@@ -675,7 +675,6 @@ internal fun HomePageOverviewCards(
             HomeInfoCard(
                 backdrop = homeCardBackdrop,
                 blurEnabled = blurEnabled,
-                onClick = onOpenGitHubPage,
             ) {
                 HomeInfoGridCard(
                     title = homeCardGitHub,
@@ -690,6 +689,7 @@ internal fun HomePageOverviewCards(
             HomeInfoCard(
                 backdrop = homeCardBackdrop,
                 blurEnabled = blurEnabled,
+                onClick = onOpenWebDavSync,
             ) {
                 HomeInfoGridCard(
                     title = homeCardWebDav,

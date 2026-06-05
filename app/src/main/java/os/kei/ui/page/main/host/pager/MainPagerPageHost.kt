@@ -50,7 +50,7 @@ internal data class MainPagerHomePageState(
     val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
     val onHomeActionBarSelectedIndexChange: (Int) -> Unit,
     val onHomeBottomPageEditorVisibleChange: (Boolean) -> Unit,
-    val onOpenGitHubPage: () -> Unit,
+    val onOpenWebDavSync: () -> Unit,
     val onOpenSettings: () -> Unit,
     val onOpenAbout: () -> Unit,
 )
@@ -137,7 +137,7 @@ internal fun MainPagerPageHost(
                         onCacheFreshnessVisibilityChange = homeState.onCacheFreshnessVisibilityChange,
                         onActionBarSelectedIndexChange = homeState.onHomeActionBarSelectedIndexChange,
                         onBottomPageEditorVisibleChange = homeState.onHomeBottomPageEditorVisibleChange,
-                        onOpenGitHubPage = homeState.onOpenGitHubPage,
+                        onOpenWebDavSync = homeState.onOpenWebDavSync,
                         onOpenSettings = homeState.onOpenSettings,
                         onOpenAbout = homeState.onOpenAbout,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,

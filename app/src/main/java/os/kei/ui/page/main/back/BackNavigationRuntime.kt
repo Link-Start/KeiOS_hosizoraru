@@ -271,7 +271,6 @@ internal fun rememberFullscreenBackNavigationGestureState(
                     predictiveBackSwipeEdge = event.swipeEdge
                     predictiveBackTouchY = event.touchY
                     predictiveBackProgress.snapTo(event.progress.coerceIn(0f, 1f))
-                    runtimeController.updateGesture(event, BackNavigationSource.Fullscreen)
                 }
                 runtimeController.beginCommit(BackNavigationSource.Fullscreen)
                 predictiveBackProgress.settleBackGestureProgress(
@@ -372,8 +371,9 @@ internal fun KeiOSBackNavigationHandler(
             commitGate.reset()
             runtimeController.beginGesture(source)
             try {
-                backEvents.collect { event ->
-                    runtimeController.updateGesture(event, source)
+                backEvents.collect {
+                    // Per-frame progress stays local to draw-phase motion. The runtime state only
+                    // gates expensive content work at gesture start, commit, and reset.
                 }
                 runtimeController.beginCommit(source)
                 commitGate.tryCommit(latestOnBack)

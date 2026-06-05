@@ -49,12 +49,23 @@ internal class BackNavigationRuntimeController {
         private set
 
     fun updatePolicy(policy: PredictiveBackOemCompat.Policy) {
+        if (state.policy == policy) return
         state = state.copy(policy = policy)
     }
 
     fun beginGesture(source: BackNavigationSource) {
+        if (
+            state.isGestureInProgress &&
+            !state.isCommitRunning &&
+            state.source == source &&
+            state.progress == 0f &&
+            state.swipeEdge == BackEventCompat.EDGE_NONE
+        ) {
+            return
+        }
         state = state.copy(
             isGestureInProgress = true,
+            isCommitRunning = false,
             source = source,
             progress = 0f,
             swipeEdge = BackEventCompat.EDGE_NONE
@@ -80,6 +91,14 @@ internal class BackNavigationRuntimeController {
     }
 
     fun beginCommit(source: BackNavigationSource) {
+        if (
+            !state.isGestureInProgress &&
+            state.isCommitRunning &&
+            state.source == source &&
+            state.progress == 1f
+        ) {
+            return
+        }
         state = state.copy(
             isGestureInProgress = false,
             isCommitRunning = true,
@@ -90,6 +109,7 @@ internal class BackNavigationRuntimeController {
 
     fun reset() {
         val policy = state.policy
+        if (state == BackNavigationRuntimeState(policy = policy)) return
         state = BackNavigationRuntimeState(policy = policy)
     }
 }

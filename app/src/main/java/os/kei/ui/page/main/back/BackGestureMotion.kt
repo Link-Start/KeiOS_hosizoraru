@@ -51,11 +51,12 @@ internal fun resolveBackGestureMotion(
         } else {
             0.5f
         }
+    val visualProgress = resolveBackGestureVisualProgress(clampedProgress)
     val translationX =
         containerWidthPx.toFloat() * config.translationFactor * edgeDirection * clampedProgress
-    val scale = 1f - ((1f - config.minScale) * clampedProgress)
-    val contentAlpha = (1f - clampedProgress * config.contentFadeFactor).coerceIn(0f, 1f)
-    val scrimAlpha = (1f - clampedProgress * config.scrimFadeFactor).coerceIn(0f, 1f)
+    val scale = 1f - ((1f - config.minScale) * visualProgress)
+    val contentAlpha = (1f - visualProgress * config.contentFadeFactor).coerceIn(0f, 1f)
+    val scrimAlpha = (1f - visualProgress * config.scrimFadeFactor).coerceIn(0f, 1f)
 
     return BackGestureMotionValues(
         progress = clampedProgress,
@@ -67,6 +68,9 @@ internal fun resolveBackGestureMotion(
         pivotY = pivotY,
     )
 }
+
+internal fun resolveBackGestureVisualProgress(progress: Float): Float =
+    BackGestureVisualEasing.transform(progress.coerceIn(0f, 1f)).coerceIn(0f, 1f)
 
 internal fun resolveBackGestureSettleDurationMillis(
     currentProgress: Float,
@@ -107,6 +111,7 @@ internal suspend fun Animatable<Float, AnimationVector1D>.settleBackGestureProgr
 internal const val BACK_GESTURE_COMMIT_SETTLE_DURATION_MS = 500
 internal const val BACK_GESTURE_CANCEL_SETTLE_DURATION_MS = 260
 
-private const val BACK_GESTURE_MIN_SETTLE_DURATION_MS = 96
+private const val BACK_GESTURE_MIN_SETTLE_DURATION_MS = 128
 private const val BACK_GESTURE_SETTLE_EPSILON = 0.001f
+private val BackGestureVisualEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 private val BackGestureSettleEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)

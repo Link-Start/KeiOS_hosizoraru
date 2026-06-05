@@ -23,6 +23,7 @@ import androidx.navigationevent.compose.NavigationEventState
 import kotlinx.coroutines.flow.collectLatest
 import os.kei.ui.page.main.back.BACK_GESTURE_CANCEL_SETTLE_DURATION_MS
 import os.kei.ui.page.main.back.BACK_GESTURE_COMMIT_SETTLE_DURATION_MS
+import os.kei.ui.page.main.back.resolveBackGestureVisualProgress
 import os.kei.ui.page.main.back.settleBackGestureProgress
 
 @Stable
@@ -196,7 +197,7 @@ internal fun resolveRoutePredictiveBackDepthValues(
     touchY: Float,
     containerHeightPx: Int,
 ): RoutePredictiveBackDepthValues {
-    val clampedProgress = progress.coerceIn(0f, 1f)
+    val visualProgress = resolveBackGestureVisualProgress(progress)
     val pivotX =
         when (swipeEdge) {
             EDGE_LEFT -> ROUTE_DEPTH_PIVOT_EDGE_BIAS
@@ -216,8 +217,8 @@ internal fun resolveRoutePredictiveBackDepthValues(
     return when (role) {
         RoutePredictiveBackDepthRole.Top ->
             RoutePredictiveBackDepthValues(
-                scale = 1f - (1f - ROUTE_DEPTH_TOP_MIN_SCALE) * clampedProgress,
-                alpha = 1f - (1f - ROUTE_DEPTH_TOP_MIN_ALPHA) * clampedProgress,
+                scale = 1f - (1f - ROUTE_DEPTH_TOP_MIN_SCALE) * visualProgress,
+                alpha = 1f - (1f - ROUTE_DEPTH_TOP_MIN_ALPHA) * visualProgress,
                 pivotX = pivotX,
                 pivotY = pivotY,
             )

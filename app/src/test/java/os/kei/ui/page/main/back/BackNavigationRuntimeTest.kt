@@ -5,6 +5,7 @@ import org.junit.Test
 import os.kei.core.platform.PredictiveBackOemCompat
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class BackNavigationRuntimeTest {
@@ -71,6 +72,40 @@ class BackNavigationRuntimeTest {
                 source = BackNavigationSource.Activity
             ).contentWorkAllowed
         )
+    }
+
+    @Test
+    fun `runtime controller keeps repeated lifecycle writes idempotent`() {
+        val controller = BackNavigationRuntimeController()
+        val policy =
+            PredictiveBackOemCompat.Policy(
+                frameworkAnimationsEnabled = true,
+                popDirectionFollowsSwipeEdge = true,
+                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
+                localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
+                activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
+                romFamily = PredictiveBackOemCompat.RomFamily.HyperOs,
+            )
+
+        controller.updatePolicy(policy)
+        val policyState = controller.state
+        controller.updatePolicy(policy)
+        assertSame(policyState, controller.state)
+
+        controller.beginGesture(BackNavigationSource.MainRoute)
+        val gestureState = controller.state
+        controller.beginGesture(BackNavigationSource.MainRoute)
+        assertSame(gestureState, controller.state)
+
+        controller.beginCommit(BackNavigationSource.MainRoute)
+        val commitState = controller.state
+        controller.beginCommit(BackNavigationSource.MainRoute)
+        assertSame(commitState, controller.state)
+
+        controller.reset()
+        val idleState = controller.state
+        controller.reset()
+        assertSame(idleState, controller.state)
     }
 
     @Test
@@ -267,6 +302,9 @@ class BackNavigationRuntimeTest {
         )
 
         assertEquals(-48f, motion.translationX, absoluteTolerance = 0.001f)
+        assertTrue(motion.scale < 0.95f)
+        assertTrue(motion.contentAlpha < 0.9f)
+        assertTrue(motion.scrimAlpha < 0.85f)
         assertEquals(0.16f, motion.pivotX, absoluteTolerance = 0.001f)
         assertEquals(0.5f, motion.pivotY, absoluteTolerance = 0.001f)
     }
@@ -282,7 +320,7 @@ class BackNavigationRuntimeTest {
             ),
         )
         assertEquals(
-            96,
+            128,
             resolveBackGestureSettleDurationMillis(
                 currentProgress = 0.96f,
                 targetProgress = 1f,

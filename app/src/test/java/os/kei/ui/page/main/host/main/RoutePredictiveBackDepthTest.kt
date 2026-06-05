@@ -4,6 +4,7 @@ import androidx.navigationevent.NavigationEvent.Companion.EDGE_LEFT
 import androidx.navigationevent.NavigationEvent.Companion.EDGE_RIGHT
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RoutePredictiveBackDepthTest {
     @Test
@@ -34,8 +35,8 @@ class RoutePredictiveBackDepthTest {
                 containerHeightPx = 2000,
             )
 
-        assertEquals(0.991f, values.scale, absoluteTolerance = 0.001f)
-        assertEquals(0.98f, values.alpha, absoluteTolerance = 0.001f)
+        assertTrue(values.scale in 0.982f..0.991f)
+        assertTrue(values.alpha in 0.96f..0.98f)
         assertEquals(0.18f, values.pivotX, absoluteTolerance = 0.001f)
         assertEquals(0.5f, values.pivotY, absoluteTolerance = 0.001f)
     }

@@ -13,10 +13,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.NavEntryDecorator
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -31,13 +32,15 @@ import androidx.navigation3.ui.defaultPredictivePopTransitionSpec
 import androidx.navigationevent.NavigationEventTransitionState.InProgress
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.about.page.AboutPage
+import os.kei.ui.page.main.back.BACK_GESTURE_COMMIT_SETTLE_DURATION_MS
 import os.kei.ui.page.main.back.BackNavigationRuntimeController
 import os.kei.ui.page.main.back.BackNavigationSource
 import os.kei.ui.page.main.back.KeiOSBackNavigationHandler
@@ -281,27 +284,38 @@ internal fun MainScreenNavHost(
             onBack = onRouteBack,
         )
     val navigationEventState = rememberNavigationEventState(sceneState)
+    val currentRouteContentKey = backStack.lastOrNull()?.toString()
+    val previousRouteContentKey = backStack.dropLast(1).lastOrNull()?.toString()
+    val latestCurrentRouteContentKey = rememberUpdatedState(currentRouteContentKey)
     BindRoutePredictiveBackDepthState(
         enabled = routePredictiveBackEnabled && backStack.size > 1,
         navigationEventState = navigationEventState,
-        currentContentKey = backStack.lastOrNull()?.toString(),
-        previousContentKey = backStack.dropLast(1).lastOrNull()?.toString(),
+        currentContentKey = currentRouteContentKey,
+        previousContentKey = previousRouteContentKey,
         state = routeDepthState,
     )
-    LaunchedEffect(routePredictiveBackEnabled, navigationEventState, backRuntimeController) {
+    LaunchedEffect(routePredictiveBackEnabled, navigationEventState, backRuntimeController, routeDepthState) {
         if (!routePredictiveBackEnabled) {
             if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {
                 backRuntimeController.reset()
             }
             return@LaunchedEffect
         }
-        snapshotFlow { navigationEventState.transitionState is InProgress }
-            .distinctUntilChanged()
-            .collect { inProgress ->
-                if (inProgress) {
-                    backRuntimeController.beginGesture(BackNavigationSource.MainRoute)
-                } else if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {
-                    backRuntimeController.reset()
+        snapshotFlow { navigationEventState.transitionState }
+            .collectLatest { transitionState ->
+                when (transitionState) {
+                    is InProgress -> backRuntimeController.beginGesture(BackNavigationSource.MainRoute)
+                    else -> {
+                        if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {
+                            if (routeDepthState.isCommittedTarget(latestCurrentRouteContentKey.value)) {
+                                backRuntimeController.beginCommit(BackNavigationSource.MainRoute)
+                                delay(BACK_GESTURE_COMMIT_SETTLE_DURATION_MS.toLong())
+                            }
+                            if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {
+                                backRuntimeController.reset()
+                            }
+                        }
+                    }
                 }
             }
     }

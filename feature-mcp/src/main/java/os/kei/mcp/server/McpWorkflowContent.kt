@@ -11,6 +11,11 @@ import java.util.Locale
 internal class McpWorkflowContent(
     private val environment: McpToolEnvironment
 ) {
+    private val workflowSkillCache = McpBoundedTextCache(maxEntries = 8)
+    private val workflowListCache = McpBoundedTextCache(maxEntries = 8)
+    private val workflowDetailCache = McpBoundedTextCache(maxEntries = 32)
+    private val workflowMarkdownCache = McpBoundedTextCache(maxEntries = 32)
+
     private data class WorkflowBlueprint(
         val id: String,
         val titleEn: String,
@@ -172,6 +177,12 @@ internal class McpWorkflowContent(
     }
 
     fun buildWorkflowSkillText(locale: Locale = currentLocale()): String {
+        return workflowSkillCache.getOrPut("workflow-skill|${locale.mcpCacheTag()}") {
+            buildWorkflowSkillTextUncached(locale)
+        }
+    }
+
+    private fun buildWorkflowSkillTextUncached(locale: Locale): String {
         return buildString {
             appendLine("# KeiOS MCP Workflows")
             appendLine()
@@ -213,6 +224,12 @@ internal class McpWorkflowContent(
     }
 
     private fun buildBlueprintListText(locale: Locale): String {
+        return workflowListCache.getOrPut("workflow-list|${locale.mcpCacheTag()}") {
+            buildBlueprintListTextUncached(locale)
+        }
+    }
+
+    private fun buildBlueprintListTextUncached(locale: Locale): String {
         return buildString {
             appendLine("ok=true")
             appendLine("count=${blueprints.size}")
@@ -232,6 +249,13 @@ internal class McpWorkflowContent(
     }
 
     private fun buildBlueprintDetailText(workflow: String, locale: Locale): String {
+        val normalized = workflow.trim().lowercase(Locale.ROOT)
+        return workflowDetailCache.getOrPut("workflow-detail|${locale.mcpCacheTag()}|$normalized") {
+            buildBlueprintDetailTextUncached(workflow, locale)
+        }
+    }
+
+    private fun buildBlueprintDetailTextUncached(workflow: String, locale: Locale): String {
         val blueprint = findBlueprint(workflow)
             ?: return "ok=false\nmessage=workflow_not_found\navailable=${blueprints.joinToString(",") { it.id }}"
         return buildString {
@@ -251,6 +275,13 @@ internal class McpWorkflowContent(
     }
 
     private fun buildBlueprintMarkdown(workflow: String, locale: Locale): String {
+        val normalized = workflow.trim().lowercase(Locale.ROOT)
+        return workflowMarkdownCache.getOrPut("workflow-markdown|${locale.mcpCacheTag()}|$normalized") {
+            buildBlueprintMarkdownUncached(workflow, locale)
+        }
+    }
+
+    private fun buildBlueprintMarkdownUncached(workflow: String, locale: Locale): String {
         val blueprint = findBlueprint(workflow) ?: return buildString {
             appendLine("# Unknown Workflow")
             appendLine()

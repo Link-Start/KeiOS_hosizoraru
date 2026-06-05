@@ -15,6 +15,11 @@ internal class McpSkillContent(
     private val runtimeConfigBuilder: (McpServerUiState?, String, String, String) -> String
 ) {
     private val skillTemplateCache = ConcurrentHashMap<String, String>()
+    private val renderedSkillCache = McpBoundedTextCache(maxEntries = 12)
+    private val skillOverviewCache = McpBoundedTextCache(maxEntries = 12)
+    private val subAgentCache = McpBoundedTextCache(maxEntries = 12)
+    private val toolHelpCache = McpBoundedTextCache(maxEntries = 96)
+    private val domainGuideCache = McpBoundedTextCache(maxEntries = 24)
 
     fun registerClawGuideTool(server: Server) {
         server.addMcpTextTool(environment, name = "keios.mcp.claw.skill.guide") { request ->
@@ -233,6 +238,8 @@ internal class McpSkillContent(
     fun loadSkillMarkdown(): String {
         val locale = currentLocale()
         val path = localizedSkillAssetPath(locale)
+        val state = environment.currentState()
+        val cacheKey = "skill|$path|${state.mcpResourceStateCacheTag(locale)}"
         return runCatching {
             skillTemplateCache.getOrPut(path) {
                 environment.appContext.assets.open(path)
@@ -241,14 +248,19 @@ internal class McpSkillContent(
                     }
             }
         }.map { template ->
-            renderSkillTemplate(template, locale)
+            renderedSkillCache.getOrPut(cacheKey) {
+                renderSkillTemplate(template, locale, state)
+            }
         }.getOrElse {
             buildFallbackSkillMarkdown(locale)
         }
     }
 
-    private fun renderSkillTemplate(template: String, locale: Locale): String {
-        val state = environment.currentState()
+    private fun renderSkillTemplate(
+        template: String,
+        locale: Locale,
+        state: McpServerUiState?
+    ): String {
         val tools = McpToolCatalog.forLocale(locale)
         val toolList = tools.joinToString("\n") { meta -> "- `${meta.name}`: ${meta.description}" }
         return template
@@ -299,6 +311,12 @@ internal class McpSkillContent(
     private fun buildSkillOverview(): String {
         val state = environment.currentState()
         val locale = currentLocale()
+        return skillOverviewCache.getOrPut("overview|${state.mcpResourceStateCacheTag(locale)}") {
+            buildSkillOverviewText(state, locale)
+        }
+    }
+
+    private fun buildSkillOverviewText(state: McpServerUiState?, locale: Locale): String {
         return buildString {
             appendLine("skillResource=$SKILL_RESOURCE_URI")
             appendLine("subAgentResource=$SUBAGENT_RESOURCE_URI")
@@ -334,6 +352,12 @@ internal class McpSkillContent(
     private fun buildToolHelp(tool: String): String {
         val locale = currentLocale()
         val normalized = tool.trim().lowercase(Locale.ROOT)
+        return toolHelpCache.getOrPut("tool|${locale.mcpCacheTag()}|$normalized") {
+            buildToolHelpText(tool, normalized, locale)
+        }
+    }
+
+    private fun buildToolHelpText(tool: String, normalized: String, locale: Locale): String {
         val hit = McpToolCatalog.forLocale(locale)
             .firstOrNull { it.name.lowercase(Locale.ROOT) == normalized }
             ?: return buildUnknownToolHelp(tool, locale)
@@ -520,6 +544,15 @@ internal class McpSkillContent(
 
     fun buildSubAgentMarkdown(locale: Locale = currentLocale()): String {
         val state = environment.currentState()
+        return subAgentCache.getOrPut("subagent|${state.mcpResourceStateCacheTag(locale)}") {
+            buildSubAgentMarkdownText(state, locale)
+        }
+    }
+
+    private fun buildSubAgentMarkdownText(
+        state: McpServerUiState?,
+        locale: Locale
+    ): String {
         val entrypointTools = McpToolCatalog.forLocale(locale)
             .filter { it.visibility == McpToolVisibility.Entrypoint }
         return buildString {
@@ -662,6 +695,16 @@ internal class McpSkillContent(
     private fun buildDomainGuide(domain: String): String {
         val locale = currentLocale()
         val normalized = domain.trim().lowercase(Locale.ROOT)
+        return domainGuideCache.getOrPut("domain|${locale.mcpCacheTag()}|$normalized") {
+            buildDomainGuideText(domain, normalized, locale)
+        }
+    }
+
+    private fun buildDomainGuideText(
+        domain: String,
+        normalized: String,
+        locale: Locale
+    ): String {
         val tools = McpToolCatalog.forLocale(locale).filter { it.group == normalized }
         if (tools.isEmpty()) {
             return buildString {

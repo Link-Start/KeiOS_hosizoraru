@@ -79,6 +79,8 @@ class McpServerManager(
         fun actualDataBytes(): Long = McpServerPrefs.actualDataBytes()
 
         fun configBytesEstimated(): Long = McpServerPrefs.configBytesEstimated()
+
+        private const val LOG_PUBLISH_INTERVAL_MS = 500L
     }
 
     private val scope = CoroutineScope(SupervisorJob() + monitorDispatcher)
@@ -102,7 +104,10 @@ class McpServerManager(
             onSessionCountChanged = ::handleSessionCountChanged
         )
     private val logStore by lazy {
-        McpRuntimeLogStore { logs ->
+        McpRuntimeLogStore(
+            minPublishIntervalMs = LOG_PUBLISH_INTERVAL_MS,
+            publishScope = scope
+        ) { logs ->
             _uiState.update { state -> state.copy(logs = logs) }
         }
     }

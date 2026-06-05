@@ -4,7 +4,10 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.cio.CIO
+import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.applicationEnvironment
+import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
@@ -31,8 +34,10 @@ internal class McpKtorEndpointHost(
         val server = serverFactory()
         val engine = embeddedServer(
             factory = CIO,
-            host = host,
-            port = port
+            environment = applicationEnvironment(),
+            configure = {
+                configureMcpCioEndpoint(host = host, port = port)
+            }
         ) {
             installMcpEndpoint(
                 path = path,
@@ -56,6 +61,20 @@ internal class McpKtorEndpointHost(
         withTimeoutOrNull(1_500) {
             current.server.close()
         }
+    }
+}
+
+internal fun CIOApplicationEngine.Configuration.configureMcpCioEndpoint(host: String, port: Int) {
+    connectionIdleTimeoutSeconds = MCP_CIO_IDLE_TIMEOUT_SECONDS
+    reuseAddress = true
+    connectionGroupSize = MCP_CIO_CONNECTION_GROUP_SIZE
+    workerGroupSize = MCP_CIO_WORKER_GROUP_SIZE
+    callGroupSize = MCP_CIO_CALL_GROUP_SIZE
+    shutdownGracePeriod = MCP_CIO_SHUTDOWN_GRACE_PERIOD_MS
+    shutdownTimeout = MCP_CIO_SHUTDOWN_TIMEOUT_MS
+    connector {
+        this.host = host
+        this.port = port
     }
 }
 
@@ -95,3 +114,10 @@ private fun String.isMcpEndpointPath(basePath: String): Boolean {
     val fixedBasePath = basePath.trimEnd('/')
     return this == fixedBasePath || startsWith("$fixedBasePath/")
 }
+
+internal const val MCP_CIO_IDLE_TIMEOUT_SECONDS = 12
+internal const val MCP_CIO_CONNECTION_GROUP_SIZE = 1
+internal const val MCP_CIO_WORKER_GROUP_SIZE = 1
+internal const val MCP_CIO_CALL_GROUP_SIZE = 3
+internal const val MCP_CIO_SHUTDOWN_GRACE_PERIOD_MS = 250L
+internal const val MCP_CIO_SHUTDOWN_TIMEOUT_MS = 1_500L

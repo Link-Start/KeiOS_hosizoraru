@@ -33,6 +33,22 @@ class McpKtorEndpointHostTest {
     private val jsonMediaType = "application/json".toMediaType()
 
     @Test
+    fun endpointHostUsesBoundedCioConfiguration() {
+        val config = CIO.configuration {
+            configureMcpCioEndpoint(host = "127.0.0.1", port = 38888)
+        }
+
+        assertEquals(MCP_CIO_IDLE_TIMEOUT_SECONDS, config.connectionIdleTimeoutSeconds)
+        assertEquals(true, config.reuseAddress)
+        assertEquals(MCP_CIO_CONNECTION_GROUP_SIZE, config.connectionGroupSize)
+        assertEquals(MCP_CIO_WORKER_GROUP_SIZE, config.workerGroupSize)
+        assertEquals(MCP_CIO_CALL_GROUP_SIZE, config.callGroupSize)
+        assertEquals(1, config.connectors.size)
+        assertEquals("127.0.0.1", config.connectors.single().host)
+        assertEquals(38888, config.connectors.single().port)
+    }
+
+    @Test
     fun missingAndWrongTokenReturnUnauthorized() = withRunningEndpoint { port ->
         val missing = postMcp(port = port, token = null)
         val wrong = postMcp(port = port, token = "wrong")

@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,11 +59,12 @@ private const val DETENT_ONE_THIRD = 1f / 3f
 private const val DETENT_HALF = 0.50f
 private const val DETENT_THREE_QUARTER = 0.75f
 private const val DETENT_FULL = 1.0f
-private const val DETENT_SOLIDNESS_START = 0.75f
-private const val LIQUID_SHEET_BLUR_SCALE = 0.56f
-private const val LIQUID_SHEET_LENS_SCALE = 0.28f
-private const val LIQUID_SHEET_REFRACTION_AMOUNT_SCALE = 1.32f
-private const val LIQUID_SHEET_BACKGROUND_DEPTH_BLUR_SCALE = 1.35f
+private const val DETENT_SOLIDNESS_START = 0.58f
+private const val LIQUID_SHEET_BLUR_SCALE = 0.58f
+private const val LIQUID_SHEET_LENS_SCALE = 0.30f
+private const val LIQUID_SHEET_REFRACTION_AMOUNT_SCALE = 1.28f
+private const val LIQUID_SHEET_BACKGROUND_DEPTH_BLUR_SCALE = 1.48f
+private const val LIQUID_SHEET_VISUAL_FRACTION_STEPS = 48f
 private val LiquidSheetDetentDragThreshold = 72.dp
 
 enum class LiquidSheetInitialDetent(
@@ -150,6 +153,13 @@ fun LiquidGlassBottomSheet(
     val openingContentMinHeight = (openingMinHeight - LiquidSheetEstimatedChromeHeight).coerceAtLeast(0.dp)
     val resolvedSheetMaxWidth = liquidSheetMaxWidth(sheetMaxWidth)
     val density = LocalDensity.current
+    val visualDetentFraction = remember(show) { mutableFloatStateOf(targetFraction) }
+
+    LaunchedEffect(show, targetFraction) {
+        if (show) {
+            visualDetentFraction.floatValue = liquidSheetQuantizedVisualDetentFraction(targetFraction)
+        }
+    }
 
     val animatedContentDetentHeight = animateDpAsState(
         targetValue = contentDetentHeight,
@@ -157,11 +167,6 @@ fun LiquidGlassBottomSheet(
     )
     val shouldBoundManagedScrollableContent = managedScrollableContent && scrollableContentOverflowsOpeningDetent
     val sheetShape = RoundedRectangle(cornerRadius)
-    val sheetGlassSurfaceColor =
-        liquidSheetGlassSurfaceColor(
-            isDark = isDark,
-            detentFraction = targetFraction,
-        )
     val sheetSurfaceModifier =
         if (useLiquidBackdropSurface) {
             Modifier.drawBackdrop(
@@ -190,14 +195,20 @@ fun LiquidGlassBottomSheet(
                     InnerShadow(radius = 7.dp, alpha = if (isDark) 0.16f else 0.10f)
                 },
                 onDrawSurface = {
-                    drawRect(sheetGlassSurfaceColor)
+                    drawRect(
+                        liquidSheetGlassSurfaceColor(
+                            isDark = isDark,
+                            detentFraction = visualDetentFraction.floatValue,
+                        )
+                    )
                 },
                 onDrawFront = {
+                    val solidness = liquidSheetSolidness(visualDetentFraction.floatValue)
                     val topEdgeColor =
                         if (isDark) {
-                            Color.White.copy(alpha = 0.12f)
+                            Color.White.copy(alpha = lerp(0.12f, 0.16f, solidness))
                         } else {
-                            Color.White.copy(alpha = 0.54f)
+                            Color.White.copy(alpha = lerp(0.54f, 0.62f, solidness))
                         }
                     drawLine(
                         color = topEdgeColor,
@@ -207,7 +218,11 @@ fun LiquidGlassBottomSheet(
                     )
                     drawRect(
                         Color.Black.copy(
-                            alpha = if (isDark) 0.018f else 0.012f,
+                            alpha = if (isDark) {
+                                lerp(0.018f, 0.028f, solidness)
+                            } else {
+                                lerp(0.012f, 0.018f, solidness)
+                            },
                         )
                     )
                 },
@@ -260,6 +275,12 @@ fun LiquidGlassBottomSheet(
         onBlockedDismissRequest = onBlockedDismissRequest,
         contentCanScrollUp = { contentCanScrollUp },
         backgroundDepthBlurRadius = backgroundDepthBlurRadius,
+        onVisibleHeightFractionChanged = { fraction ->
+            val nextFraction = liquidSheetQuantizedVisualDetentFraction(fraction)
+            if (visualDetentFraction.floatValue != nextFraction) {
+                visualDetentFraction.floatValue = nextFraction
+            }
+        },
     ) {
         Box(
             modifier =
@@ -367,27 +388,27 @@ private fun liquidSheetMaxWidth(requestedMaxWidth: Dp): Dp {
     return minOf(requestedMaxWidth, adaptiveMaxWidth)
 }
 
-private fun liquidSheetSurfaceColor(
+internal fun liquidSheetSurfaceColor(
     isDark: Boolean,
     detentFraction: Float,
 ): Color {
     val solidness = liquidSheetSolidness(detentFraction)
     return if (isDark) {
-        Color(0xFF141420).copy(alpha = lerp(0.88f, 0.985f, solidness))
+        Color(0xFF141420).copy(alpha = lerp(0.90f, 0.99f, solidness))
     } else {
-        Color(0xFFF8F9FC).copy(alpha = lerp(0.84f, 0.985f, solidness))
+        Color(0xFFF8F9FC).copy(alpha = lerp(0.87f, 0.99f, solidness))
     }
 }
 
-private fun liquidSheetGlassSurfaceColor(
+internal fun liquidSheetGlassSurfaceColor(
     isDark: Boolean,
     detentFraction: Float,
 ): Color {
     val solidness = liquidSheetSolidness(detentFraction)
     return if (isDark) {
-        Color(0xFF141420).copy(alpha = lerp(0.30f, 0.52f, solidness))
+        Color(0xFF141420).copy(alpha = lerp(0.34f, 0.58f, solidness))
     } else {
-        Color(0xFFF8F9FC).copy(alpha = lerp(0.24f, 0.42f, solidness))
+        Color(0xFFF8F9FC).copy(alpha = lerp(0.28f, 0.50f, solidness))
     }
 }
 
@@ -397,19 +418,25 @@ private fun liquidSheetDragHandleColor(
 ): Color {
     val solidness = liquidSheetSolidness(detentFraction)
     return if (isDark) {
-        Color.White.copy(alpha = lerp(0.34f, 0.26f, solidness))
+        Color.White.copy(alpha = lerp(0.38f, 0.28f, solidness))
     } else {
-        Color.Black.copy(alpha = lerp(0.24f, 0.18f, solidness))
+        Color.Black.copy(alpha = lerp(0.28f, 0.20f, solidness))
     }
 }
 
-private fun liquidSheetSolidness(detentFraction: Float): Float {
+internal fun liquidSheetSolidness(detentFraction: Float): Float {
     val linear =
         (
             (detentFraction - DETENT_SOLIDNESS_START) /
                 (DETENT_FULL - DETENT_SOLIDNESS_START)
         ).coerceIn(0f, 1f)
     return linear * linear * (3f - 2f * linear)
+}
+
+internal fun liquidSheetQuantizedVisualDetentFraction(detentFraction: Float): Float {
+    val steps = LIQUID_SHEET_VISUAL_FRACTION_STEPS
+    return ((detentFraction.coerceIn(0f, 1f) * steps).roundToInt() / steps)
+        .coerceIn(0f, 1f)
 }
 
 fun liquidSheetAdaptedInitialDetent(

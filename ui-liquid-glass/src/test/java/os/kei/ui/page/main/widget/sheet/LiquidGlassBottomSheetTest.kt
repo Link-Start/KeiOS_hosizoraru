@@ -557,6 +557,122 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
+    fun visibleHeightFractionTracksResizableSheetHeight() {
+        assertEquals(
+            0f,
+            liquidSheetVisibleHeightFraction(
+                visibleHeightPx = 0f,
+                maxVisibleHeightPx = 1_000f,
+            ),
+            0.0001f,
+        )
+        assertEquals(
+            0.5f,
+            liquidSheetVisibleHeightFraction(
+                visibleHeightPx = 500f,
+                maxVisibleHeightPx = 1_000f,
+            ),
+            0.0001f,
+        )
+        assertEquals(
+            1f,
+            liquidSheetVisibleHeightFraction(
+                visibleHeightPx = 1_200f,
+                maxVisibleHeightPx = 1_000f,
+            ),
+            0.0001f,
+        )
+    }
+
+    @Test
+    fun visualDetentFractionUsesSmallStableSteps() {
+        assertEquals(
+            0f,
+            liquidSheetQuantizedVisualDetentFraction(-0.5f),
+            0.0001f,
+        )
+        assertEquals(
+            0.5f,
+            liquidSheetQuantizedVisualDetentFraction(0.5f),
+            0.0001f,
+        )
+        assertTrue(
+            liquidSheetQuantizedVisualDetentFraction(0.751f) in 0.74f..0.77f,
+            "Expected visual detent quantization to preserve smooth height readability",
+        )
+        assertEquals(
+            1f,
+            liquidSheetQuantizedVisualDetentFraction(1.2f),
+            0.0001f,
+        )
+    }
+
+    @Test
+    fun glassSurfaceTintGainsReadabilityBeforeFullHeight() {
+        val shortLightAlpha = liquidSheetGlassSurfaceColor(
+            isDark = false,
+            detentFraction = 1f / 3f,
+        ).alpha
+        val tallLightAlpha = liquidSheetGlassSurfaceColor(
+            isDark = false,
+            detentFraction = 0.75f,
+        ).alpha
+        val fullLightAlpha = liquidSheetGlassSurfaceColor(
+            isDark = false,
+            detentFraction = 1f,
+        ).alpha
+        val tallDarkAlpha = liquidSheetGlassSurfaceColor(
+            isDark = true,
+            detentFraction = 0.75f,
+        ).alpha
+
+        assertTrue(
+            tallLightAlpha > shortLightAlpha + 0.06f,
+            "Expected 3/4 detent to add readable tint before full height",
+        )
+        assertTrue(
+            fullLightAlpha > tallLightAlpha,
+            "Expected full detent to keep gaining readable tint",
+        )
+        assertTrue(
+            tallDarkAlpha > 0.40f,
+            "Expected dark sheet tint to remain readable at 3/4 detent",
+        )
+        assertTrue(
+            liquidSheetSolidness(0.75f) in 0.30f..0.45f,
+            "Expected readability curve to engage before full height",
+        )
+    }
+
+    @Test
+    fun backgroundDepthCurvesIncreaseAfterSheetGrows() {
+        assertEquals(
+            0.28f,
+            liquidSheetBackgroundDimDepth(0f),
+            0.0001f,
+        )
+        assertTrue(
+            liquidSheetBackgroundDimDepth(0.5f) > 0.60f,
+            "Expected mid-height background dim to support sheet readability",
+        )
+        assertEquals(
+            1f,
+            liquidSheetBackgroundDimDepth(1f),
+            0.0001f,
+        )
+
+        assertEquals(
+            0f,
+            liquidSheetBackgroundBlurLayerAlpha(0.25f),
+            0.0001f,
+        )
+        assertTrue(
+            liquidSheetBackgroundBlurLayerAlpha(0.84f) > 0.85f,
+            "Expected high sheet depth to restore strong background blur after settling",
+        )
+    }
+
+    @Test
     fun topChromeDownwardDragClampsAtMinimumFloatingHeightBeforeDismiss() {
         var dismissRequests = 0
         composeRule.setContent {

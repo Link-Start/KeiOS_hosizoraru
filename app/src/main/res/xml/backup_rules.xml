@@ -1,2 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<full-backup-content />
+<full-backup-content>
+    <!-- KeiOS stores WebDAV credentials, MCP tokens, and account data in app-private files. -->
+    <exclude
+        domain="root"
+        path="." />
+    <exclude
+        domain="device_root"
+        path="." />
+</full-backup-content>

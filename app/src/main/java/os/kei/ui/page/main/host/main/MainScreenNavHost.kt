@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
@@ -249,10 +250,26 @@ internal fun MainScreenNavHost(
     SideEffect {
         backRuntimeController.updatePolicy(predictiveBackPolicy)
     }
+    val routeDepthState = rememberRoutePredictiveBackDepthState()
+    val routeDepthDecorator =
+        remember(routeDepthState) {
+            NavEntryDecorator<NavKey> { entry ->
+                RoutePredictiveBackDepthEntry(
+                    state = routeDepthState,
+                    contentKey = entry.contentKey,
+                ) {
+                    entry.Content()
+                }
+            }
+        }
     val entries =
         rememberDecoratedNavEntries(
             backStack = backStack,
-            entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+            entryDecorators =
+                listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    routeDepthDecorator,
+                ),
             entryProvider = entryProvider,
         )
     val sceneState =
@@ -264,6 +281,13 @@ internal fun MainScreenNavHost(
             onBack = onRouteBack,
         )
     val navigationEventState = rememberNavigationEventState(sceneState)
+    BindRoutePredictiveBackDepthState(
+        enabled = routePredictiveBackEnabled && backStack.size > 1,
+        navigationEventState = navigationEventState,
+        currentContentKey = backStack.lastOrNull()?.toString(),
+        previousContentKey = backStack.dropLast(1).lastOrNull()?.toString(),
+        state = routeDepthState,
+    )
     LaunchedEffect(routePredictiveBackEnabled, navigationEventState, backRuntimeController) {
         if (!routePredictiveBackEnabled) {
             if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {

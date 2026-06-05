@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -88,12 +89,11 @@ fun LiquidActionBarPopupAnchors(
             }
         }
     val minimumWidth =
-        if (compactSingleItem && itemCount == 1) {
-            AppChromeTokens.liquidActionBarSingleWidth
-        } else {
-            AppChromeTokens.liquidActionBarMinWidth
-        }
-    val barWidth = maxOf(minimumWidth, (itemCount * AppChromeTokens.liquidActionBarItemStep.value).dp)
+        liquidActionBarMinimumWidth(
+            itemCount = itemCount,
+            compactSingleItem = compactSingleItem,
+        )
+    val barWidth = liquidActionBarWidth(itemCount = itemCount, minimumWidth = minimumWidth)
     Row(
         modifier =
             modifier
@@ -433,14 +433,13 @@ fun LiquidActionBar(
     val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
 
     val minimumWidth =
-        if (compactSingleItem && items.size == 1) {
-            AppChromeTokens.liquidActionBarSingleWidth
-        } else {
-            AppChromeTokens.liquidActionBarMinWidth
-        }
+        liquidActionBarMinimumWidth(
+            itemCount = items.size,
+            compactSingleItem = compactSingleItem,
+        )
     val barWidth =
-        remember(items.size, compactSingleItem) {
-            maxOf(minimumWidth, (items.size * AppChromeTokens.liquidActionBarItemStep.value).dp)
+        remember(items.size, minimumWidth) {
+            liquidActionBarWidth(itemCount = items.size, minimumWidth = minimumWidth)
         }
     val singleBreakoutPadding =
         if (compactSingleItem && items.size == 1) {
@@ -595,3 +594,17 @@ private fun liquidActionBarPanelOffset(
         3f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
     }
 }
+
+private fun liquidActionBarMinimumWidth(
+    itemCount: Int,
+    compactSingleItem: Boolean,
+) = when {
+    compactSingleItem && itemCount == 1 -> AppChromeTokens.liquidActionBarSingleWidth
+    itemCount == 2 -> AppChromeTokens.liquidActionBarTwoItemWidth
+    else -> AppChromeTokens.liquidActionBarMinWidth
+}
+
+private fun liquidActionBarWidth(
+    itemCount: Int,
+    minimumWidth: Dp,
+) = maxOf(minimumWidth, (itemCount * AppChromeTokens.liquidActionBarItemStep.value).dp)

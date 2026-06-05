@@ -28,6 +28,7 @@ object AppChromeTokens {
 
     val liquidActionBarSingleWidth: Dp = 52.dp
     val liquidActionBarSingleBreakoutPadding: Dp = 8.dp
+    val liquidActionBarTwoItemWidth: Dp = 112.dp
     val liquidActionBarMinWidth: Dp = 160.dp
     val liquidActionBarItemStep: Dp = 40.dp
     val liquidActionBarOuterHeight: Dp = 52.dp

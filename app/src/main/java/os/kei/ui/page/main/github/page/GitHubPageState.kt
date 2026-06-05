@@ -87,6 +87,9 @@ internal class GitHubPageState(
     var updateIntervalModeInput by trackEditorState::updateIntervalModeInput
     var actionsUpdateIntervalModeInput by trackEditorState::actionsUpdateIntervalModeInput
     var preciseApkVersionModeInput by trackEditorState::preciseApkVersionModeInput
+    var ignoreModeInput by trackEditorState::ignoreModeInput
+    var ignoredStableReleaseKeyInput by trackEditorState::ignoredStableReleaseKeyInput
+    var ignoredPreReleaseKeyInput by trackEditorState::ignoredPreReleaseKeyInput
     var trackSourceModeInput by trackEditorState::trackSourceModeInput
     var sourceModeDropdownExpanded by trackEditorState::sourceModeDropdownExpanded
     var sourceModeDropdownAnchorBounds by trackEditorState::sourceModeDropdownAnchorBounds
@@ -96,6 +99,8 @@ internal class GitHubPageState(
     var actionsIntervalDropdownAnchorBounds by trackEditorState::actionsIntervalDropdownAnchorBounds
     var preciseModeDropdownExpanded by trackEditorState::preciseModeDropdownExpanded
     var preciseModeDropdownAnchorBounds by trackEditorState::preciseModeDropdownAnchorBounds
+    var ignoreModeDropdownExpanded by trackEditorState::ignoreModeDropdownExpanded
+    var ignoreModeDropdownAnchorBounds by trackEditorState::ignoreModeDropdownAnchorBounds
     var repoUrlScanRunning by trackEditorState::repoUrlScanRunning
     var packageNameScanRunning by trackEditorState::packageNameScanRunning
     var selectedApp by trackEditorState::selectedApp

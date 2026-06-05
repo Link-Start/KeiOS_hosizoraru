@@ -11,6 +11,7 @@ import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
+import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -101,6 +102,8 @@ internal fun VersionCheckUi.statusIcon(): ImageVector {
         recommendsPreRelease -> appLucideDownloadIcon()
         hasPreReleaseUpdate -> appLucideDownloadIcon()
         hasUpdate == true -> appLucideDownloadIcon()
+        GitHubTrackedReleaseStatus.fromMessage(message) == GitHubTrackedReleaseStatus.Ignored ->
+            appLucidePauseIcon()
         hasUpdate == false -> appLucideConfirmIcon()
         isPreRelease -> appLucideAlertIcon()
         else -> appLucideMoreIcon()
@@ -114,6 +117,8 @@ internal fun VersionCheckUi.statusColor(neutralColor: Color): Color {
         recommendsPreRelease -> GitHubStatusPalette.PreRelease
         hasPreReleaseUpdate -> GitHubStatusPalette.PreRelease
         hasUpdate == true -> GitHubStatusPalette.Update
+        GitHubTrackedReleaseStatus.fromMessage(message) == GitHubTrackedReleaseStatus.Ignored ->
+            GitHubStatusPalette.Cache
         hasUpdate == false && isPreRelease -> GitHubStatusPalette.PreRelease
         hasUpdate == false -> GitHubStatusPalette.Stable
         isPreRelease -> GitHubStatusPalette.PreRelease
@@ -136,6 +141,8 @@ internal fun VersionCheckUi.statusMessage(context: Context): String {
             context.getString(R.string.github_status_prerelease_tracked)
         status == GitHubTrackedReleaseStatus.UpToDate ->
             context.getString(R.string.github_status_up_to_date)
+        status == GitHubTrackedReleaseStatus.Ignored ->
+            context.getString(R.string.github_status_ignored)
         status == GitHubTrackedReleaseStatus.MatchedRelease ->
             context.getString(R.string.github_status_matched_release)
         status == GitHubTrackedReleaseStatus.ComparisonUncertain ->

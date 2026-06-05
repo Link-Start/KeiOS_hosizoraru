@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.page.action
 
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -48,6 +49,32 @@ class GitHubRefreshActionsTest {
         )
 
         assertEquals(listOf(item), selected)
+    }
+
+    @Test
+    fun `tracked update selector skips automatic refresh for ignored version tracks`() {
+        val active = tracked("active")
+        val temporaryIgnored = tracked("temporary").copy(
+            ignoreMode = GitHubTrackedIgnoreMode.Temporary
+        )
+        val allVersionsIgnored = tracked("all").copy(
+            ignoreMode = GitHubTrackedIgnoreMode.AllVersions
+        )
+        val nowMs = 12L * 60L * 60L * 1000L + 1L
+
+        val selected = selectDueTrackedUpdateItems(
+            trackedItems = listOf(active, temporaryIgnored, allVersionsIgnored),
+            checkedAtMillisById = mapOf(
+                active.id to 1L,
+                temporaryIgnored.id to 1L,
+                allVersionsIgnored.id to 1L,
+            ),
+            lastRefreshMs = 0L,
+            refreshIntervalHours = 12,
+            nowMs = nowMs,
+        )
+
+        assertEquals(listOf(active), selected)
     }
 
     @Test

@@ -258,6 +258,7 @@ internal fun GitHubMainContent(
                                 onRefreshTrackedItem = actions.onRefreshTrackedItem,
                                 onOpenActionsSheet = actions.onOpenActionsSheet,
                                 onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
+                                onIgnoreCurrentTrackedVersion = actions.onIgnoreCurrentTrackedVersion,
                                 onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
                                 onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
                                 onCollapseTrackedCard = actions.onCollapseTrackedCard,

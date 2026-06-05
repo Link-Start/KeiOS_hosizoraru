@@ -21,6 +21,7 @@ import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -64,6 +65,9 @@ internal fun GitHubTrackEditSheet(
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    ignoreModeInput: GitHubTrackedIgnoreMode,
+    ignoredStableReleaseKeyInput: String,
+    ignoredPreReleaseKeyInput: String,
     sourceModeDropdownExpanded: Boolean,
     sourceModeDropdownAnchorBounds: IntRect?,
     updateIntervalDropdownExpanded: Boolean,
@@ -72,6 +76,8 @@ internal fun GitHubTrackEditSheet(
     actionsIntervalDropdownAnchorBounds: IntRect?,
     preciseModeDropdownExpanded: Boolean,
     preciseModeDropdownAnchorBounds: IntRect?,
+    ignoreModeDropdownExpanded: Boolean,
+    ignoreModeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onDismissRequest: () -> Unit,
@@ -95,6 +101,7 @@ internal fun GitHubTrackEditSheet(
     onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit,
+    onIgnoreModeInputChange: (GitHubTrackedIgnoreMode) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
@@ -103,6 +110,8 @@ internal fun GitHubTrackEditSheet(
     onActionsIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onPreciseModeDropdownExpandedChange: (Boolean) -> Unit,
     onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onIgnoreModeDropdownExpandedChange: (Boolean) -> Unit,
+    onIgnoreModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val hasUnsavedChanges =
         hasGitHubTrackEditorUnsavedChanges(
@@ -120,6 +129,9 @@ internal fun GitHubTrackEditSheet(
             updateIntervalModeInput = updateIntervalModeInput,
             actionsUpdateIntervalModeInput = actionsUpdateIntervalModeInput,
             preciseApkVersionModeInput = preciseApkVersionModeInput,
+            ignoreModeInput = ignoreModeInput,
+            ignoredStableReleaseKeyInput = ignoredStableReleaseKeyInput,
+            ignoredPreReleaseKeyInput = ignoredPreReleaseKeyInput,
         )
     val dismissHandler =
         rememberUnsavedSheetDismissHandler(
@@ -220,6 +232,7 @@ internal fun GitHubTrackEditSheet(
                     updateIntervalModeInput = updateIntervalModeInput,
                     actionsUpdateIntervalModeInput = actionsUpdateIntervalModeInput,
                     preciseApkVersionModeInput = preciseApkVersionModeInput,
+                    ignoreModeInput = ignoreModeInput,
                     sourceModeDropdownExpanded = sourceModeDropdownExpanded,
                     sourceModeDropdownAnchorBounds = sourceModeDropdownAnchorBounds,
                     updateIntervalDropdownExpanded = updateIntervalDropdownExpanded,
@@ -228,6 +241,8 @@ internal fun GitHubTrackEditSheet(
                     actionsIntervalDropdownAnchorBounds = actionsIntervalDropdownAnchorBounds,
                     preciseModeDropdownExpanded = preciseModeDropdownExpanded,
                     preciseModeDropdownAnchorBounds = preciseModeDropdownAnchorBounds,
+                    ignoreModeDropdownExpanded = ignoreModeDropdownExpanded,
+                    ignoreModeDropdownAnchorBounds = ignoreModeDropdownAnchorBounds,
                     globalRefreshIntervalHours = globalRefreshIntervalHours,
                     globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
@@ -245,6 +260,7 @@ internal fun GitHubTrackEditSheet(
                     onActionsUpdateIntervalModeInputChange =
                     onActionsUpdateIntervalModeInputChange,
                     onPreciseApkVersionModeInputChange = onPreciseApkVersionModeInputChange,
+                    onIgnoreModeInputChange = onIgnoreModeInputChange,
                     onSourceModeDropdownExpandedChange = onSourceModeDropdownExpandedChange,
                     onSourceModeDropdownAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
                     onUpdateIntervalDropdownExpandedChange = onUpdateIntervalDropdownExpandedChange,
@@ -254,6 +270,8 @@ internal fun GitHubTrackEditSheet(
                     onActionsIntervalDropdownAnchorBoundsChange,
                     onPreciseModeDropdownExpandedChange = onPreciseModeDropdownExpandedChange,
                     onPreciseModeDropdownAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
+                    onIgnoreModeDropdownExpandedChange = onIgnoreModeDropdownExpandedChange,
+                    onIgnoreModeDropdownAnchorBoundsChange = onIgnoreModeDropdownAnchorBoundsChange,
                 )
             }
         }

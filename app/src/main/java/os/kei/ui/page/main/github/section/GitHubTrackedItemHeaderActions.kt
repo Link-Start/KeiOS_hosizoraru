@@ -97,6 +97,7 @@ internal fun GitHubTrackedItemHeaderActions(
                     item,
                 )
             },
+            onIgnoreCurrentVersion = actions.onIgnoreCurrentTrackedVersion,
             onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
         )
     }

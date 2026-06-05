@@ -427,6 +427,7 @@
     <string name="github_status_prerelease_optional">预发可选</string>
     <string name="github_status_prerelease_tracked">预发行</string>
     <string name="github_status_up_to_date">已是最新</string>
+    <string name="github_status_ignored">已忽略更新</string>
     <string name="github_status_matched_release">已匹配发行</string>
     <string name="github_status_comparison_uncertain">版本格式无法精确比较</string>
     <string name="github_status_only_prereleases_hint">该项目暂时可能只有预发行版</string>
@@ -818,6 +819,17 @@
     <string name="github_track_sheet_summary_update_interval_custom">此项目会按单独间隔检查版本更新。</string>
     <string name="github_track_sheet_update_interval_follow_global">跟随全局</string>
     <string name="github_track_sheet_update_interval_follow_global_format">跟随全局（%1$s）</string>
+    <string name="github_track_sheet_label_ignore_updates">忽略策略</string>
+    <string name="github_track_sheet_ignore_none">正常追踪</string>
+    <string name="github_track_sheet_ignore_temporary">暂时忽略追踪</string>
+    <string name="github_track_sheet_ignore_all_versions">忽略所有版本追踪</string>
+    <string name="github_track_sheet_ignore_current_stable">忽略当前稳定版更新</string>
+    <string name="github_track_sheet_ignore_current_prerelease">忽略当前预发版更新</string>
+    <string name="github_track_sheet_summary_ignore_none">按此项目的检查间隔正常追踪稳定版和预发版更新。</string>
+    <string name="github_track_sheet_summary_ignore_temporary">暂停此项目的自动版本追踪；手动刷新仍可查看当前状态。</string>
+    <string name="github_track_sheet_summary_ignore_all_versions">继续保留项目，但稳定版和预发版更新都不会计入提醒。</string>
+    <string name="github_track_sheet_summary_ignore_current_stable">只跳过当前稳定版；远端出现新的稳定版本后会继续提醒。</string>
+    <string name="github_track_sheet_summary_ignore_current_prerelease">只跳过当前预发版；远端出现新的预发版本后会继续提醒。</string>
     <string name="github_track_sheet_label_actions_update_interval">Actions 检查间隔</string>
     <string name="github_track_sheet_summary_actions_update_interval_follow_global">跟随全局：当前为 %1$s</string>
     <string name="github_track_sheet_summary_actions_update_interval_custom">Actions 构建变化更快，此项目会按更短间隔单独检查。</string>
@@ -840,6 +852,9 @@
     <string name="github_track_sheet_precise_apk_version_follow_global">跟随全局</string>
     <string name="github_track_sheet_precise_apk_version_enabled">仅此项目开启</string>
     <string name="github_track_sheet_precise_apk_version_disabled">仅此项目关闭</string>
+    <string name="github_item_menu_ignore_current_version">忽略本版本追踪</string>
+    <string name="github_toast_no_current_update_to_ignore">当前没有可忽略的版本更新</string>
+    <string name="github_toast_track_update_ignored">已忽略当前版本更新</string>
     <string name="github_track_sheet_section_app_candidates">App 候选</string>
     <string name="github_track_sheet_label_app_list">App 列表</string>
     <string name="github_track_sheet_app_result_count_format">显示 %1$d / %2$d 个</string>

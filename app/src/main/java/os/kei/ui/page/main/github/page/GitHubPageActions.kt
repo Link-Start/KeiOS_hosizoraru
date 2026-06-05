@@ -18,6 +18,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubShareImportFlowMode
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -544,6 +545,9 @@ internal class GitHubPageActions(
     fun setTrackPreciseApkVersionModeInput(value: GitHubTrackedPreciseApkVersionMode) =
         trackActions.setPreciseApkVersionModeInput(value)
 
+    fun setTrackIgnoreModeInput(value: GitHubTrackedIgnoreMode) =
+        trackActions.setIgnoreModeInput(value)
+
     fun setTrackSourceModeDropdownExpanded(value: Boolean) = trackActions.setSourceModeDropdownExpanded(value)
 
     fun setTrackSourceModeDropdownAnchorBounds(value: IntRect?) = trackActions.setSourceModeDropdownAnchorBounds(value)
@@ -562,9 +566,18 @@ internal class GitHubPageActions(
 
     fun setTrackPreciseModeDropdownAnchorBounds(value: IntRect?) = trackActions.setPreciseModeDropdownAnchorBounds(value)
 
+    fun setTrackIgnoreModeDropdownExpanded(value: Boolean) = trackActions.setIgnoreModeDropdownExpanded(value)
+
+    fun setTrackIgnoreModeDropdownAnchorBounds(value: IntRect?) = trackActions.setIgnoreModeDropdownAnchorBounds(value)
+
     fun refreshTrackAppList() = trackActions.refreshAppListForTrackSheet()
 
     fun requestDeleteTrackedItem(item: GitHubTrackedApp) = trackActions.requestDeleteItem(item)
+
+    fun ignoreCurrentTrackedVersion(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+    ) = trackActions.ignoreCurrentTrackedVersion(item, itemState)
 
     fun dismissPendingDeleteItem() {
         if (!env.state.deleteInProgress) {

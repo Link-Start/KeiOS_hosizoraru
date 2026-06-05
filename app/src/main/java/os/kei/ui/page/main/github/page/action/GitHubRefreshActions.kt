@@ -12,6 +12,7 @@ import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.excludesAutomaticReleaseRefresh
 import os.kei.feature.github.model.resolvedRefreshTimestamp
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -212,8 +213,9 @@ internal class GitHubRefreshActions(
                 refreshIntervalHours = state.refreshIntervalHours,
                 nowMs = clock.nowMs(),
             )
-        if (dueItems.isNotEmpty() || (!hasCachedForTracked && hasTracked)) {
-            val targets = dueItems.ifEmpty { state.trackedItems.toList() }
+        val autoRefreshItems = state.trackedItems.filterNot { it.excludesAutomaticReleaseRefresh() }
+        if (dueItems.isNotEmpty() || (!hasCachedForTracked && autoRefreshItems.isNotEmpty())) {
+            val targets = dueItems.ifEmpty { autoRefreshItems.toList() }
             repository.consumeTrackRefreshRequests(targets.mapTo(HashSet()) { it.id })
             if (targets.size == state.trackedItems.size) {
                 refreshAllTracked(showToast = false)

@@ -8,14 +8,19 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
+import os.kei.feature.github.model.GitHubReleaseIgnoreChannel
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
+import os.kei.feature.github.model.withReleaseIgnoreMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.localizedGitHubRepositoryDiscoveryErrorMessage
@@ -56,6 +61,9 @@ internal class GitHubTrackActions(
         state.updateIntervalModeInput = item.updateIntervalMode
         state.actionsUpdateIntervalModeInput = item.actionsUpdateIntervalMode
         state.preciseApkVersionModeInput = item.preciseApkVersionMode
+        state.ignoreModeInput = item.ignoreMode
+        state.ignoredStableReleaseKeyInput = item.ignoredStableReleaseKey
+        state.ignoredPreReleaseKeyInput = item.ignoredPreReleaseKey
         state.showAddSheet = true
         refreshAppListForTrackSheet()
     }
@@ -147,6 +155,30 @@ internal class GitHubTrackActions(
         state.preciseApkVersionModeInput = value
     }
 
+    fun setIgnoreModeInput(value: GitHubTrackedIgnoreMode) {
+        state.ignoreModeInput = value
+        when (value) {
+            GitHubTrackedIgnoreMode.None,
+            GitHubTrackedIgnoreMode.Temporary,
+            GitHubTrackedIgnoreMode.AllVersions -> {
+                state.ignoredStableReleaseKeyInput = ""
+                state.ignoredPreReleaseKeyInput = ""
+            }
+
+            GitHubTrackedIgnoreMode.CurrentStable -> {
+                state.ignoredStableReleaseKeyInput =
+                    currentEditingReleaseIgnoreKey(GitHubReleaseIgnoreChannel.Stable)
+                state.ignoredPreReleaseKeyInput = ""
+            }
+
+            GitHubTrackedIgnoreMode.CurrentPreRelease -> {
+                state.ignoredStableReleaseKeyInput = ""
+                state.ignoredPreReleaseKeyInput =
+                    currentEditingReleaseIgnoreKey(GitHubReleaseIgnoreChannel.PreRelease)
+            }
+        }
+    }
+
     fun setSourceModeDropdownExpanded(value: Boolean) {
         state.sourceModeDropdownExpanded = value
     }
@@ -177,6 +209,14 @@ internal class GitHubTrackActions(
 
     fun setPreciseModeDropdownAnchorBounds(value: IntRect?) {
         state.preciseModeDropdownAnchorBounds = value
+    }
+
+    fun setIgnoreModeDropdownExpanded(value: Boolean) {
+        state.ignoreModeDropdownExpanded = value
+    }
+
+    fun setIgnoreModeDropdownAnchorBounds(value: IntRect?) {
+        state.ignoreModeDropdownAnchorBounds = value
     }
 
     fun refreshAppListForTrackSheet() {
@@ -391,6 +431,9 @@ internal class GitHubTrackActions(
                         }
                     },
                 preciseApkVersionMode = state.preciseApkVersionModeInput,
+                ignoreMode = state.ignoreModeInput,
+                ignoredStableReleaseKey = state.ignoredStableReleaseKeyInput,
+                ignoredPreReleaseKey = state.ignoredPreReleaseKeyInput,
                 appList = state.appList,
             )
         scope.launch {
@@ -489,6 +532,55 @@ internal class GitHubTrackActions(
         }
     }
 
+    fun ignoreCurrentTrackedVersion(
+        item: GitHubTrackedApp,
+        itemState: VersionCheckUi,
+    ) {
+        val channel = itemState.currentReleaseIgnoreChannel()
+        if (channel == null) {
+            env.toast(R.string.github_toast_no_current_update_to_ignore)
+            return
+        }
+        val releaseKey = itemState.releaseIgnoreKeyForChannel(channel)
+        if (releaseKey.isBlank()) {
+            env.toast(R.string.github_toast_no_current_update_to_ignore)
+            return
+        }
+        val nextMode =
+            when (channel) {
+                GitHubReleaseIgnoreChannel.Stable -> GitHubTrackedIgnoreMode.CurrentStable
+                GitHubReleaseIgnoreChannel.PreRelease -> GitHubTrackedIgnoreMode.CurrentPreRelease
+            }
+        val updatedItem = item.withReleaseIgnoreMode(
+            mode = nextMode,
+            stableReleaseKey =
+                if (channel == GitHubReleaseIgnoreChannel.Stable) {
+                    releaseKey
+                } else {
+                    ""
+                },
+            preReleaseKey =
+                if (channel == GitHubReleaseIgnoreChannel.PreRelease) {
+                    releaseKey
+                } else {
+                    ""
+                },
+        )
+        val index = state.trackedItems.indexOfFirst { it.id == item.id }
+        if (index < 0) return
+        val nowMillis = env.clock.nowMs()
+        state.trackedItems[index] = updatedItem
+        state.checkStates[updatedItem.id] =
+            itemState
+                .withIgnoredReleaseChannel(channel)
+                .copy(checkedAtMillis = nowMillis)
+        state.recordTrackedModifiedAt(updatedItem.id, nowMillis)
+        state.requestTrackCardFocus(updatedItem.id)
+        env.saveTrackedItems()
+        refreshActions.persistCheckCache()
+        env.toast(R.string.github_toast_track_update_ignored)
+    }
+
     fun confirmDeletePendingItem() {
         if (state.deleteInProgress) return
         state.pendingDeleteItem?.let { deleting ->
@@ -529,4 +621,85 @@ internal class GitHubTrackActions(
             } ?: return
         state.selectedApp = refreshedApp
     }
+
+    private fun currentEditingReleaseIgnoreKey(channel: GitHubReleaseIgnoreChannel): String {
+        val editingItem = state.editingTrackedItem ?: return ""
+        val itemState = state.checkStates[editingItem.id]
+        val currentKey = itemState?.releaseIgnoreKeyForChannel(channel).orEmpty()
+        if (currentKey.isNotBlank()) return currentKey
+        return when (channel) {
+            GitHubReleaseIgnoreChannel.Stable -> editingItem.ignoredStableReleaseKey
+            GitHubReleaseIgnoreChannel.PreRelease -> editingItem.ignoredPreReleaseKey
+        }
+    }
+}
+
+private fun VersionCheckUi.currentReleaseIgnoreChannel(): GitHubReleaseIgnoreChannel? {
+    return when {
+        recommendsPreRelease &&
+            releaseIgnoreKeyForChannel(GitHubReleaseIgnoreChannel.PreRelease).isNotBlank() -> {
+            GitHubReleaseIgnoreChannel.PreRelease
+        }
+
+        hasUpdate == true &&
+            releaseIgnoreKeyForChannel(GitHubReleaseIgnoreChannel.Stable).isNotBlank() -> {
+            GitHubReleaseIgnoreChannel.Stable
+        }
+
+        hasPreReleaseUpdate &&
+            releaseIgnoreKeyForChannel(GitHubReleaseIgnoreChannel.PreRelease).isNotBlank() -> {
+            GitHubReleaseIgnoreChannel.PreRelease
+        }
+
+        else -> null
+    }
+}
+
+private fun VersionCheckUi.releaseIgnoreKeyForChannel(
+    channel: GitHubReleaseIgnoreChannel
+): String {
+    return when (channel) {
+        GitHubReleaseIgnoreChannel.Stable -> buildGitHubReleaseIgnoreKey(
+            displayVersion = latestStableName.ifBlank { latestTag.ifBlank { latestStableRawTag } },
+            rawTag = latestStableRawTag.ifBlank { latestTag },
+            rawName = latestStableName,
+            link = latestStableUrl,
+            preciseApkVersion = latestStableApkVersion
+        )
+
+        GitHubReleaseIgnoreChannel.PreRelease -> buildGitHubReleaseIgnoreKey(
+            displayVersion = latestPreName.ifBlank { preReleaseInfo.ifBlank { latestPreRawTag } },
+            rawTag = latestPreRawTag.ifBlank { preReleaseInfo },
+            rawName = latestPreName,
+            link = latestPreUrl,
+            preciseApkVersion = latestPreApkVersion
+        )
+    }
+}
+
+private fun VersionCheckUi.withIgnoredReleaseChannel(
+    channel: GitHubReleaseIgnoreChannel
+): VersionCheckUi {
+    val nextHasPreReleaseUpdate =
+        hasPreReleaseUpdate && channel != GitHubReleaseIgnoreChannel.PreRelease
+    val nextRecommendsPreRelease =
+        recommendsPreRelease && channel != GitHubReleaseIgnoreChannel.PreRelease
+    val stableUpdateVisible = hasUpdate == true && !recommendsPreRelease
+    val nextStableHasUpdate =
+        stableUpdateVisible && channel != GitHubReleaseIgnoreChannel.Stable
+    val nextHasUpdate = nextStableHasUpdate || nextRecommendsPreRelease
+    val nextStatus =
+        when {
+            nextRecommendsPreRelease -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
+            nextStableHasUpdate -> GitHubTrackedReleaseStatus.UpdateAvailable
+            nextHasPreReleaseUpdate -> GitHubTrackedReleaseStatus.PreReleaseOptional
+            else -> GitHubTrackedReleaseStatus.Ignored
+        }
+    return copy(
+        hasUpdate = nextHasUpdate,
+        hasPreReleaseUpdate = nextHasPreReleaseUpdate,
+        recommendsPreRelease = nextRecommendsPreRelease,
+        message = nextStatus.defaultMessage,
+        failed = false,
+    )
 }

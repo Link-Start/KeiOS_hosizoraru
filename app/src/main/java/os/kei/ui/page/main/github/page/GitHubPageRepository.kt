@@ -32,6 +32,7 @@ import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -83,6 +84,9 @@ internal data class GitHubTrackEditorDraft(
     val updateIntervalMode: GitHubTrackedUpdateIntervalMode,
     val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,
+    val ignoreMode: GitHubTrackedIgnoreMode = GitHubTrackedIgnoreMode.None,
+    val ignoredStableReleaseKey: String = "",
+    val ignoredPreReleaseKey: String = "",
     val appList: List<InstalledAppItem>,
 )
 

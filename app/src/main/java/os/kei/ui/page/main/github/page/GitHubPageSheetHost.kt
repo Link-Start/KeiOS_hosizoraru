@@ -241,6 +241,9 @@ internal fun GitHubPageSheetHost(
         updateIntervalModeInput = state.updateIntervalModeInput,
         actionsUpdateIntervalModeInput = state.actionsUpdateIntervalModeInput,
         preciseApkVersionModeInput = state.preciseApkVersionModeInput,
+        ignoreModeInput = state.ignoreModeInput,
+        ignoredStableReleaseKeyInput = state.ignoredStableReleaseKeyInput,
+        ignoredPreReleaseKeyInput = state.ignoredPreReleaseKeyInput,
         sourceModeDropdownExpanded = state.sourceModeDropdownExpanded,
         sourceModeDropdownAnchorBounds = state.sourceModeDropdownAnchorBounds,
         updateIntervalDropdownExpanded = state.updateIntervalDropdownExpanded,
@@ -249,6 +252,8 @@ internal fun GitHubPageSheetHost(
         actionsIntervalDropdownAnchorBounds = state.actionsIntervalDropdownAnchorBounds,
         preciseModeDropdownExpanded = state.preciseModeDropdownExpanded,
         preciseModeDropdownAnchorBounds = state.preciseModeDropdownAnchorBounds,
+        ignoreModeDropdownExpanded = state.ignoreModeDropdownExpanded,
+        ignoreModeDropdownAnchorBounds = state.ignoreModeDropdownAnchorBounds,
         globalRefreshIntervalHours = state.refreshIntervalHours,
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
@@ -273,6 +278,7 @@ internal fun GitHubPageSheetHost(
         onUpdateIntervalModeInputChange = actions::setTrackUpdateIntervalModeInput,
         onActionsUpdateIntervalModeInputChange = actions::setTrackActionsUpdateIntervalModeInput,
         onPreciseApkVersionModeInputChange = actions::setTrackPreciseApkVersionModeInput,
+        onIgnoreModeInputChange = actions::setTrackIgnoreModeInput,
         onSourceModeDropdownExpandedChange = actions::setTrackSourceModeDropdownExpanded,
         onSourceModeDropdownAnchorBoundsChange = actions::setTrackSourceModeDropdownAnchorBounds,
         onUpdateIntervalDropdownExpandedChange = actions::setTrackUpdateIntervalDropdownExpanded,
@@ -281,6 +287,8 @@ internal fun GitHubPageSheetHost(
         onActionsIntervalDropdownAnchorBoundsChange = actions::setTrackActionsIntervalDropdownAnchorBounds,
         onPreciseModeDropdownExpandedChange = actions::setTrackPreciseModeDropdownExpanded,
         onPreciseModeDropdownAnchorBoundsChange = actions::setTrackPreciseModeDropdownAnchorBounds,
+        onIgnoreModeDropdownExpandedChange = actions::setTrackIgnoreModeDropdownExpanded,
+        onIgnoreModeDropdownAnchorBoundsChange = actions::setTrackIgnoreModeDropdownAnchorBounds,
     )
 
     GitHubDeleteTrackDialog(

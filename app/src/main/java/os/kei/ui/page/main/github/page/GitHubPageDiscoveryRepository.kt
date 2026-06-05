@@ -24,6 +24,7 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.parseGithubOwnerRepoStrict
+import os.kei.feature.github.model.withReleaseIgnoreMode
 
 internal class GitHubPageDiscoveryRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
@@ -102,8 +103,7 @@ internal class GitHubPageDiscoveryRepository(
                 resolvedPackageName.isNotBlank() -> resolvedPackageName
                 else -> sourceIdentity.fallbackLabel
             }
-            GitHubTrackEditorResult.Ready(
-                GitHubTrackedApp(
+            val trackedApp = GitHubTrackedApp(
                     repoUrl = draft.repoUrl.trim(),
                     owner = sourceIdentity.owner,
                     repo = sourceIdentity.repo,
@@ -132,10 +132,19 @@ internal class GitHubPageDiscoveryRepository(
                             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                     },
                     preciseApkVersionMode = draft.preciseApkVersionMode,
+                    ignoreMode = draft.ignoreMode,
+                    ignoredStableReleaseKey = draft.ignoredStableReleaseKey.trim(),
+                    ignoredPreReleaseKey = draft.ignoredPreReleaseKey.trim(),
                     localAppType = GitHubTrackedLocalAppType.fromSystemFlag(
                         matchedInstalledApp?.isSystemApp
                     )
+                ).withReleaseIgnoreMode(
+                    mode = draft.ignoreMode,
+                    stableReleaseKey = draft.ignoredStableReleaseKey,
+                    preReleaseKey = draft.ignoredPreReleaseKey
                 )
+            GitHubTrackEditorResult.Ready(
+                trackedApp
             )
         }
     }

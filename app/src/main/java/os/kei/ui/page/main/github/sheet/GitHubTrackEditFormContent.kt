@@ -15,6 +15,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -50,6 +51,7 @@ internal fun GitHubTrackEditFormContent(
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    ignoreModeInput: GitHubTrackedIgnoreMode,
     sourceModeDropdownExpanded: Boolean,
     sourceModeDropdownAnchorBounds: IntRect?,
     updateIntervalDropdownExpanded: Boolean,
@@ -58,6 +60,8 @@ internal fun GitHubTrackEditFormContent(
     actionsIntervalDropdownAnchorBounds: IntRect?,
     preciseModeDropdownExpanded: Boolean,
     preciseModeDropdownAnchorBounds: IntRect?,
+    ignoreModeDropdownExpanded: Boolean,
+    ignoreModeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
@@ -73,6 +77,7 @@ internal fun GitHubTrackEditFormContent(
     onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit,
+    onIgnoreModeInputChange: (GitHubTrackedIgnoreMode) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
@@ -81,6 +86,8 @@ internal fun GitHubTrackEditFormContent(
     onActionsIntervalDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onPreciseModeDropdownExpandedChange: (Boolean) -> Unit,
     onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onIgnoreModeDropdownExpandedChange: (Boolean) -> Unit,
+    onIgnoreModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val sourceModes = GitHubTrackedSourceMode.entries
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
@@ -97,6 +104,10 @@ internal fun GitHubTrackEditFormContent(
             )
         }
     val updateIntervalIndex = updateIntervalModes.indexOf(updateIntervalModeInput).coerceAtLeast(0)
+    val ignoreModes = GitHubTrackedIgnoreMode.entries
+    val ignoreModeOptions = ignoreModes.map { mode -> trackedIgnoreModeLabel(mode) }
+    val ignoreModeIndex = ignoreModes.indexOf(ignoreModeInput).coerceAtLeast(0)
+    val ignoreModeSummary = trackedIgnoreModeSummary(ignoreModeInput)
     val updateIntervalFollowsGlobal =
         updateIntervalModeInput == GitHubTrackedUpdateIntervalMode.FollowGlobal
     val updateIntervalSummary =
@@ -350,6 +361,27 @@ internal fun GitHubTrackEditFormContent(
                         updateIntervalModes.getOrNull(index)?.let(onUpdateIntervalModeInputChange)
                     },
                     onAnchorBoundsChange = onUpdateIntervalDropdownAnchorBoundsChange,
+                    backdrop = backdrop,
+                )
+            }
+            SheetControlRow(
+                label = stringResource(R.string.github_track_sheet_label_ignore_updates),
+                summary = ignoreModeSummary,
+            ) {
+                AppDropdownSelector(
+                    selectedText =
+                        ignoreModeOptions.getOrElse(ignoreModeIndex) {
+                            stringResource(R.string.github_track_sheet_ignore_none)
+                        },
+                    options = ignoreModeOptions,
+                    selectedIndex = ignoreModeIndex,
+                    expanded = ignoreModeDropdownExpanded,
+                    anchorBounds = ignoreModeDropdownAnchorBounds,
+                    onExpandedChange = onIgnoreModeDropdownExpandedChange,
+                    onSelectedIndexChange = { index ->
+                        ignoreModes.getOrNull(index)?.let(onIgnoreModeInputChange)
+                    },
+                    onAnchorBoundsChange = onIgnoreModeDropdownAnchorBoundsChange,
                     backdrop = backdrop,
                 )
             }

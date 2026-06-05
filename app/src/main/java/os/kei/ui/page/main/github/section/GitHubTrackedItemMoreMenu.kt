@@ -25,6 +25,7 @@ import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.os.appLucideBranchIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
+import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
@@ -41,7 +42,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val GitHubTrackedItemMoreMenuMinWidth = 148.dp
 private val GitHubTrackedItemMoreMenuMaxWidth = 170.dp
-private val GitHubTrackedItemMoreMenuMaxHeight = 232.dp
+private val GitHubTrackedItemMoreMenuMaxHeight = 276.dp
 private const val GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION = 0.40f
 private val releaseNotesSupportedGitPlatforms = setOf(
     GitRepositoryPlatform.GitHub,
@@ -60,6 +61,7 @@ internal fun GitHubTrackedItemMoreActions(
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
     onOpenReleaseNotes: () -> Unit,
+    onIgnoreCurrentVersion: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
 ) {
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
@@ -89,13 +91,19 @@ internal fun GitHubTrackedItemMoreActions(
                 false
             }
         }
+    val showIgnoreCurrentVersionAction =
+        state.recommendsPreRelease ||
+            state.hasUpdate == true ||
+            state.hasPreReleaseUpdate
     val optionSize =
         2 +
             (if (showActionsAction) 1 else 0) +
-            (if (normalizedShowReleaseNotesAction) 1 else 0)
+            (if (normalizedShowReleaseNotesAction) 1 else 0) +
+            (if (showIgnoreCurrentVersionAction) 1 else 0)
     val refreshIcon = appLucideRefreshIcon()
     val actionsIcon = appLucideBranchIcon()
     val releaseNotesIcon = appLucideNotesIcon()
+    val ignoreIcon = appLucidePauseIcon()
     val deleteIcon = appLucideTrashIcon()
     val dangerTint =
         liquidGlassDropdownItemAccent(
@@ -163,6 +171,18 @@ internal fun GitHubTrackedItemMoreActions(
                             onClick = {
                                 menuExpanded = false
                                 onOpenReleaseNotes()
+                            },
+                        )
+                    }
+                    if (showIgnoreCurrentVersionAction) {
+                        GitHubTrackedItemMenuAction(
+                            text = stringResource(R.string.github_item_menu_ignore_current_version),
+                            leadingIcon = ignoreIcon,
+                            index = optionIndex++,
+                            optionSize = optionSize,
+                            onClick = {
+                                menuExpanded = false
+                                onIgnoreCurrentVersion(item, state)
                             },
                         )
                     }

@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -30,6 +31,9 @@ internal class GitHubTrackEditorPageStateHolder {
         GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
     )
     var preciseApkVersionModeInput by mutableStateOf(GitHubTrackedPreciseApkVersionMode.FollowGlobal)
+    var ignoreModeInput by mutableStateOf(GitHubTrackedIgnoreMode.None)
+    var ignoredStableReleaseKeyInput by mutableStateOf("")
+    var ignoredPreReleaseKeyInput by mutableStateOf("")
     var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
     var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
@@ -45,6 +49,8 @@ internal class GitHubTrackEditorPageStateHolder {
     var actionsIntervalDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var preciseModeDropdownExpanded by mutableStateOf(false)
     var preciseModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var ignoreModeDropdownExpanded by mutableStateOf(false)
+    var ignoreModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
 
     fun reset() {
         repoUrlInput = ""
@@ -59,6 +65,9 @@ internal class GitHubTrackEditorPageStateHolder {
         updateIntervalModeInput = GitHubTrackedUpdateIntervalMode.FollowGlobal
         actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal
+        ignoreModeInput = GitHubTrackedIgnoreMode.None
+        ignoredStableReleaseKeyInput = ""
+        ignoredPreReleaseKeyInput = ""
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
         repoUrlScanRunning = false
         packageNameScanRunning = false
@@ -74,5 +83,7 @@ internal class GitHubTrackEditorPageStateHolder {
         actionsIntervalDropdownAnchorBounds = null
         preciseModeDropdownExpanded = false
         preciseModeDropdownAnchorBounds = null
+        ignoreModeDropdownExpanded = false
+        ignoreModeDropdownAnchorBounds = null
     }
 }

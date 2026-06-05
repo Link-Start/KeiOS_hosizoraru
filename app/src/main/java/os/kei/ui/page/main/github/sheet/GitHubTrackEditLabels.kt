@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -67,6 +68,54 @@ internal fun updateIntervalModeLabel(
 
         GitHubTrackedUpdateIntervalMode.Hours12 -> {
             stringResource(R.string.github_refresh_interval_12h)
+        }
+    }
+
+@Composable
+internal fun trackedIgnoreModeLabel(mode: GitHubTrackedIgnoreMode): String =
+    when (mode) {
+        GitHubTrackedIgnoreMode.None -> {
+            stringResource(R.string.github_track_sheet_ignore_none)
+        }
+
+        GitHubTrackedIgnoreMode.Temporary -> {
+            stringResource(R.string.github_track_sheet_ignore_temporary)
+        }
+
+        GitHubTrackedIgnoreMode.AllVersions -> {
+            stringResource(R.string.github_track_sheet_ignore_all_versions)
+        }
+
+        GitHubTrackedIgnoreMode.CurrentStable -> {
+            stringResource(R.string.github_track_sheet_ignore_current_stable)
+        }
+
+        GitHubTrackedIgnoreMode.CurrentPreRelease -> {
+            stringResource(R.string.github_track_sheet_ignore_current_prerelease)
+        }
+    }
+
+@Composable
+internal fun trackedIgnoreModeSummary(mode: GitHubTrackedIgnoreMode): String =
+    when (mode) {
+        GitHubTrackedIgnoreMode.None -> {
+            stringResource(R.string.github_track_sheet_summary_ignore_none)
+        }
+
+        GitHubTrackedIgnoreMode.Temporary -> {
+            stringResource(R.string.github_track_sheet_summary_ignore_temporary)
+        }
+
+        GitHubTrackedIgnoreMode.AllVersions -> {
+            stringResource(R.string.github_track_sheet_summary_ignore_all_versions)
+        }
+
+        GitHubTrackedIgnoreMode.CurrentStable -> {
+            stringResource(R.string.github_track_sheet_summary_ignore_current_stable)
+        }
+
+        GitHubTrackedIgnoreMode.CurrentPreRelease -> {
+            stringResource(R.string.github_track_sheet_summary_ignore_current_prerelease)
         }
     }
 

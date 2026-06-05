@@ -395,6 +395,7 @@ fun GitHubPage(
                     onOpenActionsSheet = actions::openActionsSheet,
                     onOpenTrackSheetForAdd = actions::openTrackSheetForAdd,
                     onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
+                    onIgnoreCurrentTrackedVersion = actions::ignoreCurrentTrackedVersion,
                     onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
                     onTrackedCardExpandedChange = actions::setTrackedCardExpanded,
                     onCollapseTrackedCard = actions::collapseTrackedCard,

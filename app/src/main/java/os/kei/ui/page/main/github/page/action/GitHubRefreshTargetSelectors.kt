@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.excludesAutomaticReleaseRefresh
 import os.kei.feature.github.model.updateIntervalMs
 
 internal fun selectDueTrackedUpdateItems(
@@ -12,6 +13,7 @@ internal fun selectDueTrackedUpdateItems(
 ): List<GitHubTrackedApp> {
     if (trackedItems.isEmpty()) return emptyList()
     return trackedItems.filter { item ->
+        if (item.excludesAutomaticReleaseRefresh()) return@filter false
         val checkedAtMillis =
             checkedAtMillisById[item.id]
                 ?.takeIf { it > 0L }

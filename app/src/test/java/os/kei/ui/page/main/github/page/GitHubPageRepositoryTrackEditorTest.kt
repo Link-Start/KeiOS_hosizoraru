@@ -6,6 +6,7 @@ import org.junit.Test
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -141,6 +142,33 @@ class GitHubPageRepositoryTrackEditorTest {
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode
         )
+    }
+
+    @Test
+    fun `track editor draft preserves ignore policy`() = runBlocking {
+        val result = repository.buildTrackedItem(
+            GitHubTrackEditorDraft(
+                sourceMode = GitHubTrackedSourceMode.GitHubRepository,
+                repoUrl = "https://github.com/demo/app",
+                packageName = "com.demo.app",
+                preferPreRelease = false,
+                alwaysShowLatestReleaseDownloadButton = false,
+                checkActionsUpdates = false,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.FollowGlobal,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
+                ignoreMode = GitHubTrackedIgnoreMode.CurrentPreRelease,
+                ignoredStableReleaseKey = "release|v2.0.0",
+                ignoredPreReleaseKey = "release|v2.1.0-beta",
+                appList = emptyList()
+            )
+        )
+
+        val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
+
+        assertEquals(GitHubTrackedIgnoreMode.CurrentPreRelease, item.ignoreMode)
+        assertEquals("", item.ignoredStableReleaseKey)
+        assertEquals("release|v2.1.0-beta", item.ignoredPreReleaseKey)
     }
 
     @Test

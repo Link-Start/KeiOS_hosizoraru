@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.sheet
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
@@ -22,7 +23,10 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
     checkActionsUpdatesInput: Boolean,
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
-    preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode
+    preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
+    ignoreModeInput: GitHubTrackedIgnoreMode,
+    ignoredStableReleaseKeyInput: String,
+    ignoredPreReleaseKeyInput: String
 ): Boolean {
     val repoUrl = repoUrlInput.trim()
     val packageName = packageNameInput.trim()
@@ -35,7 +39,10 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                 checkActionsUpdatesInput != item.checkActionsUpdates ||
                 updateIntervalModeInput != item.updateIntervalMode ||
                 actionsUpdateIntervalModeInput != item.actionsUpdateIntervalMode ||
-                preciseApkVersionModeInput != item.preciseApkVersionMode
+                preciseApkVersionModeInput != item.preciseApkVersionMode ||
+                ignoreModeInput != item.ignoreMode ||
+                ignoredStableReleaseKeyInput.trim() != item.ignoredStableReleaseKey.trim() ||
+                ignoredPreReleaseKeyInput.trim() != item.ignoredPreReleaseKey.trim()
     } ?: (
             repoUrl.isNotBlank() ||
                     packageName.isNotBlank() ||
@@ -50,6 +57,9 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                     updateIntervalModeInput != GitHubTrackedUpdateIntervalMode.FollowGlobal ||
                     actionsUpdateIntervalModeInput !=
                     GitHubTrackedActionsUpdateIntervalMode.FollowGlobal ||
-                    preciseApkVersionModeInput != GitHubTrackedPreciseApkVersionMode.FollowGlobal
+                    preciseApkVersionModeInput != GitHubTrackedPreciseApkVersionMode.FollowGlobal ||
+                    ignoreModeInput != GitHubTrackedIgnoreMode.None ||
+                    ignoredStableReleaseKeyInput.trim().isNotBlank() ||
+                    ignoredPreReleaseKeyInput.trim().isNotBlank()
             )
 }

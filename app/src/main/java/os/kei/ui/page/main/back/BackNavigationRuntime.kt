@@ -4,6 +4,7 @@ import androidx.activity.BackEventCompat
 import androidx.activity.ExperimentalActivityApi
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
@@ -204,10 +205,8 @@ internal fun shouldInstallActivityBackCallback(
 }
 
 internal data class FullscreenBackNavigationGestureState(
-    val translationX: Float,
-    val contentAlpha: Float,
-    val scrimAlpha: Float,
-    val onContainerWidthChanged: (Int) -> Unit
+    val motionValues: () -> BackGestureMotionValues,
+    val onContainerSizeChanged: (width: Int, height: Int) -> Unit
 )
 
 @OptIn(ExperimentalActivityApi::class)
@@ -237,9 +236,18 @@ internal fun rememberFullscreenBackNavigationGestureState(
                 needsInterception = false
             ) == ActivityBackHandlerMode.FrameworkFinish
     val commitGate = remember { BackNavigationCommitGate() }
-    var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
     var predictiveBackSwipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_NONE) }
+    var predictiveBackTouchY by remember { mutableFloatStateOf(0f) }
+    val predictiveBackProgress = remember { Animatable(0f) }
     var containerWidthPx by remember { mutableIntStateOf(0) }
+    var containerHeightPx by remember { mutableIntStateOf(0) }
+    val motionConfig = remember {
+        BackGestureMotionConfig(
+            translationFactor = FULLSCREEN_BACK_TRANSLATION_FACTOR,
+            contentFadeFactor = FULLSCREEN_BACK_CONTENT_FADE_FACTOR,
+            scrimFadeFactor = FULLSCREEN_BACK_SCRIM_FADE_FACTOR,
+        )
+    }
 
     if (enabled && !predictiveEnabled && !frameworkFinishEnabled) {
         BackHandler {
@@ -257,47 +265,51 @@ internal fun rememberFullscreenBackNavigationGestureState(
         PredictiveBackHandler { backEvents ->
             commitGate.reset()
             runtimeController.beginGesture(BackNavigationSource.Fullscreen)
-            var completedByProgress = false
+            var committed = false
             try {
                 backEvents.collect { event ->
-                    predictiveBackProgress = event.progress.coerceIn(0f, 1f)
                     predictiveBackSwipeEdge = event.swipeEdge
+                    predictiveBackTouchY = event.touchY
+                    predictiveBackProgress.snapTo(event.progress.coerceIn(0f, 1f))
                     runtimeController.updateGesture(event, BackNavigationSource.Fullscreen)
-                    if (event.progress >= 0.995f) {
-                        completedByProgress = true
-                        runtimeController.beginCommit(BackNavigationSource.Fullscreen)
-                        commitGate.tryCommit(latestOnBack)
-                    }
                 }
-                if (!completedByProgress) {
-                    runtimeController.beginCommit(BackNavigationSource.Fullscreen)
-                    commitGate.tryCommit(latestOnBack)
-                }
+                runtimeController.beginCommit(BackNavigationSource.Fullscreen)
+                predictiveBackProgress.settleBackGestureProgress(
+                    targetProgress = 1f,
+                    maxDurationMillis = BACK_GESTURE_COMMIT_SETTLE_DURATION_MS,
+                )
+                committed = commitGate.tryCommit(latestOnBack)
             } catch (_: CancellationException) {
+                predictiveBackProgress.settleBackGestureProgress(
+                    targetProgress = 0f,
+                    maxDurationMillis = BACK_GESTURE_CANCEL_SETTLE_DURATION_MS,
+                )
             } finally {
-                predictiveBackProgress = 0f
-                predictiveBackSwipeEdge = BackEventCompat.EDGE_NONE
+                if (!committed) {
+                    predictiveBackProgress.snapTo(0f)
+                    predictiveBackSwipeEdge = BackEventCompat.EDGE_NONE
+                    predictiveBackTouchY = 0f
+                }
                 runtimeController.reset()
             }
         }
     }
 
-    val clampedBackProgress = predictiveBackProgress.coerceIn(0f, 1f)
-    val easedBackProgress =
-        clampedBackProgress * clampedBackProgress * (3f - 2f * clampedBackProgress)
-    val edgeDirection = when (predictiveBackSwipeEdge) {
-        BackEventCompat.EDGE_LEFT -> 1f
-        BackEventCompat.EDGE_RIGHT -> -1f
-        else -> 0f
-    }
     return FullscreenBackNavigationGestureState(
-        translationX = containerWidthPx.toFloat() * FULLSCREEN_BACK_TRANSLATION_FACTOR *
-                edgeDirection * easedBackProgress,
-        contentAlpha = (1f - easedBackProgress * FULLSCREEN_BACK_CONTENT_FADE_FACTOR)
-            .coerceIn(0f, 1f),
-        scrimAlpha = (1f - easedBackProgress * FULLSCREEN_BACK_SCRIM_FADE_FACTOR)
-            .coerceIn(0f, 1f),
-        onContainerWidthChanged = { width -> containerWidthPx = width }
+        motionValues = {
+            resolveBackGestureMotion(
+                progress = predictiveBackProgress.value,
+                containerWidthPx = containerWidthPx,
+                containerHeightPx = containerHeightPx,
+                swipeEdge = predictiveBackSwipeEdge,
+                touchY = predictiveBackTouchY,
+                config = motionConfig,
+            )
+        },
+        onContainerSizeChanged = { width, height ->
+            containerWidthPx = width
+            containerHeightPx = height
+        }
     )
 }
 
@@ -307,9 +319,9 @@ internal enum class MainBackNavigationAction {
     PopRoute
 }
 
-private const val FULLSCREEN_BACK_TRANSLATION_FACTOR = 0.16f
-private const val FULLSCREEN_BACK_CONTENT_FADE_FACTOR = 0.34f
-private const val FULLSCREEN_BACK_SCRIM_FADE_FACTOR = 0.42f
+private const val FULLSCREEN_BACK_TRANSLATION_FACTOR = 0.13f
+private const val FULLSCREEN_BACK_CONTENT_FADE_FACTOR = 0.18f
+private const val FULLSCREEN_BACK_SCRIM_FADE_FACTOR = 0.38f
 
 internal fun resolveMainBackNavigationAction(
     backStackSize: Int,

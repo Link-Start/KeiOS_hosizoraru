@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
@@ -179,10 +180,16 @@ private fun GuideVideoFullscreenScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .onSizeChanged { size -> backGestureState.onContainerWidthChanged(size.width) }
+            .onSizeChanged { size ->
+                backGestureState.onContainerSizeChanged(size.width, size.height)
+            }
             .graphicsLayer {
-                translationX = backGestureState.translationX
-                alpha = backGestureState.contentAlpha
+                val backMotion = backGestureState.motionValues()
+                transformOrigin = TransformOrigin(backMotion.pivotX, backMotion.pivotY)
+                translationX = backMotion.translationX
+                scaleX = backMotion.scale
+                scaleY = backMotion.scale
+                alpha = backMotion.contentAlpha
             }
             .background(Color.Black)
     ) {

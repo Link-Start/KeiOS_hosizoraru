@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.back
 
+import androidx.activity.BackEventCompat
 import org.junit.Test
 import os.kei.core.platform.PredictiveBackOemCompat
 import kotlin.test.assertEquals
@@ -231,6 +232,79 @@ class BackNavigationRuntimeTest {
                 predictiveBackAnimationsEnabled = false,
                 needsInterception = false
             )
+        )
+    }
+
+    @Test
+    fun `back gesture motion clamps progress and follows left edge`() {
+        val motion = resolveBackGestureMotion(
+            progress = 1.5f,
+            containerWidthPx = 1000,
+            containerHeightPx = 2000,
+            swipeEdge = BackEventCompat.EDGE_LEFT,
+            touchY = 120f,
+            config = testBackMotionConfig,
+        )
+
+        assertEquals(1f, motion.progress)
+        assertEquals(120f, motion.translationX, absoluteTolerance = 0.001f)
+        assertEquals(0.9f, motion.scale, absoluteTolerance = 0.001f)
+        assertEquals(0.8f, motion.contentAlpha, absoluteTolerance = 0.001f)
+        assertEquals(0.7f, motion.scrimAlpha, absoluteTolerance = 0.001f)
+        assertEquals(0.84f, motion.pivotX, absoluteTolerance = 0.001f)
+        assertEquals(0.14f, motion.pivotY, absoluteTolerance = 0.001f)
+    }
+
+    @Test
+    fun `back gesture motion reverses translation for right edge`() {
+        val motion = resolveBackGestureMotion(
+            progress = 0.5f,
+            containerWidthPx = 800,
+            containerHeightPx = 1600,
+            swipeEdge = BackEventCompat.EDGE_RIGHT,
+            touchY = 800f,
+            config = testBackMotionConfig,
+        )
+
+        assertEquals(-48f, motion.translationX, absoluteTolerance = 0.001f)
+        assertEquals(0.16f, motion.pivotX, absoluteTolerance = 0.001f)
+        assertEquals(0.5f, motion.pivotY, absoluteTolerance = 0.001f)
+    }
+
+    @Test
+    fun `back gesture settle duration scales with remaining distance`() {
+        assertEquals(
+            110,
+            resolveBackGestureSettleDurationMillis(
+                currentProgress = 0.5f,
+                targetProgress = 1f,
+                maxDurationMillis = 220,
+            ),
+        )
+        assertEquals(
+            70,
+            resolveBackGestureSettleDurationMillis(
+                currentProgress = 0.96f,
+                targetProgress = 1f,
+                maxDurationMillis = 220,
+            ),
+        )
+        assertEquals(
+            0,
+            resolveBackGestureSettleDurationMillis(
+                currentProgress = 1f,
+                targetProgress = 1f,
+                maxDurationMillis = 220,
+            ),
+        )
+    }
+
+    private companion object {
+        val testBackMotionConfig = BackGestureMotionConfig(
+            translationFactor = 0.12f,
+            contentFadeFactor = 0.2f,
+            scrimFadeFactor = 0.3f,
+            minScale = 0.9f,
         )
     }
 }

@@ -4,24 +4,30 @@ import androidx.activity.BackEventCompat
 import androidx.activity.ExperimentalActivityApi
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CancellationException
+import os.kei.ui.page.main.back.BACK_GESTURE_CANCEL_SETTLE_DURATION_MS
+import os.kei.ui.page.main.back.BACK_GESTURE_COMMIT_SETTLE_DURATION_MS
+import os.kei.ui.page.main.back.BackGestureMotionConfig
+import os.kei.ui.page.main.back.BackGestureMotionValues
+import os.kei.ui.page.main.back.resolveBackGestureMotion
+import os.kei.ui.page.main.back.settleBackGestureProgress
 import os.kei.ui.page.main.student.IMAGE_BACK_GESTURE_CONTENT_FADE_FACTOR
 import os.kei.ui.page.main.student.IMAGE_BACK_GESTURE_SCRIM_FADE_FACTOR
 import os.kei.ui.page.main.student.IMAGE_BACK_GESTURE_TRANSLATION_FACTOR
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import kotlinx.coroutines.CancellationException
 
 internal data class GuideFullscreenBackGestureState(
-    val translationX: Float,
-    val contentAlpha: Float,
-    val scrimAlpha: Float,
-    val onDialogWidthChanged: (Int) -> Unit
+    val motionValues: () -> BackGestureMotionValues,
+    val onDialogSizeChanged: (width: Int, height: Int) -> Unit
 )
 
 @OptIn(ExperimentalActivityApi::class)
@@ -29,56 +35,67 @@ internal data class GuideFullscreenBackGestureState(
 internal fun rememberGuideFullscreenBackGestureState(
     onDismiss: () -> Unit
 ): GuideFullscreenBackGestureState {
-    var predictiveBackProgress by remember { mutableFloatStateOf(0f) }
+    val latestOnDismiss by rememberUpdatedState(onDismiss)
+    val predictiveBackProgress = remember { Animatable(0f) }
     var predictiveBackSwipeEdge by remember { mutableIntStateOf(BackEventCompat.EDGE_NONE) }
+    var predictiveBackTouchY by remember { mutableFloatStateOf(0f) }
     var dialogWidthPx by remember { mutableIntStateOf(0) }
+    var dialogHeightPx by remember { mutableIntStateOf(0) }
+    val motionConfig = remember {
+        BackGestureMotionConfig(
+            translationFactor = IMAGE_BACK_GESTURE_TRANSLATION_FACTOR,
+            contentFadeFactor = IMAGE_BACK_GESTURE_CONTENT_FADE_FACTOR,
+            scrimFadeFactor = IMAGE_BACK_GESTURE_SCRIM_FADE_FACTOR,
+        )
+    }
     val predictiveBackAnimationsEnabled = LocalTransitionAnimationsEnabled.current &&
         LocalPredictiveBackAnimationsEnabled.current
 
     BackHandler(enabled = true) {
-        onDismiss()
+        latestOnDismiss()
     }
     PredictiveBackHandler(enabled = predictiveBackAnimationsEnabled) { backEvents ->
-        var dismissedByPredictiveProgress = false
+        var dismissed = false
         try {
             backEvents.collect { event ->
-                predictiveBackProgress = event.progress.coerceIn(0f, 1f)
                 predictiveBackSwipeEdge = event.swipeEdge
-                if (event.progress >= 0.995f) {
-                    dismissedByPredictiveProgress = true
-                    onDismiss()
-                }
+                predictiveBackTouchY = event.touchY
+                predictiveBackProgress.snapTo(event.progress.coerceIn(0f, 1f))
             }
-            if (!dismissedByPredictiveProgress) {
-                onDismiss()
-            }
+            predictiveBackProgress.settleBackGestureProgress(
+                targetProgress = 1f,
+                maxDurationMillis = BACK_GESTURE_COMMIT_SETTLE_DURATION_MS,
+            )
+            dismissed = true
+            latestOnDismiss()
         } catch (_: CancellationException) {
+            predictiveBackProgress.settleBackGestureProgress(
+                targetProgress = 0f,
+                maxDurationMillis = BACK_GESTURE_CANCEL_SETTLE_DURATION_MS,
+            )
         } finally {
-            predictiveBackProgress = 0f
-            predictiveBackSwipeEdge = BackEventCompat.EDGE_NONE
+            if (!dismissed) {
+                predictiveBackProgress.snapTo(0f)
+                predictiveBackSwipeEdge = BackEventCompat.EDGE_NONE
+                predictiveBackTouchY = 0f
+            }
         }
     }
 
-    val clampedBackProgress = predictiveBackProgress.coerceIn(0f, 1f)
-    val easedBackProgress = clampedBackProgress * clampedBackProgress * (3f - 2f * clampedBackProgress)
-    val backEdgeDirection = when (predictiveBackSwipeEdge) {
-        BackEventCompat.EDGE_LEFT -> 1f
-        BackEventCompat.EDGE_RIGHT -> -1f
-        else -> 0f
-    }
-    val backTranslationX = dialogWidthPx.toFloat() *
-        IMAGE_BACK_GESTURE_TRANSLATION_FACTOR *
-        backEdgeDirection *
-        easedBackProgress
-    val backContentAlpha =
-        (1f - easedBackProgress * IMAGE_BACK_GESTURE_CONTENT_FADE_FACTOR).coerceIn(0f, 1f)
-    val backScrimAlpha =
-        (1f - easedBackProgress * IMAGE_BACK_GESTURE_SCRIM_FADE_FACTOR).coerceIn(0f, 1f)
-
     return GuideFullscreenBackGestureState(
-        translationX = backTranslationX,
-        contentAlpha = backContentAlpha,
-        scrimAlpha = backScrimAlpha,
-        onDialogWidthChanged = { width -> dialogWidthPx = width }
+        motionValues = {
+            resolveBackGestureMotion(
+                progress = predictiveBackProgress.value,
+                containerWidthPx = dialogWidthPx,
+                containerHeightPx = dialogHeightPx,
+                swipeEdge = predictiveBackSwipeEdge,
+                touchY = predictiveBackTouchY,
+                config = motionConfig,
+            )
+        },
+        onDialogSizeChanged = { width, height ->
+            dialogWidthPx = width
+            dialogHeightPx = height
+        }
     )
 }

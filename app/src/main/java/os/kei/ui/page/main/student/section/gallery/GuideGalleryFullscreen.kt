@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -139,12 +140,18 @@ internal fun GuideImageFullscreenDialog(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .onSizeChanged { backGestureState.onDialogWidthChanged(it.width) }
+                    .onSizeChanged {
+                        backGestureState.onDialogSizeChanged(it.width, it.height)
+                    }
                     .graphicsLayer {
-                        translationX = backGestureState.translationX
-                        alpha = backGestureState.contentAlpha
+                        val backMotion = backGestureState.motionValues()
+                        transformOrigin = TransformOrigin(backMotion.pivotX, backMotion.pivotY)
+                        translationX = backMotion.translationX
+                        scaleX = backMotion.scale
+                        scaleY = backMotion.scale
+                        alpha = backMotion.contentAlpha
                     }.drawBehind {
-                        drawRect(Color.Black.copy(alpha = backGestureState.scrimAlpha))
+                        drawRect(Color.Black.copy(alpha = backGestureState.motionValues().scrimAlpha))
                     },
         ) {
             BoxWithConstraints(

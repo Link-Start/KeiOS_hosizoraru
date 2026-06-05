@@ -16,6 +16,7 @@ import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.actionsUpdateIntervalMs
+import os.kei.feature.github.model.excludesAutomaticReleaseRefresh
 import os.kei.feature.github.model.updateIntervalMs
 
 private const val GITHUB_BACKGROUND_REFRESH_TAG = "GitHubBackgroundRefresh"
@@ -338,6 +339,7 @@ class GitHubBackgroundRefreshService(
     ): List<GitHubTrackedApp> {
         if (snapshot.items.isEmpty()) return emptyList()
         return snapshot.items.filter { item ->
+            if (item.excludesAutomaticReleaseRefresh()) return@filter false
             val checkedAtMillis =
                 snapshot.checkCache[item.id]?.checkedAtMillis
                     ?.takeIf { it > 0L }

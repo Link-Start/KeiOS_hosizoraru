@@ -11,12 +11,14 @@ import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
+import os.kei.feature.github.model.withReleaseIgnoreMode
 import os.kei.feature.github.model.withSourceModeConstraints
 
 fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
@@ -96,7 +98,7 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         obj.hasNonNull("checkActionsUpdates") -> obj.optBoolean("checkActionsUpdates", false)
         else -> false
     }
-    return GitHubTrackedApp(
+    val parsedItem = GitHubTrackedApp(
         repoUrl = repoUrl,
         owner = owner,
         repo = repo,
@@ -109,6 +111,9 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         updateIntervalMode = parseUpdateIntervalMode(obj),
         actionsUpdateIntervalMode = parseActionsUpdateIntervalMode(obj),
         preciseApkVersionMode = parsePreciseApkVersionMode(obj),
+        ignoreMode = parseTrackedIgnoreMode(obj),
+        ignoredStableReleaseKey = parseIgnoredStableReleaseKey(obj),
+        ignoredPreReleaseKey = parseIgnoredPreReleaseKey(obj),
         repositoryArchived = when {
             repository?.hasNonNull("archived") == true -> repository.optBoolean("archived", false)
             obj.hasNonNull("repositoryArchived") -> obj.optBoolean("repositoryArchived", false)
@@ -121,6 +126,11 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         },
         localAppType = parseTrackedLocalAppType(obj)
     ).withSourceModeConstraints()
+    return parsedItem.withReleaseIgnoreMode(
+        mode = parsedItem.ignoreMode,
+        stableReleaseKey = parsedItem.ignoredStableReleaseKey,
+        preReleaseKey = parsedItem.ignoredPreReleaseKey
+    )
 }
 
 fun parseTrackedSourceMode(obj: JsonObject): GitHubTrackedSourceMode {
@@ -167,6 +177,51 @@ fun parseTrackedLocalAppType(obj: JsonObject): GitHubTrackedLocalAppType {
 
         else -> GitHubTrackedLocalAppType.Unknown
     }
+}
+
+fun parseTrackedIgnoreMode(obj: JsonObject): GitHubTrackedIgnoreMode {
+    val settings = obj.optObject("settings")
+    return when {
+        settings?.hasNonNull("ignoreMode") == true ->
+            GitHubTrackedIgnoreMode.fromStorageId(settings.optString("ignoreMode"))
+
+        obj.hasNonNull("ignoreMode") ->
+            GitHubTrackedIgnoreMode.fromStorageId(obj.optString("ignoreMode"))
+
+        settings?.hasNonNull("releaseIgnoreMode") == true ->
+            GitHubTrackedIgnoreMode.fromStorageId(settings.optString("releaseIgnoreMode"))
+
+        obj.hasNonNull("releaseIgnoreMode") ->
+            GitHubTrackedIgnoreMode.fromStorageId(obj.optString("releaseIgnoreMode"))
+
+        else -> GitHubTrackedIgnoreMode.None
+    }
+}
+
+fun parseIgnoredStableReleaseKey(obj: JsonObject): String {
+    val settings = obj.optObject("settings")
+    val ignored = obj.optObject("ignoredReleases")
+    return when {
+        settings?.hasNonNull("ignoredStableReleaseKey") == true ->
+            settings.optString("ignoredStableReleaseKey")
+
+        ignored?.hasNonNull("stable") == true -> ignored.optString("stable")
+        obj.hasNonNull("ignoredStableReleaseKey") -> obj.optString("ignoredStableReleaseKey")
+        else -> ""
+    }.trim()
+}
+
+fun parseIgnoredPreReleaseKey(obj: JsonObject): String {
+    val settings = obj.optObject("settings")
+    val ignored = obj.optObject("ignoredReleases")
+    return when {
+        settings?.hasNonNull("ignoredPreReleaseKey") == true ->
+            settings.optString("ignoredPreReleaseKey")
+
+        ignored?.hasNonNull("preRelease") == true -> ignored.optString("preRelease")
+        obj.hasNonNull("ignoredPreReleaseKey") -> obj.optString("ignoredPreReleaseKey")
+        else -> ""
+    }.trim()
 }
 
 fun parsePreciseApkVersionMode(obj: JsonObject): GitHubTrackedPreciseApkVersionMode {
@@ -237,7 +292,12 @@ fun parseActionsUpdateIntervalMode(obj: JsonObject): GitHubTrackedActionsUpdateI
 }
 
 fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
-    val normalizedItem = item.withSourceModeConstraints()
+    val constrainedItem = item.withSourceModeConstraints()
+    val normalizedItem = constrainedItem.withReleaseIgnoreMode(
+        mode = constrainedItem.ignoreMode,
+        stableReleaseKey = constrainedItem.ignoredStableReleaseKey,
+        preReleaseKey = constrainedItem.ignoredPreReleaseKey
+    )
     val settings = buildJsonObject {
         put("sourceMode", normalizedItem.sourceMode.storageId)
         put("preferPreRelease", normalizedItem.preferPreRelease)
@@ -249,6 +309,9 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
         put("updateIntervalMode", normalizedItem.updateIntervalMode.storageId)
         put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
         put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
+        put("ignoreMode", normalizedItem.ignoreMode.storageId)
+        put("ignoredStableReleaseKey", normalizedItem.ignoredStableReleaseKey)
+        put("ignoredPreReleaseKey", normalizedItem.ignoredPreReleaseKey)
         put("localAppType", normalizedItem.localAppType.storageId)
     }
     val source = buildJsonObject {
@@ -287,6 +350,9 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
         put("updateIntervalMode", normalizedItem.updateIntervalMode.storageId)
         put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
         put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
+        put("ignoreMode", normalizedItem.ignoreMode.storageId)
+        put("ignoredStableReleaseKey", normalizedItem.ignoredStableReleaseKey)
+        put("ignoredPreReleaseKey", normalizedItem.ignoredPreReleaseKey)
         put("localAppType", normalizedItem.localAppType.storageId)
         put("repository", repository)
         put("repositoryArchived", normalizedItem.repositoryArchived)

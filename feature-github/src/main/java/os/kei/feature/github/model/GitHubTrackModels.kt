@@ -25,6 +25,9 @@ data class GitHubTrackedApp(
         GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
         GitHubTrackedPreciseApkVersionMode.FollowGlobal,
+    val ignoreMode: GitHubTrackedIgnoreMode = GitHubTrackedIgnoreMode.None,
+    val ignoredStableReleaseKey: String = "",
+    val ignoredPreReleaseKey: String = "",
     val repositoryArchived: Boolean = false,
     val repositoryFork: Boolean = false,
     val localAppType: GitHubTrackedLocalAppType = GitHubTrackedLocalAppType.Unknown

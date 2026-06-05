@@ -20,17 +20,21 @@ import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitRepositoryPlatform
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
+import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.feature.github.model.githubReleaseIgnoreKeyMatches
 import os.kei.feature.github.model.githubReleaseLookupItemOrNull
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
+import os.kei.feature.github.model.suppressesAllReleaseUpdates
 import java.io.IOException
 
 object GitHubReleaseCheckService {
@@ -314,15 +318,48 @@ object GitHubReleaseCheckService {
             ?.versionCodeLong
             ?.takeIf { localVersionCode >= 0L }
             ?.compareTo(localVersionCode)
-        val hasPreReleaseUpdate = inspectPreRelease &&
+        val rawHasPreReleaseUpdate = inspectPreRelease &&
             latestPreIsRelevant &&
                 (precisePreCmp?.let { it > 0 }
                     ?: (!preTagMatchesLocalNameAndCode && latestPreCmp?.let { it < 0 } == true))
-        val stableHasUpdate = preciseStableCmp?.let { it > 0 }
+        val rawStableHasUpdate = preciseStableCmp?.let { it > 0 }
             ?: (!stableTagMatchesLocalNameAndCode && stableCmp?.let { it < 0 } == true)
+        val suppressAllReleaseUpdates = item.ignoreMode.suppressesAllReleaseUpdates()
+        val stableReleaseIgnoreKey = buildGitHubReleaseIgnoreKey(
+            release = latestStable,
+            preciseApkVersion = preciseStableApkVersion
+        )
+        val preReleaseIgnoreKey = buildGitHubReleaseIgnoreKey(
+            release = latestPre,
+            preciseApkVersion = precisePreReleaseApkVersion
+        )
+        val stableUpdateIgnored = rawStableHasUpdate &&
+            (
+                suppressAllReleaseUpdates ||
+                    item.ignoreMode == GitHubTrackedIgnoreMode.CurrentStable &&
+                    githubReleaseIgnoreKeyMatches(
+                        storedKey = item.ignoredStableReleaseKey,
+                        releaseKey = stableReleaseIgnoreKey
+                    )
+            )
+        val preReleaseUpdateIgnored = rawHasPreReleaseUpdate &&
+            (
+                suppressAllReleaseUpdates ||
+                    item.ignoreMode == GitHubTrackedIgnoreMode.CurrentPreRelease &&
+                    githubReleaseIgnoreKeyMatches(
+                        storedKey = item.ignoredPreReleaseKey,
+                        releaseKey = preReleaseIgnoreKey
+                    )
+            )
+        val stableHasUpdate = rawStableHasUpdate && !stableUpdateIgnored
+        val hasPreReleaseUpdate = rawHasPreReleaseUpdate && !preReleaseUpdateIgnored
         val recommendsPreRelease = hasPreReleaseUpdate &&
             (item.preferPreRelease || (isLocalPreReleaseInstalled && !stableHasUpdate))
         val hasUpdate = stableHasUpdate || recommendsPreRelease
+        val showIgnoredStatus =
+            suppressAllReleaseUpdates ||
+                stableUpdateIgnored ||
+                preReleaseUpdateIgnored
 
         val preReleaseInfo = when {
             inspectPreRelease && latestPre != null -> latestPre.displayVersion
@@ -340,8 +377,9 @@ object GitHubReleaseCheckService {
             recommendsPreRelease -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
             stableHasUpdate -> GitHubTrackedReleaseStatus.UpdateAvailable
             hasPreReleaseUpdate -> GitHubTrackedReleaseStatus.PreReleaseOptional
+            showIgnoredStatus -> GitHubTrackedReleaseStatus.Ignored
             inspectPreRelease && isLocalPreReleaseInstalled -> GitHubTrackedReleaseStatus.PreReleaseTracked
-            stableCompared && hasUpdate == false -> GitHubTrackedReleaseStatus.UpToDate
+            stableCompared && !hasUpdate -> GitHubTrackedReleaseStatus.UpToDate
             matchedEntry != null -> GitHubTrackedReleaseStatus.MatchedRelease
             else -> GitHubTrackedReleaseStatus.ComparisonUncertain
         }

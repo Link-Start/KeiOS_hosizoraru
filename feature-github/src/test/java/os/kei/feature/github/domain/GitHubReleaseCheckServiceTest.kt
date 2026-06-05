@@ -17,9 +17,11 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubRepositoryUpstreamProfile
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubVersionCandidateSource
+import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -336,6 +338,97 @@ class GitHubReleaseCheckServiceTest {
         assertEquals("2.0.0 (20)", restored.preciseStableApkVersion?.versionLabel())
         assertEquals("Demo 1.0.0 · v1.0.0", restored.preciseStableApkVersion?.releaseLabel())
         assertEquals("check-v2|fixture", restored.sourceConfigSignature)
+    }
+
+    @Test
+    fun `ignored current stable release suppresses stable update`() {
+        val ignoredKey = buildGitHubReleaseIgnoreKey(rawTag = "v1.2.0")
+        val item = trackedApp(preferPreRelease = false).copy(
+            ignoreMode = GitHubTrackedIgnoreMode.CurrentStable,
+            ignoredStableReleaseKey = ignoredKey
+        )
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.1.0",
+            localVersionCode = 10_100_000L,
+            snapshot = snapshot(
+                stable = signal("v1.2.0"),
+                entries = listOf(entry("v1.2.0"), entry("v1.1.0"))
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.Ignored, result.status)
+        assertEquals(false, result.hasUpdate)
+        assertFalse(result.hasPreReleaseUpdate)
+    }
+
+    @Test
+    fun `new stable release after ignored stable key reports update again`() {
+        val item = trackedApp(preferPreRelease = false).copy(
+            ignoreMode = GitHubTrackedIgnoreMode.CurrentStable,
+            ignoredStableReleaseKey = buildGitHubReleaseIgnoreKey(rawTag = "v1.2.0")
+        )
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.1.0",
+            localVersionCode = 10_100_000L,
+            snapshot = snapshot(
+                stable = signal("v1.3.0"),
+                entries = listOf(entry("v1.3.0"), entry("v1.2.0"), entry("v1.1.0"))
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+    }
+
+    @Test
+    fun `ignored prerelease keeps stable update visible`() {
+        val item = trackedApp(preferPreRelease = true).copy(
+            ignoreMode = GitHubTrackedIgnoreMode.CurrentPreRelease,
+            ignoredPreReleaseKey = buildGitHubReleaseIgnoreKey(rawTag = "v1.4.7-beta")
+        )
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.4.2",
+            localVersionCode = 14_200L,
+            snapshot = snapshot(
+                stable = signal("v1.4.4"),
+                preRelease = signal("v1.4.7-beta"),
+                entries = listOf(entry("v1.4.7-beta"), entry("v1.4.4"), entry("v1.4.2"))
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)
+        assertEquals(true, result.hasUpdate)
+        assertFalse(result.hasPreReleaseUpdate)
+        assertFalse(result.recommendsPreRelease)
+    }
+
+    @Test
+    fun `all version ignore suppresses stable and prerelease counters`() {
+        val item = trackedApp(preferPreRelease = true).copy(
+            ignoreMode = GitHubTrackedIgnoreMode.AllVersions
+        )
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "1.4.2",
+            localVersionCode = 14_200L,
+            snapshot = snapshot(
+                stable = signal("v1.4.4"),
+                preRelease = signal("v1.4.7-beta"),
+                entries = listOf(entry("v1.4.7-beta"), entry("v1.4.4"), entry("v1.4.2"))
+            )
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.Ignored, result.status)
+        assertEquals(false, result.hasUpdate)
+        assertFalse(result.hasPreReleaseUpdate)
+        assertFalse(result.recommendsPreRelease)
     }
 
     @Test

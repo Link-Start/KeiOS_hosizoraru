@@ -2,6 +2,7 @@ package os.kei.feature.github.model
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GitHubTrackModelsTest {
@@ -161,6 +162,67 @@ class GitHubTrackModelsTest {
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode
+        )
+    }
+
+    @Test
+    fun `ignore mode aliases parse safely`() {
+        assertEquals(GitHubTrackedIgnoreMode.None, GitHubTrackedIgnoreMode.fromStorageId(null))
+        assertEquals(GitHubTrackedIgnoreMode.Temporary, GitHubTrackedIgnoreMode.fromStorageId("paused"))
+        assertEquals(GitHubTrackedIgnoreMode.AllVersions, GitHubTrackedIgnoreMode.fromStorageId("all"))
+        assertEquals(GitHubTrackedIgnoreMode.CurrentStable, GitHubTrackedIgnoreMode.fromStorageId("stable"))
+        assertEquals(
+            GitHubTrackedIgnoreMode.CurrentPreRelease,
+            GitHubTrackedIgnoreMode.fromStorageId("pre_release")
+        )
+    }
+
+    @Test
+    fun `release ignore key prefers apk version identity`() {
+        val key = buildGitHubReleaseIgnoreKey(
+            displayVersion = "Demo v2",
+            rawTag = "v2.0.0",
+            rawName = "Demo 2.0",
+            link = "https://github.com/demo/app/releases/tag/v2.0.0",
+            preciseApkVersion = GitHubRemoteApkVersionInfo(
+                packageName = "com.demo.app",
+                versionName = "2.0.0",
+                versionCode = "20",
+                releaseTag = "v2.0.0"
+            )
+        )
+
+        assertEquals("apk|com.demo.app|2.0.0|20|v2.0.0", key)
+        assertTrue(githubReleaseIgnoreKeyMatches(key.uppercase(), key))
+    }
+
+    @Test
+    fun `release ignore key falls back to release tag`() {
+        val key = buildGitHubReleaseIgnoreKey(rawTag = "v1.0.0")
+
+        assertEquals("release|v1.0.0", key)
+        assertFalse(githubReleaseIgnoreKeyMatches("", key))
+    }
+
+    @Test
+    fun `tracked item ignore mode keeps only relevant release key`() {
+        val item = defaultKeiOsTrackedApp()
+            .withReleaseIgnoreMode(
+                mode = GitHubTrackedIgnoreMode.CurrentStable,
+                stableReleaseKey = "release|v1.0.0",
+                preReleaseKey = "release|v1.1.0-beta"
+            )
+
+        assertEquals(GitHubTrackedIgnoreMode.CurrentStable, item.ignoreMode)
+        assertEquals("release|v1.0.0", item.ignoredStableReleaseKey)
+        assertEquals("", item.ignoredPreReleaseKey)
+        assertEquals(
+            GitHubTrackedIgnoreMode.None,
+            item.withReleaseIgnoreMode(GitHubTrackedIgnoreMode.None).ignoreMode
+        )
+        assertEquals(
+            "",
+            item.withReleaseIgnoreMode(GitHubTrackedIgnoreMode.None).ignoredStableReleaseKey
         )
     }
 }

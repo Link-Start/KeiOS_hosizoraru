@@ -8,6 +8,7 @@ import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -29,6 +30,9 @@ class GitHubTrackStoreTrackedItemJsonTest {
             updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30,
             preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled,
+            ignoreMode = GitHubTrackedIgnoreMode.CurrentStable,
+            ignoredStableReleaseKey = "release|v2.0.0",
+            ignoredPreReleaseKey = "release|v2.1.0-beta",
             localAppType = GitHubTrackedLocalAppType.System
         )
 
@@ -51,7 +55,33 @@ class GitHubTrackStoreTrackedItemJsonTest {
             imported.actionsUpdateIntervalMode
         )
         assertEquals(GitHubTrackedPreciseApkVersionMode.Disabled, imported.preciseApkVersionMode)
+        assertEquals(GitHubTrackedIgnoreMode.CurrentStable, imported.ignoreMode)
+        assertEquals("release|v2.0.0", imported.ignoredStableReleaseKey)
+        assertEquals("", imported.ignoredPreReleaseKey)
         assertEquals(GitHubTrackedLocalAppType.System, imported.localAppType)
+    }
+
+    @Test
+    fun `legacy tracked item import defaults to normal tracking`() {
+        val payload = GitHubTrackStore.parseTrackedItemsImport(
+            """
+            [
+              {
+                "repoUrl": "https://github.com/demo/app",
+                "owner": "demo",
+                "repo": "app",
+                "packageName": "com.demo.app",
+                "appLabel": "Demo"
+              }
+            ]
+            """.trimIndent()
+        )
+
+        val imported = payload.items.single()
+
+        assertEquals(GitHubTrackedIgnoreMode.None, imported.ignoreMode)
+        assertEquals("", imported.ignoredStableReleaseKey)
+        assertEquals("", imported.ignoredPreReleaseKey)
     }
 
     @Test

@@ -40,6 +40,7 @@ enum class GitHubTrackedReleaseStatus(
     PreReleaseOptional("github.status.prerelease_optional", "\u9884\u53d1\u53ef\u9009"),
     PreReleaseTracked("github.status.prerelease_tracked", "\u9884\u53d1\u884c"),
     UpToDate("github.status.up_to_date", "\u5df2\u662f\u6700\u65b0"),
+    Ignored("github.status.ignored", "\u5df2\u5ffd\u7565\u66f4\u65b0"),
     MatchedRelease("github.status.matched_release", "\u5df2\u5339\u914d\u53d1\u884c"),
     ComparisonUncertain(
         "github.status.comparison_uncertain",

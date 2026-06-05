@@ -2,6 +2,7 @@ package os.kei.feature.github.domain
 
 import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
 
@@ -31,6 +32,25 @@ class GitHubTrackedRefreshPlannerTest {
         )
 
         assertEquals(listOf(direct.id), selected.map { it.id })
+    }
+
+    @Test
+    fun `partial missing check states skip automatic refresh for ignored version tracks`() {
+        val cached = tracked(0)
+        val active = tracked(1)
+        val temporaryIgnored = tracked(2).copy(
+            ignoreMode = GitHubTrackedIgnoreMode.Temporary
+        )
+        val allVersionsIgnored = tracked(3).copy(
+            ignoreMode = GitHubTrackedIgnoreMode.AllVersions
+        )
+
+        val selected = GitHubTrackedRefreshPlanner.selectPartialMissingCheckStateItems(
+            trackedItems = listOf(cached, active, temporaryIgnored, allVersionsIgnored),
+            cachedTrackIds = setOf(cached.id)
+        )
+
+        assertEquals(listOf(active.id), selected.map { it.id })
     }
 
     @Test

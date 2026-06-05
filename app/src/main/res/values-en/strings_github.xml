@@ -825,7 +825,7 @@
     <string name="github_track_sheet_precise_apk_version_follow_global">Follow global</string>
     <string name="github_track_sheet_precise_apk_version_enabled">Enable for this project</string>
     <string name="github_track_sheet_precise_apk_version_disabled">Disable for this project</string>
-    <string name="github_item_menu_ignore_current_version">Ignore this version</string>
+    <string name="github_item_menu_ignore_current_version">Skip version</string>
     <string name="github_toast_no_current_update_to_ignore">No current version update to ignore</string>
     <string name="github_toast_track_update_ignored">Current version update ignored</string>
     <string name="github_track_sheet_section_app_candidates">App candidates</string>

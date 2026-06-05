@@ -852,7 +852,7 @@
     <string name="github_track_sheet_precise_apk_version_follow_global">跟随全局</string>
     <string name="github_track_sheet_precise_apk_version_enabled">仅此项目开启</string>
     <string name="github_track_sheet_precise_apk_version_disabled">仅此项目关闭</string>
-    <string name="github_item_menu_ignore_current_version">忽略本版本追踪</string>
+    <string name="github_item_menu_ignore_current_version">忽略本版</string>
     <string name="github_toast_no_current_update_to_ignore">当前没有可忽略的版本更新</string>
     <string name="github_toast_track_update_ignored">已忽略当前版本更新</string>
     <string name="github_track_sheet_section_app_candidates">App 候选</string>

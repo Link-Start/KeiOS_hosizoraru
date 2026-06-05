@@ -396,7 +396,7 @@
     <string name="github_item_label_hint">提示</string>
     <string name="github_item_label_update_assets">更新</string>
     <string name="github_item_cd_more_actions">更多功能</string>
-    <string name="github_item_menu_ignore_current_version">忽略本版本追踪</string>
+    <string name="github_item_menu_ignore_current_version">忽略本版</string>
     <string name="github_toast_no_current_update_to_ignore">当前没有可忽略的版本更新</string>
     <string name="github_status_update_available">发现更新</string>
     <string name="github_status_prerelease_update_available">预发有更新</string>

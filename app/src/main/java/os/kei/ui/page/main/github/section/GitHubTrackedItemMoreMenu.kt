@@ -40,10 +40,10 @@ import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val GitHubTrackedItemMoreMenuMinWidth = 148.dp
-private val GitHubTrackedItemMoreMenuMaxWidth = 170.dp
+private val GitHubTrackedItemMoreMenuMinWidth = 156.dp
+private val GitHubTrackedItemMoreMenuMaxWidth = 196.dp
 private val GitHubTrackedItemMoreMenuMaxHeight = 276.dp
-private const val GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION = 0.40f
+private const val GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION = 0.50f
 private val releaseNotesSupportedGitPlatforms = setOf(
     GitRepositoryPlatform.GitHub,
     GitRepositoryPlatform.Gitee,

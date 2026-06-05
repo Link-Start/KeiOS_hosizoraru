@@ -144,19 +144,11 @@ internal fun WebDavSyncPage(
                     onToggleAutoSync = viewModel::setAutoSyncEnabled,
                     onToggleItem = viewModel::toggleItem,
                     onRunItem = { item, kind ->
-                        // Per-item Upload is the only destructive single-item action
-                        // (overwrites remote). Sync and Download both merge, so they run
-                        // directly. Routing Upload through the confirmation flow keeps the
-                        // safety story consistent with batch Upload All.
-                        if (kind == WebDavBatchKind.Upload) {
-                            viewModel.requestItemConfirmation(item, kind)
-                        } else {
-                            viewModel.runItem(item, kind, dataPorts)
-                        }
+                        viewModel.requestItemPlan(item, kind, dataPorts)
                     },
-                    onSyncAll = { viewModel.syncAll(dataPorts) },
-                    onUploadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Upload) },
-                    onDownloadAll = { viewModel.requestBatchConfirmation(WebDavBatchKind.Download) },
+                    onSyncAll = { viewModel.requestBatchPlan(WebDavBatchKind.Sync, dataPorts) },
+                    onUploadAll = { viewModel.requestBatchPlan(WebDavBatchKind.Upload, dataPorts) },
+                    onDownloadAll = { viewModel.requestBatchPlan(WebDavBatchKind.Download, dataPorts) },
                     onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
                 )
             }
@@ -172,37 +164,16 @@ internal fun WebDavSyncPage(
         }
     }
 
-    // Destructive batch actions (Upload All / Download All) require explicit confirmation so a
-    // fresh device can't blindly wipe one side. Sync is merge-only so it skips this gate.
-    val pendingKind = state.pendingBatchConfirmation
+    val pendingPlan = state.pendingPlan
     AppWindowDialogHost(
-        show = pendingKind != null,
-        onDismissRequest = viewModel::dismissBatchConfirmation,
+        show = pendingPlan != null,
+        onDismissRequest = viewModel::dismissPlan,
     ) {
-        if (pendingKind != null) {
-            WebDavBatchConfirmationDialog(
-                kind = pendingKind,
-                shrinkWarning = pendingKind == WebDavBatchKind.Upload && viewModel.uploadShrinksRemote(),
-                onDismiss = viewModel::dismissBatchConfirmation,
-                onConfirm = { viewModel.confirmBatchAction(dataPorts) },
-            )
-        }
-    }
-
-    // Per-item Upload uses the same dialog with item-specific copy so the user knows exactly
-    // which dataset is about to be overwritten. Download/Sync don't go through this gate.
-    val pendingItem = state.pendingItemConfirmation
-    AppWindowDialogHost(
-        show = pendingItem != null,
-        onDismissRequest = viewModel::dismissItemConfirmation,
-    ) {
-        if (pendingItem != null) {
-            val (item, _) = pendingItem
-            WebDavItemConfirmationDialog(
-                item = item,
-                shrinkWarning = viewModel.itemUploadShrinksRemote(item),
-                onDismiss = viewModel::dismissItemConfirmation,
-                onConfirm = { viewModel.confirmItemAction(dataPorts) },
+        if (pendingPlan != null) {
+            WebDavSyncPlanDialog(
+                plan = pendingPlan,
+                onDismiss = viewModel::dismissPlan,
+                onConfirm = { viewModel.confirmPlan(dataPorts) },
             )
         }
     }
@@ -494,15 +465,23 @@ private fun WebDavSyncItemsCard(
 
         // Sync All / Upload All / Download All
         Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+        Text(
+            text = stringResource(R.string.webdav_sync_actions_contract_summary),
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
+            fontSize = AppTypographyTokens.Caption.fontSize,
+            lineHeight = AppTypographyTokens.Caption.lineHeight,
+        )
+        Spacer(Modifier.height(CardLayoutRhythm.denseSectionGap))
         AppDualActionRow(
             first = { modifier ->
                 AppStandaloneLiquidTextButton(
                     variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetPrimaryAction else GlassVariant.Content,
-                    text = if (state.runningKind == WebDavBatchKind.Sync) {
-                        stringResource(R.string.webdav_sync_syncing)
-                    } else {
-                        stringResource(R.string.webdav_sync_sync_all)
-                    },
+                    text =
+                        when {
+                            state.planningKind == WebDavBatchKind.Sync -> stringResource(R.string.webdav_sync_refreshing_remote)
+                            state.runningKind == WebDavBatchKind.Sync -> stringResource(R.string.webdav_sync_syncing)
+                            else -> stringResource(R.string.webdav_sync_sync_all)
+                        },
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
                     textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
@@ -513,11 +492,12 @@ private fun WebDavSyncItemsCard(
             second = { modifier ->
                 AppStandaloneLiquidTextButton(
                     variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetAction else GlassVariant.Content,
-                    text = if (state.runningKind == WebDavBatchKind.Upload) {
-                        stringResource(R.string.webdav_sync_uploading)
-                    } else {
-                        stringResource(R.string.webdav_sync_upload_all)
-                    },
+                    text =
+                        when {
+                            state.planningKind == WebDavBatchKind.Upload -> stringResource(R.string.webdav_sync_refreshing_remote)
+                            state.runningKind == WebDavBatchKind.Upload -> stringResource(R.string.webdav_sync_uploading)
+                            else -> stringResource(R.string.webdav_sync_upload_all)
+                        },
                     modifier = modifier,
                     buttonModifier = Modifier.fillMaxWidth(),
                     textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
@@ -529,11 +509,12 @@ private fun WebDavSyncItemsCard(
         Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
         AppStandaloneLiquidTextButton(
             variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetAction else GlassVariant.Content,
-            text = if (state.runningKind == WebDavBatchKind.Download) {
-                stringResource(R.string.webdav_sync_downloading)
-            } else {
-                stringResource(R.string.webdav_sync_download_all)
-            },
+            text =
+                when {
+                    state.planningKind == WebDavBatchKind.Download -> stringResource(R.string.webdav_sync_refreshing_remote)
+                    state.runningKind == WebDavBatchKind.Download -> stringResource(R.string.webdav_sync_downloading)
+                    else -> stringResource(R.string.webdav_sync_download_all)
+                },
             modifier = Modifier.fillMaxWidth(),
             buttonModifier = Modifier.fillMaxWidth(),
             textColor = if (actionEnabled && hasEnabledItems) enabledActionTextColor else disabledActionTextColor,
@@ -591,126 +572,6 @@ private fun WebDavClearCard(
             buttonModifier = Modifier.fillMaxWidth(),
             textColor = MiuixTheme.colorScheme.error,
             onClick = onClear,
-        )
-    }
-}
-
-// ── Confirmation dialogs ───────────────────────────────────────────────
-
-@Composable
-private fun WebDavBatchConfirmationDialog(
-    kind: WebDavBatchKind,
-    shrinkWarning: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    val title = stringResource(
-        when (kind) {
-            WebDavBatchKind.Upload -> R.string.webdav_sync_confirm_upload_title
-            WebDavBatchKind.Download -> R.string.webdav_sync_confirm_download_title
-            WebDavBatchKind.Sync -> R.string.webdav_sync_confirm_upload_title // unreachable; sync is gated out
-        },
-    )
-    val summary = stringResource(
-        when (kind) {
-            WebDavBatchKind.Upload -> R.string.webdav_sync_confirm_upload_summary
-            WebDavBatchKind.Download -> R.string.webdav_sync_confirm_download_summary
-            WebDavBatchKind.Sync -> R.string.webdav_sync_confirm_upload_summary // unreachable
-        },
-    )
-    WebDavConfirmationDialogContent(
-        title = title,
-        summary = summary,
-        warning = if (shrinkWarning) stringResource(R.string.webdav_sync_confirm_upload_shrink_warning) else null,
-        confirmIsDestructive = kind == WebDavBatchKind.Upload,
-        onDismiss = onDismiss,
-        onConfirm = onConfirm,
-    )
-}
-
-@Composable
-private fun WebDavItemConfirmationDialog(
-    item: WebDavSyncItem,
-    shrinkWarning: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    val itemLabel = stringResource(item.labelRes)
-    WebDavConfirmationDialogContent(
-        title = stringResource(R.string.webdav_sync_confirm_item_upload_title, itemLabel),
-        summary = stringResource(R.string.webdav_sync_confirm_item_upload_summary, itemLabel),
-        warning = if (shrinkWarning) stringResource(R.string.webdav_sync_confirm_upload_shrink_warning) else null,
-        confirmIsDestructive = true,
-        onDismiss = onDismiss,
-        onConfirm = onConfirm,
-    )
-}
-
-@Composable
-private fun WebDavConfirmationDialogContent(
-    title: String,
-    summary: String,
-    warning: String?,
-    confirmIsDestructive: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.compactSectionGap),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = title,
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.CompactTitle.fontSize,
-            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
-            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-        )
-        Text(
-            text = summary,
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
-        warning?.let {
-            Text(
-                text = it,
-                color = MiuixTheme.colorScheme.error,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-        }
-        Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
-        AppDualActionRow(
-            first = { modifier ->
-                AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.webdav_sync_confirm_cancel),
-                    modifier = modifier,
-                    buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    onClick = onDismiss,
-                )
-            },
-            second = { modifier ->
-                AppStandaloneLiquidTextButton(
-                    variant = if (confirmIsDestructive) {
-                        GlassVariant.SheetDangerAction
-                    } else {
-                        GlassVariant.SheetPrimaryAction
-                    },
-                    text = stringResource(R.string.webdav_sync_confirm_continue),
-                    modifier = modifier,
-                    buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = if (confirmIsDestructive) {
-                        MiuixTheme.colorScheme.error
-                    } else {
-                        MiuixTheme.colorScheme.primary
-                    },
-                    onClick = onConfirm,
-                )
-            },
         )
     }
 }

@@ -194,127 +194,13 @@ internal class WebDavSyncViewModel(
 
     // ── Sync actions ───────────────────────────────────────────────────
 
-    fun syncAll(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) =
-        runBatch(dataPorts, WebDavBatchKind.Sync)
-
-    fun uploadAll(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) =
-        runBatch(dataPorts, WebDavBatchKind.Upload)
-
-    fun downloadAll(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) =
-        runBatch(dataPorts, WebDavBatchKind.Download)
-
-    // ── Confirmation flow for destructive batch actions ────────────────
-
-    /**
-     * Open the confirmation dialog for a batch action. Sync is safe (merge-only) and runs
-     * immediately; Upload All overwrites the remote and Download All merges into local — both
-     * are gated through [WebDavSyncUiState.pendingBatchConfirmation] so a fresh device can't
-     * blindly wipe data on either side.
-     */
-    fun requestBatchConfirmation(kind: WebDavBatchKind) {
+    fun requestBatchPlan(
+        kind: WebDavBatchKind,
+        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    ) {
         val state = _uiState.value
-        if (state.interactionLocked || state.pendingBatchConfirmation != null || state.pendingItemConfirmation != null) return
+        if (state.interactionLocked || state.pendingPlan != null) return
         if (!hasEnabledItems()) return
-        if (kind == WebDavBatchKind.Sync) {
-            // Sync is union-merge end-to-end, no confirmation needed.
-            return
-        }
-        _uiState.update { it.copy(pendingBatchConfirmation = kind) }
-    }
-
-    fun dismissBatchConfirmation() {
-        _uiState.update { it.copy(pendingBatchConfirmation = null) }
-    }
-
-    fun confirmBatchAction(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
-        val kind = _uiState.value.pendingBatchConfirmation ?: return
-        _uiState.update { it.copy(pendingBatchConfirmation = null) }
-        runBatch(dataPorts, kind)
-    }
-
-    /**
-     * Per-item destructive action gate. Upload overwrites the remote copy of a single item
-     * unconditionally, so a fresh device tapping this on its first run could replace populated
-     * server data with the empty local set. Download is union-merge and Sync is two-way merge,
-     * so both bypass this gate and run directly via [runItem].
-     */
-    fun requestItemConfirmation(item: WebDavSyncItem, kind: WebDavBatchKind) {
-        val state = _uiState.value
-        if (state.interactionLocked || state.pendingBatchConfirmation != null || state.pendingItemConfirmation != null) return
-        if (kind != WebDavBatchKind.Upload) return
-        _uiState.update { it.copy(pendingItemConfirmation = item to kind) }
-    }
-
-    fun dismissItemConfirmation() {
-        _uiState.update { it.copy(pendingItemConfirmation = null) }
-    }
-
-    fun confirmItemAction(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
-        val (item, kind) = _uiState.value.pendingItemConfirmation ?: return
-        _uiState.update { it.copy(pendingItemConfirmation = null) }
-        runItem(item, kind, dataPorts)
-    }
-
-    /**
-     * Returns true when an Upload All would visibly shrink the remote — every enabled item that
-     * has a known remote count exceeds the local count. Used by the page to switch the dialog to
-     * a stronger warning so users on a fresh device don't accidentally wipe remote data.
-     */
-    fun uploadShrinksRemote(): Boolean {
-        val targets = _uiState.value.itemStates.filterValues { it.enabled }.keys
-        if (targets.isEmpty()) return false
-        var anyKnownDelta = false
-        for (item in targets) {
-            val state = _uiState.value.itemStates[item] ?: continue
-            val local = state.localCount
-            val remote = state.remoteSummary
-            if (local < 0 || remote == null || remote.empty || remote.itemCount < 0) continue
-            anyKnownDelta = true
-            if (local >= remote.itemCount) return false
-        }
-        return anyKnownDelta
-    }
-
-    /**
-     * Same shrink check, for the per-item Upload confirmation. Returns true only when both
-     * counts are known and local < remote.
-     */
-    fun itemUploadShrinksRemote(item: WebDavSyncItem): Boolean {
-        val state = _uiState.value.itemStates[item] ?: return false
-        val local = state.localCount
-        val remote = state.remoteSummary
-        if (local < 0 || remote == null || remote.empty || remote.itemCount <= 0) return false
-        return local < remote.itemCount
-    }
-
-    /** Sync / upload / download a single item on demand. */
-    fun runItem(
-        item: WebDavSyncItem,
-        kind: WebDavBatchKind,
-        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
-    ) {
-        if (_uiState.value.interactionLocked) return
-        val port = dataPorts[item] ?: return
-        syncJob = viewModelScope.launch {
-            if (!repository.isItemEnabled(item)) return@launch
-            val config = repository.loadConfig() ?: return@launch
-            _uiState.update { it.copy(runningKind = kind) }
-            setItemRunning(item)
-            val outcome = repository.invoke(kind, config, item, port)
-            applyItemOutcome(item, outcome)
-            val itemStates = repository.loadItemStates(_uiState.value.itemStates)
-            _uiState.update { it.copy(runningKind = null, itemStates = itemStates) }
-            // Local count may have changed after merge / download; refresh it so the UI shows
-            // the post-action delta against the remote summary.
-            refreshLocalCountsInternal(dataPorts)
-        }
-    }
-
-    private fun runBatch(
-        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
-        kind: WebDavBatchKind,
-    ) {
-        if (_uiState.value.interactionLocked) return
         syncJob = viewModelScope.launch {
             val config = repository.loadConfig() ?: run {
                 _uiState.update { it.copy(missingConfig = true) }
@@ -322,12 +208,117 @@ internal class WebDavSyncViewModel(
             }
             val targets = repository.loadEnabledItems()
             if (targets.isEmpty()) return@launch
-            _uiState.update { it.copy(runningKind = kind, missingConfig = false) }
+            _uiState.update {
+                it.copy(
+                    planningKind = kind,
+                    missingConfig = false,
+                    pendingPlan = null,
+                )
+            }
+            val plan =
+                repository.preparePlan(
+                    kind = kind,
+                    scope = WebDavSyncPlanScope.Batch,
+                    config = config,
+                    targets = targets,
+                    dataPorts = dataPorts,
+                )
+            val itemStates = itemStatesWithPlan(
+                base = repository.loadItemStates(_uiState.value.itemStates),
+                plan = plan,
+            )
+            _uiState.update {
+                it.copy(
+                    planningKind = null,
+                    pendingPlan = plan,
+                    lastRemoteProbeTimeMs = plan.createdAtMs,
+                    itemStates = itemStates,
+                )
+            }
+            refreshLocalCountsInternal(dataPorts)
+        }
+    }
+
+    fun requestItemPlan(
+        item: WebDavSyncItem,
+        kind: WebDavBatchKind,
+        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    ) {
+        val state = _uiState.value
+        if (state.interactionLocked || state.pendingPlan != null) return
+        syncJob = viewModelScope.launch {
+            if (!repository.isItemEnabled(item)) return@launch
+            val config = repository.loadConfig() ?: run {
+                _uiState.update { it.copy(missingConfig = true) }
+                return@launch
+            }
+            _uiState.update {
+                it.copy(
+                    planningKind = kind,
+                    missingConfig = false,
+                    pendingPlan = null,
+                )
+            }
+            val plan =
+                repository.preparePlan(
+                    kind = kind,
+                    scope = WebDavSyncPlanScope.Single(item),
+                    config = config,
+                    targets = listOf(item),
+                    dataPorts = dataPorts,
+                )
+            val itemStates = itemStatesWithPlan(
+                base = repository.loadItemStates(_uiState.value.itemStates),
+                plan = plan,
+            )
+            _uiState.update {
+                it.copy(
+                    planningKind = null,
+                    pendingPlan = plan,
+                    lastRemoteProbeTimeMs = plan.createdAtMs,
+                    itemStates = itemStates,
+                )
+            }
+            refreshLocalCountsInternal(dataPorts)
+        }
+    }
+
+    fun dismissPlan() {
+        _uiState.update { it.copy(pendingPlan = null) }
+    }
+
+    fun confirmPlan(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+        val plan = _uiState.value.pendingPlan ?: return
+        if (plan.hasBlockingError) return
+        _uiState.update { it.copy(pendingPlan = null) }
+        runPlannedBatch(plan, dataPorts)
+    }
+
+    private fun runPlannedBatch(
+        plan: WebDavSyncPlan,
+        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    ) {
+        if (_uiState.value.interactionLocked) return
+        syncJob = viewModelScope.launch {
+            val config = repository.loadConfig() ?: run {
+                _uiState.update { it.copy(missingConfig = true) }
+                return@launch
+            }
+            val targets = plan.items.map { it.item }
+            if (targets.isEmpty()) return@launch
+            _uiState.update { it.copy(runningKind = plan.kind, missingConfig = false) }
             targets.forEach { setItemRunning(it) }
-            for (item in targets) {
-                val port = dataPorts[item] ?: continue
-                val outcome = repository.invoke(kind, config, item, port)
-                applyItemOutcome(item, outcome)
+            for (planItem in plan.items) {
+                val port = dataPorts[planItem.item] ?: continue
+                val outcome =
+                    repository.invoke(
+                        kind = plan.kind,
+                        config = config,
+                        item = planItem.item,
+                        port = port,
+                        planItem = planItem,
+                    )
+                applyItemOutcome(planItem.item, outcome)
             }
             val lastFullSyncTimeMs = repository.recordFullSyncBatch()
             val itemStates = repository.loadItemStates(_uiState.value.itemStates)
@@ -367,6 +358,25 @@ internal class WebDavSyncViewModel(
                         ),
             )
         }
+    }
+
+    private fun itemStatesWithPlan(
+        base: Map<WebDavSyncItem, WebDavSyncItemUiState>,
+        plan: WebDavSyncPlan,
+    ): Map<WebDavSyncItem, WebDavSyncItemUiState> {
+        val updated = base.toMutableMap()
+        for (planItem in plan.items) {
+            val current = updated[planItem.item] ?: WebDavSyncItemUiState()
+            val remoteError =
+                (planItem.remoteState as? WebDavSyncPlanRemoteState.Error)
+                    ?.let { WebDavItemOutcome(status = it.status, detail = it.detail) }
+            updated[planItem.item] =
+                current.copy(
+                    localCount = planItem.localCount,
+                    remoteProbeError = remoteError,
+                )
+        }
+        return updated
     }
 
     // ── Init / helpers ─────────────────────────────────────────────────
@@ -433,14 +443,14 @@ internal data class WebDavSyncUiState(
     val connectionResult: WebDavConnectionOutcome? = null,
     val urlError: WebDavUrlError? = null,
     val missingConfig: Boolean = false,
+    val planningKind: WebDavBatchKind? = null,
     val runningKind: WebDavBatchKind? = null,
-    val pendingBatchConfirmation: WebDavBatchKind? = null,
-    val pendingItemConfirmation: Pair<WebDavSyncItem, WebDavBatchKind>? = null,
+    val pendingPlan: WebDavSyncPlan? = null,
     val lastFullSyncTimeMs: Long = 0L,
     val lastRemoteProbeTimeMs: Long = 0L,
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
 ) {
-    val busy: Boolean get() = runningKind != null
+    val busy: Boolean get() = runningKind != null || planningKind != null
     val interactionLocked: Boolean
         get() = busy || testing || refreshingRemote
     val canConnect: Boolean

@@ -67,6 +67,58 @@ class WebDavSyncEngineTest {
     }
 
     @Test
+    fun `sync creates empty remote with create only write`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(WebDavDownloadResult.Empty),
+            uploadIfAbsentResults = mutableListOf(WebDavUploadResult.Success("etag-new")),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val port = FakeWebDavSyncDataPort(localJson = """{"items":[1]}""")
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 5678L },
+        )
+
+        val outcome = engine.sync(fakeConfig(), WebDavSyncItem.GitHubTracked, port.port)
+
+        assertEquals(WebDavItemStatus.Uploaded, outcome.status)
+        assertEquals(1, client.uploadIfAbsentCalls.size)
+        assertTrue(client.uploadCalls.isEmpty())
+        assertEquals("etag-new", metadata.etags[WebDavSyncItem.GitHubTracked])
+        assertEquals(5678L, metadata.lastSyncTimes[WebDavSyncItem.GitHubTracked])
+    }
+
+    @Test
+    fun `sync empty remote conflict re downloads and merges latest remote`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Empty,
+                WebDavDownloadResult.Success("remote-after-empty-preview", "etag-after"),
+            ),
+            uploadIfAbsentResults = mutableListOf(WebDavUploadResult.Conflict),
+            uploadResults = mutableListOf(WebDavUploadResult.Success("etag-merged")),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val port = FakeWebDavSyncDataPort(localJson = "local")
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 6789L },
+        )
+
+        val outcome = engine.sync(fakeConfig(), WebDavSyncItem.OsActivityCards, port.port)
+
+        assertEquals(WebDavItemStatus.Merged, outcome.status)
+        assertEquals(1, client.uploadIfAbsentCalls.size)
+        assertEquals(listOf("remote-after-empty-preview"), port.mergeCalls)
+        assertEquals("merge(remote-after-empty-preview)", client.uploadCalls.single().content)
+        assertEquals("etag-after", client.uploadCalls.single().etag)
+        assertEquals("etag-merged", metadata.etags[WebDavSyncItem.OsActivityCards])
+        assertEquals(6789L, metadata.lastSyncTimes[WebDavSyncItem.OsActivityCards])
+    }
+
+    @Test
     fun `probe remote found stores parsed remote summary`() = runBlocking {
         val client = FakeWebDavSyncClientBridge(
             downloadResults = mutableListOf(
@@ -92,6 +144,120 @@ class WebDavSyncEngineTest {
         assertEquals("etag-9", metadata.remoteFound[WebDavSyncItem.BaCatalogFavorites]?.etag)
         assertEquals(3, metadata.remoteFound[WebDavSyncItem.BaCatalogFavorites]?.itemCount)
     }
+
+    @Test
+    fun `prepare upload plan refreshes remote and marks shrink risk`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"items":[1,2,3]}""", "etag-remote"),
+            ),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 2468L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"items":[1]}""",
+            localCount = 1,
+            remoteItemCount = 3,
+        )
+
+        val planItem =
+            engine.prepareChange(
+                config = fakeConfig(),
+                kind = WebDavBatchKind.Upload,
+                item = WebDavSyncItem.GitHubTracked,
+                port = port.port,
+            )
+
+        assertEquals(WebDavSyncPlanEffect.UploadOverwrite, planItem.effect)
+        assertTrue(planItem.remoteState is WebDavSyncPlanRemoteState.Found)
+        assertTrue(planItem.shrinksRemote)
+        assertEquals("etag-remote", planItem.remoteEtag)
+        assertEquals(2468L, metadata.remoteFound[WebDavSyncItem.GitHubTracked]?.probedAtMs)
+        assertEquals(3, metadata.remoteFound[WebDavSyncItem.GitHubTracked]?.itemCount)
+    }
+
+    @Test
+    fun `planned upload uses refreshed remote etag for conditional write`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            uploadResults = mutableListOf(WebDavUploadResult.Success("etag-after")),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 9999L },
+        )
+        val port = FakeWebDavSyncDataPort(localJson = """{"items":[1]}""")
+
+        val outcome =
+            engine.upload(
+                config = fakeConfig(),
+                item = WebDavSyncItem.GitHubTracked,
+                port = port.port,
+                expectedRemoteEtag = "etag-before",
+            )
+
+        assertEquals(WebDavItemStatus.Uploaded, outcome.status)
+        assertEquals("etag-before", client.uploadCalls.single().etag)
+        assertEquals("etag-after", metadata.etags[WebDavSyncItem.GitHubTracked])
+    }
+
+    @Test
+    fun `planned upload returns conflict when remote changed after preview`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            uploadResults = mutableListOf(WebDavUploadResult.Conflict),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 9999L },
+        )
+        val port = FakeWebDavSyncDataPort(localJson = """{"items":[1]}""")
+
+        val outcome =
+            engine.upload(
+                config = fakeConfig(),
+                item = WebDavSyncItem.GitHubTracked,
+                port = port.port,
+                expectedRemoteEtag = "etag-before",
+            )
+
+        assertEquals(WebDavItemStatus.ConflictUnresolved, outcome.status)
+        assertEquals("etag-before", client.uploadCalls.single().etag)
+        assertTrue(metadata.etags.isEmpty())
+    }
+
+    @Test
+    fun `planned upload uses create only write when preview saw empty remote`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            uploadIfAbsentResults = mutableListOf(WebDavUploadResult.Conflict),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 9999L },
+        )
+        val port = FakeWebDavSyncDataPort(localJson = """{"items":[1]}""")
+
+        val outcome =
+            engine.upload(
+                config = fakeConfig(),
+                item = WebDavSyncItem.GitHubTracked,
+                port = port.port,
+                remoteKnownEmpty = true,
+            )
+
+        assertEquals(WebDavItemStatus.ConflictUnresolved, outcome.status)
+        assertEquals(1, client.uploadIfAbsentCalls.size)
+        assertTrue(client.uploadCalls.isEmpty())
+        assertTrue(metadata.etags.isEmpty())
+    }
 }
 
 private fun fakeConfig() = WebDavConfig(
@@ -103,6 +269,7 @@ private fun fakeConfig() = WebDavConfig(
 
 private class FakeWebDavSyncDataPort(
     private var localJson: String,
+    private val localCount: Int = 0,
     private val remoteItemCount: Int = 0,
 ) {
     val mergeCalls = mutableListOf<String>()
@@ -116,7 +283,7 @@ private class FakeWebDavSyncDataPort(
                 "$localJson+merge($remote)"
             }
         },
-        localCount = { 0 },
+        localCount = { localCount },
         countRemoteItems = { remoteItemCount },
     )
 }
@@ -124,10 +291,13 @@ private class FakeWebDavSyncDataPort(
 private class FakeWebDavSyncClientBridge(
     val downloadResults: MutableList<WebDavDownloadResult> = mutableListOf(),
     val uploadResults: MutableList<WebDavUploadResult> = mutableListOf(),
+    val uploadIfAbsentResults: MutableList<WebDavUploadResult> = mutableListOf(),
 ) : WebDavSyncClientBridge {
     data class UploadCall(val fileName: String, val content: String, val etag: String?)
+    data class UploadIfAbsentCall(val fileName: String, val content: String)
 
     val uploadCalls = mutableListOf<UploadCall>()
+    val uploadIfAbsentCalls = mutableListOf<UploadIfAbsentCall>()
 
     override suspend fun testConnection(): WebDavTestConnectionResult =
         WebDavTestConnectionResult.Success(dirCreated = false)
@@ -139,6 +309,11 @@ private class FakeWebDavSyncClientBridge(
     ): WebDavUploadResult {
         uploadCalls += UploadCall(fileName, content, etag)
         return uploadResults.removeFirstOrNull() ?: WebDavUploadResult.Success("etag-default")
+    }
+
+    override suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult {
+        uploadIfAbsentCalls += UploadIfAbsentCall(fileName, content)
+        return uploadIfAbsentResults.removeFirstOrNull() ?: WebDavUploadResult.Success("etag-default")
     }
 
     override suspend fun download(fileName: String): WebDavDownloadResult {

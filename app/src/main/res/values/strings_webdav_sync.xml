@@ -136,4 +136,33 @@
     <string name="webdav_sync_totals_contract_note">Counts follow each item\'s exported JSON payload.</string>
     <string name="webdav_sync_totals_remote_format">Remote: %1$d items · %2$s</string>
     <string name="webdav_sync_totals_remote_unknown">Remote: tap "Refresh remote" to load.</string>
+    <string name="webdav_sync_actions_contract_summary">Sync merges local and remote; Upload writes local to remote; Download merges remote into local. Every action refreshes remote first and shows a review list.</string>
+
+    <!-- Confirmable change plan -->
+    <string name="webdav_sync_plan_sync_title">Review sync changes</string>
+    <string name="webdav_sync_plan_upload_title">Review upload changes</string>
+    <string name="webdav_sync_plan_download_title">Review download changes</string>
+    <string name="webdav_sync_plan_item_sync_title">Review %1$s sync</string>
+    <string name="webdav_sync_plan_item_upload_title">Review %1$s upload</string>
+    <string name="webdav_sync_plan_item_download_title">Review %1$s download</string>
+    <string name="webdav_sync_plan_sync_summary">Sync first refreshes the remote snapshot, then merges local and remote JSON. Local-only and remote-only items are both kept.</string>
+    <string name="webdav_sync_plan_upload_summary">Upload first refreshes the remote snapshot, then writes local JSON to the server. Existing remote files use ETag protection so changed remote data reports a conflict.</string>
+    <string name="webdav_sync_plan_download_summary">Download first refreshes the remote snapshot, then merges remote JSON into local data.</string>
+    <string name="webdav_sync_plan_remote_refreshed">Remote refreshed: %1$s</string>
+    <string name="webdav_sync_plan_upload_shrink_warning">Some remote datasets currently contain more items than local. Uploading will make those remote files smaller.</string>
+    <string name="webdav_sync_plan_blocking_error">Remote refresh failed for at least one dataset. Resolve the error or disable that dataset before continuing.</string>
+    <string name="webdav_sync_plan_confirm_sync">Sync</string>
+    <string name="webdav_sync_plan_confirm_upload">Upload</string>
+    <string name="webdav_sync_plan_confirm_download">Download</string>
+    <string name="webdav_sync_plan_counts_format">Local %1$d · Remote %2$s</string>
+    <string name="webdav_sync_plan_remote_count_format">%1$d items · %2$s</string>
+    <string name="webdav_sync_plan_remote_empty_count">empty</string>
+    <string name="webdav_sync_plan_effect_no_change">No write needed</string>
+    <string name="webdav_sync_plan_effect_create_remote">Create the remote file from local data</string>
+    <string name="webdav_sync_plan_effect_merge_upload">Merge local + remote, then upload the merged JSON</string>
+    <string name="webdav_sync_plan_effect_upload_overwrite">Overwrite the remote file with local JSON</string>
+    <string name="webdav_sync_plan_effect_download_merge">Merge remote JSON into local data</string>
+    <string name="webdav_sync_plan_effect_remote_empty">Remote is empty; local data is kept as-is</string>
+    <string name="webdav_sync_plan_effect_error">Remote refresh failed</string>
+    <string name="webdav_sync_plan_effect_remote_shrink">remote item count will decrease</string>
 </resources>

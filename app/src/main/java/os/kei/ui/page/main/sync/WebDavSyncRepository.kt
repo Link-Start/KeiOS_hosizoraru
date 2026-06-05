@@ -95,13 +95,50 @@ internal class WebDavSyncRepository(
         config: WebDavConfig,
         item: WebDavSyncItem,
         port: WebDavSyncDataPort,
+        planItem: WebDavSyncPlanItem? = null,
     ): WebDavItemOutcome =
         withContext(ioDispatcher) {
             when (kind) {
                 WebDavBatchKind.Sync -> engine.sync(config, item, port)
-                WebDavBatchKind.Upload -> engine.upload(config, item, port)
+                WebDavBatchKind.Upload ->
+                    engine.upload(
+                        config = config,
+                        item = item,
+                        port = port,
+                        expectedRemoteEtag =
+                            (planItem?.remoteState as? WebDavSyncPlanRemoteState.Found)?.etag,
+                        remoteKnownEmpty = planItem?.remoteState == WebDavSyncPlanRemoteState.Empty,
+                    )
                 WebDavBatchKind.Download -> engine.download(config, item, port)
             }
+        }
+
+    suspend fun preparePlan(
+        kind: WebDavBatchKind,
+        scope: WebDavSyncPlanScope,
+        config: WebDavConfig,
+        targets: List<WebDavSyncItem>,
+        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    ): WebDavSyncPlan =
+        withContext(ioDispatcher) {
+            val items =
+                targets.mapNotNull { item ->
+                    val port = dataPorts[item] ?: return@mapNotNull null
+                    engine.prepareChange(
+                        config = config,
+                        kind = kind,
+                        item = item,
+                        port = port,
+                    )
+                }
+            val probedAtMs = nowMs()
+            WebDavSyncStore.setLastRemoteProbeTime(probedAtMs)
+            WebDavSyncPlan(
+                kind = kind,
+                scope = scope,
+                createdAtMs = probedAtMs,
+                items = items,
+            )
         }
 
     suspend fun probeRemote(

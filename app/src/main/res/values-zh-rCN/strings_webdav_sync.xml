@@ -136,4 +136,33 @@
     <string name="webdav_sync_totals_contract_note">计数口径跟随各项目导出的 JSON 内容。</string>
     <string name="webdav_sync_totals_remote_format">远端：%1$d 项 · %2$s</string>
     <string name="webdav_sync_totals_remote_unknown">远端：点击"刷新远端"载入。</string>
+    <string name="webdav_sync_actions_contract_summary">同步会合并本地与远端；上传会以本地写入远端；下载会把远端合并到本地。每次操作都会先刷新远端并显示确认清单。</string>
+
+    <!-- 可确认的变更计划 -->
+    <string name="webdav_sync_plan_sync_title">确认同步变更</string>
+    <string name="webdav_sync_plan_upload_title">确认上传变更</string>
+    <string name="webdav_sync_plan_download_title">确认下载变更</string>
+    <string name="webdav_sync_plan_item_sync_title">确认同步「%1$s」</string>
+    <string name="webdav_sync_plan_item_upload_title">确认上传「%1$s」</string>
+    <string name="webdav_sync_plan_item_download_title">确认下载「%1$s」</string>
+    <string name="webdav_sync_plan_sync_summary">同步会先刷新远端快照，再合并本地与远端 JSON。本地独有和远端独有项目都会保留。</string>
+    <string name="webdav_sync_plan_upload_summary">上传会先刷新远端快照，再把本地 JSON 写入服务器。远端已存在文件时使用 ETag 保护，远端发生变化会返回冲突。</string>
+    <string name="webdav_sync_plan_download_summary">下载会先刷新远端快照，再把远端 JSON 合并到本地数据。</string>
+    <string name="webdav_sync_plan_remote_refreshed">远端已刷新：%1$s</string>
+    <string name="webdav_sync_plan_upload_shrink_warning">部分远端数据集条目数多于本地。继续上传会让这些远端文件变小。</string>
+    <string name="webdav_sync_plan_blocking_error">至少一个数据集刷新远端失败。请先处理错误，或关闭该数据集后继续。</string>
+    <string name="webdav_sync_plan_confirm_sync">同步</string>
+    <string name="webdav_sync_plan_confirm_upload">上传</string>
+    <string name="webdav_sync_plan_confirm_download">下载</string>
+    <string name="webdav_sync_plan_counts_format">本地 %1$d · 远端 %2$s</string>
+    <string name="webdav_sync_plan_remote_count_format">%1$d 项 · %2$s</string>
+    <string name="webdav_sync_plan_remote_empty_count">暂无数据</string>
+    <string name="webdav_sync_plan_effect_no_change">无需写入</string>
+    <string name="webdav_sync_plan_effect_create_remote">用本地数据创建远端文件</string>
+    <string name="webdav_sync_plan_effect_merge_upload">合并本地与远端后，上传合并后的 JSON</string>
+    <string name="webdav_sync_plan_effect_upload_overwrite">使用本地 JSON 覆盖远端文件</string>
+    <string name="webdav_sync_plan_effect_download_merge">把远端 JSON 合并到本地数据</string>
+    <string name="webdav_sync_plan_effect_remote_empty">远端暂无数据，本地保持现状</string>
+    <string name="webdav_sync_plan_effect_error">远端刷新失败</string>
+    <string name="webdav_sync_plan_effect_remote_shrink">远端条目数会减少</string>
 </resources>

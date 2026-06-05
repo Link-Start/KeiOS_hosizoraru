@@ -15,12 +15,14 @@ import at.bitfire.dav4jvm.okhttp.exception.UnauthorizedException
 import at.bitfire.dav4jvm.property.webdav.GetETag
 import at.bitfire.dav4jvm.property.webdav.ResourceType
 import at.bitfire.dav4jvm.property.webdav.WebDAV
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import os.kei.core.log.AppLogger
 import os.kei.feature.webdav.model.WebDavConfig
@@ -171,6 +173,8 @@ class WebDavSyncClient(
                         resultEtag = response.header("ETag")?.removeSurrounding("\"")
                     }
                     WebDavUploadResult.Success(resultEtag)
+                } catch (e2: CancellationException) {
+                    throw e2
                 } catch (e2: Exception) {
                     WebDavUploadResult.Error(classifyError(e2))
                 }
@@ -182,6 +186,52 @@ class WebDavSyncClient(
                 WebDavUploadResult.Error(WebDavError.Unknown(0, e.message ?: "WebDAV error"))
             } catch (e: IOException) {
                 WebDavUploadResult.Error(WebDavError.NetworkUnreachable)
+            }
+        }
+
+    /**
+     * Create a remote file only when it is still absent. Used after the UI has refreshed an empty
+     * remote snapshot; if another device creates the same file before confirmation completes,
+     * the server returns 412 and the caller reports a conflict instead of overwriting it.
+     */
+    suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult =
+        withContext(Dispatchers.IO) {
+            try {
+                ensureCollection()
+                val body = content.toRequestBody("application/json; charset=utf-8".toMediaType())
+                val request =
+                    Request.Builder()
+                        .url(fileUrl(fileName))
+                        .put(body)
+                        .header("If-None-Match", "*")
+                        .build()
+                httpClient.newCall(request).execute().use { response ->
+                    when (response.code) {
+                        200, 201, 204 ->
+                            WebDavUploadResult.Success(response.header("ETag")?.removeSurrounding("\""))
+
+                        412 -> WebDavUploadResult.Conflict
+                        401 -> WebDavUploadResult.Error(WebDavError.AuthFailed)
+                        403 -> WebDavUploadResult.Error(WebDavError.PermissionDenied)
+                        else ->
+                            WebDavUploadResult.Error(
+                                WebDavError.Unknown(
+                                    response.code,
+                                    response.message.ifBlank { "HTTP ${response.code}" },
+                                ),
+                            )
+                    }
+                }
+            } catch (e: UnauthorizedException) {
+                WebDavUploadResult.Error(WebDavError.AuthFailed)
+            } catch (e: ForbiddenException) {
+                WebDavUploadResult.Error(WebDavError.PermissionDenied)
+            } catch (e: IOException) {
+                WebDavUploadResult.Error(WebDavError.NetworkUnreachable)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                WebDavUploadResult.Error(classifyError(e))
             }
         }
 
@@ -254,6 +304,8 @@ class WebDavSyncClient(
                 }
             }
             files
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "listFiles failed", e)
             emptyList()

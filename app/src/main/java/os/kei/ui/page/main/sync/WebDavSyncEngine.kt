@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.sync
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import os.kei.core.log.AppLogger
@@ -78,6 +79,101 @@ internal class WebDavSyncEngine(
     // ── Two-way sync (pull → merge → push) ─────────────────────────────
 
     /**
+     * Read the current remote payload and build a user-confirmable change plan for one item.
+     * This method never mutates domain data; it only updates the remote summary cache so the UI
+     * and the eventual execution path share the same fresh remote baseline.
+     */
+    suspend fun prepareChange(
+        config: WebDavConfig,
+        kind: WebDavBatchKind,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavSyncPlanItem {
+        val c = client(config)
+        val local = runCatching { port.exportJson() }.getOrElse { "" }
+        val localHash = contentHash(local)
+        val localCount = runCatching { port.localCount() }.getOrDefault(-1)
+        return try {
+            val nowMs = nowMillis()
+            when (val download = c.download(item.fileName)) {
+                is WebDavDownloadResult.Success -> {
+                    val remoteHash = contentHash(download.content)
+                    val remoteCount = runCatching { port.countRemoteItems(download.content) }
+                        .getOrDefault(-1)
+                    val byteSize = download.content.toByteArray(Charsets.UTF_8).size.toLong()
+                    metadataStore.saveRemoteSummaryFound(
+                        item = item,
+                        itemCount = remoteCount,
+                        byteSize = byteSize,
+                        etag = download.etag,
+                        probedAtMs = nowMs,
+                    )
+                    WebDavSyncPlanItem(
+                        item = item,
+                        localCount = localCount,
+                        localHash = localHash,
+                        remoteState =
+                            WebDavSyncPlanRemoteState.Found(
+                                itemCount = remoteCount,
+                                byteSize = byteSize,
+                                etag = download.etag,
+                                contentHash = remoteHash,
+                            ),
+                        effect =
+                            when {
+                                localHash == remoteHash -> WebDavSyncPlanEffect.NoChange
+                                kind == WebDavBatchKind.Upload -> WebDavSyncPlanEffect.UploadOverwrite
+                                kind == WebDavBatchKind.Download -> WebDavSyncPlanEffect.DownloadMerge
+                                else -> WebDavSyncPlanEffect.MergeThenUpload
+                            },
+                    )
+                }
+
+                WebDavDownloadResult.Empty -> {
+                    metadataStore.saveRemoteSummaryEmpty(item, nowMs)
+                    WebDavSyncPlanItem(
+                        item = item,
+                        localCount = localCount,
+                        localHash = localHash,
+                        remoteState = WebDavSyncPlanRemoteState.Empty,
+                        effect =
+                            when (kind) {
+                                WebDavBatchKind.Sync,
+                                WebDavBatchKind.Upload -> WebDavSyncPlanEffect.CreateRemote
+
+                                WebDavBatchKind.Download -> WebDavSyncPlanEffect.RemoteEmpty
+                            },
+                    )
+                }
+
+                is WebDavDownloadResult.Error ->
+                    WebDavSyncPlanItem(
+                        item = item,
+                        localCount = localCount,
+                        localHash = localHash,
+                        remoteState = download.error.toPlanRemoteError(),
+                        effect = WebDavSyncPlanEffect.Error,
+                    )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "prepareChange ${item.name} failed", e)
+            WebDavSyncPlanItem(
+                item = item,
+                localCount = localCount,
+                localHash = localHash,
+                remoteState =
+                    WebDavSyncPlanRemoteState.Error(
+                        status = WebDavItemStatus.Error,
+                        detail = e.message,
+                    ),
+                effect = WebDavSyncPlanEffect.Error,
+            )
+        }
+    }
+
+    /**
      * Reconcile a single item with the remote: pull the remote copy, merge it into local, then
      * push the merged local copy back. Updates the persisted ETag + content hash + last-sync time
      * on success.
@@ -111,6 +207,8 @@ internal class WebDavSyncEngine(
                 }
                 is WebDavDownloadResult.Error -> errorOutcome(download.error)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "sync ${item.name} failed", e)
             WebDavItemOutcome(WebDavItemStatus.Error, e.message)
@@ -125,7 +223,14 @@ internal class WebDavSyncEngine(
         etag: String?,
         statusWhenWritten: WebDavItemStatus = WebDavItemStatus.Merged,
     ): WebDavItemOutcome =
-        when (val upload = c.upload(item.fileName, content, etag)) {
+        when (
+            val upload =
+                if (etag == null) {
+                    c.uploadIfAbsent(item.fileName, content)
+                } else {
+                    c.upload(item.fileName, content, etag)
+                }
+        ) {
             is WebDavUploadResult.Success -> {
                 recordSynced(item, upload.etag, content)
                 WebDavItemOutcome(statusWhenWritten)
@@ -152,12 +257,26 @@ internal class WebDavSyncEngine(
 
     // ── Manual upload (push local → remote, overwrite) ─────────────────
 
-    suspend fun upload(config: WebDavConfig, item: WebDavSyncItem, port: WebDavSyncDataPort): WebDavItemOutcome {
+    suspend fun upload(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        expectedRemoteEtag: String? = null,
+        remoteKnownEmpty: Boolean = false,
+    ): WebDavItemOutcome {
         val c = client(config)
         return try {
             val local = port.exportJson()
-            // Manual upload is an explicit "local wins" action → unconditional write.
-            when (val upload = c.upload(item.fileName, local, etag = null)) {
+            // Manual upload is a "local wins" action. When a confirmation plan has observed a
+            // remote file, pass its ETag so concurrent remote changes produce Conflict instead
+            // of a silent overwrite.
+            val uploadResult =
+                if (expectedRemoteEtag == null && remoteKnownEmpty) {
+                    c.uploadIfAbsent(item.fileName, local)
+                } else {
+                    c.upload(item.fileName, local, etag = expectedRemoteEtag)
+                }
+            when (val upload = uploadResult) {
                 is WebDavUploadResult.Success -> {
                     recordSynced(item, upload.etag, local)
                     WebDavItemOutcome(WebDavItemStatus.Uploaded)
@@ -165,6 +284,8 @@ internal class WebDavSyncEngine(
                 WebDavUploadResult.Conflict -> WebDavItemOutcome(WebDavItemStatus.ConflictUnresolved)
                 is WebDavUploadResult.Error -> errorOutcome(upload.error)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "upload ${item.name} failed", e)
             WebDavItemOutcome(WebDavItemStatus.Error, e.message)
@@ -191,6 +312,8 @@ internal class WebDavSyncEngine(
                 WebDavDownloadResult.Empty -> WebDavItemOutcome(WebDavItemStatus.RemoteEmpty)
                 is WebDavDownloadResult.Error -> errorOutcome(download.error)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "download ${item.name} failed", e)
             WebDavItemOutcome(WebDavItemStatus.Error, e.message)
@@ -245,6 +368,8 @@ internal class WebDavSyncEngine(
                     detail = (download.error as? WebDavError.Unknown)?.message,
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "probeRemote ${item.name} failed", e)
             WebDavRemoteProbeOutcome.Error(WebDavItemStatus.Error, e.message)
@@ -264,6 +389,20 @@ internal class WebDavSyncEngine(
         is WebDavError.Unknown -> WebDavItemOutcome(WebDavItemStatus.Error, error.message)
     }
 
+    private fun WebDavError.toPlanRemoteError(): WebDavSyncPlanRemoteState.Error = when (this) {
+        WebDavError.NetworkUnreachable ->
+            WebDavSyncPlanRemoteState.Error(WebDavItemStatus.NetworkError, null)
+
+        WebDavError.AuthFailed ->
+            WebDavSyncPlanRemoteState.Error(WebDavItemStatus.AuthFailed, null)
+
+        WebDavError.PermissionDenied ->
+            WebDavSyncPlanRemoteState.Error(WebDavItemStatus.PermissionDenied, null)
+
+        is WebDavError.Unknown ->
+            WebDavSyncPlanRemoteState.Error(WebDavItemStatus.Error, message)
+    }
+
     companion object {
         private const val TAG = "WebDavSyncEngine"
 
@@ -278,6 +417,7 @@ internal class WebDavSyncEngine(
 internal interface WebDavSyncClientBridge {
     suspend fun testConnection(): WebDavTestConnectionResult
     suspend fun upload(fileName: String, content: String, etag: String? = null): WebDavUploadResult
+    suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult
     suspend fun download(fileName: String): WebDavDownloadResult
 }
 
@@ -291,6 +431,9 @@ private class RealWebDavSyncClientBridge(
         content: String,
         etag: String?,
     ): WebDavUploadResult = delegate.upload(fileName, content, etag)
+
+    override suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult =
+        delegate.uploadIfAbsent(fileName, content)
 
     override suspend fun download(fileName: String): WebDavDownloadResult =
         delegate.download(fileName)

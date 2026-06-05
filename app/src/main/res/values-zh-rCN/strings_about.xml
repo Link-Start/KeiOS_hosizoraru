@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.8.0</string>
-    <string name="about_card_release_subtitle">GitHub 追踪、Actions 与托管安装收口</string>
+    <string name="about_card_release_title">Release v1.9.0</string>
+    <string name="about_card_release_subtitle">WebDAV、BA 多账号、Git/GitHub 追踪与 MCP/Claw 升级</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -193,23 +193,23 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.8.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.9.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">发布重点</string>
-    <string name="about_release_value_focus">GitHub Actions artifacts、托管安装、超级岛通知、单项目检查间隔与设置分区整理</string>
-    <string name="about_release_row_github">GitHub 链路</string>
-    <string name="about_release_value_github">下载入口在 nightly.link 与 GitHub API Token 两种模式下保持常驻</string>
-    <string name="about_release_row_ba_guide">OS 工具</string>
-    <string name="about_release_value_ba_guide">支持托管安装的 APK artifact 同时提供安装与下载，安装状态与通知提示更稳定</string>
-    <string name="about_release_row_navigation">交互体验</string>
-    <string name="about_release_value_navigation">下载按钮只显示文件大小，动作含义交给 icon，减少重复文字</string>
-    <string name="about_release_row_icon">图标与外观</string>
-    <string name="about_release_value_icon">图标切换、设置分区、依赖版本与发布检测同步整理</string>
+    <string name="about_release_value_focus">全新 WebDAV 同步、BA 多账号、Git 通用来源、Actions 历史与 MCP/Claw 引导</string>
+    <string name="about_release_row_github">Git / GitHub</string>
+    <string name="about_release_value_github">支持 GitHub、Gitee、GitLab/Gitea、通用 Git tag、版本忽略和 Actions 历史</string>
+    <string name="about_release_row_ba_guide">WebDAV 与 BA</string>
+    <string name="about_release_value_ba_guide">WebDAV 可同步 GitHub/Git、OS/Shell、BA 账号和图鉴收藏；BA 支持多账号与账号定向通知</string>
+    <string name="about_release_row_navigation">MCP / Claw</string>
+    <string name="about_release_value_navigation">提供一键配置提示、Skill URI、Workflow URI、Sub Agent URI 与升级后重新添加提醒</string>
+    <string name="about_release_row_icon">界面体验</string>
+    <string name="about_release_value_icon">Home、Actions 历史、WebDAV、BA、底栏、竖向 dock、预测式返回和卡片交互继续统一</string>
     <string name="about_release_row_release_gate">发布门禁</string>
-    <string name="about_release_value_release_gate">Debug 编译、Release 构建、签名校验与 GitHub Release 发布链路完成验证</string>
+    <string name="about_release_value_release_gate">Debug 编译、Release 构建、R8、lintVital、签名校验与 GitHub Release 发布链路完成验证</string>
     <string name="about_release_row_performance">性能基线</string>
-    <string name="about_release_value_performance">R8 full mode、资源压缩、Baseline Profile 与 Pixel_10_Pro AVD smoke 已完成阶段验收</string>
+    <string name="about_release_value_performance">数据加载更多下沉到 repository、ViewModel 与后台 dispatcher；液态玻璃弹出面板默认关闭</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议 v1.7.1 及更早版本升级到 v1.8.0，常用 GitHub Actions artifacts 的用户优先升级</string>
+    <string name="about_release_value_next">建议所有 v1.8.x 用户升级，常用 WebDAV、BA 多账号、Git/GitHub 追踪、MCP/Claw 和 Shizuku Shell 的用户优先升级</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

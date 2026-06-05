@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">App identity and runtime information</string>
-    <string name="about_card_release_title">Release v1.8.0</string>
-    <string name="about_card_release_subtitle">GitHub tracking, Actions, and managed install polish</string>
+    <string name="about_card_release_title">Release v1.9.0</string>
+    <string name="about_card_release_subtitle">WebDAV, BA multi-account, Git/GitHub tracking, and MCP/Claw upgrades</string>
     <string name="about_card_runtime_title">Runtime status</string>
     <string name="about_card_runtime_subtitle">Quick checks for notifications, Shizuku, and system state</string>
     <string name="about_card_permission_title">Permission list</string>
@@ -205,23 +205,23 @@
     <string name="about_label_security_patch">Security patch</string>
 
     <string name="about_release_row_version">Version line</string>
-    <string name="about_release_value_version">v1.8.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.9.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">Release focus</string>
-    <string name="about_release_value_focus">GitHub Actions artifacts, managed install, Super Island notifications, per-project check intervals, and Settings grouping</string>
-    <string name="about_release_row_github">GitHub flow</string>
-    <string name="about_release_value_github">Downloads stay visible in both nightly.link and GitHub API Token modes</string>
-    <string name="about_release_row_ba_guide">OS tools</string>
-    <string name="about_release_value_ba_guide">Managed APK artifacts expose separate install and download actions, with steadier install states and notification hints</string>
-    <string name="about_release_row_navigation">Interactions</string>
-    <string name="about_release_value_navigation">Download controls show file size only, letting the icon carry the action meaning</string>
-    <string name="about_release_row_icon">Icons and visuals</string>
-    <string name="about_release_value_icon">Icon switching, Settings grouping, dependency versions, and release checks were cleaned up</string>
+    <string name="about_release_value_focus">New WebDAV sync, BA multi-account, generic Git sources, Actions History, and MCP/Claw onboarding</string>
+    <string name="about_release_row_github">Git / GitHub</string>
+    <string name="about_release_value_github">Supports GitHub, Gitee, GitLab/Gitea, generic Git tags, release ignore modes, and Actions History</string>
+    <string name="about_release_row_ba_guide">WebDAV &amp; BA</string>
+    <string name="about_release_value_ba_guide">WebDAV can sync GitHub/Git, OS/Shell, BA accounts, and guide favorites; BA supports account-targeted notifications</string>
+    <string name="about_release_row_navigation">MCP / Claw</string>
+    <string name="about_release_value_navigation">Adds one-shot setup prompt, Skill URI, Workflow URI, Sub Agent URI, and upgrade guidance for re-adding the server</string>
+    <string name="about_release_row_icon">UI experience</string>
+    <string name="about_release_value_icon">Home, Actions History, WebDAV, BA, bottom chrome, vertical dock, predictive back, and card interactions are more consistent</string>
     <string name="about_release_row_release_gate">Release gates</string>
-    <string name="about_release_value_release_gate">Debug compile, release build, signing verification, and GitHub Release publishing were verified</string>
+    <string name="about_release_value_release_gate">Debug compile, release build, R8, lintVital, signing verification, and GitHub Release publishing were verified</string>
     <string name="about_release_row_performance">Performance baseline</string>
-    <string name="about_release_value_performance">R8 full mode, resource shrinking, Baseline Profile, and Pixel_10_Pro AVD smoke passed stage validation</string>
+    <string name="about_release_value_performance">More data loading runs through repositories, ViewModels, and background dispatchers; liquid-glass popup sheets are disabled by default</string>
     <string name="about_release_row_next">Upgrade advice</string>
-    <string name="about_release_value_next">Users on v1.7.1 and earlier should upgrade to v1.8.0, especially when using GitHub Actions artifacts often</string>
+    <string name="about_release_value_next">All v1.8.x users should upgrade, especially WebDAV, BA multi-account, Git/GitHub tracking, MCP/Claw, and Shizuku Shell users</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

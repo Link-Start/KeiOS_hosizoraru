@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="webdav_sync_title">WebDAV 同步</string>
+    <string name="webdav_sync_section_connection">连接</string>
+    <string name="webdav_sync_section_data">数据</string>
+    <string name="webdav_sync_section_advanced">高级</string>
     <string name="webdav_sync_provider_label">服务商</string>
     <string name="webdav_sync_connection">连接设置</string>
     <string name="webdav_sync_jianguoyun_hint">请使用坚果云账号邮箱和第三方应用密码（非账号密码）。在坚果云网页端：账户设置 → 安全选项 → 第三方应用管理 中生成。</string>

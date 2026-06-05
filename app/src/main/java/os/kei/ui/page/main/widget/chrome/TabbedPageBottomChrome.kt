@@ -134,6 +134,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     searchIcon: ImageVector,
     searchContentDescription: String,
     searchPlaceholder: String,
+    searchEnabled: Boolean = true,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
@@ -145,10 +146,11 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     val gap = TabbedPageBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
+    val effectiveSearchExpanded = searchEnabled && searchExpanded
     val categoryDockExpanded =
         tabbedPageCategoryDockExpanded(
             visible = visible,
-            searchExpanded = searchExpanded,
+            searchExpanded = effectiveSearchExpanded,
         )
     val keyboardLiftState =
         rememberAppFloatingKeyboardLiftState(
@@ -185,15 +187,19 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 gap = gap,
             )
         val collapsedDockWidth =
-            tabbedPageCollapsedDockWidth(
-                availableWidth = maxWidth,
-                searchDockWidth = size,
-                gap = gap,
-            )
+            if (searchEnabled) {
+                tabbedPageCollapsedDockWidth(
+                    availableWidth = maxWidth,
+                    searchDockWidth = size,
+                    gap = gap,
+                )
+            } else {
+                maxWidth
+            }
         val visibleDockWidth = collapsedDockWidth
         val searchTransition =
             updateTransition(
-                targetState = searchExpanded,
+                targetState = effectiveSearchExpanded,
                 label = "${labelPrefix}_search_dock",
             )
         val searchXState =
@@ -249,7 +255,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         category = categories[safeSelectedPage],
                         backdrop = backdrop,
                         onClick = {
-                            if (visible) {
+                            if (visible && searchEnabled) {
                                 onSearchExpandedChange(false)
                             } else {
                                 onExpandDock()
@@ -264,27 +270,29 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
             },
         )
 
-        AppBottomSearchDock(
-            backdrop = backdrop,
-            expanded = searchExpanded,
-            query = searchQuery,
-            onQueryChange = onSearchQueryChange,
-            onExpandedChange = onSearchExpandedChange,
-            searchIcon = searchIcon,
-            contentDescription = searchContentDescription,
-            placeholder = searchPlaceholder,
-            modifier =
-                Modifier
-                    .zIndex(3f)
-                    .graphicsLayer {
-                        alpha = searchDockAlphaProvider()
-                    }
-                    .offset {
-                        IntOffset(x = searchXProvider().roundToPx(), y = 0)
-                    },
-            expandedWidth = expandedSearchWidth,
-            expandedWidthProvider = searchWidthProvider,
-        )
+        if (searchEnabled) {
+            AppBottomSearchDock(
+                backdrop = backdrop,
+                expanded = searchExpanded,
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                onExpandedChange = onSearchExpandedChange,
+                searchIcon = searchIcon,
+                contentDescription = searchContentDescription,
+                placeholder = searchPlaceholder,
+                modifier =
+                    Modifier
+                        .zIndex(3f)
+                        .graphicsLayer {
+                            alpha = searchDockAlphaProvider()
+                        }
+                        .offset {
+                            IntOffset(x = searchXProvider().roundToPx(), y = 0)
+                        },
+                expandedWidth = expandedSearchWidth,
+                expandedWidthProvider = searchWidthProvider,
+            )
+        }
     }
 }
 

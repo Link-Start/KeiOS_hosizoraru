@@ -120,6 +120,7 @@ class McpKtorEndpointHostTest {
         val resourcesBody = resources.body.string()
         assertEquals(200, resources.code)
         assertTrue(resourcesBody.contains("keios://skill/overview.txt"))
+        assertTrue(resourcesBody.contains("keios://skill/subagent.md"))
         resources.close()
 
         val templates = postMcp(
@@ -145,6 +146,19 @@ class McpKtorEndpointHostTest {
         assertEquals(200, resource.code)
         assertTrue(resourceBody.contains("ok=true"))
         resource.close()
+
+        val subAgentResource = postMcp(
+            port = port,
+            token = "secret",
+            sessionId = sessionId,
+            protocolVersion = "2025-11-25",
+            body = """{"jsonrpc":"2.0","id":8,"method":"resources/read","params":{"uri":"keios://skill/subagent.md"}}"""
+        )
+        val subAgentResourceBody = subAgentResource.body.string()
+        assertEquals(200, subAgentResource.code)
+        assertTrue(subAgentResourceBody.contains("KeiOS MCP Sub Agent"))
+        assertTrue(subAgentResourceBody.contains("keios://skill/keios-mcp.md"))
+        subAgentResource.close()
     }
 
     private fun withRunningEndpoint(block: (port: Int) -> Unit) {
@@ -246,6 +260,18 @@ class McpKtorEndpointHostTest {
                 mimeType = MIME_TEXT
             ) { _ ->
                 callResource("keios://skill/overview.txt", MIME_TEXT, "ok=true")
+            }
+            addResource(
+                uri = "keios://skill/subagent.md",
+                name = "subagent",
+                description = "Sub Agent",
+                mimeType = MIME_MARKDOWN
+            ) { _ ->
+                callResource(
+                    "keios://skill/subagent.md",
+                    MIME_MARKDOWN,
+                    "# KeiOS MCP Sub Agent\n\nskillResource=keios://skill/keios-mcp.md"
+                )
             }
             addResourceTemplate(
                 uriTemplate = "keios://skill/tool/{tool}",

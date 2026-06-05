@@ -9,16 +9,19 @@
 
 ## Start
 
-1. Call `keios.health.ping` to verify connectivity.
-2. Call `keios.mcp.runtime.status` for server, token, and endpoint state.
-3. Read `{{RESOURCE_WORKFLOWS_URI}}` to choose a scheduled task or composed-skill blueprint.
-4. Read `{{RESOURCE_DOMAIN_TEMPLATE_URI}}` for a domain guide.
-5. Read `{{RESOURCE_SKILL_URI}}` for the complete guide.
+1. Add the current MCP config to the Claw App MCP server list.
+2. Ask Claw to read `{{RESOURCE_SKILL_URI}}`, or call `keios.mcp.claw.skill.guide(mode=auto)` for the complete Skill content.
+3. In Agent mode, ask the Claw main Agent to read `{{RESOURCE_SUBAGENT_URI}}` and create a KeiOS MCP sub agent.
+4. Call `keios.health.ping` to verify connectivity.
+5. Call `keios.mcp.runtime.status` for server, token, and endpoint state.
+6. For scheduled tasks or composed skills, read `{{RESOURCE_WORKFLOWS_URI}}` and choose a blueprint.
+7. After each KeiOS upgrade, delete the old KeiOS MCP server in Claw and add it again so the client refreshes cached tools.
 
 ## Client Config
 
 - Default config resource: `{{RESOURCE_CONFIG_URI}}`
 - Mode config template: `{{RESOURCE_CONFIG_TEMPLATE_URI}}`
+- Sub-agent guide: `{{RESOURCE_SUBAGENT_URI}}`
 - Bootstrap prompt: `{{PROMPT_BOOTSTRAP}}`
 - Workflow prompt: `{{PROMPT_WORKFLOW_PLAN}}`
 - Diagnostics prompt: `{{PROMPT_DIAGNOSTICS_PLAN}}`

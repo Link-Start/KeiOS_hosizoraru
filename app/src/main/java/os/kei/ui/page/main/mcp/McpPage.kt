@@ -71,6 +71,7 @@ fun McpPage(
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
     val unknownText = stringResource(R.string.common_unknown)
+    val clawSetupPromptTemplate = stringResource(R.string.mcp_claw_setup_prompt_template)
 
     val isDark = isSystemInDarkTheme()
     val titleColor = MiuixTheme.colorScheme.onBackground
@@ -236,10 +237,12 @@ fun McpPage(
         McpPageActions(
             onToggleServer = toggleServer,
             onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
+            onOnboardingExpandedChange = mcpPageViewModel::updateOnboardingExpanded,
             onControlExpandedChange = mcpPageViewModel::updateControlExpanded,
             onSendTestNotification = { mcpPageViewModel.requestSendTestNotification(mcpServerManager) },
             onShowResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(true) },
             onCopySkillResource = mcpPageViewModel::requestCopySkillResource,
+            onCopySubAgentResource = mcpPageViewModel::requestCopySubAgentResource,
             onCopyWorkflowResource = mcpPageViewModel::requestCopyWorkflowResource,
             onToolsSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
             onToolEntrypointsExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
@@ -256,6 +259,13 @@ fun McpPage(
             },
             onClearLogs = { mcpPageViewModel.requestClearLogs(mcpServerManager) },
             onCopyCurrentConfig = { mcpPageViewModel.requestCopyCurrentConfig(mcpServerManager, uiState) },
+            onCopyClawSetupPrompt = {
+                mcpPageViewModel.requestCopyClawSetupPrompt(
+                    manager = mcpServerManager,
+                    serverState = uiState,
+                    promptTemplate = clawSetupPromptTemplate,
+                )
+            },
             onRefreshNow = { mcpPageViewModel.requestRefreshNow(mcpServerManager) },
             onSaveServiceConfig = { mcpPageViewModel.requestSaveConfig(mcpServerManager) },
             onServerNameChange = mcpPageViewModel::updateServerName,

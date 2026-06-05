@@ -56,6 +56,23 @@ internal class McpSkillContent(
         ) { _ ->
             callResource(uri = SKILL_OVERVIEW_URI, mimeType = MIME_TEXT, text = buildSkillOverview())
         }
+        server.addResource(
+            uri = SUBAGENT_RESOURCE_URI,
+            name = "keios-mcp-subagent",
+            description = localText(
+                locale,
+                "KeiOS MCP 子 Agent 指南",
+                "KeiOS MCP sub agent guide",
+                "KeiOS MCP sub-agent guide"
+            ),
+            mimeType = MIME_MARKDOWN
+        ) { _ ->
+            callResource(
+                uri = SUBAGENT_RESOURCE_URI,
+                mimeType = MIME_MARKDOWN,
+                text = buildSubAgentMarkdown(currentLocale())
+            )
+        }
         server.addResourceTemplate(
             uriTemplate = SKILL_TOOL_TEMPLATE_URI,
             name = "keios-mcp-tool-help",
@@ -203,6 +220,7 @@ internal class McpSkillContent(
             appendLine("- keios.health.ping -> keios.mcp.runtime.status -> keios.github.config.snapshot")
             appendLine("- overview=$SKILL_OVERVIEW_URI")
             appendLine("- skill=$SKILL_RESOURCE_URI")
+            appendLine("- subAgent=$SUBAGENT_RESOURCE_URI")
             appendLine("- toolHelp=$SKILL_TOOL_TEMPLATE_URI")
             appendLine("- domainHelp=$SKILL_DOMAIN_TEMPLATE_URI")
             appendLine("- workflows=$WORKFLOW_RESOURCE_URI")
@@ -247,6 +265,7 @@ internal class McpSkillContent(
                 state?.lanEndpoints?.takeIf { it.isNotEmpty() }?.joinToString(" | ") ?: "N/A"
             )
             .replace("{{RESOURCE_SKILL_URI}}", SKILL_RESOURCE_URI)
+            .replace("{{RESOURCE_SUBAGENT_URI}}", SUBAGENT_RESOURCE_URI)
             .replace("{{RESOURCE_OVERVIEW_URI}}", SKILL_OVERVIEW_URI)
             .replace("{{RESOURCE_TOOL_TEMPLATE_URI}}", SKILL_TOOL_TEMPLATE_URI)
             .replace("{{RESOURCE_DOMAIN_TEMPLATE_URI}}", SKILL_DOMAIN_TEMPLATE_URI)
@@ -282,6 +301,7 @@ internal class McpSkillContent(
         val locale = currentLocale()
         return buildString {
             appendLine("skillResource=$SKILL_RESOURCE_URI")
+            appendLine("subAgentResource=$SUBAGENT_RESOURCE_URI")
             appendLine("skillOverviewResource=$SKILL_OVERVIEW_URI")
             appendLine("skillToolTemplate=$SKILL_TOOL_TEMPLATE_URI")
             appendLine("skillDomainTemplate=$SKILL_DOMAIN_TEMPLATE_URI")
@@ -386,7 +406,8 @@ internal class McpSkillContent(
             appendLine("3) keios.github.config.snapshot")
             appendLine("4) $SKILL_OVERVIEW_URI")
             appendLine("5) $SKILL_RESOURCE_URI")
-            appendLine("6) $WORKFLOW_RESOURCE_URI")
+            appendLine("6) $SUBAGENT_RESOURCE_URI")
+            appendLine("7) $WORKFLOW_RESOURCE_URI")
             if (task.isNotBlank()) {
                 appendLine("task=$task")
             }
@@ -421,12 +442,14 @@ internal class McpSkillContent(
         endpointOverride: String,
         serverNameOverride: String
     ): String {
+        val locale = currentLocale()
         val fixedMode = normalizeMcpConfigMode(mode)
         val configJson = runtimeConfigBuilder(state, fixedMode, endpointOverride, serverNameOverride)
         return buildString {
             appendLine("target=claw")
             appendLine("mode=$fixedMode")
             appendLine("skillResource=$SKILL_RESOURCE_URI")
+            appendLine("subAgentResource=$SUBAGENT_RESOURCE_URI")
             appendLine("skillOverviewResource=$SKILL_OVERVIEW_URI")
             appendLine("skillToolTemplate=$SKILL_TOOL_TEMPLATE_URI")
             appendLine("skillDomainTemplate=$SKILL_DOMAIN_TEMPLATE_URI")
@@ -435,6 +458,48 @@ internal class McpSkillContent(
             appendLine("workflowTemplate=$WORKFLOW_TEMPLATE_URI")
             appendLine("workflowPrompt=$WORKFLOW_PLAN_PROMPT")
             appendLine("diagnosticsPrompt=$DIAGNOSTICS_PLAN_PROMPT")
+            appendLine()
+            appendLine("## Claw Setup")
+            appendLine(
+                "1. " + localText(
+                    locale,
+                    "在 Claw App 的 MCP 服务器列表里添加下面的 MCP Config。",
+                    "Claw App の MCP サーバー一覧に下の MCP Config を追加します。",
+                    "Add the MCP Config below in the Claw App MCP server list."
+                )
+            )
+            appendLine(
+                "2. " + localText(
+                    locale,
+                    "读取 skillResource，并将 SKILL.md 注册为 KeiOS MCP Skill。",
+                    "skillResource を読み取り、SKILL.md を KeiOS MCP Skill として登録します。",
+                    "Read skillResource and register SKILL.md as the KeiOS MCP Skill."
+                )
+            )
+            appendLine(
+                "3. " + localText(
+                    locale,
+                    "Agent 模式下读取 subAgentResource，并让 Claw 主 Agent 将 KeiOS、GitHub、OS、BA 相关任务委派给 KeiOS MCP 子 Agent。",
+                    "Agent mode では subAgentResource を読み取り、Claw main Agent が KeiOS、GitHub、OS、BA 関連タスクを KeiOS MCP sub agent へ委譲します。",
+                    "In Agent mode, read subAgentResource and let the Claw main Agent delegate KeiOS, GitHub, OS, and BA tasks to the KeiOS MCP sub agent."
+                )
+            )
+            appendLine(
+                "4. " + localText(
+                    locale,
+                    "需要定时任务或组合技能时读取 workflowResource。",
+                    "定期タスクや複合 skill では workflowResource を読み取ります。",
+                    "Read workflowResource for scheduled tasks or composed skills."
+                )
+            )
+            appendLine(
+                "5. " + localText(
+                    locale,
+                    "每次 KeiOS 升级后，在 Claw 删除旧服务器并重新添加，刷新工具缓存。",
+                    "KeiOS 更新後は Claw で古いサーバーを削除して追加し直し、tools キャッシュを更新します。",
+                    "After each KeiOS upgrade, delete the old server in Claw and add it again to refresh cached tools."
+                )
+            )
             appendLine()
             appendLine("## MCP Config")
             appendLine("```json")
@@ -445,6 +510,152 @@ internal class McpSkillContent(
             appendLine("```markdown")
             appendLine(loadSkillMarkdown())
             appendLine("```")
+            appendLine()
+            appendLine("## SUBAGENT.md")
+            appendLine("```markdown")
+            appendLine(buildSubAgentMarkdown(locale))
+            appendLine("```")
+        }.trim()
+    }
+
+    fun buildSubAgentMarkdown(locale: Locale = currentLocale()): String {
+        val state = environment.currentState()
+        val entrypointTools = McpToolCatalog.forLocale(locale)
+            .filter { it.visibility == McpToolVisibility.Entrypoint }
+        return buildString {
+            appendLine("# KeiOS MCP Sub Agent")
+            appendLine()
+            appendLine(
+                localText(
+                    locale,
+                    "这是给 Claw 主 Agent 读取的 KeiOS 子 Agent 指南。主 Agent 可以把 KeiOS 本地服务、GitHub 追踪、Actions、OS 卡片、Shell、Blue Archive 与开发验证相关任务委派给此子 Agent。",
+                    "これは Claw main Agent が読む KeiOS sub agent ガイドです。main Agent は KeiOS local service、GitHub tracking、Actions、OS cards、Shell、Blue Archive、development validation 関連タスクをこの sub agent に委譲できます。",
+                    "This guide is for the Claw main Agent. The main Agent can delegate KeiOS local service, GitHub tracking, Actions, OS cards, shell, Blue Archive, and development validation tasks to this sub agent."
+                )
+            )
+            appendLine()
+            appendLine("subAgentResource=$SUBAGENT_RESOURCE_URI")
+            appendLine("skillResource=$SKILL_RESOURCE_URI")
+            appendLine("skillOverviewResource=$SKILL_OVERVIEW_URI")
+            appendLine("workflowResource=$WORKFLOW_RESOURCE_URI")
+            appendLine("workflowTemplate=$WORKFLOW_TEMPLATE_URI")
+            appendLine("configResource=$CONFIG_RESOURCE_URI")
+            appendLine("bootstrapPrompt=$BOOTSTRAP_PROMPT")
+            appendLine("workflowPrompt=$WORKFLOW_PLAN_PROMPT")
+            appendLine("diagnosticsPrompt=$DIAGNOSTICS_PLAN_PROMPT")
+            appendLine("localEndpoint=${state?.localEndpoint ?: DEFAULT_ENDPOINT}")
+            if (state?.lanEndpoints?.isNotEmpty() == true) {
+                appendLine("lanEndpoints=${state.lanEndpoints.joinToString(",")}")
+            }
+            appendLine()
+            appendLine("## Suggested Claw Agent Card")
+            appendLine()
+            appendLine("```yaml")
+            appendLine("name: KeiOS MCP Agent")
+            appendLine("uri: $SUBAGENT_RESOURCE_URI")
+            appendLine("mcpServer: ${state?.serverName ?: "KeiOS MCP"}")
+            appendLine("modelRole: tool-operator")
+            appendLine("defaultResources:")
+            appendLine("  - $SKILL_RESOURCE_URI")
+            appendLine("  - $SKILL_OVERVIEW_URI")
+            appendLine("  - $WORKFLOW_RESOURCE_URI")
+            appendLine("handoffFrom: Claw main Agent")
+            appendLine("```")
+            appendLine()
+            appendLine("## When To Delegate")
+            appendLine()
+            listOf(
+                localText(
+                    locale,
+                    "用户询问 KeiOS、MCP 服务、Token、endpoint、日志、连接或升级后的工具刷新。",
+                    "ユーザーが KeiOS、MCP service、Token、endpoint、logs、接続、更新後の tools refresh を求めたとき。",
+                    "The user asks about KeiOS, MCP service state, token, endpoint, logs, connectivity, or post-upgrade tool refresh."
+                ),
+                localText(
+                    locale,
+                    "用户需要 GitHub / Git / 订阅项目追踪、版本检查、Actions、Star List 导入或 APK 验证。",
+                    "ユーザーが GitHub / Git / subscription tracking、version checks、Actions、Star List import、APK verification を求めたとき。",
+                    "The user needs GitHub, Git, or subscription tracking, version checks, Actions, Star List import, or APK verification."
+                ),
+                localText(
+                    locale,
+                    "用户需要 OS Activity、Shell 卡片、Shizuku 状态、系统 TopInfo 或卡片导入导出。",
+                    "ユーザーが OS Activity、Shell cards、Shizuku status、system TopInfo、card import/export を求めたとき。",
+                    "The user needs OS Activity, shell cards, Shizuku state, system TopInfo, or card import/export."
+                ),
+                localText(
+                    locale,
+                    "用户需要 Blue Archive AP、咖啡厅、活动日历、卡池、图鉴缓存或 BGM 收藏信息。",
+                    "ユーザーが Blue Archive AP、Cafe、calendar、pool、guide cache、BGM favorites を求めたとき。",
+                    "The user needs Blue Archive AP, Cafe, calendar, pool, guide cache, or BGM favorites."
+                )
+            ).forEach { item -> appendLine("- $item") }
+            appendLine()
+            appendLine("## Startup Flow")
+            appendLine()
+            appendLine("1. `keios.health.ping`")
+            appendLine("2. `keios.mcp.runtime.status`")
+            appendLine("3. Read `$SKILL_OVERVIEW_URI`")
+            appendLine("4. Read `$SKILL_RESOURCE_URI` for the full tool contract")
+            appendLine("5. Read `$SKILL_DOMAIN_TEMPLATE_URI` for domain-specific tasks")
+            appendLine()
+            appendLine("## Operating Contract")
+            appendLine()
+            listOf(
+                localText(
+                    locale,
+                    "优先调用入口工具理解状态，再读取领域资源或单工具帮助，再调用底层工具。",
+                    "入口ツールで状態を理解し、domain resource または single-tool help を読み、下位ツールを呼びます。",
+                    "Call entrypoint tools first, then read domain resources or single-tool help, then call lower-level tools."
+                ),
+                localText(
+                    locale,
+                    "导入、清理、写入类工具先用预览模式；用户明确确认后再传 `apply=true`。",
+                    "import、clear、write 系ツールは preview mode から始め、ユーザー確認後に `apply=true` を渡します。",
+                    "Use preview mode for import, clear, and write tools; pass `apply=true` after explicit user confirmation."
+                ),
+                localText(
+                    locale,
+                    "联网和深扫工具带上 limit、repoFilter 或 scope，优先返回可读摘要。",
+                    "network / deep scan tools には limit、repoFilter、scope を付け、読みやすい summary を優先します。",
+                    "Use limit, repoFilter, or scope for network and deep-scan tools, and return a readable summary first."
+                ),
+                localText(
+                    locale,
+                    "输出给主 Agent 时包含已调用工具、关键结果、风险、建议下一步。",
+                    "main Agent へ返すときは called tools、key results、risks、next steps を含めます。",
+                    "Return called tools, key results, risks, and next steps to the main Agent."
+                )
+            ).forEach { item -> appendLine("- $item") }
+            appendLine()
+            appendLine("## Entrypoint Tools")
+            appendLine()
+            entrypointTools.forEach { meta ->
+                appendLine("- `${meta.name}`: ${meta.description}")
+            }
+            appendLine()
+            appendLine("## Escalate To Main Agent")
+            appendLine()
+            listOf(
+                localText(
+                    locale,
+                    "需要用户授权 Shizuku、本地网络权限、Token 重配或 Claw 重新添加服务器。",
+                    "Shizuku permission、local network permission、Token reconfiguration、Claw server re-add が必要なとき。",
+                    "User action is required for Shizuku permission, local network permission, token reconfiguration, or Claw server re-add."
+                ),
+                localText(
+                    locale,
+                    "写入操作会覆盖、清理或导入用户数据。",
+                    "write operation がユーザーデータの overwrite、clear、import を行うとき。",
+                    "A write operation may overwrite, clear, or import user data."
+                ),
+                localText(
+                    locale,
+                    "任务需要用户选择账号、服务器、追踪条目、目标文件或通知策略。",
+                    "task が account、server、tracking item、target file、notification policy の選択を必要とするとき。",
+                    "The task requires the user to choose an account, server, tracked item, target file, or notification policy."
+                )
+            ).forEach { item -> appendLine("- $item") }
         }.trim()
     }
 

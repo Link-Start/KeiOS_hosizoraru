@@ -6,7 +6,7 @@
     <string name="mcp_skill_section_default_overview">概览</string>
     <string name="mcp_skill_section_default_content">内容</string>
     <string name="mcp_skill_section_empty_content">暂无内容</string>
-    <string name="mcp_skill_claw_prompt">请连接当前 KeiOS MCP 服务，并调用 keios.mcp.claw.skill.guide(mode=auto)。把返回结果里的 SKILL.md 内容注册为一个名为“KeiOS MCP Skill”的 Claw Skill；完成后先执行 keios.health.ping 和 keios.mcp.runtime.status 验证连通性。需要创建定时任务或组合技能时，读取 keios://skill/workflows.md，并使用 keios.mcp.workflow.plan 或 keios.mcp.workflow.blueprints。</string>
+    <string name="mcp_skill_claw_prompt">请连接当前 KeiOS MCP 服务，并调用 keios.mcp.claw.skill.guide(mode=auto)。把返回结果里的 SKILL.md 内容注册为一个名为“KeiOS MCP Skill”的 Claw Skill；Agent 模式下读取 keios://skill/subagent.md，让 Claw 主 Agent 委派 KeiOS 相关任务；完成后先执行 keios.health.ping 和 keios.mcp.runtime.status 验证连通性。需要创建定时任务或组合技能时，读取 keios://skill/workflows.md，并使用 keios.mcp.workflow.plan 或 keios.mcp.workflow.blueprints。</string>
     <string name="mcp_skill_action_copy_claw_prompt">复制提示词</string>
     <string name="mcp_skill_toast_claw_prompt_copied">Claw 提示词已复制</string>
     <string name="mcp_skill_onboarding_title">把 KeiOS MCP 接入 Claw</string>
@@ -23,22 +23,26 @@
     <string name="mcp_skill_action_collapse_reference">收起完整参考</string>
     <string name="mcp_skill_action_copy_current_config">复制当前配置</string>
     <string name="mcp_skill_action_copy_full_skill">复制 SKILL.md</string>
+    <string name="mcp_skill_action_copy_subagent_resource">复制子 Agent URI</string>
     <string name="mcp_skill_action_copy_workflow_resource">复制工作流 URI</string>
     <string name="mcp_skill_action_copy_domain_template">复制领域 URI</string>
     <string name="mcp_skill_action_copy_bootstrap_prompt">复制初始化 Prompt</string>
     <string name="mcp_skill_action_copy_diagnostics_prompt">复制排障 Prompt</string>
     <string name="mcp_skill_copy_current_config_summary">包含 endpoint、Token 与请求头，交给客户端后即可连接本机服务。</string>
     <string name="mcp_skill_copy_full_skill_summary">完整说明，适合注册为客户端 Skill。</string>
+    <string name="mcp_skill_copy_subagent_resource_summary">让 Claw 主 Agent 读取 KeiOS 子 Agent 职责、委派边界与工具规则。</string>
     <string name="mcp_skill_copy_workflow_resource_summary">读取定时任务与组合技能蓝图。</string>
     <string name="mcp_skill_copy_domain_template_summary">按 runtime、github、os、ba 读取领域指南。</string>
     <string name="mcp_skill_copy_bootstrap_prompt_summary">新客户端初始化、连通性检查和配置导入。</string>
     <string name="mcp_skill_copy_diagnostics_prompt_summary">连接失败、权限异常和工具失败排查。</string>
     <string name="mcp_skill_resource_skill_title">完整 Skill</string>
+    <string name="mcp_skill_resource_subagent_title">子 Agent 指南</string>
     <string name="mcp_skill_resource_workflow_title">工作流蓝图</string>
     <string name="mcp_skill_resource_domain_github_title">GitHub 领域指南</string>
     <string name="mcp_skill_resource_domain_runtime_title">Runtime 领域指南</string>
     <string name="mcp_skill_resource_tool_template_title">单工具帮助模板</string>
     <string name="mcp_skill_resource_skill_summary">让客户端读取当前版本的完整 Skill 文档。</string>
+    <string name="mcp_skill_resource_subagent_summary">让 Claw 主 Agent 创建专门调用 KeiOS MCP 的子 Agent。</string>
     <string name="mcp_skill_resource_workflow_summary">让客户端读取可组合的任务蓝图。</string>
     <string name="mcp_skill_resource_domain_github_summary">聚焦 GitHub 追踪、订阅项目、刷新与导入导出。</string>
     <string name="mcp_skill_resource_domain_runtime_summary">聚焦服务状态、配置、连接和日志。</string>
@@ -81,6 +85,7 @@
     <string name="mcp_action_open_skill_md">查看 SKILL.md</string>
     <string name="mcp_action_copy_current_config">复制当前配置</string>
     <string name="mcp_action_copy_skill_resource">复制 Skill URI</string>
+    <string name="mcp_action_copy_subagent_resource">复制子 Agent URI</string>
     <string name="mcp_action_copy_workflow_resource">复制工作流 URI</string>
     <string name="mcp_action_copy_skill_resource_summary">复制完整 Skill 资源地址，客户端读取后可获得当前工具索引、参数说明和写入规则。</string>
     <string name="mcp_action_copy_workflow_resource_summary">复制工作流蓝图资源地址，适合给 Claw 规划定时任务或组合技能。</string>

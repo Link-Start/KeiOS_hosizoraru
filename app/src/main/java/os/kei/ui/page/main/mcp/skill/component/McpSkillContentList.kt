@@ -23,6 +23,7 @@ import os.kei.mcp.server.DIAGNOSTICS_PLAN_PROMPT
 import os.kei.mcp.server.SKILL_DOMAIN_TEMPLATE_URI
 import os.kei.mcp.server.SKILL_RESOURCE_URI
 import os.kei.mcp.server.SKILL_TOOL_TEMPLATE_URI
+import os.kei.mcp.server.SUBAGENT_RESOURCE_URI
 import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.mcp.skill.model.SkillSection
 import os.kei.ui.page.main.mcp.skill.state.McpSkillPageContentState
@@ -82,6 +83,7 @@ internal fun McpSkillContentList(
             buildMcpSkillCopyActions(
                 textBundle = textBundle,
                 markdown = markdown,
+                subAgentResourceUri = SUBAGENT_RESOURCE_URI,
                 workflowResourceUri = WORKFLOW_RESOURCE_URI,
                 domainTemplateUri = SKILL_DOMAIN_TEMPLATE_URI,
                 bootstrapPrompt = BOOTSTRAP_PROMPT,
@@ -98,6 +100,7 @@ internal fun McpSkillContentList(
             buildMcpSkillResourceActions(
                 textBundle = textBundle,
                 skillResourceUri = SKILL_RESOURCE_URI,
+                subAgentResourceUri = SUBAGENT_RESOURCE_URI,
                 workflowResourceUri = WORKFLOW_RESOURCE_URI,
                 domainTemplateUri = SKILL_DOMAIN_TEMPLATE_URI,
                 toolTemplateUri = SKILL_TOOL_TEMPLATE_URI,

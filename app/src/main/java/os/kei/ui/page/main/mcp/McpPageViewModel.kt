@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -21,6 +22,7 @@ import os.kei.R
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerUiState
 import os.kei.mcp.server.SKILL_RESOURCE_URI
+import os.kei.mcp.server.SUBAGENT_RESOURCE_URI
 import os.kei.mcp.server.WORKFLOW_RESOURCE_URI
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
@@ -36,13 +38,14 @@ internal data class McpPageUiState(
     val allowExternal: Boolean = false,
     val serverName: String = "KeiOS MCP",
     val showEditSheet: Boolean = false,
-    val controlExpanded: Boolean = true,
-    val toolEntrypointsExpanded: Boolean = true,
+    val onboardingExpanded: Boolean = false,
+    val controlExpanded: Boolean = false,
+    val toolEntrypointsExpanded: Boolean = false,
     val runtimeToolsExpanded: Boolean = false,
     val systemToolsExpanded: Boolean = false,
     val githubToolsExpanded: Boolean = false,
     val baToolsExpanded: Boolean = false,
-    val codexToolsExpanded: Boolean = true,
+    val codexToolsExpanded: Boolean = false,
     val workflowToolsExpanded: Boolean = false,
     val advancedToolsExpanded: Boolean = false,
     val toolsSearchQuery: String = "",
@@ -106,11 +109,13 @@ internal sealed interface McpPageEvent {
     ) : McpPageEvent
 }
 
-internal class McpPageViewModel : ViewModel() {
+internal class McpPageViewModel(
+    private val savedStateHandle: SavedStateHandle,
+) : ViewModel() {
     private val repository = McpPageRepository()
     private val toolBucketLoader = McpToolBucketLoader(viewModelScope, repository)
     private val runtimeTicker = McpRuntimeTicker(viewModelScope)
-    private val _uiState = MutableStateFlow(McpPageUiState())
+    private val _uiState = MutableStateFlow(savedStateHandle.toInitialMcpPageUiState())
     val uiState: StateFlow<McpPageUiState> = _uiState.asStateFlow()
     val toolBuckets: StateFlow<McpToolBuckets> = toolBucketLoader.buckets
     val runtimeNowMs: StateFlow<Long> = runtimeTicker.nowMs
@@ -159,39 +164,53 @@ internal class McpPageViewModel : ViewModel() {
         _uiState.update { state -> state.copy(showEditSheet = value) }
     }
 
+    fun updateOnboardingExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_ONBOARDING_EXPANDED] = value
+        _uiState.update { state -> state.copy(onboardingExpanded = value) }
+    }
+
     fun updateControlExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_CONTROL_EXPANDED] = value
         _uiState.update { state -> state.copy(controlExpanded = value) }
     }
 
     fun updateToolEntrypointsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_TOOL_ENTRYPOINTS_EXPANDED] = value
         _uiState.update { state -> state.copy(toolEntrypointsExpanded = value) }
     }
 
     fun updateRuntimeToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_RUNTIME_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(runtimeToolsExpanded = value) }
     }
 
     fun updateSystemToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_SYSTEM_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(systemToolsExpanded = value) }
     }
 
     fun updateGithubToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_GITHUB_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(githubToolsExpanded = value) }
     }
 
     fun updateBaToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_BA_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(baToolsExpanded = value) }
     }
 
     fun updateCodexToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_CODEX_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(codexToolsExpanded = value) }
     }
 
     fun updateWorkflowToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_WORKFLOW_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(workflowToolsExpanded = value) }
     }
 
     fun updateAdvancedToolsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_ADVANCED_TOOLS_EXPANDED] = value
         _uiState.update { state -> state.copy(advancedToolsExpanded = value) }
     }
 
@@ -216,6 +235,7 @@ internal class McpPageViewModel : ViewModel() {
     }
 
     fun updateLogsExpanded(value: Boolean) {
+        savedStateHandle[MCP_STATE_LOGS_EXPANDED] = value
         _uiState.update { state -> state.copy(logsExpanded = value) }
     }
 
@@ -334,6 +354,16 @@ internal class McpPageViewModel : ViewModel() {
         )
     }
 
+    fun requestCopySubAgentResource() {
+        _events.tryEmit(
+            McpPageEvent.CopyText(
+                label = "mcp-subagent-resource",
+                text = SUBAGENT_RESOURCE_URI,
+                successRes = R.string.mcp_toast_resource_copied,
+            ),
+        )
+    }
+
     fun requestCopyWorkflowResource() {
         _events.tryEmit(
             McpPageEvent.CopyText(
@@ -342,6 +372,29 @@ internal class McpPageViewModel : ViewModel() {
                 successRes = R.string.mcp_toast_resource_copied,
             ),
         )
+    }
+
+    fun requestCopyClawSetupPrompt(
+        manager: McpServerManager,
+        serverState: McpServerUiState,
+        promptTemplate: String,
+    ) {
+        viewModelScope.launch {
+            val prompt =
+                repository.buildClawSetupPrompt(
+                    manager = manager,
+                    serverState = serverState,
+                    draft = _uiState.value.serviceDraft,
+                    promptTemplate = promptTemplate,
+                )
+            _events.emit(
+                McpPageEvent.CopyText(
+                    label = "mcp-claw-setup-prompt",
+                    text = prompt,
+                    successRes = R.string.mcp_toast_claw_setup_prompt_copied,
+                ),
+            )
+        }
     }
 
     fun requestRefreshNow(manager: McpServerManager) {
@@ -500,3 +553,30 @@ internal class McpPageViewModel : ViewModel() {
         )
     }
 }
+
+private const val MCP_STATE_CONTROL_EXPANDED = "mcp.controlExpanded"
+private const val MCP_STATE_ONBOARDING_EXPANDED = "mcp.onboardingExpanded"
+private const val MCP_STATE_TOOL_ENTRYPOINTS_EXPANDED = "mcp.toolEntrypointsExpanded"
+private const val MCP_STATE_RUNTIME_TOOLS_EXPANDED = "mcp.runtimeToolsExpanded"
+private const val MCP_STATE_SYSTEM_TOOLS_EXPANDED = "mcp.systemToolsExpanded"
+private const val MCP_STATE_GITHUB_TOOLS_EXPANDED = "mcp.githubToolsExpanded"
+private const val MCP_STATE_BA_TOOLS_EXPANDED = "mcp.baToolsExpanded"
+private const val MCP_STATE_CODEX_TOOLS_EXPANDED = "mcp.codexToolsExpanded"
+private const val MCP_STATE_WORKFLOW_TOOLS_EXPANDED = "mcp.workflowToolsExpanded"
+private const val MCP_STATE_ADVANCED_TOOLS_EXPANDED = "mcp.advancedToolsExpanded"
+private const val MCP_STATE_LOGS_EXPANDED = "mcp.logsExpanded"
+
+private fun SavedStateHandle.toInitialMcpPageUiState(): McpPageUiState =
+    McpPageUiState(
+        onboardingExpanded = get<Boolean>(MCP_STATE_ONBOARDING_EXPANDED) ?: false,
+        controlExpanded = get<Boolean>(MCP_STATE_CONTROL_EXPANDED) ?: false,
+        toolEntrypointsExpanded = get<Boolean>(MCP_STATE_TOOL_ENTRYPOINTS_EXPANDED) ?: false,
+        runtimeToolsExpanded = get<Boolean>(MCP_STATE_RUNTIME_TOOLS_EXPANDED) ?: false,
+        systemToolsExpanded = get<Boolean>(MCP_STATE_SYSTEM_TOOLS_EXPANDED) ?: false,
+        githubToolsExpanded = get<Boolean>(MCP_STATE_GITHUB_TOOLS_EXPANDED) ?: false,
+        baToolsExpanded = get<Boolean>(MCP_STATE_BA_TOOLS_EXPANDED) ?: false,
+        codexToolsExpanded = get<Boolean>(MCP_STATE_CODEX_TOOLS_EXPANDED) ?: false,
+        workflowToolsExpanded = get<Boolean>(MCP_STATE_WORKFLOW_TOOLS_EXPANDED) ?: false,
+        advancedToolsExpanded = get<Boolean>(MCP_STATE_ADVANCED_TOOLS_EXPANDED) ?: false,
+        logsExpanded = get<Boolean>(MCP_STATE_LOGS_EXPANDED) ?: false,
+    )

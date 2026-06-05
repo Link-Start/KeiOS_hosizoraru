@@ -55,7 +55,7 @@ internal fun BoxScope.McpPageFloatingActionDock(
     val moreIcon = appLucideMoreIcon()
     val primaryColor = MiuixTheme.colorScheme.primary
     val errorColor = MiuixTheme.colorScheme.error
-    val copyConfigContentDescription = stringResource(R.string.mcp_action_copy_current_config)
+    val copyClawSetupContentDescription = stringResource(R.string.mcp_action_copy_claw_setup_prompt)
     val refreshContentDescription = stringResource(R.string.common_refresh)
     val expandDescription = stringResource(R.string.common_expand)
     val toggleContentDescription =
@@ -71,7 +71,7 @@ internal fun BoxScope.McpPageFloatingActionDock(
             toggleIcon,
             uiState.running,
             refreshRunning,
-            copyConfigContentDescription,
+            copyClawSetupContentDescription,
             refreshContentDescription,
             toggleContentDescription,
             primaryColor,
@@ -81,9 +81,9 @@ internal fun BoxScope.McpPageFloatingActionDock(
             listOf(
                 AppFloatingDockAction(
                     icon = copyIcon,
-                    contentDescription = copyConfigContentDescription,
+                    contentDescription = copyClawSetupContentDescription,
                     iconTint = primaryColor,
-                    onClick = actions.onCopyCurrentConfig,
+                    onClick = actions.onCopyClawSetupPrompt,
                 ),
                 AppFloatingDockAction(
                     icon = refreshIcon,

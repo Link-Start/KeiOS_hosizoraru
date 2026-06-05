@@ -6,7 +6,7 @@
     <string name="mcp_skill_section_default_overview">Overview</string>
     <string name="mcp_skill_section_default_content">Content</string>
     <string name="mcp_skill_section_empty_content">No content</string>
-    <string name="mcp_skill_claw_prompt">Connect to the current KeiOS MCP service, then call keios.mcp.claw.skill.guide(mode=auto). Register the SKILL.md content from the response as a Claw Skill named “KeiOS MCP Skill”; after that, run keios.health.ping and keios.mcp.runtime.status to verify connectivity. For scheduled tasks or composed skills, read keios://skill/workflows.md and use keios.mcp.workflow.plan or keios.mcp.workflow.blueprints.</string>
+    <string name="mcp_skill_claw_prompt">First add the current KeiOS MCP config in the Claw App MCP server list. Then read the Skill URI keios://skill/keios-mcp.md and register the content as a Claw Skill named “KeiOS MCP Skill”. In Agent mode, read keios://skill/subagent.md so the Claw main Agent can delegate KeiOS tasks. After setup, run keios.health.ping and keios.mcp.runtime.status to verify connectivity. For scheduled tasks or composed skills, read keios://skill/workflows.md and use keios.mcp.workflow.plan or keios.mcp.workflow.blueprints. After each KeiOS upgrade, delete the old KeiOS MCP server in Claw and add it again so the client refreshes cached tools.</string>
     <string name="mcp_skill_action_copy_claw_prompt">Copy prompt</string>
     <string name="mcp_skill_toast_claw_prompt_copied">Claw prompt copied</string>
     <string name="mcp_skill_onboarding_title">Connect KeiOS MCP to Claw</string>
@@ -23,22 +23,26 @@
     <string name="mcp_skill_action_collapse_reference">Collapse full reference</string>
     <string name="mcp_skill_action_copy_current_config">Copy current config</string>
     <string name="mcp_skill_action_copy_full_skill">Copy SKILL.md</string>
+    <string name="mcp_skill_action_copy_subagent_resource">Copy sub-agent URI</string>
     <string name="mcp_skill_action_copy_workflow_resource">Copy workflow URI</string>
     <string name="mcp_skill_action_copy_domain_template">Copy domain URI</string>
     <string name="mcp_skill_action_copy_bootstrap_prompt">Copy bootstrap prompt</string>
     <string name="mcp_skill_action_copy_diagnostics_prompt">Copy diagnostics prompt</string>
     <string name="mcp_skill_copy_current_config_summary">Includes endpoint, token, and headers so the client can connect to the local service.</string>
     <string name="mcp_skill_copy_full_skill_summary">Full guide, suitable for registering as a client Skill.</string>
+    <string name="mcp_skill_copy_subagent_resource_summary">Lets the Claw main Agent read the KeiOS sub-agent role, delegation boundary, and tool rules.</string>
     <string name="mcp_skill_copy_workflow_resource_summary">Reads scheduled task and composed skill blueprints.</string>
     <string name="mcp_skill_copy_domain_template_summary">Reads runtime, github, os, or ba domain guides.</string>
     <string name="mcp_skill_copy_bootstrap_prompt_summary">Initializes a new client, checks connectivity, and imports config.</string>
     <string name="mcp_skill_copy_diagnostics_prompt_summary">Diagnoses connection failures, permission issues, and tool errors.</string>
     <string name="mcp_skill_resource_skill_title">Full Skill</string>
+    <string name="mcp_skill_resource_subagent_title">Sub-agent guide</string>
     <string name="mcp_skill_resource_workflow_title">Workflow blueprints</string>
     <string name="mcp_skill_resource_domain_github_title">GitHub domain guide</string>
     <string name="mcp_skill_resource_domain_runtime_title">Runtime domain guide</string>
     <string name="mcp_skill_resource_tool_template_title">Single-tool help template</string>
     <string name="mcp_skill_resource_skill_summary">Lets clients read the current full Skill document.</string>
+    <string name="mcp_skill_resource_subagent_summary">Lets the Claw main Agent create a child Agent dedicated to KeiOS MCP.</string>
     <string name="mcp_skill_resource_workflow_summary">Lets clients read composable task blueprints.</string>
     <string name="mcp_skill_resource_domain_github_summary">Covers GitHub tracking, subscribed projects, refresh, import, and export.</string>
     <string name="mcp_skill_resource_domain_runtime_summary">Covers service state, config, connection, and logs.</string>
@@ -80,10 +84,24 @@
     <string name="mcp_action_edit_service_params">Edit service parameters</string>
     <string name="mcp_action_open_skill_md">View SKILL.md</string>
     <string name="mcp_action_copy_current_config">Copy current config</string>
+    <string name="mcp_action_copy_claw_setup_prompt">Copy Claw setup prompt</string>
     <string name="mcp_action_copy_skill_resource">Copy Skill URI</string>
+    <string name="mcp_action_copy_subagent_resource">Copy sub-agent URI</string>
     <string name="mcp_action_copy_workflow_resource">Copy workflow URI</string>
     <string name="mcp_action_copy_skill_resource_summary">Copies the full Skill resource URI. Clients can read it for the current tool index, arguments, and write rules.</string>
     <string name="mcp_action_copy_workflow_resource_summary">Copies the workflow blueprint resource URI for Claw scheduled tasks or composed skills.</string>
+    <string name="mcp_onboarding_card_title">Claw setup guide</string>
+    <string name="mcp_onboarding_card_subtitle">Copy config, Skill, sub-agent, and workflow resources in order</string>
+    <string name="mcp_onboarding_step_server_title">1. Add the MCP server</string>
+    <string name="mcp_onboarding_step_server_summary">Copy the current config, then add KeiOS MCP in the Claw App MCP server list.</string>
+    <string name="mcp_onboarding_step_skill_title">2. Ask Claw to read the Skill URI</string>
+    <string name="mcp_onboarding_step_skill_summary">Copy the Skill URI and give it to Claw. After reading it, Claw understands tools, arguments, output formats, and write rules.</string>
+    <string name="mcp_onboarding_step_subagent_title">3. Agent mode reads the sub-agent URI</string>
+    <string name="mcp_onboarding_step_subagent_summary">Copy the sub-agent URI for the Claw main Agent, so it can delegate KeiOS, GitHub, OS, and BA tasks to the KeiOS MCP Agent.</string>
+    <string name="mcp_onboarding_step_workflow_title">4. Read workflow URI for advanced tasks</string>
+    <string name="mcp_onboarding_step_workflow_summary">For scheduled tasks or composed skills, copy the workflow URI so Claw can read the blueprints and plan the task.</string>
+    <string name="mcp_onboarding_step_upgrade_title">5. Re-add the server after app updates</string>
+    <string name="mcp_onboarding_step_upgrade_summary">After each KeiOS upgrade, delete the old KeiOS MCP server in Claw and add it again so the client refreshes its cached tools.</string>
     <string name="mcp_action_send_test_notification">Send test notification</string>
     <string name="mcp_action_reset_service_config">Reset config</string>
     <string name="mcp_action_clear_logs">Clear logs</string>
@@ -119,6 +137,7 @@
     <string name="mcp_toast_service_started">MCP service started</string>
     <string name="mcp_toast_start_failed">Start failed: %1$s</string>
     <string name="mcp_toast_config_copied">MCP config copied</string>
+    <string name="mcp_toast_claw_setup_prompt_copied">Claw setup prompt copied</string>
     <string name="mcp_toast_resource_copied">MCP resource URI copied</string>
     <string name="mcp_toast_test_notification_sent">MCP test notification sent</string>
     <string name="mcp_toast_config_reset">MCP service config reset to defaults</string>
@@ -130,6 +149,26 @@
     <string name="mcp_toast_logs_export_failed">Log export failed: %1$s</string>
     <string name="mcp_toast_saved_requires_restart">Saved. Changes take effect on the next service start or restart.</string>
     <string name="mcp_toast_token_reset_reconnect">Token reset. Reconnect clients.</string>
+    <string name="mcp_claw_setup_prompt_template"><![CDATA[
+Please connect KeiOS MCP to Claw, and show a confirmation dialog before each config write or Agent creation step.
+
+MCP server name: {{SERVER_NAME}}
+MCP endpoint: {{ENDPOINT}}
+
+MCP config JSON:
+```json
+{{MCP_CONFIG_JSON}}
+```
+
+Setup steps:
+1. Add the MCP server with the JSON above. The transport type is Streamable HTTP, and the Authorization header already includes the Bearer token.
+2. After adding it, read the Skill URI: {{SKILL_RESOURCE_URI}}. Use it to understand KeiOS MCP tools, arguments, output formats, and write rules.
+3. In Agent mode, read the sub-agent URI: {{SUBAGENT_RESOURCE_URI}}. Create or update a KeiOS MCP sub Agent, then delegate KeiOS, GitHub, OS, and BA tasks to it.
+4. For scheduled tasks or composed skills, read the workflow URI: {{WORKFLOW_RESOURCE_URI}}, then use {{WORKFLOW_PROMPT}} to plan the task.
+5. After setup, call {{BOOTSTRAP_PROMPT}}, then run keios.health.ping and keios.mcp.runtime.status to verify connectivity.
+6. Use {{DIAGNOSTICS_PROMPT}} for troubleshooting.
+7. After each KeiOS App update, remind me to delete the old KeiOS MCP server in Claw and add it again so the client refreshes cached tools.
+]]></string>
     <string name="mcp_error_port_in_use">Port %1$d is already in use: %2$s</string>
     <string name="mcp_log_label">Log</string>
     <string name="mcp_log_empty">No logs</string>

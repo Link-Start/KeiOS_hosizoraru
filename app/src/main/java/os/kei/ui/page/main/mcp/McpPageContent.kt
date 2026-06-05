@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.MainPageRuntime
+import os.kei.ui.page.main.mcp.section.McpOnboardingGuideSection
 import os.kei.ui.page.main.mcp.section.McpLogsSection
 import os.kei.ui.page.main.mcp.section.McpOverviewCardSection
 import os.kei.ui.page.main.mcp.section.McpServiceControlSection
@@ -73,6 +74,17 @@ internal fun McpPageContent(
                     overviewMetrics = overviewState.overviewMetrics,
                     onToggleServer = actions.onToggleServer,
                     onOpenEditSheet = actions.onOpenEditSheet,
+                )
+            }
+            item(key = "mcp-onboarding-guide", contentType = "mcp_onboarding_guide_section") {
+                McpOnboardingGuideSection(
+                    backdrop = backdrops.content,
+                    expanded = pageUiState.onboardingExpanded,
+                    onExpandedChange = actions.onOnboardingExpandedChange,
+                    onCopyCurrentConfig = actions.onCopyCurrentConfig,
+                    onCopySkillResource = actions.onCopySkillResource,
+                    onCopySubAgentResource = actions.onCopySubAgentResource,
+                    onCopyWorkflowResource = actions.onCopyWorkflowResource,
                 )
             }
             item(key = "mcp-service-control", contentType = "mcp_service_control_section") {

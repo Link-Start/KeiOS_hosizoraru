@@ -8,7 +8,7 @@
     <string name="mcp_skill_section_default_overview">概要</string>
     <string name="mcp_skill_section_default_content">内容</string>
     <string name="mcp_skill_section_empty_content">内容なし</string>
-    <string name="mcp_skill_claw_prompt">現在の KeiOS MCP サービスに接続し、keios.mcp.claw.skill.guide(mode=auto) を呼び出してください。レスポンス内の SKILL.md 内容を “KeiOS MCP Skill” という名前の Claw Skill として登録し、その後 keios.health.ping と keios.mcp.runtime.status を実行して接続を確認してください。定期タスクや複合 skill を作成する場合は keios://skill/workflows.md を読み取り、keios.mcp.workflow.plan または keios.mcp.workflow.blueprints を使用してください。</string>
+    <string name="mcp_skill_claw_prompt">現在の KeiOS MCP サービスに接続し、keios.mcp.claw.skill.guide(mode=auto) を呼び出してください。レスポンス内の SKILL.md 内容を “KeiOS MCP Skill” という名前の Claw Skill として登録し、Agent mode では keios://skill/subagent.md を読み取って Claw main Agent が KeiOS タスクを委譲できるようにします。その後 keios.health.ping と keios.mcp.runtime.status を実行して接続を確認してください。定期タスクや複合 skill を作成する場合は keios://skill/workflows.md を読み取り、keios.mcp.workflow.plan または keios.mcp.workflow.blueprints を使用してください。</string>
     <string name="mcp_skill_action_copy_claw_prompt">プロンプトをコピー</string>
     <string name="mcp_skill_toast_claw_prompt_copied">Claw プロンプトをコピーしました</string>
     <string name="mcp_skill_onboarding_title">KeiOS MCP を Claw に接続</string>
@@ -25,22 +25,26 @@
     <string name="mcp_skill_action_collapse_reference">完全リファレンスを折りたたむ</string>
     <string name="mcp_skill_action_copy_current_config">現在の設定をコピー</string>
     <string name="mcp_skill_action_copy_full_skill">SKILL.md をコピー</string>
+    <string name="mcp_skill_action_copy_subagent_resource">Sub-agent URI をコピー</string>
     <string name="mcp_skill_action_copy_workflow_resource">Workflow URI をコピー</string>
     <string name="mcp_skill_action_copy_domain_template">Domain URI をコピー</string>
     <string name="mcp_skill_action_copy_bootstrap_prompt">Bootstrap Prompt をコピー</string>
     <string name="mcp_skill_action_copy_diagnostics_prompt">Diagnostics Prompt をコピー</string>
     <string name="mcp_skill_copy_current_config_summary">endpoint、token、headers を含み、ローカルサービスへ接続できます。</string>
     <string name="mcp_skill_copy_full_skill_summary">クライアント Skill として登録しやすい完全ガイドです。</string>
+    <string name="mcp_skill_copy_subagent_resource_summary">Claw main Agent が KeiOS sub-agent の役割、委譲境界、ツール規則を読めます。</string>
     <string name="mcp_skill_copy_workflow_resource_summary">定期タスクと複合 skill の blueprints を読み取ります。</string>
     <string name="mcp_skill_copy_domain_template_summary">runtime、github、os、ba の領域ガイドを読み取ります。</string>
     <string name="mcp_skill_copy_bootstrap_prompt_summary">新しいクライアントの初期化、接続確認、設定取り込みを行います。</string>
     <string name="mcp_skill_copy_diagnostics_prompt_summary">接続失敗、権限問題、ツール失敗を診断します。</string>
     <string name="mcp_skill_resource_skill_title">完全 Skill</string>
+    <string name="mcp_skill_resource_subagent_title">Sub-agent guide</string>
     <string name="mcp_skill_resource_workflow_title">Workflow blueprints</string>
     <string name="mcp_skill_resource_domain_github_title">GitHub domain guide</string>
     <string name="mcp_skill_resource_domain_runtime_title">Runtime domain guide</string>
     <string name="mcp_skill_resource_tool_template_title">単一ツールヘルプテンプレート</string>
     <string name="mcp_skill_resource_skill_summary">現在版の完全 Skill 文書をクライアントに読ませます。</string>
+    <string name="mcp_skill_resource_subagent_summary">Claw main Agent が KeiOS MCP 専用の child Agent を作成できます。</string>
     <string name="mcp_skill_resource_workflow_summary">組み合わせ可能なタスク blueprints をクライアントに読ませます。</string>
     <string name="mcp_skill_resource_domain_github_summary">GitHub 追跡、購読プロジェクト、更新、インポート、エクスポートを扱います。</string>
     <string name="mcp_skill_resource_domain_runtime_summary">サービス状態、設定、接続、ログを扱います。</string>
@@ -84,6 +88,7 @@
     <string name="mcp_action_open_skill_md">SKILL.md を表示</string>
     <string name="mcp_action_copy_current_config">現在の設定をコピー</string>
     <string name="mcp_action_copy_skill_resource">Skill URI をコピー</string>
+    <string name="mcp_action_copy_subagent_resource">Sub-agent URI をコピー</string>
     <string name="mcp_action_copy_workflow_resource">Workflow URI をコピー</string>
     <string name="mcp_action_copy_skill_resource_summary">完全 Skill の resource URI をコピーします。クライアントは現在のツール索引、引数、書き込みルールを読めます。</string>
     <string name="mcp_action_copy_workflow_resource_summary">Workflow blueprint の resource URI をコピーします。Claw の定期タスクや複合 skill 計画に使えます。</string>

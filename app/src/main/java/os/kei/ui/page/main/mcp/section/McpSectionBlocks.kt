@@ -4,6 +4,7 @@ package os.kei.ui.page.main.mcp.section
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -23,8 +25,10 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.mcp.server.McpLogEntry
 import os.kei.mcp.server.McpServerUiState
+import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
@@ -41,6 +45,102 @@ import java.util.Date
 import java.util.Locale
 
 private const val MCP_LOG_INLINE_LIMIT = 12
+@Composable
+internal fun McpOnboardingGuideSection(
+    backdrop: LayerBackdrop,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onCopyCurrentConfig: () -> Unit,
+    onCopySkillResource: () -> Unit,
+    onCopySubAgentResource: () -> Unit,
+    onCopyWorkflowResource: () -> Unit,
+) {
+    AppLiquidExpandableSection(
+        backdrop = backdrop,
+        title = stringResource(R.string.mcp_onboarding_card_title),
+        subtitle = stringResource(R.string.mcp_onboarding_card_subtitle),
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        headerStartAction = {
+            McpSectionHeaderIcon(
+                icon = appLucideInfoIcon(),
+                contentDescription = stringResource(R.string.mcp_onboarding_card_title),
+            )
+        },
+    ) {
+        McpOnboardingActionRow(
+            title = stringResource(R.string.mcp_onboarding_step_server_title),
+            summary = stringResource(R.string.mcp_onboarding_step_server_summary),
+            copyContentDescription = stringResource(R.string.mcp_action_copy_current_config),
+            onCopy = onCopyCurrentConfig,
+        )
+        McpOnboardingActionRow(
+            title = stringResource(R.string.mcp_onboarding_step_skill_title),
+            summary = stringResource(R.string.mcp_onboarding_step_skill_summary),
+            copyContentDescription = stringResource(R.string.mcp_action_copy_skill_resource),
+            onCopy = onCopySkillResource,
+        )
+        McpOnboardingActionRow(
+            title = stringResource(R.string.mcp_onboarding_step_subagent_title),
+            summary = stringResource(R.string.mcp_onboarding_step_subagent_summary),
+            copyContentDescription = stringResource(R.string.mcp_action_copy_subagent_resource),
+            onCopy = onCopySubAgentResource,
+        )
+        McpOnboardingActionRow(
+            title = stringResource(R.string.mcp_onboarding_step_workflow_title),
+            summary = stringResource(R.string.mcp_onboarding_step_workflow_summary),
+            copyContentDescription = stringResource(R.string.mcp_action_copy_workflow_resource),
+            onCopy = onCopyWorkflowResource,
+        )
+        McpServiceControlHint(
+            title = stringResource(R.string.mcp_onboarding_step_upgrade_title),
+            summary = stringResource(R.string.mcp_onboarding_step_upgrade_summary),
+        )
+    }
+}
+
+@Composable
+private fun McpOnboardingActionRow(
+    title: String,
+    summary: String,
+    copyContentDescription: String,
+    onCopy: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = title,
+                color = MiuixTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                lineHeight = 19.sp,
+            )
+            Text(
+                text = summary,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.88f),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+            )
+        }
+        AppCompactIconAction(
+            icon = osLucideCopyIcon(),
+            contentDescription = copyContentDescription,
+            tint = MiuixTheme.colorScheme.primary,
+            minSize = 40.dp,
+            onClick = onCopy,
+        )
+    }
+}
 
 @Composable
 internal fun McpServiceControlSection(

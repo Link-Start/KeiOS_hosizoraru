@@ -116,15 +116,36 @@ internal class McpPageRepository(
         draft: McpServiceDraft
     ): String {
         return withContext(ioDispatcher) {
-            val port = draft.portText.toIntOrNull() ?: serverState.port
-            val endpoint = if (draft.allowExternal && serverState.addresses.isNotEmpty()) {
-                "http://${serverState.addresses.first()}:$port${serverState.endpointPath}"
-            } else {
-                "http://127.0.0.1:$port${serverState.endpointPath}"
-            }
             manager.buildConfigJson(
-                url = endpoint,
+                url = resolveEndpoint(serverState, draft),
                 includeJsonContentTypeHeader = draft.allowExternal
+            )
+        }
+    }
+
+    suspend fun buildClawSetupPrompt(
+        manager: McpServerManager,
+        serverState: McpServerUiState,
+        draft: McpServiceDraft,
+        promptTemplate: String
+    ): String {
+        val endpoint = resolveEndpoint(serverState, draft)
+        val configJson =
+            withContext(ioDispatcher) {
+                manager.buildConfigJson(
+                    url = endpoint,
+                    includeJsonContentTypeHeader = draft.allowExternal
+                )
+            }
+        return withContext(defaultDispatcher) {
+            renderClawSetupPrompt(
+                template = promptTemplate,
+                payload =
+                    McpClawSetupPromptPayload(
+                        serverName = serverState.serverName,
+                        endpoint = endpoint,
+                        configJson = configJson
+                    )
             )
         }
     }
@@ -147,5 +168,17 @@ internal class McpPageRepository(
                 writer.write(exportContent)
             }
         }
+    }
+}
+
+private fun resolveEndpoint(
+    serverState: McpServerUiState,
+    draft: McpServiceDraft
+): String {
+    val port = draft.portText.toIntOrNull() ?: serverState.port
+    return if (draft.allowExternal && serverState.addresses.isNotEmpty()) {
+        "http://${serverState.addresses.first()}:$port${serverState.endpointPath}"
+    } else {
+        "http://127.0.0.1:$port${serverState.endpointPath}"
     }
 }

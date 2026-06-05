@@ -9,16 +9,19 @@
 
 ## 快速开始
 
-1. 调用 `keios.health.ping` 验证连通性。
-2. 调用 `keios.mcp.runtime.status` 获取服务、Token 与 endpoint 状态。
-3. 读取 `{{RESOURCE_WORKFLOWS_URI}}` 选择定时任务或组合技能蓝图。
-4. 读取 `{{RESOURCE_DOMAIN_TEMPLATE_URI}}` 获取领域指南。
-5. 读取 `{{RESOURCE_SKILL_URI}}` 获取完整说明。
+1. 先把当前 MCP Config 添加到 Claw App 的 MCP 服务器列表。
+2. 让 Claw 读取 `{{RESOURCE_SKILL_URI}}`，或调用 `keios.mcp.claw.skill.guide(mode=auto)` 获取完整 Skill 内容。
+3. Agent 模式下让 Claw 主 Agent 读取 `{{RESOURCE_SUBAGENT_URI}}`，并创建 KeiOS MCP 子 Agent。
+4. 调用 `keios.health.ping` 验证连通性。
+5. 调用 `keios.mcp.runtime.status` 获取服务、Token 与 endpoint 状态。
+6. 需要定时任务或组合技能时，读取 `{{RESOURCE_WORKFLOWS_URI}}` 选择蓝图。
+7. 每次升级 KeiOS 后，在 Claw 删除旧的 KeiOS MCP 服务器并重新添加，让客户端刷新工具缓存。
 
 ## 客户端配置
 
 - 默认配置资源：`{{RESOURCE_CONFIG_URI}}`
 - mode 配置模板：`{{RESOURCE_CONFIG_TEMPLATE_URI}}`
+- 子 Agent 指南：`{{RESOURCE_SUBAGENT_URI}}`
 - 初始化 Prompt：`{{PROMPT_BOOTSTRAP}}`
 - 工作流 Prompt：`{{PROMPT_WORKFLOW_PLAN}}`
 - 排障 Prompt：`{{PROMPT_DIAGNOSTICS_PLAN}}`

@@ -6,7 +6,7 @@
     <string name="mcp_skill_section_default_overview">Overview</string>
     <string name="mcp_skill_section_default_content">Content</string>
     <string name="mcp_skill_section_empty_content">No content</string>
-    <string name="mcp_skill_claw_prompt">Connect to the current KeiOS MCP service, then call keios.mcp.claw.skill.guide(mode=auto). Register the SKILL.md content from the response as a Claw Skill named “KeiOS MCP Skill”; after that, run keios.health.ping and keios.mcp.runtime.status to verify connectivity. For scheduled tasks or composed skills, read keios://skill/workflows.md and use keios.mcp.workflow.plan or keios.mcp.workflow.blueprints.</string>
+    <string name="mcp_skill_claw_prompt">Connect to the current KeiOS MCP service, then call keios.mcp.claw.skill.guide(mode=auto). Register the SKILL.md content from the response as a Claw Skill named “KeiOS MCP Skill”; in Agent mode, read keios://skill/subagent.md so the Claw main Agent can delegate KeiOS tasks; after that, run keios.health.ping and keios.mcp.runtime.status to verify connectivity. For scheduled tasks or composed skills, read keios://skill/workflows.md and use keios.mcp.workflow.plan or keios.mcp.workflow.blueprints.</string>
     <string name="mcp_skill_action_copy_claw_prompt">Copy prompt</string>
     <string name="mcp_skill_toast_claw_prompt_copied">Claw prompt copied</string>
     <string name="mcp_skill_onboarding_title">Connect KeiOS MCP to Claw</string>
@@ -23,22 +23,26 @@
     <string name="mcp_skill_action_collapse_reference">Collapse full reference</string>
     <string name="mcp_skill_action_copy_current_config">Copy current config</string>
     <string name="mcp_skill_action_copy_full_skill">Copy SKILL.md</string>
+    <string name="mcp_skill_action_copy_subagent_resource">Copy sub-agent URI</string>
     <string name="mcp_skill_action_copy_workflow_resource">Copy workflow URI</string>
     <string name="mcp_skill_action_copy_domain_template">Copy domain URI</string>
     <string name="mcp_skill_action_copy_bootstrap_prompt">Copy bootstrap prompt</string>
     <string name="mcp_skill_action_copy_diagnostics_prompt">Copy diagnostics prompt</string>
     <string name="mcp_skill_copy_current_config_summary">Includes endpoint, token, and headers so the client can connect to the local service.</string>
     <string name="mcp_skill_copy_full_skill_summary">Full guide, suitable for registering as a client Skill.</string>
+    <string name="mcp_skill_copy_subagent_resource_summary">Lets the Claw main Agent read the KeiOS sub-agent role, delegation boundary, and tool rules.</string>
     <string name="mcp_skill_copy_workflow_resource_summary">Reads scheduled task and composed skill blueprints.</string>
     <string name="mcp_skill_copy_domain_template_summary">Reads runtime, github, os, or ba domain guides.</string>
     <string name="mcp_skill_copy_bootstrap_prompt_summary">Initializes a new client, checks connectivity, and imports config.</string>
     <string name="mcp_skill_copy_diagnostics_prompt_summary">Diagnoses connection failures, permission issues, and tool errors.</string>
     <string name="mcp_skill_resource_skill_title">Full Skill</string>
+    <string name="mcp_skill_resource_subagent_title">Sub-agent guide</string>
     <string name="mcp_skill_resource_workflow_title">Workflow blueprints</string>
     <string name="mcp_skill_resource_domain_github_title">GitHub domain guide</string>
     <string name="mcp_skill_resource_domain_runtime_title">Runtime domain guide</string>
     <string name="mcp_skill_resource_tool_template_title">Single-tool help template</string>
     <string name="mcp_skill_resource_skill_summary">Lets clients read the current full Skill document.</string>
+    <string name="mcp_skill_resource_subagent_summary">Lets the Claw main Agent create a child Agent dedicated to KeiOS MCP.</string>
     <string name="mcp_skill_resource_workflow_summary">Lets clients read composable task blueprints.</string>
     <string name="mcp_skill_resource_domain_github_summary">Covers GitHub tracking, subscribed projects, refresh, import, and export.</string>
     <string name="mcp_skill_resource_domain_runtime_summary">Covers service state, config, connection, and logs.</string>
@@ -81,6 +85,7 @@
     <string name="mcp_action_open_skill_md">View SKILL.md</string>
     <string name="mcp_action_copy_current_config">Copy current config</string>
     <string name="mcp_action_copy_skill_resource">Copy Skill URI</string>
+    <string name="mcp_action_copy_subagent_resource">Copy sub-agent URI</string>
     <string name="mcp_action_copy_workflow_resource">Copy workflow URI</string>
     <string name="mcp_action_copy_skill_resource_summary">Copies the full Skill resource URI. Clients can read it for the current tool index, arguments, and write rules.</string>
     <string name="mcp_action_copy_workflow_resource_summary">Copies the workflow blueprint resource URI for Claw scheduled tasks or composed skills.</string>

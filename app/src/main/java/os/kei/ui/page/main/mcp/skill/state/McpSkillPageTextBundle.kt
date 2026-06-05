@@ -32,22 +32,26 @@ internal data class McpSkillPageTextBundle(
     val collapseReferenceText: String,
     val copyCurrentConfigText: String,
     val copyFullSkillText: String,
+    val copySubAgentResourceText: String,
     val copyWorkflowResourceText: String,
     val copyDomainTemplateText: String,
     val copyBootstrapPromptText: String,
     val copyDiagnosticsPromptText: String,
     val currentConfigSummary: String,
     val fullSkillSummary: String,
+    val subAgentResourceSummary: String,
     val workflowResourceSummary: String,
     val domainTemplateSummary: String,
     val bootstrapPromptSummary: String,
     val diagnosticsPromptSummary: String,
     val resourceSkillTitle: String,
+    val resourceSubAgentTitle: String,
     val resourceWorkflowTitle: String,
     val resourceDomainGithubTitle: String,
     val resourceDomainRuntimeTitle: String,
     val resourceToolTemplateTitle: String,
     val resourceSkillSummary: String,
+    val resourceSubAgentSummary: String,
     val resourceWorkflowSummary: String,
     val resourceDomainGithubSummary: String,
     val resourceDomainRuntimeSummary: String,
@@ -87,6 +91,7 @@ internal fun rememberMcpSkillPageTextBundle(): McpSkillPageTextBundle {
     val collapseReferenceText = stringResource(R.string.mcp_skill_action_collapse_reference)
     val copyCurrentConfigText = stringResource(R.string.mcp_skill_action_copy_current_config)
     val copyFullSkillText = stringResource(R.string.mcp_skill_action_copy_full_skill)
+    val copySubAgentResourceText = stringResource(R.string.mcp_skill_action_copy_subagent_resource)
     val copyWorkflowResourceText = stringResource(R.string.mcp_skill_action_copy_workflow_resource)
     val copyDomainTemplateText = stringResource(R.string.mcp_skill_action_copy_domain_template)
     val copyBootstrapPromptText = stringResource(R.string.mcp_skill_action_copy_bootstrap_prompt)
@@ -94,18 +99,21 @@ internal fun rememberMcpSkillPageTextBundle(): McpSkillPageTextBundle {
         stringResource(R.string.mcp_skill_action_copy_diagnostics_prompt)
     val currentConfigSummary = stringResource(R.string.mcp_skill_copy_current_config_summary)
     val fullSkillSummary = stringResource(R.string.mcp_skill_copy_full_skill_summary)
+    val subAgentResourceSummary = stringResource(R.string.mcp_skill_copy_subagent_resource_summary)
     val workflowResourceSummary = stringResource(R.string.mcp_skill_copy_workflow_resource_summary)
     val domainTemplateSummary = stringResource(R.string.mcp_skill_copy_domain_template_summary)
     val bootstrapPromptSummary = stringResource(R.string.mcp_skill_copy_bootstrap_prompt_summary)
     val diagnosticsPromptSummary =
         stringResource(R.string.mcp_skill_copy_diagnostics_prompt_summary)
     val resourceSkillTitle = stringResource(R.string.mcp_skill_resource_skill_title)
+    val resourceSubAgentTitle = stringResource(R.string.mcp_skill_resource_subagent_title)
     val resourceWorkflowTitle = stringResource(R.string.mcp_skill_resource_workflow_title)
     val resourceDomainGithubTitle = stringResource(R.string.mcp_skill_resource_domain_github_title)
     val resourceDomainRuntimeTitle =
         stringResource(R.string.mcp_skill_resource_domain_runtime_title)
     val resourceToolTemplateTitle = stringResource(R.string.mcp_skill_resource_tool_template_title)
     val resourceSkillSummary = stringResource(R.string.mcp_skill_resource_skill_summary)
+    val resourceSubAgentSummary = stringResource(R.string.mcp_skill_resource_subagent_summary)
     val resourceWorkflowSummary = stringResource(R.string.mcp_skill_resource_workflow_summary)
     val resourceDomainGithubSummary =
         stringResource(R.string.mcp_skill_resource_domain_github_summary)
@@ -145,22 +153,26 @@ internal fun rememberMcpSkillPageTextBundle(): McpSkillPageTextBundle {
         collapseReferenceText,
         copyCurrentConfigText,
         copyFullSkillText,
+        copySubAgentResourceText,
         copyWorkflowResourceText,
         copyDomainTemplateText,
         copyBootstrapPromptText,
         copyDiagnosticsPromptText,
         currentConfigSummary,
         fullSkillSummary,
+        subAgentResourceSummary,
         workflowResourceSummary,
         domainTemplateSummary,
         bootstrapPromptSummary,
         diagnosticsPromptSummary,
         resourceSkillTitle,
+        resourceSubAgentTitle,
         resourceWorkflowTitle,
         resourceDomainGithubTitle,
         resourceDomainRuntimeTitle,
         resourceToolTemplateTitle,
         resourceSkillSummary,
+        resourceSubAgentSummary,
         resourceWorkflowSummary,
         resourceDomainGithubSummary,
         resourceDomainRuntimeSummary,
@@ -198,22 +210,26 @@ internal fun rememberMcpSkillPageTextBundle(): McpSkillPageTextBundle {
             collapseReferenceText = collapseReferenceText,
             copyCurrentConfigText = copyCurrentConfigText,
             copyFullSkillText = copyFullSkillText,
+            copySubAgentResourceText = copySubAgentResourceText,
             copyWorkflowResourceText = copyWorkflowResourceText,
             copyDomainTemplateText = copyDomainTemplateText,
             copyBootstrapPromptText = copyBootstrapPromptText,
             copyDiagnosticsPromptText = copyDiagnosticsPromptText,
             currentConfigSummary = currentConfigSummary,
             fullSkillSummary = fullSkillSummary,
+            subAgentResourceSummary = subAgentResourceSummary,
             workflowResourceSummary = workflowResourceSummary,
             domainTemplateSummary = domainTemplateSummary,
             bootstrapPromptSummary = bootstrapPromptSummary,
             diagnosticsPromptSummary = diagnosticsPromptSummary,
             resourceSkillTitle = resourceSkillTitle,
+            resourceSubAgentTitle = resourceSubAgentTitle,
             resourceWorkflowTitle = resourceWorkflowTitle,
             resourceDomainGithubTitle = resourceDomainGithubTitle,
             resourceDomainRuntimeTitle = resourceDomainRuntimeTitle,
             resourceToolTemplateTitle = resourceToolTemplateTitle,
             resourceSkillSummary = resourceSkillSummary,
+            resourceSubAgentSummary = resourceSubAgentSummary,
             resourceWorkflowSummary = resourceWorkflowSummary,
             resourceDomainGithubSummary = resourceDomainGithubSummary,
             resourceDomainRuntimeSummary = resourceDomainRuntimeSummary,

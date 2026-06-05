@@ -405,6 +405,7 @@ private fun SkillTinyCopyButton(
 internal fun buildMcpSkillCopyActions(
     textBundle: McpSkillPageTextBundle,
     markdown: String,
+    subAgentResourceUri: String,
     workflowResourceUri: String,
     domainTemplateUri: String,
     bootstrapPrompt: String,
@@ -422,6 +423,13 @@ internal fun buildMcpSkillCopyActions(
             payload = markdown,
             label = "mcp-skill-markdown",
             icon = notesIcon,
+        ),
+        McpSkillCopyAction(
+            title = textBundle.copySubAgentResourceText,
+            summary = textBundle.subAgentResourceSummary,
+            payload = subAgentResourceUri,
+            label = "mcp-subagent-resource",
+            icon = bootstrapIcon,
         ),
         McpSkillCopyAction(
             title = textBundle.copyWorkflowResourceText,
@@ -456,6 +464,7 @@ internal fun buildMcpSkillCopyActions(
 internal fun buildMcpSkillResourceActions(
     textBundle: McpSkillPageTextBundle,
     skillResourceUri: String,
+    subAgentResourceUri: String,
     workflowResourceUri: String,
     domainTemplateUri: String,
     toolTemplateUri: String,
@@ -465,6 +474,11 @@ internal fun buildMcpSkillResourceActions(
             title = textBundle.resourceSkillTitle,
             summary = textBundle.resourceSkillSummary,
             payload = skillResourceUri,
+        ),
+        McpSkillResourceAction(
+            title = textBundle.resourceSubAgentTitle,
+            summary = textBundle.resourceSubAgentSummary,
+            payload = subAgentResourceUri,
         ),
         McpSkillResourceAction(
             title = textBundle.resourceWorkflowTitle,

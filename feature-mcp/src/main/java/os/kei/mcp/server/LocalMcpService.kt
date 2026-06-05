@@ -121,6 +121,7 @@ class LocalMcpService(
                             put("skillResource", SKILL_RESOURCE_URI)
                             put("skillOverviewResource", SKILL_OVERVIEW_URI)
                             put("skillDomainTemplate", SKILL_DOMAIN_TEMPLATE_URI)
+                            put("subAgentResource", SUBAGENT_RESOURCE_URI)
                             put("workflowResource", WORKFLOW_RESOURCE_URI)
                             put("workflowPrompt", WORKFLOW_PLAN_PROMPT)
                             put("diagnosticsPrompt", DIAGNOSTICS_PLAN_PROMPT)

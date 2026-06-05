@@ -274,19 +274,19 @@ class BackNavigationRuntimeTest {
     @Test
     fun `back gesture settle duration scales with remaining distance`() {
         assertEquals(
-            110,
+            250,
             resolveBackGestureSettleDurationMillis(
                 currentProgress = 0.5f,
                 targetProgress = 1f,
-                maxDurationMillis = 220,
+                maxDurationMillis = BACK_GESTURE_COMMIT_SETTLE_DURATION_MS,
             ),
         )
         assertEquals(
-            70,
+            96,
             resolveBackGestureSettleDurationMillis(
                 currentProgress = 0.96f,
                 targetProgress = 1f,
-                maxDurationMillis = 220,
+                maxDurationMillis = BACK_GESTURE_COMMIT_SETTLE_DURATION_MS,
             ),
         )
         assertEquals(
@@ -294,7 +294,7 @@ class BackNavigationRuntimeTest {
             resolveBackGestureSettleDurationMillis(
                 currentProgress = 1f,
                 targetProgress = 1f,
-                maxDurationMillis = 220,
+                maxDurationMillis = BACK_GESTURE_COMMIT_SETTLE_DURATION_MS,
             ),
         )
     }

@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -25,8 +27,10 @@ import androidx.navigation3.scene.rememberSceneState
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.NavDisplayTransitionEffects
 import androidx.navigation3.ui.defaultPredictivePopTransitionSpec
+import androidx.navigationevent.NavigationEventTransitionState.InProgress
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.mcp.server.McpServerManager
@@ -260,6 +264,23 @@ internal fun MainScreenNavHost(
             onBack = onRouteBack,
         )
     val navigationEventState = rememberNavigationEventState(sceneState)
+    LaunchedEffect(routePredictiveBackEnabled, navigationEventState, backRuntimeController) {
+        if (!routePredictiveBackEnabled) {
+            if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {
+                backRuntimeController.reset()
+            }
+            return@LaunchedEffect
+        }
+        snapshotFlow { navigationEventState.transitionState is InProgress }
+            .distinctUntilChanged()
+            .collect { inProgress ->
+                if (inProgress) {
+                    backRuntimeController.beginGesture(BackNavigationSource.MainRoute)
+                } else if (backRuntimeController.state.source == BackNavigationSource.MainRoute) {
+                    backRuntimeController.reset()
+                }
+            }
+    }
     CompositionLocalProvider(
         LocalBackNavigationRuntimeController provides backRuntimeController,
         LocalBackNavigationRuntimeState provides backRuntimeController.state,

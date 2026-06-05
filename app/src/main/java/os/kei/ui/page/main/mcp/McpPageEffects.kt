@@ -39,12 +39,13 @@ internal fun BindMcpPageEffects(
         if (!runtime.isSettledDataActive) return@LaunchedEffect
         mcpPageViewModel.syncServiceDraft(uiState)
     }
-    LaunchedEffect(uiState.tools, pageUiState.toolsSearchQuery, runtime.isSettledDataActive) {
+    val toolBucketSearchQuery = pageUiState.toolsSearchQuery.trim()
+    LaunchedEffect(uiState.tools, toolBucketSearchQuery, runtime.isSettledDataActive) {
         if (!runtime.isSettledDataActive) return@LaunchedEffect
         mcpPageViewModel.requestToolBuckets(
             McpToolBucketInput(
                 tools = uiState.tools,
-                searchQuery = pageUiState.toolsSearchQuery,
+                searchQuery = toolBucketSearchQuery,
             ),
         )
     }

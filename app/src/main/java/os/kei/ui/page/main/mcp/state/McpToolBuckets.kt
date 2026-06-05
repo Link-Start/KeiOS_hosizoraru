@@ -11,7 +11,16 @@ import java.util.Locale
 internal data class McpToolBucketInput(
     val tools: List<McpToolMeta>,
     val searchQuery: String,
-)
+) {
+    fun normalizedForDerivation(): McpToolBucketInput {
+        val normalizedQuery = searchQuery.trim()
+        return if (normalizedQuery == searchQuery) {
+            this
+        } else {
+            copy(searchQuery = normalizedQuery)
+        }
+    }
+}
 
 @Immutable
 internal data class McpToolBuckets(
@@ -65,7 +74,8 @@ private val McpToolCategorizedGroups =
 private val McpCodexToolNames = McpToolCatalog.devToolNames.toSet()
 
 internal fun deriveMcpToolBuckets(input: McpToolBucketInput): McpToolBuckets {
-    val query = input.searchQuery.trim().lowercase(Locale.ROOT)
+    val normalizedInput = input.normalizedForDerivation()
+    val query = normalizedInput.searchQuery.lowercase(Locale.ROOT)
     val entrypointTools = mutableListOf<McpToolMeta>()
     val runtimeTools = mutableListOf<McpToolMeta>()
     val systemTools = mutableListOf<McpToolMeta>()
@@ -76,7 +86,7 @@ internal fun deriveMcpToolBuckets(input: McpToolBucketInput): McpToolBuckets {
     val advancedCandidates = mutableListOf<McpToolMeta>()
     val categorizedToolNames = mutableSetOf<String>()
 
-    input.tools.forEach { tool ->
+    normalizedInput.tools.forEach { tool ->
         if (query.isNotBlank() && !tool.matchesMcpToolQuery(query)) {
             return@forEach
         }

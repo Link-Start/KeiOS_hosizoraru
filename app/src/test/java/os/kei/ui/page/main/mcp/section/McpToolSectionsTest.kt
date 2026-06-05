@@ -1,8 +1,12 @@
 package os.kei.ui.page.main.mcp.section
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.mcp.server.McpServerUiState
 import os.kei.mcp.server.McpToolCatalog
+import os.kei.ui.page.main.mcp.McpToolBucketLoader
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
 import os.kei.ui.page.main.mcp.state.deriveMcpToolBuckets
@@ -10,6 +14,7 @@ import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class McpToolSectionsTest {
     @Test
     fun toolBucketsKeepUserFacingGroupsSeparate() {
@@ -34,6 +39,29 @@ class McpToolSectionsTest {
         assertEquals(emptyList(), buckets.baTools)
         assertEquals(emptySet(), duplicateBucketNames(buckets))
     }
+
+    @Test
+    fun toolBucketLoaderSkipsTrimEquivalentSearchRequests() =
+        runTest {
+            var deriveCount = 0
+            val tools = McpToolCatalog.forLocale(Locale.SIMPLIFIED_CHINESE)
+            val loader =
+                McpToolBucketLoader(
+                    scope = this,
+                    deriveToolBuckets = { input ->
+                        deriveCount += 1
+                        deriveMcpToolBuckets(input)
+                    },
+                )
+
+            loader.request(McpToolBucketInput(tools, searchQuery = "codex"))
+            advanceUntilIdle()
+            loader.request(McpToolBucketInput(tools, searchQuery = "  codex  "))
+            advanceUntilIdle()
+
+            assertEquals(1, deriveCount)
+            assertTrue(loader.buckets.value.codexTools.isNotEmpty())
+        }
 
     private fun duplicateBucketNames(buckets: McpToolBuckets): Set<String> {
         val groupedNames =

@@ -11,8 +11,16 @@ import os.kei.ui.page.main.mcp.state.McpToolBuckets
 
 internal class McpToolBucketLoader(
     private val scope: CoroutineScope,
-    private val repository: McpPageRepository,
+    private val deriveToolBuckets: suspend (McpToolBucketInput) -> McpToolBuckets,
 ) {
+    constructor(
+        scope: CoroutineScope,
+        repository: McpPageRepository,
+    ) : this(
+        scope = scope,
+        deriveToolBuckets = repository::deriveToolBuckets,
+    )
+
     private val _buckets = MutableStateFlow(McpToolBuckets.Empty)
     val buckets: StateFlow<McpToolBuckets> = _buckets.asStateFlow()
 
@@ -20,13 +28,14 @@ internal class McpToolBucketLoader(
     private var job: Job? = null
 
     fun request(nextInput: McpToolBucketInput) {
-        if (input == nextInput) return
-        input = nextInput
+        val normalizedInput = nextInput.normalizedForDerivation()
+        if (input == normalizedInput) return
+        input = normalizedInput
         job?.cancel()
         job =
             scope.launch {
-                val derived = repository.deriveToolBuckets(nextInput)
-                if (input == nextInput) {
+                val derived = deriveToolBuckets(normalizedInput)
+                if (input == normalizedInput && _buckets.value != derived) {
                     _buckets.value = derived
                 }
             }

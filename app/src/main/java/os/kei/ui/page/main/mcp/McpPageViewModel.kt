@@ -138,84 +138,119 @@ internal class McpPageViewModel(
         serverState: McpServerUiState,
         force: Boolean = false,
     ) {
-        _uiState.update { state ->
-            if (state.showEditSheet && !force) return@update state
-            state.copy(
-                portText = serverState.port.toString(),
-                allowExternal = serverState.allowExternal,
-                serverName = serverState.serverName,
-            )
+        updateUiStateIfChanged { state ->
+            if (state.showEditSheet && !force) {
+                state
+            } else {
+                state.copy(
+                    portText = serverState.port.toString(),
+                    allowExternal = serverState.allowExternal,
+                    serverName = serverState.serverName,
+                )
+            }
         }
     }
 
     fun updatePortText(value: String) {
-        _uiState.update { state -> state.copy(portText = value.filter(Char::isDigit).take(5)) }
+        val portText = value.filter(Char::isDigit).take(5)
+        updateUiStateIfChanged { state -> state.copy(portText = portText) }
     }
 
     fun updateAllowExternal(value: Boolean) {
-        _uiState.update { state -> state.copy(allowExternal = value) }
+        updateUiStateIfChanged { state -> state.copy(allowExternal = value) }
     }
 
     fun updateServerName(value: String) {
-        _uiState.update { state -> state.copy(serverName = value) }
+        updateUiStateIfChanged { state -> state.copy(serverName = value) }
     }
 
     fun updateEditSheetVisible(value: Boolean) {
-        _uiState.update { state -> state.copy(showEditSheet = value) }
+        updateUiStateIfChanged { state -> state.copy(showEditSheet = value) }
     }
 
     fun updateOnboardingExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_ONBOARDING_EXPANDED] = value
-        _uiState.update { state -> state.copy(onboardingExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_ONBOARDING_EXPANDED,
+            value = value,
+            current = McpPageUiState::onboardingExpanded,
+        ) { state -> state.copy(onboardingExpanded = value) }
     }
 
     fun updateControlExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_CONTROL_EXPANDED] = value
-        _uiState.update { state -> state.copy(controlExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_CONTROL_EXPANDED,
+            value = value,
+            current = McpPageUiState::controlExpanded,
+        ) { state -> state.copy(controlExpanded = value) }
     }
 
     fun updateToolEntrypointsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_TOOL_ENTRYPOINTS_EXPANDED] = value
-        _uiState.update { state -> state.copy(toolEntrypointsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_TOOL_ENTRYPOINTS_EXPANDED,
+            value = value,
+            current = McpPageUiState::toolEntrypointsExpanded,
+        ) { state -> state.copy(toolEntrypointsExpanded = value) }
     }
 
     fun updateRuntimeToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_RUNTIME_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(runtimeToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_RUNTIME_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::runtimeToolsExpanded,
+        ) { state -> state.copy(runtimeToolsExpanded = value) }
     }
 
     fun updateSystemToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_SYSTEM_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(systemToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_SYSTEM_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::systemToolsExpanded,
+        ) { state -> state.copy(systemToolsExpanded = value) }
     }
 
     fun updateGithubToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_GITHUB_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(githubToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_GITHUB_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::githubToolsExpanded,
+        ) { state -> state.copy(githubToolsExpanded = value) }
     }
 
     fun updateBaToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_BA_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(baToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_BA_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::baToolsExpanded,
+        ) { state -> state.copy(baToolsExpanded = value) }
     }
 
     fun updateCodexToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_CODEX_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(codexToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_CODEX_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::codexToolsExpanded,
+        ) { state -> state.copy(codexToolsExpanded = value) }
     }
 
     fun updateWorkflowToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_WORKFLOW_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(workflowToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_WORKFLOW_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::workflowToolsExpanded,
+        ) { state -> state.copy(workflowToolsExpanded = value) }
     }
 
     fun updateAdvancedToolsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_ADVANCED_TOOLS_EXPANDED] = value
-        _uiState.update { state -> state.copy(advancedToolsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_ADVANCED_TOOLS_EXPANDED,
+            value = value,
+            current = McpPageUiState::advancedToolsExpanded,
+        ) { state -> state.copy(advancedToolsExpanded = value) }
     }
 
     fun updateToolsSearchQuery(value: String) {
-        _uiState.update { state -> state.copy(toolsSearchQuery = value.take(80)) }
+        val searchQuery = value.take(80)
+        updateUiStateIfChanged { state -> state.copy(toolsSearchQuery = searchQuery) }
     }
 
     fun requestToolBuckets(input: McpToolBucketInput) {
@@ -235,28 +270,19 @@ internal class McpPageViewModel(
     }
 
     fun updateLogsExpanded(value: Boolean) {
-        savedStateHandle[MCP_STATE_LOGS_EXPANDED] = value
-        _uiState.update { state -> state.copy(logsExpanded = value) }
+        updatePersistentBoolean(
+            key = MCP_STATE_LOGS_EXPANDED,
+            value = value,
+            current = McpPageUiState::logsExpanded,
+        ) { state -> state.copy(logsExpanded = value) }
     }
 
     fun updateLocalNetworkPermissionGranted(granted: Boolean) {
-        _uiState.update { state ->
-            if (state.localNetworkPermissionGranted == granted) {
-                state
-            } else {
-                state.copy(localNetworkPermissionGranted = granted)
-            }
-        }
+        updateUiStateIfChanged { state -> state.copy(localNetworkPermissionGranted = granted) }
     }
 
     fun armStartAfterLocalNetworkPermission(armed: Boolean) {
-        _uiState.update { state ->
-            if (state.startAfterLocalNetworkPermission == armed) {
-                state
-            } else {
-                state.copy(startAfterLocalNetworkPermission = armed)
-            }
-        }
+        updateUiStateIfChanged { state -> state.copy(startAfterLocalNetworkPermission = armed) }
     }
 
     fun consumeLocalNetworkPermissionResult(granted: Boolean): Boolean {
@@ -272,11 +298,11 @@ internal class McpPageViewModel(
     }
 
     fun updateResetTokenConfirmVisible(value: Boolean) {
-        _uiState.update { state -> state.copy(showResetTokenConfirm = value) }
+        updateUiStateIfChanged { state -> state.copy(showResetTokenConfirm = value) }
     }
 
     fun updateResetConfigConfirmVisible(value: Boolean) {
-        _uiState.update { state -> state.copy(showResetConfigConfirm = value) }
+        updateUiStateIfChanged { state -> state.copy(showResetConfigConfirm = value) }
     }
 
     fun beginLogsExport(
@@ -305,7 +331,7 @@ internal class McpPageViewModel(
     }
 
     fun finishLogsExport() {
-        _uiState.update { state ->
+        updateUiStateIfChanged { state ->
             state.copy(
                 logsExporting = false,
                 pendingLogsExport = null,
@@ -551,6 +577,33 @@ internal class McpPageViewModel(
             generatedAt = request.generatedAt,
             state = state,
         )
+    }
+
+    private inline fun updateUiStateIfChanged(
+        crossinline transform: (McpPageUiState) -> McpPageUiState,
+    ): Boolean {
+        var changed = false
+        _uiState.update { state ->
+            val next = transform(state)
+            changed = next != state
+            if (changed) next else state
+        }
+        return changed
+    }
+
+    private inline fun updatePersistentBoolean(
+        key: String,
+        value: Boolean,
+        crossinline current: (McpPageUiState) -> Boolean,
+        crossinline transform: (McpPageUiState) -> McpPageUiState,
+    ) {
+        val changed =
+            updateUiStateIfChanged { state ->
+                if (current(state) == value) state else transform(state)
+            }
+        if (changed) {
+            savedStateHandle[key] = value
+        }
     }
 }
 

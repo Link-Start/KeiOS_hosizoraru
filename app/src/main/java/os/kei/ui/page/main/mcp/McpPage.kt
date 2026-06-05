@@ -70,8 +70,10 @@ fun McpPage(
     val pageUiState = routeState.pageUiState
     val mcpToolBuckets = routeState.toolBuckets
     val currentUiState by rememberUpdatedState(uiState)
+    val currentPageUiState by rememberUpdatedState(pageUiState)
     val unknownText = stringResource(R.string.common_unknown)
     val clawSetupPromptTemplate = stringResource(R.string.mcp_claw_setup_prompt_template)
+    val currentClawSetupPromptTemplate by rememberUpdatedState(clawSetupPromptTemplate)
 
     val isDark = isSystemInDarkTheme()
     val titleColor = MiuixTheme.colorScheme.onBackground
@@ -139,22 +141,25 @@ fun McpPage(
                 mcpPageViewModel.requestToggleServer(mcpServerManager)
             }
         }
-    val toggleServer: () -> Unit = toggleServer@{
-        val localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
-        mcpPageViewModel.updateLocalNetworkPermissionGranted(localNetworkPermissionGranted)
-        if (!uiState.running && pageUiState.allowExternal && !localNetworkPermissionGranted) {
-            LocalNetworkPermissionCompat
-                .requiredPermissionOrNull()
-                ?.let { permission ->
-                    mcpPageViewModel.armStartAfterLocalNetworkPermission(true)
-                    runCatching { localNetworkPermissionLauncher.launch(permission) }
+    val toggleServer: () -> Unit =
+        remember(context, localNetworkPermissionLauncher, mcpPageViewModel, mcpServerManager) {
+            toggleServer@{
+                val localNetworkPermissionGranted = hasMcpLocalNetworkPermission(context)
+                mcpPageViewModel.updateLocalNetworkPermissionGranted(localNetworkPermissionGranted)
+                if (!currentUiState.running && currentPageUiState.allowExternal && !localNetworkPermissionGranted) {
+                    LocalNetworkPermissionCompat
+                        .requiredPermissionOrNull()
+                        ?.let { permission ->
+                            mcpPageViewModel.armStartAfterLocalNetworkPermission(true)
+                            runCatching { localNetworkPermissionLauncher.launch(permission) }
+                        }
+                    context.showToast(R.string.mcp_toast_local_network_permission_requested)
+                    return@toggleServer
                 }
-            context.showToast(R.string.mcp_toast_local_network_permission_requested)
-            return@toggleServer
+                mcpPageViewModel.armStartAfterLocalNetworkPermission(false)
+                mcpPageViewModel.requestToggleServer(mcpServerManager)
+            }
         }
-        mcpPageViewModel.armStartAfterLocalNetworkPermission(false)
-        mcpPageViewModel.requestToggleServer(mcpServerManager)
-    }
     val logsExportLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -234,50 +239,52 @@ fun McpPage(
         }
     }
     val actions =
-        McpPageActions(
-            onToggleServer = toggleServer,
-            onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
-            onOnboardingExpandedChange = mcpPageViewModel::updateOnboardingExpanded,
-            onControlExpandedChange = mcpPageViewModel::updateControlExpanded,
-            onSendTestNotification = { mcpPageViewModel.requestSendTestNotification(mcpServerManager) },
-            onShowResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(true) },
-            onCopySkillResource = mcpPageViewModel::requestCopySkillResource,
-            onCopySubAgentResource = mcpPageViewModel::requestCopySubAgentResource,
-            onCopyWorkflowResource = mcpPageViewModel::requestCopyWorkflowResource,
-            onToolsSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
-            onToolEntrypointsExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
-            onRuntimeToolsExpandedChange = mcpPageViewModel::updateRuntimeToolsExpanded,
-            onSystemToolsExpandedChange = mcpPageViewModel::updateSystemToolsExpanded,
-            onGithubToolsExpandedChange = mcpPageViewModel::updateGithubToolsExpanded,
-            onBaToolsExpandedChange = mcpPageViewModel::updateBaToolsExpanded,
-            onCodexToolsExpandedChange = mcpPageViewModel::updateCodexToolsExpanded,
-            onWorkflowToolsExpandedChange = mcpPageViewModel::updateWorkflowToolsExpanded,
-            onAdvancedToolsExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
-            onLogsExpandedChange = mcpPageViewModel::updateLogsExpanded,
-            onExportLogs = { generatedAt, fileName ->
-                mcpPageViewModel.beginLogsExport(generatedAt, fileName)
-            },
-            onClearLogs = { mcpPageViewModel.requestClearLogs(mcpServerManager) },
-            onCopyCurrentConfig = { mcpPageViewModel.requestCopyCurrentConfig(mcpServerManager, uiState) },
-            onCopyClawSetupPrompt = {
-                mcpPageViewModel.requestCopyClawSetupPrompt(
-                    manager = mcpServerManager,
-                    serverState = uiState,
-                    promptTemplate = clawSetupPromptTemplate,
-                )
-            },
-            onRefreshNow = { mcpPageViewModel.requestRefreshNow(mcpServerManager) },
-            onSaveServiceConfig = { mcpPageViewModel.requestSaveConfig(mcpServerManager) },
-            onServerNameChange = mcpPageViewModel::updateServerName,
-            onPortTextChange = mcpPageViewModel::updatePortText,
-            onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
-            onDismissEditSheet = { mcpPageViewModel.updateEditSheetVisible(false) },
-            onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) },
-            onResetConfig = { mcpPageViewModel.requestResetConfig(mcpServerManager) },
-            onDismissResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(false) },
-            onResetToken = { mcpPageViewModel.requestResetToken(mcpServerManager) },
-            onDismissResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(false) },
-        )
+        remember(mcpPageViewModel, mcpServerManager, toggleServer) {
+            McpPageActions(
+                onToggleServer = toggleServer,
+                onOpenEditSheet = { mcpPageViewModel.updateEditSheetVisible(true) },
+                onOnboardingExpandedChange = mcpPageViewModel::updateOnboardingExpanded,
+                onControlExpandedChange = mcpPageViewModel::updateControlExpanded,
+                onSendTestNotification = { mcpPageViewModel.requestSendTestNotification(mcpServerManager) },
+                onShowResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(true) },
+                onCopySkillResource = mcpPageViewModel::requestCopySkillResource,
+                onCopySubAgentResource = mcpPageViewModel::requestCopySubAgentResource,
+                onCopyWorkflowResource = mcpPageViewModel::requestCopyWorkflowResource,
+                onToolsSearchQueryChange = mcpPageViewModel::updateToolsSearchQuery,
+                onToolEntrypointsExpandedChange = mcpPageViewModel::updateToolEntrypointsExpanded,
+                onRuntimeToolsExpandedChange = mcpPageViewModel::updateRuntimeToolsExpanded,
+                onSystemToolsExpandedChange = mcpPageViewModel::updateSystemToolsExpanded,
+                onGithubToolsExpandedChange = mcpPageViewModel::updateGithubToolsExpanded,
+                onBaToolsExpandedChange = mcpPageViewModel::updateBaToolsExpanded,
+                onCodexToolsExpandedChange = mcpPageViewModel::updateCodexToolsExpanded,
+                onWorkflowToolsExpandedChange = mcpPageViewModel::updateWorkflowToolsExpanded,
+                onAdvancedToolsExpandedChange = mcpPageViewModel::updateAdvancedToolsExpanded,
+                onLogsExpandedChange = mcpPageViewModel::updateLogsExpanded,
+                onExportLogs = { generatedAt, fileName ->
+                    mcpPageViewModel.beginLogsExport(generatedAt, fileName)
+                },
+                onClearLogs = { mcpPageViewModel.requestClearLogs(mcpServerManager) },
+                onCopyCurrentConfig = { mcpPageViewModel.requestCopyCurrentConfig(mcpServerManager, currentUiState) },
+                onCopyClawSetupPrompt = {
+                    mcpPageViewModel.requestCopyClawSetupPrompt(
+                        manager = mcpServerManager,
+                        serverState = currentUiState,
+                        promptTemplate = currentClawSetupPromptTemplate,
+                    )
+                },
+                onRefreshNow = { mcpPageViewModel.requestRefreshNow(mcpServerManager) },
+                onSaveServiceConfig = { mcpPageViewModel.requestSaveConfig(mcpServerManager) },
+                onServerNameChange = mcpPageViewModel::updateServerName,
+                onPortTextChange = mcpPageViewModel::updatePortText,
+                onAllowExternalChange = mcpPageViewModel::updateAllowExternal,
+                onDismissEditSheet = { mcpPageViewModel.updateEditSheetVisible(false) },
+                onShowResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(true) },
+                onResetConfig = { mcpPageViewModel.requestResetConfig(mcpServerManager) },
+                onDismissResetConfigConfirm = { mcpPageViewModel.updateResetConfigConfirmVisible(false) },
+                onResetToken = { mcpPageViewModel.requestResetToken(mcpServerManager) },
+                onDismissResetTokenConfirm = { mcpPageViewModel.updateResetTokenConfirmVisible(false) },
+            )
+        }
     val serverNameHint = context.resolveString(R.string.mcp_input_service_name_hint)
     val serverNameFieldWidth =
         remember(pageUiState.serverName, serverNameHint) {

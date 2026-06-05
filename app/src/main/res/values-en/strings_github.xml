@@ -54,6 +54,7 @@
     <string name="github_actions_history_summary_label_filter">Filter</string>
     <string name="github_actions_history_summary_label_sort">Sort</string>
     <string name="github_actions_history_summary_label_cleanup">Cleanup</string>
+    <string name="github_actions_history_summary_chip_value">%1$s · %2$s</string>
     <string name="github_actions_history_summary_sort_value">%1$s · %2$s</string>
     <string name="github_actions_history_cleanup_removed">%1$d old records removed</string>
     <string name="github_actions_history_time_notified">Notified %1$s</string>

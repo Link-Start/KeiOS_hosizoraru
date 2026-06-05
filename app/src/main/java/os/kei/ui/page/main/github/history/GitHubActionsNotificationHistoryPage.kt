@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -49,12 +51,16 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoRow
+import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
@@ -227,6 +233,7 @@ internal fun GitHubActionsNotificationHistoryPage(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GitHubActionsHistorySummaryCard(
     uiState: GitHubActionsNotificationHistoryUiState,
@@ -234,52 +241,106 @@ private fun GitHubActionsHistorySummaryCard(
     val filterLabel = stringResource(uiState.filterMode.labelRes)
     val sortLabel = stringResource(uiState.sortMode.labelRes)
     val sortDirectionLabel = stringResource(uiState.sortDirection.labelRes)
-    AppFeatureCard(
-        title = stringResource(R.string.github_actions_history_summary_title),
-        subtitle =
-            stringResource(
-                R.string.github_actions_history_summary_subtitle,
-                uiState.records.size,
-                uiState.totalRecordCount,
-            ),
-        sectionIcon = appLucideFilterIcon(),
+    val sortValue =
+        stringResource(
+            R.string.github_actions_history_summary_sort_value,
+            sortLabel,
+            sortDirectionLabel,
+        )
+    AppSurfaceCard(
         showIndication = false,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = CardLayoutRhythm.cardHorizontalPadding, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
         ) {
-            AppInfoRow(
-                label = stringResource(R.string.github_actions_history_summary_label_filter),
-                value = filterLabel,
-                valueMaxLines = 1,
-                valueOverflow = TextOverflow.Ellipsis,
-            )
-            AppInfoRow(
-                label = stringResource(R.string.github_actions_history_summary_label_sort),
-                value =
-                    stringResource(
-                        R.string.github_actions_history_summary_sort_value,
-                        sortLabel,
-                        sortDirectionLabel,
-                    ),
-                valueMaxLines = 1,
-                valueOverflow = TextOverflow.Ellipsis,
-            )
-            uiState.lastCleanupRemovedCount?.let { removedCount ->
-                AppInfoRow(
-                    label = stringResource(R.string.github_actions_history_summary_label_cleanup),
-                    value =
-                        stringResource(
-                            R.string.github_actions_history_cleanup_removed,
-                            removedCount,
-                        ),
-                    valueMaxLines = 1,
-                    valueOverflow = TextOverflow.Ellipsis,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = appLucideFilterIcon(),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    tint = MiuixTheme.colorScheme.onBackground,
                 )
+                Text(
+                    text = stringResource(R.string.github_actions_history_summary_title),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.CompactTitle.fontSize,
+                    lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+                    fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                StatusPill(
+                    label =
+                        stringResource(
+                            R.string.github_actions_history_summary_subtitle,
+                            uiState.records.size,
+                            uiState.totalRecordCount,
+                        ),
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    size = AppStatusPillSize.Compact,
+                    backgroundAlphaOverride = 0.12f,
+                    borderAlphaOverride = 0.22f,
+                )
+            }
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                GitHubActionsHistorySummaryPill(
+                    label = stringResource(R.string.github_actions_history_summary_label_filter),
+                    value = filterLabel,
+                    color = MiuixTheme.colorScheme.primary,
+                )
+                GitHubActionsHistorySummaryPill(
+                    label = stringResource(R.string.github_actions_history_summary_label_sort),
+                    value = sortValue,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                uiState.lastCleanupRemovedCount?.let { removedCount ->
+                    GitHubActionsHistorySummaryPill(
+                        label = stringResource(R.string.github_actions_history_summary_label_cleanup),
+                        value =
+                            stringResource(
+                                R.string.github_actions_history_cleanup_removed,
+                                removedCount,
+                            ),
+                        color = MiuixTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun GitHubActionsHistorySummaryPill(
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color,
+) {
+    StatusPill(
+        label =
+            stringResource(
+                R.string.github_actions_history_summary_chip_value,
+                label,
+                value,
+            ),
+        color = color,
+        size = AppStatusPillSize.Compact,
+        backgroundAlphaOverride = 0.16f,
+        borderAlphaOverride = 0.28f,
+    )
 }
 
 @Composable

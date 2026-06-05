@@ -54,6 +54,7 @@
     <string name="github_actions_history_summary_label_filter">絞り込み</string>
     <string name="github_actions_history_summary_label_sort">並び替え</string>
     <string name="github_actions_history_summary_label_cleanup">クリーンアップ</string>
+    <string name="github_actions_history_summary_chip_value">%1$s · %2$s</string>
     <string name="github_actions_history_summary_sort_value">%1$s · %2$s</string>
     <string name="github_actions_history_cleanup_removed">古い記録を %1$d 件削除しました</string>
     <string name="github_actions_history_time_notified">通知 %1$s</string>

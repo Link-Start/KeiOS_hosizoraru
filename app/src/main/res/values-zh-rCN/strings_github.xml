@@ -54,6 +54,7 @@
     <string name="github_actions_history_summary_label_filter">筛选</string>
     <string name="github_actions_history_summary_label_sort">排序</string>
     <string name="github_actions_history_summary_label_cleanup">清理</string>
+    <string name="github_actions_history_summary_chip_value">%1$s · %2$s</string>
     <string name="github_actions_history_summary_sort_value">%1$s · %2$s</string>
     <string name="github_actions_history_cleanup_removed">已清理 %1$d 条旧记录</string>
     <string name="github_actions_history_time_notified">通知 %1$s</string>

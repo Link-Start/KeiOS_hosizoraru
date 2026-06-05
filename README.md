@@ -20,7 +20,7 @@
   <img alt="minSdk" src="https://img.shields.io/badge/minSdk-35-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="targetSdk" src="https://img.shields.io/badge/targetSdk-37-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.1-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.2-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
 </p>
 
 KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.8.0`                                             |
+| Latest stable tag | `v1.9.0`                                             |
 
 ## Quick Links
 
@@ -84,17 +84,20 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.8.0 Highlights
+## v1.9.0 Highlights
 
-- GitHub Actions artifact cards are cleaner, with sha256 details removed, file size shown on the
-  download control, and install/download split into separate actions.
-- The artifact download action stays visible in nightly.link and GitHub API Token modes, making
-  public-repository and token-backed Actions flows more consistent.
-- Managed install and share-import actions are steadier for Actions APK artifacts, with smoother
-  confirmation, notification cleanup, and Super Island actions.
-- GitHub tracking now supports per-project update-check intervals alongside the global cadence.
-- Settings grouping, icon switching, dependency refreshes, and release checks were cleaned up
-  together.
+- GitHub tracking now covers GitHub, Gitee, generic Git release sources, release ignore modes,
+  Actions artifacts, managed installs, notification history, and clearer cache/refresh state.
+- WebDAV sync has a safer page flow with remote refresh, change plans, upload/sync confirmation,
+  and broader data coverage for app settings, BA accounts, GitHub tracking, OS cards, and favorites.
+- BA helpers now support a multi-account office model, account-aware reminders, account-targeted
+  notification entry points, cleaner AP/cafe/calendar cards, and improved Super Island/Live Update
+  presentation.
+- MCP was split into feature modules and polished for Claw onboarding, sub-agent setup, workflow
+  resources, runtime logs, and lower background service overhead.
+- Liquid-glass sheets, floating docks, action bars, predictive back, Home cards, and settings were
+  tuned across the app. Liquid-glass bottom sheets now start disabled by default while the visual
+  system continues to receive performance work.
 
 Read the full feature tour:
 
@@ -104,16 +107,16 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.8.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.0).
+- Current stable tag: [v1.9.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.3.21`,
-  Compose `1.11.1`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
+  Compose `1.11.2`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.8.0](readme/RELEASE_V1.8.0.md)
+- [Release Notes v1.9.0](readme/RELEASE_V1.9.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

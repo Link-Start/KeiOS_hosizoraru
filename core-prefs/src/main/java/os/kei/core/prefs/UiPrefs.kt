@@ -289,7 +289,7 @@ object UiPrefs {
         kv().encode(KEY_REDUCE_TOAST_INTERRUPTION, value)
     }
 
-    fun isLiquidSheetEnabled(defaultValue: Boolean = true): Boolean = kv().decodeBool(KEY_LIQUID_SHEET, defaultValue)
+    fun isLiquidSheetEnabled(defaultValue: Boolean = false): Boolean = kv().decodeBool(KEY_LIQUID_SHEET, defaultValue)
 
     fun setLiquidSheetEnabled(value: Boolean) {
         kv().encode(KEY_LIQUID_SHEET, value)
@@ -353,7 +353,7 @@ object UiPrefs {
             cacheDiagnosticsEnabled = true,
             liquidToastEnabled = true,
             reduceToastInterruptionEnabled = false,
-            liquidSheetEnabled = true,
+            liquidSheetEnabled = false,
             liquidDialogEnabled = true,
             appThemeMode = appThemeMode,
             visibleBottomPageNames = DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES,
@@ -388,7 +388,7 @@ object UiPrefs {
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
             liquidToastEnabled = store.decodeBool(KEY_LIQUID_TOAST, true),
             reduceToastInterruptionEnabled = store.decodeBool(KEY_REDUCE_TOAST_INTERRUPTION, false),
-            liquidSheetEnabled = store.decodeBool(KEY_LIQUID_SHEET, true),
+            liquidSheetEnabled = store.decodeBool(KEY_LIQUID_SHEET, false),
             liquidDialogEnabled = store.decodeBool(KEY_LIQUID_DIALOG, true),
             appThemeMode = getAppThemeMode(),
             visibleBottomPageNames = loadVisibleBottomPageNames(),

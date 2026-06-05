@@ -5,9 +5,9 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.8.3](https://github.com/hosizoraru/KeiOS/releases/tag/v1.8.3)。
-- `master` 当前作为 v1.8.x 发布基线，覆盖 GitHub Actions artifact 精简、nightly.link/API
-  下载入口、托管安装修复、单项目检查间隔和设置分区整理。
+- 当前公开标签基线为 [KeiOS v1.9.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.0)。
+- `master` 当前作为 v1.9.0 发布基线，覆盖 GitHub/Git 追踪、WebDAV 同步、MCP 服务模块、
+  BA 多账号、Actions 历史和 UI/性能打磨。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出 Debug、Benchmark 与 Release APK。
 
@@ -31,8 +31,8 @@
 - CI 会在 Gradle 外根据当前 HEAD 已合入的最新 semver tag 注入版本元数据。
 - 本地构建可在 `~/.gradle/gradle.properties` 或 `local.properties` 覆盖
   `keios.version.name`、`keios.nextVersion.name`、`keios.version.anchorTag` 与 `keios.git.*`。
-- Release 构建使用 semver 基础版本，例如 `1.8.3`。
-- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.8.4+12.gabcdef0`。
+- Release 构建使用 semver 基础版本，例如 `1.9.0`。
+- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.9.1+12.gabcdef0`。
 - 缺少 CI 注入 metadata 的本地构建会直接读取 git metadata，让 versionName 和 versionCode
   保持同一套 commit 数后缀规则。
 - 包名链路保持精简：Debug 安装为 `os.kei.debug`；Benchmark 与 Release 安装为 `os.kei`。
@@ -84,7 +84,7 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.8.0 发布门禁
+### v1.9.0 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
@@ -97,13 +97,13 @@ git diff --check
 
 本次发布建议重点复查：
 
-- Actions artifact card 隐藏 digest 详情，并在下载动作上显示文件大小。
-- 支持托管安装的 Actions APK artifact 同时显示安装和下载控件。
-- Actions artifact 下载入口在 nightly.link 与 GitHub API Token 两种模式下保持常驻。
-- 单项目 GitHub 检查更新间隔保存与刷新正常。
-- 设置页权限 / 外观分区与当前 UI 结构一致。
-- Release APK 签名、版本元数据和启动。
-- GitHub Release 发布文案可直接参考 [Release Notes v1.8.0](RELEASE_V1.8.0.md)。
+- GitHub、Gitee、通用 Git、Actions、忽略版本和托管安装链路可以正常打开和执行。
+- WebDAV 同步会在同步或上传前展示远端刷新与变更计划确认。
+- BA 账号提醒与 AP / 咖啡厅 / 活动日历 / 卡池通知入口能跳转到对应账号。
+- MCP 本地服务能启动、拒绝未授权请求、输出 Claw 接入资源，并保持日志响应。
+- 液态玻璃弹出面板默认走 Miuix 标准 sheet，用户可在设置里手动启用。
+- Release APK 签名、版本元数据、R8/minify 输出和启动完成验证。
+- GitHub Release 发布文案可直接参考 [Release Notes v1.9.0](RELEASE_V1.9.0.md)。
 
 ### 截图基线
 

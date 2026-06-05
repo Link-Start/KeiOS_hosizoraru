@@ -121,7 +121,7 @@ abstract class BuildTimestampValueSource : ValueSource<Long, ValueSourceParamete
     override fun obtain(): Long = System.currentTimeMillis()
 }
 
-val fallbackReleaseVersion = AppSemVer(major = 1, minor = 8, patch = 3)
+val fallbackReleaseVersion = AppSemVer(major = 1, minor = 9, patch = 0)
 val configuredReleaseVersion =
     parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.version.name", "KEIOS_VERSION_NAME"))
 val configuredVersionAnchorTag =

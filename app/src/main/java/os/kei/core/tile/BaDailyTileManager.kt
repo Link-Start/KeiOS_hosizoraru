@@ -67,6 +67,13 @@ internal fun baDailyTileAddResultOf(code: Int): BaDailyTileAddResult =
         else -> BaDailyTileAddResult.Declined
     }
 
+/** Which daily-done trigger a quick-settings component is, for a long-press that has to be told apart. */
+internal sealed interface BaDailyTileKind {
+    data object AllAccounts : BaDailyTileKind
+
+    data class AccountSlot(val slot: Int) : BaDailyTileKind
+}
+
 /**
  * Claims, releases and keeps the daily-done tiles in step with the account list.
  *
@@ -245,6 +252,27 @@ internal object BaDailyTileManager {
                 AppLogger.i(TAG) { "released tile slot=$slot after its account was deleted" }
             }
         }
+    }
+
+    /**
+     * Which of the four declared tiles a component name refers to, or `null` when it is none of them.
+     *
+     * The component arrives as an extra on the platform's `QS_TILE_PREFERENCES` intent, i.e. from outside
+     * the app, so the package is checked rather than assumed: the preferences activity has to be exported
+     * for the system to launch it, which means anyone can send it a component name. Resolving to `null`
+     * is the safe answer, not a per-account guess.
+     */
+    fun kindOf(
+        context: Context,
+        component: ComponentName?,
+    ): BaDailyTileKind? {
+        val target = component ?: return null
+        if (target.packageName != context.packageName) return null
+        if (target.className == BaDailyDoneAllTileService::class.java.name) {
+            return BaDailyTileKind.AllAccounts
+        }
+        val slot = accountTileClasses.indexOfFirst { it.name == target.className }
+        return if (slot >= 0) BaDailyTileKind.AccountSlot(slot) else null
     }
 
     private fun request(

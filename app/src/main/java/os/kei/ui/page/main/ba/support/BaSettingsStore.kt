@@ -892,6 +892,31 @@ internal object BASettingsStore {
     }
 
     /**
+     * The daily-done template, shared by every trigger.
+     *
+     * One record for all of them rather than one per tile: the tile, the launcher shortcut and the MCP
+     * tool are three ways to say the same sentence, and a per-trigger copy would make "my dailies" mean
+     * something different depending on which one the teacher reached for. It is also not per account, so
+     * the all-accounts tile has one answer to apply — the price is that a teacher whose accounts end the
+     * day at different AP has to pick a number, which the long-press editor makes a two-tap correction.
+     *
+     * A malformed value decodes to the defaults, which are the pre-configurable template, so a corrupt
+     * record degrades to the behaviour the tile used to have rather than to nothing at all.
+     */
+    fun loadDailyDoneConfig(): BaDailyDoneConfig {
+        val raw = kv().decodeString(KEY_BA_DAILY_DONE_CONFIG, "").orEmpty()
+        if (raw.isBlank()) return BaDailyDoneConfig().normalized()
+        return runCatching { KeiJson.lenient.decodeFromString<BaDailyDoneConfig>(raw) }
+            .getOrElse { BaDailyDoneConfig() }
+            .normalized()
+    }
+
+    fun saveDailyDoneConfig(config: BaDailyDoneConfig) {
+        kv().encode(KEY_BA_DAILY_DONE_CONFIG, KeiJson.lenient.encodeToString(config.normalized()))
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    /**
      * Applies a whole daily-done template to one account.
      *
      * One function rather than a chain of the per-field savers above, for two reasons. Correctness
@@ -935,9 +960,10 @@ internal object BASettingsStore {
     /**
      * Runs the daily-done template across every enabled account, in one signal.
      *
-     * Returns the per-account outcomes so the caller can say what actually happened rather than
-     * claiming success. An account whose dailies were already done contributes an outcome with
-     * `changedAnything == false`.
+     * The template itself is [loadDailyDoneConfig], not a parameter: every trigger applies the teacher's
+     * one template, and the long-press editor persists before it applies. Returns the per-account
+     * outcomes so the caller can say what actually happened rather than claiming success. An account
+     * whose dailies were already done contributes an outcome with `changedAnything == false`.
      */
     fun applyDailyDone(
         accountIds: List<BaAccountId>? = null,
@@ -973,10 +999,13 @@ internal object BASettingsStore {
                 .filter { it.profile.enabled }
                 .filter { accountIds == null || it.profile.id in accountIds }
         if (targets.isEmpty()) return emptyMap()
+        // Read once for the whole pass: an all-accounts run must apply one template, and re-reading per
+        // account would let a concurrent edit split the run across two of them.
+        val config = loadDailyDoneConfig()
         val outcomes = LinkedHashMap<BaAccountId, BaDailyDoneOutcome>(targets.size)
         targets.forEach { account ->
             val snapshot = BaPageSnapshot().withBaAccount(accountState = accountState, account = account)
-            val plan = planBaDailyDone(snapshot = snapshot, nowMs = nowMs)
+            val plan = planBaDailyDone(snapshot = snapshot, config = config, nowMs = nowMs)
             if (persist) saveAccountDailyDone(accountId = account.profile.id, plan = plan, notify = false)
             outcomes[account.profile.id] = plan.outcome
         }

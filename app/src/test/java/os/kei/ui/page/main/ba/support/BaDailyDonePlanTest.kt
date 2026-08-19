@@ -18,6 +18,7 @@ class BaDailyDonePlanTest {
         coffeeInvite2UsedMs: Long = 0L,
         craft: BaCraftState = BaCraftState(),
         serverIndex: Int = 2,
+        apLastNotifiedLevel: Int = -1,
     ): BaPageSnapshot =
         BaPageSnapshot(
             apCurrent = apCurrent,
@@ -27,6 +28,7 @@ class BaDailyDonePlanTest {
             coffeeInvite2UsedMs = coffeeInvite2UsedMs,
             craft = craft,
             serverIndex = serverIndex,
+            apLastNotifiedLevel = apLastNotifiedLevel,
         )
 
     @Test
@@ -37,7 +39,7 @@ class BaDailyDonePlanTest {
         assertEquals(NOW, plan.apRegenBaseMs)
         assertEquals(NOW, plan.apSyncMs)
         assertEquals(floorToHourMs(NOW), plan.cafeLastHourMs)
-        assertTrue(plan.outcome.apCleared)
+        assertTrue(plan.outcome.apAdjusted)
         assertTrue(plan.outcome.cafeApCleared)
     }
 
@@ -213,5 +215,186 @@ class BaDailyDonePlanTest {
         // at all rather than being silently dropped.
         assertEquals(NOW, cn.coffeeHeadpatMs)
         assertEquals(NOW, jp.coffeeHeadpatMs)
+    }
+
+    @Test
+    fun `a configured remainder is what the pool is left holding, anchors still re-based`() {
+        // The teacher stopped at 37 AP rather than exactly zero, which is the normal case for the player
+        // pool — only the cafe can be emptied precisely.
+        val plan =
+            planBaDailyDone(
+                snapshot(apCurrent = 120.0),
+                config = BaDailyDoneConfig(apRemaining = 37),
+                nowMs = NOW,
+            )
+        assertEquals(37.0, plan.apCurrent)
+        assertEquals(NOW, plan.apRegenBaseMs)
+        assertEquals(NOW, plan.apSyncMs)
+        assertTrue(plan.outcome.apAdjusted)
+        // The cafe pool is not configurable and still lands on zero.
+        assertEquals(0.0, plan.cafeStoredAp)
+    }
+
+    @Test
+    fun `a remainder that already matches the pool is not an adjustment`() {
+        val plan =
+            planBaDailyDone(
+                snapshot(apCurrent = 37.0),
+                config = BaDailyDoneConfig(apRemaining = 37),
+                nowMs = NOW,
+            )
+        assertFalse(plan.outcome.apAdjusted)
+    }
+
+    @Test
+    fun `a remainder above the current pool is a correction, not a refusal`() {
+        // Reading the number off the game after a sync gap: the app was behind, so the template moves the
+        // pool up. Refusing would leave the teacher hand-editing the value they had just typed.
+        val plan =
+            planBaDailyDone(
+                snapshot(apCurrent = 4.0),
+                config = BaDailyDoneConfig(apRemaining = 40),
+                nowMs = NOW,
+            )
+        assertEquals(40.0, plan.apCurrent)
+        assertTrue(plan.outcome.apAdjusted)
+    }
+
+    @Test
+    fun `the ap notified marker is only cleared when the pool really is empty`() {
+        // A remainder can sit above the teacher's own reminder threshold. Clearing the marker there would
+        // re-announce a level they have already been told about.
+        val kept =
+            planBaDailyDone(
+                snapshot(apLastNotifiedLevel = 150),
+                config = BaDailyDoneConfig(apRemaining = 200),
+                nowMs = NOW,
+            )
+        assertEquals(150, kept.apLastNotifiedLevel)
+
+        val cleared =
+            planBaDailyDone(
+                snapshot(apLastNotifiedLevel = 150),
+                config = BaDailyDoneConfig(apRemaining = 0),
+                nowMs = NOW,
+            )
+        assertEquals(-1, cleared.apLastNotifiedLevel)
+        // The cafe pool is always emptied, so its marker is always cleared.
+        assertEquals(-1, kept.cafeApLastNotifiedLevel)
+    }
+
+    @Test
+    fun `cooldowns switched off are left alone even when they are ready`() {
+        val plan =
+            planBaDailyDone(
+                snapshot(),
+                config =
+                    BaDailyDoneConfig(
+                        startHeadpat = false,
+                        startInvite1 = false,
+                        startInvite2 = false,
+                    ),
+                nowMs = NOW,
+            )
+        // Never-used cooldowns, which the default template would have started.
+        assertEquals(0L, plan.coffeeHeadpatMs)
+        assertEquals(0L, plan.coffeeInvite1UsedMs)
+        assertEquals(0L, plan.coffeeInvite2UsedMs)
+        assertFalse(plan.outcome.headpatStarted)
+        assertFalse(plan.outcome.invite1Started)
+        assertFalse(plan.outcome.invite2Started)
+    }
+
+    @Test
+    fun `zero craft slots leaves both functions untouched`() {
+        val plan =
+            planBaDailyDone(snapshot(), config = BaDailyDoneConfig(craftSlots = 0), nowMs = NOW)
+        assertEquals(0, plan.outcome.craftSlotsStarted)
+        repeat(BA_CRAFT_SLOT_COUNT) { index ->
+            assertFalse(plan.craft.slotAt(BaCraftFunction.Generate, index).isActive())
+            assertFalse(plan.craft.slotAt(BaCraftFunction.Fusion, index).isActive())
+        }
+    }
+
+    @Test
+    fun `a fusion template loads fusion slots and leaves generate alone`() {
+        val plan =
+            planBaDailyDone(
+                snapshot(),
+                config =
+                    BaDailyDoneConfig(
+                        craftFunction = BaCraftFunction.Fusion,
+                        craftSlots = BA_CRAFT_SLOT_COUNT,
+                        craftGrade = BaCraftGrade.Highest,
+                        craftEntriesPerSlot = BA_CRAFT_FUSION_MAX_ENTRIES,
+                    ),
+                nowMs = NOW,
+            )
+        assertEquals(BA_CRAFT_SLOT_COUNT, plan.outcome.craftSlotsStarted)
+        repeat(BA_CRAFT_SLOT_COUNT) { index ->
+            val slot = plan.craft.slotAt(BaCraftFunction.Fusion, index)
+            assertEquals(List(BA_CRAFT_FUSION_MAX_ENTRIES) { BaCraftGrade.Highest }, slot.grades)
+            // 5 copies at 6h each: the longest craft the game can hold.
+            assertEquals(NOW + 30L * HOUR, slot.endAtMs())
+            assertFalse(plan.craft.slotAt(BaCraftFunction.Generate, index).isActive())
+        }
+    }
+
+    @Test
+    fun `the entry count multiplies the slot duration rather than adding a second unit`() {
+        val plan =
+            planBaDailyDone(
+                snapshot(),
+                config =
+                    BaDailyDoneConfig(
+                        craftSlots = 1,
+                        craftGrade = BaCraftGrade.Highest,
+                        craftEntriesPerSlot = 2,
+                    ),
+                nowMs = NOW,
+            )
+        val slot = plan.craft.slotAt(BaCraftFunction.Generate, 0)
+        assertEquals(listOf(BaCraftGrade.Highest, BaCraftGrade.Highest), slot.grades)
+        assertEquals(NOW + 12L * HOUR, slot.endAtMs())
+    }
+
+    @Test
+    fun `a six hour craft is one highest grade item, the shape the tile editor offers`() {
+        val plan =
+            planBaDailyDone(
+                snapshot(),
+                config = BaDailyDoneConfig(craftSlots = 1, craftGrade = BaCraftGrade.Highest),
+                nowMs = NOW,
+            )
+        assertEquals(NOW + 6L * HOUR, plan.craft.slotAt(BaCraftFunction.Generate, 0).endAtMs())
+    }
+
+    @Test
+    fun `a template that changes nothing still reports nothing changed`() {
+        // Everything the configured template would touch is already spent: AP already at the remainder,
+        // cooldowns running, and the one configured craft slot counting down.
+        val plan =
+            planBaDailyDone(
+                snapshot(
+                    apCurrent = 20.0,
+                    cafeStoredAp = 0.0,
+                    coffeeHeadpatMs = NOW - MINUTE,
+                    craft =
+                        BaCraftState().withSlotAt(
+                            BaCraftFunction.Generate,
+                            0,
+                            BaCraftSlot(startedAtMs = NOW, grades = listOf(BaCraftGrade.High)),
+                        ),
+                ),
+                config =
+                    BaDailyDoneConfig(
+                        apRemaining = 20,
+                        startInvite1 = false,
+                        startInvite2 = false,
+                        craftSlots = 1,
+                    ),
+                nowMs = NOW,
+            )
+        assertFalse(plan.outcome.changedAnything)
     }
 }

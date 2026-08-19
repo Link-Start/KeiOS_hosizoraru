@@ -1,26 +1,34 @@
 package os.kei.ui.page.main.ba.support
 
 /**
- * How many Generate slots the daily template loads.
+ * How many Generate slots the daily template loads *by default*.
  *
  * Two, not three. Sensei's habitual daily opens the first two and leaves the third for whatever the
- * day actually calls for.
+ * day actually calls for. Configurable since the tile grew a long-press editor — see
+ * [BaDailyDoneConfig.craftSlots] — but this is still what a fresh install starts from.
  */
 internal const val BA_DAILY_DONE_CRAFT_SLOTS = 2
 
 /**
- * The grade the template assumes for each loaded craft.
+ * The grade the template assumes for each loaded craft, by default.
  *
  * [BaCraftGrade.High] is 3h for a single node, which is what an advanced material or a gift comes out
  * as — the outcome a one-node craft is actually run for, and the best value per keystone. Opening more
- * nodes multiplies the cost far faster than the reward, so the template deliberately stops at one node
- * per slot rather than guessing at a bigger craft the teacher did not ask for.
+ * nodes multiplies the cost far faster than the reward, so the default deliberately stops at one node
+ * per slot rather than guessing at a bigger craft the teacher did not ask for. A teacher who *does*
+ * want the bigger craft now says so in [BaDailyDoneConfig] instead of living with the guess.
  */
 internal val BA_DAILY_DONE_CRAFT_GRADE = BaCraftGrade.High
 
 /** What a daily-done application actually changed, so the caller can report it honestly. */
 internal data class BaDailyDoneOutcome(
-    val apCleared: Boolean = false,
+    /**
+     * The player AP pool was written to a different number.
+     *
+     * Not named "cleared": the template leaves [BaDailyDoneConfig.apRemaining] behind, which is usually
+     * but not always zero, and a teacher correcting a stale reading upwards is a legitimate change too.
+     */
+    val apAdjusted: Boolean = false,
     val cafeApCleared: Boolean = false,
     val headpatStarted: Boolean = false,
     val invite1Started: Boolean = false,
@@ -28,7 +36,7 @@ internal data class BaDailyDoneOutcome(
     val craftSlotsStarted: Int = 0,
 ) {
     val changedAnything: Boolean
-        get() = apCleared ||
+        get() = apAdjusted ||
             cafeApCleared ||
             headpatStarted ||
             invite1Started ||
@@ -60,40 +68,50 @@ internal data class BaDailyDonePlan(
  * therefore does not push a cooldown out or overwrite a craft still in flight, which is what makes it
  * safe to bind to a quick-settings tile where a stray tap costs nothing.
  *
- * Both AP pools go to **zero**, which is not the same as claiming the cafe. Claiming moves cafe AP into
- * the player pool; this template says the teacher already spent both, so each is zeroed independently
- * and each regeneration anchor is re-based to now so the next cycle starts from this moment.
- *
- * The notified levels reset alongside, matching what the in-app cafe claim already does: a reminder
- * that fired at yesterday's level must not dedupe away the next one.
+ * [config] says what the teacher's daily looks like; everything else here is a fact about the account
+ * and stays out of it. The AP pool lands on [BaDailyDoneConfig.apRemaining] with its regeneration anchor
+ * re-based to now, so the next cycle starts from this moment however much was left. The cafe pool goes
+ * to **zero**, which is not the same as claiming it: claiming moves cafe AP into the player pool, while
+ * this template says the teacher already spent both, so each is written independently.
  */
 internal fun planBaDailyDone(
     snapshot: BaPageSnapshot,
+    config: BaDailyDoneConfig = BaDailyDoneConfig(),
     nowMs: Long = System.currentTimeMillis(),
 ): BaDailyDonePlan {
-    val apCleared = snapshot.apCurrent > 0.0
+    val template = config.normalized()
+    val apTarget = normalizeAp(template.apRemaining.toDouble())
+    val apAdjusted = normalizeAp(snapshot.apCurrent) != apTarget
     val cafeApCleared = snapshot.cafeStoredAp > 0.0
 
-    val headpatAt = consumeBaHeadpatIfReady(snapshot.coffeeHeadpatMs, snapshot.serverIndex, nowMs)
-    val invite1At = consumeBaInviteTicketIfReady(snapshot.coffeeInvite1UsedMs, nowMs)
-    val invite2At = consumeBaInviteTicketIfReady(snapshot.coffeeInvite2UsedMs, nowMs)
+    val headpatAt =
+        if (template.startHeadpat) {
+            consumeBaHeadpatIfReady(snapshot.coffeeHeadpatMs, snapshot.serverIndex, nowMs)
+        } else {
+            null
+        }
+    val invite1At =
+        if (template.startInvite1) consumeBaInviteTicketIfReady(snapshot.coffeeInvite1UsedMs, nowMs) else null
+    val invite2At =
+        if (template.startInvite2) consumeBaInviteTicketIfReady(snapshot.coffeeInvite2UsedMs, nowMs) else null
 
     var craft = snapshot.craft.normalized()
     var craftStarted = 0
-    repeat(BA_DAILY_DONE_CRAFT_SLOTS) { index ->
-        val slot = craft.slotAt(BaCraftFunction.Generate, index)
+    val slotGrades = template.craftSlotGrades()
+    repeat(template.craftSlots) { index ->
+        val slot = craft.slotAt(template.craftFunction, index)
         // Free means idle OR already finished: a completed slot has been collected, so reusing it is
         // exactly what the teacher would do next. A slot still counting down is left alone.
         val free = !slot.isActive() || slot.isComplete(nowMs)
         if (free) {
             craft =
                 craft.withSlotAt(
-                    function = BaCraftFunction.Generate,
+                    function = template.craftFunction,
                     index = index,
                     slot =
                         BaCraftSlot(
                             startedAtMs = nowMs,
-                            grades = listOf(BA_DAILY_DONE_CRAFT_GRADE),
+                            grades = slotGrades,
                         ),
                 )
             craftStarted++
@@ -101,10 +119,16 @@ internal fun planBaDailyDone(
     }
 
     return BaDailyDonePlan(
-        apCurrent = 0.0,
+        apCurrent = apTarget,
         apRegenBaseMs = nowMs,
         apSyncMs = nowMs,
-        apLastNotifiedLevel = -1,
+        // Reset only when the pool really is empty. That case matches what the in-app cafe claim does —
+        // a reminder that fired at yesterday's level must not dedupe away the next one — but a
+        // configured remainder is different: it can sit above the teacher's own threshold, and clearing
+        // the marker there would re-announce a level they have already been told about. Keeping it costs
+        // nothing, because the dedup is an equality against the level and a changed pool no longer
+        // matches; and the reminder sweep clears the marker itself once AP is back under the threshold.
+        apLastNotifiedLevel = if (apTarget <= 0.0) -1 else snapshot.apLastNotifiedLevel,
         cafeStoredAp = 0.0,
         cafeLastHourMs = floorToHourMs(nowMs),
         cafeApLastNotifiedLevel = -1,
@@ -114,7 +138,7 @@ internal fun planBaDailyDone(
         craft = craft,
         outcome =
             BaDailyDoneOutcome(
-                apCleared = apCleared,
+                apAdjusted = apAdjusted,
                 cafeApCleared = cafeApCleared,
                 headpatStarted = headpatAt != null,
                 invite1Started = invite1At != null,

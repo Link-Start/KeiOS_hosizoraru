@@ -94,7 +94,7 @@ internal fun mcpBaDailyDoneLine(
         append("dailyDone[$accountId]=name:$accountName")
         append(" | applied:$applied")
         append(" | changed:${outcome.changedAnything}")
-        append(" | apCleared:${outcome.apCleared}")
+        append(" | apAdjusted:${outcome.apAdjusted}")
         append(" | cafeApCleared:${outcome.cafeApCleared}")
         append(" | headpatStarted:${outcome.headpatStarted}")
         append(" | invite1Started:${outcome.invite1Started}")

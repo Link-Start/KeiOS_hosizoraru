@@ -55,6 +55,7 @@ internal const val DEFAULT_AP_CURRENT = 0.0
 internal const val DEFAULT_CALENDAR_REFRESH_INTERVAL_HOURS = 12
 
 internal const val KEY_BA_DAILY_TILE_STATE = "ba_daily_tile_state_v1"
+internal const val KEY_BA_DAILY_DONE_CONFIG = "ba_daily_done_config_v1"
 private const val KEY_CALENDAR_CACHE_PREFIX = "calendar_cache_"
 private const val KEY_CALENDAR_SYNC_PREFIX = "calendar_sync_"
 private const val KEY_CALENDAR_CACHE_VERSION_PREFIX = "calendar_cache_version_"

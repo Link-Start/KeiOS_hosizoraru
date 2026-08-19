@@ -162,7 +162,7 @@ class McpBaAccountTextTest {
     fun `a dailies preview and a commit differ only in the applied flag`() {
         val outcome =
             BaDailyDoneOutcome(
-                apCleared = true,
+                apAdjusted = true,
                 cafeApCleared = true,
                 headpatStarted = true,
                 craftSlotsStarted = 2,
@@ -172,7 +172,7 @@ class McpBaAccountTextTest {
         val committed = mcpBaDailyDoneLine("Kei", "a", outcome, applied = true)
 
         assertEquals(
-            "dailyDone[a]=name:Kei | applied:false | changed:true | apCleared:true |" +
+            "dailyDone[a]=name:Kei | applied:false | changed:true | apAdjusted:true |" +
                 " cafeApCleared:true | headpatStarted:true | invite1Started:false |" +
                 " invite2Started:false | craftSlotsStarted:2",
             preview,

@@ -7,14 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
@@ -34,13 +32,11 @@ import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.maxEntries
 import os.kei.ui.page.main.widget.core.AppDualActionRow
-import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
-import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
@@ -145,7 +141,7 @@ internal fun BaCraftSlotEditSheet(
             SheetSectionCard(verticalSpacing = 10.dp) {
                 if (function == BaCraftFunction.Generate) {
                     repeat(BA_CRAFT_GENERATE_MAX_ENTRIES) { node ->
-                        BaCraftGradeRow(
+                        BaSheetDropdownRow(
                             backdrop = backdrop,
                             label = stringResource(R.string.ba_craft_sheet_node_format, node + 1),
                             options = listOf(unopenedName) + gradeNames,
@@ -171,7 +167,7 @@ internal fun BaCraftSlotEditSheet(
                         )
                     }
                 } else {
-                    BaCraftGradeRow(
+                    BaSheetDropdownRow(
                         backdrop = backdrop,
                         label = stringResource(R.string.ba_craft_sheet_grade_label),
                         options = listOf(unopenedName) + gradeNames,
@@ -187,14 +183,14 @@ internal fun BaCraftSlotEditSheet(
                                 }
                         },
                     )
-                    BaCraftGradeRow(
+                    BaSheetDropdownRow(
                         backdrop = backdrop,
                         label = stringResource(R.string.ba_craft_sheet_quantity),
                         options = (1..BA_CRAFT_FUSION_MAX_ENTRIES).map(Int::toString),
                         selectedIndex = (grades.size - 1).coerceIn(0, BA_CRAFT_FUSION_MAX_ENTRIES - 1),
                         enabled = grades.isNotEmpty(),
                         onSelectedIndexChange = { picked ->
-                            val grade = grades.firstOrNull() ?: return@BaCraftGradeRow
+                            val grade = grades.firstOrNull() ?: return@BaSheetDropdownRow
                             grades = List(picked + 1) { grade }
                         },
                     )
@@ -291,34 +287,5 @@ internal fun BaCraftSlotEditSheet(
                 },
             )
         }
-    }
-}
-
-@Composable
-private fun BaCraftGradeRow(
-    backdrop: Backdrop?,
-    label: String,
-    options: List<String>,
-    selectedIndex: Int,
-    enabled: Boolean,
-    onSelectedIndexChange: (Int) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    SheetControlRow(label = label) {
-        AppDropdownSelector(
-            selectedText = options.getOrElse(selectedIndex) { options.first() },
-            options = options,
-            selectedIndex = selectedIndex,
-            expanded = expanded && enabled,
-            anchorBounds = anchorBounds,
-            onExpandedChange = { expanded = it && enabled },
-            onSelectedIndexChange = {
-                expanded = false
-                onSelectedIndexChange(it)
-            },
-            onAnchorBoundsChange = { anchorBounds = it },
-            backdrop = backdrop,
-        )
     }
 }

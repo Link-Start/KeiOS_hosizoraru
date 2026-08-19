@@ -155,11 +155,79 @@ shortcuts and wakes the home overview; folding a card changes none of that.
 
 Default is expanded — hiding rows an existing install was already using would read as data loss.
 
+## Long-press: the template stopped being fixed (2026-08-19)
+
+The last "Open" item below — no entry for the AP left after clearing — turned out to be the smaller
+half of the same gap. A tile's long-press was falling through to the system app-info screen, which is
+the platform's fallback for a tile with nothing to configure, so the tile had both a fixed template
+and no place to change it.
+
+**The long-press hook.** SystemUI resolves `TileService.ACTION_QS_TILE_PREFERENCES` against the tile's
+own package and launches the first activity that handles it, attaching the pressed component as
+`Intent.EXTRA_COMPONENT_NAME` (and the tile state as `TileService.EXTRA_STATE`); it falls back to app
+info only when nothing resolves. `BaDailyDoneTemplateActivity` handles it for all four tiles and reads
+its target off the extra. It has to be `exported="true"` for the shade to launch it, which is why the
+component name is treated as untrusted input — the package is checked, and anything unrecognised
+resolves to the all-accounts scope rather than to a guessed account. Every failure mode here is
+invisible (no crash, no log — the long-press just goes back to app info), so the manifest half is
+pinned by `BaDailyTilePreferencesManifestTest` and the component mapping by `BaDailyTileKindTest`.
+
+**What the template now holds.** `BaDailyDoneConfig`, one record for every trigger:
+
+| field | why it is a choice and not a fact |
+|---|---|
+| `apRemaining` | only the cafe pool can be emptied exactly; a teacher who stops at 37 would otherwise correct it by hand after every run. A value *above* the current pool is accepted — that is a sync correction, and refusing it would be the surprising half |
+| `startHeadpat` / `startInvite1` / `startInvite2` | "I did not pat today" is not derivable from a cooldown |
+| `craftFunction` | Generate or Fusion (物質合成). One run loads one function; the other is untouched |
+| `craftSlots` | 0..3, counting from the first. Zero means "leave my crafts alone" |
+| `craftGrade` + `craftEntriesPerSlot` | the two together *are* the duration, by the same summed-multiset formula `BaCraftSlot.computedDurationMs` already uses. 6h is one Superlative item; 18h is three; a five-copy Fusion of Superlative is the 30h ceiling. No second unit for the teacher to reason about |
+
+Deliberately **not** in the record: cafe AP (one action, always lands on zero, so a remainder would be
+a setting with one correct value), and every idempotence rule — "is this cooldown spent", "is this slot
+still counting down" are facts about the account and stay in `planBaDailyDone`.
+
+Every default reproduces the pre-configurable template, which is the compatibility contract an install
+that never opens the editor relies on; `BaDailyDoneConfigTest` pins it against the old constants.
+
+**One record, not one per trigger.** The tile, the launcher shortcut and the MCP tool are three ways to
+say the same sentence, so a per-trigger copy would make "my dailies" mean different things depending
+on which one the teacher reached for. It is also not per account, so the all-accounts tile has one
+answer to apply. The price: a teacher whose accounts end the day at different AP has to pick a number.
+The long-press makes correcting it two taps, which is why that trade was taken.
+
+**Two actions, because the intents differ.** *Save* records what a later tap will apply; *apply now*
+does that and runs it. Apply saves first, so what just ran is also what the plain tap will run — there
+is never a second template in play. Neither is a preview.
+
+**`apCleared` became `apAdjusted`.** With a remainder the field would have been lying in two
+directions: `changedAnything` has to be true when the pool moves 12 → 40 (else the tile posts nothing
+for a run that did change something), and "cleared" is false when the pool goes *up*. The MCP line
+prints the new name.
+
+**The notified-level reset got narrower.** The old plan always wrote `apLastNotifiedLevel = -1`. A
+configured remainder can sit above the teacher's own reminder threshold, where clearing the marker
+re-announces a level they have already been told about — so it is cleared only when the pool really
+lands on zero. Nothing is lost by keeping it: the dedup is an equality against the level, a changed
+pool no longer matches, and the reminder sweep clears the marker itself once AP is back under the
+threshold.
+
+**Verified on the API 37 phone AVD**, end to end: `cmd package resolve-activity` returns the activity
+for the action; a real long-press on the added tile opens the sheet with the all-accounts scope; a
+per-account tile whose account is gone renders "no account bound" with apply disabled and editing
+still allowed; a run with `apRemaining = 37`, Superlative × 3 left the account at **AP 37/240**, cafe
+**0/740**, headpat and both tickets started, and Craft Chamber "2 running · next 17h 59m"; the
+unsaved-changes action sheet fires on back and discarding really does not write.
+
+Two things a sheet-only window cannot do, both accepted rather than worked around: the backdrop behind
+the sheet is opaque (`SceneBackdropHost` pre-paints the theme background, and no app window can sample
+the shade's pixels anyway — the same compromise `GitHubShareImportActivity` already makes), and the
+platform dim is off because the sheet draws its own scrim.
+
 ## Open
 
 - `BaDailyTileManager` and `BaDailyShortcutSync` have device verification but no unit tests beyond the
-  pure parts (`baDailyTileAddResultOf`, and the binding model's own 13 tests). What is left is almost
-  entirely `PackageManager` / `StatusBarManager` calls; testing it needs a seam that does not exist
-  yet.
-- The daily-done template is fixed. There is no entry for "AP left after clearing everything", which
-  was floated and not built.
+  pure parts (`baDailyTileAddResultOf`, `kindOf`, and the binding model's own 13 tests). What is left
+  is almost entirely `PackageManager` / `StatusBarManager` calls; testing it needs a seam that does not
+  exist yet.
+- The template is global, so a per-account AP remainder is still not expressible. Nobody has asked for
+  one; if they do, the shape is a per-account override on top of this record, not a second record.

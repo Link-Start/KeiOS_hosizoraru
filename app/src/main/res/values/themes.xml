@@ -5,7 +5,14 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <style name="Theme.KeiOS.ShareImportWindow" parent="Theme.KeiOS">
+    <!--
+        A window that is nothing but a liquid sheet: translucent, undimmed, and edge to edge.
+
+        backgroundDimEnabled is false because the sheet draws its own scrim. Leaving the platform dim on
+        would stack a second, differently-timed fade behind an animation that already recedes what is
+        underneath.
+    -->
+    <style name="Theme.KeiOS.TranslucentSheetWindow" parent="Theme.KeiOS">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:backgroundDimEnabled">false</item>
@@ -14,6 +21,9 @@
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:windowNoTitle">true</item>
     </style>
+
+    <!-- Kept as its own name so the share-import window can diverge later without touching the base. -->
+    <style name="Theme.KeiOS.ShareImportWindow" parent="Theme.KeiOS.TranslucentSheetWindow" />
 
     <style name="Theme.KeiOS.ShortcutAction" parent="@android:style/Theme.NoDisplay">
         <item name="android:windowNoDisplay">true</item>

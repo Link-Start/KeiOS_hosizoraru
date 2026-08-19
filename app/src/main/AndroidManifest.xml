@@ -121,6 +121,34 @@
             android:taskAffinity=""
             android:theme="@style/Theme.KeiOS.ShortcutAction" />
 
+        <!--
+            The daily tiles' long-press target.
+
+            Android resolves TileService.ACTION_QS_TILE_PREFERENCES against the tile's own package on a
+            long-press and only falls back to the system app-info screen when nothing handles it, which is
+            what these tiles did before this activity existed. exported must be true for SystemUI to launch
+            it; the activity treats its intent as untrusted and only reads which tile was pressed from it.
+
+            No screenOrientation: it opens from the shade and should follow whatever the device is doing.
+        -->
+        <activity
+            android:name=".ui.page.main.ba.BaDailyDoneTemplateActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/ba_daily_template_title"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/Theme.KeiOS.TranslucentSheetWindow"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".ui.page.main.github.share.GitHubShareImportActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"

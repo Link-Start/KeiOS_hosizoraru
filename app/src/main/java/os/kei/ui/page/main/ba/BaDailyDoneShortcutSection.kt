@@ -88,6 +88,22 @@ internal fun BaDailyDoneShortcutSection(
     )
 
     SheetSectionCard(verticalSpacing = 10.dp) {
+        // The same editor a tile long-press opens, reachable for a teacher who has not added a tile —
+        // and the only way to reach it at all when the shortcut is the trigger they use.
+        SheetControlRow(
+            label = stringResource(R.string.ba_daily_template_row_label),
+            summary = stringResource(R.string.ba_daily_template_scope_summary),
+        ) {
+            AppLiquidTextButton(
+                backdrop = backdrop,
+                text = stringResource(R.string.ba_daily_template_edit),
+                variant = GlassVariant.SheetAction,
+                onClick = { BaDailyDoneTemplateActivity.launch(context) },
+            )
+        }
+    }
+
+    SheetSectionCard(verticalSpacing = 10.dp) {
         SheetChoiceCard(
             title = stringResource(R.string.ba_daily_done_mode_all),
             summary = stringResource(R.string.ba_daily_done_tile_subtitle),

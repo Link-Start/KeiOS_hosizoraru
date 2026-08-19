@@ -9,7 +9,6 @@ import kotlinx.coroutines.withContext
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.background.AppForegroundInfoHandler
-import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.background.AppShortcutGitHubRefreshResult
 import os.kei.core.log.AppLogger
 import os.kei.core.platform.LocalNetworkPermissionCompat
@@ -19,7 +18,7 @@ import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerRuntimeRegistry
 import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
-import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.BaDailyDoneRunner
 import os.kei.ui.page.main.ba.support.BaAccountId
 
 internal object AppShortcutActionHandler {
@@ -55,27 +54,14 @@ internal object AppShortcutActionHandler {
     /**
      * Marks the dailies done from a launcher shortcut.
      *
-     * A null [accountId] is the all-accounts shortcut, which is exactly the store's null filter. A
-     * non-null one that no longer resolves is reported rather than silently doing nothing — the shortcut
-     * outlives the account it was pinned for.
+     * The template, the target resolution and the toasts all live in [BaDailyDoneRunner], shared with the
+     * tile's long-press editor so the two triggers cannot drift into reporting the same run differently.
      */
     private suspend fun applyBaDailyDone(context: Context, accountId: String?) {
-        val targets = accountId?.takeIf { it.isNotBlank() }?.let { listOf(BaAccountId(it)) }
-        val outcomes = withContext(AppDispatchers.baFetch) {
-            BASettingsStore.applyDailyDone(accountIds = targets)
-        }
-        when {
-            outcomes.isEmpty() -> context.toast(R.string.ba_daily_done_toast_no_target)
-            outcomes.none { it.value.changedAnything } ->
-                context.toast(R.string.ba_daily_done_toast_already_done)
-
-            else ->
-                context.toast(
-                    R.string.ba_daily_done_toast_applied_format,
-                    outcomes.count { it.value.changedAnything },
-                    outcomes.values.sumOf { it.craftSlotsStarted },
-                )
-        }
+        BaDailyDoneRunner.applyAndToast(
+            context = context,
+            accountId = accountId?.takeIf { it.isNotBlank() }?.let(::BaAccountId),
+        )
     }
 
     private suspend fun refreshGitHubTracked(context: Context) {

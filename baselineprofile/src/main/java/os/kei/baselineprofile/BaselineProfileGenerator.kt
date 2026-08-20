@@ -155,19 +155,23 @@ class BaselineProfileGenerator {
             // `BaCafeCooldownEditSheet` had no journey at all, and it is only reachable from inside an
             // expanded card, so the accordion has to be walked to get there.
             scrollTestTagIntoReach(BA_COOLDOWN_CARD_FIRST)
-            clickTestTag(BA_COOLDOWN_CARD_FIRST)
+            clickTaggedCardHeader(BA_COOLDOWN_CARD_FIRST)
             waitForTestTag(BA_COOLDOWN_ADJUST_BUTTON, timeoutMs = 15_000)
+            // The body opens below the header, so the editor's button lands past the tappable band even
+            // though the card itself was in reach when it was tapped — measured at cy 2298 of 2856.
+            scrollTestTagIntoReach(BA_COOLDOWN_ADJUST_BUTTON)
             openAndDismissOverlay(
                 triggerTag = BA_COOLDOWN_ADJUST_BUTTON,
                 panelTag = LIQUID_SHEET_PANEL,
             )
-            clickTestTag(BA_COOLDOWN_CARD_FIRST)
-            device.waitForIdle()
+            scrollTestTagIntoReach(BA_COOLDOWN_CARD_FIRST)
+            collapseTaggedCard(cardTag = BA_COOLDOWN_CARD_FIRST, bodyTag = BA_COOLDOWN_ADJUST_BUTTON)
 
             // Then a craft slot card, and the sheet its configure button opens.
             scrollTestTagIntoReach(BA_CRAFT_SLOT_CARD_FIRST)
-            clickTestTag(BA_CRAFT_SLOT_CARD_FIRST)
+            clickTaggedCardHeader(BA_CRAFT_SLOT_CARD_FIRST)
             waitForTestTag(BA_CRAFT_SLOT_FIRST, timeoutMs = 15_000)
+            scrollTestTagIntoReach(BA_CRAFT_SLOT_FIRST)
             openAndDismissOverlay(
                 triggerTag = BA_CRAFT_SLOT_FIRST,
                 panelTag = LIQUID_SHEET_PANEL,
@@ -634,34 +638,93 @@ private fun MacrobenchmarkScope.discardTheOpenSheetsEdit() {
 }
 
 /**
- * Expands a tagged card, lets it settle, and collapses it again.
+ * Scrolls until a tagged node is a real target: composed at all, tall enough to hit, and clear of both
+ * the pile band under the top bar and the band the floating dock draws over.
  *
- * Both halves are the point: an accordion's exit re-animates the same surfaces its entry did, and that is
- * the half a teacher sees last.
+ * "Composed at all" is the part that bites, and it is why this no longer waits for the tag first. Each
+ * cooldown and craft slot is its own lazy item now, so a card below the fold has no semantics node to
+ * wait for — scrolling is what brings it into existence, and waiting first only buys a timeout. Nor can
+ * the walk be one-directional: the keep-alive headroom keeps a card composed after it recedes into the
+ * pile, where it reports a clipped height beneath the top bar, so an overshoot has to be walked back.
  */
-private fun MacrobenchmarkScope.expandCardAndCollapse(cardTag: String) {
-    scrollTestTagIntoReach(cardTag)
-    clickTestTag(cardTag)
-    device.waitForIdle()
-    clickTestTag(cardTag)
+private fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
+    val safeTop = (device.displayHeight * SCROLL_SAFE_TOP_FRACTION).toInt()
+    val safeBottom = (device.displayHeight * SCROLL_SAFE_BOTTOM_FRACTION).toInt()
+    repeat(SCROLL_INTO_REACH_ATTEMPTS) {
+        val bounds = device.findObject(testTagSelector(tag))?.visibleBounds
+        if (bounds != null &&
+            bounds.height() >= MIN_TAPPABLE_HEIGHT_PX &&
+            bounds.centerY() in safeTop..safeBottom
+        ) {
+            device.waitForIdle()
+            return
+        }
+        nudgeVisibleScrollable(forward = bounds == null || bounds.centerY() > safeBottom)
+    }
+    error("Unable to bring testTag=$tag into reach in ${targetAppId()}")
+}
+
+/**
+ * Taps a card's header rather than the middle of the card.
+ *
+ * [clickTestTag] clicks a node's centre, which is the header only while the card is collapsed. On an
+ * expanded card the centre lands in the body, and the tap is a silent no-op: nothing fails, the card
+ * stays open, and the exit animation half of the accordion is never collected. Measured on the BA page,
+ * an expanded cooldown card spans 508px against a 216px header.
+ */
+private fun MacrobenchmarkScope.clickTaggedCardHeader(tag: String) {
+    val bounds = device.findObject(testTagSelector(tag))?.visibleBounds
+        ?: error("Unable to find card testTag=$tag in ${targetAppId()}")
+    // A quarter in from the top stays inside the header of a collapsed card, and the cap keeps a tall
+    // expanded card's quarter from reaching past its header into the body.
+    val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
+    device.click(bounds.centerX(), bounds.top + inset)
     device.waitForIdle()
 }
 
 /**
- * Flings until a tagged node is a real target: tall enough to hit, and clear of the band the floating
- * dock and bottom bar draw over.
+ * Collapses a card and proves it collapsed, by waiting for a control only its body carries.
  *
- * Generalised from the craft header's version of the same problem. A card that is technically present but
- * sitting under the dock swallows the tap, and the failure reads as a missing test tag.
+ * Without the proof a missed header tap reads as success — which is exactly how the collapse half of
+ * this journey went uncollected while the test still passed.
  */
-private fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
-    val safeBottom = (device.displayHeight * 0.80f).toInt()
-    repeat(6) {
-        waitForTestTag(tag, timeoutMs = 15_000)
-        val bounds = device.findObject(testTagSelector(tag))?.visibleBounds ?: return
-        if (bounds.height() >= MIN_TAPPABLE_HEIGHT_PX && bounds.centerY() <= safeBottom) return
-        flingVisibleScrollable(times = 1)
+private fun MacrobenchmarkScope.collapseTaggedCard(
+    cardTag: String,
+    bodyTag: String,
+) {
+    clickTaggedCardHeader(cardTag)
+    check(device.wait(Until.gone(testTagSelector(bodyTag)), 15_000)) {
+        "Card testTag=$cardTag did not collapse in ${targetAppId()}"
     }
+    device.waitForIdle()
+}
+
+/** Keeps a header tap inside the header of even a fully expanded card. */
+private const val MAX_HEADER_TAP_INSET_PX = 100
+
+/** The pile band under the top bar and the band the floating dock draws over. */
+private const val SCROLL_SAFE_TOP_FRACTION = 0.22f
+private const val SCROLL_SAFE_BOTTOM_FRACTION = 0.80f
+
+/** Enough nudges to walk the BA page end to end at roughly a quarter of a screen each. */
+private const val SCROLL_INTO_REACH_ATTEMPTS = 14
+
+/**
+ * Scrolls roughly a quarter of a screen, either way.
+ *
+ * Deliberately shorter than [flingVisibleScrollable]: a fling exists to collect the scroll path, while
+ * this exists to land one card in the tappable band, and a fling overshoots a one-line card.
+ */
+private fun MacrobenchmarkScope.nudgeVisibleScrollable(forward: Boolean) {
+    val centerX = device.displayWidth / 2
+    val near = (device.displayHeight * 0.62f).toInt()
+    val far = (device.displayHeight * 0.38f).toInt()
+    if (forward) {
+        device.swipe(centerX, near, centerX, far, 24)
+    } else {
+        device.swipe(centerX, far, centerX, near, 24)
+    }
+    device.waitForIdle()
 }
 
 /**

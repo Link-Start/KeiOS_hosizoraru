@@ -72,6 +72,7 @@ private const val APP_SOURCE_PREFIX = "app/src/main/java/os/kei/ui/page/main/"
 private val STACKING_HOSTS =
     listOf(
         "ba/BaCalendarPoolStackedLayout.kt",
+        "ba/BaPageContent.kt",
         "github/history/GitHubActionsNotificationHistoryPage.kt",
         "github/section/GitHubMainContentSection.kt",
         "mcp/McpPageContent.kt",

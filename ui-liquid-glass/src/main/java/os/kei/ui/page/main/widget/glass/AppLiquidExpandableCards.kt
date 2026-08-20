@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.kyant.backdrop.Backdrop
@@ -26,6 +27,7 @@ fun AppLiquidAccordionCard(
     subtitle: String,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
     headerStartAction: (@Composable () -> Unit)? = null,
     titleAccessory: (@Composable RowScope.() -> Unit)? = null,
     headerActions: (@Composable () -> Unit)? = null,
@@ -45,6 +47,7 @@ fun AppLiquidAccordionCard(
         subtitle = subtitle,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
+        modifier = modifier,
         headerStartAction = headerStartAction,
         titleAccessory = titleAccessory,
         headerActions = headerActions,
@@ -106,6 +109,7 @@ private fun AppLiquidExpandableCardFrame(
     subtitle: String,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
     headerStartAction: (@Composable () -> Unit)?,
     titleAccessory: (@Composable RowScope.() -> Unit)? = null,
     headerActions: (@Composable () -> Unit)?,

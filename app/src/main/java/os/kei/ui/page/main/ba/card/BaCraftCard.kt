@@ -1,70 +1,57 @@
 package os.kei.ui.page.main.ba.card
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.ba.support.BA_CRAFT_SLOT_COUNT
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
 import os.kei.ui.page.main.ba.BaPageClockState
-import os.kei.ui.page.main.ba.baCraftFunctionLabelRes
-import os.kei.ui.page.main.ba.support.BA_CRAFT_SLOT_COUNT
-import os.kei.ui.page.main.ba.support.BaCraftFunction
 import os.kei.ui.page.main.ba.support.BaCraftState
-import os.kei.ui.page.main.ba.support.BaCraftSummary
-import os.kei.ui.page.main.ba.support.endAtMs
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
-import os.kei.ui.page.main.ba.support.isActive
-import os.kei.ui.page.main.ba.support.isComplete
-import os.kei.ui.page.main.ba.support.slotAt
 import os.kei.ui.page.main.ba.support.summary
-import os.kei.ui.page.main.widget.motion.appExpandIn
-import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.testing.KeiOsTestTags
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * Craft Chamber timers: three Generate slots and three Fusion slots, all six per account.
+ * The Craft Chamber at a glance, in the shape [BaApCard] uses for AP.
  *
- * Rows reuse [BaInlineActionPanel] rather than growing a new shape, because a craft slot is the same
- * three facts the cafe cooldown rows already show — an actionable button, a countdown, and the instant
- * it lands — and the gesture language carries over too: tap to configure, long-press to clear.
+ * It replaced a fold. The chamber used to be one card with six rows inside it, and the fold existed
+ * because six rows was the tallest thing on the page — but a fold only hides the cost while it is shut,
+ * and the rows cost frames whenever it was open: twelve nested glass surfaces, measured at **+16.6ms of
+ * RenderThread** (`docs/planning/ba-craft-card-frame-cost.md`).
+ *
+ * Each slot is now its own card in the list, so they are composed one at a time and stack into the pile
+ * like every other card. That leaves this: an overview, with no disclosure of its own, saying what the
+ * six of them add up to — how many are running, how many are waiting to be collected, and when the next
+ * one lands. Exactly the summary the fold's header used to carry, now standing on its own.
  *
  * The countdown reads [BaPageClockState.uiMinuteMs], the page's existing minute ticker. Nothing here
  * starts a clock of its own: a craft is 30 minutes at the shortest, so a per-second tick would buy
  * nothing but wakeups.
- *
- * Six rows is the tallest card on the page and most of the time every one of them is idle, so the card
- * folds shut. Collapsing is non-lossy on purpose: the header takes over with a one-line summary of all
- * six slots, so the pile of rows is only worth opening when a slot actually needs configuring.
- * [expanded] is persisted — see `BaPageSnapshot.craftCardExpanded`.
  */
 @Composable
-internal fun BaCraftCard(
+internal fun BaCraftOverviewCard(
     backdrop: Backdrop?,
     clockState: BaPageClockState,
     craft: BaCraftState,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    onConfigureSlot: (BaCraftFunction, Int) -> Unit,
-    onClearSlot: (BaCraftFunction, Int) -> Unit,
 ) {
     val uiNowMs = clockState.uiMinuteMs.longValue
     val accentAmber = Color(0xFFFBBF24)
+    val countdownBlue = Color(0xFF60A5FA)
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val idleCountdownText = stringResource(R.string.ba_craft_slot_idle_countdown)
-    val idleText = stringResource(R.string.ba_craft_slot_idle)
-    val doneText = stringResource(R.string.ba_craft_slot_done)
+    val summary = craft.summary(uiNowMs)
+    val nextAtMs = summary.nextCompletionAtMs
 
     BaLiquidCard(
         backdrop = backdrop,
@@ -73,117 +60,72 @@ internal fun BaCraftCard(
     ) {
         BaCardHeader(
             title = stringResource(R.string.ba_craft_title),
-            // The header is the disclosure control, and the only handle a baseline-profile journey has
-            // on the expand/collapse transition. It carries a clickable role below, so the tag does
-            // become its own node — a tag on a semantics-free container would not.
             modifier = Modifier.testTag(KeiOsTestTags.BaCraftCardHeader),
-            expandable = true,
-            expanded = expanded,
-            expandTint = accentAmber,
-            onClick = { onExpandedChange(!expanded) },
-            // Only while collapsed: expanded, the rows below already say all of this, and repeating it
-            // in the header is just a second thing to read.
-            trailing =
-                if (expanded) {
-                    null
-                } else {
-                    {
-                        Text(
-                            text = baCraftSummaryText(craft.summary(uiNowMs), uiNowMs),
-                            color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            fontSize = 13.sp,
-                            lineHeight = 16.sp,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                },
+            // Three counts as three pills, the way the cafe card carries its own header facts. They are
+            // flat rather than glass on purpose: the same choice the slot cards' metadata pills make, and
+            // for the same reason — a count is a tag, and a tag does not need its own offscreen layer.
+            trailing = {
+                if (summary.runningCount > 0) {
+                    BaCraftCountPill(
+                        label = stringResource(R.string.ba_craft_pill_running_format, summary.runningCount),
+                        color = countdownBlue,
+                    )
+                }
+                if (summary.readyCount > 0) {
+                    BaCraftCountPill(
+                        label = stringResource(R.string.ba_craft_pill_ready_format, summary.readyCount),
+                        color = AppStatusColors.Fresh,
+                    )
+                }
+                val idleCount = BA_CRAFT_SLOT_TOTAL - summary.runningCount - summary.readyCount
+                if (idleCount > 0) {
+                    BaCraftCountPill(
+                        label = stringResource(R.string.ba_craft_pill_idle_format, idleCount),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    )
+                }
+            },
         )
 
-        AnimatedVisibility(
-            visible = expanded,
-            enter = appExpandIn(),
-            exit = appExpandOut(),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                BaCraftFunction.entries.forEach { function ->
-                    val functionLabel = stringResource(baCraftFunctionLabelRes(function))
-                    repeat(BA_CRAFT_SLOT_COUNT) { index ->
-                        val slot = craft.slotAt(function, index)
-                        val complete = slot.isComplete(uiNowMs)
-                        val endAtMs = slot.endAtMs()
-                        BaInlineActionPanel(
-                            backdrop = backdrop,
-                            // Only the first Generate slot is tagged: it is the journey's way into the
-                            // craft sheet, and six tags would be five that nothing waits for.
-                            buttonTestTag =
-                                KeiOsTestTags.BaCraftSlotFirst
-                                    .takeIf { function == BaCraftFunction.Generate && index == 0 },
-                            buttonText =
-                                stringResource(
-                                    R.string.ba_craft_slot_button_format,
-                                    functionLabel,
-                                    // The game numbers its slots from one; do not leak the index.
-                                    index + 1,
-                                ),
-                            countdownText =
-                                when {
-                                    !slot.isActive() -> idleCountdownText
-                                    complete -> "0m"
-                                    else -> formatBaRemainingTime(endAtMs, uiNowMs)
-                                },
-                            timeText =
-                                when {
-                                    !slot.isActive() -> idleText
-                                    complete -> doneText
-                                    else -> formatBaDateTimeNoSeconds(endAtMs, notSyncedText)
-                                },
-                            accentColor = accentAmber,
-                            enabled = true,
-                            onClick = { onConfigureSlot(function, index) },
-                            onLongClick = { onClearSlot(function, index) },
-                        )
-                    }
-                }
-            }
-        }
+        BaCompactDualMetricPanel(
+            backdrop = backdrop,
+            firstLabel = stringResource(R.string.ba_craft_overview_next),
+            firstValue =
+                if (nextAtMs != null) {
+                    formatBaRemainingTime(nextAtMs, uiNowMs)
+                } else {
+                    stringResource(R.string.ba_craft_slot_idle_countdown)
+                },
+            secondLabel = stringResource(R.string.ba_craft_overview_at),
+            secondValue =
+                if (nextAtMs != null) {
+                    formatBaDateTimeNoSeconds(nextAtMs, notSyncedText)
+                } else {
+                    stringResource(R.string.ba_craft_slot_idle_countdown)
+                },
+            accentColor = accentAmber,
+            valueColor = countdownBlue,
+        )
     }
 }
 
-/**
- * The collapsed header's one line.
- *
- * A finished craft outranks a running one: it is the only state the teacher has to act on, and it
- * carries no countdown worth showing. Anything still running reports the nearest completion, because
- * that is the single number the six rows were being scanned for.
- */
+/** Every slot of both functions, which is what the overview's counts add up to. */
+private const val BA_CRAFT_SLOT_TOTAL = BA_CRAFT_SLOT_COUNT * 2
+
+/** A flat count tag, matching the slot cards' metadata pills rather than the glass time pill. */
 @Composable
-private fun baCraftSummaryText(
-    summary: BaCraftSummary,
-    nowMs: Long,
-): String {
-    val nextAtMs = summary.nextCompletionAtMs
-    return when {
-        summary.isIdle -> stringResource(R.string.ba_craft_summary_idle)
-        summary.readyCount > 0 && summary.runningCount > 0 ->
-            stringResource(
-                R.string.ba_craft_summary_ready_running_format,
-                summary.readyCount,
-                summary.runningCount,
-            )
-
-        summary.readyCount > 0 -> stringResource(R.string.ba_craft_summary_ready_format, summary.readyCount)
-        nextAtMs != null ->
-            stringResource(
-                R.string.ba_craft_summary_running_format,
-                summary.runningCount,
-                formatBaRemainingTime(nextAtMs, nowMs),
-            )
-
-        // Running with no future completion is unreachable through the UI (a started slot always ends
-        // after it started), so this only fires on a clock jump. Report the count and no time rather
-        // than an inverted countdown.
-        else -> stringResource(R.string.ba_craft_summary_running_only_format, summary.runningCount)
+private fun BaCraftCountPill(
+    label: String,
+    color: Color,
+) {
+    CompositionLocalProvider(LocalLiquidParentBackdrop provides null) {
+        StatusPill(
+            label = label,
+            color = color,
+            size = AppStatusPillSize.Compact,
+            backdrop = null,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

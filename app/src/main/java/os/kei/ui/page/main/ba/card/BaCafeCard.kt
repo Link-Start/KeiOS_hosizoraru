@@ -32,9 +32,6 @@ import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.ba.support.cafeHourlyGain
 import os.kei.ui.page.main.ba.support.calculateCafeFullAtMs
-import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
-import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
-import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.nextArenaRefreshMs
 import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
@@ -66,49 +63,14 @@ internal fun BaCafeCard(
     onCafeStoredApDone: () -> Unit,
     onOpenCafeApTools: () -> Unit,
     onClaimCafeStoredAp: () -> Unit,
-    coffeeHeadpatMs: Long,
-    coffeeInvite1UsedMs: Long,
-    coffeeInvite2UsedMs: Long,
-    onTouchHead: () -> Unit,
-    onEditHeadpatCooldown: () -> Unit,
-    onUseInviteTicket1: () -> Unit,
-    onEditInviteTicket1Cooldown: () -> Unit,
-    onUseInviteTicket2: () -> Unit,
-    onEditInviteTicket2Cooldown: () -> Unit,
 ) {
     val uiNowMs = clockState.uiMinuteMs.longValue
     val accentPink = Color(0xFFF472B6)
     val countdownBlue = Color(0xFF60A5FA)
-    val nextHeadpatAt = calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)
-    val headpatReady = coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs
     val nextStudentRefreshAt = nextCafeStudentRefreshMs(uiNowMs, serverIndex)
     val nextArenaRefreshAt = nextArenaRefreshMs(uiNowMs, serverIndex)
-    val nextHeadpatText =
-        if (headpatReady) {
-            "0m"
-        } else {
-            formatBaRemainingTime(
-                nextHeadpatAt,
-                uiNowMs,
-            )
-        }
     val nextStudentRefreshText = formatBaRemainingTime(nextStudentRefreshAt, uiNowMs)
     val nextArenaRefreshText = formatBaRemainingTime(nextArenaRefreshAt, uiNowMs)
-    val invite1AvailableAt = calculateInviteTicketAvailableMs(coffeeInvite1UsedMs)
-    val invite2AvailableAt = calculateInviteTicketAvailableMs(coffeeInvite2UsedMs)
-    val invite1Ready = coffeeInvite1UsedMs <= 0L || invite1AvailableAt <= uiNowMs
-    val invite2Ready = coffeeInvite2UsedMs <= 0L || invite2AvailableAt <= uiNowMs
-    val invite1Color = accentPink
-    val invite2Color = accentPink
-    val invite1Text = if (invite1Ready) "0m" else formatBaRemainingTime(invite1AvailableAt, uiNowMs)
-    val invite2Text = if (invite2Ready) "0m" else formatBaRemainingTime(invite2AvailableAt, uiNowMs)
-    val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val invite1TimeText =
-        formatBaDateTimeNoSeconds(if (invite1Ready) uiNowMs else invite1AvailableAt, notSyncedText)
-    val invite2TimeText =
-        formatBaDateTimeNoSeconds(if (invite2Ready) uiNowMs else invite2AvailableAt, notSyncedText)
-    val headpatTimeText =
-        formatBaDateTimeNoSeconds(if (headpatReady) uiNowMs else nextHeadpatAt, notSyncedText)
     val cafeHourlyText = stringResource(R.string.ba_cafe_ap_hourly_gain_format, cafeHourlyGain(cafeLevel))
     val cafeCap = cafeDailyCapacity(cafeLevel)
     val cafeFullAt =
@@ -186,42 +148,6 @@ internal fun BaCafeCard(
             secondValue = nextStudentRefreshText,
             accentColor = accentPink,
             valueColor = countdownBlue,
-        )
-
-        BaInlineActionPanel(
-            backdrop = backdrop,
-            buttonText = stringResource(R.string.ba_cafe_action_headpat),
-            buttonIconRes = R.drawable.fx_tex_ch0071_prop_05_small,
-            countdownText = nextHeadpatText,
-            timeText = headpatTimeText,
-            accentColor = accentPink,
-            enabled = headpatReady,
-            onClick = onTouchHead,
-            onLongClick = onEditHeadpatCooldown,
-        )
-
-        BaInlineActionPanel(
-            backdrop = backdrop,
-            buttonText = stringResource(R.string.ba_cafe_action_invite_ticket_1),
-            buttonIconRes = R.drawable.cafe_icon_coupon_small,
-            countdownText = invite1Text,
-            timeText = invite1TimeText,
-            accentColor = invite1Color,
-            enabled = invite1Ready,
-            onClick = onUseInviteTicket1,
-            onLongClick = onEditInviteTicket1Cooldown,
-        )
-
-        BaInlineActionPanel(
-            backdrop = backdrop,
-            buttonText = stringResource(R.string.ba_cafe_action_invite_ticket_2),
-            buttonIconRes = R.drawable.cafe_icon_coupon_small,
-            countdownText = invite2Text,
-            timeText = invite2TimeText,
-            accentColor = invite2Color,
-            enabled = invite2Ready,
-            onClick = onUseInviteTicket2,
-            onLongClick = onEditInviteTicket2Cooldown,
         )
     }
 }

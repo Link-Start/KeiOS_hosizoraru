@@ -28,6 +28,7 @@ import os.kei.ui.page.main.ba.support.baCraftCustomDurationMinutesText
 import os.kei.ui.page.main.ba.support.baCraftCustomDurationMsFromMinutes
 import os.kei.ui.page.main.ba.support.computedDurationMs
 import os.kei.ui.page.main.ba.support.effectiveDurationMs
+import os.kei.ui.page.main.ba.support.isActive
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.maxEntries
@@ -71,6 +72,7 @@ internal fun BaCraftSlotEditSheet(
     slot: BaCraftSlot,
     uiNowMs: Long,
     onStart: (BaCraftSlot) -> Unit,
+    onSave: (BaCraftSlot) -> Unit,
     onClear: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
@@ -260,32 +262,74 @@ internal fun BaCraftSlotEditSheet(
                 )
             }
 
-            AppDualActionRow(
-                spacing = 8.dp,
-                first = { modifier ->
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        text = stringResource(R.string.ba_craft_sheet_start),
-                        variant = GlassVariant.SheetAction,
-                        enabled = totalMs > 0L,
-                        textMaxLines = 1,
-                        textOverflow = TextOverflow.Ellipsis,
-                        modifier = modifier,
-                        onClick = { onStart(draft) },
-                    )
-                },
-                second = { modifier ->
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        text = stringResource(R.string.ba_craft_sheet_clear),
-                        variant = GlassVariant.SheetAction,
-                        textMaxLines = 1,
-                        textOverflow = TextOverflow.Ellipsis,
-                        modifier = modifier,
-                        onClick = onClear,
-                    )
-                },
-            )
+            // A running slot gets three ways out, not two. Save keeps the instant it began and only
+            // changes how long it runs for — correcting a grade two hours in used to cost those two
+            // hours, because start was the only exit and it re-anchored to now.
+            if (slot.isActive()) {
+                AppDualActionRow(
+                    spacing = 8.dp,
+                    first = { modifier ->
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            text = stringResource(R.string.ba_craft_sheet_save),
+                            variant = GlassVariant.SheetAction,
+                            enabled = totalMs > 0L,
+                            textMaxLines = 1,
+                            textOverflow = TextOverflow.Ellipsis,
+                            modifier = modifier,
+                            onClick = { onSave(draft) },
+                        )
+                    },
+                    second = { modifier ->
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            text = stringResource(R.string.ba_craft_sheet_restart),
+                            variant = GlassVariant.SheetAction,
+                            enabled = totalMs > 0L,
+                            textMaxLines = 1,
+                            textOverflow = TextOverflow.Ellipsis,
+                            modifier = modifier,
+                            onClick = { onStart(draft) },
+                        )
+                    },
+                )
+                AppLiquidTextButton(
+                    backdrop = backdrop,
+                    text = stringResource(R.string.ba_craft_sheet_clear),
+                    variant = GlassVariant.SheetAction,
+                    textMaxLines = 1,
+                    textOverflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onClear,
+                )
+            } else {
+                AppDualActionRow(
+                    spacing = 8.dp,
+                    first = { modifier ->
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            text = stringResource(R.string.ba_craft_sheet_start),
+                            variant = GlassVariant.SheetAction,
+                            enabled = totalMs > 0L,
+                            textMaxLines = 1,
+                            textOverflow = TextOverflow.Ellipsis,
+                            modifier = modifier,
+                            onClick = { onStart(draft) },
+                        )
+                    },
+                    second = { modifier ->
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            text = stringResource(R.string.ba_craft_sheet_clear),
+                            variant = GlassVariant.SheetAction,
+                            textMaxLines = 1,
+                            textOverflow = TextOverflow.Ellipsis,
+                            modifier = modifier,
+                            onClick = onClear,
+                        )
+                    },
+                )
+            }
         }
     }
 }

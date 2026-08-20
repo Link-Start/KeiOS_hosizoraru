@@ -20,6 +20,7 @@ import os.kei.ui.page.main.ba.support.BaCraftState
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.isActive
+import os.kei.ui.page.main.ba.support.slotAt
 import os.kei.ui.page.main.ba.support.normalized
 import os.kei.ui.page.main.ba.support.started
 import os.kei.ui.page.main.ba.support.withSlotAt
@@ -608,6 +609,30 @@ internal class BaOfficeController(
         val started = slot.started(nowMs = clock.nowMs())
         if (!started.isActive()) return null
         return writeCraftSlot(function = function, index = index, slot = started)
+    }
+
+    /**
+     * Rewrites a running slot's composition **without moving its start**, so the countdown is not reset.
+     *
+     * The editor used to have one way out — start — which re-anchored to now, so correcting a grade on a
+     * craft that had been running for two hours threw those two hours away. This is the edit that was
+     * missing: the slot keeps the instant it began, and only its duration changes. A slot that is not
+     * running has no start to keep, so it falls through to [startCraftSlot].
+     *
+     * Returns `null` when the edit would leave the slot with no resolvable duration — the same guard
+     * [startCraftSlot] applies, because a zero-duration slot cannot be active and silently clearing one
+     * from an edit would look like data loss.
+     */
+    fun editCraftSlot(
+        function: BaCraftFunction,
+        index: Int,
+        slot: BaCraftSlot,
+    ): BaCraftState? {
+        val current = craft.slotAt(function, index)
+        if (!current.isActive()) return startCraftSlot(function = function, index = index, slot = slot)
+        val edited = slot.copy(startedAtMs = current.startedAtMs)
+        if (!edited.isActive()) return null
+        return writeCraftSlot(function = function, index = index, slot = edited)
     }
 
     fun clearCraftSlot(

@@ -370,6 +370,18 @@ internal fun BaPageSheetHost(
             }
             viewModel.hideCraftSlotEditSheet()
         },
+        onSave = { draft ->
+            routeState.craftSlotEditTarget?.let { target ->
+                persistCraft(
+                    office.editCraftSlot(
+                        function = target.function,
+                        index = target.index,
+                        slot = draft,
+                    ),
+                )
+            }
+            viewModel.hideCraftSlotEditSheet()
+        },
         onClear = {
             routeState.craftSlotEditTarget?.let { target ->
                 persistCraft(office.clearCraftSlot(target.function, target.index))

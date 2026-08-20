@@ -153,6 +153,12 @@ alone. The two sit adjacent in the snapshot and are easy to confuse, so a mapper
 Its store write deliberately skips `notifyChanged()`. That signal re-labels the daily-done tiles and
 shortcuts and wakes the home overview; folding a card changes none of that.
 
+**Superseded in part (2026-08-20.)** The six rows are no longer always composed: an idle slot is a
+count with a reveal, and only loaded slots render as rows. The fold above still exists and still works
+the same way — what changed is that opening the card no longer costs six rows' worth of glass. The
+measurements, the three rejected alternatives and the reason a fold alone was not enough are in
+`ba-craft-card-frame-cost.md`.
+
 Default is expanded — hiding rows an existing install was already using would read as data loss.
 
 ## Long-press: the template stopped being fixed (2026-08-19)

@@ -110,6 +110,46 @@ The last one is also what the card's own KDoc already observes — *"most of the
 them is idle"* — and it is why the card was given a fold in the first place. A fold hides the cost
 only while it is shut; not composing idle rows removes it while the card is open.
 
+## The card rewrite re-measured, and a correction (2026-08-20, later)
+
+The table above was measured with the craft card expanded on an account whose six slots were idle,
+against the same card collapsed. That A/B is a toggle on one build and one state, and it holds: the
+twelve nested surfaces cost +16.6ms.
+
+What does **not** hold is the figure that got quoted afterwards. "47.13 → 23ms, −51%" compared runs
+taken on *different account states* days apart in the same session, which is exactly the mistake
+`hwui-frame-budget.md` warns about for refresh-rate mix and is no better here. A controlled
+comparison — the pre-rewrite commit and the card build, same device, same session, same account, three
+runs each — reads:
+
+| build, scrolling | RT p50 |
+|---|---|
+| pre-rewrite (3 cafe rows + 6 craft rows, no pile) | 25.98 / 28.52 / 27.58 |
+| cards + pile | 27.57 / 27.83 / 28.24 |
+
+**Frame-neutral.** The rewrite's real wins are density and lazy disposal; the frame win claimed for it
+was an artefact of comparing two states. Anyone quoting a number for this page must state the account
+state it was taken on.
+
+Four more levers, all measured on that same controlled state, all neutral or nearly so:
+
+| lever | RT p50 | verdict |
+|---|---|---|
+| the edge-stack pile, off | 28.33 / 27.68 / 27.81 | neutral — the pile is free here, unlike on the row layout where it cost +11ms |
+| `exportBackdropToContent` off on collapsed cards | 27.48 / 27.57 / 28.06 | neutral — even though nothing in a collapsed card samples it |
+| scrolling among the slot cards only, big cards off screen | 27.41 | the slot cards are not carrying the cost either |
+| the list's `layerBackdrop` for the top bar removed | 24.82 / 24.90 | **−3ms**, the only real contributor found, and not shippable: the top bar's glass has nothing else to sample |
+
+So the page's ~27ms is not one thing. The full-page capture the top bar needs is the largest single
+piece at ~3ms; the rest is spread thin across every glass surface on screen, and no individual card,
+panel or pill accounts for enough to be worth a visual trade. The one lever that did pay was making
+the slot cards' pills flat (**−7ms** when measured, on the state it was measured on), and that is
+already shipped.
+
+**There is no further appreciable appearance-neutral win on this page.** The next real one is the
+reduced-resolution capture in `backdrop-reduced-resolution.md`, which the library cannot express
+today. Do not re-run the four levers above.
+
 ## Reproducing
 
 ```bash

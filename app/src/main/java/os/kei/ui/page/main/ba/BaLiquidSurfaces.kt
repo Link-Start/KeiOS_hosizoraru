@@ -28,6 +28,9 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.AppSurfaceBox
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
+import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
+import os.kei.ui.page.main.widget.chrome.appManagedPageCardMaterialColor
+import os.kei.ui.page.main.widget.chrome.appPageBackdropBaseColor
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
@@ -61,6 +64,7 @@ private fun BaLiquidSurfaceColumn(
     onClick: (() -> Unit)?,
     onLongClick: (() -> Unit)?,
     pressFeedback: Boolean,
+    flattenOverUniformParent: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val isDark = isAppInDarkTheme()
@@ -85,6 +89,37 @@ private fun BaLiquidSurfaceColumn(
         } else {
             backdrop ?: parentBackdrop
         }
+    // Blurring a locally uniform field returns that field, so a panel nested over a parent that
+    // exported its layer can composite its colours straight onto the real background and land on the
+    // same pixels — measured at max 6/255, with nothing over a 3% threshold. What it saves is a second
+    // offscreen layer over the same area, which is the BA office page's whole frame budget.
+    //
+    // Gated on having no gesture. The press deformation lives inside the glass layer, so a panel that
+    // can be pressed keeps its layer rather than trading feedback for frames.
+    val flattenToUniformFill = flattenOverUniformParent && !hasInteraction
+    // Composited over the *page's* card material, not over the card's own fill.
+    //
+    // An exporting card's layer carries the page material, not the card's surface on top of it, so the
+    // glass panel refracts the page colour while the card paints its own over the same pixels. In light
+    // the two are within a level of each other and it does not show; in dark, `background` and
+    // `surfaceContainer` are far enough apart that compositing over the wrong one left every flattened
+    // panel reading lighter than its glass twin. Kept alpha-correct rather than opaque so a managed
+    // background still shows through, exactly as the material it stands in for does.
+    val uniformFill =
+        if (flattenToUniformFill) {
+            accentTint
+                .compositeOver(glass.overlayColor)
+                .compositeOver(glass.baseColor)
+                .compositeOver(
+                    appManagedPageCardMaterialColor(
+                        baseColor = appPageBackdropBaseColor(),
+                        elevatedColor = MiuixTheme.colorScheme.surfaceContainer,
+                        backed = LocalAppManagedSceneBackdrop.current != null,
+                    ),
+                )
+        } else {
+            Color.Unspecified
+        }
     val edgeStack = rememberAppEdgeStackSlot()
     // Restoring glass here is the largest visible change in this rewrite. 482f0cfb3 switched the
     // backdrop off whenever a card stack was provided, and BaCalendarPoolStackedLayout always
@@ -108,7 +143,7 @@ private fun BaLiquidSurfaceColumn(
     }
     val stackedModifier = edgeStack.modifier.then(modifier)
 
-    if (activeBackdrop != null) {
+    if (activeBackdrop != null && !flattenToUniformFill) {
         AppSurfaceBox(
             modifier = stackedModifier,
             edgeStack = edgeStack,
@@ -162,7 +197,10 @@ private fun BaLiquidSurfaceColumn(
                 // No glass layer to fold the pile into on this path, so it gets its own.
                 .appEdgeStackLayer(edgeStack)
                 .padding(pressSafePadding)
-                .appSquircleBackground(fallbackSurface, cornerRadius)
+                .appSquircleBackground(
+                    if (flattenToUniformFill) uniformFill else fallbackSurface,
+                    cornerRadius,
+                )
                 .then(
                     if (borderColor.alpha > 0.01f && glass.borderWidth > 0.dp) {
                         Modifier.appSquircleBorder(
@@ -208,6 +246,10 @@ internal fun BaLiquidCard(
         accentColor = accentColor,
         accentAlpha = accentAlpha,
         variant = GlassVariant.Bar,
+        // Never flattened: a card samples the page's *synthetic* flat material, not the pixels behind
+        // it, so drawing its colours onto the real background is a different composite. Measured: doing
+        // it anyway moved 847k pixels.
+        flattenOverUniformParent = false,
         effectsEnabled = effectsEnabled,
         shadowEnabled = shadowEnabled,
         contentPadding = contentPadding,
@@ -233,10 +275,18 @@ internal fun BaLiquidPanel(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     pressFeedback: Boolean = true,
+    /**
+     * Draws this panel's colours straight onto the background instead of through a glass layer.
+     *
+     * Only correct where the parent exported a layer that is uniform under this panel — see
+     * `BaLiquidPanelUniformFillSourceTest` for the three conditions and what each one costs.
+     */
+    flattenOverUniformParent: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BaLiquidSurfaceColumn(
         backdrop = backdrop,
+        flattenOverUniformParent = flattenOverUniformParent,
         modifier = modifier
             .fillMaxWidth(),
         cornerRadius = 18.dp,
@@ -278,9 +328,12 @@ internal fun BaLiquidMetricPanel(
     pressFeedback: Boolean = true,
     effectsEnabled: Boolean = true,
     shadowEnabled: Boolean = true,
+    /** See [BaLiquidPanel]. */
+    flattenOverUniformParent: Boolean = false,
 ) {
     BaLiquidPanel(
         backdrop = backdrop,
+        flattenOverUniformParent = flattenOverUniformParent,
         modifier = modifier,
         accentColor = accentColor,
         effectsEnabled = effectsEnabled,

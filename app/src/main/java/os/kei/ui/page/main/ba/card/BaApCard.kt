@@ -126,6 +126,7 @@ private fun BaApInputPanel(
 ) {
     BaLiquidPanel(
         backdrop = backdrop,
+        flattenOverUniformParent = true,
         accentColor = accentGreen,
         onLongClick = onOpenApLimitTools,
     ) {

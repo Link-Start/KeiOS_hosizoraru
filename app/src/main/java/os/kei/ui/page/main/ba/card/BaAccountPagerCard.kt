@@ -135,6 +135,7 @@ private fun BaAccountLoadingCard(backdrop: Backdrop?) {
 
         BaLiquidPanel(
             backdrop = backdrop,
+            flattenOverUniformParent = true,
             accentColor = accentColor,
             accentAlpha = 0f,
         ) {
@@ -229,6 +230,7 @@ private fun BaAccountPageCard(
         ) {
             BaLiquidMetricPanel(
                 backdrop = backdrop,
+                flattenOverUniformParent = true,
                 label = stringResource(R.string.ba_id_label_nickname),
                 value = teacherName,
                 accentColor = accentColor,
@@ -245,6 +247,7 @@ private fun BaAccountPageCard(
             )
             BaLiquidMetricPanel(
                 backdrop = backdrop,
+                flattenOverUniformParent = true,
                 label = stringResource(R.string.ba_id_label_friend_code),
                 value = friendCode,
                 accentColor = accentColor,

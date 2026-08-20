@@ -167,6 +167,7 @@ private fun BaCafeApStockPanel(
 
     BaLiquidPanel(
         backdrop = backdrop,
+        flattenOverUniformParent = true,
         accentColor = accentPink,
         onLongClick = onOpenCafeApTools,
     ) {

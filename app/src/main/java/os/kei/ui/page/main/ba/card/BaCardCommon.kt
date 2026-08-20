@@ -165,6 +165,8 @@ internal fun BaCompactDualMetricPanel(
 ) {
     BaLiquidPanel(
         backdrop = backdrop,
+        // Every caller of this panel is an office card, which exports a uniform layer.
+        flattenOverUniformParent = true,
         modifier = modifier.fillMaxWidth(),
         accentColor = accentColor,
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),

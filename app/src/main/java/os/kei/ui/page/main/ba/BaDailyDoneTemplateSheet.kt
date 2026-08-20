@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,6 +45,7 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 
@@ -223,7 +225,12 @@ internal fun BaDailyDoneTemplateSheet(
             )
             SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetControlRow(label = stringResource(R.string.ba_daily_template_headpat)) {
-                    AppSwitch(checked = startHeadpat, onCheckedChange = { startHeadpat = it })
+                    AppSwitch(
+                        checked = startHeadpat,
+                        onCheckedChange = { startHeadpat = it },
+                        // The baseline profile's handle on this sheet — see KeiOsTestTags.
+                        modifier = Modifier.testTag(KeiOsTestTags.BaDailyTemplateHeadpatSwitch),
+                    )
                 }
                 SheetControlRow(label = stringResource(R.string.ba_daily_template_invite1)) {
                     AppSwitch(checked = startInvite1, onCheckedChange = { startInvite1 = it })

@@ -14,6 +14,16 @@ import os.kei.ui.page.main.widget.dialog.LiquidActionRole
 import os.kei.ui.page.main.widget.dialog.LiquidActionSheet
 import os.kei.ui.page.main.widget.dialog.LiquidPresentationAction
 
+/**
+ * The discard action of *any* sheet's unsaved-changes confirmation.
+ *
+ * Component-owned, like [LiquidSheetPanelTestTag], because a journey that wants to walk the
+ * unsaved-dismiss path cannot name the sheet it happens to be walking — and the eleven sheets using this
+ * guard would otherwise each need their own spelling. There is no matching tag for "keep editing": that
+ * is what the action sheet's own dismiss already does, so nothing has to reach it by name.
+ */
+const val UnsavedSheetDismissDiscardTestTag = "unsaved_sheet_dismiss_discard"
+
 @Stable
 class UnsavedSheetDismissHandler(
     val showConfirmDialog: Boolean,
@@ -87,7 +97,8 @@ fun UnsavedSheetDismissConfirmDialog(
             LiquidPresentationAction(
                 label = stringResource(R.string.common_discard_changes),
                 onClick = onDiscardChanges,
-                role = LiquidActionRole.Destructive
+                role = LiquidActionRole.Destructive,
+                testTag = UnsavedSheetDismissDiscardTestTag
             ),
             LiquidPresentationAction(
                 label = stringResource(R.string.common_keep_editing),

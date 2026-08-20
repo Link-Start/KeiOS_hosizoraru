@@ -65,6 +65,28 @@ class BaselineProfileTestTagContractTest {
     }
 
     @Test
+    fun theClassNamesTheTileLongPressJourneyStartsStillExist() {
+        // The journey opens the daily-template editor with `am start -n <pkg>/<class>`, and the
+        // macrobenchmark module cannot see either class to reference it. A rename would fail as a start
+        // that never brings the sheet up, minutes into a run, so the two literals are checked against the
+        // manifest that declares them here instead.
+        val manifest = sourceFile("app/src/main/AndroidManifest.xml")
+        val classNames = generatorClassNameConstants()
+
+        // Vacuously passing is the failure mode to guard here: the filter is by shape, so a rewritten
+        // constant could drop out of it and take the check with it.
+        assertTrue(classNames.isNotEmpty(), "Unable to parse class-name constants out of the generator")
+        classNames.forEach { (constant, className) ->
+            val relativeName = className.removePrefix(APP_NAMESPACE)
+            assertTrue(
+                relativeName in manifest,
+                "$constant = \"$className\" is declared by no manifest component; the journey would " +
+                    "start nothing",
+            )
+        }
+    }
+
+    @Test
     fun tagValuesAreUnique() {
         val values = keiOsTestTagValues()
 
@@ -94,16 +116,36 @@ private val COMPONENT_TAG_SOURCES =
     listOf(
         "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheet.kt",
         "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/MiuixSnapshotAdapters.kt",
+        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/UnsavedSheetDismiss.kt",
     )
 
 private const val SCENE_BACKDROP_HOST =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SceneBackdropScope.kt"
 
+/**
+ * The generator's tag constants only.
+ *
+ * It also holds a couple of *platform identifiers* — the class names the tile long-press journey starts —
+ * which are strings but not tags, and would fail the declared-tag check on sight. Tag values are
+ * snake_case identifiers and a class name is not, so the shape is the filter;
+ * `theClassNamesTheTileLongPressJourneyStartsStillExist` covers what this skips.
+ */
 private fun generatorTagConstants(): List<Pair<String, String>> =
+    generatorConstants().filter { (_, value) -> TAG_SHAPED.matches(value) }
+
+private fun generatorClassNameConstants(): List<Pair<String, String>> =
+    generatorConstants().filter { (_, value) -> value.startsWith(APP_NAMESPACE) }
+
+private fun generatorConstants(): List<Pair<String, String>> =
     CONST_DECLARATION
         .findAll(sourceFile("baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileGenerator.kt"))
         .map { match -> match.groupValues[1] to match.groupValues[2] }
         .toList()
+
+private val TAG_SHAPED = Regex("""[a-z0-9_]+""")
+
+/** Class names stay on the manifest namespace even when the installed applicationId has a suffix. */
+private const val APP_NAMESPACE = "os.kei."
 
 private val CONST_DECLARATION = Regex("""const val (\w+)\s*(?:=\s*)?\n?\s*"([^"]+)"""")
 

@@ -1,5 +1,7 @@
 package os.kei.baselineprofile
 
+import android.content.Intent
+import android.service.quicksettings.TileService
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -113,31 +115,30 @@ class BaselineProfileGenerator {
     }
 
     /**
-     * The Craft Chamber's disclosure, and the first sheet any journey has ever reached.
+     * The BA office's slot cards: the shape the page took when its rows became cards.
      *
-     * Two gaps in one journey, both on the BA page. Counted in the shipped profile before this landed:
-     * **zero** `BaCraft*` rules, for a feature with six timers, an edit sheet and its own models — it
-     * shipped after the last regeneration and nothing had walked it.
+     * Three things live here that no other journey reaches, and all three are new since the page was
+     * rebuilt around one card per cooldown and per craft slot.
      *
-     * The craft card folds. Its rows come and go through `appExpandIn`/`appExpandOut` inside a glass
-     * card in a lazy list, and [baPageInteractions] only ever composes whichever state was persisted —
-     * the transition itself was never run, so it was interpreted on the teacher's first tap. That is
-     * the same trap recorded on the calendar and pool journeys, and it costs dropped frames rather than
-     * a slower launch because the animation *is* the first composition.
+     * **The accordion.** Nine `AppLiquidAccordionCard`s replaced two tall cards, and each one expands and
+     * collapses through `appExpandIn`/`appExpandOut` on glass inside a lazy list. Both card kinds are
+     * walked because they animate the same accordion but compose different bodies — a cooldown's is a
+     * progress bar and two facts, a craft slot's is its node composition — and the first composition of
+     * either happens mid-animation, which is where an interpreted class costs a dropped frame.
      *
-     * Then a sheet. `LiquidSheetPanelTestTag` was added for exactly this and never worked: the overlay
-     * layer is a sibling of the page content, so it inherited no `testTagsAsResourceId` and every tag
-     * inside a sheet was invisible to UiAutomator. `SceneBackdropHost` now sets it for the whole
-     * overlay layer, which is what makes this wait resolve. Verified by dumping the hierarchy with the
-     * craft sheet open — `liquid_sheet_panel` appears, and did not before. The 15 `LiquidSheet` rules
-     * already in the profile came in incidentally through other journeys; nothing had opened a sheet.
+     * **The pile.** The office list became an edge-stack host, so BA cards now recede, blur and dim into
+     * the top edge as they leave. `cardPileInteractions` covers that transform on the OS page; this covers
+     * it on a list of *cards with their own glass*, which is the combination the BA page has and the OS
+     * page does not.
      *
-     * The header is toggled to a known state first rather than assumed: the expansion is persisted, so
-     * whatever the previous run or the teacher left behind decides whether the rows exist. Ending
-     * expanded also puts the device back on the shipped default.
+     * **The craft sheet, reached the way it now is** — through a card's own configure button rather than a
+     * row. The sheet itself was already profiled; the path into it was not.
+     *
+     * No fold to drive any more: the Craft Chamber card became an overview with no disclosure of its own,
+     * so the slot cards are always in the list and the journey can go straight at them.
      */
     @Test
-    fun baCraftCardInteractions() {
+    fun baSlotCardInteractions() {
         rule.collect(
             packageName = targetAppId(),
             includeInStartupProfile = false,
@@ -150,15 +151,21 @@ class BaselineProfileGenerator {
                 settledTag = MAIN_PAGER_SETTLED_BA,
             )
 
-            // Both halves of the disclosure animate, and both are what a teacher actually triggers.
-            setCraftCardExpanded(expanded = true)
-            setCraftCardExpanded(expanded = false)
-            setCraftCardExpanded(expanded = true)
+            // A cooldown card, both directions of its accordion.
+            expandCardAndCollapse(BA_COOLDOWN_CARD_FIRST)
 
+            // Then a craft slot card, and the sheet its configure button opens.
+            scrollTestTagIntoReach(BA_CRAFT_SLOT_CARD_FIRST)
+            clickTestTag(BA_CRAFT_SLOT_CARD_FIRST)
+            waitForTestTag(BA_CRAFT_SLOT_FIRST, timeoutMs = 15_000)
             openAndDismissOverlay(
                 triggerTag = BA_CRAFT_SLOT_FIRST,
                 panelTag = LIQUID_SHEET_PANEL,
             )
+
+            // The list is long enough to scroll now, so the pile actually engages.
+            flingVisibleScrollable(times = 3)
+            dragSlowly(times = 2)
         }
     }
 
@@ -301,8 +308,12 @@ class BaselineProfileGenerator {
      * It waits on a menu *row*, not on the panel container. A bare `Modifier.testTag` on a container
      * with no other semantics never becomes its own accessibility node, so `SnapshotMenuPanelTestTag`
      * is invisible to UiAutomator — verified by dumping the hierarchy with the menu open, where the
-     * rows appear and the panel does not. Sheets are still uncovered: the BA account toolbar action
-     * does not open its sheet under a synthetic tap, and an unverified wait here costs a 25-minute run.
+     * rows appear and the panel does not.
+     *
+     * Sheets are no longer the gap this used to name: [baCraftCardInteractions] opens one and
+     * [baDailyTemplateEditorInteractions] opens a second plus an action sheet. What is still uncovered is
+     * the BA *account* sheet specifically, which does not open under a synthetic tap on its toolbar
+     * action — and an unverified wait here costs a 25-minute run, so it is left alone deliberately.
      */
     @Test
     fun presentationChromeInteractions() {
@@ -520,56 +531,6 @@ private fun MacrobenchmarkScope.resetWindowSize() {
     device.waitForIdle()
 }
 
-/**
- * Drives the Craft Chamber card to [expanded], scrolling it into reach and retrying the tap.
- *
- * Written this way after the first version failed on the device with "did not collapse". Two things
- * make a single blind tap unreliable here, and both are properties of the card rather than of the test:
- * the expansion is *persisted*, so neither state can be assumed on entry — a fresh install is expanded
- * and a device someone has used may not be; and the card is the last one in the list, so the header can
- * sit under the floating dock, which is drawn above the list and eats the tap.
- *
- * Three attempts, then a loud failure. A real break still fails; a swallowed tap does not cost a run.
- */
-private fun MacrobenchmarkScope.setCraftCardExpanded(expanded: Boolean) {
-    val rows = testTagSelector(BA_CRAFT_SLOT_FIRST)
-    repeat(3) {
-        if (device.hasObject(rows) == expanded) {
-            device.waitForIdle()
-            return
-        }
-        scrollCraftCardHeaderClearOfTheDock()
-        clickTestTag(BA_CRAFT_CARD_HEADER)
-        val settled =
-            if (expanded) {
-                device.wait(Until.hasObject(rows), 5_000)
-            } else {
-                device.wait(Until.gone(rows), 5_000)
-            }
-        if (settled) {
-            device.waitForIdle()
-            return
-        }
-    }
-    error("Craft card would not settle to expanded=$expanded in ${targetAppId()}")
-}
-
-/**
- * Flings until the craft header is a real target: tall enough to hit and clear of the bottom band the
- * floating dock and bottom bar occupy.
- *
- * The list stops at its end, so this converges rather than scrolling past — the card is the last one.
- */
-private fun MacrobenchmarkScope.scrollCraftCardHeaderClearOfTheDock() {
-    val safeBottom = (device.displayHeight * 0.80f).toInt()
-    repeat(6) {
-        waitForTestTag(BA_CRAFT_CARD_HEADER, timeoutMs = 15_000)
-        val bounds = device.findObject(testTagSelector(BA_CRAFT_CARD_HEADER))?.visibleBounds ?: return
-        if (bounds.height() >= MIN_TAPPABLE_HEIGHT_PX && bounds.centerY() <= safeBottom) return
-        flingVisibleScrollable(times = 1)
-    }
-}
-
 private fun MacrobenchmarkScope.clickTestTag(tag: String) {
     val node = device.findObject(testTagSelector(tag))
         ?: error("Unable to find testTag=$tag in ${targetAppId()}")
@@ -622,6 +583,75 @@ private fun MacrobenchmarkScope.openDockRouteAndReturn(dockTag: String) {
     device.pressBack()
     waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
     device.waitForIdle()
+}
+
+/**
+ * Starts the daily-done template editor from a dead process, exactly as a tile long-press does.
+ *
+ * `TileService.ACTION_QS_TILE_PREFERENCES` and `Intent.EXTRA_COMPONENT_NAME` are read from the platform
+ * rather than restated, so a renamed constant fails to compile instead of failing 20 minutes into a run.
+ * The two app class names cannot be — the macrobenchmark module has no view of the app's source set — so
+ * they are literals, and `BaselineProfileTestTagContractTest` checks them against the manifest.
+ */
+private fun MacrobenchmarkScope.launchDailyTemplateFromTileLongPress() {
+    pressHome()
+    grantRuntimePermissions()
+    device.executeShellCommand("am force-stop ${targetAppId()}")
+    device.executeShellCommand(
+        "am start -W -a ${TileService.ACTION_QS_TILE_PREFERENCES} " +
+            "-n ${targetAppId()}/$DAILY_TEMPLATE_ACTIVITY_CLASS " +
+            "--ecn ${Intent.EXTRA_COMPONENT_NAME} ${targetAppId()}/$DAILY_TILE_ACCOUNT_SERVICE_CLASS",
+    )
+    waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 15_000)
+    device.waitForIdle()
+}
+
+/**
+ * Leaves an edited sheet through its unsaved-changes confirmation, discarding the edit.
+ *
+ * Waits on the discard action rather than on the panel, because the sheet underneath still carries
+ * [LIQUID_SHEET_PANEL] while the confirmation is up — the panel tag cannot tell the two apart. Both
+ * surfaces are then waited *gone*, so the pair of exit animations is collected as well.
+ */
+private fun MacrobenchmarkScope.discardTheOpenSheetsEdit() {
+    device.pressBack()
+    waitForTestTag(UNSAVED_SHEET_DISMISS_DISCARD, timeoutMs = 15_000)
+    clickTestTag(UNSAVED_SHEET_DISMISS_DISCARD)
+    check(device.wait(Until.gone(testTagSelector(LIQUID_SHEET_PANEL)), 15_000)) {
+        "Timed out waiting for the edited sheet to dismiss in ${targetAppId()}"
+    }
+    device.waitForIdle()
+}
+
+/**
+ * Expands a tagged card, lets it settle, and collapses it again.
+ *
+ * Both halves are the point: an accordion's exit re-animates the same surfaces its entry did, and that is
+ * the half a teacher sees last.
+ */
+private fun MacrobenchmarkScope.expandCardAndCollapse(cardTag: String) {
+    scrollTestTagIntoReach(cardTag)
+    clickTestTag(cardTag)
+    device.waitForIdle()
+    clickTestTag(cardTag)
+    device.waitForIdle()
+}
+
+/**
+ * Flings until a tagged node is a real target: tall enough to hit, and clear of the band the floating
+ * dock and bottom bar draw over.
+ *
+ * Generalised from the craft header's version of the same problem. A card that is technically present but
+ * sitting under the dock swallows the tap, and the failure reads as a missing test tag.
+ */
+private fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
+    val safeBottom = (device.displayHeight * 0.80f).toInt()
+    repeat(6) {
+        waitForTestTag(tag, timeoutMs = 15_000)
+        val bounds = device.findObject(testTagSelector(tag))?.visibleBounds ?: return
+        if (bounds.height() >= MIN_TAPPABLE_HEIGHT_PX && bounds.centerY() <= safeBottom) return
+        flingVisibleScrollable(times = 1)
+    }
 }
 
 /**
@@ -706,9 +736,13 @@ private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
 private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
 private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
 private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
-private const val BA_CRAFT_CARD_HEADER = "ba_craft_card_header"
+/** The cafe's headpat card — see [BaselineProfileGenerator.baSlotCardInteractions]. */
+private const val BA_COOLDOWN_CARD_FIRST = "ba_cooldown_card_first"
 
-/** The first Generate row, which opens the craft sheet — see [BaselineProfileGenerator.baCraftCardInteractions]. */
+/** The first craft slot's own card, which the journey expands to reach its configure button. */
+private const val BA_CRAFT_SLOT_CARD_FIRST = "ba_craft_slot_card_first"
+
+/** The configure button inside that card, which opens the craft sheet. */
 private const val BA_CRAFT_SLOT_FIRST = "ba_craft_slot_first"
 
 /**
@@ -716,6 +750,23 @@ private const val BA_CRAFT_SLOT_FIRST = "ba_craft_slot_first"
  * `KeiOsTestTags`, because the sheet component and not a page owns it.
  */
 private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
+
+/** One switch in the daily-done template editor — see [BaselineProfileGenerator.baDailyTemplateEditorInteractions]. */
+private const val BA_DAILY_TEMPLATE_HEADPAT_SWITCH = "ba_daily_template_headpat_switch"
+
+/**
+ * Any sheet's unsaved-changes discard action, from `UnsavedSheetDismissDiscardTestTag`. Component-owned
+ * for the same reason [LIQUID_SHEET_PANEL] is: the journey cannot name the sheet it happens to be in.
+ */
+private const val UNSAVED_SHEET_DISMISS_DISCARD = "unsaved_sheet_dismiss_discard"
+
+/**
+ * The two app classes the tile long-press names. Not test tags — see
+ * [launchDailyTemplateFromTileLongPress] for why they have to be literals, and
+ * `BaselineProfileTestTagContractTest` for what keeps them honest.
+ */
+private const val DAILY_TEMPLATE_ACTIVITY_CLASS = "os.kei.ui.page.main.ba.BaDailyDoneTemplateActivity"
+private const val DAILY_TILE_ACCOUNT_SERVICE_CLASS = "os.kei.core.tile.BaDailyDoneAccountTileService1"
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
 

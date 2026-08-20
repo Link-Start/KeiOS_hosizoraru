@@ -42,9 +42,36 @@ object KeiOsTestTags {
     const val BaPageRoot = "ba_page_root"
     const val BaAccountManagementButton = "ba_account_management_button"
     const val BaCraftCardHeader = "ba_craft_card_header"
+
+    /**
+     * The first cooldown card, the cafe's headpat.
+     *
+     * The three cooldowns are cards in the list now, so the profile has something to expand that is not
+     * a craft slot — and the two card kinds animate the same accordion but compose different bodies.
+     */
+    const val BaCooldownCardFirst = "ba_cooldown_card_first"
+
+    /**
+     * The first craft slot's card.
+     *
+     * The baseline profile's "the craft section is open" signal, and its way in: the slots are one card
+     * each now, so there is no single container whose presence says the section is showing.
+     */
+    const val BaCraftSlotCardFirst = "ba_craft_slot_card_first"
+
+    /** The configure button inside that card, which opens the craft sheet. */
     const val BaCraftSlotFirst = "ba_craft_slot_first"
     const val BaDockOpenCalendar = "ba_dock_open_calendar"
     const val BaDockOpenPool = "ba_dock_open_pool"
+
+    /**
+     * One switch in the daily-done template editor, tagged so a journey can make an edit it knows about.
+     *
+     * A switch rather than one of the four dropdowns: a toggle always changes the draft, so the
+     * unsaved-changes path it is there to reach cannot silently not happen because a picker landed back
+     * on the value it started from.
+     */
+    const val BaDailyTemplateHeadpatSwitch = "ba_daily_template_headpat_switch"
     const val GitHubPageRoot = "github_page_root"
     const val GitHubImportMenuButton = "github_import_menu_button"
     const val GitHubImportTracks = "github_import_tracks"

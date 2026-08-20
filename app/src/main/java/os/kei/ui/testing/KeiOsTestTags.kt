@@ -51,6 +51,9 @@ object KeiOsTestTags {
      */
     const val BaCooldownCardFirst = "ba_cooldown_card_first"
 
+    /** The cooldown editor's entry point, inside an expanded cooldown card. */
+    const val BaCooldownAdjustButton = "ba_cooldown_adjust_button"
+
     /**
      * The first craft slot's card.
      *

@@ -151,8 +151,18 @@ class BaselineProfileGenerator {
                 settledTag = MAIN_PAGER_SETTLED_BA,
             )
 
-            // A cooldown card, both directions of its accordion.
-            expandCardAndCollapse(BA_COOLDOWN_CARD_FIRST)
+            // A cooldown card, both directions of its accordion, and the editor it can now reach —
+            // `BaCafeCooldownEditSheet` had no journey at all, and it is only reachable from inside an
+            // expanded card, so the accordion has to be walked to get there.
+            scrollTestTagIntoReach(BA_COOLDOWN_CARD_FIRST)
+            clickTestTag(BA_COOLDOWN_CARD_FIRST)
+            waitForTestTag(BA_COOLDOWN_ADJUST_BUTTON, timeoutMs = 15_000)
+            openAndDismissOverlay(
+                triggerTag = BA_COOLDOWN_ADJUST_BUTTON,
+                panelTag = LIQUID_SHEET_PANEL,
+            )
+            clickTestTag(BA_COOLDOWN_CARD_FIRST)
+            device.waitForIdle()
 
             // Then a craft slot card, and the sheet its configure button opens.
             scrollTestTagIntoReach(BA_CRAFT_SLOT_CARD_FIRST)
@@ -738,6 +748,9 @@ private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
 private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
 /** The cafe's headpat card — see [BaselineProfileGenerator.baSlotCardInteractions]. */
 private const val BA_COOLDOWN_CARD_FIRST = "ba_cooldown_card_first"
+
+/** The cooldown editor's entry point, inside that card. */
+private const val BA_COOLDOWN_ADJUST_BUTTON = "ba_cooldown_adjust_button"
 
 /** The first craft slot's own card, which the journey expands to reach its configure button. */
 private const val BA_CRAFT_SLOT_CARD_FIRST = "ba_craft_slot_card_first"

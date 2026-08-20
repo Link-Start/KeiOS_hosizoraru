@@ -331,6 +331,7 @@ private fun LazyListScope.baCooldownCards(
             actionLabel = label,
             // The profile journey's handle on a cooldown card; the first one is enough.
             cardTestTag = KeiOsTestTags.BaCooldownCardFirst.takeIf { entry.key == entries.first().key },
+            adjustTestTag = KeiOsTestTags.BaCooldownAdjustButton.takeIf { entry.key == entries.first().key },
         )
     }
 }

@@ -84,6 +84,7 @@ internal fun BaCooldownSlotCard(
     onEditCooldown: () -> Unit,
     actionLabel: String,
     cardTestTag: String? = null,
+    adjustTestTag: String? = null,
 ) {
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val readyText = stringResource(R.string.ba_slot_card_ready)
@@ -181,7 +182,7 @@ internal fun BaCooldownSlotCard(
             },
             second = { rowModifier ->
                 AppLiquidTextButton(
-                    modifier = rowModifier,
+                    modifier = rowModifier.then(adjustTestTag?.let { Modifier.testTag(it) } ?: Modifier),
                     backdrop = backdrop,
                     text = stringResource(R.string.ba_slot_card_edit_cooldown),
                     textColor = MiuixTheme.colorScheme.onBackgroundVariant,

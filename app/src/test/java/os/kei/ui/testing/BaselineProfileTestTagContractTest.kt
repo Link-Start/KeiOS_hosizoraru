@@ -86,6 +86,48 @@ class BaselineProfileTestTagContractTest {
         }
     }
 
+    /**
+     * A journey helper that nothing calls collects nothing, and says nothing about it.
+     *
+     * `launchDailyTemplateFromTileLongPress` and `discardTheOpenSheetsEdit` were written, documented as
+     * covering the tile template editor, and never wired into a `@Test`. They sat uncalled through two
+     * profile captures. Kotlin warns about an unused private function; the build does not fail on
+     * warnings, and a profile run cannot fail on a journey that does not exist.
+     *
+     * Comments are stripped before counting, because a KDoc reference to the helper is exactly what made
+     * the gap look wired.
+     */
+    @Test
+    fun theGeneratorCallsEveryHelperItDeclares() {
+        val source = generatorSourceWithoutComments()
+        val helpers = SCOPED_HELPER.findAll(source).map { match -> match.groupValues[1] }.toList()
+
+        assertTrue(helpers.isNotEmpty(), "Unable to parse journey helpers out of the generator")
+        helpers.forEach { helper ->
+            val calls = Regex("""\b$helper\s*\(""").findAll(source).count()
+            assertTrue(
+                calls > 1,
+                "$helper is declared and never called, so whatever it was meant to collect is missing",
+            )
+        }
+    }
+
+    /** The same silence, one step earlier: a tag constant no journey ever waits for. */
+    @Test
+    fun theGeneratorUsesEveryConstantItDeclares() {
+        val source = generatorSourceWithoutComments()
+        val constants = generatorConstants().map { (constant, _) -> constant }
+
+        assertTrue(constants.isNotEmpty(), "Unable to parse constants out of the generator")
+        constants.forEach { constant ->
+            val references = Regex("""\b$constant\b""").findAll(source).count()
+            assertTrue(
+                references > 1,
+                "$constant is declared and never used, so the path it names is uncovered",
+            )
+        }
+    }
+
     @Test
     fun tagValuesAreUnique() {
         val values = keiOsTestTagValues()
@@ -138,7 +180,7 @@ private fun generatorClassNameConstants(): List<Pair<String, String>> =
 
 private fun generatorConstants(): List<Pair<String, String>> =
     CONST_DECLARATION
-        .findAll(sourceFile("baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileGenerator.kt"))
+        .findAll(sourceFile(GENERATOR_SOURCE))
         .map { match -> match.groupValues[1] to match.groupValues[2] }
         .toList()
 
@@ -146,6 +188,22 @@ private val TAG_SHAPED = Regex("""[a-z0-9_]+""")
 
 /** Class names stay on the manifest namespace even when the installed applicationId has a suffix. */
 private const val APP_NAMESPACE = "os.kei."
+
+private val SCOPED_HELPER = Regex("""private fun MacrobenchmarkScope\.(\w+)\s*\(""")
+
+/**
+ * The generator with comments removed.
+ *
+ * A KDoc mention reads as a use to any plain text search, which is how an uncalled helper stayed
+ * plausible through two captures.
+ */
+private fun generatorSourceWithoutComments(): String =
+    sourceFile(GENERATOR_SOURCE)
+        .replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
+        .replace(Regex("""//[^\n]*"""), "")
+
+private const val GENERATOR_SOURCE =
+    "baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileGenerator.kt"
 
 private val CONST_DECLARATION = Regex("""const val (\w+)\s*(?:=\s*)?\n?\s*"([^"]+)"""")
 

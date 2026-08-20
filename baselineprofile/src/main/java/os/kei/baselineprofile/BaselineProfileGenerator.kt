@@ -184,6 +184,35 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * The daily-done template editor, which nothing else can reach.
+     *
+     * It is not a page and not a sheet on a page: a QS tile long-press starts
+     * `BaDailyDoneTemplateActivity` into a translucent window, from a process that is usually dead. So
+     * everything on that path — the activity, its window configuration, `SceneBackdropHost`, and the
+     * sheet's whole first composition — was being interpreted on a user's first long-press.
+     *
+     * The switch is toggled deliberately rather than for its own sake: a clean sheet closes straight
+     * out, and only a dirty one routes the exit through the unsaved-changes confirmation, which is a
+     * second overlay stacked on the first. That pair of exit animations is the part no other journey has.
+     *
+     * The helpers for this landed without it. They sat here uncalled through two profile captures while
+     * the KDoc above claimed the coverage, which is why `theGeneratorCallsEveryHelperItDeclares` exists.
+     */
+    @Test
+    fun baDailyTemplateEditorInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchDailyTemplateFromTileLongPress()
+
+            waitForTestTag(BA_DAILY_TEMPLATE_HEADPAT_SWITCH, timeoutMs = 15_000)
+            clickTestTag(BA_DAILY_TEMPLATE_HEADPAT_SWITCH)
+            discardTheOpenSheetsEdit()
+        }
+    }
+
+    /**
      * The activity calendar and pool pages became nav routes, so their first composition now runs
      * inside the push transition instead of behind an activity launch. Nothing had ever profiled
      * them — the shipped profile carried 606 BaCalendarPool* rules and not one for either page
@@ -324,7 +353,7 @@ class BaselineProfileGenerator {
      * is invisible to UiAutomator — verified by dumping the hierarchy with the menu open, where the
      * rows appear and the panel does not.
      *
-     * Sheets are no longer the gap this used to name: [baCraftCardInteractions] opens one and
+     * Sheets are no longer the gap this used to name: [baSlotCardInteractions] opens one and
      * [baDailyTemplateEditorInteractions] opens a second plus an action sheet. What is still uncovered is
      * the BA *account* sheet specifically, which does not open under a synthetic tap on its toolbar
      * action — and an unverified wait here costs a 25-minute run, so it is left alone deliberately.

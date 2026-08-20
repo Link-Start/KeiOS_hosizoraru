@@ -127,6 +127,7 @@ private fun AppLiquidExpandableCardFrame(
     val contentVisibilityState = rememberExpandableCardVisibilityState(expanded)
 
     AppSurfaceCard(
+        modifier = modifier,
         backdrop = backdrop,
         containerColor = sectionSurface,
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),

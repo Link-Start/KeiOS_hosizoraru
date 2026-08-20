@@ -146,9 +146,76 @@ panel or pill accounts for enough to be worth a visual trade. The one lever that
 the slot cards' pills flat (**−7ms** when measured, on the state it was measured on), and that is
 already shipped.
 
-**There is no further appreciable appearance-neutral win on this page.** The next real one is the
-reduced-resolution capture in `backdrop-reduced-resolution.md`, which the library cannot express
-today. Do not re-run the four levers above.
+**Retracted (2026-08-21): "no further appreciable appearance-neutral win" was wrong.** There was a
+27% one, and the reason this investigation missed it is recorded below — it was looking at the wrong
+cards, with a metric too coarse to see the right ones. Do not re-run the four levers above; do read
+the next section before concluding anything about this page again.
+
+## The cards this whole document ignored (2026-08-21)
+
+The prompt that cracked it was a comparison, not a profile: the GitHub page stays smooth with far
+more cards than the BA page has. Same accordion component, same canvas-backed card material, same
+edge-stack pile, same top-bar capture — so none of those can be what makes BA slow.
+
+Measured with `dumpsys gfxinfo` CPU percentiles over a fixed six-fling journey, on
+KeiOS_API37_Validation. Every other page in the app lands at 15-22ms; BA sits at **77**, rendering 88
+frames where the others render 275-400:
+
+| page | cpu p50 | frames |
+|---|---|---|
+| home | 15 | 321 |
+| os | 17 | 401 |
+| mcp | 16 | 393 |
+| github | 16 | 275 |
+| **ba** | **77** | **88** |
+
+Dropping one list section at a time attributes it, and it is not the nine accordion cards:
+
+| dropped | cpu p50 |
+|---|---|
+| nothing | 73 |
+| the account pager | 61 |
+| **the AP card** | **48** |
+| **the Cafe card** | **42** |
+| all three cooldown cards | 61 |
+| the craft overview | 65 |
+| all six craft slot cards | 65 |
+
+The AP and Cafe cards carry ~11 glass surfaces each — a card, two panels, a dual-metric panel, six
+pills — against one per card on the GitHub page. **The cost scales with area, not count**: flattening
+every pill on the page changes nothing (77 vs 69, inside noise), while the full-width panels are
+worth 25-31ms each.
+
+Why the earlier pass missed it: `RT issue->swap` on a controlled state put the whole page at ~27ms
+and the slot-cards-only scroll at 27.41, which reads as "evenly spread, nothing to attribute". The
+gfxinfo total-frame percentile separates the same builds by 4x. When an attribution says "spread
+thin", suspect the metric before believing it.
+
+### What shipped
+
+A nested panel samples its parent's exported layer, and blurring a locally uniform field returns that
+field — so the panel can composite its own colours onto the background directly and skip a second
+offscreen layer over the same area. p50 **75 → 55**, p99 150 → ~100, verified by screenshot diff at
+max 6/255 with zero pixels over a 3% threshold, light and dark.
+
+Three conditions, all pinned by `BaLiquidPanelUniformFillSourceTest`:
+
+- Gated on the panel having no gesture, because the press deformation lives inside the glass layer.
+  That leaves ~11ms unclaimed on the two long-pressable panels, deliberately.
+- The fill composites over the **page's** card material, not the card's own. An exporting card's
+  layer carries the page material rather than its own surface over it; in light those are a level
+  apart and invisible, in dark it was 363k pixels over the threshold until corrected.
+- Not routed through `LiquidSurface`'s own no-backdrop path, which fills via `squircleSurface` — a
+  shader mask, which allocates the layer straight back. Measured at 73, i.e. nothing.
+
+Cards keep their glass: a card samples the page's *synthetic* flat material rather than the pixels
+behind it, so the substitution is not available there (doing it anyway moved 847k pixels).
+
+### Still open
+
+The reduced-resolution capture in `backdrop-reduced-resolution.md`, which the library cannot express
+today. And the ~11ms behind the two interactive panels, which needs the press deformation to work
+without a glass layer.
 
 ## Reproducing
 

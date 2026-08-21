@@ -33,8 +33,8 @@ MCP 页面用于管理本地 KeiOS MCP Server：
 - 支持启动/停止、本机或局域网连接配置、端口/路径/Token 展示和配置复制。
 - 入口工具、工作流工具和高级工具分区展示，并支持搜索与分组卡片，降低初次接入成本。
 - 提供 Claw Skill 快速接入提示词、本地化 SKILL.md、工作流蓝图和单工具帮助资源。
-- 45 个 MCP 工具覆盖 Home 总览、OS 卡片、系统 TopInfo、GitHub 跟踪 / 分享导入 / 仓库发现、Star List
-  导入、包名扫描、仓库反扫、订阅项目检查和 Blue Archive 缓存巡检。
+- 54 个 MCP 工具覆盖 Home 总览、OS 卡片、系统 TopInfo、GitHub 跟踪 / 分享导入 / 仓库发现、Star List
+  导入、包名扫描、仓库反扫、订阅项目检查，以及 Blue Archive 账号、日常模板、制造室与缓存操作。
 - 补齐 typed catalog、JSON schema、工具 annotations、结构化输出和资源 / prompt 注册表，适配支持新协议面的
   MCP 客户端。
 - 自适应运行日志与会话监控用于降低长期运行 MCP 服务时的前台开销。
@@ -79,6 +79,8 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - 追踪 AP 与咖啡厅 AP，并按不同服务器时区计算。
 - 支持进度与倒计时模板的 BA 专用超级岛显示。
 - 支持从快捷方式触发 AP 与咖啡厅 AP 超级岛通知。
+- 每个账号提供三个生成槽和三个物质合成槽，支持等级、数量、总时长编辑、精确完成提醒与紧凑运行概览。
+- 可配置日常模板可为单账号或全部账号更新 AP 余量、摸头 / 邀请次数和制造计划，并可从快速设置磁贴、启动器快捷方式与 MCP 触发。
 - 支持按服务器独立的昵称 / 好友码 ID 卡、好友码复制和办公室总览卡。
 - 支持服务器、咖啡厅等级、AP 阈值、媒体旋转、自定义媒体保存位置等配置。
 - 活动日历与卡池卡片带服务器上下文和紧凑时间布局，可配置通知并跳转到对应学生图鉴。
@@ -91,7 +93,7 @@ BA 页面是 Blue Archive 办公室仪表盘：
   卫星学园筛选。
 - 学生与相关条目详情支持资料、攻略/模拟、NPC / 卫星角色标签分类、鉴赏媒体、本地化语音语言标签、音频/视频内容和来源分享。
 - 礼物偏好解析保留礼物图片和态度标记。
-- 回忆大厅 BGM 收藏库支持播放队列、液态底栏、mini player、批量缓存、失败重试、导入导出和跳回学生详情。
+- 回忆大厅 BGM 收藏库支持播放队列、液态底栏、mini player、批量缓存、失败重试、删除撤销、导入导出、原生媒体通知和跳回学生详情。
 - 媒体缓存和导出流程支持表达包/媒体包打包保存。
 - NPC 与卫星条目适配较早期的 GameKee 页面，补齐更广的影画鉴赏解析、相关角色分类、更轻的信息行和缺少实装学生字段时的兼容。
 
@@ -101,9 +103,9 @@ BA 页面是 Blue Archive 办公室仪表盘：
 
 - 主题模式、过渡动画、预测返回、搜索默认聚焦、预加载、应用语言入口和 Home HDR 高光。
 - v2 液态玻璃 ActionBar、标题卡、搜索栏、浮动 dock、底栏、滑动时底栏完整特效策略和局部卡片按压反馈。
-- 支持在现有底栏 / pager 链路与 MIUIX iOS-like 底栏 / pager 链路之间切换。
+- 主导航会在手机使用底栏，在常规平板宽度使用顶部导航，并在超宽窗口使用可记忆、可拖动收起的侧边栏。
 - 图标设计以 Android Designs 作为默认图标，并提供 Apple Designs 焕新版图标切换。
-- 非 Home 页面自定义背景图和透明度。
+- 二级页面自定义背景图和透明度覆盖卡片、chrome 与弹层场景。
 - 通知权限、电池优化、OEM 自启动、应用列表访问和 Shizuku 状态。
 - 超级岛通知样式、HyperOS 兼容绕过和恢复延迟调节。
 - 复制/文本选择模式、缓存诊断、调试日志、日志 ZIP 导出和一键清理缓存。
@@ -116,7 +118,7 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - 包名：`os.kei`。
 - ABI：`arm64-v8a`。
 - Android 基线：Android 15+（`minSdk 35`），`targetSdk=37`。
-- UI 技术栈：Jetpack Compose `1.11.4`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
+- UI 技术栈：Jetpack Compose `1.12.0-rc01`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
   Chrome、MMKV 偏好存储。
-- 构建基线：Java 21、Gradle Wrapper `9.5.1`、Kotlin `2.4.0`、Android Gradle Plugin `9.2.1`、
+- 构建基线：Java 21、Gradle Wrapper `9.7.0`、Kotlin `2.4.10`、Android Gradle Plugin `9.3.1`、
   已生成的 Baseline Profiles 与 Gradle 项目工具链。

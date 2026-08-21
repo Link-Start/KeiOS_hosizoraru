@@ -40,9 +40,9 @@ The MCP page manages a local KeiOS MCP server:
   cards for users who want a smaller starting surface.
 - Claw Skill quick setup prompt, localized SKILL.md generation, workflow blueprints, and tool-level
   help resources.
-- 45 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
+- 54 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
   Star List import, package scans, reverse repository scans, direct subscription inspection, and
-  Blue Archive cache inspection.
+  Blue Archive account, daily-plan, Craft Chamber, and cache operations.
 - Typed catalog metadata, JSON schemas, tool annotations, structured outputs, and resource/prompt
   registries for MCP clients that support the newer protocol surface.
 - Adaptive runtime-log and session monitoring to keep long-running MCP service sessions lighter.
@@ -105,6 +105,10 @@ The BA page acts as a Blue Archive office dashboard:
 - AP threshold notifications, cafe visit reminders, arena refresh reminders, and BA-specific Super
   Island presentation using progress and countdown templates.
 - Shortcut-triggered AP and cafe AP Super Island notifications.
+- Six Craft Chamber timers per account cover three Generate slots and three Fusion slots, with grade,
+  count, total-duration editing, precise completion reminders, and compact running summaries.
+- Configurable daily templates can update AP remainder, headpat/invite counts, and craft plans for
+  one account or every account through Quick Settings tiles, launcher shortcuts, and MCP.
 - Server-specific nickname and friend-code ID cards, plus friend code copy and office overview
   cards.
 - Server, cafe level, AP threshold, media rotation, and custom media save-location settings.
@@ -122,7 +126,7 @@ The student guide expands the BA workflow into catalog and media browsing:
   sharing.
 - Gift preference parsing with image and attitude markers.
 - BGM favorites library with playback queue, liquid bottom dock, mini player, batch cache, retry,
-  import/export, and jump back into the student guide.
+  removal Undo, import/export, native media notifications, and jump back into the student guide.
 - Media cache controls and export flows, including archive-style saves for expression/media packs.
 - NPC and satellite entries adapt older GameKee pages with broader gallery parsing, related-role
   classification, leaner information rows, and compatibility for pages with fewer implemented-student
@@ -136,11 +140,12 @@ Settings collect the runtime controls in one place:
   language shortcut, and Home HDR highlight.
 - v2 liquid-glass ActionBar, title cards, search fields, floating docks, bottom bar, bottom-bar
   full-effect policy during scrolling, and scoped card press feedback.
-- Toggleable main navigation style between the existing bottom bar / pager chain and the MIUIX
-  iOS-like bottom bar / pager chain.
+- Adaptive main navigation keeps a bottom bar on phones, moves to top navigation at regular tablet
+  widths, and uses a remembered drag-to-close sidebar on ultra-wide windows.
 - Icon design selector with Android Designs as the default set and Apple Designs as the refreshed
   alternate set.
-- Custom non-Home background image and opacity controls.
+- Custom secondary-page background image and opacity controls, including cards, chrome, and modal
+  presentation scenes.
 - Notification permission, battery optimization, OEM autostart, app-list access, and Shizuku status.
 - Super Island notification style, HyperOS compatibility bypass, and restore-delay tuning.
 - Copy/text-selection mode, cache diagnostics, debug logs, exportable log ZIPs, and clear-cache actions.
@@ -154,7 +159,7 @@ Settings collect the runtime controls in one place:
 - Package: `os.kei`.
 - ABI: `arm64-v8a`.
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
-- UI stack: Jetpack Compose `1.11.4`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
+- UI stack: Jetpack Compose `1.12.0-rc01`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
   chrome, MMKV-backed preferences.
-- Build baseline: Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.4.0`, Android Gradle Plugin `9.2.1`,
+- Build baseline: Java 21, Gradle Wrapper `9.7.0`, Kotlin `2.4.10`, Android Gradle Plugin `9.3.1`,
   generated Baseline Profiles, and Gradle project tooling.

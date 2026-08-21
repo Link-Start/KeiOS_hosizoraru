@@ -20,7 +20,7 @@
   <img alt="minSdk" src="https://img.shields.io/badge/minSdk-35-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="targetSdk" src="https://img.shields.io/badge/targetSdk-37-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.4-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.12.0--rc01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
 </p>
 
 KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.13.0`                                            |
+| Latest stable tag | `v1.14.0`                                            |
 
 ## Quick Links
 
@@ -59,8 +59,8 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 - OS tools for system tables, Android/Java/Linux properties, built-in activity shortcuts,
   searchable activity/shell card sheets, privileged shell cards, and card import/export.
 - Local MCP server controls with config copy, runtime logs, foreground service support, Claw
-  onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 45 tools
-  across runtime, Home, OS, GitHub discovery/tracking, and BA cache inspection.
+  onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 54 tools
+  across runtime, Home, OS, GitHub discovery/tracking, BA accounts, dailies, and cache inspection.
 - GitHub tracking for Releases, Actions artifacts, generic Git sources, Direct APKs, and F-Droid
   repositories, with Atom/API strategy comparison, package-name scanning, installed-app reverse
   scan, subscription projects, share-import links, app linkage, and Star List import.
@@ -76,30 +76,33 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   events, with unread badges, search, export, and MCP query support.
 - JSON import and WebDAV sync for multi-schema KeiOS data migration, including GitHub/F-Droid
   tracking, OS card transfer data, BA multi-account data, previews, and routed result screens.
-- BA office helpers for AP, cafe visit, arena refresh reminders, server-aware calendar/pool data,
-  per-server ID cards, media settings, AP/cafe Super Island notifications, and student-guide entry
-  points.
+- BA office helpers for AP, cafe visit, arena refresh reminders, six-slot Craft Chamber timers,
+  configurable one-tap dailies, per-account Quick Settings tiles and launcher shortcuts,
+  server-aware calendar/pool data, Super Island notifications, and student-guide entry points.
 - Student Guide catalog with full-page search, sorting, long-lived implemented-student detail
-  cache, media cache, Memorial Lobby cards and PiP video playback, BGM favorites, gallery viewing,
-  media export, liquid bottom dock, and import/export for favorites.
+  cache, media cache, Memorial Lobby cards and PiP video playback, BGM favorites with removal Undo,
+  native media notifications, gallery viewing, media export, liquid bottom dock, and import/export
+  for favorites.
 - Settings for theme, motion, v2 liquid-glass components, bottom-bar effect policy, search focus
   behavior, grip-aware floating docks, background images, app language, permissions, cache
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.13.0 Highlights
+## v1.14.0 Highlights
 
-- Sheets, alerts, action sheets, toasts, dropdowns, and action menus now share an in-window Liquid
-  Glass presentation layer with live backdrop sampling, correct light/dark materials, and consistent
-  stacking and dismissal.
-- BA Calendar, Pools, and OS Shell join the main Miuix Nav route stack with shared transitions,
-  edge-back behavior, theming, and background lifecycle.
-- Main-page gestures preserve release momentum and request peak refresh rate only while moving;
-  hidden pages and presentations pause unnecessary backdrop production.
-- Calendar and Pool card piles keep receding content identifiable through progressive blur, depth,
-  and scale, while Student Guide warms cached content asynchronously before entry.
-- Privilege mode defaults to Off when no explicit selection exists, and Home, Settings, GitHub app
-  discovery, OS Shell, and MCP consistently follow the selected Shizuku or Root backend.
+- BA accounts gain six Craft Chamber timers spanning Generate and Fusion, configurable durations,
+  precise completion reminders, compact summaries, and edits to running crafts that preserve their
+  original start time.
+- A configurable one-tap daily plan can update one or every account from Quick Settings tiles,
+  launcher shortcuts, or MCP. Long-pressing a tile opens the template editor, and completion can be
+  reported through notifications and Super Island.
+- Tablets and foldables gain capped content widths, pane-aware spacing, top-row navigation at regular
+  widths, and a remembered drag-to-close sidebar on ultra-wide windows; phones keep the compact
+  bottom bar.
+- Custom backgrounds now continue through secondary pages, sheets preserve inner scrolling, and
+  Student Guide adds BGM removal Undo plus native media notifications enabled by default.
+- Modal presentations suspend idle background redraws, BA office cards remove redundant inner-glass
+  work, Android 17 paths are audited, and the release gate now checks Baseline Profile freshness.
 
 Read the full feature tour:
 
@@ -109,16 +112,16 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.13.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.13.0).
+- Current stable tag: [v1.14.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.14.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
-- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.6.1`, Kotlin `2.4.10`,
-  Compose `1.11.4`, Android Gradle Plugin `9.3.1`, Ktor `3.5.1`.
+- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.7.0`, Kotlin `2.4.10`,
+  Compose `1.12.0-rc01`, Android Gradle Plugin `9.3.1`, Ktor `3.5.1`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.13.0](readme/RELEASE_V1.13.0.md)
+- [Release Notes v1.14.0](readme/RELEASE_V1.14.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

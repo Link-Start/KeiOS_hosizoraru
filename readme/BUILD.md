@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.13.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.13.0).
-- `master` is the v1.13.0 release baseline for the in-window Liquid Glass presentation layer,
-  routed BA/OS destinations, privilege-aware app discovery, and main-page performance work.
+  is [KeiOS v1.14.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.14.0).
+- `master` is the v1.14.0 release baseline for six-slot BA crafting, configurable daily actions,
+  adaptive large-screen navigation, custom-background continuity, and Android 17 hardening.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 
@@ -21,8 +21,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Gradle daemon + Java compile + Kotlin JVM target are all aligned to Java 21.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
-- Gradle Wrapper: `9.6.1`; Kotlin plugin: `2.4.0`; Android Gradle Plugin: `9.3.0-rc01`;
-  Compose runtime: `1.11.4`; Ktor: `3.5.1`.
+- Gradle Wrapper: `9.7.0`; Kotlin plugin: `2.4.10`; Android Gradle Plugin: `9.3.1`;
+  Compose runtime: `1.12.0-rc01`; Ktor: `3.5.1`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
   the release profile path.
@@ -35,8 +35,9 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Local builds can override `keios.version.name`, `keios.nextVersion.name`,
   `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
 - Release builds use the newer value between the latest merged semver tag and the current release
-  target, for example `1.13.0`.
-- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.13.1+12.gabcdef0`.
+  target, for example `1.14.0`.
+- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example
+  `1.14.1+12.gabcdef0`.
 - Local builds resolve git metadata directly when CI metadata is absent, using the latest merged tag
   as the commit-count anchor and the current release target as the release base when it is newer.
 - Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
@@ -70,7 +71,7 @@ Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-on
 org.gradle.java.home=/path/to/your/jdk
 
 # Optional: pin another Miuix version locally
-miuix.version=0.9.3-c6d7d6dd-SNAPSHOT
+miuix.version=0.9.4-4a6b750b-SNAPSHOT
 ```
 
 Miuix iterates fast. When something Miuix-shaped misbehaves, check whether the pin is current
@@ -102,25 +103,34 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.13.0 Release Gate
+### v1.14.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
 ```bash
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:testDebugUnitTest
+scripts/qa/baseline_profile_freshness.sh
 ./gradlew :app:assembleRelease :app:assembleBenchmark
 git diff --check
 ```
 
 Recommended focused checks for this release:
 
-- Sheets, alerts, action sheets, toasts, dropdowns, and action menus sample the live scene in light and dark themes, stack correctly, and dismiss through back, outside tap, and drag where supported.
-- BA Calendar, Pools, Student Guide, OS Shell, Settings, About, WebDAV, MCP Skill, and GitHub Actions History enter and return through the shared route stack.
-- Floating toolbars, title cards, bottom bars, overview-card actions, and pull-to-refresh preserve their intended click and gesture behavior over pageable content.
-- Disabled, Shizuku, and Root modes stay aligned across Home, Settings diagnostics, GitHub app discovery, OS Shell, and MCP networking.
-- Release APK signing, `1.13.0` metadata, R8/minify output, Baseline Profile packaging, and the signer certificate are verified.
-- GitHub release upload notes are copied from [Release Notes v1.13.0](RELEASE_V1.13.0.md).
+- Each BA account can run three Generate and three Fusion crafts, receive precise reminders, and
+  edit an active craft without changing its original start time.
+- One-tap daily templates work for one or every account through Quick Settings tiles, launcher
+  shortcuts, and MCP; tile long presses open the editor and completion feedback reaches notification
+  and Super Island surfaces.
+- Phones retain bottom navigation while tablets and foldables use capped widths, pane-aware spacing,
+  regular-width top navigation, and the remembered ultra-wide sidebar.
+- Custom backgrounds continue through secondary pages; sheet content remains scrollable; BGM
+  removal Undo and native media notifications work across Student Guide playback states.
+- Android 17 foreground/background audio paths and fair-memory handling pass the release smoke;
+  physical-device testing covers vendor ITGSA broadcasts and memory-pressure callbacks.
+- Release APK signing, `1.14.0` metadata, R8/minify output, current Baseline Profile packaging, and
+  the signer certificate are verified.
+- GitHub release upload notes are copied from [Release Notes v1.14.0](RELEASE_V1.14.0.md).
 
 ### Screenshot Baseline
 

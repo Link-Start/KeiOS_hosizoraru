@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">App identity and runtime information</string>
-    <string name="about_card_release_title">Release v1.13.0</string>
-    <string name="about_card_release_subtitle">A global Liquid Glass presentation layer, routed navigation, and smoother interaction</string>
+    <string name="about_card_release_title">Release v1.14.0</string>
+    <string name="about_card_release_subtitle">BA daily workflows, adaptive navigation, and interaction-performance updates</string>
     <string name="about_card_runtime_title">Runtime status</string>
     <string name="about_card_runtime_subtitle">Quick checks for notifications, Shizuku, and system state</string>
     <string name="about_card_permission_title">Permission list</string>
@@ -335,21 +335,21 @@
     <string name="about_label_security_patch">Security patch</string>
 
     <string name="about_release_row_version">Version line</string>
-    <string name="about_release_value_version">v1.13.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_github">Privilege &amp; GitHub</string>
-    <string name="about_release_value_github">An unset privilege choice defaults to off; Home, Settings, app discovery, Shell, and MCP network commands now follow the active Shizuku / Root choice, and APK details add SHA-256</string>
-    <string name="about_release_row_ba_guide">Home &amp; entry actions</string>
-    <string name="about_release_value_ba_guide">GitHub, OS, and MCP add or toggle actions move into their overview cards for cleaner floating docks; pull to refresh uses a deeper trigger to prevent accidental refreshes</string>
-    <string name="about_release_row_navigation">Navigation &amp; toolbars</string>
-    <string name="about_release_value_navigation">BA Calendar, Pools, and OS Shell join the shared route transitions and back stack; top actions become grouped toolbars with more reliable taps, drags, and menu anchors</string>
-    <string name="about_release_row_icon">BA</string>
-    <string name="about_release_value_icon">Student Guide warms its cache asynchronously before entry and limits image prefetch to the active viewport; Calendar and Pools gain real glass with progressively blurred, identifiable receding cards</string>
-    <string name="about_release_row_release_gate">Liquid Glass presentation</string>
-    <string name="about_release_value_release_gate">Sheets, alerts, action sheets, toasts, dropdowns, and action menus now render in-window, sample the live scene, and share correct light/dark, stacking, and exit behavior</string>
-    <string name="about_release_row_performance">Performance &amp; startup</string>
-    <string name="about_release_value_performance">Home cards and status pills draw in batches while hidden pages and panels pause backdrop work; motion requests peak refresh rate and keeps momentum, with presentation and card piles added to the Baseline Profile</string>
+    <string name="about_release_value_version">v1.14.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_github">Craft Chamber &amp; reminders</string>
+    <string name="about_release_value_github">Each BA account can manage six Generate and Fusion timers with grade, quantity, total-duration, precise completion reminders, a collapsible summary, and edits to running crafts without resetting their start time</string>
+    <string name="about_release_row_ba_guide">One-tap dailies</string>
+    <string name="about_release_value_ba_guide">Configure remaining AP, headpats, invite tickets, and craft plans; Quick Settings tiles, launcher shortcuts, and MCP can apply the template to one or every account, tile long-press opens the editor, and notifications plus Super Island report results</string>
+    <string name="about_release_row_navigation">Large screens &amp; navigation</string>
+    <string name="about_release_value_navigation">Tablets and foldables gain capped content widths and single/dual-pane thresholds; regular widths move main navigation into the top row, ultra-wide windows offer a remembered, drag-to-close sidebar, and phones retain the compact bottom bar</string>
+    <string name="about_release_row_icon">Catalog &amp; media</string>
+    <string name="about_release_value_icon">Removing a favorite Student Guide BGM now offers Undo, native media notifications are enabled by default for background playback, and catalog widths, scroll edges, and large-screen spacing adapt together</string>
+    <string name="about_release_row_release_gate">Liquid Glass &amp; backgrounds</string>
+    <string name="about_release_value_release_gate">Custom backgrounds now extend through secondary pages while cards and chrome sample one scene; sheets preserve content scrolling, and dropdowns, sliders, and card piles use more consistent materials and feedback</string>
+    <string name="about_release_row_performance">Performance, memory &amp; compatibility</string>
+    <string name="about_release_value_performance">Presentations pause idle background redraws and lazily compose sheet content, while BA office cards drop redundant inner glass; ITGSA fair-memory handling, Android 17, hardened background audio, and Baseline Profile freshness are release-gated</string>
     <string name="about_release_row_next">Upgrade advice</string>
-    <string name="about_release_value_next">Recommended for every v1.12.x user, with the largest gains for frequent page switching, floating actions, presentations, BA Student Guide, Root / Shizuku, and high-refresh-rate devices</string>
+    <string name="about_release_value_next">Recommended for every v1.13.x user, with the largest gains for BA dailies and crafting, tablet or foldable navigation, custom backgrounds, presentations, and Student Guide BGM</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

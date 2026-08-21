@@ -21,8 +21,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.13.0</string>
-    <string name="about_card_release_subtitle">全局 Liquid Glass 展示层、路由导航与交互性能升级</string>
+    <string name="about_card_release_title">Release v1.14.0</string>
+    <string name="about_card_release_subtitle">BA 日常管理、大屏导航与交互性能更新</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -339,21 +339,21 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.13.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_github">特权与 GitHub</string>
-    <string name="about_release_value_github">未明确选择时默认关闭特权模式；Home、设置、应用发现、Shell 与 MCP 网络命令统一跟随当前 Shizuku / Root 选择，APK 信息新增 SHA-256</string>
-    <string name="about_release_row_ba_guide">Home 与页面入口</string>
-    <string name="about_release_value_ba_guide">GitHub、OS 与 MCP 的新增或切换操作移入概览卡片，浮动 Dock 更简洁；下拉刷新采用更深的触发距离，减少误刷新</string>
-    <string name="about_release_row_navigation">导航与工具栏</string>
-    <string name="about_release_value_navigation">BA 活动日历、卡池和 OS Shell 接入统一路由、转场与返回栈；顶部操作栏升级为分组工具栏，点击、拖动和菜单锚点更稳定</string>
-    <string name="about_release_row_icon">BA</string>
-    <string name="about_release_value_icon">学生图鉴在进入前异步预热缓存，图像预取限制在当前视口；活动日历与卡池首次获得真实玻璃材质，堆叠时内容渐进虚化并保持可辨识</string>
-    <string name="about_release_row_release_gate">Liquid Glass 展示层</string>
-    <string name="about_release_value_release_gate">Sheet、Alert、Action Sheet、Toast、Dropdown 与操作菜单统一在应用窗口内渲染，正确采样实时背景并支持深浅色、叠层与一致的退出动画</string>
-    <string name="about_release_row_performance">性能与启动</string>
-    <string name="about_release_value_performance">批量绘制 Home 卡片与状态 Pill，暂停不可见页面和面板的背景采样；滑动时请求峰值刷新率并保留动量，Baseline Profile 覆盖展示层与卡片堆</string>
+    <string name="about_release_value_version">v1.14.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_github">制造室与提醒</string>
+    <string name="about_release_value_github">每个 BA 账号可管理生成与物质合成共 6 个计时槽，支持等级、数量与总时长配置、精确完成提醒、折叠概览，以及在不重置起始时间的前提下编辑运行中制造</string>
+    <string name="about_release_row_ba_guide">一键日常</string>
+    <string name="about_release_value_ba_guide">可配置 AP 余量、摸头、邀请券和制造方案；快速设置磁贴、启动器快捷方式与 MCP 可应用到单账号或全部账号，长按磁贴可直接编辑模板，完成结果通过通知与超级岛反馈</string>
+    <string name="about_release_row_navigation">大屏与导航</string>
+    <string name="about_release_value_navigation">平板与折叠屏获得内容限宽和单双栏门槛；常规宽度将主导航移到顶部，超宽窗口提供可记忆、可拖动收起的侧边栏，手机继续使用紧凑底栏</string>
+    <string name="about_release_row_icon">图鉴与媒体</string>
+    <string name="about_release_value_icon">学生图鉴删除收藏 BGM 后可撤销，后台播放默认启用原生媒体通知；图鉴内容列、滚动边缘和大屏间距同步适配</string>
+    <string name="about_release_row_release_gate">Liquid Glass 与背景</string>
+    <string name="about_release_value_release_gate">自定义背景覆盖二级页面，卡片与上下栏正确采样同一场景；Sheet 内容滚动不再被拖拽抢占，Dropdown、Slider 和堆叠卡片的材质与反馈更一致</string>
+    <string name="about_release_row_performance">性能、内存与兼容</string>
+    <string name="about_release_value_performance">弹层打开时暂停空闲背景重绘并懒加载 Sheet 内容，BA 办公室卡片移除冗余内层玻璃；接入 ITGSA 公平运行内存回收，完成 Android 17、后台音频与 Baseline Profile 新鲜度门禁</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有 v1.12.x 用户升级；经常切换主页面、使用浮动操作、弹出面板、BA 图鉴、Root / Shizuku 或高刷新率设备的用户提升最明显</string>
+    <string name="about_release_value_next">建议所有 v1.13.x 用户升级；经常使用 BA 日常与制造、平板或折叠屏导航、自定义背景、弹出面板和学生 BGM 的用户提升最明显</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

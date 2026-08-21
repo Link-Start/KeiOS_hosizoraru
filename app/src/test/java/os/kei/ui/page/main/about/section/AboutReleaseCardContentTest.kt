@@ -6,19 +6,19 @@ import kotlin.test.assertContains
 
 class AboutReleaseCardContentTest {
     @Test
-    fun releaseCardPublishesV1130InEverySupportedLocale() {
+    fun releaseCardPublishesV1140InEverySupportedLocale() {
         aboutReleaseResourceFiles().forEach { resourceFile ->
             val resources = resourceFile.readText()
 
             assertContains(
                 resources,
-                """<string name="about_card_release_title">Release v1.13.0</string>""",
-                message = "${resourceFile.path} must publish the v1.13.0 card title",
+                """<string name="about_card_release_title">Release v1.14.0</string>""",
+                message = "${resourceFile.path} must publish the v1.14.0 card title",
             )
             assertContains(
                 resources,
-                """<string name="about_release_value_version">v1.13.0 · Android 15+ · arm64-v8a · targetSdk 37</string>""",
-                message = "${resourceFile.path} must publish the v1.13.0 version line",
+                """<string name="about_release_value_version">v1.14.0 · Android 15+ · arm64-v8a · targetSdk 37</string>""",
+                message = "${resourceFile.path} must publish the v1.14.0 version line",
             )
         }
     }
@@ -30,11 +30,11 @@ class AboutReleaseCardContentTest {
             .readText()
 
         listOf(
-            "未明确选择时默认关闭特权模式",
-            "Home 与页面入口",
-            "导航与工具栏",
-            "Liquid Glass 展示层",
-            "性能与启动",
+            "制造室与提醒",
+            "一键日常",
+            "大屏与导航",
+            "Liquid Glass 与背景",
+            "性能、内存与兼容",
         ).forEach { expected ->
             assertContains(resources, expected)
         }

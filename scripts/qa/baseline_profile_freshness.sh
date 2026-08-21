@@ -42,9 +42,11 @@ for file in "$BASELINE" "$STARTUP"; do
   fi
 done
 
-# Sources whose compiled method set the profile describes. Everything under a
-# module's main sources qualifies: the journeys walk whole pages, and an inlined
-# helper three modules away still lands in the recorded signatures.
+# Compiled runtime sources whose method set the profile describes. The journeys
+# walk whole pages, and an inlined helper three modules away still lands in the
+# recorded signatures. Resources and manifests can change runtime data, while
+# leaving the ART profile's class and method rules valid, so they stay outside
+# this method-signature freshness check.
 CAPTURE=$(git log -1 --format=%H -- "$PROFILE_DIR")
 if [[ -z "$CAPTURE" ]]; then
   echo "UNKNOWN  no commit touches $PROFILE_DIR; cannot date the capture"
@@ -53,7 +55,13 @@ fi
 
 CAPTURE_WHEN=$(git log -1 --format=%cs "$CAPTURE")
 CAPTURE_SUBJECT=$(git log -1 --format=%s "$CAPTURE")
-DRIFT=$(git diff --name-only "$CAPTURE..$REF" -- '*/src/main/*' | sort)
+DRIFT=$(
+  git diff --name-only "$CAPTURE..$REF" -- \
+    ':(glob)*/src/main/**/*.kt' \
+    ':(glob)*/src/main/**/*.java' \
+    ':(glob)*/src/main/**/*.aidl' \
+    | sort
+)
 RULES=$(grep -cv '^#' "$BASELINE")
 STARTUP_RULES=$(grep -cv '^#' "$STARTUP")
 
@@ -66,7 +74,9 @@ if [[ -z "$DRIFT" ]]; then
 fi
 
 echo "STATUS    STALE — runtime source moved after the capture:"
-echo "$DRIFT" | sed 's/^/            /'
+while IFS= read -r path; do
+  echo "            $path"
+done <<< "$DRIFT"
 echo
 echo "Regenerate before shipping:"
 echo "  ANDROID_SERIAL=<emulator> ./gradlew :app:generateBaselineProfile"

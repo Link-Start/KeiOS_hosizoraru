@@ -29,6 +29,7 @@ import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.appMotionDpState
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.ToolbarPosition
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 
@@ -100,6 +101,9 @@ fun AppScaffold(
     containerColor: Color? = null,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
+    floatingToolbar: @Composable () -> Unit = {},
+    floatingToolbarPosition: ToolbarPosition = ToolbarPosition.BottomCenter,
+    snackbarHost: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val resolvedContainerColor =
@@ -111,6 +115,9 @@ fun AppScaffold(
         containerColor = resolvedContainerColor,
         topBar = topBar,
         bottomBar = bottomBar,
+        floatingToolbar = floatingToolbar,
+        floatingToolbarPosition = floatingToolbarPosition,
+        snackbarHost = snackbarHost,
         content = content,
     )
 }
@@ -127,6 +134,9 @@ fun AppPageScaffold(
     titleBackdrop: Backdrop? = null,
     reserveTopEndActionSpace: Boolean = false,
     bottomBar: @Composable () -> Unit = {},
+    floatingToolbar: @Composable () -> Unit = {},
+    floatingToolbarPosition: ToolbarPosition = ToolbarPosition.BottomCenter,
+    snackbarHost: @Composable () -> Unit = {},
     searchBarVisible: Boolean = false,
     searchBarAnimationLabelPrefix: String = "appPageSearch",
     searchBarContent: (@Composable BoxScope.() -> Unit)? = null,
@@ -165,6 +175,9 @@ fun AppPageScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = scaffoldTopBar,
             bottomBar = bottomBar,
+            floatingToolbar = floatingToolbar,
+            floatingToolbarPosition = floatingToolbarPosition,
+            snackbarHost = snackbarHost,
             content = { innerPadding ->
                 val layoutDirection = LocalLayoutDirection.current
                 val searchBarPlaceholderHeight = searchBarPlaceholderHeightState.value

@@ -39,6 +39,23 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+internal val MainPagerMiuixFloatingToolbarSpacing: Dp = 4.dp
+
+/**
+ * Keeps the visible phone dock on its established baseline after MIUIX Scaffold takes over placement.
+ *
+ * MIUIX already consumes the navigation inset and leaves [MainPagerMiuixFloatingToolbarSpacing] above it.
+ * KeiOS historically left 8dp above a reported navigation inset, or 36dp when the inset was zero. This is the
+ * remaining content-side distance, so the Liquid Glass bar lands on the same pixels while gaining Scaffold's
+ * snackbar avoidance and safe-inset ownership.
+ */
+internal fun mainPagerFloatingToolbarContentBottomPadding(navigationBarBottom: Dp): Dp =
+    if (navigationBarBottom > 0.dp) {
+        8.dp - MainPagerMiuixFloatingToolbarSpacing
+    } else {
+        36.dp - MainPagerMiuixFloatingToolbarSpacing
+    }
+
 @Composable
 internal fun MainPagerBottomBar(
     visible: Boolean,
@@ -57,6 +74,8 @@ internal fun MainPagerBottomBar(
         expanded = visible,
         expandedContent = { motionModifier, interactionEnabled ->
             val atTop = placement == AppNavigationPlacement.Top
+            val bottomContentPadding =
+                if (atTop) 0.dp else mainPagerFloatingToolbarContentBottomPadding(navigationBarBottom)
             Box(
                 modifier =
                     motionModifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter),
@@ -140,12 +159,7 @@ internal fun MainPagerBottomBar(
                             .widthIn(max = availableWidth)
                             .padding(
                                 top = if (atTop) topInset + 6.dp else 0.dp,
-                                bottom =
-                                    when {
-                                        atTop -> 0.dp
-                                        navigationBarBottom != 0.dp -> 8.dp + navigationBarBottom
-                                        else -> 36.dp
-                                    },
+                                bottom = bottomContentPadding,
                             )
 
                     LiquidGlassBottomBar(
@@ -167,6 +181,8 @@ internal fun MainPagerBottomBar(
             // Collapses toward whichever edge the bar itself lives on, so the tuck stays a short move rather
             // than a flight across the window.
             val atTop = placement == AppNavigationPlacement.Top
+            val bottomContentPadding =
+                if (atTop) 0.dp else mainPagerFloatingToolbarContentBottomPadding(navigationBarBottom)
             Box(
                 modifier =
                     motionModifier
@@ -174,12 +190,7 @@ internal fun MainPagerBottomBar(
                         .padding(
                             start = AppChromeTokens.pageHorizontalPadding,
                             top = if (atTop) topInset + 6.dp else 0.dp,
-                            bottom =
-                                when {
-                                    atTop -> 0.dp
-                                    navigationBarBottom != 0.dp -> 8.dp + navigationBarBottom
-                                    else -> 36.dp
-                                },
+                            bottom = bottomContentPadding,
                         ),
             ) {
                 val page = tabs.getOrElse(selectedPageIndex) { tabs.first() }

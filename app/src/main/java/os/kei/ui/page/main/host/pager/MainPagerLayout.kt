@@ -54,6 +54,7 @@ import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.testing.KeiOsTestTags
+import top.yukonga.miuix.kmp.basic.ToolbarPosition
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import os.kei.core.privilege.PrivilegeStatus
 import androidx.compose.runtime.getValue
@@ -282,40 +283,42 @@ internal fun MainPagerLayout(
                     if (nonHomeBackgroundActive) pageBaseColor else MiuixTheme.colorScheme.surface,
                 )
                 .nestedScroll(coordinator.nestedScrollConnection),
-        bottomBar = {
-            // Bottom placement only. At Top the same bar is composed inside the content instead, because this
-            // slot is measured at the bottom edge of the scaffold and a TopCenter alignment inside it would
-            // align against a strip a few dp tall, not against the window.
+        floatingToolbarPosition = ToolbarPosition.BottomCenter,
+        floatingToolbar = {
+            // The phone navigation is visually and behaviorally a floating toolbar: it overlays the page,
+            // collapses while reading, and leaves content visible underneath. Let MIUIX own that layer so its
+            // snackbar host can keep transient messages above the dock. The regular-width top bar and sidebar
+            // remain content overlays because they participate in different adaptive rows.
             if (navigationPlacement == AppNavigationPlacement.Bottom) {
-            val safeSelectedPageIndex =
-                coordinator.pagerState.targetPage.coerceIn(
-                    0,
-                    (coordinator.tabs.size - 1).coerceAtLeast(0),
-                )
-            val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
-            val selectedPagePositionProvider =
-                remember(coordinator.pagerState, mainPagerBackGestureState, lastPagePosition) {
-                    {
-                        if (mainPagerBackGestureState.inProgress) {
-                            mainPagerBackGestureState.selectedPagePosition()
-                        } else {
-                            coordinator.pagerState.pagePosition
-                        }.coerceIn(0f, lastPagePosition)
+                val safeSelectedPageIndex =
+                    coordinator.pagerState.targetPage.coerceIn(
+                        0,
+                        (coordinator.tabs.size - 1).coerceAtLeast(0),
+                    )
+                val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
+                val selectedPagePositionProvider =
+                    remember(coordinator.pagerState, mainPagerBackGestureState, lastPagePosition) {
+                        {
+                            if (mainPagerBackGestureState.inProgress) {
+                                mainPagerBackGestureState.selectedPagePosition()
+                            } else {
+                                coordinator.pagerState.pagePosition
+                            }.coerceIn(0f, lastPagePosition)
+                        }
                     }
-                }
-            MainPagerBottomBar(
-                visible = coordinator.showBottomBar,
-                placement = navigationPlacement,
-                navigationBarBottom = insets.navigationBarBottom,
-                topInset = insets.homeTopInset,
-                tabs = coordinator.tabs,
-                selectedPageIndex = safeSelectedPageIndex,
-                selectedPagePosition = null,
-                selectedPagePositionProvider = selectedPagePositionProvider,
-                backdrop = bottomBarBackdrop,
-                onPageSelected = coordinator.onPageSelected,
-                onExpand = coordinator.onShowBottomBar,
-            )
+                MainPagerBottomBar(
+                    visible = coordinator.showBottomBar,
+                    placement = navigationPlacement,
+                    navigationBarBottom = insets.navigationBarBottom,
+                    topInset = insets.homeTopInset,
+                    tabs = coordinator.tabs,
+                    selectedPageIndex = safeSelectedPageIndex,
+                    selectedPagePosition = null,
+                    selectedPagePositionProvider = selectedPagePositionProvider,
+                    backdrop = bottomBarBackdrop,
+                    onPageSelected = coordinator.onPageSelected,
+                    onExpand = coordinator.onShowBottomBar,
+                )
             }
         },
     ) { _ ->

@@ -63,6 +63,7 @@
 | 2026-06-30 | P2 | Liquid sliders gained MIUIX-style edge/key-point haptics; Liquid switch gained toggle haptics on drag and tap. Existing action bar/bottom bar/floating dock chrome already uses shared KeiOS glass primitives plus Miuix badge/tooltip pieces, so this pass preserved those visuals. |
 | 2026-06-30 | Verification | Passed `:ui-liquid-glass:compileDebugKotlin`, focused app back tests, `:ui-liquid-glass:testDebugUnitTest`, `:app:compileReleaseArtProfile`, and `git diff --check`. Removed stale Squircle SDF entries from release baseline profiles. |
 | 2026-08-16 | Upgrade | `0.9.3-c6d7d6dd-SNAPSHOT` → `0.9.4-4a6b750b-SNAPSHOT`. See [Snapshot upgrade: 0.9.4](#snapshot-upgrade-094). |
+| 2026-08-24 | Upgrade and adoption | `0.9.4-4a6b750b-SNAPSHOT` → `0.9.4-4f86de92-SNAPSHOT`; adopted MIUIX floating-toolbar ownership for the phone main navigation. See [Snapshot follow-up: 4f86de92](#snapshot-follow-up-4f86de92). |
 
 <a id="snapshot-upgrade-094"></a>
 
@@ -131,3 +132,33 @@ immediate execution will need explicit synchronisation when it happens.
 - API 37 AVD: Home, OS, MCP, GitHub and BA all render; Home's `textureBlur` chip rows, the BA floating
   dock glass and the bottom bar are intact; logcat clean of `FATAL`, `AndroidRuntime`,
   `NoSuchMethod` and `NoClassDefFound` across the sweep.
+
+<a id="snapshot-follow-up-4f86de92"></a>
+
+## Snapshot follow-up: 0.9.4-4f86de92-SNAPSHOT
+
+The 2026-08-22 snapshot is pinned in both `gradle.properties` and `libs.versions.toml`. Its Android
+runtime source delta from `4a6b750b` is the nullable smart-cast cleanup in `Scaffold.kt`; the published
+artifacts keep the floating-toolbar and snackbar placement contract introduced earlier on the 0.9.4 line.
+
+KeiOS now routes the compact-width main navigation through `Scaffold.floatingToolbar` at
+`ToolbarPosition.BottomCenter`. `AppScaffold` and `AppPageScaffold` expose the upstream
+`floatingToolbar`, `floatingToolbarPosition`, and `snackbarHost` slots so app-level chrome can use the
+same placement owner. The regular-width top navigation, sidebar, and route-local fixed action bars keep
+their existing adaptive layout roles.
+
+The Liquid Glass surface, collapse animation, pager selection interpolation, test tags, grip-aware
+touch handling, and Backdrop ownership stay in KeiOS. MIUIX contributes bottom safe-inset placement and
+keeps snackbars above the dock. The content-side padding accounts for MIUIX's 4dp host spacing, preserving
+the established visible baseline of 8dp above a reported navigation inset and the 36dp zero-inset fallback.
+
+### Follow-up verification
+
+- Compose layout contract: the floating toolbar remains an overlay and leaves content padding unchanged.
+- Snackbar layout contract: a bottom snackbar is measured above the floating toolbar.
+- Main pager geometry contract: reported and zero navigation-inset baselines retain their previous values.
+- `:app:testDebugUnitTest`: 1565 tests, 0 failures and 0 errors.
+- `:app:assembleRelease`: R8, resource optimization, Lint Vital, and ART Profile compilation passed.
+- API 37 visual acceptance: 1280×2856 phone expanded navigation, OS selection, and scroll collapse passed;
+  2560×1600 tablet top-tab and sidebar modes passed. The target app log stayed clear of fatal runtime and
+  linkage errors through the sweep.

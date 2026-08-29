@@ -1800,4 +1800,5 @@
     <string name="github_release_time_hours_format">%1$d 小时前</string>
     <string name="github_release_time_days_format">%1$d 天前</string>
     <string name="github_release_first_page">第一页</string>
+    <string name="github_release_page_past_end_format">第 %1$d 页之后没有更多发行版了</string>
 </resources>

@@ -269,6 +269,15 @@ private fun LazyListScope.releaseListBody(
             )
         }
 
+        // Past the end is not the same as empty. Paging or jumping beyond the last release used to
+        // report the repository as having none, which for a repository with twenty of them reads as a
+        // failure rather than as the end of the list.
+        uiState.rows.isEmpty() && uiState.page > 1 -> item(key = "release-past-end") {
+            GitHubReleaseNotice(
+                text = stringResource(R.string.github_release_page_past_end_format, uiState.page),
+            )
+        }
+
         uiState.rows.isEmpty() -> item(key = "release-empty") {
             GitHubReleaseNotice(textRes = R.string.github_release_empty)
         }

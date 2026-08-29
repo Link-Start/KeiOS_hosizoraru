@@ -92,10 +92,16 @@ class GitHubReleaseApiClient(
     suspend fun fetchReleaseListAsync(
         owner: String,
         repo: String,
-        apiToken: String
+        apiToken: String,
+        perPage: Int = DEFAULT_RELEASE_PAGE_SIZE,
+        page: Int = 1
     ): Result<JsonArray> = withContext(ioDispatcher) {
         cancellableResult {
-            val url = "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
+            val resolvedPerPage = perPage.coerceIn(1, MAX_RELEASE_PAGE_SIZE)
+            val resolvedPage = page.coerceAtLeast(1)
+            val url =
+                "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases" +
+                    "?per_page=$resolvedPerPage&page=$resolvedPage"
             fetchJsonAsync(url, apiToken).parseJsonArrayOrNull()
                 ?: error("GitHub releases response is not a JSON array")
         }
@@ -234,5 +240,11 @@ class GitHubReleaseApiClient(
         const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
         const val MAX_RELEASE_API_RESPONSE_BYTES = 12L * 1024L * 1024L
         const val DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com"
+
+        /** What the update check has always asked for, kept so existing callers are unaffected. */
+        const val DEFAULT_RELEASE_PAGE_SIZE = 30
+
+        /** GitHub caps `per_page` at 100 and silently clamps past it; clamp here so the URL stays honest. */
+        const val MAX_RELEASE_PAGE_SIZE = 100
     }
 }

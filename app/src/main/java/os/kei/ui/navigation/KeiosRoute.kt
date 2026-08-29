@@ -20,6 +20,12 @@ sealed interface KeiosRoute : NavKey {
     @Serializable
     data object GitHubActionsNotificationHistory : KeiosRoute
 
+    /** A tracked repository's release history. Carries the track id, since the page resolves the rest. */
+    @Serializable
+    data class GitHubReleaseList(
+        val trackId: String,
+    ) : KeiosRoute
+
     @Serializable
     data object About : KeiosRoute
 

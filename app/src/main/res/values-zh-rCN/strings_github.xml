@@ -1770,4 +1770,18 @@
     <string name="github_track_sheet_fdroid_search_partial_failure">部分 Droid 源搜索失败：%1$d 个</string>
     <string name="github_track_sheet_fdroid_search_partial_failure_detail_format">%1$s：%2$s</string>
     <string name="github_track_sheet_fdroid_search_partial_failure_more_format">还有 %1$d 个源失败</string>
+    <string name="github_release_page_title">发行版</string>
+    <string name="github_release_badge_latest">最新</string>
+    <string name="github_release_badge_prerelease">预发布</string>
+    <string name="github_release_loading">正在加载发行版…</string>
+    <string name="github_release_empty">该仓库暂无发行版</string>
+    <string name="github_release_unsupported">该跟踪项没有发行版历史</string>
+    <string name="github_release_load_failed_format">加载发行版失败：%1$s</string>
+    <string name="github_release_tag_label">标签</string>
+    <string name="github_release_author_label">发布者</string>
+    <string name="github_release_assets_label">文件</string>
+    <string name="github_release_open_in_browser">在浏览器打开</string>
+    <string name="github_release_previous_page">上一页</string>
+    <string name="github_release_next_page">下一页</string>
+    <string name="github_release_page_indicator_format">第 %1$d 页</string>
 </resources>

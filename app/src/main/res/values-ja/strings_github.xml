@@ -1771,4 +1771,18 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_error_git_package_scan_unavailable">この Git リポジトリではパッケージ名の自動スキャンに対応していません</string>
     <string name="github_error_remote_apk_manifest_failed">リモート APK Manifest の読み取りに失敗しました</string>
     <string name="github_error_direct_apk_index_too_large">直リンク APK ディレクトリが大きすぎるため自動解析できません</string>
+    <string name="github_release_page_title">リリース</string>
+    <string name="github_release_badge_latest">最新</string>
+    <string name="github_release_badge_prerelease">プレリリース</string>
+    <string name="github_release_loading">リリースを読み込み中…</string>
+    <string name="github_release_empty">このリポジトリにはまだリリースがありません</string>
+    <string name="github_release_unsupported">この追跡項目にはリリース履歴がありません</string>
+    <string name="github_release_load_failed_format">リリースの読み込みに失敗しました: %1$s</string>
+    <string name="github_release_tag_label">タグ</string>
+    <string name="github_release_author_label">公開者</string>
+    <string name="github_release_assets_label">ファイル</string>
+    <string name="github_release_open_in_browser">ブラウザーで開く</string>
+    <string name="github_release_previous_page">前へ</string>
+    <string name="github_release_next_page">次へ</string>
+    <string name="github_release_page_indicator_format">%1$d ページ目</string>
 </resources>

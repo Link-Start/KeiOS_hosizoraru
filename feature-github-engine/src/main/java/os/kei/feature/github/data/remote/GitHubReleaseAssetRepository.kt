@@ -221,6 +221,93 @@ object GitHubReleaseAssetRepository {
         }
     }
 
+    /**
+     * One page of releases, for browsing rather than for deciding whether to update.
+     *
+     * Drafts are dropped the way [buildReleaseNotesTargets] drops them: they are invisible to anyone
+     * without push access, so showing them would show holes to everyone else. They are dropped *after*
+     * the next-page test, because the page size the server filled is what says whether more exist.
+     */
+    suspend fun fetchReleasePage(
+        owner: String,
+        repo: String,
+        apiToken: String = "",
+        page: Int = 1,
+        perPage: Int = DEFAULT_RELEASE_LIST_PAGE_SIZE
+    ): Result<GitHubReleasePage> = cancellableResult {
+        val resolvedPage = page.coerceAtLeast(1)
+        val resolvedPerPage = perPage.coerceAtLeast(1)
+        val releases =
+            apiClient.fetchReleaseListAsync(
+                owner = owner,
+                repo = repo,
+                apiToken = apiToken,
+                perPage = resolvedPerPage,
+                page = resolvedPage
+            ).getOrThrow()
+        buildReleasePage(
+            releases = releases,
+            page = resolvedPage,
+            perPage = resolvedPerPage
+        )
+    }
+
+    internal fun buildReleasePage(
+        releases: JsonArray,
+        page: Int,
+        perPage: Int
+    ): GitHubReleasePage {
+        val entries = buildList {
+            for (element in releases) {
+                val release = element as? JsonObject ?: continue
+                if (release.optBoolean("draft", false)) continue
+                val tagName = release.optString("tag_name").trim()
+                val htmlUrl = release.optString("html_url").trim()
+                if (tagName.isBlank() || htmlUrl.isBlank()) continue
+                val author = release["author"] as? JsonObject
+                add(
+                    GitHubReleaseListEntry(
+                        tagName = tagName,
+                        releaseName = release.optString("name").trim(),
+                        htmlUrl = htmlUrl,
+                        prerelease = release.optBoolean("prerelease", false),
+                        publishedAtMillis = release.optString("published_at").trim()
+                            .parseIsoInstantOrNull()
+                            ?: release.optString("created_at").trim().parseIsoInstantOrNull(),
+                        authorName = author?.optString("login").orEmpty().trim(),
+                        authorAvatarUrl = author?.optString("avatar_url").orEmpty().trim(),
+                        bodyMarkdown = release.optString("body"),
+                        assetCount = (release["assets"] as? JsonArray)?.size ?: 0
+                    )
+                )
+            }
+        }
+        // "Latest" is the repository's newest non-pre-release, which only page 1 is in a position to know.
+        val marked =
+            if (page == 1) {
+                var claimed = false
+                entries.map { entry ->
+                    if (!claimed && !entry.prerelease) {
+                        claimed = true
+                        entry.copy(latest = true)
+                    } else {
+                        entry
+                    }
+                }
+            } else {
+                entries
+            }
+        return GitHubReleasePage(
+            entries = marked,
+            page = page,
+            perPage = perPage,
+            hasNextPage = releases.size >= perPage
+        )
+    }
+
+    /** GitHub shows ten in its own release list, and ten covers most repositories' recent history. */
+    const val DEFAULT_RELEASE_LIST_PAGE_SIZE = 10
+
     suspend fun resolvePreferredDownloadUrl(
         asset: GitHubReleaseAssetFile,
         useApiAssetUrl: Boolean,

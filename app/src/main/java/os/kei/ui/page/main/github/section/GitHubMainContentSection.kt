@@ -411,6 +411,7 @@ internal fun GitHubMainContent(
                                     onIgnoreCurrentTrackedVersion = actions.onIgnoreCurrentTrackedVersion,
                                     onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
                                     onOpenFdroidDetail = actions.onOpenFdroidDetail,
+                                    onOpenReleaseList = actions.onOpenReleaseList,
                                     onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
                                     onCollapseTrackedCard = actions.onCollapseTrackedCard,
                                     onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,

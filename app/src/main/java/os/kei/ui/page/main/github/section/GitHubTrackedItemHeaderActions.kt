@@ -103,6 +103,7 @@ internal fun GitHubTrackedItemHeaderActions(
             onIgnoreCurrentVersion = actions.onIgnoreCurrentTrackedVersion,
             onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
             onOpenFdroidDetail = actions.onOpenFdroidDetail,
+            onOpenReleaseList = actions.onOpenReleaseList,
         )
     }
 }

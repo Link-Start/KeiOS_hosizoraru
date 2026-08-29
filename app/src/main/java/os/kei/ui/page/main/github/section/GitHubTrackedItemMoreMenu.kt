@@ -64,11 +64,16 @@ internal fun GitHubTrackedItemMoreActions(
     onIgnoreCurrentVersion: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
+    onOpenReleaseList: (GitHubTrackedApp) -> Unit,
 ) {
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
     val showActionsAction = item.isGitHubRepositoryTrack()
     val showFdroidDetailAction = item.isFdroidRepositoryTrack()
+    // Only a GitHub repository has a paged release feed behind it. The Git platforms reach releases
+    // through their own strategies and are not wired to the list page yet; a direct APK or an F-Droid
+    // index has no release history at all.
+    val showReleaseListAction = item.isGitHubRepositoryTrack()
     val gitRepositoryReleaseNotesSupported =
         item.isGitRepositoryTrack() &&
             buildGitRepositoryTrackIdentity(item.repoUrl)?.platform in releaseNotesSupportedGitPlatforms
@@ -175,6 +180,19 @@ internal fun GitHubTrackedItemMoreActions(
                                         onClick = {
                                             menuExpanded = false
                                             onOpenFdroidDetail(item)
+                                        },
+                                    ),
+                                )
+                            }
+                            if (showReleaseListAction) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "release_list",
+                                        text = stringResource(R.string.github_release_page_title),
+                                        leadingIcon = releaseNotesIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenReleaseList(item)
                                         },
                                     ),
                                 )

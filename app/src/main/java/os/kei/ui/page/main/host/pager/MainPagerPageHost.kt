@@ -88,6 +88,7 @@ internal data class MainPagerGitHubPageState(
     val requestedGitHubActionsTrackId: String?,
     val requestedGitHubActionsSheetToken: Int,
     val onOpenActionsNotificationHistory: () -> Unit,
+    val onOpenReleaseList: (String) -> Unit,
 )
 
 @Composable
@@ -203,6 +204,7 @@ internal fun MainPagerPageHost(
                         externalActionsTrackId = githubState.requestedGitHubActionsTrackId,
                         externalActionsSheetToken = githubState.requestedGitHubActionsSheetToken,
                         onOpenActionsNotificationHistory = githubState.onOpenActionsNotificationHistory,
+                        onOpenReleaseList = githubState.onOpenReleaseList,
                     )
                 }
             }

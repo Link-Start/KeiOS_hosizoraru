@@ -16,6 +16,7 @@ import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.data.remote.GitHubReleasePage
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.model.FdroidAppSearchRequest
@@ -602,6 +603,13 @@ internal class GitHubPageRepository(
             includeAllAssets = includeAllAssets,
             apiToken = apiToken,
         )
+
+    suspend fun fetchReleasePage(
+        owner: String,
+        repo: String,
+        apiToken: String,
+        page: Int,
+    ): Result<GitHubReleasePage> = assetBridge.fetchReleasePage(owner, repo, apiToken, page)
 
     suspend fun fetchReleaseNotesTargets(
         owner: String,

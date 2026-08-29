@@ -58,6 +58,7 @@ fun GitHubPage(
     externalActionsSheetToken: Int = 0,
     enableSearchBar: Boolean = true,
     onOpenActionsNotificationHistory: () -> Unit = {},
+    onOpenReleaseList: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val openLinkFailureMessage = context.resolveString(R.string.github_error_open_link)
@@ -428,6 +429,7 @@ fun GitHubPage(
                     onIgnoreCurrentTrackedVersion = actions::ignoreCurrentTrackedVersion,
                     onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
                     onOpenFdroidDetail = actions::openFdroidDetail,
+                    onOpenReleaseList = { item -> onOpenReleaseList(item.id) },
                     onTrackedCardExpandedChange = actions::setTrackedCardExpanded,
                     onCollapseTrackedCard = actions::collapseTrackedCard,
                     onCollapseApkAssetPanel = actions::collapseApkAssetPanel,

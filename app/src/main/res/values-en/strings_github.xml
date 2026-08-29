@@ -1773,4 +1773,18 @@
     <string name="github_error_git_package_scan_unavailable">Automatic package scanning is not supported for this Git repository</string>
     <string name="github_error_remote_apk_manifest_failed">Failed to read the remote APK manifest</string>
     <string name="github_error_direct_apk_index_too_large">Direct APK directory is too large to parse automatically</string>
+    <string name="github_release_page_title">Releases</string>
+    <string name="github_release_badge_latest">Latest</string>
+    <string name="github_release_badge_prerelease">Pre-release</string>
+    <string name="github_release_loading">Loading releases…</string>
+    <string name="github_release_empty">This repository has no releases yet</string>
+    <string name="github_release_unsupported">This track has no release history</string>
+    <string name="github_release_load_failed_format">Failed to load releases: %1$s</string>
+    <string name="github_release_tag_label">Tag</string>
+    <string name="github_release_author_label">Published by</string>
+    <string name="github_release_assets_label">Files</string>
+    <string name="github_release_open_in_browser">Open in browser</string>
+    <string name="github_release_previous_page">Previous</string>
+    <string name="github_release_next_page">Next</string>
+    <string name="github_release_page_indicator_format">Page %1$d</string>
 </resources>

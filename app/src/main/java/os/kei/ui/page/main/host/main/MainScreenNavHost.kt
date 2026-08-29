@@ -25,6 +25,7 @@ import os.kei.ui.page.main.ba.BaActivityCalendarPage
 import os.kei.ui.page.main.ba.BaPoolPage
 import os.kei.ui.page.main.ba.toInitialServerSelection
 import os.kei.ui.page.main.github.history.GitHubActionsNotificationHistoryPage
+import os.kei.ui.page.main.github.release.GitHubReleaseListPage
 import os.kei.ui.page.main.host.pager.MainPagerLayout
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
@@ -294,6 +295,17 @@ internal fun MainScreenNavHost(
                                 onBack = onRouteBack,
                                 onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
                                 onRetryRefreshTargets = onRetryGitHubRefreshTargetsFromHistory,
+                            )
+                        }
+                    }
+                    entry<KeiosRoute.GitHubReleaseList> { route ->
+                        MainScreenRouteBackgroundHost(
+                            prefsState = prefsState,
+                            exportBackdropToContent = true,
+                        ) {
+                            GitHubReleaseListPage(
+                                trackId = route.trackId,
+                                onBack = onRouteBack,
                             )
                         }
                     }

@@ -9,6 +9,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.data.remote.GitHubReleasePage
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
@@ -94,6 +95,23 @@ class GitHubReleaseAssetService(
                 aggressiveFiltering = aggressiveFiltering,
                 includeAllAssets = includeAllAssets,
                 apiToken = apiToken,
+            )
+        }
+
+    suspend fun fetchReleasePage(
+        owner: String,
+        repo: String,
+        apiToken: String,
+        page: Int,
+        perPage: Int = GitHubReleaseAssetRepository.DEFAULT_RELEASE_LIST_PAGE_SIZE,
+    ): Result<GitHubReleasePage> =
+        withContext(networkDispatcher) {
+            GitHubReleaseAssetRepository.fetchReleasePage(
+                owner = owner,
+                repo = repo,
+                apiToken = apiToken,
+                page = page,
+                perPage = perPage,
             )
         }
 

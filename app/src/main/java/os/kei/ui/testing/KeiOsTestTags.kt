@@ -43,6 +43,11 @@ object KeiOsTestTags {
     const val BaAccountManagementButton = "ba_account_management_button"
     const val BaCraftCardHeader = "ba_craft_card_header"
 
+    /** The release list page's root, and the handles a journey needs on it. */
+    const val GitHubReleasePageRoot = "github_release_page_root"
+    const val GitHubReleaseCardFirst = "github_release_card_first"
+    const val GitHubReleaseNextPageButton = "github_release_next_page_button"
+
     /**
      * The first cooldown card, the cafe's headpat.
      *

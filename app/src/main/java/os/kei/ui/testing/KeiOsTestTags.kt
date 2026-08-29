@@ -49,6 +49,10 @@ object KeiOsTestTags {
     const val GitHubReleaseNextPageButton = "github_release_next_page_button"
     const val GitHubReleasePageJumpField = "github_release_page_jump_field"
 
+    /** A tracked card's overflow trigger, and the release entry inside it. */
+    const val GitHubTrackedItemMoreButton = "github_tracked_item_more_button"
+    const val GitHubReleaseMenuItem = "github_release_menu_item"
+
     /**
      * The first cooldown card, the cafe's headpat.
      *

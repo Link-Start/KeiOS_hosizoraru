@@ -9,11 +9,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.ui.testing.KeiOsTestTags
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitRepositoryPlatform
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
@@ -127,6 +129,7 @@ internal fun GitHubTrackedItemMoreActions(
         contentAlignment = Alignment.Center,
     ) {
         AppCompactIconAction(
+            modifier = Modifier.testTag(KeiOsTestTags.GitHubTrackedItemMoreButton),
             icon = appLucideMoreIcon(),
             contentDescription = stringResource(R.string.github_item_cd_more_actions),
             tint = if (state.loading) iconTint.copy(alpha = 0.68f) else iconTint,
@@ -188,6 +191,7 @@ internal fun GitHubTrackedItemMoreActions(
                                 add(
                                     LiquidGlassActionMenuActionRow(
                                         id = "release_list",
+                                        testTag = KeiOsTestTags.GitHubReleaseMenuItem,
                                         text = stringResource(R.string.github_release_page_title),
                                         leadingIcon = releaseNotesIcon,
                                         onClick = {

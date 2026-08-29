@@ -617,6 +617,9 @@ private fun GitHubReleasePageJumpField(
         modifier =
             Modifier
                 .width(64.dp)
+                // The same height `AppLiquidNavigationButton` uses, so the field centres against the
+                // title card instead of riding above it — the top-end overlay pins by its top edge.
+                .height(52.dp)
                 .appSquircleBackground(
                     MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
                     14.dp,

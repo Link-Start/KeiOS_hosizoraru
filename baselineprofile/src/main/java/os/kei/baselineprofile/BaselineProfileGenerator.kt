@@ -184,6 +184,62 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * The release list, which is a page nothing had ever walked.
+     *
+     * It is reached the way a user reaches it — a tracked card's overflow menu — so the menu's own
+     * popup is on the path too. Then the parts that only exist here: the accordion over a lazy list of
+     * ten cards with the pile engaged on the *open* ones, the release notes' markdown blocks, and the
+     * asset rows, which are the tracked card's own asset row composed on a different surface.
+     *
+     * Paging is walked because a second page is a fresh fetch into an already-composed list, which is
+     * the one path here that is not first-composition.
+     */
+    @Test
+    fun gitHubReleaseListInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+
+            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+            clickTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+            waitForTestTag(GITHUB_RELEASE_MENU_ITEM, timeoutMs = 15_000)
+            clickTestTag(GITHUB_RELEASE_MENU_ITEM)
+            waitForTestTag(GITHUB_RELEASE_PAGE_ROOT, timeoutMs = 20_000)
+            device.waitForIdle()
+
+            // The first card opens itself, so this walks the other direction first and back, which is
+            // the accordion exit the page otherwise never plays.
+            scrollTestTagIntoReach(GITHUB_RELEASE_CARD_FIRST)
+            clickTaggedCardHeader(GITHUB_RELEASE_CARD_FIRST)
+            device.waitForIdle()
+            clickTaggedCardHeader(GITHUB_RELEASE_CARD_FIRST)
+            device.waitForIdle()
+
+            // The pile only does anything once cards move under the top edge.
+            flingVisibleScrollable(times = 2)
+            dragSlowly(times = 1)
+
+            // A second page: same list, new content, no first composition.
+            if (device.findObject(testTagSelector(GITHUB_RELEASE_NEXT_PAGE_BUTTON)) != null) {
+                clickTestTag(GITHUB_RELEASE_NEXT_PAGE_BUTTON)
+                device.waitForIdle()
+            }
+
+            device.pressBack()
+            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
+            device.waitForIdle()
+        }
+    }
+
+    /**
      * The daily-done template editor, which nothing else can reach.
      *
      * It is not a page and not a sheet on a page: a QS tile long-press starts
@@ -872,6 +928,13 @@ private const val UNSAVED_SHEET_DISMISS_DISCARD = "unsaved_sheet_dismiss_discard
  */
 private const val DAILY_TEMPLATE_ACTIVITY_CLASS = "os.kei.ui.page.main.ba.BaDailyDoneTemplateActivity"
 private const val DAILY_TILE_ACCOUNT_SERVICE_CLASS = "os.kei.core.tile.BaDailyDoneAccountTileService1"
+/** The release list page and the handles a journey needs to reach and drive it. */
+private const val GITHUB_TRACKED_ITEM_MORE_BUTTON = "github_tracked_item_more_button"
+private const val GITHUB_RELEASE_MENU_ITEM = "github_release_menu_item"
+private const val GITHUB_RELEASE_PAGE_ROOT = "github_release_page_root"
+private const val GITHUB_RELEASE_CARD_FIRST = "github_release_card_first"
+private const val GITHUB_RELEASE_NEXT_PAGE_BUTTON = "github_release_next_page_button"
+
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
 

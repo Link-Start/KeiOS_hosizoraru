@@ -107,6 +107,8 @@ data class LiquidGlassActionMenuActionRow(
     val highlighted: Boolean = false,
     val dismissOnClick: Boolean = true,
     val variant: GlassVariant = GlassVariant.SheetAction,
+    /** A handle for a baseline profile journey, the way [LiquidGlassActionMenuQuickAction] has one. */
+    val testTag: String? = null,
 ) : LiquidGlassActionMenuItem
 
 data class LiquidGlassActionMenuSubmenuRow(
@@ -402,6 +404,7 @@ private fun LiquidGlassActionMenuItemRow(
                 variant = item.variant,
                 enabled = item.enabled,
                 highlighted = item.highlighted,
+                modifier = item.testTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier,
             )
         }
 

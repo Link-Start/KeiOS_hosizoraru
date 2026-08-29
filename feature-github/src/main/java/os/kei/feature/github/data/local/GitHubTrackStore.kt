@@ -115,6 +115,7 @@ object GitHubTrackStore {
     private const val KEY_PROFILE_CACHE = "tracked_profile_cache"
     private const val KEY_LAST_REFRESH_MS = "last_full_refresh_ms"
     private val checkCacheLock = Any()
+    private const val KEY_HIDE_TAG_ONLY_RELEASES = "hide_tag_only_releases"
     private const val KEY_REFRESH_INTERVAL_HOURS = "refresh_interval_hours"
     private const val KEY_LOOKUP_STRATEGY = "lookup_strategy"
     private const val KEY_ACTIONS_LOOKUP_STRATEGY = "actions_lookup_strategy"
@@ -863,6 +864,21 @@ object GitHubTrackStore {
 
     fun markAutoRefreshDoneInSession() {
         didAutoRefreshInSession = true
+    }
+
+    /**
+     * Whether the release list hides entries that are only tags.
+     *
+     * GitHub's `releases.atom` carries a repository's *tags* as well as its releases, so a tag pushed
+     * without a release shows up in the feed with no notes and no files — KeiOS's own v1.11.6 through
+     * v1.11.9 are exactly that, and none of them appear on the repository's Releases page. The API
+     * returns only real releases, so this changes nothing in that mode.
+     */
+    fun loadHideTagOnlyReleases(defaultValue: Boolean = true): Boolean =
+        kv().decodeBool(KEY_HIDE_TAG_ONLY_RELEASES, defaultValue)
+
+    fun saveHideTagOnlyReleases(hide: Boolean) {
+        kv().encode(KEY_HIDE_TAG_ONLY_RELEASES, hide)
     }
 
     fun loadRefreshIntervalHours(defaultValue: Int = 3): Int {

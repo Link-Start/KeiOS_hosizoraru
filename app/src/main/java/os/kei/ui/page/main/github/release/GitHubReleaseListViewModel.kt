@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
+import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseListEntry
 import os.kei.feature.github.domain.GitHubReleaseAssetService
@@ -43,6 +44,10 @@ internal data class GitHubReleaseListUiState(
     val unsupported: Boolean = false,
     /** True when the list came from the Atom feed rather than the API — see [loadPage]. */
     val atomMode: Boolean = false,
+    /** Whether tag-only entries are being hidden. Only ever does anything in [atomMode]. */
+    val hideTagOnly: Boolean = true,
+    /** True when the filter was asked for but the source that can apply it did not answer. */
+    val tagFilterUnavailable: Boolean = false,
 )
 
 /**
@@ -72,6 +77,8 @@ internal class GitHubReleaseListViewModel(
     private var repo: String = ""
     private var lookupConfig: GitHubLookupConfig = GitHubLookupConfig()
     private var defaultsApplied = false
+    private var hideTagOnly: Boolean = GitHubTrackStore.loadHideTagOnlyReleases()
+    private var tagFilterUnavailable: Boolean = false
 
     init {
         val track = GitHubTrackStore.load().firstOrNull { item -> item.id == trackId }
@@ -84,6 +91,19 @@ internal class GitHubReleaseListViewModel(
     }
 
     fun retry() = loadPage(_uiState.value.page)
+
+    /**
+     * Hides entries the feed carries that are tags rather than releases.
+     *
+     * Persisted, because it is a property of how a reader wants the list to read rather than of this
+     * visit. Off in API mode by construction: that endpoint returns releases only.
+     */
+    fun toggleHideTagOnly() {
+        hideTagOnly = !hideTagOnly
+        GitHubTrackStore.saveHideTagOnlyReleases(hideTagOnly)
+        _uiState.update { state -> state.copy(hideTagOnly = hideTagOnly) }
+        loadPage(_uiState.value.page)
+    }
 
     fun openFirstPage() = loadPage(1)
 
@@ -159,6 +179,7 @@ internal class GitHubReleaseListViewModel(
                 repositoryUrl = track.repoUrl,
                 packageName = track.packageName,
                 atomMode = lookupConfig.selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken,
+                hideTagOnly = hideTagOnly,
                 // Only a repository has a release feed. The other modes reach a file or an index, and
                 // there is no history behind them to page through.
                 unsupported = track.sourceMode != GitHubTrackedSourceMode.GitHubRepository,
@@ -184,6 +205,7 @@ internal class GitHubReleaseListViewModel(
                             hasNextPage = loaded.hasNextPage,
                             hasPreviousPage = loaded.page > 1,
                             errorMessage = "",
+                            tagFilterUnavailable = tagFilterUnavailable,
                         )
                     }
                     applyDefaultExpansionOnce(loaded.entries)
@@ -217,9 +239,35 @@ internal class GitHubReleaseListViewModel(
                 hasNextPage = apiPage.hasNextPage,
             )
         }
-        // An Atom feed is a fixed window, not a cursor: it answers with the most recent releases and has
-        // no page parameter. So it is asked for everything up to the requested page and sliced, and it
-        // runs out where the feed does rather than pretending there is more.
+        // Hiding tag-only entries means asking something that knows the difference, and only the API
+        // does. GitHub's `releases.atom` carries a repository's tags alongside its releases and gives
+        // the two *structurally identical* entries — same element set, same `tag:github.com,2008:
+        // Repository/<id>/<tag>` id shape. No title rule separates them either: KeiOS's bare tags are
+        // titled `v1.11.8`, and InstallerX's real releases are titled `26.05.01`, both equal to their
+        // tag. So when the filter is on, the list comes from the releases endpoint *unauthenticated* —
+        // one request, no token, and definitive. If that fails, which on a shared address usually means
+        // the 60-per-hour limit, the feed answers instead and the filter reports itself unavailable
+        // rather than silently dropping rows it cannot identify.
+        if (hideTagOnly) {
+            val filtered =
+                runCatching {
+                    service.fetchReleasePage(
+                        owner = owner,
+                        repo = repo,
+                        apiToken = lookupConfig.apiToken,
+                        page = page,
+                    ).getOrThrow()
+                }.getOrNull()
+            if (filtered != null) {
+                tagFilterUnavailable = false
+                return LoadedReleasePage(
+                    entries = filtered.entries,
+                    page = filtered.page,
+                    hasNextPage = filtered.hasNextPage,
+                )
+            }
+            tagFilterUnavailable = true
+        }
         val wanted = page * RELEASE_PAGE_SIZE
         // The strategy is an object with no dispatcher of its own — unlike the service path, which wraps
         // every call in `withContext(networkDispatcher)`. Calling it straight from `viewModelScope` put an

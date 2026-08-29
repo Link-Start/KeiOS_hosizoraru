@@ -1799,4 +1799,6 @@
     <string name="github_release_time_days_format">%1$d d ago</string>
     <string name="github_release_first_page">First page</string>
     <string name="github_release_page_past_end_format">No releases on page %1$d — this is past the end</string>
+    <string name="github_release_hide_tag_only">Hide tag-only entries</string>
+    <string name="github_release_tag_filter_unavailable">Cannot hide tag-only entries: the Atom feed does not distinguish them, and the releases endpoint did not answer</string>
 </resources>

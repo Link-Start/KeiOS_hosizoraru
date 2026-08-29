@@ -1801,4 +1801,6 @@
     <string name="github_release_time_days_format">%1$d 天前</string>
     <string name="github_release_first_page">第一页</string>
     <string name="github_release_page_past_end_format">第 %1$d 页之后没有更多发行版了</string>
+    <string name="github_release_hide_tag_only">隐藏仅有标签的条目</string>
+    <string name="github_release_tag_filter_unavailable">无法过滤仅有标签的条目：Atom 源无法区分，且发行版接口暂时没有响应</string>
 </resources>

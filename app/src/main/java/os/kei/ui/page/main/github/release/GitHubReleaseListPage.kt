@@ -71,6 +71,7 @@ import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideBackIcon
 import androidx.compose.ui.draw.clip
+import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -235,10 +236,14 @@ internal fun GitHubReleaseListPage(
                 canGoPrevious = uiState.hasPreviousPage,
                 canGoNext = uiState.hasNextPage,
                 loading = uiState.loading,
+                // The API returns releases only, so there is nothing for this filter to do there.
+                showTagFilter = uiState.atomMode,
+                hideTagOnly = uiState.hideTagOnly,
                 onFirst = viewModel::openFirstPage,
                 onPrevious = viewModel::openPreviousPage,
                 onNext = viewModel::openNextPage,
                 onRefresh = viewModel::retry,
+                onToggleTagFilter = viewModel::toggleHideTagOnly,
             )
         }
     }
@@ -282,30 +287,68 @@ private fun LazyListScope.releaseListBody(
             GitHubReleaseNotice(textRes = R.string.github_release_empty)
         }
 
-        else -> items(
-            count = uiState.rows.size,
-            key = { index -> uiState.rows[index].entry.id },
-            contentType = { "github_release" },
-        ) { index ->
-            val row = uiState.rows[index]
-            GitHubReleaseCard(
-                row = row,
-                expanded = openReleases.containsKey(row.entry.id),
-                onExpandedChange = { open -> onToggleRelease(row.entry.id, open) },
-                notesExpanded = openNotes.containsKey(row.entry.id),
-                onNotesExpandedChange = { open ->
-                    if (open) openNotes[row.entry.id] = Unit else openNotes.remove(row.entry.id)
-                },
-                assetsExpanded = !closedAssets.containsKey(row.entry.id),
-                onAssetsExpandedChange = { open ->
-                    if (open) closedAssets.remove(row.entry.id) else closedAssets[row.entry.id] = Unit
-                },
+        uiState.tagFilterUnavailable -> {
+            item(key = "release-filter-unavailable") {
+                GitHubReleaseNotice(textRes = R.string.github_release_tag_filter_unavailable)
+            }
+            releaseCards(
+                uiState = uiState,
+                openReleases = openReleases,
+                openNotes = openNotes,
+                closedAssets = closedAssets,
+                onToggleRelease = onToggleRelease,
                 onOpenLink = onOpenLink,
                 onShare = onShare,
                 packageName = packageName,
-                cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
             )
         }
+
+        else -> releaseCards(
+            uiState = uiState,
+            openReleases = openReleases,
+            openNotes = openNotes,
+            closedAssets = closedAssets,
+            onToggleRelease = onToggleRelease,
+            onOpenLink = onOpenLink,
+            onShare = onShare,
+            packageName = packageName,
+        )
+    }
+}
+
+private fun LazyListScope.releaseCards(
+    uiState: GitHubReleaseListUiState,
+    openReleases: MutableMap<String, Unit>,
+    openNotes: MutableMap<String, Unit>,
+    closedAssets: MutableMap<String, Unit>,
+    onToggleRelease: (String, Boolean) -> Unit,
+    onOpenLink: (String) -> Unit,
+    onShare: (GitHubReleaseAssetFile) -> Unit,
+    packageName: String,
+) {
+    items(
+        count = uiState.rows.size,
+        key = { index -> uiState.rows[index].entry.id },
+        contentType = { "github_release" },
+    ) { index ->
+        val row = uiState.rows[index]
+        GitHubReleaseCard(
+            row = row,
+            expanded = openReleases.containsKey(row.entry.id),
+            onExpandedChange = { open -> onToggleRelease(row.entry.id, open) },
+            notesExpanded = openNotes.containsKey(row.entry.id),
+            onNotesExpandedChange = { open ->
+                if (open) openNotes[row.entry.id] = Unit else openNotes.remove(row.entry.id)
+            },
+            assetsExpanded = !closedAssets.containsKey(row.entry.id),
+            onAssetsExpandedChange = { open ->
+                if (open) closedAssets.remove(row.entry.id) else closedAssets[row.entry.id] = Unit
+            },
+            onOpenLink = onOpenLink,
+            onShare = onShare,
+            packageName = packageName,
+            cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
+        )
     }
 }
 
@@ -518,10 +561,13 @@ private fun GitHubReleasePagerBar(
     canGoPrevious: Boolean,
     canGoNext: Boolean,
     loading: Boolean,
+    showTagFilter: Boolean,
+    hideTagOnly: Boolean,
     onFirst: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onRefresh: () -> Unit,
+    onToggleTagFilter: () -> Unit,
 ) {
     AppLiquidFloatingSurface(
         // A fixed capsule rather than a stretched plate: four actions is a known width, and the bar
@@ -529,7 +575,7 @@ private fun GitHubReleasePagerBar(
         // the bottom edge.
         modifier =
             modifier
-                .width(GitHubReleasePagerBarWidth)
+                .width(if (showTagFilter) GitHubReleasePagerBarWideWidth else GitHubReleasePagerBarWidth)
                 .height(AppChromeTokens.floatingBottomBarOuterHeight),
         backdrop = backdrop,
     ) {
@@ -550,6 +596,16 @@ private fun GitHubReleasePagerBar(
                 contentDescription = stringResource(R.string.github_release_previous_page),
                 onClick = onPrevious,
             )
+            if (showTagFilter) {
+                GitHubReleaseBarAction(
+                    icon = appLucideFilterIcon(),
+                    enabled = !loading,
+                    highlighted = hideTagOnly,
+                    contentDescription = stringResource(R.string.github_release_hide_tag_only),
+                    onClick = onToggleTagFilter,
+                    modifier = Modifier.testTag(KeiOsTestTags.GitHubReleaseTagFilterButton),
+                )
+            }
             GitHubReleaseBarAction(
                 icon = appLucideRefreshIcon(),
                 enabled = !loading,
@@ -574,6 +630,7 @@ private fun GitHubReleaseBarAction(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    highlighted: Boolean = false,
 ) {
     Box(
         modifier =
@@ -583,7 +640,7 @@ private fun GitHubReleaseBarAction(
                 .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        GitHubReleaseDockIcon(icon, enabled, contentDescription)
+        GitHubReleaseDockIcon(icon, enabled, contentDescription, highlighted)
     }
 }
 
@@ -592,16 +649,18 @@ private fun GitHubReleaseDockIcon(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     enabled: Boolean,
     contentDescription: String? = null,
+    highlighted: Boolean = false,
 ) {
     Icon(
         modifier = Modifier.size(22.dp),
         imageVector = icon,
         contentDescription = contentDescription,
         tint =
-            if (enabled) {
-                MiuixTheme.colorScheme.primary
-            } else {
-                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.4f)
+            when {
+                !enabled -> MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.4f)
+                // A filter that is *on* has to look on, since what it does is remove rows.
+                highlighted -> MiuixTheme.colorScheme.primary
+                else -> MiuixTheme.colorScheme.onBackgroundVariant
             },
     )
 }
@@ -703,6 +762,9 @@ private fun GitHubReleasePill(
 
 /** Four 48dp actions, their spacing, and the capsule's own padding. */
 private val GitHubReleasePagerBarWidth = 224.dp
+
+/** The same, plus the tag filter the Atom feed needs. */
+private val GitHubReleasePagerBarWideWidth = 276.dp
 
 /** GitHub marks a pre-release amber; the app already uses this exact amber for its warnings. */
 private val GitHubReleasePreReleaseColor = Color(0xFFF59E0B)

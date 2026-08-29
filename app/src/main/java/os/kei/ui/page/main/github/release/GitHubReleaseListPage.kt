@@ -4,7 +4,11 @@ import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -173,11 +178,15 @@ internal fun GitHubReleaseListPage(
         },
     ) { innerPadding ->
         val listTopPadding = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap
+        val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val pagerBarBottomInset = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp
         val edgeStackState = rememberAppEdgeStackState(stackLine = listTopPadding)
         Box(modifier = Modifier.fillMaxSize()) {
             AppEdgeStackKeepAlive(
                 state = edgeStackState,
-                modifier = Modifier.fillMaxSize(),
+                // The top bar and the pager bar sample this. Without recording the list into it, both
+                // render as flat white plates — glass with nothing behind it is just a fill.
+                modifier = Modifier.fillMaxSize().layerBackdrop(pageBackdrop),
             ) {
                 CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
                     AppPageLazyColumn(
@@ -218,7 +227,10 @@ internal fun GitHubReleaseListPage(
                 }
             }
             GitHubReleasePagerBar(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = pagerBarBottomInset),
                 backdrop = pageBackdrop,
                 canGoPrevious = uiState.hasPreviousPage,
                 canGoNext = uiState.hasNextPage,
@@ -503,11 +515,17 @@ private fun GitHubReleasePagerBar(
     onRefresh: () -> Unit,
 ) {
     AppLiquidFloatingSurface(
-        modifier = modifier.height(AppChromeTokens.floatingBottomBarOuterHeight),
+        // A fixed capsule rather than a stretched plate: four actions is a known width, and the bar
+        // reads as chrome floating over the list the way the pager's does, not as a footer bolted to
+        // the bottom edge.
+        modifier =
+            modifier
+                .width(GitHubReleasePagerBarWidth)
+                .height(AppChromeTokens.floatingBottomBarOuterHeight),
         backdrop = backdrop,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp),
+            modifier = Modifier.wrapContentWidth().padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -670,6 +688,9 @@ private fun GitHubReleasePill(
         )
     }
 }
+
+/** Four 48dp actions, their spacing, and the capsule's own padding. */
+private val GitHubReleasePagerBarWidth = 224.dp
 
 /** GitHub marks a pre-release amber; the app already uses this exact amber for its warnings. */
 private val GitHubReleasePreReleaseColor = Color(0xFFF59E0B)

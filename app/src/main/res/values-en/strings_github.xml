@@ -1801,4 +1801,8 @@
     <string name="github_release_page_past_end_format">No releases on page %1$d — this is past the end</string>
     <string name="github_release_hide_tag_only">Hide tag-only entries</string>
     <string name="github_release_tag_filter_unavailable">Cannot hide tag-only entries: the Atom feed does not distinguish them, and the releases endpoint did not answer</string>
+    <string name="github_release_badge_installed">Installed</string>
+    <string name="github_release_compare">Compare</string>
+    <string name="github_release_assets_show_all">Show all files</string>
+    <string name="github_release_assets_show_relevant">Show relevant files</string>
 </resources>

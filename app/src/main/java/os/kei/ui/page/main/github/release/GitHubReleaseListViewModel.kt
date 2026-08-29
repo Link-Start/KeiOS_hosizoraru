@@ -28,6 +28,12 @@ internal data class GitHubReleaseRow(
     val detail: GitHubReleaseAssetBundle? = null,
     val detailLoading: Boolean = false,
     val detailError: String = "",
+    /** Whether this release is showing every file rather than the ones worth offering. */
+    val showAllAssets: Boolean = false,
+    /** The tag immediately older than this one on the page, for a compare link. */
+    val previousTag: String = "",
+    /** True when this release's version matches what is installed. */
+    val installed: Boolean = false,
 )
 
 internal data class GitHubReleaseListUiState(
@@ -48,6 +54,12 @@ internal data class GitHubReleaseListUiState(
     val hideTagOnly: Boolean = true,
     /** True when the filter was asked for but the source that can apply it did not answer. */
     val tagFilterUnavailable: Boolean = false,
+    /** The version of this app that is installed right now, so the list can say "you are here". */
+    val installedVersion: String = "",
+    /** Set while the list is showing a single release looked up by tag rather than a page. */
+    val tagQuery: String = "",
+    /** The user's lookup settings, so asset rows judge trust the way the tracked card does. */
+    val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
 )
 
 /**
@@ -79,6 +91,7 @@ internal class GitHubReleaseListViewModel(
     private var defaultsApplied = false
     private var hideTagOnly: Boolean = GitHubTrackStore.loadHideTagOnlyReleases()
     private var tagFilterUnavailable: Boolean = false
+    private var installedVersion: String = ""
 
     init {
         val track = GitHubTrackStore.load().firstOrNull { item -> item.id == trackId }
@@ -115,6 +128,101 @@ internal class GitHubReleaseListViewModel(
         if (_uiState.value.hasPreviousPage) loadPage(_uiState.value.page - 1)
     }
 
+    /**
+     * Shows every file a release carries, rather than the ones the app judges worth offering.
+     *
+     * Source archives and attestations are noise for someone picking a build to install, which is why
+     * they are filtered by default — but GitHub always offers them, and occasionally that *is* the file
+     * someone came for.
+     */
+    fun toggleAllAssets(entryId: String) {
+        updateRow(entryId) { current ->
+            current.copy(showAllAssets = !current.showAllAssets, detail = null, detailError = "")
+        }
+        ensureDetail(entryId, force = true)
+    }
+
+    /**
+     * Looks a release up by tag, the way GitHub's "Find a release" box does.
+     *
+     * Paging ten at a time is fine for recent history and useless for a repository with hundreds of
+     * releases. Reuses the by-tag fetch the expanded card already uses, so it is exact rather than a
+     * search, and works without a token.
+     */
+    fun findByTag(rawTag: String) {
+        val tag = rawTag.trim()
+        if (tag.isBlank()) return
+        _uiState.update { state -> state.copy(loading = true, errorMessage = "", tagQuery = tag) }
+        viewModelScope.launch {
+            val result =
+                runCatching {
+                    service.fetchApkAssets(
+                        owner = owner,
+                        repo = repo,
+                        rawTag = tag,
+                        releaseUrl = "",
+                        preferHtml = _uiState.value.atomMode,
+                        aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
+                        includeAllAssets = false,
+                        apiToken = lookupConfig.apiToken,
+                    ).getOrThrow()
+                }
+            result
+                .onSuccess { bundle ->
+                    val entry =
+                        GitHubReleaseListEntry(
+                            tagName = bundle.tagName.ifBlank { tag },
+                            releaseName = bundle.releaseName,
+                            htmlUrl = bundle.htmlUrl,
+                            prerelease = false,
+                            publishedAtMillis = bundle.releaseUpdatedAtMillis,
+                            bodyMarkdown = bundle.releaseNotesBody,
+                            assetCount = bundle.assets.size,
+                        )
+                    _uiState.update { state ->
+                        state.copy(
+                            loading = false,
+                            rows =
+                                listOf(
+                                    GitHubReleaseRow(
+                                        entry = entry,
+                                        detail = bundle,
+                                        installed = matchesInstalled(entry),
+                                    ),
+                                ),
+                            hasNextPage = false,
+                            hasPreviousPage = false,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    _uiState.update { state ->
+                        state.copy(
+                            loading = false,
+                            rows = emptyList(),
+                            errorMessage = error.message ?: error::class.java.simpleName,
+                        )
+                    }
+                }
+        }
+    }
+
+    /** Leaves a by-tag lookup and goes back to paging. */
+    fun clearTagQuery() {
+        if (_uiState.value.tagQuery.isBlank()) return
+        _uiState.update { state -> state.copy(tagQuery = "") }
+        loadPage(1)
+    }
+
+    /** GitHub's own compare view, between this release and the one before it. */
+    fun compareUrl(row: GitHubReleaseRow): String? {
+        val previous = row.previousTag.trim()
+        val current = row.entry.tagName.trim()
+        if (previous.isBlank() || current.isBlank()) return null
+        return "https://github.com/$owner/$repo/compare/$previous...$current"
+    }
+
     fun jumpToPage(page: Int) {
         val target = page.coerceAtLeast(1)
         if (target != _uiState.value.page) loadPage(target)
@@ -127,9 +235,12 @@ internal class GitHubReleaseListViewModel(
      * actually asks for a release. A failure is kept on the row so the card can say so without taking the
      * whole page down with it.
      */
-    fun ensureDetail(entryId: String) {
+    fun ensureDetail(
+        entryId: String,
+        force: Boolean = false,
+    ) {
         val row = _uiState.value.rows.firstOrNull { candidate -> candidate.entry.id == entryId } ?: return
-        if (row.detail != null || row.detailLoading) return
+        if (!force && (row.detail != null || row.detailLoading)) return
         updateRow(entryId) { current -> current.copy(detailLoading = true, detailError = "") }
         viewModelScope.launch {
             val result =
@@ -147,7 +258,7 @@ internal class GitHubReleaseListViewModel(
                         // attestation json and the rest of a release's bookkeeping are not what anyone
                         // opens this page to download. Same selector the tracked card's asset panel uses,
                         // so the two surfaces offer the same files.
-                        includeAllAssets = false,
+                        includeAllAssets = row.showAllAssets,
                         apiToken = lookupConfig.apiToken,
                     ).getOrThrow()
                 }
@@ -173,6 +284,10 @@ internal class GitHubReleaseListViewModel(
         owner = track.owner
         repo = track.repo
         lookupConfig = GitHubTrackStore.loadLookupConfig().forTrackedItem(track)
+        // What the teacher is running right now. The update check already resolves and caches it, so the
+        // list can mark the release you are on — which is the whole point of a history you reach in order
+        // to go *back* through it. GitHub's own page cannot do this; it does not know your device.
+        installedVersion = GitHubTrackStore.loadCheckCache().first[track.id]?.localVersion.orEmpty()
         _uiState.update { state ->
             state.copy(
                 repositoryLabel = track.appLabel.ifBlank { "${track.owner}/${track.repo}" },
@@ -180,6 +295,8 @@ internal class GitHubReleaseListViewModel(
                 packageName = track.packageName,
                 atomMode = lookupConfig.selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken,
                 hideTagOnly = hideTagOnly,
+                installedVersion = installedVersion,
+                lookupConfig = lookupConfig,
                 // Only a repository has a release feed. The other modes reach a file or an index, and
                 // there is no history behind them to page through.
                 unsupported = track.sourceMode != GitHubTrackedSourceMode.GitHubRepository,
@@ -200,7 +317,15 @@ internal class GitHubReleaseListViewModel(
                     _uiState.update { state ->
                         state.copy(
                             loading = false,
-                            rows = loaded.entries.map { entry -> GitHubReleaseRow(entry = entry) },
+                            rows =
+                                loaded.entries.mapIndexed { index, entry ->
+                                    GitHubReleaseRow(
+                                        entry = entry,
+                                        previousTag =
+                                            loaded.entries.getOrNull(index + 1)?.tagName.orEmpty(),
+                                        installed = matchesInstalled(entry),
+                                    )
+                                },
                             page = loaded.page,
                             hasNextPage = loaded.hasNextPage,
                             hasPreviousPage = loaded.page > 1,
@@ -344,6 +469,21 @@ internal class GitHubReleaseListViewModel(
         }
     }
 
+    /**
+     * Whether a release is the one installed.
+     *
+     * Compared on the normalised version rather than the tag, because a release's tag, its name and the
+     * installed `versionName` disagree constantly — `v1.14.0`, `KeiOS v1.14.0` and `1.14.0` are the same
+     * build. Anything looser would mark the wrong row, which on a rollback screen is worse than marking
+     * nothing.
+     */
+    private fun matchesInstalled(entry: GitHubReleaseListEntry): Boolean {
+        val installed = installedVersion.normalizedVersion()
+        if (installed.isBlank()) return false
+        return entry.tagName.normalizedVersion() == installed ||
+            entry.releaseName.normalizedVersion() == installed
+    }
+
     private data class LoadedReleasePage(
         val entries: List<GitHubReleaseListEntry>,
         val page: Int,
@@ -351,6 +491,9 @@ internal class GitHubReleaseListViewModel(
     )
 
     private companion object {
+        private fun String.normalizedVersion(): String =
+            trim().removePrefix("v").removePrefix("V").trim()
+
         /** What GitHub's own release list shows. Mirrors the engine's page size. */
         const val RELEASE_PAGE_SIZE = 10
     }

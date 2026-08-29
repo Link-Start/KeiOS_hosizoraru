@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
@@ -42,7 +43,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,6 +65,7 @@ import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronLeftIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
@@ -80,6 +81,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -140,7 +142,7 @@ internal fun GitHubReleaseListPage(
     var pageInput by remember { mutableStateOf("") }
 
     LaunchedEffect(uiState.page, uiState.rows.size, viewModel.defaultExpandedIds) {
-        pageInput = uiState.page.toString()
+        pageInput = uiState.tagQuery.ifBlank { uiState.page.toString() }
         if (seededPage == uiState.page || uiState.rows.isEmpty()) return@LaunchedEffect
         seededPage = uiState.page
         viewModel.defaultExpandedIds.forEach { id ->
@@ -169,11 +171,20 @@ internal fun GitHubReleaseListPage(
             )
         },
         actions = {
+            // A page number *or* a tag, the way GitHub's "Find a release" box lets you go straight to
+            // one. Paging ten at a time is fine for recent history and useless on a repository with
+            // hundreds of releases.
             GitHubReleasePageJumpField(
                 value = pageInput,
-                onValueChange = { text -> pageInput = text.filter(Char::isDigit).take(4) },
+                onValueChange = { text -> pageInput = text.take(40) },
                 onSubmit = {
-                    pageInput.toIntOrNull()?.let(viewModel::jumpToPage)
+                    val typed = pageInput.trim()
+                    val page = typed.toIntOrNull()
+                    when {
+                        page != null -> viewModel.jumpToPage(page)
+                        typed.isNotBlank() -> viewModel.findByTag(typed)
+                        else -> viewModel.clearTagQuery()
+                    }
                 },
             )
         },
@@ -199,6 +210,9 @@ internal fun GitHubReleaseListPage(
                     ) {
                         releaseListBody(
                             uiState = uiState,
+                            onToggleAllAssets = viewModel::toggleAllAssets,
+                            compareUrlOf = viewModel::compareUrl,
+                            lookupConfig = uiState.lookupConfig,
                             openReleases = openReleases,
                             openNotes = openNotes,
                             closedAssets = closedAssets,
@@ -257,6 +271,9 @@ private fun LazyListScope.releaseListBody(
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
     onShare: (GitHubReleaseAssetFile) -> Unit,
+    onToggleAllAssets: (String) -> Unit,
+    compareUrlOf: (GitHubReleaseRow) -> String?,
+    lookupConfig: GitHubLookupConfig,
     packageName: String,
 ) {
     when {
@@ -299,6 +316,9 @@ private fun LazyListScope.releaseListBody(
                 onToggleRelease = onToggleRelease,
                 onOpenLink = onOpenLink,
                 onShare = onShare,
+                onToggleAllAssets = onToggleAllAssets,
+                compareUrlOf = compareUrlOf,
+                lookupConfig = lookupConfig,
                 packageName = packageName,
             )
         }
@@ -311,6 +331,9 @@ private fun LazyListScope.releaseListBody(
             onToggleRelease = onToggleRelease,
             onOpenLink = onOpenLink,
             onShare = onShare,
+            onToggleAllAssets = onToggleAllAssets,
+            compareUrlOf = compareUrlOf,
+            lookupConfig = lookupConfig,
             packageName = packageName,
         )
     }
@@ -324,6 +347,9 @@ private fun LazyListScope.releaseCards(
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
     onShare: (GitHubReleaseAssetFile) -> Unit,
+    onToggleAllAssets: (String) -> Unit,
+    compareUrlOf: (GitHubReleaseRow) -> String?,
+    lookupConfig: GitHubLookupConfig,
     packageName: String,
 ) {
     items(
@@ -346,6 +372,9 @@ private fun LazyListScope.releaseCards(
             },
             onOpenLink = onOpenLink,
             onShare = onShare,
+            onToggleAllAssets = onToggleAllAssets,
+            compareUrl = compareUrlOf(row),
+            lookupConfig = lookupConfig,
             packageName = packageName,
             cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
         )
@@ -363,6 +392,9 @@ private fun GitHubReleaseCard(
     onAssetsExpandedChange: (Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
     onShare: (GitHubReleaseAssetFile) -> Unit,
+    onToggleAllAssets: (String) -> Unit,
+    compareUrl: String?,
+    lookupConfig: GitHubLookupConfig,
     packageName: String,
     cardTestTag: String?,
 ) {
@@ -382,6 +414,12 @@ private fun GitHubReleaseCard(
         // or it stops working at all here.
         edgeStackWhileExpanded = true,
         titleAccessory = {
+            if (row.installed) {
+                GitHubReleasePill(
+                    label = stringResource(R.string.github_release_badge_installed),
+                    color = GitHubStatusPalette.Active,
+                )
+            }
             if (entry.latest) {
                 GitHubReleasePill(
                     label = stringResource(R.string.github_release_badge_latest),
@@ -493,8 +531,11 @@ private fun GitHubReleaseCard(
                         summaryBorderColor = accent.copy(alpha = if (isDark) 0.30f else 0.20f),
                         supportedAbis = supportedAbis,
                         relativeTimeNowMillis = nowMillis,
-                        showApkTrustCheck = false,
-                        managedInstallEnabled = false,
+                        // Verifying an *old* APK's signer matters at least as much as verifying the
+                        // newest one, so this follows the same settings the tracked card follows.
+                        showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
+                            lookupConfig.apkTrustCheckEnabled,
+                        managedInstallEnabled = lookupConfig.appManagedShareInstallEnabled,
                         manifestInfo = null,
                         managedInstallRunning = false,
                         installActionColor = MiuixTheme.colorScheme.primary,
@@ -507,6 +548,56 @@ private fun GitHubReleaseCard(
                 }
             }
         }
+
+        AppDualActionRow(
+            spacing = 8.dp,
+            first = { rowModifier ->
+                AppLiquidTextButton(
+                    modifier = rowModifier,
+                    backdrop = null,
+                    text =
+                        stringResource(
+                            if (row.showAllAssets) {
+                                R.string.github_release_assets_show_relevant
+                            } else {
+                                R.string.github_release_assets_show_all
+                            },
+                        ),
+                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    variant = GlassVariant.SheetAction,
+                    textMaxLines = 1,
+                    textOverflow = TextOverflow.Ellipsis,
+                    onClick = { onToggleAllAssets(entry.id) },
+                )
+            },
+            second = { rowModifier ->
+                // GitHub's Compare, built from the tag before this one on the page.
+                AppLiquidTextButton(
+                    modifier = rowModifier,
+                    backdrop = null,
+                    text = stringResource(R.string.github_release_compare),
+                    textColor = MiuixTheme.colorScheme.primary,
+                    containerColor = MiuixTheme.colorScheme.primary,
+                    variant = GlassVariant.SheetAction,
+                    enabled = compareUrl != null,
+                    textMaxLines = 1,
+                    textOverflow = TextOverflow.Ellipsis,
+                    onClick = { compareUrl?.let(onOpenLink) },
+                )
+            },
+        )
+        AppLiquidTextButton(
+            modifier = Modifier.fillMaxWidth(),
+            backdrop = null,
+            text = stringResource(R.string.github_release_open_in_browser),
+            textColor = MiuixTheme.colorScheme.primary,
+            containerColor = MiuixTheme.colorScheme.primary,
+            variant = GlassVariant.SheetAction,
+            textMaxLines = 1,
+            textOverflow = TextOverflow.Ellipsis,
+            onClick = { onOpenLink(entry.htmlUrl) },
+        )
     }
 }
 
@@ -675,7 +766,9 @@ private fun GitHubReleasePageJumpField(
     Box(
         modifier =
             Modifier
-                .width(64.dp)
+                // Stays a page-number's width even when a tag is typed into it: the title card sits
+                // right beside it, and growing the field clipped the repository's name.
+                .width(72.dp)
                 // The same height `AppLiquidNavigationButton` uses, so the field centres against the
                 // title card instead of riding above it — the top-end overlay pins by its top edge.
                 .height(52.dp)
@@ -697,8 +790,7 @@ private fun GitHubReleasePageJumpField(
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                 ),
-            keyboardOptions =
-                KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { onSubmit() }),
             modifier = Modifier.fillMaxWidth().testTag(KeiOsTestTags.GitHubReleasePageJumpField),
         )

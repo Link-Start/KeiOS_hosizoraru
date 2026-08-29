@@ -310,6 +310,9 @@ private fun GitHubReleaseCard(
         expanded = expanded,
         onExpandedChange = onExpandedChange,
         modifier = cardTestTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier,
+        // Ten cards a page, two of which open themselves — the pile has to keep working on the open ones
+        // or it stops working at all here.
+        edgeStackWhileExpanded = true,
         titleAccessory = {
             if (entry.latest) {
                 GitHubReleasePill(
@@ -440,10 +443,10 @@ private fun GitHubReleaseCard(
 }
 
 /**
- * A card inside a card, drawn flat rather than as a second glass surface.
+ * A real card inside the release card, not a tinted strip.
  *
- * Its parent's fill is uniform under it, so a blur there returns the same field for the price of an
- * offscreen layer — the measurement the BA office cards were rebuilt around.
+ * Notes and files are each a section a reader opens on their own terms, so they get the same accordion
+ * the page's cards use rather than a bespoke header row.
  */
 @Composable
 private fun GitHubReleaseNestedCard(
@@ -453,50 +456,20 @@ private fun GitHubReleaseNestedCard(
     trailing: String = "",
     content: @Composable () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .appSquircleBackground(
-                    MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.42f),
-                    14.dp,
-                )
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable { onExpandedChange(!expanded) },
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                modifier = Modifier.weight(1f),
-                text = title,
-                color = MiuixTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-            )
+    AppLiquidAccordionCard(
+        backdrop = null,
+        title = title,
+        subtitle = "",
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        titleAccessory =
             if (trailing.isNotBlank()) {
-                Text(text = trailing, color = MiuixTheme.colorScheme.onBackgroundVariant)
-            }
-            Icon(
-                modifier = Modifier.size(18.dp),
-                imageVector =
-                    if (expanded) {
-                        appLucideChevronUpIcon()
-                    } else {
-                        appLucideChevronDownIcon()
-                    },
-                contentDescription = null,
-                tint = MiuixTheme.colorScheme.onBackgroundVariant,
-            )
-        }
-        AnimatedVisibility(visible = expanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                content()
-            }
-        }
-    }
+                { GitHubReleasePill(label = trailing, color = MiuixTheme.colorScheme.onBackgroundVariant) }
+            } else {
+                null
+            },
+        content = content,
+    )
 }
 
 @Composable

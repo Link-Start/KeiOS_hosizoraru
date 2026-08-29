@@ -123,9 +123,11 @@ internal class GitHubReleaseListViewModel(
                         // knows how to read a release out of its HTML page instead.
                         preferHtml = _uiState.value.atomMode,
                         aggressiveFiltering = lookupConfig.aggressiveApkFiltering,
-                        // The page lists what the release actually holds, the way GitHub's own does; the
-                        // APK-relevance filter stays a presentation choice inside the card.
-                        includeAllAssets = true,
+                        // The app already knows which files are worth offering — source archives, the
+                        // attestation json and the rest of a release's bookkeeping are not what anyone
+                        // opens this page to download. Same selector the tracked card's asset panel uses,
+                        // so the two surfaces offer the same files.
+                        includeAllAssets = false,
                         apiToken = lookupConfig.apiToken,
                     ).getOrThrow()
                 }

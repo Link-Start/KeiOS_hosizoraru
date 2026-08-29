@@ -34,6 +34,15 @@ fun AppLiquidAccordionCard(
     onHeaderLongClick: (() -> Unit)? = null,
     containerColor: Color? = null,
     clipContent: Boolean = true,
+    /**
+     * Keeps this card in the edge-stack pile while it is open.
+     *
+     * Off by default: an expanded card is usually tall enough that receding it into the pile hides the
+     * content the reader just opened. A list whose cards are *browsed* open — the release list, where
+     * latest and the newest pre-release open themselves — wants the opposite, or the pile stops working
+     * for the ten cards on the page.
+     */
+    edgeStackWhileExpanded: Boolean = false,
     headerContentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,
     headerHorizontalSpacing: Dp = CardLayoutRhythm.controlRowGap,
     headerActionSpacing: Dp = CardLayoutRhythm.infoRowGap,
@@ -42,6 +51,7 @@ fun AppLiquidAccordionCard(
     content: @Composable () -> Unit,
 ) {
     AppLiquidExpandableCardFrame(
+        edgeStackWhileExpanded = edgeStackWhileExpanded,
         backdrop = backdrop,
         title = title,
         subtitle = subtitle,
@@ -116,6 +126,7 @@ private fun AppLiquidExpandableCardFrame(
     onHeaderLongClick: (() -> Unit)?,
     containerColor: Color?,
     clipContent: Boolean,
+    edgeStackWhileExpanded: Boolean = false,
     headerContentPadding: PaddingValues,
     headerHorizontalSpacing: Dp,
     headerActionSpacing: Dp,
@@ -135,10 +146,11 @@ private fun AppLiquidExpandableCardFrame(
         exportBackdropToContent = true,
         clipContent = clipContent,
         edgeStackEnabled =
-            shouldApplyEdgeStackToExpandableCard(
-                currentState = contentVisibilityState.currentState,
-                targetState = contentVisibilityState.targetState,
-            ),
+            edgeStackWhileExpanded ||
+                shouldApplyEdgeStackToExpandableCard(
+                    currentState = contentVisibilityState.currentState,
+                    targetState = contentVisibilityState.targetState,
+                ),
     ) {
         AppCardHeader(
             title = title,

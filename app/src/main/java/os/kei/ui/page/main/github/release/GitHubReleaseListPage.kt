@@ -51,9 +51,13 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import os.kei.R
+import android.os.Build
 import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.github.section.GitHubInlineLiquidSurface
+import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
+import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronLeftIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
@@ -193,6 +197,7 @@ internal fun GitHubReleaseListPage(
                                 }
                             },
                             onOpenLink = { url -> uriHandler.openUri(url) },
+                            packageName = uiState.packageName,
                             onShare = { asset ->
                                 val send =
                                     Intent(Intent.ACTION_SEND).apply {
@@ -231,6 +236,7 @@ private fun LazyListScope.releaseListBody(
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
     onShare: (GitHubReleaseAssetFile) -> Unit,
+    packageName: String,
 ) {
     when {
         uiState.unsupported -> item(key = "release-unsupported") {
@@ -271,6 +277,7 @@ private fun LazyListScope.releaseListBody(
                 },
                 onOpenLink = onOpenLink,
                 onShare = onShare,
+                packageName = packageName,
                 cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
             )
         }
@@ -288,9 +295,13 @@ private fun GitHubReleaseCard(
     onAssetsExpandedChange: (Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
     onShare: (GitHubReleaseAssetFile) -> Unit,
+    packageName: String,
     cardTestTag: String?,
 ) {
     val entry = row.entry
+    val context = LocalContext.current
+    val supportedAbis = remember { Build.SUPPORTED_ABIS.orEmpty().toList() }
+    val nowMillis = remember(row.detail) { System.currentTimeMillis() }
     val notes = row.detail?.releaseNotesBody?.takeIf(String::isNotBlank) ?: entry.bodyMarkdown
     AppLiquidAccordionCard(
         backdrop = null,
@@ -320,23 +331,33 @@ private fun GitHubReleaseCard(
             }
         },
     ) {
-        // Tag and commit identify the build; the name often does not. A CI pre-release keeps one name
-        // and moves its tag every push, and the commit is what makes a pre-release comparable to latest.
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        // The same tinted summary strip the tracked card's asset panel uses, carrying what identifies
+        // the build. A release's name and its tag routinely mean different things — a CI pre-release keeps
+        // one name and moves its tag every push — and the commit is what makes it comparable to latest.
+        val accent = if (entry.prerelease) GitHubReleasePreReleaseColor else GitHubStatusPalette.Update
+        val isDark = isAppInDarkTheme()
+        GitHubInlineLiquidSurface(
+            backdrop = null,
+            tint = Color.Unspecified,
+            surfaceColor =
+                GitHubStatusPalette
+                    .tonedSurface(accent, isDark = isDark)
+                    .copy(alpha = if (isDark) 0.30f else 0.18f),
+            onClick = { onOpenLink(entry.htmlUrl) },
         ) {
-            GitHubReleasePill(label = entry.tagName, color = MiuixTheme.colorScheme.primary)
-            row.detail?.shortCommitSha?.takeIf(String::isNotBlank)?.let { sha ->
-                GitHubReleasePill(label = sha, color = AppStatusColors.Refreshing)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GitHubReleasePill(label = entry.tagName, color = GitHubStatusPalette.Stable)
+                row.detail?.shortCommitSha?.takeIf(String::isNotBlank)?.let { sha ->
+                    GitHubReleasePill(label = sha, color = GitHubStatusPalette.Active)
+                }
+                if (entry.authorName.isNotBlank()) {
+                    GitHubReleasePill(label = entry.authorName, color = accent)
+                }
             }
-        }
-        if (entry.authorName.isNotBlank()) {
-            GitHubReleaseFact(
-                label = stringResource(R.string.github_release_author_label),
-                value = entry.authorName,
-            )
         }
 
         GitHubReleaseNestedCard(
@@ -377,10 +398,7 @@ private fun GitHubReleaseCard(
                     )
 
                 row.detailError.isNotBlank() ->
-                    Text(
-                        text = row.detailError,
-                        color = AppStatusColors.Failed,
-                    )
+                    Text(text = row.detailError, color = AppStatusColors.Failed)
 
                 row.detail?.assets.isNullOrEmpty() ->
                     Text(
@@ -389,85 +407,34 @@ private fun GitHubReleaseCard(
                     )
 
                 else -> row.detail?.assets?.forEach { asset ->
-                    GitHubReleaseAssetRow(
+                    // The tracked card's own asset row, so a file reads the same on both surfaces: ABI
+                    // and extension pills, size, age, the trust check, and icon actions rather than
+                    // stacked text buttons.
+                    GitHubTrackedItemAssetRow(
                         asset = asset,
-                        onOpenLink = onOpenLink,
-                        onShare = onShare,
+                        expectedPackageName = packageName,
+                        alwaysLatestReleaseDownload = false,
+                        targetAccent = accent,
+                        summaryContainerColor =
+                            GitHubStatusPalette
+                                .tonedSurface(accent, isDark = isDark)
+                                .copy(alpha = if (isDark) 0.30f else 0.18f),
+                        summaryBorderColor = accent.copy(alpha = if (isDark) 0.30f else 0.20f),
+                        supportedAbis = supportedAbis,
+                        relativeTimeNowMillis = nowMillis,
+                        showApkTrustCheck = false,
+                        managedInstallEnabled = false,
+                        manifestInfo = null,
+                        managedInstallRunning = false,
+                        installActionColor = MiuixTheme.colorScheme.primary,
+                        context = context,
+                        onOpenApkInfo = { onOpenLink(entry.htmlUrl) },
+                        onInstallApk = { onOpenLink(asset.downloadUrl) },
+                        onOpenApkInDownloader = { onOpenLink(asset.downloadUrl) },
+                        onShareApkLink = onShare,
                     )
                 }
             }
-        }
-
-        AppLiquidTextButton(
-            modifier = Modifier.fillMaxWidth(),
-            backdrop = null,
-            text = stringResource(R.string.github_release_open_in_browser),
-            textColor = MiuixTheme.colorScheme.primary,
-            containerColor = MiuixTheme.colorScheme.primary,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-            onClick = { onOpenLink(entry.htmlUrl) },
-        )
-    }
-}
-
-@Composable
-private fun GitHubReleaseAssetRow(
-    asset: GitHubReleaseAssetFile,
-    onOpenLink: (String) -> Unit,
-    onShare: (GitHubReleaseAssetFile) -> Unit,
-) {
-    val context = LocalContext.current
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (asset.name.endsWith(".apk", ignoreCase = true)) {
-                GitHubReleasePill(label = "APK", color = AppStatusColors.Fresh)
-            }
-            Text(
-                modifier = Modifier.weight(1f),
-                text = asset.name,
-                color = MiuixTheme.colorScheme.onBackground,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = formatAssetSize(asset.sizeBytes, context),
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                maxLines = 1,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            AppLiquidTextButton(
-                modifier = Modifier.weight(1f),
-                backdrop = null,
-                text = stringResource(R.string.github_release_asset_download),
-                textColor = MiuixTheme.colorScheme.primary,
-                containerColor = MiuixTheme.colorScheme.primary,
-                variant = GlassVariant.SheetAction,
-                textMaxLines = 1,
-                onClick = { onOpenLink(asset.downloadUrl) },
-            )
-            AppLiquidTextButton(
-                modifier = Modifier.weight(1f),
-                backdrop = null,
-                text = stringResource(R.string.github_release_asset_share),
-                textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                variant = GlassVariant.SheetAction,
-                textMaxLines = 1,
-                onClick = { onShare(asset) },
-            )
         }
     }
 }

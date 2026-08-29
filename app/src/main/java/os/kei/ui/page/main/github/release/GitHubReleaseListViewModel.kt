@@ -38,6 +38,8 @@ internal data class GitHubReleaseListUiState(
     val hasPreviousPage: Boolean = false,
     val repositoryLabel: String = "",
     val repositoryUrl: String = "",
+    /** The tracked app's package, so an asset row can judge whether a file installs over it. */
+    val packageName: String = "",
     val unsupported: Boolean = false,
     /** True when the list came from the Atom feed rather than the API — see [loadPage]. */
     val atomMode: Boolean = false,
@@ -153,6 +155,7 @@ internal class GitHubReleaseListViewModel(
             state.copy(
                 repositoryLabel = track.appLabel.ifBlank { "${track.owner}/${track.repo}" },
                 repositoryUrl = track.repoUrl,
+                packageName = track.packageName,
                 atomMode = lookupConfig.selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken,
                 // Only a repository has a release feed. The other modes reach a file or an index, and
                 // there is no history behind them to page through.
@@ -267,7 +270,11 @@ internal class GitHubReleaseListViewModel(
         defaultsApplied = true
         val latest = entries.firstOrNull { entry -> entry.latest }
         val newestPreRelease = entries.firstOrNull { entry -> entry.prerelease }
-        defaultExpandedIds = listOfNotNull(latest?.id, newestPreRelease?.id).toSet()
+        val anchors = listOfNotNull(latest?.id, newestPreRelease?.id)
+        // Atom mode marks neither, because the feed cannot tell them apart. The newest release is the
+        // closest honest anchor there — opening nothing at all would be worse than opening the top one.
+        defaultExpandedIds =
+            anchors.ifEmpty { listOfNotNull(entries.firstOrNull()?.id) }.toSet()
     }
 
     var defaultExpandedIds: Set<String> = emptySet()

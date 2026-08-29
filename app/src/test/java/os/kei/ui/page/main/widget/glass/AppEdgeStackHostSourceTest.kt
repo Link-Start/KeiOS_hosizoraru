@@ -74,6 +74,7 @@ private val STACKING_HOSTS =
         "ba/BaCalendarPoolStackedLayout.kt",
         "ba/BaPageContent.kt",
         "github/history/GitHubActionsNotificationHistoryPage.kt",
+        "github/release/GitHubReleaseListPage.kt",
         "github/section/GitHubMainContentSection.kt",
         "mcp/McpPageContent.kt",
         "os/components/OsPageMainList.kt",

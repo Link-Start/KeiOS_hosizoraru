@@ -1787,4 +1787,14 @@
     <string name="github_release_previous_page">Previous</string>
     <string name="github_release_next_page">Next</string>
     <string name="github_release_page_indicator_format">Page %1$d</string>
+    <string name="github_release_notes_section">Release notes</string>
+    <string name="github_release_notes_empty">This release has no notes</string>
+    <string name="github_release_assets_section">Assets</string>
+    <string name="github_release_assets_loading">Loading assets…</string>
+    <string name="github_release_assets_empty">This release has no assets</string>
+    <string name="github_release_asset_download">Download</string>
+    <string name="github_release_asset_share">Share</string>
+    <string name="github_release_time_minutes_format">%1$d min ago</string>
+    <string name="github_release_time_hours_format">%1$d h ago</string>
+    <string name="github_release_time_days_format">%1$d d ago</string>
 </resources>

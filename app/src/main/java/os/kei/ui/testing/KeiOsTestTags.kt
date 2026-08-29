@@ -47,6 +47,7 @@ object KeiOsTestTags {
     const val GitHubReleasePageRoot = "github_release_page_root"
     const val GitHubReleaseCardFirst = "github_release_card_first"
     const val GitHubReleaseNextPageButton = "github_release_next_page_button"
+    const val GitHubReleasePageJumpField = "github_release_page_jump_field"
 
     /**
      * The first cooldown card, the cafe's headpat.

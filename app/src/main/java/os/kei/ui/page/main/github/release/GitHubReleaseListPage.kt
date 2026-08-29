@@ -1,64 +1,104 @@
 package os.kei.ui.page.main.github.release
 
+import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import os.kei.R
-import os.kei.feature.github.data.remote.GitHubReleaseListEntry
+import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.ui.page.main.github.asset.formatAssetSize
+import os.kei.ui.page.main.os.appLucideChevronDownIcon
+import os.kei.ui.page.main.os.appLucideChevronLeftIcon
+import os.kei.ui.page.main.os.appLucideChevronUpIcon
+import os.kei.ui.page.main.os.appLucideChevronRightIcon
+import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.core.ui.effect.rememberAppTopBarColor
+import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
-import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.markdown.AppMarkdownContent
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
 import os.kei.ui.testing.pageRootTestTag
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import androidx.compose.runtime.CompositionLocalProvider
 
 /**
- * A repository's release history, as its own page.
+ * A repository's release history, laid out the way GitHub's own release page lays it out.
  *
- * The tracked card cannot carry this. It already shows local, stable and pre-release sections plus an
- * asset panel, and the release list is a second list with its own notes and files — the 发行日志 sheet
- * that came before this had to degrade notes to preview lines to fit, which is the same space problem one
- * level down. A page also gets the markdown renderer the sheet could not afford.
+ * The tracked card cannot carry this: it already shows local, stable and pre-release sections plus an
+ * asset panel, and a release is itself a card with notes and files. The 发行日志 sheet that came before
+ * had to degrade notes to preview lines to fit — the same space problem one level down.
  *
- * Ten per page, which is what GitHub's own release list shows. Most repositories' recent history fits;
- * the ones that publish a pre-release per CI run get a next page rather than a 30-deep first load.
+ * Collapsed, a card is a name, when it landed, and whether it is the latest or a pre-release, because
+ * that is what picking a version off a list needs. Everything that identifies the build — tag, commit —
+ * is a pill, since a release's name and its tag routinely mean different things: a CI pre-release keeps
+ * a fixed name and moves its tag every push.
+ *
+ * The two nested cards are deliberately opposite by default. Notes are long enough to push the files off
+ * the screen, and files are what most readers came down here for.
  */
 @Composable
 internal fun GitHubReleaseListPage(
@@ -68,19 +108,34 @@ internal fun GitHubReleaseListPage(
     val viewModel: GitHubReleaseListViewModel =
         viewModel(
             key = "github-releases-$trackId",
-            factory =
-                viewModelFactory {
-                    initializer { GitHubReleaseListViewModel(trackId = trackId) }
-                },
+            factory = viewModelFactory { initializer { GitHubReleaseListViewModel(trackId = trackId) } },
         )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val uriHandler = LocalUriHandler.current
-    // Session-only, like the BA office cards: a visit starts compact, and scrolling keeps what was opened.
-    val expanded = remember { mutableStateMapOf<String, Unit>() }
+
+    val openReleases = remember { mutableStateMapOf<String, Unit>() }
+    val openNotes = remember { mutableStateMapOf<String, Unit>() }
+    // Assets default open, so this tracks what the reader has *closed* rather than what they opened.
+    val closedAssets = remember { mutableStateMapOf<String, Unit>() }
+    var seededPage by remember { mutableStateOf(-1) }
+    var pageInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(uiState.page, uiState.rows.size, viewModel.defaultExpandedIds) {
+        pageInput = uiState.page.toString()
+        if (seededPage == uiState.page || uiState.rows.isEmpty()) return@LaunchedEffect
+        seededPage = uiState.page
+        viewModel.defaultExpandedIds.forEach { id ->
+            if (uiState.rows.any { row -> row.entry.id == id }) {
+                openReleases[id] = Unit
+                viewModel.ensureDetail(id)
+            }
+        }
+    }
 
     AppPageScaffold(
         title = uiState.repositoryLabel.ifBlank { stringResource(R.string.github_release_page_title) },
@@ -99,96 +154,144 @@ internal fun GitHubReleaseListPage(
                 backdrop = pageBackdrop,
             )
         },
+        actions = {
+            GitHubReleasePageJumpField(
+                value = pageInput,
+                onValueChange = { text -> pageInput = text.filter(Char::isDigit).take(4) },
+                onSubmit = {
+                    pageInput.toIntOrNull()?.let(viewModel::jumpToPage)
+                },
+            )
+        },
     ) { innerPadding ->
-        AppPageLazyColumn(
-            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            topExtra = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-        ) {
-            when {
-                uiState.unsupported ->
-                    item(key = "release-unsupported") {
-                        GitHubReleaseNotice(text = stringResource(R.string.github_release_unsupported))
-                    }
-
-                uiState.loading && uiState.entries.isEmpty() ->
-                    item(key = "release-loading") {
-                        GitHubReleaseNotice(text = stringResource(R.string.github_release_loading))
-                    }
-
-                uiState.errorMessage.isNotBlank() && uiState.entries.isEmpty() ->
-                    item(key = "release-error") {
-                        GitHubReleaseNotice(
-                            text =
-                                stringResource(
-                                    R.string.github_release_load_failed_format,
-                                    uiState.errorMessage,
-                                ),
+        val listTopPadding = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap
+        val edgeStackState = rememberAppEdgeStackState(stackLine = listTopPadding)
+        Box(modifier = Modifier.fillMaxSize()) {
+            AppEdgeStackKeepAlive(
+                state = edgeStackState,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
+                    AppPageLazyColumn(
+                        innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        topExtra = appEdgeStackKeepAliveTopPadding(listTopPadding),
+                        bottomExtra = AppChromeTokens.floatingBottomBarOuterHeight + 24.dp,
+                    ) {
+                        releaseListBody(
+                            uiState = uiState,
+                            openReleases = openReleases,
+                            openNotes = openNotes,
+                            closedAssets = closedAssets,
+                            onToggleRelease = { id, open ->
+                                if (open) {
+                                    openReleases[id] = Unit
+                                    viewModel.ensureDetail(id)
+                                } else {
+                                    openReleases.remove(id)
+                                }
+                            },
+                            onOpenLink = { url -> uriHandler.openUri(url) },
+                            onShare = { asset ->
+                                val send =
+                                    Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, asset.downloadUrl)
+                                    }
+                                context.startActivity(
+                                    Intent.createChooser(send, asset.name)
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            },
                         )
                     }
-
-                uiState.entries.isEmpty() ->
-                    item(key = "release-empty") {
-                        GitHubReleaseNotice(text = stringResource(R.string.github_release_empty))
-                    }
-
-                else ->
-                    itemsIndexedReleases(
-                        entries = uiState.entries,
-                        expanded = expanded,
-                        onOpenLink = { url -> uriHandler.openUri(url) },
-                    )
-            }
-
-            if (uiState.entries.isNotEmpty()) {
-                item(key = "release-pager") {
-                    GitHubReleasePager(
-                        page = uiState.page,
-                        hasPrevious = uiState.hasPreviousPage,
-                        hasNext = uiState.hasNextPage,
-                        loading = uiState.loading,
-                        onPrevious = viewModel::openPreviousPage,
-                        onNext = viewModel::openNextPage,
-                    )
                 }
             }
+            GitHubReleasePagerDock(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                backdrop = pageBackdrop,
+                canGoFirst = uiState.hasPreviousPage,
+                canGoPrevious = uiState.hasPreviousPage,
+                canGoNext = uiState.hasNextPage,
+                loading = uiState.loading,
+                onFirst = viewModel::openFirstPage,
+                onPrevious = viewModel::openPreviousPage,
+                onNext = viewModel::openNextPage,
+            )
         }
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.itemsIndexedReleases(
-    entries: List<GitHubReleaseListEntry>,
-    expanded: MutableMap<String, Unit>,
+private fun LazyListScope.releaseListBody(
+    uiState: GitHubReleaseListUiState,
+    openReleases: MutableMap<String, Unit>,
+    openNotes: MutableMap<String, Unit>,
+    closedAssets: MutableMap<String, Unit>,
+    onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
+    onShare: (GitHubReleaseAssetFile) -> Unit,
 ) {
-    items(
-        count = entries.size,
-        key = { index -> entries[index].id },
-        contentType = { "github_release" },
-    ) { index ->
-        val entry = entries[index]
-        GitHubReleaseCard(
-            entry = entry,
-            expanded = expanded.containsKey(entry.id),
-            onExpandedChange = { open ->
-                if (open) expanded[entry.id] = Unit else expanded.remove(entry.id)
-            },
-            onOpenLink = onOpenLink,
-            // The profile journey's handle on a release card; the first one is enough.
-            cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
-        )
+    when {
+        uiState.unsupported -> item(key = "release-unsupported") {
+            GitHubReleaseNotice(textRes = R.string.github_release_unsupported)
+        }
+
+        uiState.loading && uiState.rows.isEmpty() -> item(key = "release-loading") {
+            GitHubReleaseNotice(textRes = R.string.github_release_loading)
+        }
+
+        uiState.errorMessage.isNotBlank() && uiState.rows.isEmpty() -> item(key = "release-error") {
+            GitHubReleaseNotice(
+                text = stringResource(R.string.github_release_load_failed_format, uiState.errorMessage),
+            )
+        }
+
+        uiState.rows.isEmpty() -> item(key = "release-empty") {
+            GitHubReleaseNotice(textRes = R.string.github_release_empty)
+        }
+
+        else -> items(
+            count = uiState.rows.size,
+            key = { index -> uiState.rows[index].entry.id },
+            contentType = { "github_release" },
+        ) { index ->
+            val row = uiState.rows[index]
+            GitHubReleaseCard(
+                row = row,
+                expanded = openReleases.containsKey(row.entry.id),
+                onExpandedChange = { open -> onToggleRelease(row.entry.id, open) },
+                notesExpanded = openNotes.containsKey(row.entry.id),
+                onNotesExpandedChange = { open ->
+                    if (open) openNotes[row.entry.id] = Unit else openNotes.remove(row.entry.id)
+                },
+                assetsExpanded = !closedAssets.containsKey(row.entry.id),
+                onAssetsExpandedChange = { open ->
+                    if (open) closedAssets.remove(row.entry.id) else closedAssets[row.entry.id] = Unit
+                },
+                onOpenLink = onOpenLink,
+                onShare = onShare,
+                cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
+            )
+        }
     }
 }
 
 @Composable
 private fun GitHubReleaseCard(
-    entry: GitHubReleaseListEntry,
+    row: GitHubReleaseRow,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    notesExpanded: Boolean,
+    onNotesExpandedChange: (Boolean) -> Unit,
+    assetsExpanded: Boolean,
+    onAssetsExpandedChange: (Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
+    onShare: (GitHubReleaseAssetFile) -> Unit,
     cardTestTag: String?,
 ) {
+    val entry = row.entry
+    val notes = row.detail?.releaseNotesBody?.takeIf(String::isNotBlank) ?: entry.bodyMarkdown
     AppLiquidAccordionCard(
         backdrop = null,
         title = entry.displayName,
@@ -210,35 +313,91 @@ private fun GitHubReleaseCard(
                 )
             }
             entry.publishedAtMillis?.let { millis ->
-                GitHubReleasePill(label = formatReleaseDate(millis), color = AppStatusColors.Cached)
+                GitHubReleasePill(
+                    label = releasedLabel(millis),
+                    color = AppStatusColors.Cached,
+                )
             }
         },
     ) {
-        GitHubReleaseFact(
-            label = stringResource(R.string.github_release_tag_label),
-            value = entry.tagName,
-        )
+        // Tag and commit identify the build; the name often does not. A CI pre-release keeps one name
+        // and moves its tag every push, and the commit is what makes a pre-release comparable to latest.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            GitHubReleasePill(label = entry.tagName, color = MiuixTheme.colorScheme.primary)
+            row.detail?.shortCommitSha?.takeIf(String::isNotBlank)?.let { sha ->
+                GitHubReleasePill(label = sha, color = AppStatusColors.Refreshing)
+            }
+        }
         if (entry.authorName.isNotBlank()) {
             GitHubReleaseFact(
                 label = stringResource(R.string.github_release_author_label),
                 value = entry.authorName,
             )
         }
-        GitHubReleaseFact(
-            label = stringResource(R.string.github_release_assets_label),
-            value = entry.assetCount.toString(),
-        )
-        if (entry.bodyMarkdown.isNotBlank()) {
-            AppMarkdownContent(
-                markdown = entry.bodyMarkdown,
-                titleColor = MiuixTheme.colorScheme.onBackground,
-                subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                accentColor = MiuixTheme.colorScheme.primary,
-                codeContainerColor = MiuixTheme.colorScheme.surfaceContainer,
-                sourceKey = entry.id,
-                onOpenLink = onOpenLink,
-            )
+
+        GitHubReleaseNestedCard(
+            title = stringResource(R.string.github_release_notes_section),
+            expanded = notesExpanded,
+            onExpandedChange = onNotesExpandedChange,
+        ) {
+            if (notes.isBlank()) {
+                Text(
+                    text = stringResource(R.string.github_release_notes_empty),
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                )
+            } else {
+                AppMarkdownContent(
+                    markdown = notes,
+                    titleColor = MiuixTheme.colorScheme.onBackground,
+                    subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    accentColor = MiuixTheme.colorScheme.primary,
+                    codeContainerColor = MiuixTheme.colorScheme.surfaceContainer,
+                    sourceKey = entry.id,
+                    onOpenLink = onOpenLink,
+                )
+            }
         }
+
+        GitHubReleaseNestedCard(
+            title = stringResource(R.string.github_release_assets_section),
+            trailing = row.detail?.assets?.size?.toString()
+                ?: entry.assetCount.takeIf { count -> count > 0 }?.toString().orEmpty(),
+            expanded = assetsExpanded,
+            onExpandedChange = onAssetsExpandedChange,
+        ) {
+            when {
+                row.detailLoading ->
+                    Text(
+                        text = stringResource(R.string.github_release_assets_loading),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    )
+
+                row.detailError.isNotBlank() ->
+                    Text(
+                        text = row.detailError,
+                        color = AppStatusColors.Failed,
+                    )
+
+                row.detail?.assets.isNullOrEmpty() ->
+                    Text(
+                        text = stringResource(R.string.github_release_assets_empty),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    )
+
+                else -> row.detail?.assets?.forEach { asset ->
+                    GitHubReleaseAssetRow(
+                        asset = asset,
+                        onOpenLink = onOpenLink,
+                        onShare = onShare,
+                    )
+                }
+            }
+        }
+
         AppLiquidTextButton(
             modifier = Modifier.fillMaxWidth(),
             backdrop = null,
@@ -254,53 +413,230 @@ private fun GitHubReleaseCard(
 }
 
 @Composable
-private fun GitHubReleasePager(
-    page: Int,
-    hasPrevious: Boolean,
-    hasNext: Boolean,
+private fun GitHubReleaseAssetRow(
+    asset: GitHubReleaseAssetFile,
+    onOpenLink: (String) -> Unit,
+    onShare: (GitHubReleaseAssetFile) -> Unit,
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (asset.name.endsWith(".apk", ignoreCase = true)) {
+                GitHubReleasePill(label = "APK", color = AppStatusColors.Fresh)
+            }
+            Text(
+                modifier = Modifier.weight(1f),
+                text = asset.name,
+                color = MiuixTheme.colorScheme.onBackground,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = formatAssetSize(asset.sizeBytes, context),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                maxLines = 1,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AppLiquidTextButton(
+                modifier = Modifier.weight(1f),
+                backdrop = null,
+                text = stringResource(R.string.github_release_asset_download),
+                textColor = MiuixTheme.colorScheme.primary,
+                containerColor = MiuixTheme.colorScheme.primary,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                onClick = { onOpenLink(asset.downloadUrl) },
+            )
+            AppLiquidTextButton(
+                modifier = Modifier.weight(1f),
+                backdrop = null,
+                text = stringResource(R.string.github_release_asset_share),
+                textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                onClick = { onShare(asset) },
+            )
+        }
+    }
+}
+
+/**
+ * A card inside a card, drawn flat rather than as a second glass surface.
+ *
+ * Its parent's fill is uniform under it, so a blur there returns the same field for the price of an
+ * offscreen layer — the measurement the BA office cards were rebuilt around.
+ */
+@Composable
+private fun GitHubReleaseNestedCard(
+    title: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    trailing: String = "",
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .appSquircleBackground(
+                    MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.42f),
+                    14.dp,
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { onExpandedChange(!expanded) },
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = title,
+                color = MiuixTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+            if (trailing.isNotBlank()) {
+                Text(text = trailing, color = MiuixTheme.colorScheme.onBackgroundVariant)
+            }
+            Icon(
+                modifier = Modifier.size(18.dp),
+                imageVector =
+                    if (expanded) {
+                        appLucideChevronUpIcon()
+                    } else {
+                        appLucideChevronDownIcon()
+                    },
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onBackgroundVariant,
+            )
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun GitHubReleasePagerDock(
+    modifier: Modifier,
+    backdrop: com.kyant.backdrop.Backdrop?,
+    canGoFirst: Boolean,
+    canGoPrevious: Boolean,
+    canGoNext: Boolean,
     loading: Boolean,
+    onFirst: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.padding(bottom = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppLiquidTextButton(
-            modifier = Modifier.weight(1f),
-            backdrop = null,
-            text = stringResource(R.string.github_release_previous_page),
-            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-            containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-            variant = GlassVariant.SheetAction,
-            enabled = hasPrevious && !loading,
-            textMaxLines = 1,
+        CompactBottomBarDock(
+            backdrop = backdrop,
+            enabled = canGoFirst && !loading,
+            onClick = onFirst,
+        ) {
+            GitHubReleaseDockIcon(appLucideSkipBackIcon(), canGoFirst && !loading)
+        }
+        CompactBottomBarDock(
+            backdrop = backdrop,
+            enabled = canGoPrevious && !loading,
             onClick = onPrevious,
-        )
-        Text(
-            text = stringResource(R.string.github_release_page_indicator_format, page),
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-        )
-        AppLiquidTextButton(
-            modifier = Modifier.weight(1f).testTag(KeiOsTestTags.GitHubReleaseNextPageButton),
-            backdrop = null,
-            text = stringResource(R.string.github_release_next_page),
-            textColor = MiuixTheme.colorScheme.primary,
-            containerColor = MiuixTheme.colorScheme.primary,
-            variant = GlassVariant.SheetAction,
-            enabled = hasNext && !loading,
-            textMaxLines = 1,
+        ) {
+            GitHubReleaseDockIcon(appLucideChevronLeftIcon(), canGoPrevious && !loading)
+        }
+        CompactBottomBarDock(
+            backdrop = backdrop,
+            enabled = canGoNext && !loading,
             onClick = onNext,
+            modifier = Modifier.testTag(KeiOsTestTags.GitHubReleaseNextPageButton),
+        ) {
+            GitHubReleaseDockIcon(appLucideChevronRightIcon(), canGoNext && !loading)
+        }
+    }
+}
+
+@Composable
+private fun GitHubReleaseDockIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean,
+) {
+    Icon(
+        modifier = Modifier.size(22.dp),
+        imageVector = icon,
+        contentDescription = null,
+        tint =
+            if (enabled) {
+                MiuixTheme.colorScheme.primary
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.4f)
+            },
+    )
+}
+
+/** The page number, editable, so a repository with a long history can be jumped through. */
+@Composable
+private fun GitHubReleasePageJumpField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .width(64.dp)
+                .appSquircleBackground(
+                    MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
+                    14.dp,
+                )
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle =
+                TextStyle(
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                ),
+            keyboardOptions =
+                KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
+            keyboardActions = KeyboardActions(onGo = { onSubmit() }),
+            modifier = Modifier.fillMaxWidth().testTag(KeiOsTestTags.GitHubReleasePageJumpField),
         )
     }
 }
 
 @Composable
-private fun GitHubReleaseNotice(text: String) {
+private fun GitHubReleaseNotice(
+    text: String? = null,
+    textRes: Int? = null,
+) {
     Text(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 24.dp),
-        text = text,
+        text = text ?: textRes?.let { res -> stringResource(res) }.orEmpty(),
         color = MiuixTheme.colorScheme.onBackgroundVariant,
     )
 }
@@ -328,13 +664,13 @@ private fun GitHubReleaseFact(
 /**
  * Flat rather than glass, the way the BA slot cards' pills are.
  *
- * A pill sits on the card's own surface, where a blur has a uniform field to work on and so returns it —
- * measured on the BA page as the same pixels for an offscreen layer per pill.
+ * A pill sits on the card's own uniform fill, where a blur returns that fill — the same pixels for the
+ * price of an offscreen layer.
  */
 @Composable
 private fun GitHubReleasePill(
     label: String,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
 ) {
     CompositionLocalProvider(LocalLiquidParentBackdrop provides null) {
         StatusPill(
@@ -349,9 +685,30 @@ private fun GitHubReleasePill(
 }
 
 /** GitHub marks a pre-release amber; the app already uses this exact amber for its warnings. */
-private val GitHubReleasePreReleaseColor = androidx.compose.ui.graphics.Color(0xFFF59E0B)
+private val GitHubReleasePreReleaseColor = Color(0xFFF59E0B)
 
-private fun formatReleaseDate(millis: Long): String =
+/**
+ * "3 days ago" while that still means something, then a short date.
+ *
+ * A release from last year does not become more legible as "412 days ago", and the collapsed card has
+ * room for one short label either way.
+ */
+@Composable
+private fun releasedLabel(millis: Long): String {
+    val now = System.currentTimeMillis()
+    val elapsed = (now - millis).coerceAtLeast(0L)
+    val days = TimeUnit.MILLISECONDS.toDays(elapsed)
+    val hours = TimeUnit.MILLISECONDS.toHours(elapsed)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(elapsed)
+    return when {
+        minutes < 60L -> stringResource(R.string.github_release_time_minutes_format, minutes.coerceAtLeast(1L))
+        hours < 24L -> stringResource(R.string.github_release_time_hours_format, hours)
+        days <= 30L -> stringResource(R.string.github_release_time_days_format, days)
+        else -> shortReleaseDate(millis)
+    }
+}
+
+private fun shortReleaseDate(millis: Long): String =
     runCatching {
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(millis))
+        SimpleDateFormat("yy-MM-dd", Locale.getDefault()).format(Date(millis))
     }.getOrDefault("")

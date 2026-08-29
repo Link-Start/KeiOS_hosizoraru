@@ -1789,4 +1789,14 @@
     <string name="github_release_previous_page">上一页</string>
     <string name="github_release_next_page">下一页</string>
     <string name="github_release_page_indicator_format">第 %1$d 页</string>
+    <string name="github_release_notes_section">发行日志</string>
+    <string name="github_release_notes_empty">该发行版没有说明</string>
+    <string name="github_release_assets_section">文件</string>
+    <string name="github_release_assets_loading">正在加载文件…</string>
+    <string name="github_release_assets_empty">该发行版没有文件</string>
+    <string name="github_release_asset_download">下载</string>
+    <string name="github_release_asset_share">分享</string>
+    <string name="github_release_time_minutes_format">%1$d 分钟前</string>
+    <string name="github_release_time_hours_format">%1$d 小时前</string>
+    <string name="github_release_time_days_format">%1$d 天前</string>
 </resources>

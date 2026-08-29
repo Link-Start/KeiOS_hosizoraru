@@ -1785,4 +1785,14 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_release_previous_page">前へ</string>
     <string name="github_release_next_page">次へ</string>
     <string name="github_release_page_indicator_format">%1$d ページ目</string>
+    <string name="github_release_notes_section">リリースノート</string>
+    <string name="github_release_notes_empty">このリリースには説明がありません</string>
+    <string name="github_release_assets_section">ファイル</string>
+    <string name="github_release_assets_loading">ファイルを読み込み中…</string>
+    <string name="github_release_assets_empty">このリリースにはファイルがありません</string>
+    <string name="github_release_asset_download">ダウンロード</string>
+    <string name="github_release_asset_share">共有</string>
+    <string name="github_release_time_minutes_format">%1$d 分前</string>
+    <string name="github_release_time_hours_format">%1$d 時間前</string>
+    <string name="github_release_time_days_format">%1$d 日前</string>
 </resources>

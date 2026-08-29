@@ -1795,4 +1795,5 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_release_time_minutes_format">%1$d 分前</string>
     <string name="github_release_time_hours_format">%1$d 時間前</string>
     <string name="github_release_time_days_format">%1$d 日前</string>
+    <string name="github_release_first_page">最初のページ</string>
 </resources>

@@ -3,6 +3,8 @@ package os.kei.ui.page.main.github.release
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,15 +65,17 @@ import os.kei.ui.page.main.os.appLucideChevronLeftIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideBackIcon
+import androidx.compose.ui.draw.clip
+import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
+import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
@@ -213,16 +217,16 @@ internal fun GitHubReleaseListPage(
                     }
                 }
             }
-            GitHubReleasePagerDock(
-                modifier = Modifier.align(Alignment.BottomCenter),
+            GitHubReleasePagerBar(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
                 backdrop = pageBackdrop,
-                canGoFirst = uiState.hasPreviousPage,
                 canGoPrevious = uiState.hasPreviousPage,
                 canGoNext = uiState.hasNextPage,
                 loading = uiState.loading,
                 onFirst = viewModel::openFirstPage,
                 onPrevious = viewModel::openPreviousPage,
                 onNext = viewModel::openNextPage,
+                onRefresh = viewModel::retry,
             )
         }
     }
@@ -462,6 +466,14 @@ private fun GitHubReleaseNestedCard(
         subtitle = "",
         expanded = expanded,
         onExpandedChange = onExpandedChange,
+        // A step away from the parent, not a heavier coat of the same paint. `surfaceContainer` is
+        // near-white in light, so stacking it on a white card renders nothing — the section read as a
+        // heading with a chevron. Veiling with the foreground colour guarantees a visible edge in both
+        // themes, which is what makes it a card.
+        containerColor =
+            MiuixTheme.colorScheme.onBackground.copy(
+                alpha = if (isAppInDarkTheme()) 0.10f else 0.05f,
+            ),
         titleAccessory =
             if (trailing.isNotBlank()) {
                 { GitHubReleasePill(label = trailing, color = MiuixTheme.colorScheme.onBackgroundVariant) }
@@ -472,45 +484,79 @@ private fun GitHubReleaseNestedCard(
     )
 }
 
+/**
+ * One floating Liquid surface holding the page controls, rather than three separate circles.
+ *
+ * Three docks in a row are three buttons; a bar is a single surface the controls sit inside, which is
+ * what every other page's bottom chrome is.
+ */
 @Composable
-private fun GitHubReleasePagerDock(
+private fun GitHubReleasePagerBar(
     modifier: Modifier,
     backdrop: com.kyant.backdrop.Backdrop?,
-    canGoFirst: Boolean,
     canGoPrevious: Boolean,
     canGoNext: Boolean,
     loading: Boolean,
     onFirst: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
-    Row(
-        modifier = modifier.padding(bottom = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    AppLiquidFloatingSurface(
+        modifier = modifier.height(AppChromeTokens.floatingBottomBarOuterHeight),
+        backdrop = backdrop,
     ) {
-        CompactBottomBarDock(
-            backdrop = backdrop,
-            enabled = canGoFirst && !loading,
-            onClick = onFirst,
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            GitHubReleaseDockIcon(appLucideSkipBackIcon(), canGoFirst && !loading)
+            GitHubReleaseBarAction(
+                icon = appLucideSkipBackIcon(),
+                enabled = canGoPrevious && !loading,
+                contentDescription = stringResource(R.string.github_release_first_page),
+                onClick = onFirst,
+            )
+            GitHubReleaseBarAction(
+                icon = appLucideChevronLeftIcon(),
+                enabled = canGoPrevious && !loading,
+                contentDescription = stringResource(R.string.github_release_previous_page),
+                onClick = onPrevious,
+            )
+            GitHubReleaseBarAction(
+                icon = appLucideRefreshIcon(),
+                enabled = !loading,
+                contentDescription = stringResource(R.string.common_refresh),
+                onClick = onRefresh,
+            )
+            GitHubReleaseBarAction(
+                icon = appLucideChevronRightIcon(),
+                enabled = canGoNext && !loading,
+                contentDescription = stringResource(R.string.github_release_next_page),
+                onClick = onNext,
+                modifier = Modifier.testTag(KeiOsTestTags.GitHubReleaseNextPageButton),
+            )
         }
-        CompactBottomBarDock(
-            backdrop = backdrop,
-            enabled = canGoPrevious && !loading,
-            onClick = onPrevious,
-        ) {
-            GitHubReleaseDockIcon(appLucideChevronLeftIcon(), canGoPrevious && !loading)
-        }
-        CompactBottomBarDock(
-            backdrop = backdrop,
-            enabled = canGoNext && !loading,
-            onClick = onNext,
-            modifier = Modifier.testTag(KeiOsTestTags.GitHubReleaseNextPageButton),
-        ) {
-            GitHubReleaseDockIcon(appLucideChevronRightIcon(), canGoNext && !loading)
-        }
+    }
+}
+
+@Composable
+private fun GitHubReleaseBarAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        GitHubReleaseDockIcon(icon, enabled, contentDescription)
     }
 }
 
@@ -518,11 +564,12 @@ private fun GitHubReleasePagerDock(
 private fun GitHubReleaseDockIcon(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     enabled: Boolean,
+    contentDescription: String? = null,
 ) {
     Icon(
         modifier = Modifier.size(22.dp),
         imageVector = icon,
-        contentDescription = null,
+        contentDescription = contentDescription,
         tint =
             if (enabled) {
                 MiuixTheme.colorScheme.primary

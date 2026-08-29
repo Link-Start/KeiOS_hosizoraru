@@ -1799,4 +1799,5 @@
     <string name="github_release_time_minutes_format">%1$d 分钟前</string>
     <string name="github_release_time_hours_format">%1$d 小时前</string>
     <string name="github_release_time_days_format">%1$d 天前</string>
+    <string name="github_release_first_page">第一页</string>
 </resources>

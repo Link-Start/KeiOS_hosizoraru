@@ -408,6 +408,34 @@ android {
             buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
         }
 
+        /**
+         * A release build that installs *beside* the real one, for A/B measurement.
+         *
+         * Frame-time work means building the same app with one thing changed and comparing. Doing
+         * that by overwriting `os.kei` means the device only ever holds one of the two, the previous
+         * build has to be rebuilt to go back, and — the part that actually caused trouble — a
+         * diagnostic with the glass switched off can be left sitting on the device looking like a
+         * shipped regression.
+         *
+         * `.diag` keeps both installed at once, and `src/releaseDiagnostic/res` overrides the launcher
+         * label so they are told apart at a glance — a `resValue` would collide with the `app_name`
+         * that `src/main` already declares. Identical to release otherwise, R8 included, so the numbers are comparable:
+         * a diagnostic that optimises differently from release measures the wrong app.
+         */
+        create("releaseDiagnostic") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".diag"
+            versionNameSuffix = "-diag"
+            signingConfig =
+                if (releaseSigningConfigured) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
+            matchingFallbacks += listOf("release")
+            buildConfigField("String", "DEFAULT_LOG_LEVEL_ID", "\"off\"")
+        }
+
         create("benchmark") {
             initWith(getByName("release"))
             signingConfig =
@@ -484,6 +512,13 @@ androidComponents {
         variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
     }
     onVariants(selector().withBuildType("benchmark")) { variant ->
+        variant.sources.baselineProfiles?.addStaticSourceDirectory("src/release/generated/baselineProfiles")
+    }
+    // The diagnostic build has to carry the same ART profile as release, or it is not the app being
+    // measured. Without this it looked for `src/releaseDiagnostic/generated`, found nothing, and
+    // shipped unprofiled — which measured the BA page ~9ms of RenderThread slower than release built
+    // from the identical source.
+    onVariants(selector().withBuildType("releaseDiagnostic")) { variant ->
         variant.sources.baselineProfiles?.addStaticSourceDirectory("src/release/generated/baselineProfiles")
     }
     onVariants(selector().withBuildType("benchmarkRelease")) { variant ->

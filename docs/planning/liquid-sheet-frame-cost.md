@@ -476,3 +476,35 @@ wrong fix.
   the signature of large layers rather than many. The per-control model is dead twice over.
 - **`GlassEffectRuntime.reducedProgress`**, still inert app-wide, and blur radius measured free, so
   driving it would buy nothing.
+
+---
+
+# Measuring an A/B without overwriting the app
+
+Frame-time work is two builds differing in one thing. Overwriting `os.kei` to compare them is worse
+than it sounds: the device only ever holds one of the pair, going back means rebuilding, and a
+diagnostic with the glass switched off can be left sitting on the device looking exactly like a
+shipped regression. That happened.
+
+`:app:installReleaseDiagnostic` installs `os.kei.diag` **beside** `os.kei`, labelled "KeiOS diag" on
+the launcher. It is `initWith(release)` — R8 and all — because a diagnostic that optimises
+differently measures a different app.
+
+Two things had to be fixed before the pair agreed, and both are worth knowing because either one
+silently biases every number:
+
+1. **The diagnostic shipped without a baseline profile.** It looked for
+   `src/releaseDiagnostic/generated/baselineProfiles`, which does not exist, so it was unprofiled
+   against a profiled release. Measured the BA page ~9ms of RenderThread slower from identical
+   source. Now wired to the same `src/release/generated/baselineProfiles`.
+2. **A fresh install has empty storage.** On a data-driven page that is not the same screen — BA with
+   no account configured renders a different card list. `scripts/perf/clone_app_data.sh` copies one
+   build's data onto the other (needs root, so emulator only) and fixes ownership and SELinux labels
+   after the copy.
+
+With both in place the two builds agree from identical source: BA RT 39.99 against 39.48, total
+132.73 against 129.49.
+
+**Absolute numbers drift between sessions** — the same BA journey measured 32.1ms of RenderThread
+earlier in the day and 39-40ms after two more apps were installed on the AVD. Only A/B pairs measured
+back to back are worth comparing, which is the other reason to have both builds resident at once.

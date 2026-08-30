@@ -215,6 +215,13 @@ class BaselineProfileGenerator {
             waitForTestTag(GITHUB_RELEASE_PAGE_ROOT, timeoutMs = 20_000)
             device.waitForIdle()
 
+            // Waited for before it is scrolled to, unlike the BA cards [scrollTestTagIntoReach] was
+            // written for. Those exist only once a scroll composes them; these arrive over the network
+            // and land at the top of the list, so scrolling immediately walks an empty list fourteen
+            // times and gives up — which is how a capture died three quarters of the way through on a
+            // slow fetch, taking every journey after it with it.
+            waitForTestTag(GITHUB_RELEASE_CARD_FIRST, timeoutMs = 45_000)
+
             // The first card opens itself, so this walks the other direction first and back, which is
             // the accordion exit the page otherwise never plays.
             scrollTestTagIntoReach(GITHUB_RELEASE_CARD_FIRST)
@@ -544,9 +551,9 @@ class BaselineProfileGenerator {
             // The catalog's own dock: memory lobby, student BGM, favourite BGM. Tapped rather than
             // swiped for the same reason as the guide's tabs — it is a bar, and a horizontal swipe over
             // the content leaves the page exactly where it was.
-            clickTestTag(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
+            clickDockTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
             flingVisibleScrollable(times = 2)
-            clickTestTag(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
+            clickDockTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
             flingVisibleScrollable(times = 1)
 
             // Playing a track, which is the only thing that loads androidx.media3 at all. The BGM
@@ -561,9 +568,9 @@ class BaselineProfileGenerator {
                 flingVisibleScrollable(times = 2)
             }
 
-            clickTestTag(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+            clickDockTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
             flingVisibleScrollable(times = 1)
-            clickTestTag(BA_GUIDE_CATALOG_DOCK_STUDENT)
+            clickDockTab(BA_GUIDE_CATALOG_DOCK_STUDENT)
 
             device.pressBack()
             waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
@@ -1094,6 +1101,28 @@ private fun MacrobenchmarkScope.waitForOptionalTestTag(
     device.waitForIdle()
     return arrived
 }
+
+/**
+ * Taps a catalog dock tab, bringing the dock back if a scroll has put it away.
+ *
+ * The dock is an `AnimatedCompactBottomBar`: scrolling down collapses it to a pill and the expanded
+ * tabs leave the composition entirely, tags and all. So a journey that flings one tab's list and then
+ * reaches for the next tab finds nothing — measured on the AVD as the tag count going 1, 0, then 1
+ * again on the scroll back. Scrolling back is what restores it, so that is what this does.
+ */
+private fun MacrobenchmarkScope.clickDockTab(tag: String) {
+    repeat(DOCK_REEXPAND_ATTEMPTS) {
+        if (device.findObject(testTagSelector(tag)) != null) {
+            clickTestTag(tag)
+            return
+        }
+        nudgeVisibleScrollable(forward = false)
+    }
+    error("Unable to bring dock tab testTag=$tag back into view in ${targetAppId()}")
+}
+
+/** Enough backward nudges to undo the flings a tab's own step makes, with room to spare. */
+private const val DOCK_REEXPAND_ATTEMPTS = 8
 
 /** Dismisses an open overlay with back, and waits out its exit animation rather than a fixed delay. */
 private fun MacrobenchmarkScope.dismissTheOpenOverlay(panelTag: String) {

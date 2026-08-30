@@ -145,20 +145,22 @@ per-journey file is produced. Only `generateBaselineProfile` tells you what was 
 
 ## Deliberately not covered
 
-- **`debug` — the component lab.** Attempted, and still uncovered: the journey exists, walks About's
-  lab tab, and comes back with zero `os/kei/ui/page/main/debug` rules because the lab window does not
-  open during a capture. It opens reliably when the same steps are driven by hand on the same build,
-  which is what makes it hard: at the point of failure the About page is up, its tab bar is up, and
-  the lab row is not composed, so the pager's tab state is lost between finding the row and tapping
-  it. Five attempts, four wrong theories — a collapsing bar, tap position, pager settling, tab state.
-  The journey is deliberately best-effort so it cannot cost a capture; About's lab tab is still
-  walked, which is real coverage.
-
-  Worth weighing before spending more on it: this is a developer catalogue almost no user opens, and
-  a profile pays for what users actually do. It would be the largest single addition for the least
-  benefit even if it worked.
-- ~~`github.history`'s other tabs~~ — done. All four categories are walked and the journey collects
-  516 rules across `github/history`.
+- **`debug` — the component lab — covered, but intermittently.** It contributes 463 rules, the
+  Liquid catalogue included, so both windows opened and the whole sample list composed. That is one
+  capture. The capture before it collected zero from the same journey, so re-selecting About's lab
+  tab on each attempt improved the odds rather than fixing a cause: at the failure the About page was
+  up, its tab bar was up, and the lab row was not composed, meaning the pager's tab state is lost
+  between finding the row and tapping it, and the same steps by hand on the same build open it every
+  time. Five attempts, four wrong theories — a collapsing bar, tap position, pager settling, tab
+  state. The journey is best-effort by design and cannot cost a capture, so an occasional miss shows
+  up as these rules going absent rather than as a failure. Check for it before trusting a release
+  profile to carry them.
+- **`github.history`'s tabs — walked, but their cards do not compose.** All four categories are
+  selected now and the package collects 549 rules, and yet `GitHubAppInstallHistoryCards`,
+  `GitHubRefreshHistoryDiagnostics` and `GitHubTrackChangeHistoryCards` still carry none. Nothing is
+  wrong with the journey: a capture installs the app fresh, and those three tabs render history the
+  app accumulates over time, so on a clean device they are empty states. Covering the cards means
+  seeding history before the journey runs, which is a fixture problem rather than a tagging one.
 - **The BA account sheet**, which does not open under a synthetic tap on its toolbar action. Noted
   on `presentationChromeInteractions` and still true.
 - **The feedback window** (`feedback`, 28 KB). It is `exported="false"`, and `am start` runs as the

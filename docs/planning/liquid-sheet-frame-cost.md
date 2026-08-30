@@ -601,3 +601,31 @@ regression, no gain. Taken to stay current, not for performance.
 One incidental difference worth noting: the official Glass Slider tutorial has the thumb sample
 `backdrop = trackBackdrop` alone, where `AppSwitch` samples `rememberCombinedBackdrop(backdrop,
 trackBackdrop)`. Measured as free either way, so this is a note rather than a finding.
+
+## `rememberCanvasBackdrop` was already the answer, and it is already applied
+
+Not a new API — it exists in 2.0.0 and `MainPageBackdropSet` has used it all along, as
+`contentMaterial`: `rememberCanvasBackdrop { drawRect(cardMaterialColor) }`, with the reasoning and
+the measurement recorded there. Composing the scene under a page's cards instead "took the 1% low
+from 13 fps to 6". BA, MCP, GitHub and OS all pass `backdrops.contentMaterial` to their content,
+which is why MCP sits at RT 4.0 and GitHub at 3.4.
+
+The guide catalog does not: `rememberBaGuideCatalogSceneBackdrop()` is a plain `rememberLayerBackdrop`,
+so the BGM track chunks sample a live screen-sized scene layer rather than a flat material. That
+looked like the missing application of an established in-house pattern.
+
+Tested, and it is not:
+
+| BGM track list | total p50 | RT p50 | sync p50 |
+|---|---|---|---|
+| as shipped (live scene layer) | 132.9 | 36.3 | 10.1 |
+| chunk samples a canvas material instead | 149.4 | 34.5 | 13.3 |
+
+No gain — worse on total and on sync. The source a `drawBackdrop` samples is cheap either way; what
+costs is rasterizing its own effect layer, and swapping a live layer for a flat colour does not
+change the size of that layer. Consistent with every other negative result here: blur radius, lens
+mode, chunk size and backdrop source are all free, and only the existence and area of the layer
+matter.
+
+That is now three tested hypotheses for the BGM list — aberration (~12%, appearance cost), chunk size
+(nothing), backdrop source (nothing) — and its 13ms `sync` is still unexplained.

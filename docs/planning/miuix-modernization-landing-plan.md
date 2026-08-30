@@ -64,6 +64,7 @@
 | 2026-06-30 | Verification | Passed `:ui-liquid-glass:compileDebugKotlin`, focused app back tests, `:ui-liquid-glass:testDebugUnitTest`, `:app:compileReleaseArtProfile`, and `git diff --check`. Removed stale Squircle SDF entries from release baseline profiles. |
 | 2026-08-16 | Upgrade | `0.9.3-c6d7d6dd-SNAPSHOT` → `0.9.4-4a6b750b-SNAPSHOT`. See [Snapshot upgrade: 0.9.4](#snapshot-upgrade-094). |
 | 2026-08-24 | Upgrade and adoption | `0.9.4-4a6b750b-SNAPSHOT` → `0.9.4-4f86de92-SNAPSHOT`; adopted MIUIX floating-toolbar ownership for the phone main navigation. See [Snapshot follow-up: 4f86de92](#snapshot-follow-up-4f86de92). |
+| 2026-08-31 | Upgrade | `0.9.4-4f86de92-SNAPSHOT` → `0.9.4-7cc339c2-SNAPSHOT`; no library source moved, so nothing to adapt. See [Snapshot follow-up: 7cc339c2](#snapshot-follow-up-7cc339c2). |
 
 <a id="snapshot-upgrade-094"></a>
 
@@ -162,3 +163,63 @@ the established visible baseline of 8dp above a reported navigation inset and th
 - API 37 visual acceptance: 1280×2856 phone expanded navigation, OS selection, and scroll collapse passed;
   2560×1600 tablet top-tab and sidebar modes passed. The target app log stayed clear of fatal runtime and
   linkage errors through the sweep.
+<a id="snapshot-follow-up-7cc339c2"></a>
+
+## Snapshot follow-up: 0.9.4-7cc339c2-SNAPSHOT
+
+**Nothing to adapt.** All eight upstream commits between `4f86de92` (2026-08-22) and `7cc339c2`
+(2026-08-29) are Renovate dependency bumps and CI workflow edits. The compare touches six files —
+four `.github/workflows/*.yml`, `gradle/libs.versions.toml`, and `gradle/wrapper/*.properties` —
+and not one library source file.
+
+Verified against the published artifacts rather than only the compare, because the tag-to-artifact
+mapping is the part that could be wrong: the sources jars for all six modules KeiOS consumes are
+byte-identical across the two snapshots.
+
+| module | .kt files | old vs new |
+| --- | --- | --- |
+| `miuix-ui` | 86 | identical |
+| `miuix-icons` | 156 | identical |
+| `miuix-nav` | 29 | identical |
+| `miuix-blur` | 24 | identical |
+| `miuix-preference` | 19 | identical |
+| `miuix-squircle` | 7 | identical |
+
+### What actually reaches KeiOS
+
+Two transitive versions moved in the Gradle module metadata, and neither changes behaviour.
+
+`org.jetbrains.compose.foundation:foundation` **1.12.0-rc01 → 1.12.0**. Its Android variant *is* the
+androidx artifact, so this is what the catalog comment above is about, and `compose` is now declared
+at `1.12.0` to match what resolves. The two androidx AARs were unpacked and hashed file by file:
+**1984 entries each, exactly one differs** — `META-INF/androidx.compose.foundation_foundation.version`,
+the version stamp. The bytecode is identical, so rc01 to final is a re-stamp and carries no runtime
+change. This is also why `:ui-liquid-glass:compileDebugKotlin` stayed `UP-TO-DATE` through the bump:
+Gradle's compile-classpath normalisation saw an unchanged ABI, correctly.
+
+`com.materialkolor:material-color-utilities` **5.0.0 → 5.0.1**. The release headline — "stop
+overriding consumer Material3 version on Android" — does not apply here twice over: the utilities
+module never declared a Material3 dependency, and KeiOS has no androidx Material3 on its classpath at
+all. Its only metadata change is `kotlin-stdlib` 2.4.0 → 2.4.10, which the app already pins at 2.4.10.
+
+So the entire eight-commit delta lands in the APK as one changed string, `BuildConfig.COMPOSE_VERSION`,
+which the About page reads. `:app:compileDebugKotlin` recompiling while every library module stayed
+up-to-date is exactly that and nothing more.
+
+### Verification
+
+- `:app:compileDebugKotlin` and `:ui-liquid-glass:compileDebugKotlin` pass; no new warnings.
+- `:app:testDebugUnitTest` 1567 tests and `:ui-liquid-glass:testDebugUnitTest` 438 tests —
+  2005 total, 0 failures and 0 errors.
+- `:app:assembleRelease`: R8, resource optimization, Lint Vital, and ART Profile compilation passed.
+- Baseline profile freshness: this bump moves it no further. `baseline_profile_freshness.sh` does report
+  STALE, but on `GitHubStrategySheet.kt`, `AppFeatureCards.kt` and `CullWhenFullyClipped.kt` — the
+  Liquid-Glass cull work, already stale before this. No build-file change can affect that gate, which
+  compares only `src/main` runtime sources.
+- API 37 AVD visual acceptance (release APK, 1280×2856): Home, OS, MCP, GitHub and BA all render and
+  scroll. Home's `textureBlur` chip rows, the BA office cards and floating dock, the GitHub tracked card,
+  the MIUIX floating toolbar and the bottom-bar dock glass are all intact, including the dock's blur over
+  scrolled content. The log carried no `FATAL`, `NoSuchMethod`, `NoClassDefFound` or `AbstractMethodError`
+  through the sweep — the only `AndroidRuntime` lines are `uiautomator`'s own, from the dumps that drove it.
+- The one user-visible change, confirmed in the shipped artifact: `BuildConfig.COMPOSE_VERSION` is
+  `"1.12.0"`, and no `1.12.0-rc01` string survives anywhere in the release dex.

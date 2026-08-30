@@ -181,3 +181,43 @@ R8 reports as missing before minification. That flag is what turns `startup-prof
 *layout* — startup classes packed into the primary dex — and it is a cold-start win separate from
 AOT compilation. Miuix's example app enables it. Worth re-testing against a fresh capture rather
 than left as a permanent no.
+
+## Capture on the 1.5.0-rc02 toolchain (2026-08-31)
+
+Taken after the baseline profile plugin moved `1.5.0-alpha07` → `1.5.0-rc02` and the
+`androidx.benchmark` runtime was aligned to match. 36 tests, **0 failures**, 1h 21m on
+`KeiOS_API37_Validation`.
+
+| profile | added | removed | unmodified |
+| --- | --- | --- | --- |
+| `baseline-prof.txt` | 540 (0.76%) | 2063 (2.91%) | 68284 (96.33%) |
+| `startup-prof.txt` | 168 (0.70%) | 202 (0.84%) | 23709 (98.46%) |
+
+96–98% unmodified is the useful number: the new plugin and runtime produce the same profile from the
+same journeys, so the drift below is code drift, not toolchain noise.
+
+**It also closed a real gap.** The committed profile was stale on the Liquid-Glass cull work, and the
+cost was not abstract — it carried **zero** rules for `CullWhenFullyClipped`, so the cull that every
+`AppSurfaceCard` now runs on each draw was shipping uncompiled. The new capture has 13. That is
+exactly the silent failure `scripts/qa/baseline_profile_freshness.sh` was written to catch, and the
+first time the gate's value has been demonstrated rather than argued.
+
+### The adb trap this ran into first
+
+The first attempt failed with `No compatible devices connected`, which reads like a plugin
+incompatibility and is not one. The line above it is the real one:
+
+```
+Skipping device 'KeiOS_API37_Validation(AVD)': Unknown API Level
+Caused by: com.android.ddmlib.ShellCommandUnresponsiveException
+```
+
+Two adb binaries — Homebrew's `/opt/homebrew/bin/adb` and the SDK's `platform-tools/adb` — were both
+trying to own the server (`ADB server didn't ACK`), so ddmlib's property fetch timed out and AGP could
+not read the API level. Killing both and starting one from `platform-tools` fixed it: property reads
+went to 28ms and the run reported `Starting 36 tests on KeiOS_API37_Validation(AVD) - 17`. Put
+`platform-tools` first on `PATH` for a capture so Gradle and the shell share one server.
+
+Worth pairing with a second habit: that failed run's task summary still said *exit code 0*, because a
+`| tail` pipeline reports the tail's status and not Gradle's. Capture `GRADLE_EXIT=$?` before piping,
+or a failed capture reads as a successful one.

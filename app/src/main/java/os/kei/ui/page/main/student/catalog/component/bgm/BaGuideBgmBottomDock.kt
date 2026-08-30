@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,6 +48,7 @@ internal fun BaGuideBgmExpandedDock(
                 tabIndex = index,
                 label = tab.label,
                 onClick = { onSelectedDockKeyChange(tab.key) },
+                modifier = tab.testTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier,
             ) {
                 Icon(
                     imageVector = tab.icon,

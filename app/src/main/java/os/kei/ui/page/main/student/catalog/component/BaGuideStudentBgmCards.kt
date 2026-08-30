@@ -160,6 +160,7 @@ internal fun BaGuideStudentBgmCard(
     onOpenGuide: () -> Unit,
     onPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isLoading = lookupState == BaGuideStudentBgmLookupState.Loading
     val isMissing = lookupState == BaGuideStudentBgmLookupState.Missing
@@ -183,6 +184,7 @@ internal fun BaGuideStudentBgmCard(
     AppSurfaceCard(
         containerColor = containerColor,
         borderColor = borderColor,
+        modifier = modifier,
         onClick = onPlay,
         onLongClick = onOpenGuide,
     ) {

@@ -27,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -61,6 +62,7 @@ import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
+import os.kei.ui.testing.KeiOsTestTags
 
 private const val STUDENT_BGM_ENTRY_START_INDEX = 1
 
@@ -431,6 +433,17 @@ internal fun BaGuideStudentBgmTabContent(
                     val entry = row.entry
                     val selected = row.readyAudioUrl == selectedAudioUrl
                     BaGuideStudentBgmCard(
+                        // Tapping this card is what loads androidx.media3 at all. Only the first one is
+                        // tagged: one handle is all a journey needs, and every row would put a resource
+                        // id on a list that can run to hundreds. Keyed off the first row's id rather than
+                        // an index, so `items` keeps the key and contentType spelling
+                        // `BaGuideCatalogPageBackdropTest` pins.
+                        modifier =
+                            if (displayedRows.firstOrNull()?.entry?.contentId == entry.contentId) {
+                                Modifier.testTag(KeiOsTestTags.BaGuideCatalogStudentBgmFirst)
+                            } else {
+                                Modifier
+                            },
                         entry = entry,
                         lookupState = row.displayState,
                         selected = selected,

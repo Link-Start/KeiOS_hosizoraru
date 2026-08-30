@@ -127,6 +127,22 @@ object KeiOsTestTags {
     const val BaStudentGuideTabSimulate = "ba_student_guide_tab_simulate"
 
     /**
+     * The catalog's own dock: students, memory lobby, student BGM, favourite BGM.
+     *
+     * The same bar-not-a-pager trap as the guide's tabs, and the reason the previous capture reached
+     * none of the three tabs past the first. It is also where `androidx.media3` comes from — the BGM
+     * interface composes on every tab because the mini player is always there, but nothing loads a
+     * track until someone opens the library and plays one.
+     */
+    const val BaGuideCatalogDockStudent = "ba_guide_catalog_dock_student"
+    const val BaGuideCatalogDockMemoryLobby = "ba_guide_catalog_dock_memory_lobby"
+    const val BaGuideCatalogDockStudentBgm = "ba_guide_catalog_dock_student_bgm"
+    const val BaGuideCatalogDockFavoriteBgm = "ba_guide_catalog_dock_favorite_bgm"
+
+    /** The first student-BGM row, whose whole card is a play button. Tapping it is what loads media3. */
+    const val BaGuideCatalogStudentBgmFirst = "ba_guide_catalog_student_bgm_first"
+
+    /**
      * One switch in the daily-done template editor, tagged so a journey can make an edit it knows about.
      *
      * A switch rather than one of the four dropdowns: a toggle always changes the draft, so the

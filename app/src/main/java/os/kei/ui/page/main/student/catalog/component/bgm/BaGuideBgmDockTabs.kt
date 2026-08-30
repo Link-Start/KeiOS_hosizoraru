@@ -52,4 +52,12 @@ internal data class BaGuideBgmDockTab(
     val key: String,
     val icon: ImageVector,
     val label: String,
+    /**
+     * What a baseline-profile journey taps to reach this tab, when anything needs to.
+     *
+     * It lives on the tab rather than on the dock because [BaGuideBgmExpandedDock] renders two different
+     * docks — the catalog's four sections and the BGM library's own four — whose keys would otherwise
+     * have to be told apart by string. Null for the tabs no journey reaches.
+     */
+    val testTag: String? = null,
 )

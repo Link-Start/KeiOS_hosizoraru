@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
+import os.kei.ui.testing.KeiOsTestTags
 
 @Composable
 internal fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
@@ -33,10 +34,30 @@ internal fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
         playbackIcon,
     ) {
         listOf(
-            BaGuideBgmDockTab(CatalogStudentKey, studentIcon, studentLabel),
-            BaGuideBgmDockTab(CatalogMemoryLobbyKey, memoryLobbyIcon, memoryLobbyLabel),
-            BaGuideBgmDockTab(CatalogStudentBgmKey, musicIcon, studentBgmLabel),
-            BaGuideBgmDockTab(CatalogFavoriteBgmKey, playbackIcon, bgmLabel),
+            BaGuideBgmDockTab(
+                CatalogStudentKey,
+                studentIcon,
+                studentLabel,
+                KeiOsTestTags.BaGuideCatalogDockStudent,
+            ),
+            BaGuideBgmDockTab(
+                CatalogMemoryLobbyKey,
+                memoryLobbyIcon,
+                memoryLobbyLabel,
+                KeiOsTestTags.BaGuideCatalogDockMemoryLobby,
+            ),
+            BaGuideBgmDockTab(
+                CatalogStudentBgmKey,
+                musicIcon,
+                studentBgmLabel,
+                KeiOsTestTags.BaGuideCatalogDockStudentBgm,
+            ),
+            BaGuideBgmDockTab(
+                CatalogFavoriteBgmKey,
+                playbackIcon,
+                bgmLabel,
+                KeiOsTestTags.BaGuideCatalogDockFavoriteBgm,
+            ),
         )
     }
 }

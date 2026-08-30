@@ -540,10 +540,30 @@ class BaselineProfileGenerator {
 
             flingVisibleScrollable(times = 2)
             dragSlowly(times = 1)
-            // The catalog's own dock — memory lobby, student BGM, favourite BGM — is not walked, and a
-            // swipe does not reach it: like the guide, its tabs are a bar rather than a pager, and its
-            // buttons publish no id. What BGM this journey does collect comes from the mini player, which
-            // is on every tab. See docs/planning/baseline-profile-coverage.md for what that leaves out.
+
+            // The catalog's own dock: memory lobby, student BGM, favourite BGM. Tapped rather than
+            // swiped for the same reason as the guide's tabs — it is a bar, and a horizontal swipe over
+            // the content leaves the page exactly where it was.
+            clickTestTag(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
+            flingVisibleScrollable(times = 2)
+            clickTestTag(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
+            flingVisibleScrollable(times = 1)
+
+            // Playing a track, which is the only thing that loads androidx.media3 at all. The BGM
+            // *interface* composes on every catalog tab because the mini player is always there, so a
+            // capture can look like it covers playback while carrying no ExoPlayer, MediaSession or
+            // extractor rules — which is exactly what the capture before this one did.
+            if (waitForOptionalTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST, timeoutMs = 15_000)) {
+                scrollTestTagIntoReach(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                // The player prepares off the main thread, so the scrolling below is both coverage and
+                // the wall time it needs. Waiting on a tag would only prove the row redrew.
+                flingVisibleScrollable(times = 2)
+            }
+
+            clickTestTag(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+            flingVisibleScrollable(times = 1)
+            clickTestTag(BA_GUIDE_CATALOG_DOCK_STUDENT)
 
             device.pressBack()
             waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
@@ -1217,6 +1237,13 @@ private const val GITHUB_RELEASE_NEXT_PAGE_BUTTON = "github_release_next_page_bu
 private const val BA_DOCK_OPEN_GUIDE_CATALOG = "ba_dock_open_guide_catalog"
 private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
 private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
+
+/** The catalog's own dock, and the row on its BGM tab whose whole card is a play button. */
+private const val BA_GUIDE_CATALOG_DOCK_STUDENT = "ba_guide_catalog_dock_student"
+private const val BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY = "ba_guide_catalog_dock_memory_lobby"
+private const val BA_GUIDE_CATALOG_DOCK_STUDENT_BGM = "ba_guide_catalog_dock_student_bgm"
+private const val BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM = "ba_guide_catalog_dock_favorite_bgm"
+private const val BA_GUIDE_CATALOG_STUDENT_BGM_FIRST = "ba_guide_catalog_student_bgm_first"
 private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
 
 /** The guide's six bottom tabs, in bar order. Walked whole: each one composes a different section set. */

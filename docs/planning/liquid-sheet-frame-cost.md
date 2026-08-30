@@ -508,3 +508,58 @@ With both in place the two builds agree from identical source: BA RT 39.99 again
 **Absolute numbers drift between sessions** — the same BA journey measured 32.1ms of RenderThread
 earlier in the day and 39-40ms after two more apps were installed on the AVD. Only A/B pairs measured
 back to back are worth comparing, which is the other reason to have both builds resident at once.
+
+---
+
+# BA and BGM: what the levers are actually worth
+
+Both measured with the `os.kei` / `os.kei.diag` pair, cloned data, back to back.
+
+## The ceilings
+
+| | RT p50, as shipped | RT p50, control glass off |
+|---|---|---|
+| BA office page | 32.1 | 5.5 |
+| BGM track list | 36.1 | 10.1 |
+
+On both, the glass *is* the cost. Unlike the sheets, none of it is being spent on invisible pixels —
+these are the surfaces the user is looking at — so `cullWhenFullyClipped` has nothing to take.
+
+## BA decomposes into the pile and the cards
+
+| BA office page | RT p50 |
+|---|---|
+| as shipped | 32.1 |
+| edge-stack pile disabled | 16.3 |
+| all control glass disabled | 5.5 |
+
+So roughly **16ms pile, 10ms card glass, 5.5ms floor**. The pile's half is not waste: it is the cost
+of *showing* two or three extra receding glass cards that would otherwise be off screen. Turning it
+off is a feature change, not an optimisation.
+
+## BGM: two hypotheses tested, one paid a little
+
+`BaGuideBgmTrackList` chunks tracks 18 to a lazy item, each chunk a single `LiquidSurface` about
+3000px tall — taller than the screen, so laziness can never cull one.
+
+| BGM track list | RT p50 | sync p50 |
+|---|---|---|
+| as shipped | 31.3 - 35.2 | 13.1 - 13.4 |
+| `chromaticAberration = false` on the chunk surface | **30.8** | 12.8 |
+| `BGM_TRACK_CHUNK_SIZE` 18 -> 6 | 37.9 | 13.3 |
+
+- **Chromatic aberration is not free at this size.** On a 40x24dp switch thumb it measured as
+  nothing; on a surface the size of the screen it is worth ~12% of RenderThread. The earlier "not the
+  cost" finding was true only for the thing it was measured on. It remains an appearance change —
+  the fringe is the effect — so it is offered, not taken.
+- **Chunk size is not the lever.** Cutting it to 6 made things slightly worse and moved `sync` by
+  0.01ms, so the oversized layer is not what the upload stage is spending 13ms on. Whatever drives
+  that 13ms is still unidentified, and it is the single largest unexplained number left in the app.
+
+## Where that leaves both
+
+No appearance-neutral lever remains for either surface in app code. Every remaining option — dropping
+aberration, thinning the pile, fewer glass rows — trades the material for frames, which is the wrong
+trade for this app. The one path that keeps the appearance exactly is caching the rasterized glass so
+a layer whose inputs have not changed is not re-recorded, which lives in the backdrop node rather
+than in our components.

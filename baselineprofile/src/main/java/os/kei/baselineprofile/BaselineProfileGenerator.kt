@@ -538,7 +538,7 @@ class BaselineProfileGenerator {
                 // guide's tab bar is a bar, not a pager, and two horizontal swipes over its content left
                 // the page exactly where it was.
                 GUIDE_BOTTOM_TABS.forEach { tab ->
-                    clickTestTag(tab)
+                    clickBottomBarTab(tab)
                     flingVisibleScrollable(times = 1)
                 }
                 device.pressBack()
@@ -551,9 +551,9 @@ class BaselineProfileGenerator {
             // The catalog's own dock: memory lobby, student BGM, favourite BGM. Tapped rather than
             // swiped for the same reason as the guide's tabs — it is a bar, and a horizontal swipe over
             // the content leaves the page exactly where it was.
-            clickDockTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
+            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
             flingVisibleScrollable(times = 2)
-            clickDockTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
+            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
             flingVisibleScrollable(times = 1)
 
             // Playing a track, which is the only thing that loads androidx.media3 at all. The BGM
@@ -568,9 +568,9 @@ class BaselineProfileGenerator {
                 flingVisibleScrollable(times = 2)
             }
 
-            clickDockTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
             flingVisibleScrollable(times = 1)
-            clickDockTab(BA_GUIDE_CATALOG_DOCK_STUDENT)
+            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT)
 
             device.pressBack()
             waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
@@ -1103,26 +1103,31 @@ private fun MacrobenchmarkScope.waitForOptionalTestTag(
 }
 
 /**
- * Taps a catalog dock tab, bringing the dock back if a scroll has put it away.
+ * Taps a tab on one of the app's collapsing bottom bars, bringing the bar back if a scroll put it away.
  *
- * The dock is an `AnimatedCompactBottomBar`: scrolling down collapses it to a pill and the expanded
- * tabs leave the composition entirely, tags and all. So a journey that flings one tab's list and then
- * reaches for the next tab finds nothing — measured on the AVD as the tag count going 1, 0, then 1
- * again on the scroll back. Scrolling back is what restores it, so that is what this does.
+ * Both the catalog's dock and the student guide's tab bar are `AnimatedCompactBottomBar`s: scrolling
+ * down collapses them to a pill and the expanded tabs leave the composition entirely, tags and all. So
+ * a journey that flings one tab's content and then reaches for the next tab finds nothing. Measured on
+ * the AVD both times as every tab tag vanishing and returning on a single backward nudge, which is
+ * what this does.
+ *
+ * Worth stating because it cost two captures: the guide's bar does *not* hide on every tab. Scrolling
+ * its profile tab leaves the bar alone and scrolling its skills tab does not, so a check on one tab is
+ * no evidence about the others.
  */
-private fun MacrobenchmarkScope.clickDockTab(tag: String) {
-    repeat(DOCK_REEXPAND_ATTEMPTS) {
+private fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
+    repeat(BOTTOM_BAR_REEXPAND_ATTEMPTS) {
         if (device.findObject(testTagSelector(tag)) != null) {
             clickTestTag(tag)
             return
         }
         nudgeVisibleScrollable(forward = false)
     }
-    error("Unable to bring dock tab testTag=$tag back into view in ${targetAppId()}")
+    error("Unable to bring bottom bar tab testTag=$tag back into view in ${targetAppId()}")
 }
 
 /** Enough backward nudges to undo the flings a tab's own step makes, with room to spare. */
-private const val DOCK_REEXPAND_ATTEMPTS = 8
+private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8
 
 /** Dismisses an open overlay with back, and waits out its exit animation rather than a fixed delay. */
 private fun MacrobenchmarkScope.dismissTheOpenOverlay(panelTag: String) {

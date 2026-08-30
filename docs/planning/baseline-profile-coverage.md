@@ -126,7 +126,13 @@ one per journey, which is where the three silent failures showed up:
    is the accumulated answer. Note too that the guide's bar does *not* hide on every tab — its profile
    tab leaves it alone and its skills tab does not — so a check on one tab is no evidence about the
    others.
-5. **A covered interface is not a covered feature.** The BGM mini player sits on every catalog tab,
+5. **A tap that lands and does nothing is the recurring failure on this device.** A card under the
+   floating bottom bar, or a list still settling under the tap. It has now cost four separate
+   journeys, so route pushes and window opens both go through `openWindowFrom`, which takes two
+   identical bounds readings as proof the layout settled, retries, and — the part that ended four
+   rounds of guessing — reports the trigger's bounds, which known roots are on screen, and which
+   activity holds the window when it gives up. "It did not open" is not a diagnosis.
+6. **A covered interface is not a covered feature.** The BGM mini player sits on every catalog tab,
    so its composables land in the profile whether or not anything plays — while `androidx.media3`,
    the ExoPlayer/MediaSession/extractor stack behind it, loads only when a track starts. A capture
    can look like it covers playback and carry none of it. The journey now taps a student-BGM row,
@@ -139,12 +145,20 @@ per-journey file is produced. Only `generateBaselineProfile` tells you what was 
 
 ## Deliberately not covered
 
-- **`debug` — the component lab.** It ships (it is manifest-declared and reachable from About), and
-  it is 178 KB of composables, which is precisely the argument against it: it is a developer
-  catalogue almost no user opens, and Google's guidance is that a profile pays for what users
-  actually do. Adding it would be the largest single addition to the profile for the least benefit.
-- **`github.history`'s other tabs.** The history route is covered, but only its default tab; the
-  install-history and refresh-diagnostics tabs need tab tags first. ~39 KB, worth doing next.
+- **`debug` — the component lab.** Attempted, and still uncovered: the journey exists, walks About's
+  lab tab, and comes back with zero `os/kei/ui/page/main/debug` rules because the lab window does not
+  open during a capture. It opens reliably when the same steps are driven by hand on the same build,
+  which is what makes it hard: at the point of failure the About page is up, its tab bar is up, and
+  the lab row is not composed, so the pager's tab state is lost between finding the row and tapping
+  it. Five attempts, four wrong theories — a collapsing bar, tap position, pager settling, tab state.
+  The journey is deliberately best-effort so it cannot cost a capture; About's lab tab is still
+  walked, which is real coverage.
+
+  Worth weighing before spending more on it: this is a developer catalogue almost no user opens, and
+  a profile pays for what users actually do. It would be the largest single addition for the least
+  benefit even if it worked.
+- ~~`github.history`'s other tabs~~ — done. All four categories are walked and the journey collects
+  516 rules across `github/history`.
 - **The BA account sheet**, which does not open under a synthetic tap on its toolbar action. Noted
   on `presentationChromeInteractions` and still true.
 - **The feedback window** (`feedback`, 28 KB). It is `exported="false"`, and `am start` runs as the

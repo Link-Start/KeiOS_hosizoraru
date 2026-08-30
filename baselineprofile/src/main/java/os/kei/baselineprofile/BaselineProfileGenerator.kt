@@ -980,11 +980,11 @@ private fun MacrobenchmarkScope.pushRouteAndReturn(
     pageTag: String,
     returnTag: String,
 ) {
-    waitForTestTag(entryTag, timeoutMs = 15_000)
-    val entry = device.findObject(testTagSelector(entryTag))
-        ?: error("Unable to find testTag=$entryTag in ${targetAppId()}")
-    entry.click()
-    waitForTestTag(pageTag, timeoutMs = 15_000)
+    // Through [openWindowFrom] rather than a single click, because a tap that lands on the right node
+    // and opens nothing is the recurring failure on this device: a card under the floating bottom bar,
+    // or a list still settling under the tap. This is what timed out on the WebDAV card an hour into a
+    // capture, on a journey that had passed three captures before it.
+    openWindowFrom(triggerTag = entryTag, arrivalTag = pageTag)
     flingVisibleScrollable(times = 2)
 
     device.pressBack()

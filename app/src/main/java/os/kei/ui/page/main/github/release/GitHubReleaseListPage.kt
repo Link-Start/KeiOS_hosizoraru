@@ -89,6 +89,7 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
+import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -192,6 +193,7 @@ internal fun GitHubReleaseListPage(
                         else -> viewModel.clearTagQuery()
                     }
                 },
+                backdrop = pageBackdrop,
             )
         },
     ) { innerPadding ->
@@ -780,22 +782,22 @@ private fun GitHubReleasePageJumpField(
     value: String,
     onValueChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    backdrop: com.kyant.backdrop.Backdrop?,
 ) {
-    Box(
+    // The same Liquid capsule the back button is, rather than a flat squircle between two of them.
+    // `AppLiquidNavigationButton` is an `AppLiquidIconButton` at 52dp on `ContinuousCapsule`; this is
+    // that surface with a field in it instead of an icon.
+    AppLiquidFloatingSurface(
         modifier =
             Modifier
                 // Stays a page-number's width even when a tag is typed into it: the title card sits
                 // right beside it, and growing the field clipped the repository's name.
                 .width(72.dp)
-                // The same height `AppLiquidNavigationButton` uses, so the field centres against the
-                // title card instead of riding above it — the top-end overlay pins by its top edge.
-                .height(52.dp)
-                .appSquircleBackground(
-                    MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f),
-                    14.dp,
-                )
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center,
+                // The height the back button uses, so the field centres against the title card instead
+                // of riding above it — the top-end overlay pins by its top edge.
+                .height(52.dp),
+        shape = ContinuousCapsule,
+        backdrop = backdrop,
     ) {
         BasicTextField(
             value = value,
@@ -810,7 +812,11 @@ private fun GitHubReleasePageJumpField(
                 ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
             keyboardActions = KeyboardActions(onGo = { onSubmit() }),
-            modifier = Modifier.fillMaxWidth().testTag(KeiOsTestTags.GitHubReleasePageJumpField),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .testTag(KeiOsTestTags.GitHubReleasePageJumpField),
         )
     }
 }

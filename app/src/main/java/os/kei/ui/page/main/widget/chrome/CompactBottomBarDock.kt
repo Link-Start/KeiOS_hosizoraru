@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -24,6 +25,7 @@ import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
+import os.kei.ui.testing.KeiOsTestTags
 
 private const val CompactBottomBarMotionMs = 240
 
@@ -39,6 +41,11 @@ internal fun CompactBottomBarDock(
         modifier =
             modifier
                 .then(if (enabled) Modifier else Modifier.clearAndSetSemantics {})
+                // One tag for every collapsed dock in the app: only one is ever on screen, and a
+                // baseline-profile journey that finds a bar collapsed needs a way to open it again.
+                // Scrolling back is not one — a tab whose content does not fill the screen has no scroll
+                // range to give, which is how a capture died on the catalog's empty favourites tab.
+                .testTag(KeiOsTestTags.CompactBottomBarDock)
                 .size(AppChromeTokens.floatingBottomBarOuterHeight),
         shape = CircleShape,
         backdrop = backdrop,

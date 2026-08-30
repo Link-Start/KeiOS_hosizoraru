@@ -142,6 +142,9 @@ object KeiOsTestTags {
     /** The first student-BGM row, whose whole card is a play button. Tapping it is what loads media3. */
     const val BaGuideCatalogStudentBgmFirst = "ba_guide_catalog_student_bgm_first"
 
+    /** Whatever collapsed bottom dock is currently on screen. Tapping it puts the tabs back. */
+    const val CompactBottomBarDock = "compact_bottom_bar_dock"
+
     /**
      * One switch in the daily-done template editor, tagged so a journey can make an edit it knows about.
      *

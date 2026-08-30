@@ -1107,9 +1107,12 @@ private fun MacrobenchmarkScope.waitForOptionalTestTag(
  *
  * Both the catalog's dock and the student guide's tab bar are `AnimatedCompactBottomBar`s: scrolling
  * down collapses them to a pill and the expanded tabs leave the composition entirely, tags and all. So
- * a journey that flings one tab's content and then reaches for the next tab finds nothing. Measured on
- * the AVD both times as every tab tag vanishing and returning on a single backward nudge, which is
- * what this does.
+ * a journey that flings one tab's content and then reaches for the next tab finds nothing.
+ *
+ * The pill is tapped rather than scrolled back to, because scrolling back is not always available: a
+ * tab whose content does not fill the screen — the catalog's favourites tab with no favourites — has
+ * no scroll range to give, and a capture died there after eight backward nudges did nothing. A nudge
+ * is still tried when no pill is showing, for the case where the bar is merely off screen.
  *
  * Worth stating because it cost two captures: the guide's bar does *not* hide on every tab. Scrolling
  * its profile tab leaves the bar alone and scrolling its skills tab does not, so a check on one tab is
@@ -1121,10 +1124,17 @@ private fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
             clickTestTag(tag)
             return
         }
-        nudgeVisibleScrollable(forward = false)
+        if (device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK)) != null) {
+            clickTestTag(COMPACT_BOTTOM_BAR_DOCK)
+        } else {
+            nudgeVisibleScrollable(forward = false)
+        }
     }
     error("Unable to bring bottom bar tab testTag=$tag back into view in ${targetAppId()}")
 }
+
+/** The collapsed dock that stands in for whichever bottom bar a scroll has put away. */
+private const val COMPACT_BOTTOM_BAR_DOCK = "compact_bottom_bar_dock"
 
 /** Enough backward nudges to undo the flings a tab's own step makes, with room to spare. */
 private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8

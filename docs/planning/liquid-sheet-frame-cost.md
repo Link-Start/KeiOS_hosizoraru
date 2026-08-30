@@ -629,3 +629,47 @@ matter.
 
 That is now three tested hypotheses for the BGM list — aberration (~12%, appearance cost), chunk size
 (nothing), backdrop source (nothing) — and its 13ms `sync` is still unexplained.
+
+---
+
+# StatusPill is 29% of the BA page, and the "small controls are free" finding was wrong
+
+Measured with the `os.kei` / `os.kei.diag` pair, cloned data, BA office page scroll:
+
+| BA office page | total p50 | RT p50 |
+|---|---|---|
+| as shipped | 141.0 | 42.0 |
+| every `StatusPill` on its non-glass path | **99.6** | **29.8** |
+
+**~12ms of RenderThread, 29% of the page.** Every pill with a backdrop becomes a `StatusPillLiquid`,
+which is a `LiquidSurface`, which is one offscreen layer — and BA shows a dozen or more at once.
+
+This contradicts the earlier conclusion, recorded twice above, that the small controls are free. That
+was measured on nine switch thumbs on one sheet and on Settings' `sync` figure, and it generalised to
+"small controls" when what it actually supported was "nine switch thumbs". `StatusPill` has 171 call
+sites; a pill-dense page is a different question from a switch-dense one, and nobody had asked it.
+
+## The static path is not the fix
+
+`StatusPill` already has a non-glass branch, and it is what the measurement above used. It is not
+visually equivalent: pixel-diffed against the glass build on the same screen, **1.73% of sampled
+pixels differ by more than 3%, max delta 741 of 765**. `fallbackOptics` is a different look by
+design, not a cheaper rendering of the same look, so this branch is not available as an optimisation.
+
+## What is available
+
+The BA office-card treatment, applied to pills. A pill sits on a card whose surface is a flat fill —
+BA cards sample the `contentMaterial` canvas backdrop — so the field beneath a pill is uniform, and
+blurring or lensing a uniform field returns that field. A pill could composite its colour over the
+card material and draw a plain squircle, landing on the same pixels without an offscreen layer.
+
+Two things make this more promising than the earlier flattening work:
+
+- **Pills are never interactive.** `StatusPillLiquid` passes `isInteractive = false`, so the press
+  deformation that forced `BaLiquidPanelUniformFillSourceTest` to gate flattening on "no gesture"
+  does not apply here at all.
+- **It generalises.** 171 call sites, and the pill-dense surfaces are exactly the expensive ones —
+  BA, Settings, the GitHub tracked cards, the release page.
+
+It has to be pixel-verified against the glass build before it ships, to a much tighter bound than the
+static path manages — the target is "no visible difference", not "close enough".

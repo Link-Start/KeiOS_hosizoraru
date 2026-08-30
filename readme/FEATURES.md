@@ -159,7 +159,7 @@ Settings collect the runtime controls in one place:
 - Package: `os.kei`.
 - ABI: `arm64-v8a`.
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
-- UI stack: Jetpack Compose `1.12.0-rc01`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
+- UI stack: Jetpack Compose `1.12.0`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
   chrome, MMKV-backed preferences.
 - Build baseline: Java 21, Gradle Wrapper `9.7.0`, Kotlin `2.4.10`, Android Gradle Plugin `9.3.1`,
   generated Baseline Profiles, and Gradle project tooling.

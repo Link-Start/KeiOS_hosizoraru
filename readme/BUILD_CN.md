@@ -21,7 +21,7 @@
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。
 - Gradle Wrapper：`9.7.0`；Kotlin 插件：`2.4.10`；Android Gradle Plugin：`9.3.1`；
-  Compose 运行库：`1.12.0-rc01`；Ktor：`3.5.1`。
+  Compose 运行库：`1.12.0`；Ktor：`3.5.1`。
 - Release APK 读取 `app/src/release/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
   Benchmark 构建会接入同一份 profile 目录，用于预发行性能验证。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
@@ -62,7 +62,7 @@ Gradle 配置也支持环境变量兜底：
 org.gradle.java.home=/path/to/your/jdk
 
 # 可选：本地覆盖 Miuix 版本
-miuix.version=0.9.4-4a6b750b-SNAPSHOT
+miuix.version=0.9.4-7cc339c2-SNAPSHOT
 ```
 
 Miuix 迭代很快。遇到疑似 Miuix 的问题时，先确认当前 pin 是不是最新快照再动手改，很多问题上游

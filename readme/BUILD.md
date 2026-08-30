@@ -22,7 +22,7 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
 - Gradle Wrapper: `9.7.0`; Kotlin plugin: `2.4.10`; Android Gradle Plugin: `9.3.1`;
-  Compose runtime: `1.12.0-rc01`; Ktor: `3.5.1`.
+  Compose runtime: `1.12.0`; Ktor: `3.5.1`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
   the release profile path.
@@ -71,7 +71,7 @@ Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-on
 org.gradle.java.home=/path/to/your/jdk
 
 # Optional: pin another Miuix version locally
-miuix.version=0.9.4-4a6b750b-SNAPSHOT
+miuix.version=0.9.4-7cc339c2-SNAPSHOT
 ```
 
 Miuix iterates fast. When something Miuix-shaped misbehaves, check whether the pin is current

@@ -418,3 +418,61 @@ Recorded because each of these looks like an obvious next step and is not.
   a flat fill and land on the same pixels. Needs pixel verification before it is trusted.
 - **The BGM track list is its own problem**: 166ms total, RT 36ms, sync 12.6ms, already lazy. Its cost
   is visible content — many rows each carrying glass and album art — not anything culling addresses.
+
+---
+
+# Scan: what is left across the app
+
+Every surface below measured the same way — API 37 AVD, release build, six 90ms flings, native
+window. Ranked by RenderThread, which is where every one of these frames is spent.
+
+| surface | total p50 | RT p50 | sync p50 |
+|---|---|---|---|
+| BGM track list (guide catalog) | 166.6 | 36.1 | **12.6** |
+| BA office page | 101.9 | 32.1 | 0.30 |
+| GitHub strategy sheet | 116.1 | 30.7 | 6.2 |
+| Settings | 74.4 | 22.3 | 0.21 |
+| GitHub track editor sheet | 74.3 | 17.9 | 4.5 |
+| MCP page | 30.9 | 4.0 | 0.16 |
+| GitHub page | 16.0 | 3.4 | 0.17 |
+| Home, idle | 16.5 | 3.3 | — |
+| **BA office page, idle** | **0 frames** | — | — |
+
+The GitHub page at RT 3.4 and MCP at 4.0 are done; nothing there is worth touching. BA renders
+*nothing at all* when untouched, which remains the best idle behaviour in the app.
+
+## `sync` says which lever applies
+
+The scan turns up two different signatures, and the `sync` stage — layer upload — separates them.
+
+- **High sync** (BGM 12.6, strategy sheet 6.2, track editor 4.5) means *many* composed glass layers
+  going to the GPU each frame. That is what culling and laziness fix, and it is why the sheets
+  responded to `cullWhenFullyClipped`.
+- **Low sync with high RT** (BA 0.30 against RT 32.1; Settings 0.21 against RT 22.3) means *few but
+  large* layers. Culling cannot help — the layers are on screen. Only shrinking the glass area, or
+  flattening it where the field beneath is uniform, moves these.
+
+Reading `sync` first tells you which of the two problems you have, before spending a build on the
+wrong fix.
+
+## Where the remaining headroom is
+
+1. **BA office page, RT 32.1, low sync.** The worst page left, and the flattening already applied to
+   its *nested* panels (`BaLiquidPanelUniformFillSourceTest`) does not cover the outer cards, which
+   are still full-width live glass over a card-dense list. Same argument should extend to them:
+   blurring a locally uniform field returns that field.
+2. **BGM track list, RT 36.1, high sync 12.6.** Already lazy, so the cost is *visible* rows, each
+   carrying its own `LiquidSurface` plus album art. High sync on an already-lazy list is the one
+   place a per-row flatten would pay, since the rows sit on a uniform page background.
+3. **Settings, RT 22.3, low sync.** Same shape as BA: switch rows inside large glass cards. The
+   switches themselves are not the cost — that is measured, twice.
+4. **The sheet surface floor, ~16ms RT.** Unchanged, and still needs caching at the backdrop-node
+   level rather than anything reachable from app code.
+
+## Not worth another look
+
+- **`AppSwitch` and the small controls.** Deleting the glass from every switch thumb measured as no
+  change, and Settings — the most switch-dense surface in the app — has a `sync` of 0.21, which is
+  the signature of large layers rather than many. The per-control model is dead twice over.
+- **`GlassEffectRuntime.reducedProgress`**, still inert app-wide, and blur radius measured free, so
+  driving it would buy nothing.

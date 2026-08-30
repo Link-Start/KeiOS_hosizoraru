@@ -19,7 +19,7 @@
 # change on a path a journey walks can move method signatures, so the answer to
 # "is it current" is a date comparison, and the fix is a 30-minute run:
 #
-#   ANDROID_SERIAL=<emulator> ./gradlew :app:generateBaselineProfile
+#   ANDROID_SERIAL=<emulator> ./gradlew :app:generateReleaseBaselineProfile
 set -uo pipefail
 
 REF="HEAD"
@@ -79,5 +79,5 @@ while IFS= read -r path; do
 done <<< "$DRIFT"
 echo
 echo "Regenerate before shipping:"
-echo "  ANDROID_SERIAL=<emulator> ./gradlew :app:generateBaselineProfile"
+echo "  ANDROID_SERIAL=<emulator> ./gradlew :app:generateReleaseBaselineProfile"
 exit 1

@@ -141,7 +141,10 @@ one per journey, which is where the three silent failures showed up:
 
 `connectedNonMinifiedReleaseAndroidTest` with a `--tests` filter is a good way to prove a journey
 does not time out, and proves nothing else: it does not run the profile-collection step, so no
-per-journey file is produced. Only `generateBaselineProfile` tells you what was actually collected.
+per-journey file is produced. Only a `generate…BaselineProfile` task tells you what was actually
+collected — use `:app:generateReleaseBaselineProfile`, not the bare `generateBaselineProfile`.
+The bare one is an aggregate over every profileable variant, and since `releaseDiagnostic` was
+added it walks all 21 journeys a second time against the diagnostic APK for an identical result.
 
 ## Deliberately not covered
 

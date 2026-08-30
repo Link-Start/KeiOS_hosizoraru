@@ -242,3 +242,104 @@ Enable `debug.hwui.profile true`, restart the app, then for the at-rest case sim
 "Bottom pages" sheet, `dumpsys gfxinfo os.kei reset`, wait three seconds without touching the
 screen, and dump `framestats`. The at-rest measurement needs no window override and no gesture
 scripting, which makes it the cheapest possible regression check for any of the fixes above.
+
+---
+
+# Re-measured, and the conclusion above is wrong
+
+Everything from here down supersedes the per-control model in the sections above. Measured on the
+same API 37 AVD, against a **release** build (`:app:installRelease`, R8 on) at `wm size 1280x2000`,
+eight 90ms flings inside Home's "Bottom pages" sheet. Two runs per condition unless noted.
+
+## Where it stands now
+
+| condition | total p50 | RT issue->swap p50 | record draw p50 |
+|---|---|---|---|
+| release, sheet at rest | **0 frames** | — | — |
+| release, sheet scrolling | 108.2 / 107.8 | 32.5 / 34.8 | 0.63 |
+| debug, sheet scrolling | 99.8 | 32.2 | 4.98 |
+
+The modal freeze still works: an untouched sheet renders nothing. Scrolling one still costs ~108ms a
+frame, 100% of frames over the 8.33ms interval.
+
+**Release and debug are the same speed.** RenderThread is 32ms in both. The only stage release wins
+is `record draw`, 0.63ms against 4.98ms, which is 4% of the frame. That answers the question of why
+the release channel feels no better than a debug build: R8 and `isDebuggable = false` optimise the UI
+thread, and the UI thread is not where the time goes.
+
+## What the cost is not
+
+Each row is a build with one thing changed, measured the same way.
+
+| build | RT p50 | verdict |
+|---|---|---|
+| baseline | 32.5 / 34.8 | — |
+| switch thumb `chromaticAberration = false` | 33.3 | no effect |
+| switch thumb samples parent backdrop only (no track layer) | 37.0 | no effect |
+| **switch thumb `drawBackdrop` removed entirely** | 34.1 | **no effect** |
+| sheet blur radius -> 2px | 33.0 | no effect |
+| glass drawn by a content-free sibling, content translated separately | 33.5 | no effect |
+
+The third row is the one that settles it. Deleting the glass from every switch thumb — not tuning it,
+removing it — changes nothing. **The controls are not the cost**, and the "9 controls x 3.7ms"
+arithmetic above is an artefact of inferring a per-control constant from a global toggle that
+disables glass on everything at once.
+
+The last row also rules out the obvious structural fix. Moving the sheet's glass out of the content's
+ancestry, so that scrolling cannot invalidate it, changes nothing: the glass layer re-records every
+frame regardless of whether the scrolling content is inside it.
+
+## What the cost is
+
+| build | total p50 | RT issue->swap p50 |
+|---|---|---|
+| baseline | 108.2 | 32.5 |
+| `exportedBackdrop = null` | 99.4 | 27.6 |
+| **sheet surface `glassEnabled = false`** | **13.0** | **1.77** |
+
+Turning off the sheet's own `drawBackdrop` takes RenderThread from 32ms to 1.77ms and the frame from
+108ms to 13ms, with frame production going from 83 to 118 in the same window — saturated.
+
+So the split is roughly:
+
+- the sheet's own backdrop layer: **~27ms**
+- the `exportedBackdrop` second record of it: **~6ms**
+- everything else in the sheet, nine glass switches included: **~2ms**
+
+This directly contradicts "Not the sheet's own glass area" above. That section's evidence was that
+growing the sheet's area 1.8x moved the cost only 7%, and the inference — that a cost dominated by
+the sheet's blur would have scaled with area — does not follow. A large **fixed** per-frame term does
+not scale with area either. The doc had already identified the mechanism and then set it aside: the
+decompiled `DrawBackdropNode` re-records its effect layer on every draw via `drawBackdropLayer`, at
+`CompositingStrategy.Offscreen`, and does it a second time when `exportedBackdrop != null`. That is
+the cost, and the 6ms recovered by dropping the export is the second record being skipped.
+
+Tuning the effects does not help because the effects are not the expensive part — the per-frame
+record and rasterize of the layer is, whatever is drawn into it.
+
+## Where this points
+
+The background behind an open sheet is already frozen — that is what the modal freeze does, and why
+an idle sheet renders zero frames. So the sheet's refraction input is **constant** for the whole life
+of the presentation, and yet the layer is re-rasterized on every frame that anything else moves. The
+shape of the fix is the modal freeze one level down: rasterize the sheet's glass once and reuse it
+while its inputs are unchanged, re-rendering only when the backdrop or the sheet's geometry actually
+changes.
+
+Two smaller things fall out on the way:
+
+- **`exportedBackdrop` is unconditional.** It is only needed when a control inside the sheet samples
+  the sheet's own surface. Making it conditional on that is worth ~6ms of the ~33ms on any sheet
+  whose contents do not need it.
+- **`GlassEffectRuntime.reducedProgress` is dead code in the app.** Every page provides a
+  `GlassEffectRuntime()` with the default `reducedProgress = 0f`, so `blurScaleFor`/`lensScaleFor`
+  always return 1.0 and the whole quality-reduction path is inert outside the debug catalogue. Given
+  that blur radius measured as free, driving it is unlikely to pay — recorded so nobody spends a day
+  wiring it up expecting a win.
+
+## Not yet verified on hardware
+
+Every number here is from the emulator, where 27ms of *RenderThread CPU* for one offscreen layer is
+suspicious on its face and may be an artefact of the AVD's rendering path. The user reports the
+problem on real devices, so the next measurement should be the same A/B on hardware before any fix is
+designed around these proportions.

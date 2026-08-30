@@ -90,8 +90,8 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
 - 当前稳定标签：[v1.14.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.14.0)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
-- 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.7.0`、Kotlin `2.4.10`、
-  Compose `1.12.0`、Android Gradle Plugin `9.3.1`、Ktor `3.5.1`。
+- 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.7.1`、Kotlin `2.4.10`、
+  Compose `1.12.0`、Android Gradle Plugin `9.3.2`、Ktor `3.5.1`。
 - 当前应用语言资源覆盖简体中文、English、日本語。
 
 ## 文档

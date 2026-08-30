@@ -120,5 +120,5 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - Android 基线：Android 15+（`minSdk 35`），`targetSdk=37`。
 - UI 技术栈：Jetpack Compose `1.12.0`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
   Chrome、MMKV 偏好存储。
-- 构建基线：Java 21、Gradle Wrapper `9.7.0`、Kotlin `2.4.10`、Android Gradle Plugin `9.3.1`、
+- 构建基线：Java 21、Gradle Wrapper `9.7.1`、Kotlin `2.4.10`、Android Gradle Plugin `9.3.2`、
   已生成的 Baseline Profiles 与 Gradle 项目工具链。

@@ -20,8 +20,10 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 
 - Gradle daemon + Java compile + Kotlin JVM target are all aligned to Java 21.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
-- Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
-- Gradle Wrapper: `9.7.0`; Kotlin plugin: `2.4.10`; Android Gradle Plugin: `9.3.1`;
+- Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`. API 37 ships minor
+  revisions, and this app pins `compileSdkMinor = 0` — it compiles against **37.0** (SDK extension
+  22), not whichever 37.x the local SDK happens to have installed.
+- Gradle Wrapper: `9.7.1`; Kotlin plugin: `2.4.10`; Android Gradle Plugin: `9.3.2`;
   Compose runtime: `1.12.0`; Ktor: `3.5.1`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise

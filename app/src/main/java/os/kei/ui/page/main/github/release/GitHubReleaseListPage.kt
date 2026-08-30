@@ -70,12 +70,16 @@ import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronLeftIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
+import os.kei.ui.page.main.os.appLucideArchiveIcon
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideBranchIcon
+import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import androidx.compose.ui.draw.clip
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSkipBackIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
@@ -413,6 +417,33 @@ private fun GitHubReleaseCard(
         // Ten cards a page, two of which open themselves — the pile has to keep working on the open ones
         // or it stops working at all here.
         edgeStackWhileExpanded = true,
+        // Compare and open-in-browser belong on the header rather than as buttons stranded at the foot
+        // of a long card: they act on the release itself, not on whatever the reader scrolled to.
+        headerActions = if (!expanded) {
+            null
+        } else {
+            {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppCompactIconAction(
+                    icon = appLucideBranchIcon(),
+                    contentDescription = stringResource(R.string.github_release_compare),
+                    tint = MiuixTheme.colorScheme.primary,
+                    enabled = compareUrl != null,
+                    onClick = { compareUrl?.let(onOpenLink) },
+                )
+                AppCompactIconAction(
+                    icon = appLucideExternalLinkIcon(),
+                    contentDescription = stringResource(R.string.github_release_open_in_browser),
+                    tint = MiuixTheme.colorScheme.primary,
+                    enabled = true,
+                    onClick = { onOpenLink(entry.htmlUrl) },
+                )
+            }
+            }
+        },
         titleAccessory = {
             if (row.installed) {
                 GitHubReleasePill(
@@ -432,11 +463,15 @@ private fun GitHubReleaseCard(
                     color = GitHubReleasePreReleaseColor,
                 )
             }
-            entry.publishedAtMillis?.let { millis ->
-                GitHubReleasePill(
-                    label = releasedLabel(millis),
-                    color = AppStatusColors.Cached,
-                )
+            // Collapsed, the date is the second thing a reader needs. Open, the header has actions to
+            // carry and the summary strip below states the date, so it stops competing for the title.
+            if (!expanded) {
+                entry.publishedAtMillis?.let { millis ->
+                    GitHubReleasePill(
+                        label = releasedLabel(millis),
+                        color = AppStatusColors.Cached,
+                    )
+                }
             }
         },
     ) {
@@ -460,6 +495,9 @@ private fun GitHubReleaseCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 GitHubReleasePill(label = entry.tagName, color = GitHubStatusPalette.Stable)
+                entry.publishedAtMillis?.let { millis ->
+                    GitHubReleasePill(label = releasedLabel(millis), color = AppStatusColors.Cached)
+                }
                 row.detail?.shortCommitSha?.takeIf(String::isNotBlank)?.let { sha ->
                     GitHubReleasePill(label = sha, color = GitHubStatusPalette.Active)
                 }
@@ -498,6 +536,27 @@ private fun GitHubReleaseCard(
                 ?: entry.assetCount.takeIf { count -> count > 0 }?.toString().orEmpty(),
             expanded = assetsExpanded,
             onExpandedChange = onAssetsExpandedChange,
+            headerAction = {
+                AppCompactIconAction(
+                    icon = appLucideArchiveIcon(),
+                    contentDescription =
+                        stringResource(
+                            if (row.showAllAssets) {
+                                R.string.github_release_assets_show_relevant
+                            } else {
+                                R.string.github_release_assets_show_all
+                            },
+                        ),
+                    tint =
+                        if (row.showAllAssets) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onBackgroundVariant
+                        },
+                    enabled = true,
+                    onClick = { onToggleAllAssets(entry.id) },
+                )
+            },
         ) {
             when {
                 row.detailLoading ->
@@ -549,55 +608,6 @@ private fun GitHubReleaseCard(
             }
         }
 
-        AppDualActionRow(
-            spacing = 8.dp,
-            first = { rowModifier ->
-                AppLiquidTextButton(
-                    modifier = rowModifier,
-                    backdrop = null,
-                    text =
-                        stringResource(
-                            if (row.showAllAssets) {
-                                R.string.github_release_assets_show_relevant
-                            } else {
-                                R.string.github_release_assets_show_all
-                            },
-                        ),
-                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    variant = GlassVariant.SheetAction,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis,
-                    onClick = { onToggleAllAssets(entry.id) },
-                )
-            },
-            second = { rowModifier ->
-                // GitHub's Compare, built from the tag before this one on the page.
-                AppLiquidTextButton(
-                    modifier = rowModifier,
-                    backdrop = null,
-                    text = stringResource(R.string.github_release_compare),
-                    textColor = MiuixTheme.colorScheme.primary,
-                    containerColor = MiuixTheme.colorScheme.primary,
-                    variant = GlassVariant.SheetAction,
-                    enabled = compareUrl != null,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis,
-                    onClick = { compareUrl?.let(onOpenLink) },
-                )
-            },
-        )
-        AppLiquidTextButton(
-            modifier = Modifier.fillMaxWidth(),
-            backdrop = null,
-            text = stringResource(R.string.github_release_open_in_browser),
-            textColor = MiuixTheme.colorScheme.primary,
-            containerColor = MiuixTheme.colorScheme.primary,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-            onClick = { onOpenLink(entry.htmlUrl) },
-        )
     }
 }
 
@@ -613,6 +623,7 @@ private fun GitHubReleaseNestedCard(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     trailing: String = "",
+    headerAction: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     AppLiquidAccordionCard(
@@ -635,6 +646,7 @@ private fun GitHubReleaseNestedCard(
             } else {
                 null
             },
+        headerActions = headerAction,
         content = content,
     )
 }

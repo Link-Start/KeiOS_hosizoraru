@@ -81,9 +81,11 @@ internal fun GitHubTrackedItemMoreActions(
             buildGitRepositoryTrackIdentity(item.repoUrl)?.platform in releaseNotesSupportedGitPlatforms
     val normalizedShowReleaseNotesAction =
         when {
-            item.isGitHubRepositoryTrack() || gitRepositoryReleaseNotesSupported -> {
-                showReleaseNotesAction
-            }
+            // Always offered on a repository track. It is the overflow menu — the place a reader looks
+            // for exactly this — and gating it behind a setting meant the sheet existed but could not be
+            // found. The other source kinds stay data-dependent below, because for them the notes really
+            // can be absent.
+            item.isGitHubRepositoryTrack() || gitRepositoryReleaseNotesSupported -> true
 
             item.isDirectApkTrack() -> {
                 state.latestStableApkVersion

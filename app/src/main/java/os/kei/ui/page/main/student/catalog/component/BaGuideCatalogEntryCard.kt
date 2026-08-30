@@ -32,11 +32,12 @@ internal fun BaGuideCatalogEntryCard(
     isFavorite: Boolean,
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val uiState = rememberBaGuideCatalogEntryCardUiState(entry = entry, isFavorite = isFavorite)
     val copyAction = rememberBaGuideCatalogEntryCopyAction(copyPayload = uiState.copyPayload)
     AppSurfaceCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         containerColor = uiState.containerColor,
         borderColor = uiState.borderColor,
         onClick = { onOpenGuide(entry.detailUrl) },

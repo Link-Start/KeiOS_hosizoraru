@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,6 +36,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -96,6 +98,7 @@ internal fun GitHubOverviewCard(
         overviewRefreshState
     }
     AppOverviewCard(
+        modifier = Modifier.testTag(KeiOsTestTags.GitHubAddTrackedButton),
         title = stringResource(R.string.github_overview_title),
         backdrop = backdrop,
         // Adding a tracked repo used to be a dock button. The dock is the scarcer

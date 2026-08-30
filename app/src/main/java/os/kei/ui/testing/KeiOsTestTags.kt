@@ -55,6 +55,25 @@ object KeiOsTestTags {
     const val GitHubReleaseTagFilterButton = "github_release_tag_filter_button"
 
     /**
+     * The first tracked card itself, so a journey can open one.
+     *
+     * A collapsed card composes its header and nothing else, so the asset panel, the asset rows and the
+     * version sections underneath it — the densest part of the page a user actually looks at — were
+     * reachable only by expanding a card, which no journey did.
+     */
+    const val GitHubTrackedItemCardFirst = "github_tracked_item_card_first"
+
+    /** The Actions entry in that overflow, which opens the workflow-runs sheet. */
+    const val GitHubActionsMenuItem = "github_actions_menu_item"
+
+    /** The empty-state and overview button that opens the track editor for a new track. */
+    const val GitHubAddTrackedButton = "github_add_tracked_button"
+
+    /** The two top-bar toolbar actions that open sheets of their own. */
+    const val GitHubStrategySheetButton = "github_strategy_sheet_button"
+    const val GitHubCheckLogicSheetButton = "github_check_logic_sheet_button"
+
+    /**
      * The first cooldown card, the cafe's headpat.
      *
      * The three cooldowns are cards in the list now, so the profile has something to expand that is not
@@ -77,6 +96,20 @@ object KeiOsTestTags {
     const val BaCraftSlotFirst = "ba_craft_slot_first"
     const val BaDockOpenCalendar = "ba_dock_open_calendar"
     const val BaDockOpenPool = "ba_dock_open_pool"
+
+    /**
+     * The dock's third action, which pushes the guide catalog.
+     *
+     * Untagged until the profile went looking for it: the catalog and the student guide it opens are two
+     * nav routes and about a hundred composable files, and not one of them had a single rule in the
+     * shipped profile, because nothing could reach them.
+     */
+    const val BaDockOpenGuideCatalog = "ba_dock_open_guide_catalog"
+    const val BaGuideCatalogPageRoot = "ba_guide_catalog_page_root"
+
+    /** The catalog's first entry card, which is the only way into the student guide. */
+    const val BaGuideCatalogEntryFirst = "ba_guide_catalog_entry_first"
+    const val BaStudentGuidePageRoot = "ba_student_guide_page_root"
 
     /**
      * One switch in the daily-done template editor, tagged so a journey can make an edit it knows about.

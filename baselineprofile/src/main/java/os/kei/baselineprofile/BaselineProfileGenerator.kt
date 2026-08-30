@@ -486,6 +486,215 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * The guide catalog and the student guide it opens — together the largest hole this profile had.
+     *
+     * About a hundred composable files under `student.` resolved to not one rule in the shipped profile,
+     * and the reason was mechanical rather than editorial: the only way in is the BA dock's third action,
+     * and that action carried no test tag, so no journey could reach either route. Both are pushed routes,
+     * which means every class on them was interpreted *inside* a push transition — the trap already
+     * recorded on the calendar and pool journey — over a page that then composes a tab pager, a lazy list
+     * of entry cards with the pile engaged, and a media-heavy detail with its own pager.
+     *
+     * The detail half is conditional on purpose. Catalog entries come from a synced dataset, so a device
+     * that has not synced shows an empty state, which is a legitimate thing to profile rather than a
+     * reason to fail a half-hour run. When entries are present the guide is opened; when they are not, the
+     * catalog's own first composition is still collected.
+     */
+    @Test
+    fun baGuideCatalogInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_BA,
+                pageTag = BA_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_BA,
+            )
+
+            waitForTestTag(BA_DOCK_OPEN_GUIDE_CATALOG, timeoutMs = 15_000)
+            clickTestTag(BA_DOCK_OPEN_GUIDE_CATALOG)
+            waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 25_000)
+            flingVisibleScrollable(times = 2)
+            dragSlowly(times = 1)
+
+            // The catalog is a pager, and its other tabs are half its source: the BGM library with its
+            // player chrome, and the memory lobby. Both are reachable by swiping, so neither needs a tag
+            // of its own — and neither had a single rule before this.
+            flingPagerHorizontally(times = 2)
+            flingVisibleScrollable(times = 2)
+            flingPagerHorizontally(times = -2)
+
+            if (waitForOptionalTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST, timeoutMs = 10_000)) {
+                scrollTestTagIntoReach(BA_GUIDE_CATALOG_ENTRY_FIRST)
+                clickTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST)
+                waitForTestTag(BA_STUDENT_GUIDE_PAGE_ROOT, timeoutMs = 30_000)
+                flingVisibleScrollable(times = 3)
+                device.pressBack()
+                waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 20_000)
+            }
+
+            device.pressBack()
+            waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
+            device.waitForIdle()
+        }
+    }
+
+    /**
+     * A tracked card opened, which is where the GitHub page keeps almost all of its content.
+     *
+     * Every GitHub journey before this one scrolled a list of *collapsed* cards, and a collapsed card
+     * composes its header and nothing else. The asset panel, the asset rows, the version sections and the
+     * health cards under it — the densest thing on the page, and the part a user actually reads — had no
+     * rules at all. Both directions of the accordion are walked for the reason [baSlotCardInteractions]
+     * records: the exit animation composes as much as the entry does.
+     *
+     * The Actions sheet then comes off the same card's overflow, and is conditional because that row only
+     * exists for GitHub repository tracks — an F-Droid track first in the sort order would otherwise fail
+     * the run rather than skip a step.
+     */
+    @Test
+    fun gitHubTrackedCardInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+
+            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_CARD_FIRST)
+            clickTaggedCardHeader(GITHUB_TRACKED_ITEM_CARD_FIRST)
+            device.waitForIdle()
+            flingVisibleScrollable(times = 1)
+            dragSlowly(times = 1)
+            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_CARD_FIRST)
+            clickTaggedCardHeader(GITHUB_TRACKED_ITEM_CARD_FIRST)
+            device.waitForIdle()
+
+            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+            clickTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+            if (waitForOptionalTestTag(GITHUB_ACTIONS_MENU_ITEM, timeoutMs = 10_000)) {
+                clickTestTag(GITHUB_ACTIONS_MENU_ITEM)
+                waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 25_000)
+                dismissTheOpenOverlay(LIQUID_SHEET_PANEL)
+            } else {
+                device.pressBack()
+                device.waitForIdle()
+            }
+        }
+    }
+
+    /**
+     * The three sheets the GitHub page's own chrome opens, and the star importer beside them.
+     *
+     * The track editor is the app's most-used form — adding or editing a tracked repository is the whole
+     * point of the page — and it, the strategy sheet and the check-logic sheet were all uncovered, which
+     * is roughly 200KB of source composed for the first time under a sheet's present transition. None of
+     * the three had a test tag on its trigger before this journey, which is why they had none.
+     *
+     * The star importer is a separate activity rather than a sheet, so it is proven by the GitHub page
+     * going *away* rather than by a tag of its own: it has no page root, and adding one would be a tag
+     * that exists only to be waited on.
+     */
+    @Test
+    fun gitHubChromeSheetInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+
+            openAndDismissOverlay(
+                triggerTag = GITHUB_ADD_TRACKED_BUTTON,
+                panelTag = LIQUID_SHEET_PANEL,
+            )
+            openAndDismissOverlay(
+                triggerTag = GITHUB_STRATEGY_SHEET_BUTTON,
+                panelTag = LIQUID_SHEET_PANEL,
+            )
+            openAndDismissOverlay(
+                triggerTag = GITHUB_CHECK_LOGIC_SHEET_BUTTON,
+                panelTag = LIQUID_SHEET_PANEL,
+            )
+
+            clickTestTag(GITHUB_IMPORT_MENU_BUTTON)
+            waitForTestTag(GITHUB_IMPORT_STARS, timeoutMs = 15_000)
+            clickTestTag(GITHUB_IMPORT_STARS)
+            check(device.wait(Until.gone(testTagSelector(GITHUB_PAGE_ROOT)), 20_000)) {
+                "Timed out waiting for the star importer to take the window in ${targetAppId()}"
+            }
+            device.waitForIdle()
+            flingVisibleScrollable(times = 2)
+            device.pressBack()
+            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 20_000)
+            device.waitForIdle()
+        }
+    }
+
+    /**
+     * The two windows another app hands KeiOS an intent to open.
+     *
+     * Both start from a dead process into their own activity, which is the worst case an ART profile can
+     * fix: the Compose setup, the window chrome and the flow's first composition all run interpreted while
+     * the user is looking at an empty window. `github.share` alone is 50-odd files and had no rules.
+     *
+     * The share window is driven with the intent a share sheet would send it, and everything after the
+     * launch is conditional: resolving a repository is a network round trip, and a run must not fail
+     * because GitHub was slow. The resolving state composes either way, which is the part worth having.
+     *
+     * The *feedback* window is the one deliberately not here. It is `exported="false"`, so
+     * [launchActivityFromColdStart] cannot reach it — see that helper for the platform reason — and the
+     * only other way in is a button inside an expandable card most of the way down the settings page.
+     * That is a three-tag chain for 28KB of source, so it is left for whoever wants it.
+     */
+    @Test
+    fun sharedIntentWindowInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchActivityFromColdStart(
+                className = SHARE_IMPORT_ACTIVITY_CLASS,
+                arguments =
+                    "-a ${Intent.ACTION_SEND} -t text/plain " +
+                        "--es ${Intent.EXTRA_TEXT} $SHARE_IMPORT_SAMPLE_URL",
+            )
+            if (waitForOptionalTestTag(GITHUB_SHARE_IMPORT_CANCEL, timeoutMs = 20_000)) {
+                clickTestTag(GITHUB_SHARE_IMPORT_CANCEL)
+            } else {
+                device.pressBack()
+            }
+            device.waitForIdle()
+
+            // The other window, which a file manager or a share sheet opens with a KeiOS export. The
+            // payload is deliberately an empty document: what is being collected is the window and the
+            // import screen's first composition, not a real merge into the user's tracked list.
+            launchActivityFromColdStart(
+                className = JSON_IMPORT_ACTIVITY_CLASS,
+                arguments =
+                    "-a ${Intent.ACTION_SEND} -t text/plain " +
+                        "--es ${Intent.EXTRA_TEXT} '$JSON_IMPORT_SAMPLE_PAYLOAD'",
+            )
+            flingVisibleScrollable(times = 1)
+            device.pressBack()
+            device.waitForIdle()
+        }
+    }
+
+    /**
      * The tablet and fold navigation shapes: the top tab bar, and the sidebar it converts into.
      *
      * ## Why this forces the geometry instead of requiring a tablet
@@ -836,6 +1045,81 @@ private fun MacrobenchmarkScope.openAndDismissOverlay(
 }
 
 /**
+ * Waits for a tag and reports whether it arrived, instead of failing the run.
+ *
+ * For steps whose *presence* is data-dependent — a catalog that has not synced, a menu row only GitHub
+ * repository tracks carry, a share resolution waiting on the network. A hard wait there turns a
+ * legitimate device state into a failure half an hour into a capture, and the alternative of dropping the
+ * step loses the coverage on every device that does have the data.
+ */
+private fun MacrobenchmarkScope.waitForOptionalTestTag(
+    tag: String,
+    timeoutMs: Long,
+): Boolean {
+    val arrived = device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs) == true
+    device.waitForIdle()
+    return arrived
+}
+
+/**
+ * Swipes a horizontal pager one page at a time; a negative [times] walks back.
+ *
+ * Kept clear of both edges: a swipe that starts within the back-gesture inset is a predictive back, not a
+ * page change, and the difference is a journey that silently leaves the page it meant to walk.
+ */
+private fun MacrobenchmarkScope.flingPagerHorizontally(times: Int) {
+    val centerY = device.displayHeight / 2
+    val nearEdge = (device.displayWidth * 0.78f).toInt()
+    val farEdge = (device.displayWidth * 0.22f).toInt()
+    repeat(kotlin.math.abs(times)) {
+        if (times > 0) {
+            device.swipe(nearEdge, centerY, farEdge, centerY, 24)
+        } else {
+            device.swipe(farEdge, centerY, nearEdge, centerY, 24)
+        }
+        device.waitForIdle()
+    }
+}
+
+/** Dismisses an open overlay with back, and waits out its exit animation rather than a fixed delay. */
+private fun MacrobenchmarkScope.dismissTheOpenOverlay(panelTag: String) {
+    device.pressBack()
+    check(device.wait(Until.gone(testTagSelector(panelTag)), 15_000)) {
+        "Timed out waiting for testTag=$panelTag to dismiss in ${targetAppId()}"
+    }
+    device.waitForIdle()
+}
+
+/**
+ * Starts one of the app's other activities from a dead process, the way the system does.
+ *
+ * `force-stop` first is the whole point: these windows are only ever entered cold — a share sheet hands
+ * one an intent and the process starts to receive it — so profiling them from a warm process would
+ * collect the cheap path and miss the expensive one.
+ *
+ * **Exported activities only.** `am start` runs as the shell uid, which on this platform does not hold
+ * `START_ANY_ACTIVITY`, so an `exported="false"` activity comes back as
+ * `SecurityException: Permission Denial: … not exported from uid …` and this times out. Confirmed
+ * against `FeedbackIssueActivity` and `GitHubStarImportActivity`; the star importer is reached through
+ * its menu row instead, which is why [gitHubChromeSheetInteractions] taps rather than starts it.
+ */
+private fun MacrobenchmarkScope.launchActivityFromColdStart(
+    className: String,
+    arguments: String = "",
+) {
+    pressHome()
+    grantRuntimePermissions()
+    device.executeShellCommand("am force-stop ${targetAppId()}")
+    device.executeShellCommand(
+        "am start -W -n ${targetAppId()}/$className $arguments".trim(),
+    )
+    check(device.wait(Until.hasObject(By.pkg(targetAppId()).depth(0)), 20_000)) {
+        "Timed out waiting for $className to take the window in ${targetAppId()}"
+    }
+    device.waitForIdle()
+}
+
+/**
  * Drags roughly one card at a time, slowly, so cards sit part way into the pile.
  *
  * 120 steps against [flingVisibleScrollable]'s 24: the step count is the whole point, because the
@@ -934,6 +1218,39 @@ private const val GITHUB_RELEASE_MENU_ITEM = "github_release_menu_item"
 private const val GITHUB_RELEASE_PAGE_ROOT = "github_release_page_root"
 private const val GITHUB_RELEASE_CARD_FIRST = "github_release_card_first"
 private const val GITHUB_RELEASE_NEXT_PAGE_BUTTON = "github_release_next_page_button"
+
+/** The BA dock's guide-catalog action, and the two routes behind it. */
+private const val BA_DOCK_OPEN_GUIDE_CATALOG = "ba_dock_open_guide_catalog"
+private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
+private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
+private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
+
+/** The GitHub page's own chrome: a card to open, three sheets, and the star importer. */
+private const val GITHUB_TRACKED_ITEM_CARD_FIRST = "github_tracked_item_card_first"
+private const val GITHUB_ACTIONS_MENU_ITEM = "github_actions_menu_item"
+private const val GITHUB_ADD_TRACKED_BUTTON = "github_add_tracked_button"
+private const val GITHUB_STRATEGY_SHEET_BUTTON = "github_strategy_sheet_button"
+private const val GITHUB_CHECK_LOGIC_SHEET_BUTTON = "github_check_logic_sheet_button"
+private const val GITHUB_IMPORT_STARS = "github_import_stars"
+
+/** The share window's cancel, which is the first control its asset picker offers. */
+private const val GITHUB_SHARE_IMPORT_CANCEL = "github_share_import_cancel"
+
+/**
+ * The other two activities a journey starts by name, checked against the manifest by
+ * `BaselineProfileTestTagContractTest` for the reason [launchDailyTemplateFromTileLongPress] records.
+ */
+private const val SHARE_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.github.share.GitHubShareImportActivity"
+private const val JSON_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.jsonimport.KeiOSJsonImportActivity"
+
+/** An empty export, so the import screen composes without changing anything the next journey reads. */
+private const val JSON_IMPORT_SAMPLE_PAYLOAD = "{}"
+
+/**
+ * A repository the share window can resolve. KeiOS's own, so the journey never depends on someone else's
+ * repository staying public, and so a confirmed import would be a no-op rather than new tracked state.
+ */
+private const val SHARE_IMPORT_SAMPLE_URL = "https://github.com/hosizoraru/KeiOS"
 
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"

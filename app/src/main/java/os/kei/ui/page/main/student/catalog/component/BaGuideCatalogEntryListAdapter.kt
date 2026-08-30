@@ -5,14 +5,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -25,16 +27,24 @@ internal fun LazyListScope.renderBaGuideCatalogEntryListAdapter(
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
 ) {
-    items(
+    itemsIndexed(
         items = displayedEntries,
-        key = { "${it.tab.name}-${it.entryId}-${it.contentId}" },
-        contentType = { "ba_guide_catalog_entry" },
-    ) { entry ->
+        key = { _, entry -> "${entry.tab.name}-${entry.entryId}-${entry.contentId}" },
+        contentType = { _, _ -> "ba_guide_catalog_entry" },
+    ) { index, entry ->
         BaGuideCatalogEntryCard(
             entry = entry,
             isFavorite = favoriteCatalogEntries.containsKey(entry.contentId),
             onOpenGuide = onOpenGuide,
             onToggleFavorite = onToggleFavorite,
+            // The baseline profile's only way into the student guide: the entries carry student names,
+            // which differ per catalog and per language, so nothing else here is a stable handle.
+            modifier =
+                if (index == 0) {
+                    Modifier.testTag(KeiOsTestTags.BaGuideCatalogEntryFirst)
+                } else {
+                    Modifier
+                },
         )
     }
 

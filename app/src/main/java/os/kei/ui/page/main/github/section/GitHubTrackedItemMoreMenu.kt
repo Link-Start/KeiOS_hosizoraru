@@ -167,6 +167,7 @@ internal fun GitHubTrackedItemMoreActions(
                                 add(
                                     LiquidGlassActionMenuActionRow(
                                         id = "actions",
+                                        testTag = KeiOsTestTags.GitHubActionsMenuItem,
                                         text = stringResource(R.string.github_actions_menu),
                                         leadingIcon = actionsIcon,
                                         onClick = {

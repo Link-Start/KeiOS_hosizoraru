@@ -161,6 +161,7 @@ internal fun GitHubTopBarActions(
                         onShowActionMenuPopupChange(false)
                         onOpenStrategySheet()
                     },
+                    testTag = KeiOsTestTags.GitHubStrategySheetButton,
                 ),
                 LiquidToolbarAction(
                     icon = checkLogicIcon,
@@ -169,6 +170,7 @@ internal fun GitHubTopBarActions(
                         onShowActionMenuPopupChange(false)
                         onOpenCheckLogicSheet()
                     },
+                    testTag = KeiOsTestTags.GitHubCheckLogicSheetButton,
                 ),
                 LiquidToolbarAction(
                     icon = moreIcon,

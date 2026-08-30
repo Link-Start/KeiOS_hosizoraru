@@ -76,6 +76,8 @@ import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -350,6 +352,7 @@ fun BaStudentGuidePage(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .pageRootTestTag(KeiOsTestTags.BaStudentGuidePageRoot)
                         // Transparent while a non-Home background is painting, otherwise this opaque
                         // plate covers it and the setting does nothing on this page.
                         .background(

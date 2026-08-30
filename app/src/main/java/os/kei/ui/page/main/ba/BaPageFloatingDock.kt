@@ -125,6 +125,7 @@ internal fun BoxScope.BaPageFloatingDock(
                     icon = catalogIcon,
                     contentDescription = catalogDescription,
                     iconTint = primaryIconTint,
+                    testTag = KeiOsTestTags.BaDockOpenGuideCatalog,
                     onClick = openGuideCatalogClick,
                 ),
             )

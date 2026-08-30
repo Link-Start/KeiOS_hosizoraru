@@ -227,4 +227,8 @@ private val PAGE_ROOT_SOURCES =
         "app/src/main/java/os/kei/ui/page/main/os/shell/page/OsShellRunnerContent.kt" to "OsShellRunnerPageRoot",
         "app/src/main/java/os/kei/ui/page/main/github/history/GitHubActionsNotificationHistoryPage.kt"
             to "GitHubActionsHistoryPageRoot",
+        "app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPageContent.kt"
+            to "BaGuideCatalogPageRoot",
+        "app/src/main/java/os/kei/ui/page/main/student/page/BaStudentGuidePage.kt"
+            to "BaStudentGuidePageRoot",
     )

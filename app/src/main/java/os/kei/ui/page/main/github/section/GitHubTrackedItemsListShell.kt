@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.BuildConfig
@@ -31,6 +32,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Suppress("FunctionName")
@@ -76,6 +78,14 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                 )
             val displaySubtitle = item.githubTrackedDisplaySubtitle(state, displayTitle)
             AppLiquidAccordionCard(
+                // The profile's handle on a tracked card. Only the first one carries it: a per-item tag
+                // would put a resource id on every card in the list for one journey's benefit.
+                modifier =
+                    if (content.sortedTracked.firstOrNull()?.id == item.id) {
+                        Modifier.testTag(KeiOsTestTags.GitHubTrackedItemCardFirst)
+                    } else {
+                        Modifier
+                    },
                 backdrop = surfaces.contentBackdrop,
                 title = displayTitle,
                 subtitle = displaySubtitle,

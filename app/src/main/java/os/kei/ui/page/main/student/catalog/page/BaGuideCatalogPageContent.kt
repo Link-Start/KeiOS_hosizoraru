@@ -67,6 +67,8 @@ import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -196,7 +198,7 @@ internal fun BaGuideCatalogPageContent(
     // tinting with it is what turned both edges black.
     val scrollEdgeTint = appPageBackdropBaseColor()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().pageRootTestTag(KeiOsTestTags.BaGuideCatalogPageRoot)) {
         Box(
             modifier =
                 Modifier

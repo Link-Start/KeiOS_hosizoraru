@@ -1120,14 +1120,25 @@ private fun MacrobenchmarkScope.waitForOptionalTestTag(
  */
 private fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
     repeat(BOTTOM_BAR_REEXPAND_ATTEMPTS) {
-        if (device.findObject(testTagSelector(tag)) != null) {
-            clickTestTag(tag)
-            return
-        }
-        if (device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK)) != null) {
-            clickTestTag(COMPACT_BOTTOM_BAR_DOCK)
+        // Clicked through the node already in hand rather than by looking the tag up a second time.
+        // These two bars cross-fade, so a tag that answered `findObject` a moment ago can be gone by the
+        // time a second lookup runs — which failed a run as "Unable to find testTag=compact_bottom_bar_dock"
+        // one line after something had just found it. A stale handle throws instead, and another pass
+        // around this loop is the right answer to that.
+        val tab = device.findObject(testTagSelector(tag))
+        if (tab != null) {
+            if (runCatching { tab.click() }.isSuccess) {
+                device.waitForIdle()
+                return
+            }
         } else {
-            nudgeVisibleScrollable(forward = false)
+            val pill = device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK))
+            if (pill != null) {
+                runCatching { pill.click() }
+                device.waitForIdle()
+            } else {
+                nudgeVisibleScrollable(forward = false)
+            }
         }
     }
     error("Unable to bring bottom bar tab testTag=$tag back into view in ${targetAppId()}")

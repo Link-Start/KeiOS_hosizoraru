@@ -522,3 +522,59 @@ Suite **2937 tests, 0 failures**; debug and release both assemble.
   strip, the mini player and the search field together because all three derive from its `maxWidth`. A source
   assertion that pinned the raw token was updated to pin the helper instead, which is the more useful contract:
   the token stays right *inside* a card, where there is no page edge to centre against.
+
+## API 37 is versioned in minors, and the app compiles against 37.0
+
+Recorded 2026-08-31, after a local SDK refresh installed the 37.2 platform. This is a landscape note,
+not a change: nothing was migrated, and the reason is below.
+
+API 37 ships minor revisions that each carry their own `android.jar` and their own SDK extension level:
+
+| platform | extension level | android.jar | system image | AVDs |
+| --- | --- | --- | --- | --- |
+| `android-37.0` | 22 | 43.0 MB | installed | — |
+| `android-37.1` | 23 | 43.3 MB | installed | all four run this |
+| `android-37.2` | 24 | 43.8 MB | **none** | — |
+
+The app pins `compileSdkMinor = 0` in **two** files — `app/build.gradle.kts` and
+`ui-liquid-glass/build.gradle.kts` — so `compileSdk = 37` means 37.0 specifically, regardless of what
+the local SDK has installed. A newer platform appearing on the machine changes nothing about the build,
+which is the point of the pin.
+
+Worth knowing that the emulators run a **higher** minor than the app compiles against: every AVD is on
+`android-37.1`. That is fine in the direction it runs — a 37.1 device executing a 37.0-compiled app —
+and it is why an extension-23 API can be present at runtime on the AVD while invisible at compile time.
+
+### What 37.2 would add, and why it is not adopted
+
+Diffed class-for-class against 37.0: **184 classes added, 0 removed** — purely additive, so raising the
+minor could not break anything. But most of the surface is unreachable for an app like this one:
+
+| package | classes | reachable here |
+| --- | --- | --- |
+| `android.app.personalcontext.*` | 38 | no — assistant-role APIs |
+| `android.app.privatecompute.*` | 6 | no — system/assistant |
+| `android.app.contentsafety.*`, `android.agenticon.*` | 8 | no |
+| `android.hardware.input.*` customization | 7 | no |
+| `android.app.MemoryBudgetManager`, `android.content.pm.MemoryBudgetInfo` | 2 | **yes** |
+
+`MemoryBudgetManager` is the one genuinely interesting entry, because it is app-usable — self-imposed
+package and process budgets with over-budget listeners:
+
+```
+setProcessBudgetBytes(long) / getProcessCurrentUsageBytes()
+registerProcessOverBudgetListener(Looper, OnOverBudgetListener)
+```
+
+That is a live lead for `os/kei/memory/AppMemoryRelease.kt`, which drives release levels off
+`ComponentCallbacks2.TRIM_MEMORY_COMPLETE`, `TRIM_MEMORY_RUNNING_CRITICAL` and `TRIM_MEMORY_MODERATE` —
+all three of which the platform now marks deprecated, and the compiler warns about on every full build.
+
+It is **not** taken now, for one reason that is not about effort: there is no `android-37.2` system
+image, so nothing on this machine can run it. Adopting a budget-listener contract that cannot be
+executed once would be shipping an untested memory path, and the existing `TRIM_MEMORY` route still
+works. Revisit when a 37.2 image exists; the diff above is the receipt for what is waiting there.
+
+The NDK also gained `30.0.16138531` in the same refresh. Irrelevant here — this app has no
+`externalNativeBuild`, no `ndkVersion`, and no `CMakeLists.txt` outside the vendored
+`.tmp/Shizuku-API-reference` tree.

@@ -343,3 +343,78 @@ Every number here is from the emulator, where 27ms of *RenderThread CPU* for one
 suspicious on its face and may be an artefact of the AVD's rendering path. The user reports the
 problem on real devices, so the next measurement should be the same A/B on hardware before any fix is
 designed around these proportions.
+
+---
+
+# The fix, and where else it applies
+
+## What the cost actually decomposes into
+
+Measured on the API 37 AVD, release builds, scrolling. Keep the sheet's own glass, disable glass on
+its content only:
+
+| GitHub strategy sheet | total p50 | RT p50 | sync p50 |
+|---|---|---|---|
+| baseline | 132.9 | 38.6 | 9.27 |
+| content glass off | 59.4 | 15.9 | **0.29** |
+
+So a long sheet is **surface term + one offscreen layer per composed glass element**, and `sync` —
+layer upload — is the tell: 9.27ms against 0.29ms is dozens of layers going to the GPU every frame.
+Short sheets are surface-bound and long sheets are content-bound, which is why the earlier
+experiments on Home's nine switch thumbs found nothing: nine 40x24dp thumbs inside one
+always-visible card is a content term of about zero.
+
+## `Modifier.cullWhenFullyClipped`
+
+Compose clips a scrolled-away child and then draws it anyway. For a glass surface that is a layer
+recorded, rasterized and uploaded for pixels that never reach the screen. Skipping the draw of a
+fully clipped element is visually identical by construction.
+
+It lives on `AppSurfaceCard`, which is the shared base for `AppFeatureCard` (47 sites),
+`AppOverviewCard` (9), `SheetSectionCard`/`SheetSurfaceCard` (every sheet) and
+`AppLiquidExpandableCardFrame` (9 accordion sites) — roughly 114 call sites from one modifier.
+
+| | total p50 | RT p50 | frames |
+|---|---|---|---|
+| GitHub track editor, eager and untouched | 91.1 | 24.05 | 95 |
+| + cull | **74.3** | **17.9** | **119** (saturated) |
+| GitHub strategy sheet, lazified | 123.5 | 33.3 | 83 |
+| + cull | **116.1** | **30.7** | 90 |
+
+It culls on zero *clipped area* read from layout, never on position: a partly visible card reports
+positive area and keeps drawing. The edge-stack pile was the case that could have broken — a card
+receding under the top edge is scaled and blurred but still has area, so it keeps drawing. Verified
+on the BA office page mid-scroll.
+
+## Where the same trick does *not* pay
+
+Recorded because each of these looks like an obvious next step and is not.
+
+- **Direct `LiquidSurface` users.** Applied and A/B'd on the BGM track list, the app's longest run of
+  them: 165.9 -> 166.6 total, RT 36.1 -> 39.0, sync 12.6 -> 13.6. No gain, slightly worse. Those rows
+  are inside a `LazyColumn`, so laziness has already stopped composing them and there is nothing left
+  to skip. Reverted. **Culling and laziness overlap; whichever comes first takes the win.**
+- **Floating chrome and overlays** — `AppLiquidFloatingSurface`, toolbars, docks, `LiquidMenuSurface`,
+  `LiquidToastSurface`, `LiquidModalSurface`. Always on screen, so the cull is a no-op.
+- **Small controls** — `StatusPill` (171 sites), `AppSwitch`, `AppLiquidCheckbox`, sliders, search
+  fields. They are descendants of cards, so they are already skipped whenever their card is, and
+  their own layers are too small to matter: deleting the glass from all nine switch thumbs on a sheet
+  measured as no change at all.
+- **Migrating the other 34 eager sheets to `SheetContentLazyColumn`.** Worth much less now than it
+  looked: the strategy sheet gained only 8% from culling *because* laziness had already taken that
+  win, and the two overlap. Culling gets most of it without touching any sheet. Note also that
+  automating the conversion failed twice on real Kotlin — `} else {` seams, and `if` used as an
+  expression inside an argument list — so this route is manual and error-prone for little return.
+
+## What is left
+
+- **The sheet surface floor, ~16ms RT.** From the decomposition above, that is what remains after all
+  content is dealt with. It is one `drawBackdrop` re-recording an offscreen layer every frame whose
+  input — the page behind, already frozen by the modal freeze — has not changed. Tuning what it draws
+  is free (chromatic aberration, blur radius and the thumb's track backdrop all measured as no-ops),
+  so this needs caching at the backdrop-node level rather than anything in app code.
+- **Glass on *visible* cards**, which culling cannot touch. The untried lever is the BA office trick:
+  over the uniform middle of a sheet surface a blur returns the same field, so a card could composite
+  a flat fill and land on the same pixels. Needs pixel verification before it is trusted.
+- **The BGM track list is its own problem**: 166ms total, RT 36ms, sync 12.6ms, already lazy. Its cost
+  is visible content — many rows each carrying glass and album art — not anything culling addresses.

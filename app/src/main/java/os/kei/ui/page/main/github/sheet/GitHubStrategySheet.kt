@@ -42,7 +42,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetActionGroup
-import os.kei.ui.page.main.widget.sheet.SheetContentColumn
+import os.kei.ui.page.main.widget.sheet.SheetContentLazyColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
@@ -145,46 +145,58 @@ internal fun GitHubStrategySheet(
             else -> MiuixTheme.colorScheme.onBackgroundVariant
         }
 
-        SheetContentColumn(verticalSpacing = 8.dp) {
-            SheetSectionHeader(stringResource(R.string.github_strategy_section_draft_summary))
-            GitHubStrategyDraftSummaryCard(
-                selectedStrategy = selectedStrategyInput,
-                selectedActionsStrategy = selectedActionsStrategyInput,
-                tokenInput = sanitizedTokenInput,
-                trackedCount = trackedCount,
-                changed = draftChanged
-            )
-
-            SheetSectionHeader(stringResource(R.string.github_strategy_section_strategy))
-            SheetActionGroup(
-                modifier = Modifier.selectableGroup(),
-                verticalSpacing = 8.dp,
-            ) {
-                guides.forEach { guide ->
-                    GitHubStrategyGuideCard(
-                        guide = guide,
-                        selected = selectedStrategyInput == guide.option,
-                        onSelect = { onSelectedStrategyChange(guide.option) },
-                    )
+        SheetContentLazyColumn(verticalSpacing = 8.dp) {
+            item {
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_draft_summary))
+            }
+            item {
+                GitHubStrategyDraftSummaryCard(
+                    selectedStrategy = selectedStrategyInput,
+                    selectedActionsStrategy = selectedActionsStrategyInput,
+                    tokenInput = sanitizedTokenInput,
+                    trackedCount = trackedCount,
+                    changed = draftChanged
+                )
+            }
+            item {
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_strategy))
+            }
+            item {
+                SheetActionGroup(
+                    modifier = Modifier.selectableGroup(),
+                    verticalSpacing = 8.dp,
+                ) {
+                    guides.forEach { guide ->
+                        GitHubStrategyGuideCard(
+                            guide = guide,
+                            selected = selectedStrategyInput == guide.option,
+                            onSelect = { onSelectedStrategyChange(guide.option) },
+                        )
+                    }
                 }
             }
-
-            SheetSectionHeader(stringResource(R.string.github_strategy_section_actions_strategy))
-            SheetActionGroup(
-                modifier = Modifier.selectableGroup(),
-                verticalSpacing = 8.dp,
-            ) {
-                actionsGuides.forEach { guide ->
-                    GitHubActionsStrategyGuideCard(
-                        guide = guide,
-                        selected = selectedActionsStrategyInput == guide.option,
-                        onSelect = { onSelectedActionsStrategyChange(guide.option) },
-                    )
+            item {
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_actions_strategy))
+            }
+            item {
+                SheetActionGroup(
+                    modifier = Modifier.selectableGroup(),
+                    verticalSpacing = 8.dp,
+                ) {
+                    actionsGuides.forEach { guide ->
+                        GitHubActionsStrategyGuideCard(
+                            guide = guide,
+                            selected = selectedActionsStrategyInput == guide.option,
+                            onSelect = { onSelectedActionsStrategyChange(guide.option) },
+                        )
+                    }
                 }
             }
-
             if (tokenUsedByDraft) {
+                item {
                 SheetSectionHeader(stringResource(R.string.github_strategy_section_credential))
+                }
+                item {
                 SheetSectionCard {
                     SheetControlRow(label = stringResource(R.string.github_strategy_label_token_status)) {
                         StatusPill(
@@ -237,7 +249,11 @@ internal fun GitHubStrategySheet(
                         )
                     }
                 }
+                }
+                item {
                 SheetSectionHeader(stringResource(R.string.github_strategy_section_verify_now))
+                }
+                item {
                 SheetSectionCard {
                     SheetActionGroup {
                         AppLiquidTextButton(
@@ -265,6 +281,8 @@ internal fun GitHubStrategySheet(
                         )
                     }
                 }
+                }
+                item {
                 credentialCheckStatus?.let { status ->
                     GitHubCredentialStatusCard(status = status)
                     SheetDescriptionText(
@@ -275,6 +293,8 @@ internal fun GitHubStrategySheet(
                         }
                     )
                 }
+                }
+                item {
                 GitHubStrategyBenchmarkSection(
                     backdrop = backdrop,
                     trackedCount = trackedCount,
@@ -283,15 +303,23 @@ internal fun GitHubStrategySheet(
                     strategyBenchmarkReport = strategyBenchmarkReport,
                     onRunStrategyBenchmark = onRunStrategyBenchmark
                 )
+                }
+                item {
                 SheetDescriptionText(
                     text = stringResource(R.string.github_strategy_desc_api_actions_recommendation)
                 )
+                }
+                item {
                 SheetSectionHeader(stringResource(R.string.github_strategy_section_recommended_create))
+                }
+                item {
                 GitHubRecommendedTokenGuideCard(
                     guide = tokenGuide,
                     expanded = recommendedTokenGuideExpanded,
                     onExpandedChange = onRecommendedTokenGuideExpandedChange
                 )
+                }
+                item {
                 SheetActionGroup {
                     AppLiquidTextButton(
                         backdrop = backdrop,
@@ -318,16 +346,24 @@ internal fun GitHubStrategySheet(
                         }
                     )
                 }
+                }
+                item {
                 SheetDescriptionText(
                     text = stringResource(R.string.github_strategy_desc_dedicated_token)
                 )
+                }
             } else {
+                item {
                 SheetSectionHeader(stringResource(R.string.github_strategy_section_strategy_note))
+                }
+                item {
                 SheetSectionCard {
                     SheetDescriptionText(
                         text = stringResource(R.string.github_strategy_desc_atom_note)
                     )
                 }
+                }
+                item {
                 GitHubStrategyBenchmarkSection(
                     backdrop = backdrop,
                     trackedCount = trackedCount,
@@ -336,6 +372,7 @@ internal fun GitHubStrategySheet(
                     strategyBenchmarkReport = strategyBenchmarkReport,
                     onRunStrategyBenchmark = onRunStrategyBenchmark
                 )
+                }
             }
         }
     }

@@ -530,11 +530,22 @@ not a change: nothing was migrated, and the reason is below.
 
 API 37 ships minor revisions that each carry their own `android.jar` and their own SDK extension level:
 
-| platform | extension level | android.jar | system image | AVDs |
+| platform | extension level | android.jar | system images published | AVDs |
 | --- | --- | --- | --- | --- |
-| `android-37.0` | 22 | 43.0 MB | installed | — |
-| `android-37.1` | 23 | 43.3 MB | installed | all four run this |
-| `android-37.2` | 24 | 43.8 MB | **none** | — |
+| `android-37.0` | 22 | 43.0 MB | 5 variants x 2 arch, incl. wear and playstore | — |
+| `android-37.1` | 23 | 43.3 MB | 2 variants x 2 arch | all four run this |
+| `android-37.2` | 24 | 43.8 MB | **none under the stable id** | — |
+| `android-37.2-beta1/2/3` | — | not installed | `google_apis_ps16k` + `google_apis_playstore_ps16k`, both arches | — |
+
+That last row is the correction to an earlier draft of this section, which said flatly that no 37.2
+system image exists. It does not exist under the *stable* `android-37.2` id — but three of them are
+published under the **beta** platform ids, and `android-37.2-beta3/google_apis_ps16k/arm64-v8a` is the
+same variant family every KeiOS AVD already runs. "Not published yet" and "published under a name I did
+not grep for" are different facts, and only the second one is true here.
+
+The shape of that table is itself the thing to watch: Google is still iterating this API level. 37.0
+shipped the full image matrix, 37.1 narrowed to two variants, and 37.2 stable currently ships a compile
+surface with **no** stable emulator image behind it at all.
 
 The app pins `compileSdkMinor = 0` in **two** files — `app/build.gradle.kts` and
 `ui-liquid-glass/build.gradle.kts` — so `compileSdk = 37` means 37.0 specifically, regardless of what
@@ -570,10 +581,17 @@ That is a live lead for `os/kei/memory/AppMemoryRelease.kt`, which drives releas
 `ComponentCallbacks2.TRIM_MEMORY_COMPLETE`, `TRIM_MEMORY_RUNNING_CRITICAL` and `TRIM_MEMORY_MODERATE` —
 all three of which the platform now marks deprecated, and the compiler warns about on every full build.
 
-It is **not** taken now, for one reason that is not about effort: there is no `android-37.2` system
-image, so nothing on this machine can run it. Adopting a budget-listener contract that cannot be
-executed once would be shipping an untested memory path, and the existing `TRIM_MEMORY` route still
-works. Revisit when a 37.2 image exists; the diff above is the receipt for what is waiting there.
+It is **not** taken yet, but the reason is narrower than it first looked. There is no *stable* 37.2
+emulator image, so the exact platform the app would compile against cannot be booted. What can be
+booted is `android-37.2-beta3`, whose `google_apis_ps16k/arm64-v8a` image matches the variant the
+existing AVDs use — so a budget-listener path is testable, on a beta of the minor rather than the minor
+itself.
+
+That leaves a real question rather than a blocker: whether `MemoryBudgetManager`'s signatures are
+identical between `37.2-beta3` and stable `37.2`. Until that is checked against beta3's own
+`android.jar`, a beta3 AVD proves the API runs, not that it runs as the shipping platform declares it.
+The honest status is "runnable on a beta, unverified against stable", and the class diff above is the
+receipt for picking it up.
 
 The NDK also gained `30.0.16138531` in the same refresh. Irrelevant here — this app has no
 `externalNativeBuild`, no `ndkVersion`, and no `CMakeLists.txt` outside the vendored

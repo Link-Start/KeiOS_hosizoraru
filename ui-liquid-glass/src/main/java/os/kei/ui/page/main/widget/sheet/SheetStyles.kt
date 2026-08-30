@@ -52,7 +52,6 @@ import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.status.StatusPill
-import os.kei.ui.page.main.widget.glass.cullWhenFullyClipped
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -184,9 +183,7 @@ fun SheetSurfaceCard(
     val resolvedContainerColor = containerColor ?: sheetCardSurfaceColor(surfaceTone, isDark)
     val optics = sheetCardOptics(interactive = onClick != null)
     AppSurfaceCard(
-        // A sheet card scrolled out of view is clipped but still drawn, and for a glass surface that
-        // means a layer recorded, rasterized and uploaded for pixels nobody sees.
-        modifier = modifier.cullWhenFullyClipped(),
+        modifier = modifier,
         exportBackdropToContent = true,
         containerColor = resolvedContainerColor,
         borderColor = borderColor ?: sheetCardBorderColor(surfaceTone),

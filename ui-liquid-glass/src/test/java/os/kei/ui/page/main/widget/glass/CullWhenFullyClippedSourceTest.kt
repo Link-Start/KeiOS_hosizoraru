@@ -14,13 +14,14 @@ import org.junit.Test
  */
 class CullWhenFullyClippedSourceTest {
     @Test
-    fun theSheetCardStillCulls() {
-        val source = sourceFile(SHEET_STYLES)
+    fun theSharedCardStillCulls() {
+        val source = sourceFile(APP_FEATURE_CARDS)
 
         assertTrue(
             "cullWhenFullyClipped()" in source,
-            "$SHEET_STYLES must keep culling fully clipped cards, or every eager sheet pays for " +
-                "layers no pixel of which reaches the screen",
+            "$APP_FEATURE_CARDS must keep culling fully clipped cards. It sits on AppSurfaceCard " +
+                "rather than on the sheet card so pages get it too — every accordion card, tracked " +
+                "card and office card goes through here.",
         )
     }
 
@@ -50,8 +51,8 @@ class CullWhenFullyClippedSourceTest {
 private const val CULL =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/CullWhenFullyClipped.kt"
 
-private const val SHEET_STYLES =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SheetStyles.kt"
+private const val APP_FEATURE_CARDS =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppFeatureCards.kt"
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

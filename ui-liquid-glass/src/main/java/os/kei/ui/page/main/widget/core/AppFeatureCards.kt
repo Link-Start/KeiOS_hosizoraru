@@ -31,6 +31,7 @@ import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
+import os.kei.ui.page.main.widget.glass.cullWhenFullyClipped
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -62,7 +63,10 @@ fun AppSurfaceCard(
 ) {
     val edgeStack = rememberAppEdgeStackSlot(enabled = edgeStackEnabled)
     AppSurfaceBox(
-        modifier = edgeStack.modifier.then(modifier),
+        // Every card in the app, not just the ones in sheets: a card scrolled fully out of its clip
+        // is still drawn by Compose, and for a glass surface that means an offscreen layer recorded,
+        // rasterized and uploaded for pixels that never reach the screen. See [cullWhenFullyClipped].
+        modifier = edgeStack.modifier.then(modifier).cullWhenFullyClipped(),
         edgeStack = edgeStack,
         backdrop = backdrop,
         surfaceColor = containerColor,

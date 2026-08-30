@@ -563,3 +563,41 @@ aberration, thinning the pile, fewer glass rows — trades the material for fram
 trade for this app. The one path that keeps the appearance exactly is caching the rasterized glass so
 a layer whose inputs have not changed is not re-recorded, which lives in the backdrop node rather
 than in our components.
+
+---
+
+# kyant backdrop 2.0.1 / shapes 1.2.1
+
+Both are packaging-only releases. Verified rather than assumed:
+
+- `backdrop-android` **sources are byte-identical** between 2.0.0 and 2.0.1, common sources too.
+- The compiled public API is unchanged — 84 members across `DrawBackdropModifierKt`,
+  `DrawBackdropNode` and `LayerBackdropKt`, `diff` clean.
+- 63 class files differ only through recompilation; the one real change is
+  `META-INF/backdrop.kotlin_module` becoming `META-INF/Glass_backdrop.kotlin_module`, so the Gradle
+  module was renamed upstream. No `glass` artifact is published yet, so this looks like groundwork.
+- `shapes` 1.2.0 -> 1.2.1 sources are byte-identical as well.
+
+A/B'd anyway with the `os.kei` / `os.kei.diag` pair on the BA page: RT 38.65 against 38.73. No
+regression, no gain. Taken to stay current, not for performance.
+
+## What the docs MCP settles
+
+- **There is no cache/freeze API.** Nothing in the documentation exposes a way to stop `drawBackdrop`
+  re-recording its offscreen layer when the source and geometry are unchanged. The ~16ms sheet floor
+  is therefore not reachable from app code with the shipped API, which confirms the conclusion above
+  rather than replacing it.
+- **`exportedBackdrop` is required for our sheets, not optional.** The documented purpose is exactly
+  the "a child samples the parent surface" case, which is what every sheet card does. The ~6ms it
+  costs buys the cards their glass, so dropping it is the appearance trade the pixel diff already
+  showed.
+- **Invalidation timing is undocumented.** The docs describe the dataflow and say nothing about when
+  a `drawBackdrop` redraws or whether effects re-run per frame, so the per-frame re-record stays an
+  observed behaviour rather than a specified one.
+- **`rememberCanvasBackdrop` is coordinates-independent**, unlike `rememberLayerBackdrop`. It is the
+  one primitive this work has not tried, and it is interesting precisely where the sampled field is
+  uniform: a coordinate-independent source cannot need re-sampling as the element scrolls. Untested.
+
+One incidental difference worth noting: the official Glass Slider tutorial has the thumb sample
+`backdrop = trackBackdrop` alone, where `AppSwitch` samples `rememberCombinedBackdrop(backdrop,
+trackBackdrop)`. Measured as free either way, so this is a note rather than a finding.

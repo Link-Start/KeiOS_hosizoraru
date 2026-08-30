@@ -112,6 +112,21 @@ object KeiOsTestTags {
     const val BaStudentGuidePageRoot = "ba_student_guide_page_root"
 
     /**
+     * The student guide's six bottom tabs.
+     *
+     * Its tab bar is a bar, not a swipeable pager — verified on the AVD, where two horizontal swipes over
+     * the content left the page on Profile — and its buttons published neither a resource id nor a
+     * content description, so a journey could reach the guide and then only ever see the tab it landed on.
+     * That left `student.section` and `student.tabcontent`, about 290KB between them, with no rules.
+     */
+    const val BaStudentGuideTabArchive = "ba_student_guide_tab_archive"
+    const val BaStudentGuideTabSkills = "ba_student_guide_tab_skills"
+    const val BaStudentGuideTabProfile = "ba_student_guide_tab_profile"
+    const val BaStudentGuideTabVoice = "ba_student_guide_tab_voice"
+    const val BaStudentGuideTabGallery = "ba_student_guide_tab_gallery"
+    const val BaStudentGuideTabSimulate = "ba_student_guide_tab_simulate"
+
+    /**
      * One switch in the daily-done template editor, tagged so a journey can make an edit it knows about.
      *
      * A switch rather than one of the four dropdowns: a toggle always changes the draft, so the

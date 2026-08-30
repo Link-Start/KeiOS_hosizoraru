@@ -517,24 +517,36 @@ class BaselineProfileGenerator {
             waitForTestTag(BA_DOCK_OPEN_GUIDE_CATALOG, timeoutMs = 15_000)
             clickTestTag(BA_DOCK_OPEN_GUIDE_CATALOG)
             waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 25_000)
-            flingVisibleScrollable(times = 2)
-            dragSlowly(times = 1)
 
-            // The catalog is a pager, and its other tabs are half its source: the BGM library with its
-            // player chrome, and the memory lobby. Both are reachable by swiping, so neither needs a tag
-            // of its own — and neither had a single rule before this.
-            flingPagerHorizontally(times = 2)
-            flingVisibleScrollable(times = 2)
-            flingPagerHorizontally(times = -2)
-
-            if (waitForOptionalTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST, timeoutMs = 10_000)) {
+            // The detail *first*, while the first entry is still where it composed. Scrolling before this
+            // is what left `student.page` at 57 rules and `student.section` at zero in the first capture:
+            // the entry is a lazy item, so a fling disposes it and takes the only tag on it with it.
+            if (waitForOptionalTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST, timeoutMs = 15_000)) {
                 scrollTestTagIntoReach(BA_GUIDE_CATALOG_ENTRY_FIRST)
                 clickTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST)
                 waitForTestTag(BA_STUDENT_GUIDE_PAGE_ROOT, timeoutMs = 30_000)
                 flingVisibleScrollable(times = 3)
+                // Every one of the guide's tabs, which is the ~290KB of `student.section` and
+                // `student.tabcontent` that nothing has ever composed. Tapped rather than swiped: the
+                // guide's tab bar is a bar, not a pager, and two horizontal swipes over its content left
+                // the page exactly where it was.
+                GUIDE_BOTTOM_TABS.forEach { tab ->
+                    clickTestTag(tab)
+                    flingVisibleScrollable(times = 1)
+                }
                 device.pressBack()
                 waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 20_000)
             }
+
+            flingVisibleScrollable(times = 2)
+            dragSlowly(times = 1)
+
+            // The catalog is a pager too, and its other tabs are half its source: the BGM library with
+            // its player chrome, and the memory lobby. Both are reachable by swiping, so neither needs a
+            // tag of its own — and neither had a single rule before this.
+            flingPagerHorizontally(times = 2)
+            flingVisibleScrollable(times = 2)
+            flingPagerHorizontally(times = -2)
 
             device.pressBack()
             waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
@@ -672,8 +684,13 @@ class BaselineProfileGenerator {
                     "-a ${Intent.ACTION_SEND} -t text/plain " +
                         "--es ${Intent.EXTRA_TEXT} $SHARE_IMPORT_SAMPLE_URL",
             )
-            if (waitForOptionalTestTag(GITHUB_SHARE_IMPORT_CANCEL, timeoutMs = 20_000)) {
-                clickTestTag(GITHUB_SHARE_IMPORT_CANCEL)
+            // The resolving sheet is what always appears; the asset picker is one of several states the
+            // flow can settle into, so it is waited for second and softly. Waiting only on the picker is
+            // what made the first capture collect the flow's coordinators and none of its UI.
+            if (waitForOptionalTestTag(LIQUID_SHEET_PANEL, timeoutMs = 20_000)) {
+                waitForOptionalTestTag(GITHUB_SHARE_IMPORT_CANCEL, timeoutMs = 15_000)
+                device.pressBack()
+                device.waitForIdle()
             } else {
                 device.pressBack()
             }
@@ -1225,6 +1242,24 @@ private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
 private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
 private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
 
+/** The guide's six bottom tabs, in bar order. Walked whole: each one composes a different section set. */
+private const val BA_STUDENT_GUIDE_TAB_ARCHIVE = "ba_student_guide_tab_archive"
+private const val BA_STUDENT_GUIDE_TAB_SKILLS = "ba_student_guide_tab_skills"
+private const val BA_STUDENT_GUIDE_TAB_PROFILE = "ba_student_guide_tab_profile"
+private const val BA_STUDENT_GUIDE_TAB_VOICE = "ba_student_guide_tab_voice"
+private const val BA_STUDENT_GUIDE_TAB_GALLERY = "ba_student_guide_tab_gallery"
+private const val BA_STUDENT_GUIDE_TAB_SIMULATE = "ba_student_guide_tab_simulate"
+
+private val GUIDE_BOTTOM_TABS =
+    listOf(
+        BA_STUDENT_GUIDE_TAB_ARCHIVE,
+        BA_STUDENT_GUIDE_TAB_SKILLS,
+        BA_STUDENT_GUIDE_TAB_VOICE,
+        BA_STUDENT_GUIDE_TAB_GALLERY,
+        BA_STUDENT_GUIDE_TAB_SIMULATE,
+        BA_STUDENT_GUIDE_TAB_PROFILE,
+    )
+
 /** The GitHub page's own chrome: a card to open, three sheets, and the star importer. */
 private const val GITHUB_TRACKED_ITEM_CARD_FIRST = "github_tracked_item_card_first"
 private const val GITHUB_ACTIONS_MENU_ITEM = "github_actions_menu_item"
@@ -1247,10 +1282,14 @@ private const val JSON_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.jsonimport.K
 private const val JSON_IMPORT_SAMPLE_PAYLOAD = "{}"
 
 /**
- * A repository the share window can resolve. KeiOS's own, so the journey never depends on someone else's
- * repository staying public, and so a confirmed import would be a no-op rather than new tracked state.
+ * A repository the share window can resolve, and that the app is not already tracking.
+ *
+ * KeiOS's own repository was the obvious choice and the wrong one: an already-tracked repository settles
+ * the flow without a decision to make, so the window wrote its result and closed before composing
+ * anything. That capture collected the coordinators and the result writer and not one sheet. This is a
+ * library rather than an app, so nothing that ships APKs would have it tracked.
  */
-private const val SHARE_IMPORT_SAMPLE_URL = "https://github.com/hosizoraru/KeiOS"
+private const val SHARE_IMPORT_SAMPLE_URL = "https://github.com/JetBrains/compose-multiplatform"
 
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"

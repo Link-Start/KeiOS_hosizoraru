@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -26,6 +27,7 @@ import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -99,7 +101,7 @@ internal fun BaStudentGuideBottomBar(
                             tabIndex = index,
                             label = tabLabel,
                             onClick = { onSelectTab(index) },
-                            modifier = Modifier,
+                            modifier = Modifier.testTag(guideBottomTabTestTag(tab)),
                             content = tabContent,
                         )
                     }
@@ -166,3 +168,19 @@ internal fun guideBottomBarShowsLabels(
     tabCount: Int,
     fontScale: Float,
 ): Boolean = tabCount <= 5 && fontScale <= 1.2f
+
+/**
+ * The tag a baseline-profile journey taps to reach one guide tab.
+ *
+ * Exhaustive over the enum on purpose: a tab added later fails to compile here rather than quietly
+ * becoming the one tab no journey can reach.
+ */
+private fun guideBottomTabTestTag(tab: GuideBottomTab): String =
+    when (tab) {
+        GuideBottomTab.Archive -> KeiOsTestTags.BaStudentGuideTabArchive
+        GuideBottomTab.Skills -> KeiOsTestTags.BaStudentGuideTabSkills
+        GuideBottomTab.Profile -> KeiOsTestTags.BaStudentGuideTabProfile
+        GuideBottomTab.Voice -> KeiOsTestTags.BaStudentGuideTabVoice
+        GuideBottomTab.Gallery -> KeiOsTestTags.BaStudentGuideTabGallery
+        GuideBottomTab.Simulate -> KeiOsTestTags.BaStudentGuideTabSimulate
+    }

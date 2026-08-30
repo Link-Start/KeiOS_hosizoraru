@@ -3,6 +3,8 @@ package os.kei.ui.page.main.about.section
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import os.kei.R
 import os.kei.ui.page.main.about.ui.AboutCompactInfoRow
 import os.kei.ui.page.main.about.ui.AboutSectionCard
@@ -10,6 +12,7 @@ import os.kei.ui.page.main.os.appLucideAppWindowIcon
 import os.kei.ui.page.main.os.appLucideFlaskIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.appLucideMediaIcon
+import os.kei.ui.testing.KeiOsTestTags
 
 @Composable
 fun AboutComponentLabCardSection(
@@ -32,6 +35,7 @@ fun AboutComponentLabCardSection(
         onExpandedChange = onExpandedChange
     ) {
         AboutCompactInfoRow(
+            modifier = Modifier.testTag(KeiOsTestTags.AboutComponentLabButton),
             title = stringResource(R.string.about_component_lab_row_entry),
             value = stringResource(R.string.debug_component_lab_title),
             titleIcon = appLucideFlaskIcon(),

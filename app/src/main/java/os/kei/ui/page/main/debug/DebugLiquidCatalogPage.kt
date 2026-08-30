@@ -28,6 +28,8 @@ import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 
 @Composable
 internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
@@ -39,7 +41,7 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
 
     AppPageScaffold(
         title = stringResource(R.string.debug_component_lab_liquid_catalog_title),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pageRootTestTag(KeiOsTestTags.DebugLiquidCatalogPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,

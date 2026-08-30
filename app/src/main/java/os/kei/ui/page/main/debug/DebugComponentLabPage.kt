@@ -48,6 +48,9 @@ import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.platform.testTag
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 
 @Composable
 internal fun DebugComponentLabPage(
@@ -62,7 +65,7 @@ internal fun DebugComponentLabPage(
 
     AppPageScaffold(
         title = stringResource(R.string.debug_component_lab_title),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pageRootTestTag(KeiOsTestTags.DebugComponentLabPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
@@ -129,6 +132,7 @@ private fun DebugLiquidPreviewCard(
 ) {
     val openLabel = stringResource(R.string.debug_component_lab_action_open_liquid_activity)
     AppFeatureCard(
+        modifier = Modifier.testTag(KeiOsTestTags.DebugLiquidCatalogButton),
         title = stringResource(R.string.debug_component_lab_liquid_catalog_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_catalog_subtitle),
         backdrop = backdrop,

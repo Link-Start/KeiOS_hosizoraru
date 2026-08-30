@@ -51,6 +51,9 @@ internal fun AboutBottomChrome(
         isLiquidEffectEnabled = isLiquidEffectEnabled,
         onSelectCategory = onSelectCategory,
         onExpandDock = onExpandDock,
+        // Also what tags the search dock and the category tabs, via tabbedPageSearchDockTestTag and
+        // tabbedPageCategoryTabTestTag. The component lab lives behind this search: it is not one of
+        // About's three overview cards, so nothing else on the page reaches it.
         labelPrefix = "about",
     )
 }

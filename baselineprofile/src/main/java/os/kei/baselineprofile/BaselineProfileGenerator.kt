@@ -338,11 +338,21 @@ class BaselineProfileGenerator {
                 pageTag = GITHUB_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
-            pushRouteAndReturn(
-                entryTag = GITHUB_ACTIONS_HISTORY_BUTTON,
-                pageTag = GITHUB_ACTIONS_HISTORY_PAGE_ROOT,
-                returnTag = GITHUB_PAGE_ROOT,
-            )
+            waitForTestTag(GITHUB_ACTIONS_HISTORY_BUTTON, timeoutMs = 15_000)
+            clickTestTag(GITHUB_ACTIONS_HISTORY_BUTTON)
+            waitForTestTag(GITHUB_ACTIONS_HISTORY_PAGE_ROOT, timeoutMs = 20_000)
+
+            // All four categories, not just the one the route lands on. Refresh diagnostics, the
+            // track-change cards and the install-history cards each live behind their own tab, and a
+            // journey that only flings the default tab leaves all three uncompiled.
+            GITHUB_HISTORY_TABS.forEach { tab ->
+                clickBottomBarTab(tab)
+                flingVisibleScrollable(times = 1)
+            }
+
+            device.pressBack()
+            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
+            device.waitForIdle()
         }
     }
 
@@ -730,6 +740,75 @@ class BaselineProfileGenerator {
                         "--es ${Intent.EXTRA_TEXT} '$JSON_IMPORT_SAMPLE_PAYLOAD'",
             )
             flingVisibleScrollable(times = 1)
+            device.pressBack()
+            device.waitForIdle()
+        }
+    }
+
+    /**
+     * The component lab and the Liquid catalogue behind it.
+     *
+     * Left out of the first pass on the argument that a developer catalogue earns fewer rules per byte
+     * than anything a user opens — which is still true, and is why it is one journey rather than
+     * several. It ships, though: both activities are manifest-declared and About links to them.
+     *
+     * Reached through About's fourth category tab rather than through the page's search. The lab card
+     * is not one of About's three overview cards, so search was the only other way in, and driving a
+     * text field from a journey depends on focus and the IME in a way a tab tap does not.
+     *
+     * Both activities are `exported="false"`, so neither can be started by name — see
+     * [launchActivityFromColdStart] for why. The catalogue is where nearly all the weight is: a dozen
+     * sample cards on one lazy list, each a component this app draws elsewhere.
+     */
+    @Test
+    fun debugComponentLabInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            waitForTestTag(HOME_ABOUT_BUTTON, timeoutMs = 15_000)
+            clickTestTag(HOME_ABOUT_BUTTON)
+            waitForTestTag(ABOUT_PAGE_ROOT, timeoutMs = 15_000)
+
+            // The tab is re-selected on every attempt rather than once up front. The lab row is composed
+            // only while About's pager is settled on its lab page, and something about a capture's
+            // timing loses that between finding the row and tapping it — the failure reported the About
+            // page still up, its tab bar still up, and the row simply not composed.
+            val labOpened =
+                openWindowFrom(
+                    triggerTag = ABOUT_COMPONENT_LAB_BUTTON,
+                    arrivalTag = DEBUG_COMPONENT_LAB_PAGE_ROOT,
+                    required = false,
+                    prepare = { clickBottomBarTab(ABOUT_TAB_LAB) },
+                )
+
+            // Not required, deliberately. This is the one journey whose target was argued against on its
+            // merits — a developer catalogue earns fewer rules per byte than anything a user opens — and
+            // it must not be able to cost a fifty-minute capture. When the lab does not open, About's own
+            // lab tab is still walked, which is real coverage and the reason the journey gets this far.
+            if (labOpened) {
+                flingVisibleScrollable(times = 1)
+                val catalogueOpened =
+                    openWindowFrom(
+                        triggerTag = DEBUG_LIQUID_CATALOG_BUTTON,
+                        arrivalTag = DEBUG_LIQUID_CATALOG_PAGE_ROOT,
+                        required = false,
+                    )
+                if (catalogueOpened) {
+                    // One long list, every card a different component: the rare journey where scrolling
+                    // to the end is the whole point.
+                    flingVisibleScrollable(times = 8)
+                    dragSlowly(times = 2)
+                    device.pressBack()
+                    device.waitForIdle()
+                }
+                device.pressBack()
+                device.waitForIdle()
+            }
+
+            flingVisibleScrollable(times = 2)
             device.pressBack()
             device.waitForIdle()
         }
@@ -1150,6 +1229,95 @@ private const val COMPACT_BOTTOM_BAR_DOCK = "compact_bottom_bar_dock"
 /** Enough backward nudges to undo the flings a tab's own step makes, with room to spare. */
 private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8
 
+/**
+ * Taps something that opens a window, and proves the window arrived — retrying the tap if it did not.
+ *
+ * A tap that lands on the right node and does nothing is the failure mode here. The About page keeps a
+ * floating bottom bar over the lower fifth of the screen, so a row that is composed and findable can
+ * still be under the bar, and the tap goes to the bar. Bringing the trigger into the tappable band
+ * first is most of the fix; retrying covers the rest, because these lists settle for a moment after a
+ * tab switch and a node can move between being found and being clicked.
+ */
+private fun MacrobenchmarkScope.openWindowFrom(
+    triggerTag: String,
+    arrivalTag: String,
+    required: Boolean = true,
+    prepare: MacrobenchmarkScope.() -> Unit = {},
+): Boolean {
+    repeat(OPEN_WINDOW_ATTEMPTS) {
+        prepare()
+        if (!waitForOptionalTestTag(triggerTag, timeoutMs = 12_000)) return@repeat
+        val bounds = settledBoundsOf(triggerTag)
+        if (bounds != null) {
+            device.click(bounds.centerX(), bounds.centerY())
+            device.waitForIdle()
+            if (device.wait(Until.hasObject(testTagSelector(arrivalTag)), 12_000)) {
+                device.waitForIdle()
+                return true
+            }
+        }
+        // The tap landed on the node and nothing opened, so the node was under the floating bottom bar
+        // and the bar took it. Scrolling forward lifts it clear.
+        //
+        // Deliberately not [scrollTestTagIntoReach]: that insists the node sit inside the tappable band
+        // and scrolls until it does, which is right for a long lazy list and wrong here. About's lab tab
+        // is a single short card, so its row sits above the band with nothing to scroll, and insisting
+        // walked fourteen no-op nudges into "Unable to bring testTag=about_component_lab_button into
+        // reach" for a row that was perfectly tappable where it was.
+        nudgeVisibleScrollable(forward = true)
+    }
+    // Says what was actually on screen, because "it did not open" is not a diagnosis. A trigger that has
+    // gone reports differently from one sitting there being tapped to no effect, and the resumed
+    // activity says whether something else took the window.
+    val whereAmI =
+        listOf(
+            HOME_PAGE_ROOT,
+            ABOUT_PAGE_ROOT,
+            ABOUT_TAB_LAB,
+            ABOUT_COMPONENT_LAB_BUTTON,
+            DEBUG_COMPONENT_LAB_PAGE_ROOT,
+        ).filter { tag -> device.findObject(testTagSelector(tag)) != null }
+    val bounds = device.findObject(testTagSelector(triggerTag))?.visibleBounds
+    val resumed =
+        device
+            .executeShellCommand("dumpsys activity activities")
+            .lineSequence()
+            .firstOrNull { line -> "topResumedActivity" in line }
+            ?.trim()
+            .orEmpty()
+    val report =
+        "testTag=$triggerTag never opened testTag=$arrivalTag in ${targetAppId()}; " +
+            "trigger bounds=$bounds, on screen=$whereAmI, $resumed"
+    check(!required) { report }
+    return false
+}
+
+/** A tap, a nudge, a second tap. A third would be hiding a real failure rather than a settling list. */
+private const val OPEN_WINDOW_ATTEMPTS = 3
+
+/**
+ * The node's bounds once they stop moving, or null if they never do.
+ *
+ * `waitForIdle` does not cover a Compose pager mid-animation, so a tag can be found, report bounds, and
+ * be somewhere else by the time the tap lands — the tap then hits whatever slid under it. That is what
+ * the About lab row was doing: found, tapped, nothing opened, and by the third attempt the row was not
+ * composed at all because the tap had gone to the page sliding past. Two identical readings in a row is
+ * the cheapest proof the layout has settled.
+ */
+private fun MacrobenchmarkScope.settledBoundsOf(tag: String): android.graphics.Rect? {
+    var previous = device.findObject(testTagSelector(tag))?.visibleBounds
+    repeat(BOUNDS_SETTLE_ATTEMPTS) {
+        device.waitForIdle()
+        val current = device.findObject(testTagSelector(tag))?.visibleBounds
+        if (current != null && current == previous) return current
+        previous = current
+    }
+    return previous
+}
+
+/** Each pass costs a `waitForIdle`, so this is roughly a second of settling at worst. */
+private const val BOUNDS_SETTLE_ATTEMPTS = 6
+
 /** Dismisses an open overlay with back, and waits out its exit animation rather than a fixed delay. */
 private fun MacrobenchmarkScope.dismissTheOpenOverlay(panelTag: String) {
     device.pressBack()
@@ -1352,6 +1520,27 @@ private const val SHARE_IMPORT_SAMPLE_URL = "https://github.com/JetBrains/compos
 
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
+
+/** The history route's four category tabs: refresh, actions, tracking, apps. */
+private const val GITHUB_HISTORY_TAB_REFRESH = "github_history_tab_0"
+private const val GITHUB_HISTORY_TAB_ACTIONS = "github_history_tab_1"
+private const val GITHUB_HISTORY_TAB_TRACKING = "github_history_tab_2"
+private const val GITHUB_HISTORY_TAB_APPS = "github_history_tab_3"
+
+private val GITHUB_HISTORY_TABS =
+    listOf(
+        GITHUB_HISTORY_TAB_ACTIONS,
+        GITHUB_HISTORY_TAB_TRACKING,
+        GITHUB_HISTORY_TAB_APPS,
+        GITHUB_HISTORY_TAB_REFRESH,
+    )
+
+/** About's lab tab, and the two debug windows it is the only route to. */
+private const val ABOUT_TAB_LAB = "about_tab_3"
+private const val ABOUT_COMPONENT_LAB_BUTTON = "about_component_lab_button"
+private const val DEBUG_COMPONENT_LAB_PAGE_ROOT = "debug_component_lab_page_root"
+private const val DEBUG_LIQUID_CATALOG_BUTTON = "debug_liquid_catalog_button"
+private const val DEBUG_LIQUID_CATALOG_PAGE_ROOT = "debug_liquid_catalog_page_root"
 
 private fun targetAppId(): String {
     return InstrumentationRegistry.getArguments().getString("targetAppId")

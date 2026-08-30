@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
@@ -233,6 +234,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
             expandedContent = { motionModifier, interactionEnabled ->
                 Box(modifier = motionModifier.align(Alignment.BottomStart)) {
                     TabbedPageCategoryBar(
+                        labelPrefix = labelPrefix,
                         categories = categories,
                         safeSelectedPage = safeSelectedPage,
                         selectedPagePosition = selectedPagePosition,
@@ -295,6 +297,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 modifier =
                     Modifier
                         .width(expandedSearchWidth)
+                        .testTag(tabbedPageSearchDockTestTag(labelPrefix))
                         .zIndex(3f)
                         .graphicsLayer {
                             alpha = searchDockAlphaProvider()
@@ -323,6 +326,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     interactionEnabled: Boolean,
+    labelPrefix: String,
     onSelectCategory: (Int) -> Unit,
 ) {
     val bottomBarTabs: @Composable RowScope.() -> Unit = {
@@ -351,7 +355,14 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
                 tabIndex = index,
                 label = tabLabel,
                 onClick = { onSelectCategory(index) },
-                modifier = Modifier.defaultMinSize(minWidth = 62.dp),
+                // Derived from the page's own prefix rather than declared per page: this chrome is
+                // generic over its categories, so a tag list would have to be threaded through every
+                // caller to name tabs it cannot see. The values are spelled out in KeiOsTestTags for the
+                // pages a baseline-profile journey walks.
+                modifier =
+                    Modifier
+                        .defaultMinSize(minWidth = 62.dp)
+                        .testTag(tabbedPageCategoryTabTestTag(labelPrefix, index)),
                 content = tabContent,
             )
         }
@@ -399,3 +410,12 @@ private fun <C : TabbedPageCategory> TabbedPageCompactCategoryDock(
         )
     }
 }
+
+/** The tag on one category tab of a [TabbedPageBottomChrome], e.g. `github_history_tab_2`. */
+internal fun tabbedPageCategoryTabTestTag(
+    labelPrefix: String,
+    index: Int,
+): String = "${labelPrefix}_tab_$index"
+
+/** The tag on a [TabbedPageBottomChrome]'s search dock, e.g. `about_search`. */
+internal fun tabbedPageSearchDockTestTag(labelPrefix: String): String = "${labelPrefix}_search"

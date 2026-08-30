@@ -146,6 +146,38 @@ object KeiOsTestTags {
     const val CompactBottomBarDock = "compact_bottom_bar_dock"
 
     /**
+     * The component lab, and the Liquid catalogue behind it.
+     *
+     * Both activities are `exported="false"`, so a journey cannot start either by name and has to walk
+     * in: About, the lab's entry row, then the card that opens the catalogue. The catalogue is where
+     * almost all of the weight is — a dozen sample cards on one lazy list.
+     */
+    /**
+     * About's fourth category tab, which is where the component lab card lives.
+     *
+     * The card is not in About's three overview cards, so before this the only way to it was the page's
+     * search — and driving a text field from a profile journey is focus- and IME-dependent in a way a
+     * tab tap is not. Value must match `tabbedPageCategoryTabTestTag("about", 3)`.
+     */
+    const val AboutTabLab = "about_tab_3"
+    const val AboutComponentLabButton = "about_component_lab_button"
+    const val DebugComponentLabPageRoot = "debug_component_lab_page_root"
+    const val DebugLiquidCatalogButton = "debug_liquid_catalog_button"
+    const val DebugLiquidCatalogPageRoot = "debug_liquid_catalog_page_root"
+
+    /**
+     * The Actions-history route's four category tabs.
+     *
+     * Spelled out rather than derived, because `BaselineProfileTestTagContractTest` checks the
+     * generator's constants against literals declared here. The values must match
+     * `tabbedPageCategoryTabTestTag("github_history", index)`, which is what the chrome applies.
+     */
+    const val GitHubHistoryTabRefresh = "github_history_tab_0"
+    const val GitHubHistoryTabActions = "github_history_tab_1"
+    const val GitHubHistoryTabTracking = "github_history_tab_2"
+    const val GitHubHistoryTabApps = "github_history_tab_3"
+
+    /**
      * One switch in the daily-done template editor, tagged so a journey can make an edit it knows about.
      *
      * A switch rather than one of the four dropdowns: a toggle always changes the draft, so the

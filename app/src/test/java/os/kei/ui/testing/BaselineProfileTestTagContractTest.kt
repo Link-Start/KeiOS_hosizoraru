@@ -4,6 +4,7 @@ import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Test
+import os.kei.ui.page.main.widget.chrome.tabbedPageCategoryTabTestTag
 
 /**
  * The macrobenchmark module cannot depend on the app's source set, so [BaselineProfileGenerator]
@@ -128,6 +129,42 @@ class BaselineProfileTestTagContractTest {
         }
     }
 
+    /**
+     * The derived tab tags have to spell what the declared constants say.
+     *
+     * `TabbedPageBottomChrome` is generic over its categories, so it builds each tab's tag from the
+     * page's `labelPrefix` and the tab index rather than taking a list of tags it cannot see. That
+     * means the literals in [KeiOsTestTags] are a second spelling of a format defined elsewhere, and
+     * changing the format would leave them pointing at nothing — failing, as ever, minutes into a
+     * profile run rather than here.
+     */
+    @Test
+    fun theDerivedTabbedPageTagsMatchTheDeclaredOnes() {
+        assertEquals(KeiOsTestTags.GitHubHistoryTabRefresh, tabbedPageCategoryTabTestTag("github_history", 0))
+        assertEquals(KeiOsTestTags.GitHubHistoryTabActions, tabbedPageCategoryTabTestTag("github_history", 1))
+        assertEquals(KeiOsTestTags.GitHubHistoryTabTracking, tabbedPageCategoryTabTestTag("github_history", 2))
+        assertEquals(KeiOsTestTags.GitHubHistoryTabApps, tabbedPageCategoryTabTestTag("github_history", 3))
+        assertEquals(KeiOsTestTags.AboutTabLab, tabbedPageCategoryTabTestTag("about", 3))
+    }
+
+    /**
+     * And the prefixes have to be the ones those pages actually pass.
+     *
+     * A tag derived from "about" is worthless if the About page stops calling itself that, and the
+     * equality above would still hold.
+     */
+    @Test
+    fun thePagesStillPassThePrefixesThoseTagsAssume() {
+        assertTrue(
+            """labelPrefix = "about"""" in sourceFile(ABOUT_BOTTOM_CHROME),
+            "$ABOUT_BOTTOM_CHROME must keep the prefix KeiOsTestTags.AboutTabLab is spelled from",
+        )
+        assertTrue(
+            """labelPrefix = "github_history"""" in sourceFile(GITHUB_HISTORY_PAGE),
+            "$GITHUB_HISTORY_PAGE must keep the prefix the GitHubHistoryTab* tags are spelled from",
+        )
+    }
+
     @Test
     fun tagValuesAreUnique() {
         val values = keiOsTestTagValues()
@@ -232,3 +269,9 @@ private val PAGE_ROOT_SOURCES =
         "app/src/main/java/os/kei/ui/page/main/student/page/BaStudentGuidePage.kt"
             to "BaStudentGuidePageRoot",
     )
+
+private const val ABOUT_BOTTOM_CHROME =
+    "app/src/main/java/os/kei/ui/page/main/about/page/AboutBottomChrome.kt"
+
+private const val GITHUB_HISTORY_PAGE =
+    "app/src/main/java/os/kei/ui/page/main/github/history/GitHubActionsNotificationHistoryPage.kt"

@@ -87,11 +87,10 @@ freshness script's case, not this one's.
 
 Nine new test tags, four new journeys.
 
-- **`baGuideCatalogInteractions`** — the dock's catalog action, the catalog page, its other pager
-  tabs (the BGM library and the memory lobby, reached by swiping so they need no tags of their own),
-  and the student guide detail. The detail step is conditional: catalog entries come from a synced
-  dataset, and an unsynced device showing an empty state is a state worth profiling, not a reason to
-  fail a half-hour capture.
+- **`baGuideCatalogInteractions`** — the dock's catalog action, the catalog page, the student guide
+  detail and every one of the guide's six tabs. The detail step is conditional: catalog entries come
+  from a synced dataset, and an unsynced device showing an empty state is a state worth profiling,
+  not a reason to fail a half-hour capture.
 - **`gitHubTrackedCardInteractions`** — a tracked card *opened*. Every earlier GitHub journey
   scrolled collapsed cards, and a collapsed card composes its header and nothing else. Both
   directions of the accordion, then the Actions sheet from the same card's overflow, conditionally
@@ -103,12 +102,39 @@ Nine new test tags, four new journeys.
   sends, and the JSON import window. Both start from a dead process into their own activity, which is
   the worst case an ART profile can fix.
 
+## What a capture cost, and what reading it taught
+
+Three captures, because the first two passed every journey and still collected almost nothing from
+some of them. **The merged rule count does not tell you this.** The artifact to read is
+`baselineprofile/build/intermediates/baselineprofiles/<variant>/BaselineProfileGenerator_<journey>-baseline-prof-*.txt`,
+one per journey, which is where the three silent failures showed up:
+
+1. **The catalog journey scrolled before it clicked.** The entry card is a lazy item, so the flings
+   disposed it and the conditional detail step found nothing and skipped. `student/page` came out at
+   57 rules and `student/section` at zero. Fixed by opening the detail first.
+2. **The share window closed before composing.** The URL was KeiOS's own repository — picked so a
+   confirmed import would be a no-op, which is exactly why the flow had no decision to make and
+   finished silently. The capture had the coordinators and the result writer and not one sheet.
+3. **Two tab bars are not pagers.** Neither the guide's tabs nor the catalog's dock respond to a
+   horizontal swipe, and neither publishes a resource id or a content description. The guide's are
+   now tagged; the catalog's are not, which is the largest remaining gap below.
+
+`connectedNonMinifiedReleaseAndroidTest` with a `--tests` filter is a good way to prove a journey
+does not time out, and proves nothing else: it does not run the profile-collection step, so no
+per-journey file is produced. Only `generateBaselineProfile` tells you what was actually collected.
+
 ## Deliberately not covered
 
 - **`debug` — the component lab.** It ships (it is manifest-declared and reachable from About), and
   it is 178 KB of composables, which is precisely the argument against it: it is a developer
   catalogue almost no user opens, and Google's guidance is that a profile pays for what users
   actually do. Adding it would be the largest single addition to the profile for the least benefit.
+- **The catalog's own dock** — memory lobby, student BGM, favourite BGM. Same shape as the guide's
+  tab bar and the same fix (tags on `BaGuideBgmExpandedDock`'s items), not yet done. This is also
+  where `androidx.media3` went: the previous capture carried ~5,000 ExoPlayer, MediaSession and
+  extractor rules and this one does not, because nothing in the journey ever starts playback. The
+  BGM *UI* is covered either way — its mini player is on every catalog tab — but the first press of
+  play is now uncompiled. Getting it back means tapping into the BGM tab and starting a track.
 - **`github.history`'s other tabs.** The history route is covered, but only its default tab; the
   install-history and refresh-diagnostics tabs need tab tags first. ~39 KB, worth doing next.
 - **The BA account sheet**, which does not open under a synthetic tap on its toolbar action. Noted

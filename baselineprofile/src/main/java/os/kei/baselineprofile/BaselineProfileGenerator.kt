@@ -540,13 +540,10 @@ class BaselineProfileGenerator {
 
             flingVisibleScrollable(times = 2)
             dragSlowly(times = 1)
-
-            // The catalog is a pager too, and its other tabs are half its source: the BGM library with
-            // its player chrome, and the memory lobby. Both are reachable by swiping, so neither needs a
-            // tag of its own — and neither had a single rule before this.
-            flingPagerHorizontally(times = 2)
-            flingVisibleScrollable(times = 2)
-            flingPagerHorizontally(times = -2)
+            // The catalog's own dock — memory lobby, student BGM, favourite BGM — is not walked, and a
+            // swipe does not reach it: like the guide, its tabs are a bar rather than a pager, and its
+            // buttons publish no id. What BGM this journey does collect comes from the mini player, which
+            // is on every tab. See docs/planning/baseline-profile-coverage.md for what that leaves out.
 
             device.pressBack()
             waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
@@ -1076,26 +1073,6 @@ private fun MacrobenchmarkScope.waitForOptionalTestTag(
     val arrived = device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs) == true
     device.waitForIdle()
     return arrived
-}
-
-/**
- * Swipes a horizontal pager one page at a time; a negative [times] walks back.
- *
- * Kept clear of both edges: a swipe that starts within the back-gesture inset is a predictive back, not a
- * page change, and the difference is a journey that silently leaves the page it meant to walk.
- */
-private fun MacrobenchmarkScope.flingPagerHorizontally(times: Int) {
-    val centerY = device.displayHeight / 2
-    val nearEdge = (device.displayWidth * 0.78f).toInt()
-    val farEdge = (device.displayWidth * 0.22f).toInt()
-    repeat(kotlin.math.abs(times)) {
-        if (times > 0) {
-            device.swipe(nearEdge, centerY, farEdge, centerY, 24)
-        } else {
-            device.swipe(farEdge, centerY, nearEdge, centerY, 24)
-        }
-        device.waitForIdle()
-    }
 }
 
 /** Dismisses an open overlay with back, and waits out its exit animation rather than a fixed delay. */

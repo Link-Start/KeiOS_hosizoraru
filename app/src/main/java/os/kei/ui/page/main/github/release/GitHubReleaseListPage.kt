@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -385,6 +387,7 @@ private fun LazyListScope.releaseCards(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GitHubReleaseCard(
     row: GitHubReleaseRow,
@@ -489,10 +492,13 @@ private fun GitHubReleaseCard(
                     .copy(alpha = if (isDark) 0.30f else 0.18f),
             onClick = { onOpenLink(entry.htmlUrl) },
         ) {
-            Row(
+            // Wraps rather than truncating. Four pills — tag, date, commit, publisher — do not fit one
+            // line on a phone, and a clipped publisher or a half-shown commit is worse than a second
+            // row: these exist precisely to be read exactly.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 GitHubReleasePill(label = entry.tagName, color = GitHubStatusPalette.Stable)
                 entry.publishedAtMillis?.let { millis ->
@@ -859,7 +865,6 @@ private fun GitHubReleasePill(
             size = AppStatusPillSize.Compact,
             backdrop = null,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 }

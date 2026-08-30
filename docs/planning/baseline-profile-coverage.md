@@ -119,7 +119,14 @@ one per journey, which is where the three silent failures showed up:
 3. **Two tab bars are not pagers.** Neither the guide's tabs nor the catalog's dock respond to a
    horizontal swipe, and neither publishes a resource id or a content description, so a journey could
    reach either page and then only ever see the tab it landed on. Both are tagged now.
-4. **A covered interface is not a covered feature.** The BGM mini player sits on every catalog tab,
+4. **A collapsing bottom bar is four bugs, not one.** The catalog dock took four captures, each
+   failure only visible once the one before it was fixed: the tabs had no ids at all, then the bar
+   collapsed on scroll, then the collapsed bar could not be scrolled back on a tab whose content did
+   not fill the screen, then the pill lookup raced its own click across a cross-fade. `clickBottomBarTab`
+   is the accumulated answer. Note too that the guide's bar does *not* hide on every tab — its profile
+   tab leaves it alone and its skills tab does not — so a check on one tab is no evidence about the
+   others.
+5. **A covered interface is not a covered feature.** The BGM mini player sits on every catalog tab,
    so its composables land in the profile whether or not anything plays — while `androidx.media3`,
    the ExoPlayer/MediaSession/extractor stack behind it, loads only when a track starts. A capture
    can look like it covers playback and carry none of it. The journey now taps a student-BGM row,

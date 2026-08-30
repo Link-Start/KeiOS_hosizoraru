@@ -58,7 +58,7 @@ internal fun rememberLiquidToastSurface(
     val resolvedBackdrop = explicitBackdrop ?: sceneBackdrop.takeIf { inOverlay }
     val glassEnabled = liquidControlsEnabled && resolvedBackdrop != null
 
-    if (!glassEnabled || resolvedBackdrop == null) {
+    if (!glassEnabled) {
         return LiquidToastSurface(
             modifier = Modifier
                 .graphicsLayer(block = transformProvider)

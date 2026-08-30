@@ -126,7 +126,7 @@ internal fun rememberLiquidMenuSurface(
         }
     }
 
-    if (!glassEnabled || resolvedBackdrop == null) {
+    if (!glassEnabled) {
         return LiquidMenuSurface(
             modifier = Modifier
                 .graphicsLayer(block = transform)

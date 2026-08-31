@@ -175,7 +175,8 @@ added it walks all 21 journeys a second time against the diagnostic APK for an i
   the `github_track_change_history` *file*, but the store stays empty — the Tracking tab still reads
   "0 of 0 records shown / No tracking records" and the Apps tab "No app records". A file existing is
   not a record existing, and it would have been easy to claim the fix covered all three on the strength
-  of `ls`. `GitHubTrackChangeHistoryCards` needs a real tracked-repo change and
+  of `ls`. *(Both are covered now -- see "The other two history tabs" at the end.)*
+  `GitHubTrackChangeHistoryCards` needs a real tracked-repo change and
   `GitHubAppInstallHistoryCards` needs a real app install; the second is not something a capture can
   reasonably do.
 - **The BA account sheet**, which does not open under a synthetic tap on its toolbar action. Noted
@@ -458,3 +459,47 @@ branches.
 `GitHubTrackedItemsImportApplier` is still at **0** rules, before and after, even though the import
 demonstrably applies — the record it produces is what the whole journey then reads. Worth knowing before
 assuming a profile covers everything a journey executes.
+
+## The other two history tabs
+
+The last two components at zero rules. Measured in a single-journey capture, which is why the numbers
+below are larger than the same components will show in a full one:
+
+| component | before | after |
+| --- | ---: | ---: |
+| `GitHubAppInstallHistoryCards` | **0** | **27** |
+| `GitHubAppInstallHistoryUiRecord` | **0** | **10** |
+| `GitHubTrackChangeHistoryCards` | 14 | 20 |
+
+**Tracking was already half done, by accident.** `GitHubTrackedItemsImportApplier` calls
+`recordChangesBlocking`, so the failing-refresh fixture's JSON import had *already* written real
+track-change records and taken that component from 0 to 14 in the previous capture. What was still
+missing is the same thing the refresh card was missing before it: these cards are collapsible, so
+selecting the tab composed a header and stopped. Expanding one adds the content lambda and its rows.
+
+**Apps needed a real package event, and nothing the app does to itself is one.**
+`recordPackageChangedBlocking` returns early unless a tracked item names the package the broadcast is
+about, and the only writer is the runtime receiver in `KeiOSApp`. So a third fixture tracks a package
+that is already installed, and the journey makes that package come and go with `pm hide` / `pm unhide`.
+Hiding is what `setApplicationHiddenSettingAsUser` does: the platform broadcasts `PACKAGE_REMOVED` and
+then `PACKAGE_ADDED`, the APK is never touched, and no data is lost. The pair matters —
+`buildPackageChangeResult` maps a removal to `Uninstalled` and an add with no previous snapshot to
+`Installed`, so two events give two records with two different actions and two version strings.
+`PACKAGE_CHANGED` was the obvious cheaper trigger and is useless: that branch writes no records at all.
+
+**The package has to be one the app is willing to look at.** `com.android.cts.ctsshim` was the first
+choice — present on every build, no data, no behaviour — and it produced exactly half the records:
+hiding wrote `Uninstalled`, unhiding wrote nothing. `shouldIgnoreInstalledApp` ignores anything with
+`FLAG_HAS_CODE == 0` and the CTS shims are code-less stub APKs, so `querySnapshot` returned null and the
+add branch bails on a null snapshot; the removal branch does not, because it synthesises the previous
+snapshot it needs. Checked with `dumpsys package` on both the AVD and the physical device: the shims have
+no `HAS_CODE`, `com.android.egg` does. With the easter egg both records appear, carrying
+`Current 1.0 (12)` and `Previous 1.0 (12)`.
+
+Unhiding runs in a `finally` and is verified against `dumpsys package` afterwards, so a run that fails to
+restore the package fails loudly instead of leaving it hidden on somebody's device.
+
+**One shared helper now.** `expandHistoryRecord(cardTag, bodyTag)` serves all three tabs: `bodyTag` is a
+handle that exists only inside an expanded card, so waiting for it separates a header tap that worked
+from one that landed and did nothing. On the refresh tab that tag is the diagnostic pill row, which
+proves the record has failures as well — the same check, doing more work.

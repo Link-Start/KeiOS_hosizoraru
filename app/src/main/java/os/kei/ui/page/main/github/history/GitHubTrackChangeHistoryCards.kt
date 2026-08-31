@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -61,7 +63,7 @@ internal fun GitHubTrackChangeHistoryRecordCard(
     AppFeatureCard(
         title = title,
         subtitle = subtitle,
-        modifier = modifier,
+        modifier = modifier.testTag(KeiOsTestTags.GitHubTrackChangeHistoryCard),
         exportBackdropToContent = true,
         eyebrow = stringResource(R.string.github_history_tracking_time_changed, changedAt),
         sectionStartAction = {
@@ -93,7 +95,7 @@ internal fun GitHubTrackChangeHistoryRecordCard(
         },
     ) {
         AppInfoListBody(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag(KeiOsTestTags.GitHubTrackChangeHistoryDetails),
             verticalSpacing = CardLayoutRhythm.compactSectionGap,
         ) {
             AppInfoRow(

@@ -362,6 +362,11 @@ class BaselineProfileGenerator {
         ) {
             seedFailingGitHubTracks()
             launchHomeFromColdStart()
+            // After the launch, not before: the receiver that turns a package event into a record is
+            // registered at runtime in `KeiOSApp`, so a dead process hears nothing. And early rather
+            // than late, because it records on an application-scoped coroutine and the route reads the
+            // store once when it opens.
+            seedGitHubAppInstallHistory()
 
             clickAndWaitForPage(
                 tabTag = MAIN_BOTTOM_TAB_GITHUB,
@@ -387,6 +392,23 @@ class BaselineProfileGenerator {
             GITHUB_HISTORY_TABS.forEach { tab ->
                 clickBottomBarTab(tab)
                 flingVisibleScrollable(times = 1)
+                // Both of these cards are collapsible, and a collapsed one composes its header and
+                // stops -- which is why the two files were at zero rules while the tab they live on was
+                // being selected and flung on every capture. Selecting a tab is not rendering its
+                // content.
+                when (tab) {
+                    GITHUB_HISTORY_TAB_TRACKING ->
+                        expandHistoryRecord(
+                            cardTag = GITHUB_TRACK_CHANGE_HISTORY_CARD,
+                            bodyTag = GITHUB_TRACK_CHANGE_HISTORY_DETAILS,
+                        )
+
+                    GITHUB_HISTORY_TAB_APPS ->
+                        expandHistoryRecord(
+                            cardTag = GITHUB_APP_INSTALL_HISTORY_CARD,
+                            bodyTag = GITHUB_APP_INSTALL_HISTORY_DETAILS,
+                        )
+                }
             }
 
             // Deliberately last in GITHUB_HISTORY_TABS, so the route is sitting on Refresh here.
@@ -1314,6 +1336,46 @@ private fun MacrobenchmarkScope.seedFailingGitHubTracks() {
 private const val JSON_IMPORT_CONFIRM_ATTEMPTS = 3
 
 /**
+ * Makes a package event happen to a tracked package, so the Apps tab has records to draw.
+ *
+ * `GitHubAppInstallHistoryCards` was the last of the three history components at zero rules, and unlike
+ * the other two nothing the app does to itself produces one: `recordPackageChangedBlocking` returns
+ * early unless a tracked item names the package the broadcast is about, and the only writer is the
+ * runtime receiver in `KeiOSApp` reacting to a real `PACKAGE_ADDED`/`REMOVED`/`REPLACED`. So the third
+ * fixture tracks [APP_INSTALL_FIXTURE_PACKAGE], and this makes that package come and go.
+ *
+ * `pm hide` / `pm unhide` rather than an uninstall and a reinstall. Hiding is what
+ * `setApplicationHiddenSettingAsUser` does: the platform broadcasts `PACKAGE_REMOVED` and then
+ * `PACKAGE_ADDED`, which is exactly the pair wanted, while the APK is never touched and no data is
+ * lost. Verified on the API 37 AVD by watching other listeners react to both, and by reading back
+ * `hidden=false` afterwards.
+ *
+ * The pair is deliberate: `buildPackageChangeResult` maps a removal to `Uninstalled` and an add with no
+ * previous snapshot to `Installed`, so two events give two records with two different actions, which is
+ * two arms of `rememberAppInstallActionLabel`, `appInstallActionColor` and
+ * `rememberAppInstallVersionChange` instead of one. `PACKAGE_CHANGED` was the obvious cheaper trigger
+ * and is useless here -- that branch writes no records at all, only a snapshot.
+ *
+ * Unhiding is the restore, and it runs even if hiding threw, because the alternative is leaving a
+ * package hidden on somebody's device. The check afterwards is there so that failing to restore fails
+ * the run rather than going unnoticed.
+ */
+private fun MacrobenchmarkScope.seedGitHubAppInstallHistory() {
+    try {
+        device.executeShellCommand("pm hide $APP_INSTALL_FIXTURE_PACKAGE")
+        device.waitForIdle()
+    } finally {
+        device.executeShellCommand("pm unhide $APP_INSTALL_FIXTURE_PACKAGE")
+        device.waitForIdle()
+    }
+    val state = device.executeShellCommand("dumpsys package $APP_INSTALL_FIXTURE_PACKAGE")
+    check("hidden=false" in state) {
+        "$APP_INSTALL_FIXTURE_PACKAGE was left hidden on the device; restore it with " +
+            "`adb shell pm unhide $APP_INSTALL_FIXTURE_PACKAGE`"
+    }
+}
+
+/**
  * Runs one refresh so the history route has something other than empty states to draw.
  *
  * The route's journey walks all four tabs, but a capture installs the app fresh and those tabs render
@@ -1395,34 +1457,50 @@ private fun MacrobenchmarkScope.pullToRefresh() {
  * looked green. If the fixture ever stops taking, the run should say so.
  */
 private fun MacrobenchmarkScope.expandRefreshRecordWithDiagnostics() {
-    // Separated from the walk below so the two ways this can go wrong do not report as one. "The tab has
-    // no cards" and "the cards have no diagnostics" have different causes and different fixes, and the
-    // first capture to hit either spent half an hour saying only the second.
-    check(device.wait(Until.hasObject(testTagSelector(GITHUB_REFRESH_HISTORY_CARD)), 20_000)) {
-        "The Refresh tab drew no record cards in ${targetAppId()}; the route is not on that tab, or the " +
-            "store is empty"
+    expandHistoryRecord(
+        cardTag = GITHUB_REFRESH_HISTORY_CARD,
+        bodyTag = GITHUB_REFRESH_HISTORY_DIAGNOSTICS,
+    )
+    // The failure blocks and the retry row are the tail of an expanded record, well past a screen of
+    // scheduler and performance rows.
+    flingVisibleScrollable(times = 3)
+}
+
+/**
+ * Expands the first history record on the showing tab that proves it opened.
+ *
+ * `bodyTag` is a handle that exists only inside an expanded card, so waiting for it separates a header
+ * tap that worked from one that landed and did nothing. For the refresh tab it proves more than that:
+ * the diagnostic pills compose only for a record with failures, so it is also the check on the
+ * failing-refresh fixture.
+ *
+ * The card-absent case is checked first and separately. "The tab has no cards" and "the cards do not
+ * open" have different causes and different fixes, and a capture that reported only the second spent
+ * half an hour saying the wrong thing.
+ */
+private fun MacrobenchmarkScope.expandHistoryRecord(
+    cardTag: String,
+    bodyTag: String,
+) {
+    check(device.wait(Until.hasObject(testTagSelector(cardTag)), 20_000)) {
+        "No cards with testTag=$cardTag in ${targetAppId()}; the route is on the wrong tab, or that " +
+            "tab's store is empty. On screen: ${visibleTextSummary()}"
     }
-    repeat(REFRESH_HISTORY_RELOAD_ATTEMPTS) { attempt ->
+    repeat(HISTORY_RECORD_RELOAD_ATTEMPTS) { attempt ->
         // The route is not live on the store. `GitHubActionsNotificationHistoryViewModel` reads it once
-        // from `init`, so the record the pull-to-refresh two navigations ago is writing may simply not
-        // have existed when this page loaded -- the refresh is asynchronous and nothing waits on it.
-        // The page's own pull re-reads, which is both the retry and one more path collected.
+        // from `init`, so a record still being written when this page loaded is simply not in it. The
+        // page's own pull re-reads, which is both the retry and one more path collected.
         if (attempt > 0) pullToRefresh()
-        // Newest first, and the record this journey made is the newest, so the walk starts from the top
-        // of the list rather than from wherever the tab loop's fling left it.
+        // Newest first, and the records this journey made are the newest, so the walk starts from the
+        // top of the list rather than from wherever the tab loop's fling left it.
         scrollVisibleScrollableToTop()
-        if (openRefreshRecordWithDiagnostics()) {
-            // The failure blocks and the retry row are the tail of an expanded record, well past a
-            // screen of scheduler and performance rows.
-            flingVisibleScrollable(times = 3)
-            return
-        }
+        if (openHistoryRecord(cardTag = cardTag, bodyTag = bodyTag)) return
     }
-    val cardCount = device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD)).size
+    val cardCount = device.findObjects(testTagSelector(cardTag)).size
     error(
-        "No refresh record composed testTag=$GITHUB_REFRESH_HISTORY_DIAGNOSTICS in ${targetAppId()} " +
-            "across $REFRESH_HISTORY_RELOAD_ATTEMPTS passes over $cardCount visible cards; " +
-            "the failing-refresh fixture did not take. On screen: ${visibleTextSummary()}",
+        "No record composed testTag=$bodyTag in ${targetAppId()} across " +
+            "$HISTORY_RECORD_RELOAD_ATTEMPTS passes over $cardCount visible testTag=$cardTag cards. " +
+            "On screen: ${visibleTextSummary()}",
     )
 }
 
@@ -1466,20 +1544,23 @@ private fun MacrobenchmarkScope.scrollVisibleScrollableToTop() {
  */
 private const val SCROLL_TO_TOP_ATTEMPTS = 3
 
-/** One pass over the visible records: expand, keep the first that has diagnostics, close the rest. */
-private fun MacrobenchmarkScope.openRefreshRecordWithDiagnostics(): Boolean {
-    repeat(REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS) { index ->
+/** One pass over the visible records: expand, keep the first that draws its body, close the rest. */
+private fun MacrobenchmarkScope.openHistoryRecord(
+    cardTag: String,
+    bodyTag: String,
+): Boolean {
+    repeat(HISTORY_RECORD_CARD_ATTEMPTS) { index ->
         // Read through runCatching, re-queried every pass, and retried in place. These lists recompose
         // underneath a journey -- the staleness [clickBottomBarTab] documents -- so a handle that
         // answered `findObjects` a moment ago throws `StaleObjectException` from `visibleBounds` rather
         // than returning null. That is not a missing card, it is a moving one, and skipping to the next
         // index on it would quietly walk past the newest record, which is the only one this journey has
         // any reason to expect diagnostics from.
-        val bounds = boundsOfSettledCard(index) ?: return@repeat
+        val bounds = boundsOfSettledCard(cardTag = cardTag, index = index) ?: return@repeat
         val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
         device.click(bounds.centerX(), bounds.top + inset)
         device.waitForIdle()
-        if (device.wait(Until.hasObject(testTagSelector(GITHUB_REFRESH_HISTORY_DIAGNOSTICS)), 5_000)) {
+        if (device.wait(Until.hasObject(testTagSelector(bodyTag)), 5_000)) {
             return true
         }
         device.click(bounds.centerX(), bounds.top + inset)
@@ -1489,11 +1570,14 @@ private fun MacrobenchmarkScope.openRefreshRecordWithDiagnostics(): Boolean {
 }
 
 /** Re-reads one card's bounds until they stop moving, or gives up on it. */
-private fun MacrobenchmarkScope.boundsOfSettledCard(index: Int): android.graphics.Rect? {
+private fun MacrobenchmarkScope.boundsOfSettledCard(
+    cardTag: String,
+    index: Int,
+): android.graphics.Rect? {
     repeat(STALE_CARD_READ_ATTEMPTS) {
         val bounds =
             runCatching {
-                device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD))
+                device.findObjects(testTagSelector(cardTag))
                     .getOrNull(index)
                     ?.visibleBounds
             }.getOrNull()
@@ -1503,14 +1587,14 @@ private fun MacrobenchmarkScope.boundsOfSettledCard(index: Int): android.graphic
     return null
 }
 
-/** Enough of the visible refresh records to find one with failures, without walking the whole tab. */
-private const val REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS = 3
+/** Enough of the visible records to find one that opens, without walking the whole tab. */
+private const val HISTORY_RECORD_CARD_ATTEMPTS = 3
 
 /** A card that is still moving settles well inside this; one that is absent never will. */
 private const val STALE_CARD_READ_ATTEMPTS = 4
 
-/** Enough re-reads to outlast a refresh that is still finishing when the route opens. */
-private const val REFRESH_HISTORY_RELOAD_ATTEMPTS = 3
+/** Enough re-reads to outlast a record that is still being written when the route opens. */
+private const val HISTORY_RECORD_RELOAD_ATTEMPTS = 3
 
 private fun MacrobenchmarkScope.nudgeVisibleScrollable(forward: Boolean) {
     val centerX = device.displayWidth / 2
@@ -1898,6 +1982,25 @@ private const val JSON_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.jsonimport.K
  */
 private const val JSON_IMPORT_SAMPLE_PAYLOAD = "{}"
 
+/**
+ * The installed package the third fixture tracks, so a package event can be made to happen to it.
+ *
+ * `GitHubAppInstallHistoryService` records nothing for a package no tracked item names, so the Apps tab
+ * needs a track whose `packageName` is something already on the device -- and then a real
+ * `PACKAGE_REMOVED`/`PACKAGE_ADDED` for it. The easter egg is the least consequential thing that is
+ * present on every Android build this app runs on, checked on both the API 37 AVD and the physical
+ * device: no data, no service, and nothing depending on it for the two seconds it is away.
+ *
+ * **It has to be a package the app is willing to look at, which is not obvious.** The first choice was
+ * `com.android.cts.ctsshim`, which looked ideal and produced only half the records: hiding it wrote
+ * `Uninstalled` and unhiding it wrote nothing. The reason is in `shouldIgnoreInstalledApp` --
+ * `FLAG_HAS_CODE == 0` is one of its ignore rules, and the CTS shims are code-less stub APKs, so
+ * `querySnapshot` returned null and the add branch bails on a null snapshot. The removal branch does
+ * not, because it synthesises the previous snapshot it needs. Checked with `dumpsys package`: the shims
+ * have no `HAS_CODE`, the easter egg does.
+ */
+private const val APP_INSTALL_FIXTURE_PACKAGE = "com.android.egg"
+
 private const val JSON_IMPORT_PAGE_ROOT = "json_import_page_root"
 private const val JSON_IMPORT_CONFIRM = "json_import_confirm"
 
@@ -1926,7 +2029,7 @@ private const val JSON_IMPORT_CONFIRM = "json_import_confirm"
  * the second attempt at this: the extra arrived cut off at the first space, the router filed the
  * remainder as an unknown file, and the window drew a preview with no confirm button to find.
  */
-private const val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
+private val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
     """{"format":"keios.github.tracked/v4","schemaVersion":4,"items":[""" +
         """{"sourceMode":"github_repository",""" +
         """"repoUrl":"https://github.com/hosizoraru/keios-baseline-profile-missing",""" +
@@ -1937,7 +2040,12 @@ private const val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
         """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile.apk",""" +
         """"owner":"keios-baseline-profile","repo":"unreachable-apk",""" +
         """"packageName":"os.kei.baselineprofile.unreachable",""" +
-        """"appLabel":"zz-baseline-profile-unreachable-apk"}]}"""
+        """"appLabel":"zz-baseline-profile-unreachable-apk"},""" +
+        """{"sourceMode":"direct_apk",""" +
+        """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile-installed.apk",""" +
+        """"owner":"keios-baseline-profile","repo":"installed-package",""" +
+        """"packageName":"$APP_INSTALL_FIXTURE_PACKAGE",""" +
+        """"appLabel":"zz-baseline-profile-installed-package"}]}"""
 
 /**
  * A repository the share window can resolve, and that the app is not already tracking.
@@ -1956,6 +2064,12 @@ private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_pag
 /** Every refresh record card carries this, and only a record with something to report carries the other. */
 private const val GITHUB_REFRESH_HISTORY_CARD = "github_refresh_history_card"
 private const val GITHUB_REFRESH_HISTORY_DIAGNOSTICS = "github_refresh_history_diagnostics"
+
+/** The other two tabs' cards, and the bodies that prove one of them opened. */
+private const val GITHUB_TRACK_CHANGE_HISTORY_CARD = "github_track_change_history_card"
+private const val GITHUB_TRACK_CHANGE_HISTORY_DETAILS = "github_track_change_history_details"
+private const val GITHUB_APP_INSTALL_HISTORY_CARD = "github_app_install_history_card"
+private const val GITHUB_APP_INSTALL_HISTORY_DETAILS = "github_app_install_history_details"
 
 /** The history route's four category tabs: refresh, actions, tracking, apps. */
 private const val GITHUB_HISTORY_TAB_REFRESH = "github_history_tab_0"

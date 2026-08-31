@@ -230,6 +230,18 @@ object KeiOsTestTags {
     const val GitHubRefreshHistoryDiagnostics = "github_refresh_history_diagnostics"
 
     /**
+     * The other two history tabs' record cards, and the detail bodies only an expanded card draws.
+     *
+     * Same shape as the refresh pair above and for the same reason. A collapsed card composes its
+     * header and stops, so the body -- which is most of both files -- needs a handle that exists only
+     * once it is open. Waiting on the card alone would let a missed header tap read as success.
+     */
+    const val GitHubTrackChangeHistoryCard = "github_track_change_history_card"
+    const val GitHubTrackChangeHistoryDetails = "github_track_change_history_details"
+    const val GitHubAppInstallHistoryCard = "github_app_install_history_card"
+    const val GitHubAppInstallHistoryDetails = "github_app_install_history_details"
+
+    /**
      * The JSON import window's root, and its confirm button in the one state where it applies the file.
      *
      * The root is here for the reason `pageRootTestTag` exists: this window had no tags at all, so

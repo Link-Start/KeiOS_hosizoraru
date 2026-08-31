@@ -14,6 +14,8 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 
 @Composable
@@ -35,7 +37,7 @@ internal fun KeiOSJsonImportPage(
 
     AppPageScaffold(
         title = stringResource(R.string.json_import_title),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pageRootTestTag(KeiOsTestTags.JsonImportPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,

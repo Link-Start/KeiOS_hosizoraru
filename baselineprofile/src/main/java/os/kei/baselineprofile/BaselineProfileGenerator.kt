@@ -360,6 +360,7 @@ class BaselineProfileGenerator {
             stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
+            seedFailingGitHubTracks()
             launchHomeFromColdStart()
 
             clickAndWaitForPage(
@@ -368,6 +369,7 @@ class BaselineProfileGenerator {
                 settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
             seedGitHubHistory()
+            awaitGitHubRefreshSettled()
 
             waitForTestTag(GITHUB_ACTIONS_HISTORY_BUTTON, timeoutMs = 15_000)
             clickTestTag(GITHUB_ACTIONS_HISTORY_BUTTON)
@@ -380,6 +382,9 @@ class BaselineProfileGenerator {
                 clickBottomBarTab(tab)
                 flingVisibleScrollable(times = 1)
             }
+
+            // Deliberately last in GITHUB_HISTORY_TABS, so the route is sitting on Refresh here.
+            expandRefreshRecordWithDiagnostics()
 
             device.pressBack()
             waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
@@ -786,7 +791,7 @@ class BaselineProfileGenerator {
                 className = JSON_IMPORT_ACTIVITY_CLASS,
                 arguments =
                     "-a ${Intent.ACTION_SEND} -t text/plain " +
-                        "--es ${Intent.EXTRA_TEXT} '$JSON_IMPORT_SAMPLE_PAYLOAD'",
+                        "--es ${Intent.EXTRA_TEXT} $JSON_IMPORT_SAMPLE_PAYLOAD",
             )
             flingVisibleScrollable(times = 1)
             device.pressBack()
@@ -1162,6 +1167,30 @@ private fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
 }
 
 /**
+ * Scrolls a lazy list until a tag is composed, then taps it where it lands.
+ *
+ * [scrollTestTagIntoReach] is the one to reach for on a page whose lower fifth belongs to a floating
+ * bar: it insists the target sit inside a safe band before tapping, because a control under the dock
+ * takes no taps. This is for the opposite shape -- a control that *is* the bottom of the list. The
+ * JSON import window's action row settles around 93% of the way down the screen with nothing after it,
+ * so the band check can never be satisfied, and the scroll loop spends its whole budget swiping a list
+ * that is already at its end. That is how this journey first failed, several lines after the tag it was
+ * looking for had become visible.
+ */
+private fun MacrobenchmarkScope.scrollTestTagIntoViewAndClick(tag: String) {
+    repeat(SCROLL_INTO_REACH_ATTEMPTS) {
+        val node = device.findObject(testTagSelector(tag))
+        if (node != null && node.visibleBounds.height() >= MIN_TAPPABLE_HEIGHT_PX) {
+            node.click()
+            device.waitForIdle()
+            return
+        }
+        nudgeVisibleScrollable(forward = true)
+    }
+    error("Unable to scroll testTag=$tag into view in ${targetAppId()}")
+}
+
+/**
  * Taps a card's header rather than the middle of the card.
  *
  * [clickTestTag] clicks a node's centre, which is the header only while the card is collapsed. On an
@@ -1213,6 +1242,72 @@ private const val SCROLL_INTO_REACH_ATTEMPTS = 14
  * this exists to land one card in the tappable band, and a fling overshoots a one-line card.
  */
 /**
+ * Imports two tracked projects that cannot possibly refresh, so the next refresh records failures.
+ *
+ * The history route's Refresh tab needed a record before it drew anything, and [seedGitHubHistory] gave
+ * it one. That was not enough, and the way it was not enough is the point. `GitHubRefreshHistoryCards`
+ * collected 41 rules from those records while `GitHubRefreshHistoryDiagnostics` still collected zero:
+ * `GitHubRefreshHistoryDiagnosticPills` returns on `hasRefreshTraceDiagnostics()` and
+ * `GitHubRefreshFailureSummaryBlock` is drawn once per `failureSummaries` entry, so a clean run leaves
+ * both with nothing to say. The gap was never "no history"; it was "no *failing* history", and on a
+ * freshly installed app there is nothing tracked for a refresh to fail on either.
+ *
+ * So the fixture is two tracked items, imported through the app's own JSON import window — the same
+ * activity [sharedIntentWindowInteractions] already starts, here with a real payload instead of `{}`,
+ * which also means the planner, the applier and the sample list get compiled for the first time.
+ *
+ * The two are chosen to fail differently, because `rememberFailureCategoryLabel` branches on the
+ * category and one fixture would compile one arm of it:
+ *
+ * | fixture | category | measured |
+ * | --- | --- | --- |
+ * | a repository that does not exist | `http_error` | HTTP 404 in 81ms |
+ * | a direct APK on a closed local port | `network_error` | connection refused in 474ms |
+ *
+ * Neither depends on the device having working internet, only on what the failure is *called*: with no
+ * network the 404 becomes a DNS failure, which is still a failure and still writes a record. The
+ * loopback fixture leaves the device entirely — port 9 is discard, and nothing listens on it — so the
+ * capture is not leaning on a third party being reachable to produce its rules.
+ *
+ * Verified end to end on the API 37 AVD before this shipped: both items land in the track store, the
+ * next pull reports `failed=2`, and the expanded record draws the pills, both failure blocks with
+ * their differing category labels, and the retry row that `refreshHistoryRetryTargetIds` gates on
+ * failures.
+ */
+private fun MacrobenchmarkScope.seedFailingGitHubTracks() {
+    launchActivityFromColdStart(
+        className = JSON_IMPORT_ACTIVITY_CLASS,
+        arguments =
+            "-a ${Intent.ACTION_SEND} -t text/plain " +
+                // Unquoted, and the payload carries no spaces, because `UiDevice.executeShellCommand`
+                // is not a shell: it splits the string on whitespace and hands the pieces to
+                // `Runtime.exec`, so a quote is a literal character in the extra rather than a
+                // grouping. Wrapping the JSON in quotes made it arrive as `'{"format":...}'`, which
+                // the router reads as neither an object nor an array and files as an unknown file --
+                // a preview screen with nothing to confirm, which is how this first failed.
+                "--es ${Intent.EXTRA_TEXT} $JSON_IMPORT_FAILING_TRACKS_PAYLOAD",
+    )
+    waitForTestTag(JSON_IMPORT_PAGE_ROOT, timeoutMs = 20_000)
+    // The action card sits below the preview and the sample list, so it has to be scrolled to rather
+    // than waited for: a lazy list does not compose what is off screen, and the tag is only applied in
+    // the one state where the button imports -- not while it reads "Processing" or "Close".
+    // Retried for the reason [openWindowFrom] is: a tap that lands on the right node and does nothing
+    // is the failure mode on these pages, and the button going away is the only thing that separates
+    // an applied import from a missed one.
+    repeat(JSON_IMPORT_CONFIRM_ATTEMPTS) {
+        scrollTestTagIntoViewAndClick(JSON_IMPORT_CONFIRM)
+        if (device.wait(Until.gone(testTagSelector(JSON_IMPORT_CONFIRM)), 10_000)) {
+            device.waitForIdle()
+            return
+        }
+    }
+    error("The JSON import window never applied its tracked-project fixture in ${targetAppId()}")
+}
+
+/** A missed tap costs one more pass; a genuinely stuck window still fails the run. */
+private const val JSON_IMPORT_CONFIRM_ATTEMPTS = 3
+
+/**
  * Runs one refresh so the history route has something other than empty states to draw.
  *
  * The route's journey walks all four tabs, but a capture installs the app fresh and those tabs render
@@ -1224,6 +1319,8 @@ private const val SCROLL_INTO_REACH_ATTEMPTS = 14
  * One pull-to-refresh closes part of it. Verified on the API 37 AVD from a `pm clear` state: before the
  * pull `github_refresh_history` does not exist on disk, a single pull creates it, and the Refresh tab
  * then reports "2 of 2 records shown" with a real finished timestamp instead of its empty state.
+ * Following [seedFailingGitHubTracks], the same pull now has two targets and fails both of them, which
+ * is what fills the diagnostics that the record alone never did.
  *
  * It closes only that part, which is worth being exact about. The same pull also *creates* the
  * `github_track_change_history` file, but the store stays empty -- the Tracking tab still reads
@@ -1241,12 +1338,101 @@ private const val SCROLL_INTO_REACH_ATTEMPTS = 14
  * the union across iterations, so the cards only have to render once.
  */
 private fun MacrobenchmarkScope.seedGitHubHistory() {
+    pullToRefresh()
+}
+
+/**
+ * Waits for the GitHub page's refresh batch to stop running before the journey navigates off it.
+ *
+ * The batch is scoped to the page, so pushing the history route a second after pulling cancels it. That
+ * does not fail anything -- `GitHubRefreshHistoryService` still writes a record -- it writes a *useless*
+ * one: measured on the API 37 AVD, the journey's own timing turned a three-item refresh into
+ * `0/3 done, updates 0, failed 0, Interrupted`, and an interrupted batch has no failures to report, no
+ * slow items and no stop reason, so `hasRefreshTraceDiagnostics` returns false and the record draws
+ * exactly what a clean one draws. Ten seconds on the page instead, and the same refresh lands as
+ * `3/3 done, failed 2, Partial failed`.
+ *
+ * Waiting on the ring rather than on a delay because the number is not the point: what the journey
+ * needs is for the batch to be over, and how long that takes depends on how fast the two fixtures fail.
+ */
+private fun MacrobenchmarkScope.awaitGitHubRefreshSettled() {
+    // Softly: a batch of two unreachable items can be over before the first poll, and a refresh that
+    // never started is already settled.
+    waitForOptionalTestTag(GITHUB_OVERVIEW_REFRESHING, timeoutMs = 10_000)
+    check(device.wait(Until.gone(testTagSelector(GITHUB_OVERVIEW_REFRESHING)), 60_000)) {
+        "The GitHub page refresh never finished in ${targetAppId()}"
+    }
+    device.waitForIdle()
+}
+
+/** A drag long enough to arm a pull-to-refresh, starting below the top bar. */
+private fun MacrobenchmarkScope.pullToRefresh() {
     val centerX = device.displayWidth / 2
     val top = (device.displayHeight * 0.34f).toInt()
     val bottom = (device.displayHeight * 0.72f).toInt()
     device.swipe(centerX, top, centerX, bottom, 24)
     device.waitForIdle()
 }
+
+/**
+ * Opens a refresh record that has diagnostics to draw, and proves it found one.
+ *
+ * Two things are being worked around. The cards are collapsed on entry -- `expandedRefreshRecordKeys`
+ * starts empty -- so everything below the header is uncomposed until one is tapped. And *which* record
+ * carries failures depends on what the device did last, which is why every card gets the same tag
+ * instead of the first one getting a "first" tag: the visible cards are walked in order, and a card
+ * that turns out to be clean is closed again so the next one keeps its position.
+ *
+ * The wait on [GITHUB_REFRESH_HISTORY_DIAGNOSTICS] is the proof, and it is deliberately fatal. An
+ * expanded record with no diagnostics collects the same rules a collapsed one nearly does and reports
+ * success either way, which is exactly how this path stayed at zero rules through a capture that
+ * looked green. If the fixture ever stops taking, the run should say so.
+ */
+private fun MacrobenchmarkScope.expandRefreshRecordWithDiagnostics() {
+    repeat(REFRESH_HISTORY_RELOAD_ATTEMPTS) { attempt ->
+        // The route is not live on the store. `GitHubActionsNotificationHistoryViewModel` reads it once
+        // from `init`, so the record the pull-to-refresh two navigations ago is writing may simply not
+        // have existed when this page loaded -- the refresh is asynchronous and nothing waits on it.
+        // The page's own pull re-reads, which is both the retry and one more path collected.
+        if (attempt > 0) pullToRefresh()
+        if (openRefreshRecordWithDiagnostics()) {
+            // The failure blocks and the retry row are the tail of an expanded record, well past a
+            // screen of scheduler and performance rows.
+            flingVisibleScrollable(times = 3)
+            return
+        }
+    }
+    error(
+        "No refresh record composed testTag=$GITHUB_REFRESH_HISTORY_DIAGNOSTICS in ${targetAppId()}; " +
+            "the failing-refresh fixture did not take",
+    )
+}
+
+/** One pass over the visible records: expand, keep the first that has diagnostics, close the rest. */
+private fun MacrobenchmarkScope.openRefreshRecordWithDiagnostics(): Boolean {
+    repeat(REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS) { index ->
+        val bounds =
+            device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD))
+                .getOrNull(index)
+                ?.visibleBounds
+                ?: return false
+        val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
+        device.click(bounds.centerX(), bounds.top + inset)
+        device.waitForIdle()
+        if (device.wait(Until.hasObject(testTagSelector(GITHUB_REFRESH_HISTORY_DIAGNOSTICS)), 5_000)) {
+            return true
+        }
+        device.click(bounds.centerX(), bounds.top + inset)
+        device.waitForIdle()
+    }
+    return false
+}
+
+/** Enough of the visible refresh records to find one with failures, without walking the whole tab. */
+private const val REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS = 3
+
+/** Enough re-reads to outlast a refresh that is still finishing when the route opens. */
+private const val REFRESH_HISTORY_RELOAD_ATTEMPTS = 3
 
 private fun MacrobenchmarkScope.nudgeVisibleScrollable(forward: Boolean) {
     val centerX = device.displayWidth / 2
@@ -1624,8 +1810,49 @@ private const val GITHUB_SHARE_IMPORT_CANCEL = "github_share_import_cancel"
 private const val SHARE_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.github.share.GitHubShareImportActivity"
 private const val JSON_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.jsonimport.KeiOSJsonImportActivity"
 
-/** An empty export, so the import screen composes without changing anything the next journey reads. */
+/**
+ * An empty export, so the import screen composes without changing anything the next journey reads.
+ *
+ * `{}` reaches the router as an object with no `format`, no `items` and nothing that looks like either,
+ * so the window settles on its unknown-file branch. That is the state being collected here, and it is
+ * the same state this argument reached back when it was quoted -- the quotes were doing nothing but
+ * arriving as characters, see [seedFailingGitHubTracks] for why.
+ */
 private const val JSON_IMPORT_SAMPLE_PAYLOAD = "{}"
+
+private const val JSON_IMPORT_PAGE_ROOT = "json_import_page_root"
+private const val JSON_IMPORT_CONFIRM = "json_import_confirm"
+
+/**
+ * A real export, holding the two tracked projects [seedFailingGitHubTracks] needs to have fail.
+ *
+ * Minimal on purpose: `parseTrackedItem` rejects an entry only when `repoUrl`, `owner` or `repo` is
+ * blank, and everything else on a tracked project has a default. `packageName` names apps that are not
+ * installed, which is fine -- a missing local install is a version comparison the check never reaches,
+ * because the remote half fails first.
+ *
+ * The repository is one under the account this app is developed from rather than an invented owner, so
+ * a fixture that starts passing means someone created it rather than that GitHub changed its mind about
+ * unknown names. The subscription points at the discard port on loopback, which nothing listens on.
+ *
+ * **No spaces anywhere in here, including inside the labels.** This whole string arrives as one argv
+ * token only because `Runtime.exec` splits the command on whitespace, and there is no shell in the way
+ * to put it back together -- see [seedFailingGitHubTracks]. Spelling the labels as prose is what broke
+ * the second attempt at this: the extra arrived cut off at the first space, the router filed the
+ * remainder as an unknown file, and the window drew a preview with no confirm button to find.
+ */
+private const val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
+    """{"format":"keios.github.tracked/v4","schemaVersion":4,"items":[""" +
+        """{"sourceMode":"github_repository",""" +
+        """"repoUrl":"https://github.com/hosizoraru/keios-baseline-profile-missing",""" +
+        """"owner":"hosizoraru","repo":"keios-baseline-profile-missing",""" +
+        """"packageName":"os.kei.baselineprofile.missing",""" +
+        """"appLabel":"baseline-profile-missing-repo"},""" +
+        """{"sourceMode":"direct_apk",""" +
+        """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile.apk",""" +
+        """"owner":"keios-baseline-profile","repo":"unreachable-apk",""" +
+        """"packageName":"os.kei.baselineprofile.unreachable",""" +
+        """"appLabel":"baseline-profile-unreachable-apk"}]}"""
 
 /**
  * A repository the share window can resolve, and that the app is not already tracking.
@@ -1637,8 +1864,13 @@ private const val JSON_IMPORT_SAMPLE_PAYLOAD = "{}"
  */
 private const val SHARE_IMPORT_SAMPLE_URL = "https://github.com/JetBrains/compose-multiplatform"
 
+private const val GITHUB_OVERVIEW_REFRESHING = "github_overview_refreshing"
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
+
+/** Every refresh record card carries this, and only a record with something to report carries the other. */
+private const val GITHUB_REFRESH_HISTORY_CARD = "github_refresh_history_card"
+private const val GITHUB_REFRESH_HISTORY_DIAGNOSTICS = "github_refresh_history_diagnostics"
 
 /** The history route's four category tabs: refresh, actions, tracking, apps. */
 private const val GITHUB_HISTORY_TAB_REFRESH = "github_history_tab_0"

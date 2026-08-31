@@ -138,6 +138,12 @@ internal fun GitHubOverviewCard(
                 }
                 LiquidCircularProgressBar(
                     progress = { progressValue },
+                    modifier =
+                        if (displayRefreshState == OverviewRefreshState.Refreshing) {
+                            Modifier.testTag(KeiOsTestTags.GitHubOverviewRefreshing)
+                        } else {
+                            Modifier
+                        },
                     size = 18.dp,
                     strokeWidth = 2.dp,
                     activeColor = indicatorColor,

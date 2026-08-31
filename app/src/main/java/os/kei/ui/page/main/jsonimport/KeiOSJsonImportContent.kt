@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +46,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -428,7 +430,11 @@ private fun JsonImportActionButtons(
                 },
                 second = { modifier ->
                     JsonImportPrimaryButton(
-                        modifier = modifier,
+                        // Tagged only in this branch. The same slot draws "Close" once the import is
+                        // done and "Processing" while it runs, so a tag on the button itself would be
+                        // found in states where clicking it does not import anything -- and the
+                        // baseline profile journey reads the tag going away as proof the file applied.
+                        modifier = modifier.testTag(KeiOsTestTags.JsonImportConfirm),
                         text = stringResource(R.string.json_import_action_import),
                         enabled = true,
                         leadingIcon = appLucideConfirmIcon(),

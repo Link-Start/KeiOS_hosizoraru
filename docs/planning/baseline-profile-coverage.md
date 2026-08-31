@@ -158,7 +158,10 @@ added it walks all 21 journeys a second time against the diagnostic APK for an i
   state. The journey is best-effort by design and cannot cost a capture, so an occasional miss shows
   up as these rules going absent rather than as a failure. Check for it before trusting a release
   profile to carry them.
-- **`github.history`'s tabs — the Refresh tab is covered now; the other two are not.** All four
+- **`github.history`'s tabs — the Refresh tab is covered now; the other two are not.**
+  *(Corrected twice below: the pull described here covered the records and not the diagnostics, and
+  the diagnostics are covered now by a refresh made to fail. Read "Measured: 33m 31s" and "The failing
+  refresh" before acting on this entry.)* All four
   categories are selected and the package collects 549 rules. A capture installs the app fresh, and
   these tabs render history the app accumulates over time, so on a clean device they were all empty
   states and the three card components collected nothing.
@@ -314,3 +317,58 @@ composition. The premise was not "the tab has no history" — `GitHubRefreshHist
 carrying 41 rules before any of this — it is "the tab has no *failing* history". Covering them needs a
 refresh that fails, which a capture could arrange by pointing at an unreachable host, not merely one
 that runs.
+
+## The failing refresh, and the four things in the way
+
+Written after doing it. `gitHubActionsHistoryRouteInteractions` now imports two tracked projects that
+cannot succeed, waits for the refresh to finish, and expands the record it produced.
+`GitHubRefreshHistoryDiagnostics` goes from **0 rules to 16**, covering both composables the previous
+entry named — `GitHubRefreshHistoryDiagnosticPills`, `GitHubRefreshFailureSummaryBlock` — plus
+`hasRefreshTraceDiagnostics` and `rememberFailureCategoryLabel`.
+
+The fixture is a JSON export pushed through the app's own import window: one repository that does not
+exist, and one direct-APK subscription pointing at the discard port on loopback. Two rather than one
+because `rememberFailureCategoryLabel` branches on the category and each fixture compiles a different
+arm — measured, `http_error` (HTTP 404, 81ms) and `network_error` (connection refused, 474ms). Neither
+needs the network to work, only to decide what the failure is *called*.
+
+Four things had to be fixed on the way, none of which announced itself:
+
+1. **The import window published no tags at all.** `testTagsAsResourceId` is set by `pageRootTestTag`,
+   and this window had never needed a page root, so its confirm button was composed and invisible to
+   UiAutomator. It now goes through `pageRootTestTag` like every other route, and is in the contract
+   test's `PAGE_ROOT_SOURCES` so it stays that way.
+2. **`UiDevice.executeShellCommand` is not a shell.** It splits on whitespace and hands the pieces to
+   `Runtime.exec`, so quotes arrive as characters and a space ends the argument. The payload was first
+   quoted (the extra arrived as `'{...}'`, which the router files as an unknown file) and then, once
+   unquoted, still carried spaces inside its labels (the extra arrived cut off at the first one). The
+   payload now has no spaces anywhere, labels included, and no quotes around it.
+3. **`scrollTestTagIntoReach` cannot reach a control that *is* the bottom of the list.** It insists the
+   target sit above 80% of the screen height, which is right on a page with a floating dock over its
+   lower fifth and impossible on one whose action row settles at 93% with nothing after it. That is a
+   loop that swipes its whole budget at a list already at its end. `scrollTestTagIntoViewAndClick` is
+   the variant without the band check.
+4. **Navigating away cancels the refresh.** This is the one worth remembering. The batch is scoped to
+   the GitHub page, so pushing the history route a second after pulling kills it — and it still writes
+   a record, just an empty one: measured, `0/3 done, updates 0, failed 0, Interrupted` where waiting
+   gives `3/3 done, failed 2, Partial failed`. An interrupted batch has no failures, no slow items and
+   no stop reason, so `hasRefreshTraceDiagnostics` is false and the record draws what a clean one draws.
+   The journey now waits on `GitHubOverviewRefreshing`, a tag applied to the overview's progress ring
+   only while the state is `Refreshing`, rather than on a delay.
+
+**Two guards, because this path has already failed silently once.** Every refresh record card carries
+`GitHubRefreshHistoryCard` — the same tag, not a "first" one, since which record has failures depends on
+what the device did last — and the journey walks the visible cards until the pills appear, closing the
+ones that turn out to be clean. If none of them has diagnostics the journey *fails*, loudly, rather than
+collecting a collapsed card's worth of rules and reporting success. That is precisely how this stayed at
+zero through the last capture.
+
+**Still uncovered, and worth naming.** `rememberFailureLimitDetail` and `formatDiagnosticBytes` want a
+`response_too_large` failure — a `limitBytes >= 0` diagnostic, which only
+`BoundedContentTextReadTooLargeException` produces. Neither fixture reaches it, and arranging one means
+serving an oversized body rather than refusing a connection.
+
+**A side effect worth having.** The import window's real work was never compiled before: the existing
+`{}` payload settles on the unknown-file branch, so the planner, the applier, the preview stats and the
+sample list were all interpreted on first use. With a real payload the `jsonimport` package collects
+**327 rules**.

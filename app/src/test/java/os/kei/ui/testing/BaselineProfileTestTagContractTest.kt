@@ -268,6 +268,8 @@ private val PAGE_ROOT_SOURCES =
             to "BaGuideCatalogPageRoot",
         "app/src/main/java/os/kei/ui/page/main/student/page/BaStudentGuidePage.kt"
             to "BaStudentGuidePageRoot",
+        "app/src/main/java/os/kei/ui/page/main/jsonimport/KeiOSJsonImportPage.kt"
+            to "JsonImportPageRoot",
     )
 
 private const val ABOUT_BOTTOM_CHROME =

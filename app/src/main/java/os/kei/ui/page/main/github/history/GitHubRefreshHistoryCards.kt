@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -204,7 +206,7 @@ internal fun GitHubRefreshHistoryRecordCard(
     AppFeatureCard(
         title = title,
         subtitle = subtitle,
-        modifier = modifier,
+        modifier = modifier.testTag(KeiOsTestTags.GitHubRefreshHistoryCard),
         exportBackdropToContent = true,
         eyebrow = stringResource(R.string.github_history_refresh_time_finished, finishedAt),
         sectionStartAction = {

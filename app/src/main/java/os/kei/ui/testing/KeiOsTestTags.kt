@@ -196,8 +196,48 @@ object KeiOsTestTags {
     const val GitHubShareImportAttachClose = "github_share_import_attach_close"
     const val GitHubShareImportAttachCancel = "github_share_import_attach_cancel"
     const val GitHubShareImportAttachConfirm = "github_share_import_attach_confirm"
+    /**
+     * The overview's progress ring, tagged only while a refresh is actually running.
+     *
+     * The ring is drawn for every non-idle state -- cached and completed included -- so the tag is
+     * applied conditionally rather than to the composable. What needs to be observable is not "there is
+     * a ring" but "the batch is still going", because leaving the GitHub page cancels it: a baseline
+     * profile journey that navigated away a second after pulling turned a refresh of three items into a
+     * record reading `0/3 done, failed 0`, which is a record with nothing to diagnose.
+     */
+    const val GitHubOverviewRefreshing = "github_overview_refreshing"
     const val GitHubActionsHistoryButton = "github_actions_history_button"
     const val GitHubActionsHistoryPageRoot = "github_actions_history_page_root"
+
+    /**
+     * Every refresh history record card, all carrying the same tag rather than one "first" tag.
+     *
+     * The other card tags in this file name a single card because a journey only ever wants that one.
+     * This one is different: what the baseline profile is after is a record whose refresh *failed*, and
+     * which record that is depends on what the device did last. Tagging them all lets a journey walk
+     * the visible cards until [GitHubRefreshHistoryDiagnostics] appears instead of betting on position.
+     */
+    const val GitHubRefreshHistoryCard = "github_refresh_history_card"
+
+    /**
+     * The diagnostic pill row inside an expanded refresh record, which composes only when that record
+     * has something to diagnose -- a failure, a slow item, or a scheduler stop.
+     *
+     * Tagged as proof rather than as a handle. Nothing here is clicked; the baseline profile journey
+     * waits for it to decide whether its failing-refresh fixture actually took, because a journey that
+     * expands a clean record collects nothing and still passes.
+     */
+    const val GitHubRefreshHistoryDiagnostics = "github_refresh_history_diagnostics"
+
+    /**
+     * The JSON import window's root, and its confirm button in the one state where it applies the file.
+     *
+     * The root is here for the reason `pageRootTestTag` exists: this window had no tags at all, so
+     * nothing had ever set `testTagsAsResourceId` on it, and the confirm tag below was composed and
+     * invisible to UiAutomator until the root started publishing the subtree.
+     */
+    const val JsonImportPageRoot = "json_import_page_root"
+    const val JsonImportConfirm = "json_import_confirm"
     const val GitHubShareImportAttachConfirmOpenGitHub =
         "github_share_import_attach_confirm_open_github"
 }

@@ -396,3 +396,33 @@ resolve.
 staleness `clickBottomBarTab` documents, one call later: `findObjects` answered, the list recomposed,
 and reading the bounds raised `StaleObjectException`. The read is wrapped now, and a stale handle is
 treated as what it is — a card that moved, worth another pass — rather than as a card that is not there.
+
+### And a third, which needed a cheaper way to reproduce
+
+The second capture came back 21/22 — the release journey fixed, this one failing again, differently.
+Rather than spend a third half-hour, the run was reproduced with `am instrument` driving four journeys
+in one instrumentation pass, which puts the history journey third with the app already carrying state.
+That reproduces it in five minutes. Note the ordering is JUnit's `MethodSorters.DEFAULT`, a hash over the
+method names, so the subset's order is stable but is not the full run's — what matters is only that
+something runs before it.
+
+The failure message, enriched for exactly this, said `across 3 passes over 1 visible cards`. One card,
+and it had nothing to diagnose — which rules out both earlier suspects. It was not staleness and it was
+not the card being scrolled off the top: it was the wrong record.
+
+**A pull-to-refresh on a page whose tracked list has not loaded yet targets nothing.** It finishes
+instantly and still writes a record — `0/0 done, failed 0` — and that record is the newest, so it is
+the one the journey expands. `clickAndWaitForPage` proves the page arrived; it says nothing about its
+store. The journey now waits for a tracked card to be on screen before pulling. Verified as an A/B:
+the same four journeys in the same order, failing before the wait and passing after it.
+
+Both of the earlier reads were also wrong in an instructive way. The first capture's
+`StaleObjectException` and the second's "no diagnostics" were the same underlying miss, because the
+`runCatching` added after the first one turned a throw into a skipped index — the fix for the symptom
+hid the cause. The stale read is real and is still handled, in place rather than by skipping, but it was
+never why this failed.
+
+**The failure message now carries the screen.** On failure the journey dumps the window hierarchy and
+quotes the visible text into the exception. A card count says the walk happened; the record's own
+summary line is what distinguishes "the refresh failed as intended and the pills are missing" from "the
+refresh targeted nothing". Two captures were spent inferring that from timings.

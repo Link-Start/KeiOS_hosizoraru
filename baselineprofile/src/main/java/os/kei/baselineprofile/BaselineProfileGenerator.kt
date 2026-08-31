@@ -368,6 +368,12 @@ class BaselineProfileGenerator {
                 pageTag = GITHUB_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
+            // Before the pull, not after: a pull-to-refresh on a page whose tracked list has not loaded
+            // yet targets nothing, finishes instantly, and writes a `0/0 done, failed 0` record --
+            // which is a record with nothing to diagnose, and it is the newest one, so it is the one
+            // this journey then goes and expands. `clickAndWaitForPage` proves the page arrived, not
+            // that its store did.
+            waitForTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON, timeoutMs = 20_000)
             seedGitHubHistory()
             awaitGitHubRefreshSettled()
 
@@ -1389,12 +1395,22 @@ private fun MacrobenchmarkScope.pullToRefresh() {
  * looked green. If the fixture ever stops taking, the run should say so.
  */
 private fun MacrobenchmarkScope.expandRefreshRecordWithDiagnostics() {
+    // Separated from the walk below so the two ways this can go wrong do not report as one. "The tab has
+    // no cards" and "the cards have no diagnostics" have different causes and different fixes, and the
+    // first capture to hit either spent half an hour saying only the second.
+    check(device.wait(Until.hasObject(testTagSelector(GITHUB_REFRESH_HISTORY_CARD)), 20_000)) {
+        "The Refresh tab drew no record cards in ${targetAppId()}; the route is not on that tab, or the " +
+            "store is empty"
+    }
     repeat(REFRESH_HISTORY_RELOAD_ATTEMPTS) { attempt ->
         // The route is not live on the store. `GitHubActionsNotificationHistoryViewModel` reads it once
         // from `init`, so the record the pull-to-refresh two navigations ago is writing may simply not
         // have existed when this page loaded -- the refresh is asynchronous and nothing waits on it.
         // The page's own pull re-reads, which is both the retry and one more path collected.
         if (attempt > 0) pullToRefresh()
+        // Newest first, and the record this journey made is the newest, so the walk starts from the top
+        // of the list rather than from wherever the tab loop's fling left it.
+        scrollVisibleScrollableToTop()
         if (openRefreshRecordWithDiagnostics()) {
             // The failure blocks and the retry row are the tail of an expanded record, well past a
             // screen of scheduler and performance rows.
@@ -1402,26 +1418,64 @@ private fun MacrobenchmarkScope.expandRefreshRecordWithDiagnostics() {
             return
         }
     }
+    val cardCount = device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD)).size
     error(
-        "No refresh record composed testTag=$GITHUB_REFRESH_HISTORY_DIAGNOSTICS in ${targetAppId()}; " +
-            "the failing-refresh fixture did not take",
+        "No refresh record composed testTag=$GITHUB_REFRESH_HISTORY_DIAGNOSTICS in ${targetAppId()} " +
+            "across $REFRESH_HISTORY_RELOAD_ATTEMPTS passes over $cardCount visible cards; " +
+            "the failing-refresh fixture did not take. On screen: ${visibleTextSummary()}",
     )
 }
+
+/**
+ * The window's visible text, for a failure message.
+ *
+ * A count of cards says the walk happened and says nothing about *which* records it walked, and the
+ * difference between "the refresh failed as intended and the pills are missing" and "the refresh
+ * targeted nothing because the list had not loaded" is entirely in the record's own summary line. Two
+ * captures were spent inferring that from timings.
+ */
+private fun MacrobenchmarkScope.visibleTextSummary(): String {
+    val hierarchy =
+        runCatching {
+            java.io.ByteArrayOutputStream().also { device.dumpWindowHierarchy(it) }.toString()
+        }.getOrElse { error -> return "unavailable (${error.javaClass.simpleName})" }
+    return Regex("""text="([^"]+)"""")
+        .findAll(hierarchy)
+        .map { match -> match.groupValues[1] }
+        .filter { text -> text.isNotBlank() }
+        .take(VISIBLE_TEXT_SUMMARY_LIMIT)
+        .joinToString(" | ")
+}
+
+/** Enough to name the first couple of records and no more. */
+private const val VISIBLE_TEXT_SUMMARY_LIMIT = 24
+
+/** Undoes the tab loop's fling, without needing to know how far it went. */
+private fun MacrobenchmarkScope.scrollVisibleScrollableToTop() {
+    repeat(SCROLL_TO_TOP_ATTEMPTS) {
+        nudgeVisibleScrollable(forward = false)
+    }
+}
+
+/**
+ * Three quarter-screen nudges back against one fling forward.
+ *
+ * Not more: a backward nudge on a list already at its top is a pull-to-refresh, and while that is
+ * harmless here -- it re-reads the same store this step wants re-read -- there is no reason to do it
+ * eight times.
+ */
+private const val SCROLL_TO_TOP_ATTEMPTS = 3
 
 /** One pass over the visible records: expand, keep the first that has diagnostics, close the rest. */
 private fun MacrobenchmarkScope.openRefreshRecordWithDiagnostics(): Boolean {
     repeat(REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS) { index ->
-        // Read through runCatching, and re-queried every pass. These lists recompose underneath a
-        // journey -- the staleness [clickBottomBarTab] documents -- so a handle that answered
-        // `findObjects` a moment ago throws `StaleObjectException` from `visibleBounds` rather than
-        // returning null. That is not a missing card, it is a moving one, and it cost a capture 32
-        // minutes in. Either way the answer is another pass.
-        val bounds =
-            runCatching {
-                device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD))
-                    .getOrNull(index)
-                    ?.visibleBounds
-            }.getOrNull() ?: return@repeat
+        // Read through runCatching, re-queried every pass, and retried in place. These lists recompose
+        // underneath a journey -- the staleness [clickBottomBarTab] documents -- so a handle that
+        // answered `findObjects` a moment ago throws `StaleObjectException` from `visibleBounds` rather
+        // than returning null. That is not a missing card, it is a moving one, and skipping to the next
+        // index on it would quietly walk past the newest record, which is the only one this journey has
+        // any reason to expect diagnostics from.
+        val bounds = boundsOfSettledCard(index) ?: return@repeat
         val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
         device.click(bounds.centerX(), bounds.top + inset)
         device.waitForIdle()
@@ -1434,8 +1488,26 @@ private fun MacrobenchmarkScope.openRefreshRecordWithDiagnostics(): Boolean {
     return false
 }
 
+/** Re-reads one card's bounds until they stop moving, or gives up on it. */
+private fun MacrobenchmarkScope.boundsOfSettledCard(index: Int): android.graphics.Rect? {
+    repeat(STALE_CARD_READ_ATTEMPTS) {
+        val bounds =
+            runCatching {
+                device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD))
+                    .getOrNull(index)
+                    ?.visibleBounds
+            }.getOrNull()
+        if (bounds != null) return bounds
+        device.waitForIdle()
+    }
+    return null
+}
+
 /** Enough of the visible refresh records to find one with failures, without walking the whole tab. */
 private const val REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS = 3
+
+/** A card that is still moving settles well inside this; one that is absent never will. */
+private const val STALE_CARD_READ_ATTEMPTS = 4
 
 /** Enough re-reads to outlast a refresh that is still finishing when the route opens. */
 private const val REFRESH_HISTORY_RELOAD_ATTEMPTS = 3

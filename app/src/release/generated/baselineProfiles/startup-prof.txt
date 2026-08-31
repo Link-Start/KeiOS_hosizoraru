@@ -1403,6 +1403,7 @@ SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;-><clinit>(
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;-><init>(Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;ZZ)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;-><init>(Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->getAwaitTouchSlop()Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;
+SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->getConsumedOnInitial()Z
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->setAwaitTouchSlop(Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->setConsumedOnInitial(Z)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->setHasSeenInitialEvent(Z)V
@@ -5179,7 +5180,6 @@ SPLandroidx/compose/runtime/snapshots/SnapshotDoubleIndexHeap;->remove(I)V
 SPLandroidx/compose/runtime/snapshots/SnapshotDoubleIndexHeap;->shiftDown(I)V
 SPLandroidx/compose/runtime/snapshots/SnapshotDoubleIndexHeap;->shiftUp(I)V
 SPLandroidx/compose/runtime/snapshots/SnapshotDoubleIndexHeap;->swap(II)V
-Landroidx/compose/runtime/snapshots/SnapshotIdArrayBuilder;
 Landroidx/compose/runtime/snapshots/SnapshotIdSet;
 SPLandroidx/compose/runtime/snapshots/SnapshotIdSet;-><clinit>()V
 SPLandroidx/compose/runtime/snapshots/SnapshotIdSet;-><init>(JJJ[J)V
@@ -5242,7 +5242,7 @@ SPLandroidx/compose/runtime/snapshots/SnapshotKt;->newWritableRecordLocked(Landr
 SPLandroidx/compose/runtime/snapshots/SnapshotKt;->notifyWrite(Landroidx/compose/runtime/snapshots/Snapshot;Landroidx/compose/runtime/snapshots/StateObject;)V
 SPLandroidx/compose/runtime/snapshots/SnapshotKt;->optimisticMerges(JLandroidx/compose/runtime/snapshots/MutableSnapshot;Landroidx/compose/runtime/snapshots/SnapshotIdSet;)Ljava/util/Map;
 SPLandroidx/compose/runtime/snapshots/SnapshotKt;->overwritableRecord(Landroidx/compose/runtime/snapshots/StateRecord;Landroidx/compose/runtime/snapshots/StateObject;Landroidx/compose/runtime/snapshots/Snapshot;Landroidx/compose/runtime/snapshots/StateRecord;)Landroidx/compose/runtime/snapshots/StateRecord;
-HSPLandroidx/compose/runtime/snapshots/SnapshotKt;->overwriteUnusedRecordsLocked(Landroidx/compose/runtime/snapshots/StateObject;)Z
+SPLandroidx/compose/runtime/snapshots/SnapshotKt;->overwriteUnusedRecordsLocked(Landroidx/compose/runtime/snapshots/StateObject;)Z
 SPLandroidx/compose/runtime/snapshots/SnapshotKt;->processForUnusedRecordsLocked(Landroidx/compose/runtime/snapshots/StateObject;)V
 HSPLandroidx/compose/runtime/snapshots/SnapshotKt;->readable(Landroidx/compose/runtime/snapshots/StateRecord;JLandroidx/compose/runtime/snapshots/SnapshotIdSet;)Landroidx/compose/runtime/snapshots/StateRecord;
 SPLandroidx/compose/runtime/snapshots/SnapshotKt;->releasePinningLocked(I)V
@@ -6018,7 +6018,7 @@ SPLandroidx/compose/ui/graphics/AndroidColorFilter_androidKt;->asAndroidColorFil
 Landroidx/compose/ui/graphics/AndroidColorSpace_androidKt;
 SPLandroidx/compose/ui/graphics/AndroidColorSpace_androidKt;->toAndroidColorSpace(Landroidx/compose/ui/graphics/colorspace/ColorSpace;)Landroid/graphics/ColorSpace;
 Landroidx/compose/ui/graphics/AndroidColor_androidKt;
-HSPLandroidx/compose/ui/graphics/AndroidColor_androidKt;->fromColorLong(Landroidx/compose/ui/graphics/Color$Companion;J)J
+SPLandroidx/compose/ui/graphics/AndroidColor_androidKt;->fromColorLong(Landroidx/compose/ui/graphics/Color$Companion;J)J
 HSPLandroidx/compose/ui/graphics/AndroidColor_androidKt;->isColorSpaceSupported-8_81llA(J)Z
 SPLandroidx/compose/ui/graphics/AndroidColor_androidKt;->toColorLong-8_81llA(J)J
 SPLandroidx/compose/ui/graphics/AndroidColor_androidKt;->toSupportedColorLong-8_81llA(J)J
@@ -6090,7 +6090,7 @@ SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->asComposePaint(Landroid
 SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativeAlpha(Landroid/graphics/Paint;)F
 SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativeColor(Landroid/graphics/Paint;)J
 HSPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativeFilterQuality(Landroid/graphics/Paint;)I
-SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativePaint(Landroidx/compose/ui/graphics/Paint;)Landroid/graphics/Paint;
+HSPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativePaint(Landroidx/compose/ui/graphics/Paint;)Landroid/graphics/Paint;
 SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativeStrokeCap(Landroid/graphics/Paint;)I
 SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativeStrokeJoin(Landroid/graphics/Paint;)I
 SPLandroidx/compose/ui/graphics/AndroidPaint_androidKt;->getNativeStrokeMiterLimit(Landroid/graphics/Paint;)F
@@ -6472,7 +6472,6 @@ SPLandroidx/compose/ui/graphics/Path$Direction;->$values()[Landroidx/compose/ui/
 SPLandroidx/compose/ui/graphics/Path$Direction;-><clinit>()V
 SPLandroidx/compose/ui/graphics/Path$Direction;-><init>(Ljava/lang/String;I)V
 SPLandroidx/compose/ui/graphics/Path$Direction;->values()[Landroidx/compose/ui/graphics/Path$Direction;
-Landroidx/compose/ui/graphics/PathEffect;
 Landroidx/compose/ui/graphics/PathFillType;
 SPLandroidx/compose/ui/graphics/PathFillType;-><clinit>()V
 SPLandroidx/compose/ui/graphics/PathFillType;->access$getEvenOdd$cp()I
@@ -6936,7 +6935,7 @@ SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setCan
 HSPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setDensity(Landroidx/compose/ui/unit/Density;)V
 SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setGraphicsLayer(Landroidx/compose/ui/graphics/layer/GraphicsLayer;)V
 HSPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setLayoutDirection(Landroidx/compose/ui/unit/LayoutDirection;)V
-SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setSize-uvyYCjk(J)V
+HSPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setSize-uvyYCjk(J)V
 Landroidx/compose/ui/graphics/drawscope/CanvasDrawScopeKt;
 SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScopeKt;->access$asDrawTransform(Landroidx/compose/ui/graphics/drawscope/DrawContext;)Landroidx/compose/ui/graphics/drawscope/DrawTransform;
 SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScopeKt;->asDrawTransform(Landroidx/compose/ui/graphics/drawscope/DrawContext;)Landroidx/compose/ui/graphics/drawscope/DrawTransform;
@@ -9364,6 +9363,7 @@ SPLandroidx/compose/ui/platform/AndroidComposeView;->boundsUpdatesContentCapture
 SPLandroidx/compose/ui/platform/AndroidComposeView;->calculateMatrixToWindow-58bKbWc([F)V
 SPLandroidx/compose/ui/platform/AndroidComposeView;->calculatePositionInWindow-MK-Hz9U(J)J
 SPLandroidx/compose/ui/platform/AndroidComposeView;->childSizeCanAffectParentSize(Landroidx/compose/ui/node/LayoutNode;)Z
+SPLandroidx/compose/ui/platform/AndroidComposeView;->clearChildInvalidObservations(Landroid/view/ViewGroup;)V
 SPLandroidx/compose/ui/platform/AndroidComposeView;->convertMeasureSpec-I7RO_PI(I)J
 SPLandroidx/compose/ui/platform/AndroidComposeView;->createLayer(Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/graphics/layer/GraphicsLayer;)Landroidx/compose/ui/node/OwnedLayer;
 SPLandroidx/compose/ui/platform/AndroidComposeView;->derivedIsAttached_delegate$lambda$0(Landroidx/compose/ui/platform/AndroidComposeView;)Z
@@ -11925,7 +11925,7 @@ SPLandroidx/compose/ui/unit/IntSize$Companion;->getZero-YbymL2g()J
 Landroidx/compose/ui/unit/IntSizeKt;
 SPLandroidx/compose/ui/unit/IntSizeKt;->roundToIntSize-uvyYCjk(J)J
 SPLandroidx/compose/ui/unit/IntSizeKt;->toIntSize-uvyYCjk(J)J
-SPLandroidx/compose/ui/unit/IntSizeKt;->toSize-ozmzZPI(J)J
+HSPLandroidx/compose/ui/unit/IntSizeKt;->toSize-ozmzZPI(J)J
 Landroidx/compose/ui/unit/LayoutDirection;
 SPLandroidx/compose/ui/unit/LayoutDirection;->$values()[Landroidx/compose/ui/unit/LayoutDirection;
 SPLandroidx/compose/ui/unit/LayoutDirection;-><clinit>()V
@@ -14237,7 +14237,7 @@ SPLkotlin/collections/ArrayDeque;->incremented(I)I
 SPLkotlin/collections/ArrayDeque;->isEmpty()Z
 SPLkotlin/collections/ArrayDeque;->lastOrNull()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->positiveMod(I)I
-SPLkotlin/collections/ArrayDeque;->registerModification()V
+HSPLkotlin/collections/ArrayDeque;->registerModification()V
 HSPLkotlin/collections/ArrayDeque;->removeFirst()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->removeFirstOrNull()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->removeLast()Ljava/lang/Object;
@@ -14304,7 +14304,7 @@ SPLkotlin/collections/CollectionsKt__CollectionsJVMKt;->listOf(Ljava/lang/Object
 Lkotlin/collections/CollectionsKt__CollectionsKt;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->arrayListOf([Ljava/lang/Object;)Ljava/util/ArrayList;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->asCollection([Ljava/lang/Object;Z)Ljava/util/Collection;
-SPLkotlin/collections/CollectionsKt__CollectionsKt;->emptyList()Ljava/util/List;
+HSPLkotlin/collections/CollectionsKt__CollectionsKt;->emptyList()Ljava/util/List;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->getIndices(Ljava/util/Collection;)Lkotlin/ranges/IntRange;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->getLastIndex(Ljava/util/List;)I
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->listOf([Ljava/lang/Object;)Ljava/util/List;
@@ -14577,7 +14577,6 @@ Lkotlin/coroutines/intrinsics/IntrinsicsKt__IntrinsicsKt;
 SPLkotlin/coroutines/intrinsics/IntrinsicsKt__IntrinsicsKt;->getCOROUTINE_SUSPENDED()Ljava/lang/Object;
 Lkotlin/coroutines/jvm/internal/BaseContinuationImpl;
 SPLkotlin/coroutines/jvm/internal/BaseContinuationImpl;-><init>(Lkotlin/coroutines/Continuation;)V
-HSPLkotlin/coroutines/jvm/internal/BaseContinuationImpl;->resumeWith(Ljava/lang/Object;)V
 Lkotlin/coroutines/jvm/internal/Boxing;
 SPLkotlin/coroutines/jvm/internal/Boxing;->boxBoolean(Z)Ljava/lang/Boolean;
 SPLkotlin/coroutines/jvm/internal/Boxing;->boxFloat(F)Ljava/lang/Float;
@@ -15401,7 +15400,7 @@ SPLkotlin/text/StringsKt__StringsKt;->indexOf$StringsKt__StringsKt$default(Ljava
 SPLkotlin/text/StringsKt__StringsKt;->indexOf$StringsKt__StringsKt(Ljava/lang/CharSequence;Ljava/lang/CharSequence;IIZZ)I
 SPLkotlin/text/StringsKt__StringsKt;->indexOf$default(Ljava/lang/CharSequence;CIZILjava/lang/Object;)I
 SPLkotlin/text/StringsKt__StringsKt;->indexOf$default(Ljava/lang/CharSequence;Ljava/lang/String;IZILjava/lang/Object;)I
-HSPLkotlin/text/StringsKt__StringsKt;->indexOf(Ljava/lang/CharSequence;CIZ)I
+SPLkotlin/text/StringsKt__StringsKt;->indexOf(Ljava/lang/CharSequence;CIZ)I
 SPLkotlin/text/StringsKt__StringsKt;->indexOf(Ljava/lang/CharSequence;Ljava/lang/String;IZ)I
 SPLkotlin/text/StringsKt__StringsKt;->isBlank(Ljava/lang/CharSequence;)Z
 SPLkotlin/text/StringsKt__StringsKt;->lineSequence(Ljava/lang/CharSequence;)Lkotlin/sequences/Sequence;
@@ -22983,7 +22982,7 @@ SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->getOutlineVersio
 SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->getRootCoordinates()Landroidx/compose/ui/layout/LayoutCoordinates;
 SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->register(Ljava/lang/Object;Landroidx/compose/ui/layout/LayoutCoordinates;Los/kei/ui/page/main/widget/core/OverviewPillBatchGeometry;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
 SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->resolvePosition-x-9fifI(Landroidx/compose/ui/layout/LayoutCoordinates;)Landroidx/compose/ui/geometry/Offset;
-HSPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->resolvedPills()Ljava/util/List;
+SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->resolvedPills()Ljava/util/List;
 SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->setOutlineVersionState(I)V
 SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->setRootCoordinates(Landroidx/compose/ui/layout/LayoutCoordinates;)V
 SPLos/kei/ui/page/main/widget/core/OverviewPillBatchHostState;->updatePills(Ljava/lang/Object;Ljava/util/List;)V

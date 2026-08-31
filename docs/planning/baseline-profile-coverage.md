@@ -537,3 +537,25 @@ turned a throw into a skipped index and hid its own cause; this one broke a tap 
 the way out was the same: reproduce on the device and measure the step, rather than reason from a stack
 trace. The `am instrument` reproduction and the screen dump in the failure message are what made that
 affordable — fifteen minutes against forty-four.
+
+## Measured: 22/22 in 37m 24s, both tabs covered
+
+The fifth capture is clean — 22 tests, 0 failures — with the two components this set out to cover:
+
+| component | before | after |
+| --- | ---: | ---: |
+| `GitHubAppInstallHistoryCards` | **0** | **27** |
+| `GitHubAppInstallHistoryUiRecord` | **0** | **10** |
+| `GitHubTrackChangeHistoryCards` | 14 | 20 |
+
+**The totals moved the other way, and it is worth not glossing over.** `baseline-prof.txt` went
+71,606 -> 71,602 and `startup-prof.txt` 24,712 -> 24,711. Two things are in there. Removing the
+scroll-to-top removed its accidental coverage of the history route's *own* pull-to-refresh --
+`refreshStarted` and friends go 29 -> 16, which is exactly the 16 that stood before any of this work, so
+that is a return to baseline rather than a loss. The rest, about thirty rules, is capture-to-capture
+variance: the union across iterations is not identical run to run, and at this scale a few dozen rules
+either way is noise. The three components above are what moved deterministically.
+
+Recovering the accidental 13 would take one deliberate `pullToRefresh()` at the end of the route's work,
+where no tap follows it and a swallowed one cannot matter. Left undone because it costs a capture, and
+the path it covers was uncovered before this work started.

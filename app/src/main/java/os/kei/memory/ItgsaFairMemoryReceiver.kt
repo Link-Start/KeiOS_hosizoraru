@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -103,11 +102,9 @@ object ItgsaFairMemoryReceiver : IBinder.DeathRecipient {
                 }
             val result =
                 runCatching {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        context.registerReceiver(receiver, filter, null, handler, Context.RECEIVER_EXPORTED)
-                    } else {
-                        context.registerReceiver(receiver, filter, null, handler)
-                    }
+                    // The export flag has been mandatory since TIRAMISU (33) and minSdk is 35, so the
+                    // unflagged overload was unreachable.
+                    context.registerReceiver(receiver, filter, null, handler, Context.RECEIVER_EXPORTED)
                 }
             result
                 .onSuccess {

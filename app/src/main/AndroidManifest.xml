@@ -285,15 +285,27 @@
             android:enabled="true"
             android:exported="false" />
 
+        <!--
+            Exported, and MiFocusNotificationActionsTest pins that it stays so.
+            Every path that reaches it today is a PendingIntent this app builds
+            (MiFocusNotificationActions and McpNotificationInteractionIntents both go through
+            PendingIntent.getBroadcast at our own package), and a PendingIntent fires with its
+            creator's identity, so on that reading the export is unnecessary and lets any installed app
+            trigger a mark-read or dismiss by component name. It is left exported anyway: the HyperOS
+            Focus and Super Island delivery path cannot be exercised on a stock emulator, and the cost
+            of being wrong is silently dead notification actions on a real device. Unexport it together
+            with a HyperOS check, not on static reading alone.
+        -->
         <receiver
             android:name=".feature.notification.MiFocusNotificationActionReceiver"
             android:enabled="true"
             android:exported="true" />
 
+        <!-- Same shape: notification actions delivered by our own PendingIntents, no intent-filter. -->
         <receiver
             android:name=".feature.github.notification.GitHubShareImportActionReceiver"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="false" />
 
         <receiver
             android:name=".feature.github.install.GitHubShizukuInstallResultReceiver"

@@ -10,6 +10,10 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Until
+import java.io.Closeable
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -354,6 +358,10 @@ class BaselineProfileGenerator {
      */
     @Test
     fun gitHubActionsHistoryRouteInteractions() {
+        // Started here rather than inside the block: `collect` replays the block once per iteration,
+        // and the second replay met its own still-bound socket with EADDRINUSE. The fixture belongs to
+        // the test, not to the pass.
+        oversizedResponseServer = startOversizedResponseServer()
         rule.collect(
             packageName = targetAppId(),
             maxIterations = JOURNEY_MAX_ITERATIONS,
@@ -419,6 +427,20 @@ class BaselineProfileGenerator {
             waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
             device.waitForIdle()
         }
+    }
+
+    /**
+     * The loopback server the oversized-response fixture answers from, closed however the test ends.
+     *
+     * A field with an `@After` rather than a `use` block, so a journey that throws mid-pass still gives
+     * the port back.
+     */
+    private var oversizedResponseServer: Closeable? = null
+
+    @After
+    fun stopOversizedResponseServer() {
+        oversizedResponseServer?.let { server -> runCatching { server.close() } }
+        oversizedResponseServer = null
     }
 
     /**
@@ -1271,6 +1293,59 @@ private const val SCROLL_INTO_REACH_ATTEMPTS = 14
  * this exists to land one card in the tappable band, and a fling overshoots a one-line card.
  */
 /**
+ * A loopback server whose every answer claims a body far larger than any limit the app will read.
+ *
+ * The last uncovered corner of the refresh diagnostics: `rememberFailureLimitDetail` and
+ * `formatDiagnosticBytes` draw the limit/declared/observed/stage row, and only a
+ * `response_too_large` failure has those fields. Nothing on the network can be relied upon to send
+ * one, so the fixture sends it -- from inside the instrumentation process, over loopback, to the app
+ * on the same device. The test APK already merges `INTERNET`, so this needs no manifest change.
+ *
+ * It never sends a body. `stringLimitedBlocking` compares `Content-Length` against its limit before
+ * reading a byte and throws at the `DeclaredLength` stage, so a header is the entire fixture: the
+ * declared 99999999 is about 95 MiB against the F-Droid package API's 8 MiB.
+ *
+ * `reuseAddress` so a socket still in TIME_WAIT from the previous *run* does not refuse the bind, and a
+ * daemon accept loop because nothing joins this thread. It does not help against a socket that is still
+ * open, which is why the caller starts this once per test rather than once per replay.
+ */
+private fun startOversizedResponseServer(): Closeable {
+    val server = ServerSocket()
+    server.reuseAddress = true
+    server.bind(InetSocketAddress("127.0.0.1", OVERSIZED_FIXTURE_PORT))
+    Thread {
+        while (!server.isClosed) {
+            val client = runCatching { server.accept() }.getOrNull() ?: break
+            runCatching {
+                client.use { socket ->
+                    socket.soTimeout = OVERSIZED_FIXTURE_SOCKET_TIMEOUT_MS
+                    // Drained rather than parsed: what the client asked for makes no difference to an
+                    // answer that is the same size lie every time. Reading it at all is only so the
+                    // response does not race the request into a reset.
+                    socket.getInputStream().read(ByteArray(OVERSIZED_FIXTURE_REQUEST_BUFFER_BYTES))
+                    socket.getOutputStream().apply {
+                        write(OVERSIZED_FIXTURE_RESPONSE.toByteArray())
+                        flush()
+                    }
+                }
+            }
+        }
+    }.apply { isDaemon = true }.start()
+    return Closeable { runCatching { server.close() } }
+}
+
+private const val OVERSIZED_FIXTURE_PORT = 38921
+private const val OVERSIZED_FIXTURE_SOCKET_TIMEOUT_MS = 5_000
+private const val OVERSIZED_FIXTURE_REQUEST_BUFFER_BYTES = 4096
+
+/** Headers only, and `Connection: close` so the client stops waiting for the body that never comes. */
+private const val OVERSIZED_FIXTURE_RESPONSE =
+    "HTTP/1.1 200 OK\r\n" +
+        "Content-Type: application/json\r\n" +
+        "Content-Length: 99999999\r\n" +
+        "Connection: close\r\n\r\n"
+
+/**
  * Imports two tracked projects that cannot possibly refresh, so the next refresh records failures.
  *
  * The history route's Refresh tab needed a record before it drew anything, and [seedGitHubHistory] gave
@@ -2090,7 +2165,12 @@ private val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
         """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile-installed.apk",""" +
         """"owner":"keios-baseline-profile","repo":"installed-package",""" +
         """"packageName":"$APP_INSTALL_FIXTURE_PACKAGE",""" +
-        """"appLabel":"zz-baseline-profile-installed-package"}]}"""
+        """"appLabel":"zz-baseline-profile-installed-package"},""" +
+        """{"sourceMode":"fdroid_repository",""" +
+        """"repoUrl":"http://127.0.0.1:$OVERSIZED_FIXTURE_PORT/fdroid/repo",""" +
+        """"owner":"keios-baseline-profile","repo":"oversized-feed",""" +
+        """"packageName":"os.kei.baselineprofile.oversized",""" +
+        """"appLabel":"zz-baseline-profile-oversized-feed"}]}"""
 
 /**
  * A repository the share window can resolve, and that the app is not already tracking.

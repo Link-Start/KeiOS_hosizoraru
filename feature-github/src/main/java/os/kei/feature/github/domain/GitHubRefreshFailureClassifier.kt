@@ -64,20 +64,40 @@ internal object GitHubRefreshFailureClassifier {
             responseType = responseType,
         )
 
+    /**
+     * Every exception reachable from this one, through causes *and* suppressed exceptions.
+     *
+     * Suppressed matter because an aggregating wrapper can only carry one cause, and the one it keeps
+     * is not always the one worth classifying. `FdroidBatchPackageSnapshotProvider` is the case that
+     * forced this: when both the package API and the repository-index fallback fail it reports a
+     * combined message and keeps the *repository* error as the cause, so a
+     * [BoundedContentTextReadTooLargeException] from the API half survived only as text and every
+     * oversized F-Droid response classified as `unknown`. The category and the whole
+     * limit/declared/observed/stage row it drives were unreachable in the UI as a result.
+     *
+     * Breadth-first so a shallow suppressed exception is not lost behind a deep cause chain, and
+     * bounded by [MAX_INSPECTED_CAUSES] because this runs per failed item on a refresh.
+     */
     private fun Throwable.causes(): List<Throwable> =
         buildList {
             val visited = java.util.Collections.newSetFromMap(
                 java.util.IdentityHashMap<Throwable, Boolean>(),
             )
-            var current: Throwable? = this@causes
-            while (current != null && visited.add(current) && size < MAX_CAUSE_DEPTH) {
+            val pending = ArrayDeque<Throwable>()
+            pending.addLast(this@causes)
+            while (pending.isNotEmpty() && size < MAX_INSPECTED_CAUSES) {
+                val current = pending.removeFirst()
+                if (!visited.add(current)) continue
                 add(current)
-                current = current.cause
+                current.cause?.let(pending::addLast)
+                current.suppressed.forEach(pending::addLast)
             }
         }
 
     private val HTTP_ERROR_PATTERN = Regex("\\bhttp\\s+[45]\\d{2}\\b")
-    private const val MAX_CAUSE_DEPTH = 16
+
+    /** A cap on the graph walk, not on depth: causes and suppressed exceptions both count. */
+    private const val MAX_INSPECTED_CAUSES = 16
 
     const val CATEGORY_RESPONSE_TOO_LARGE = "response_too_large"
     const val CATEGORY_TIMEOUT = "timeout"

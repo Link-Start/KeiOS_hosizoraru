@@ -222,12 +222,21 @@ class FdroidBatchPackageSnapshotProvider(
         if (repositoryResult.isSuccess) return repositoryResult
         val apiError = apiResult.exceptionOrNull()
         val repositoryError = repositoryResult.exceptionOrNull()
+        // Both halves failed, and only one of them can be the cause. The repository error stays the
+        // cause because it is the later, more specific attempt -- but the API error is attached as a
+        // suppressed exception rather than dropped, because it is the half that carries a *typed*
+        // failure worth classifying. An oversized response throws
+        // `BoundedContentTextReadTooLargeException` here, and folding it into the message alone left
+        // `GitHubRefreshFailureClassifier` with nothing to find: every oversized F-Droid repository
+        // reported "unknown failure" while the app's own response-size diagnostics stayed unreachable.
         return Result.failure(
             IllegalStateException(
                 "F-Droid package API failed: ${apiError?.message ?: "unknown"}; " +
                     "repository index fallback failed: ${repositoryError?.message ?: "unknown"}",
                 repositoryError ?: apiError
-            )
+            ).apply {
+                if (repositoryError != null && apiError != null) addSuppressed(apiError)
+            }
         )
     }
 

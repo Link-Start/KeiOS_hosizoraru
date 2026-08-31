@@ -575,3 +575,45 @@ targeted components came back 71,606, 71,602 and 71,536 baseline rules. The last
 and its drop is mostly `github/share/`, which went 237 -> 224 -- still well above the 191 that predate
 this work. That journey resolves a real repository over the network, so what it collects moves run to
 run. What is worth checking after a capture is the named components, not the sum.
+
+## response_too_large: unreachable, then fixed at the source
+
+The last two functions in `GitHubRefreshHistoryDiagnostics` -- `rememberFailureLimitDetail` and
+`formatDiagnosticBytes`, which draw the limit/declared/observed/stage row -- needed a
+`response_too_large` failure. Chasing one turned up an app bug rather than a fixture problem.
+
+**The detection worked; the classification threw it away.** A loopback server declaring
+`Content-Length: 99999999` made `stringLimitedBlocking` throw exactly as designed --
+`content text exceeds 8388608 bytes (stage=DeclaredLength, observed=99999999, declared=99999999)`
+appeared verbatim in the failure message -- while the category pill read **"Unknown failure"** and no
+size row was drawn. `FdroidBatchPackageSnapshotProvider` reports a combined message when both its
+halves fail and can keep only one of them as the cause: it kept `repositoryError ?: apiError`, and that
+branch is reached only when the repository fallback also failed, so the typed exception was never the
+cause. `FdroidRepositoryIndexClient` does no bounded read at all -- it stream-parses -- so
+`repositoryError` could never be the typed one either. The category was unreachable by construction,
+and so was every row it drives.
+
+The other three source modes cannot reach it either, checked before concluding: `github_repository` is
+pinned to github.com; `git_repository` builds `https://${host}/api/v1`, forcing TLS and dropping the
+port, so a loopback fixture never gets a request (its bounded read *would* classify correctly --
+`failedGitRepositoryCheck` passes the raw error); and on `direct_apk` the APK step's error is what
+reaches `failedCheck`, measured as `network_error` while the `.json` and directory-index bounded reads
+never surface.
+
+**The fix is in the classifier, not the fixture.** `GitHubRefreshFailureClassifier` now walks causes
+*and* suppressed exceptions, breadth-first, capped at 16 nodes -- an aggregating wrapper can only carry
+one cause and the one it keeps is not always the one worth classifying. The F-Droid aggregation now
+attaches the API error with `addSuppressed` instead of dropping it. Four unit tests pin it, including a
+suppressed *cycle*: the walk is a graph now, so it can contain a loop, and unbounded that hangs a
+refresh thread.
+
+On the device the pill reads **Response too large** and the row reads
+`Limit 8 MiB · Declared 95 MiB · Read 95 MiB · Stage Before read`. In a single-journey capture the two
+functions collect a rule each, taking the component 16 -> 18.
+
+**The fixture is a server, not a payload.** `startOversizedResponseServer` binds 127.0.0.1 inside the
+instrumentation process and answers every request with headers only -- no body is ever sent, because
+`stringLimitedBlocking` compares the declared length before reading a byte. The test APK already merges
+`INTERNET`. It is started once per test rather than inside the `collect` block: the block is replayed
+per iteration, and the second replay met its own still-bound socket with `EADDRINUSE`. `reuseAddress`
+does not help there -- it covers a socket in TIME_WAIT from a previous run, not one still open.

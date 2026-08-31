@@ -559,3 +559,19 @@ either way is noise. The three components above are what moved deterministically
 Recovering the accidental 13 would take one deliberate `pullToRefresh()` at the end of the route's work,
 where no tap follows it and a swallowed one cannot matter. Left undone because it costs a capture, and
 the path it covers was uncovered before this work started.
+
+## The route's own pull-to-refresh, on purpose this time
+
+22/22 again, 33m 59s. `refreshStarted` goes 16 -> **29**, which is exactly what the accidental version
+reached, and the three history components are unchanged at 20 / 27 / 10.
+
+The pull is placed after every tap the journey needs, which is the whole point: a pull leaves the list
+reloading long enough to swallow the next tap, so the only safe place for one is where nothing follows.
+It repeats six times because a pull only arms at the top and an expanded record leaves the list about
+1.2 screens down against roughly 0.38 per drag -- the early passes scroll, the last ones pull.
+
+**Do not read the totals as a quality signal at this granularity.** Three captures with identical
+targeted components came back 71,606, 71,602 and 71,536 baseline rules. The last of those is this one,
+and its drop is mostly `github/share/`, which went 237 -> 224 -- still well above the 191 that predate
+this work. That journey resolves a real repository over the network, so what it collects moves run to
+run. What is worth checking after a capture is the named components, not the sum.

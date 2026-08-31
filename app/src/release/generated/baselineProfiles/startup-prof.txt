@@ -1403,7 +1403,6 @@ SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;-><clinit>(
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;-><init>(Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;ZZ)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;-><init>(Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->getAwaitTouchSlop()Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;
-SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->getConsumedOnInitial()Z
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->setAwaitTouchSlop(Landroidx/compose/foundation/gestures/DragDetectionState$AwaitDown$AwaitTouchSlop;)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->setConsumedOnInitial(Z)V
 SPLandroidx/compose/foundation/gestures/DragDetectionState$AwaitDown;->setHasSeenInitialEvent(Z)V
@@ -6472,6 +6471,7 @@ SPLandroidx/compose/ui/graphics/Path$Direction;->$values()[Landroidx/compose/ui/
 SPLandroidx/compose/ui/graphics/Path$Direction;-><clinit>()V
 SPLandroidx/compose/ui/graphics/Path$Direction;-><init>(Ljava/lang/String;I)V
 SPLandroidx/compose/ui/graphics/Path$Direction;->values()[Landroidx/compose/ui/graphics/Path$Direction;
+Landroidx/compose/ui/graphics/PathEffect;
 Landroidx/compose/ui/graphics/PathFillType;
 SPLandroidx/compose/ui/graphics/PathFillType;-><clinit>()V
 SPLandroidx/compose/ui/graphics/PathFillType;->access$getEvenOdd$cp()I
@@ -6935,7 +6935,7 @@ SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setCan
 HSPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setDensity(Landroidx/compose/ui/unit/Density;)V
 SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setGraphicsLayer(Landroidx/compose/ui/graphics/layer/GraphicsLayer;)V
 HSPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setLayoutDirection(Landroidx/compose/ui/unit/LayoutDirection;)V
-HSPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setSize-uvyYCjk(J)V
+SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScope$drawContext$1;->setSize-uvyYCjk(J)V
 Landroidx/compose/ui/graphics/drawscope/CanvasDrawScopeKt;
 SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScopeKt;->access$asDrawTransform(Landroidx/compose/ui/graphics/drawscope/DrawContext;)Landroidx/compose/ui/graphics/drawscope/DrawTransform;
 SPLandroidx/compose/ui/graphics/drawscope/CanvasDrawScopeKt;->asDrawTransform(Landroidx/compose/ui/graphics/drawscope/DrawContext;)Landroidx/compose/ui/graphics/drawscope/DrawTransform;
@@ -9363,7 +9363,6 @@ SPLandroidx/compose/ui/platform/AndroidComposeView;->boundsUpdatesContentCapture
 SPLandroidx/compose/ui/platform/AndroidComposeView;->calculateMatrixToWindow-58bKbWc([F)V
 SPLandroidx/compose/ui/platform/AndroidComposeView;->calculatePositionInWindow-MK-Hz9U(J)J
 SPLandroidx/compose/ui/platform/AndroidComposeView;->childSizeCanAffectParentSize(Landroidx/compose/ui/node/LayoutNode;)Z
-SPLandroidx/compose/ui/platform/AndroidComposeView;->clearChildInvalidObservations(Landroid/view/ViewGroup;)V
 SPLandroidx/compose/ui/platform/AndroidComposeView;->convertMeasureSpec-I7RO_PI(I)J
 SPLandroidx/compose/ui/platform/AndroidComposeView;->createLayer(Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/graphics/layer/GraphicsLayer;)Landroidx/compose/ui/node/OwnedLayer;
 SPLandroidx/compose/ui/platform/AndroidComposeView;->derivedIsAttached_delegate$lambda$0(Landroidx/compose/ui/platform/AndroidComposeView;)Z
@@ -11925,7 +11924,7 @@ SPLandroidx/compose/ui/unit/IntSize$Companion;->getZero-YbymL2g()J
 Landroidx/compose/ui/unit/IntSizeKt;
 SPLandroidx/compose/ui/unit/IntSizeKt;->roundToIntSize-uvyYCjk(J)J
 SPLandroidx/compose/ui/unit/IntSizeKt;->toIntSize-uvyYCjk(J)J
-HSPLandroidx/compose/ui/unit/IntSizeKt;->toSize-ozmzZPI(J)J
+SPLandroidx/compose/ui/unit/IntSizeKt;->toSize-ozmzZPI(J)J
 Landroidx/compose/ui/unit/LayoutDirection;
 SPLandroidx/compose/ui/unit/LayoutDirection;->$values()[Landroidx/compose/ui/unit/LayoutDirection;
 SPLandroidx/compose/ui/unit/LayoutDirection;-><clinit>()V
@@ -14304,7 +14303,7 @@ SPLkotlin/collections/CollectionsKt__CollectionsJVMKt;->listOf(Ljava/lang/Object
 Lkotlin/collections/CollectionsKt__CollectionsKt;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->arrayListOf([Ljava/lang/Object;)Ljava/util/ArrayList;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->asCollection([Ljava/lang/Object;Z)Ljava/util/Collection;
-HSPLkotlin/collections/CollectionsKt__CollectionsKt;->emptyList()Ljava/util/List;
+SPLkotlin/collections/CollectionsKt__CollectionsKt;->emptyList()Ljava/util/List;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->getIndices(Ljava/util/Collection;)Lkotlin/ranges/IntRange;
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->getLastIndex(Ljava/util/List;)I
 SPLkotlin/collections/CollectionsKt__CollectionsKt;->listOf([Ljava/lang/Object;)Ljava/util/List;
@@ -14577,6 +14576,7 @@ Lkotlin/coroutines/intrinsics/IntrinsicsKt__IntrinsicsKt;
 SPLkotlin/coroutines/intrinsics/IntrinsicsKt__IntrinsicsKt;->getCOROUTINE_SUSPENDED()Ljava/lang/Object;
 Lkotlin/coroutines/jvm/internal/BaseContinuationImpl;
 SPLkotlin/coroutines/jvm/internal/BaseContinuationImpl;-><init>(Lkotlin/coroutines/Continuation;)V
+HSPLkotlin/coroutines/jvm/internal/BaseContinuationImpl;->resumeWith(Ljava/lang/Object;)V
 Lkotlin/coroutines/jvm/internal/Boxing;
 SPLkotlin/coroutines/jvm/internal/Boxing;->boxBoolean(Z)Ljava/lang/Boolean;
 SPLkotlin/coroutines/jvm/internal/Boxing;->boxFloat(F)Ljava/lang/Float;
@@ -15526,7 +15526,7 @@ SPLkotlinx/coroutines/CancellableContinuationImpl;->getDelegate$kotlinx_coroutin
 SPLkotlinx/coroutines/CancellableContinuationImpl;->getExceptionalResult$kotlinx_coroutines_core(Ljava/lang/Object;)Ljava/lang/Throwable;
 HSPLkotlinx/coroutines/CancellableContinuationImpl;->getParentHandle()Lkotlinx/coroutines/DisposableHandle;
 HSPLkotlinx/coroutines/CancellableContinuationImpl;->getResult()Ljava/lang/Object;
-HSPLkotlinx/coroutines/CancellableContinuationImpl;->getState$kotlinx_coroutines_core()Ljava/lang/Object;
+SPLkotlinx/coroutines/CancellableContinuationImpl;->getState$kotlinx_coroutines_core()Ljava/lang/Object;
 HSPLkotlinx/coroutines/CancellableContinuationImpl;->getSuccessfulResult$kotlinx_coroutines_core(Ljava/lang/Object;)Ljava/lang/Object;
 SPLkotlinx/coroutines/CancellableContinuationImpl;->get_decisionAndIndex$volatile$FU()Ljava/util/concurrent/atomic/AtomicIntegerFieldUpdater;
 SPLkotlinx/coroutines/CancellableContinuationImpl;->get_parentHandle$volatile$FU()Ljava/util/concurrent/atomic/AtomicReferenceFieldUpdater;

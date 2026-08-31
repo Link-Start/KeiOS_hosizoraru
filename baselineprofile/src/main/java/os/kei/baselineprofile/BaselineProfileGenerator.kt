@@ -413,6 +413,7 @@ class BaselineProfileGenerator {
 
             // Deliberately last in GITHUB_HISTORY_TABS, so the route is sitting on Refresh here.
             expandRefreshRecordWithDiagnostics()
+            collectHistoryPullToRefresh()
 
             device.pressBack()
             waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
@@ -1432,6 +1433,41 @@ private fun MacrobenchmarkScope.awaitGitHubRefreshSettled() {
     }
     device.waitForIdle()
 }
+
+/**
+ * Pulls the history list to refresh, on purpose and last.
+ *
+ * The route has a pull-to-refresh of its own -- `pullRefreshSessionActive` and the `LaunchedEffect`
+ * that watches `uiState.loading` through it -- and nothing else in this journey goes near it. It was
+ * collected by accident for exactly one capture, as a side effect of a scroll-to-top that happened to
+ * be three backward nudges, and it left when that did: `refreshStarted` went 29 rules back to the 16
+ * that predate this work.
+ *
+ * So it is done deliberately now, and it is done **after every tap this journey needs**. That ordering
+ * is the whole lesson of the capture before this one: a pull leaves the list reloading long enough to
+ * swallow the next tap, measured by hand as the same header tap opening a card and then not opening it
+ * with three nudges in front of it. Here nothing follows, so there is nothing to swallow.
+ *
+ * Repeated rather than done once because a pull only arms at the top of the list and the expanded
+ * record above leaves it scrolled well down. Each pass is a long backward drag: the early ones scroll,
+ * the last ones pull.
+ */
+private fun MacrobenchmarkScope.collectHistoryPullToRefresh() {
+    repeat(HISTORY_PULL_ATTEMPTS) { pullToRefresh() }
+    check(device.wait(Until.hasObject(testTagSelector(GITHUB_REFRESH_HISTORY_CARD)), 20_000)) {
+        "The history pull-to-refresh left no record cards in ${targetAppId()}. " +
+            "On screen: ${visibleTextSummary()}"
+    }
+}
+
+/**
+ * Enough long backward drags to walk an expanded record back to the top and still pull there.
+ *
+ * The fling before this one covers about 1.2 screens forward and each drag here about 0.38 back, so
+ * four would only just arrive. Six leaves room for a record tall enough to need it, and the extra
+ * drags cost a second each and land on the pull they are there for.
+ */
+private const val HISTORY_PULL_ATTEMPTS = 6
 
 /** A drag long enough to arm a pull-to-refresh, starting below the top bar. */
 private fun MacrobenchmarkScope.pullToRefresh() {

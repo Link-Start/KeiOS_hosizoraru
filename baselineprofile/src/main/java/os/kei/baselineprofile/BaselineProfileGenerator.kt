@@ -1411,11 +1411,17 @@ private fun MacrobenchmarkScope.expandRefreshRecordWithDiagnostics() {
 /** One pass over the visible records: expand, keep the first that has diagnostics, close the rest. */
 private fun MacrobenchmarkScope.openRefreshRecordWithDiagnostics(): Boolean {
     repeat(REFRESH_HISTORY_DIAGNOSTIC_CARD_ATTEMPTS) { index ->
+        // Read through runCatching, and re-queried every pass. These lists recompose underneath a
+        // journey -- the staleness [clickBottomBarTab] documents -- so a handle that answered
+        // `findObjects` a moment ago throws `StaleObjectException` from `visibleBounds` rather than
+        // returning null. That is not a missing card, it is a moving one, and it cost a capture 32
+        // minutes in. Either way the answer is another pass.
         val bounds =
-            device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD))
-                .getOrNull(index)
-                ?.visibleBounds
-                ?: return false
+            runCatching {
+                device.findObjects(testTagSelector(GITHUB_REFRESH_HISTORY_CARD))
+                    .getOrNull(index)
+                    ?.visibleBounds
+            }.getOrNull() ?: return@repeat
         val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
         device.click(bounds.centerX(), bounds.top + inset)
         device.waitForIdle()
@@ -1835,6 +1841,13 @@ private const val JSON_IMPORT_CONFIRM = "json_import_confirm"
  * a fixture that starts passing means someone created it rather than that GitHub changed its mind about
  * unknown names. The subscription points at the discard port on loopback, which nothing listens on.
  *
+ * **The labels start with `zz-` so the fixtures sort last, and that is load-bearing.** The tracked list
+ * defaults to `GitHubSortMode.Update` ascending, which falls through to the display title once nothing
+ * is updatable, and the display title of a labelled track is its label. Two fixtures named for what
+ * they are sorted above "KeiOS" and became the *first* tracked card — which is the card
+ * [gitHubReleaseListInteractions] opens the overflow of, so that journey went looking for releases on a
+ * repository that does not exist and died 45 seconds later. It took a capture 32 minutes in to say so.
+ *
  * **No spaces anywhere in here, including inside the labels.** This whole string arrives as one argv
  * token only because `Runtime.exec` splits the command on whitespace, and there is no shell in the way
  * to put it back together -- see [seedFailingGitHubTracks]. Spelling the labels as prose is what broke
@@ -1847,12 +1860,12 @@ private const val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
         """"repoUrl":"https://github.com/hosizoraru/keios-baseline-profile-missing",""" +
         """"owner":"hosizoraru","repo":"keios-baseline-profile-missing",""" +
         """"packageName":"os.kei.baselineprofile.missing",""" +
-        """"appLabel":"baseline-profile-missing-repo"},""" +
+        """"appLabel":"zz-baseline-profile-missing-repo"},""" +
         """{"sourceMode":"direct_apk",""" +
         """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile.apk",""" +
         """"owner":"keios-baseline-profile","repo":"unreachable-apk",""" +
         """"packageName":"os.kei.baselineprofile.unreachable",""" +
-        """"appLabel":"baseline-profile-unreachable-apk"}]}"""
+        """"appLabel":"zz-baseline-profile-unreachable-apk"}]}"""
 
 /**
  * A repository the share window can resolve, and that the app is not already tracking.

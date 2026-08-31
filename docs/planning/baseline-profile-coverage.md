@@ -372,3 +372,27 @@ serving an oversized body rather than refusing a connection.
 `{}` payload settles on the unknown-file branch, so the planner, the applier, the preview stats and the
 sample list were all interpreted on first use. With a real payload the `jsonimport` package collects
 **327 rules**.
+
+### Two more, found by the capture rather than by the single-journey run
+
+The journey passed on its own and the full capture still came back 20/22. Both failures were things a
+one-test run cannot show, and both are now fixed.
+
+**The fixture is in the tracked list for every journey after it, and that changed which card is first.**
+`gitHubReleaseListInteractions` opens the overflow of whichever tracked card `findObject` returns first,
+which on a capture had always been the app's own self-tracked entry. The tracked list defaults to
+`GitHubSortMode.Update` ascending, which falls through to the display title once nothing is updatable,
+and a labelled track's display title is its label — so two fixtures named for what they are sorted above
+"KeiOS", took first place, and sent that journey looking for releases on a repository that does not
+exist. It waited its full 45 seconds and failed, 32 minutes into the run. The labels now start with
+`zz-`; verified on the AVD that the first overflow button belongs to the KeiOS card again.
+
+Leaving the fixtures in place rather than deleting them afterwards is deliberate. They are two failing
+tracked cards, an overview that reports failures, and the "Show failed"/"Retry failed" row — none of
+which a capture had ever rendered, because a capture's app tracks only itself and its own releases
+resolve.
+
+**`UiObject2` handles go stale, and `visibleBounds` throws rather than returning null.** The same
+staleness `clickBottomBarTab` documents, one call later: `findObjects` answered, the list recomposed,
+and reading the bounds raised `StaleObjectException`. The read is wrapped now, and a stale handle is
+treated as what it is — a card that moved, worth another pass — rather than as a card that is not there.

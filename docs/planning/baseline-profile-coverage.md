@@ -281,3 +281,36 @@ setting it — while doing nothing but reaching Home. Dex layout therefore cover
 the user does next, leaving the first fling to the interpreter on a fresh install, which is exactly
 where first-run jank is felt. The journey now flings twice after launch through the same
 `flingVisibleScrollable` helper the Home journey already uses.
+
+## Measured: 33m 31s, and two corrections to the analysis above
+
+The first capture on the new budget: **33m 31s (2011s) against 81m 5s (4865s), 2.42x**, exit 0, on the
+API 37 AVD.
+
+**The time model was wrong in its numbers, right in its direction.** It predicted ~22 minutes from
+92 cold starts at 14.7s. The real per-start cost is 2011/92 = **21.9s**, not 14.7s. Running that
+backwards through the original 4865s gives 222 starts, so the old run averaged about **10 iterations
+per journey, not the full 15** — some journeys did stabilise. Iterations were the cost, which is what
+mattered, but "essentially every journey ran fifteen" overstated it.
+
+**Fewer replays did not cost rules; they gained.** This was the trade flagged as the risk, so it is
+worth stating plainly that it did not materialise:
+
+| profile | before | after | delta |
+| --- | ---: | ---: | ---: |
+| `baseline-prof.txt` | 68,824 | 70,608 | **+1,784** |
+| `startup-prof.txt` | 23,877 | 24,615 | **+738** |
+
+The startup gain is the first-scroll change landing: `ScrollableState` goes 12 -> 33 rules and
+`LazyListState` 98 -> 106 in `startup-prof.txt`, which is exactly the dex-layout coverage that was
+missing.
+
+**The history seeding did not work, and the reason corrects the gap entry above.** `seedGitHubHistory`
+does run and the Refresh tab does render — but `GitHubRefreshHistoryDiagnostics` still carries 0 rules,
+same as before. Reading the file explains it: it declares `GitHubRefreshHistoryDiagnosticPills` and
+`GitHubRefreshFailureSummaryBlock`, both gated behind `hasRefreshTraceDiagnostics()` and failure state.
+A clean successful refresh produces a record with nothing to diagnose, so those composables never enter
+composition. The premise was not "the tab has no history" — `GitHubRefreshHistoryCards` was already
+carrying 41 rules before any of this — it is "the tab has no *failing* history". Covering them needs a
+refresh that fails, which a capture could arrange by pointing at an unreachable host, not merely one
+that runs.

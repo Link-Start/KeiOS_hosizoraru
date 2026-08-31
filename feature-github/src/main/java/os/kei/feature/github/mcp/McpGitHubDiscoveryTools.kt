@@ -70,7 +70,7 @@ internal class McpGitHubDiscoveryTools(
             )
         }
 
-        server.addMcpTextTool(environment, name = "keios.github.package.repo.scan") { request ->
+        server.addMcpTextTool(environment, name = "keios.github.package.repo.search") { request ->
             val packageName = argString(request.arguments?.get("packageName")).trim()
             val appLabel = argString(request.arguments?.get("appLabel")).trim()
             val preferredRepoUrl = argString(request.arguments?.get("preferredRepoUrl")).trim()

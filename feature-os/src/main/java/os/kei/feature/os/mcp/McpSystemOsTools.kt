@@ -26,28 +26,46 @@ internal class McpSystemOsTools(
             delegate.buildOsCardsSnapshotText()
         }
 
-        server.addMcpTextTool(environment, name = "keios.os.activity.cards") { request ->
-            val query = argString(request.arguments?.get("query")).trim()
-            val onlyVisible = argBoolean(request.arguments?.get("onlyVisible"), false)
-            val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(1, MAX_TRACK_LIMIT)
-            delegate.buildOsActivityCardsText(
-                query = query,
-                onlyVisible = onlyVisible,
-                limit = limit
-            )
-        }
-
-        server.addMcpTextTool(environment, name = "keios.os.shell.cards") { request ->
+        // One listing tool over both card domains. `keios.os.activity.cards` and
+        // `keios.os.shell.cards` differed only by which builder they called and by shell's
+        // `includeOutput`, so a client had to know the domain split before it could ask a question
+        // about "the cards". `target` reuses the exact vocabulary `keios.os.cards.export` and
+        // `keios.os.cards.import` already use, rather than inventing a third word for the same idea.
+        server.addMcpTextTool(environment, name = "keios.os.cards.list") { request ->
+            val target = argString(request.arguments?.get("target")).trim().lowercase().ifBlank { "all" }
             val query = argString(request.arguments?.get("query")).trim()
             val onlyVisible = argBoolean(request.arguments?.get("onlyVisible"), false)
             val includeOutput = argBoolean(request.arguments?.get("includeOutput"), false)
             val limit = argInt(request.arguments?.get("limit"), DEFAULT_TRACK_LIMIT).coerceIn(1, MAX_TRACK_LIMIT)
-            delegate.buildOsShellCardsText(
-                query = query,
-                onlyVisible = onlyVisible,
-                includeOutput = includeOutput,
-                limit = limit
-            )
+            val wantsActivity = target == "activity" || target == "all"
+            val wantsShell = target == "shell" || target == "all"
+            if (!wantsActivity && !wantsShell) {
+                return@addMcpTextTool "error=unknown_target target=$target expected=activity|shell|all"
+            }
+            buildString {
+                if (wantsActivity) {
+                    appendLine("[activity]")
+                    appendLine(
+                        delegate.buildOsActivityCardsText(
+                            query = query,
+                            onlyVisible = onlyVisible,
+                            limit = limit
+                        )
+                    )
+                }
+                if (wantsShell) {
+                    if (wantsActivity) appendLine()
+                    appendLine("[shell]")
+                    appendLine(
+                        delegate.buildOsShellCardsText(
+                            query = query,
+                            onlyVisible = onlyVisible,
+                            includeOutput = includeOutput,
+                            limit = limit
+                        )
+                    )
+                }
+            }.trim()
         }
 
         server.addMcpTextTool(environment, name = "keios.os.cards.export") { request ->

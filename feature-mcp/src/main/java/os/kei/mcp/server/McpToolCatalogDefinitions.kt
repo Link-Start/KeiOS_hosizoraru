@@ -44,7 +44,7 @@ internal object McpToolCatalogDefinitions {
     )
 
     private val deepScanTools = setOf(
-        "keios.github.package.repo.scan"
+        "keios.github.package.repo.search"
     )
 
     fun definitionFor(
@@ -87,7 +87,7 @@ internal object McpToolCatalogDefinitions {
 
     private fun maturityForName(name: String): McpToolMaturity {
         return when {
-            name == "keios.github.package.repo.scan" ||
+            name == "keios.github.package.repo.search" ||
                 name == "keios.github.stars.import" ||
                 name == "keios.github.stars.apk.verify" -> McpToolMaturity.Preview
 

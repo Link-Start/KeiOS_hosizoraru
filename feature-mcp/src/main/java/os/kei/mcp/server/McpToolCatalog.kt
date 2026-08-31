@@ -17,7 +17,6 @@ object McpToolCatalog {
     val runtimeToolNames = listOf(
         "keios.health.ping",
         "keios.app.info",
-        "keios.app.version",
         "keios.privilege.status",
         "keios.mcp.runtime.status",
         "keios.mcp.runtime.logs",
@@ -32,8 +31,7 @@ object McpToolCatalog {
 
     val osToolNames = listOf(
         "keios.os.cards.snapshot",
-        "keios.os.activity.cards",
-        "keios.os.shell.cards",
+        "keios.os.cards.list",
         "keios.os.cards.export",
         "keios.os.cards.import"
     )
@@ -59,7 +57,7 @@ object McpToolCatalog {
         "keios.github.discovery.search",
         "keios.github.repo.package.scan",
         "keios.github.direct_apk.inspect",
-        "keios.github.package.repo.scan",
+        "keios.github.package.repo.search",
         "keios.github.stars.lists",
         "keios.github.stars.preview",
         "keios.github.stars.import",
@@ -74,7 +72,6 @@ object McpToolCatalog {
         "keios.ba.calendar.cache",
         "keios.ba.pool.cache",
         "keios.ba.guide.catalog.cache",
-        "keios.ba.guide.cache.overview",
         "keios.ba.guide.cache.inspect",
         "keios.ba.guide.media.list",
         "keios.ba.guide.bgm.favorites",

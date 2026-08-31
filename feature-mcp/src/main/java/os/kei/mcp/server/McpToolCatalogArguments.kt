@@ -62,15 +62,15 @@ internal object McpToolCatalogArguments {
             McpSchema.string("id", description = "History entry id for detail mode.")
         ),
         "keios.system.topinfo.query" to listOf(McpSchema.string("query"), McpSchema.integer("limit")),
-        "keios.os.activity.cards" to listOf(
+        "keios.os.cards.list" to listOf(
+            McpSchema.string(
+                name = "target",
+                description = "OS card domain to list; defaults to all.",
+                enumValues = listOf("activity", "shell", "all")
+            ),
             McpSchema.string("query"),
             McpSchema.boolean("onlyVisible"),
-            McpSchema.integer("limit")
-        ),
-        "keios.os.shell.cards" to listOf(
-            McpSchema.string("query"),
-            McpSchema.boolean("onlyVisible"),
-            McpSchema.boolean("includeOutput"),
+            McpSchema.boolean("includeOutput", description = "Shell cards only: include last command output."),
             McpSchema.integer("limit")
         ),
         "keios.os.cards.export" to listOf(McpSchema.string("target")),
@@ -189,7 +189,7 @@ internal object McpToolCatalogArguments {
                 defaultValue = "false"
             )
         ),
-        "keios.github.package.repo.scan" to listOf(
+        "keios.github.package.repo.search" to listOf(
             McpSchema.string("packageName", required = true),
             McpSchema.string("appLabel"),
             McpSchema.string("preferredRepoUrl"),
@@ -227,7 +227,10 @@ internal object McpToolCatalogArguments {
             McpSchema.integer("limit")
         ),
         "keios.ba.guide.cache.inspect" to listOf(
-            McpSchema.string("url"),
+            McpSchema.string(
+                name = "url",
+                description = "Student Guide detail URL; omit for the whole-cache footprint."
+            ),
             McpSchema.boolean("includeSections"),
             McpSchema.integer("refreshIntervalHours")
         ),

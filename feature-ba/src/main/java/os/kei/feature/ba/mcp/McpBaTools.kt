@@ -62,12 +62,14 @@ internal class McpBaTools(
             delegate.buildGuideCatalogCacheText(tab = tab, includeEntries = includeEntries, limit = limit)
         }
 
-        server.addMcpTextTool(environment, name = "keios.ba.guide.cache.overview") { _ ->
-            delegate.buildGuideCacheOverviewText()
-        }
-
+        // `url` is the zoom level, not a separate tool. Omitting it used to mean reaching for
+        // `keios.ba.guide.cache.overview`, which returned the same cache seen whole; a client had to
+        // know both names to ask "how big is this cache" and "what is in this entry".
         server.addMcpTextTool(environment, name = "keios.ba.guide.cache.inspect") { request ->
             val url = argString(request.arguments?.get("url")).trim()
+            if (url.isEmpty()) {
+                return@addMcpTextTool delegate.buildGuideCacheOverviewText()
+            }
             val includeSections = argBoolean(request.arguments?.get("includeSections"), false)
             val refreshHours = argInt(
                 request.arguments?.get("refreshIntervalHours"),

@@ -29,10 +29,6 @@ internal class McpRuntimeTools(
             }.trim()
         }
 
-        server.addMcpTextTool(environment, name = "keios.app.version") { _ ->
-            "versionName=$appVersionName\nversionCode=$appVersionCode"
-        }
-
         server.addMcpTextTool(environment, name = "keios.privilege.status") { _ ->
             val status = environment.privilegedShell.currentStatus()
             "mode=${status.mode.storageId}\nready=${status.isCommandReady}\nstatus=${status.text}"

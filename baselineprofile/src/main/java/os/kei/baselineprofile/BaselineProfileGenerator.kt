@@ -1486,15 +1486,20 @@ private fun MacrobenchmarkScope.expandHistoryRecord(
         "No cards with testTag=$cardTag in ${targetAppId()}; the route is on the wrong tab, or that " +
             "tab's store is empty. On screen: ${visibleTextSummary()}"
     }
-    repeat(HISTORY_RECORD_RELOAD_ATTEMPTS) { attempt ->
-        // The route is not live on the store. `GitHubActionsNotificationHistoryViewModel` reads it once
-        // from `init`, so a record still being written when this page loaded is simply not in it. The
-        // page's own pull re-reads, which is both the retry and one more path collected.
-        if (attempt > 0) pullToRefresh()
-        // Newest first, and the records this journey made are the newest, so the walk starts from the
-        // top of the list rather than from wherever the tab loop's fling left it.
-        scrollVisibleScrollableToTop()
+    repeat(HISTORY_RECORD_RELOAD_ATTEMPTS) {
         if (openHistoryRecord(cardTag = cardTag, bodyTag = bodyTag)) return
+        // Only *after* a failed pass, never before a tap. The route is not live on the store --
+        // `GitHubActionsNotificationHistoryViewModel` reads it once from `init` -- so a record still
+        // being written when the page loaded needs this pull to appear. But a pull leaves the list
+        // reloading for long enough to swallow the tap that follows it, which is measurable by hand:
+        // the same header tap at the same coordinates opens a card, and does not open it when three
+        // backward nudges come first. Waiting for the cards to be back before the next pass is the
+        // difference between a retry and a second way to fail.
+        pullToRefresh()
+        check(device.wait(Until.hasObject(testTagSelector(cardTag)), 20_000)) {
+            "The reload left no cards with testTag=$cardTag in ${targetAppId()}. " +
+                "On screen: ${visibleTextSummary()}"
+        }
     }
     val cardCount = device.findObjects(testTagSelector(cardTag)).size
     error(
@@ -1517,38 +1522,42 @@ private fun MacrobenchmarkScope.visibleTextSummary(): String {
         runCatching {
             java.io.ByteArrayOutputStream().also { device.dumpWindowHierarchy(it) }.toString()
         }.getOrElse { error -> return "unavailable (${error.javaClass.simpleName})" }
-    return Regex("""text="([^"]+)"""")
-        .findAll(hierarchy)
-        .map { match -> match.groupValues[1] }
-        .filter { text -> text.isNotBlank() }
-        .take(VISIBLE_TEXT_SUMMARY_LIMIT)
-        .joinToString(" | ")
+    val text =
+        Regex("""text="([^"]+)"""")
+            .findAll(hierarchy)
+            .map { match -> match.groupValues[1] }
+            .filter { value -> value.isNotBlank() }
+            .take(VISIBLE_TEXT_SUMMARY_LIMIT)
+            .joinToString(" | ")
+    // The ids as well as the text, because the two answer different questions. Text says which record
+    // is on screen; ids say whether its tags reached UiAutomator at all -- and a capture already spent
+    // 44 minutes reporting a screen whose text showed the very pills the tag was not matching.
+    val ids =
+        Regex("""resource-id="([^"]+)"""")
+            .findAll(hierarchy)
+            .map { match -> match.groupValues[1] }
+            .filter { value -> value.isNotBlank() && !value.contains(':') }
+            .distinct()
+            .take(VISIBLE_TEXT_SUMMARY_LIMIT)
+            .joinToString(", ")
+    return "$text || ids: $ids"
 }
 
 /** Enough to name the first couple of records and no more. */
 private const val VISIBLE_TEXT_SUMMARY_LIMIT = 24
-
-/** Undoes the tab loop's fling, without needing to know how far it went. */
-private fun MacrobenchmarkScope.scrollVisibleScrollableToTop() {
-    repeat(SCROLL_TO_TOP_ATTEMPTS) {
-        nudgeVisibleScrollable(forward = false)
-    }
-}
-
-/**
- * Three quarter-screen nudges back against one fling forward.
- *
- * Not more: a backward nudge on a list already at its top is a pull-to-refresh, and while that is
- * harmless here -- it re-reads the same store this step wants re-read -- there is no reason to do it
- * eight times.
- */
-private const val SCROLL_TO_TOP_ATTEMPTS = 3
 
 /** One pass over the visible records: expand, keep the first that draws its body, close the rest. */
 private fun MacrobenchmarkScope.openHistoryRecord(
     cardTag: String,
     bodyTag: String,
 ): Boolean {
+    // A card left open by an earlier pass is the answer, not something to toggle shut. Without this the
+    // walk oscillates: it taps the header of an already-expanded card, spends its wait watching a
+    // collapsed one, taps again to "restore", and reports failure with the body on screen.
+    if (device.hasObject(testTagSelector(bodyTag))) return true
+    // No scrolling first, deliberately. Walking the visible cards is what covers position here: every
+    // record this journey creates has failures, so whichever one the tab loop's fling left on screen
+    // will do, and scrolling back to the top costs a swallowed tap for nothing.
     repeat(HISTORY_RECORD_CARD_ATTEMPTS) { index ->
         // Read through runCatching, re-queried every pass, and retried in place. These lists recompose
         // underneath a journey -- the staleness [clickBottomBarTab] documents -- so a handle that

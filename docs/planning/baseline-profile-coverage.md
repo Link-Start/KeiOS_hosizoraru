@@ -503,3 +503,37 @@ restore the package fails loudly instead of leaving it hidden on somebody's devi
 handle that exists only inside an expanded card, so waiting for it separates a header tap that worked
 from one that landed and did nothing. On the refresh tab that tag is the diagnostic pill row, which
 proves the record has failures as well — the same check, doing more work.
+
+### The scroll-to-top was the bug, and it was mine
+
+The capture after that came back 21/22 again, with the same journey failing — and the screen dump
+added for exactly this moment showed `Failed 3 | Details 3 | Slow 4 | Slowest 8s` on screen. Those are
+the diagnostic pills. The record had failures, the card was open, and the wait for its tag still
+reported nothing.
+
+Measured by hand on the device, in the failing state, tapping the very coordinates the helper computes:
+
+| sequence | card opens |
+| --- | --- |
+| tap the header | **yes** |
+| three backward nudges, then tap the header | **no** |
+
+`scrollVisibleScrollableToTop()` was three backward nudges, and on a list already at its top a backward
+nudge is a pull-to-refresh. The tap that followed landed while the list was still reloading and was
+swallowed — every pass, which is why three passes found nothing.
+
+That helper was added a round earlier on the theory that the tab loop's fling left the newest record off
+screen. The theory was inferred from timings and never measured; the real cause that round was the
+empty-target refresh, fixed separately. So the speculative fix contributed nothing and became the next
+failure. It is removed, not repaired: walking the visible cards already covers position, because every
+record this journey creates has failures and whichever card the fling leaves on screen will do.
+
+The reload between passes now runs *after* a failed pass rather than before a tap, and waits for the
+cards to come back. Verified as an A/B with the eight journeys that precede this one in a real run:
+failing before the change, 8/8 with no exceptions after it.
+
+**Twice now a fix has become the next failure.** The `runCatching` added for a `StaleObjectException`
+turned a throw into a skipped index and hid its own cause; this one broke a tap that worked. Both times
+the way out was the same: reproduce on the device and measure the step, rather than reason from a stack
+trace. The `am instrument` reproduction and the screen dump in the failure message are what made that
+affordable — fifteen minutes against forty-four.

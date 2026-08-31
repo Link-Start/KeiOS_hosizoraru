@@ -211,6 +211,25 @@ internal class McpSkillContent(
         }
     }
 
+    /**
+     * Tools removed or renamed by the catalog consolidation, and what to call instead.
+     *
+     * Served in the handshake instructions rather than as deprecated alias tools on purpose. An alias
+     * would have to appear in `tools/list` to be callable, so every client would carry five entries
+     * forever to serve the few holding a stale name -- paying the cost of the consolidation without
+     * getting its benefit. Here the mapping arrives once, before the client picks a tool, and a client
+     * that never knew the old names never sees it again.
+     *
+     * Delete an entry once no client plausibly still holds that name.
+     */
+    private val RENAMED_TOOLS = listOf(
+        "keios.app.version" to "keios.app.info",
+        "keios.os.activity.cards" to "keios.os.cards.list (target=activity)",
+        "keios.os.shell.cards" to "keios.os.cards.list (target=shell)",
+        "keios.ba.guide.cache.overview" to "keios.ba.guide.cache.inspect (omit url)",
+        "keios.github.package.repo.scan" to "keios.github.package.repo.search"
+    )
+
     fun buildServerInstructions(): String {
         val locale = currentLocale()
         return buildString {
@@ -232,6 +251,9 @@ internal class McpSkillContent(
             appendLine("- workflowPrompt=$WORKFLOW_PLAN_PROMPT")
             appendLine("- diagnosticsPrompt=$DIAGNOSTICS_PLAN_PROMPT")
             appendLine("- config=$CONFIG_RESOURCE_URI")
+            RENAMED_TOOLS.forEach { (removed, replacement) ->
+                appendLine("- renamed: $removed -> $replacement")
+            }
         }.trim()
     }
 

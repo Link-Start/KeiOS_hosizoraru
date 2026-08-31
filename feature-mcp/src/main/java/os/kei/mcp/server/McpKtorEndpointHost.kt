@@ -14,6 +14,7 @@ import io.ktor.server.response.respond
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.seconds
 
 internal data class McpEndpointSession(
     val engine: EmbeddedServer<*, *>,
@@ -104,7 +105,17 @@ internal fun Application.installMcpEndpoint(
     mcpStreamableHttp(
         path = path,
         enableDnsRebindingProtection = true,
-        allowedHosts = allowedHosts.distinct()
+        allowedHosts = allowedHosts.distinct(),
+        // Without this an SSE stream carrying nothing is indistinguishable from a dead socket, and
+        // [MCP_CIO_IDLE_TIMEOUT_SECONDS] reaps it after 12 seconds -- while a DeepScan tool is allowed
+        // to run for 60. A caller waiting on a long tool lost the stream it was waiting on, four times
+        // over, before the answer existed. kotlin-sdk 0.15.0 added the hook; Ktor sends the comment
+        // frame and the connection stays live because it is genuinely carrying bytes.
+        //
+        // Deliberately a short period rather than a longer idle timeout: raising the timeout would keep
+        // genuinely dead sockets on a phone alive for a minute, and the point of the 12 seconds is that
+        // they do not. Heartbeating under it keeps live streams live and still reaps dead ones fast.
+        sseHeartbeatConfig = { period = MCP_SSE_HEARTBEAT_PERIOD }
     ) {
         serverFactory()
     }
@@ -116,6 +127,13 @@ private fun String.isMcpEndpointPath(basePath: String): Boolean {
 }
 
 internal const val MCP_CIO_IDLE_TIMEOUT_SECONDS = 12
+
+/**
+ * SSE keep-alive period, which must stay comfortably under [MCP_CIO_IDLE_TIMEOUT_SECONDS].
+ *
+ * Two heartbeats fit inside the idle window, so a single dropped frame does not reap a live stream.
+ */
+internal val MCP_SSE_HEARTBEAT_PERIOD = 5.seconds
 internal const val MCP_CIO_CONNECTION_GROUP_SIZE = 1
 internal const val MCP_CIO_WORKER_GROUP_SIZE = 1
 internal const val MCP_CIO_CALL_GROUP_SIZE = 3

@@ -617,3 +617,28 @@ instrumentation process and answers every request with headers only -- no body i
 `INTERNET`. It is started once per test rather than inside the `collect` block: the block is replayed
 per iteration, and the second replay met its own still-bound socket with `EADDRINUSE`. `reuseAddress`
 does not help there -- it covers a socket in TIME_WAIT from a previous run, not one still open.
+
+## Measured: 22/22 in 35m 53s, and where the totals actually come from
+
+Clean capture, and the two functions this set out to reach each collect a rule:
+
+| component | before | after |
+| --- | ---: | ---: |
+| `GitHubRefreshHistoryDiagnostics` | 16 | **18** |
+| `GitHubTrackChangeHistoryCards` | 20 | 21 |
+| `GitHubAppInstallHistoryCards` | 27 | 27 |
+| `refreshStarted` (route pull) | 29 | 29 |
+
+The F-Droid fixture is not only a diagnostics fixture: it is the first time a capture has driven the
+F-Droid client at all. `feature/github/data/remote/fdroid` goes 16 -> 86, `domain/fdroid` 26 -> 97 and
+`data/local/fdroid` 30 -> 53, which is **+164** rules of a subsystem that shipped uncompiled.
+
+Totals still read 71,536 -> 71,372, and it is worth writing down what that number is made of, because
+three captures have now moved it while every driven component stayed put. The largest single loss this
+time is `GitHubBackgroundRefreshService`, `GitHubBackgroundRefreshJobService`,
+`AppForegroundInfoHandler` and `GitHubBackgroundRefreshCheckpointWriter` -- the *scheduled* background
+refresh. No journey drives those. They are collected when the job service happens to fire inside the
+capture's 35 minutes, and not otherwise. The rest of the movement is the BA and share-import journeys,
+which fetch real content over the network.
+
+So the sum is mostly a measure of what the device did while the capture ran. Read the named components.

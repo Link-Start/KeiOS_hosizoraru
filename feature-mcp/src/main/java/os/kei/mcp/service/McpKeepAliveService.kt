@@ -104,6 +104,7 @@ class McpKeepAliveService : Service() {
                 currentNotificationId = notificationId
                 currentHeartbeatEnabled = if (isBlueArchiveNotification) false else heartbeatEnabled
                 val notification = buildNotification(
+                    notificationId = notificationId,
                     serverName = serverName,
                     running = running,
                     port = port,
@@ -113,18 +114,21 @@ class McpKeepAliveService : Service() {
                 val shouldPromoteForeground =
                     !isBlueArchiveNotification &&
                         (!isForegroundPromoted || intent?.action == ACTION_START)
+                // Deliberately the same id `refreshForegroundNotification` is about to hand to
+                // `refreshForegroundAsIsland`. The service used to claim a separate
+                // KEEPALIVE_FOREGROUND_NOTIFICATION_ID here, so the island post landed *beside* the
+                // foreground-service notification instead of replacing it, and HyperOS drew the
+                // session twice: once as the Super Island card and once as an ordinary one below it.
+                // Sharing the id makes the island refresh an update of this notification.
                 if (shouldPromoteForeground) {
                     startForeground(
-                        McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID,
+                        notificationId,
                         notification,
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
                     )
                     isForegroundPromoted = true
                 } else if (!isBlueArchiveNotification && isForegroundPromoted) {
-                    notificationManager.notify(
-                        McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID,
-                        notification
-                    )
+                    notificationManager.notify(notificationId, notification)
                 }
                 if (!isBlueArchiveNotification && previousNotificationId != notificationId) {
                     McpNotificationHelper.cancelNotification(this, previousNotificationId)
@@ -154,6 +158,9 @@ class McpKeepAliveService : Service() {
         stopHeartbeat()
         McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this)
         cancelCurrentIslandNotification()
+        notificationManager.cancel(currentNotificationId)
+        // Legacy id: releases the stray notification left behind by builds that posted the
+        // foreground shell separately, so upgrading does not strand one on screen.
         notificationManager.cancel(McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID)
         isForegroundPromoted = false
         serviceScope.cancel()
@@ -161,6 +168,7 @@ class McpKeepAliveService : Service() {
     }
 
     private fun buildNotification(
+        notificationId: Int,
         serverName: String,
         running: Boolean,
         port: Int,
@@ -174,7 +182,7 @@ class McpKeepAliveService : Service() {
             port = port,
             path = path,
             clients = clients,
-            notificationId = McpNotificationHelper.KEEPALIVE_FOREGROUND_NOTIFICATION_ID
+            notificationId = notificationId
         )
     }
 

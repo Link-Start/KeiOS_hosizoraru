@@ -426,3 +426,35 @@ never why this failed.
 quotes the visible text into the exception. A card count says the walk happened; the record's own
 summary line is what distinguishes "the refresh failed as intended and the pills are missing" from "the
 refresh targeted nothing". Two captures were spent inferring that from timings.
+
+## Measured: 22/22 in 33m 27s, and the import-window claim corrected
+
+The third capture came back clean — 22 tests, 0 failures, `gitHubActionsHistoryRouteInteractions`
+passing in 3m 16s — in 33m 27s, the same wall clock as the run before this work started.
+
+| profile | before | after | delta |
+| --- | ---: | ---: | ---: |
+| `baseline-prof.txt` | 70,607 | 71,606 | **+999** |
+| `startup-prof.txt` | 24,614 | 24,712 | **+98** |
+
+What the failing refresh bought, counted in the real profile rather than the single-journey one:
+
+| package | before | after |
+| --- | ---: | ---: |
+| `GitHubRefreshHistoryDiagnostics` | **0** | **16** |
+| `GitHubRefreshHistoryCards` | 41 | 61 |
+| `GitHubRefreshHistoryRetryTargets` | 0 | 9 |
+
+**The import-window figure above was wrong, and worth correcting rather than quietly restating.** The
+"327 rules" came from the single-journey capture, where it was the *whole* `jsonimport` package count in
+a profile containing almost nothing else — and it was reported as though the package had been at zero.
+It had not: the existing `{}` journey already collected **296** rules there, because the window, its
+theme, its scaffold and the preview it draws for an unknown file are the same code either way. The real
+payload adds **29**, and they are the ones that only a file the app can act on reaches:
+`KeiOSJsonImportGitHubPlanner.buildPlan` and `buildPreview` with their continuations,
+`ImportableKeiOSJsonPlan`, `JsonImportResultAction`, and the content lambdas for the importable and done
+branches.
+
+`GitHubTrackedItemsImportApplier` is still at **0** rules, before and after, even though the import
+demonstrably applies — the record it produces is what the whole journey then reads. Worth knowing before
+assuming a profile covers everything a journey executes.

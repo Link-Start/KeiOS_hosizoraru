@@ -221,3 +221,52 @@ went to 28ms and the run reported `Starting 36 tests on KeiOS_API37_Validation(A
 Worth pairing with a second habit: that failed run's task summary still said *exit code 0*, because a
 `| tail` pipeline reports the tail's status and not Gradle's. Capture `GRADLE_EXIT=$?` before piping,
 or a failed capture reads as a successful one.
+
+## Why a capture took 1h21m, and the budget that replaces it
+
+The 2026-08-31 run reported 36 tests. Fourteen of those are macrobenchmarks
+(`MainNavigationFrameBenchmarks`, `StartupBenchmarks`) and the log shows every one **SKIPPED**, so
+they cost nothing. The remaining 22 are the generator journeys, and they own all 4860 seconds.
+
+`BaselineProfileRule.collect` defaults to `maxIterations = 15, stableIterations = 3` — replay until
+three consecutive captures are identical, give up at fifteen. The generator passed neither, so those
+defaults applied to all 22. Only one reading of the arithmetic fits:
+
+| iterations/journey | cold starts | implied seconds each |
+| --- | --- | --- |
+| 3 | 66 | 73.6 |
+| 5 | 110 | 44.2 |
+| 8 | 176 | 27.6 |
+| **15** | **330** | **14.7** |
+
+A cold start plus a deep navigation costs somewhere around 12–20s, which is the 15 row. The others
+would require a single pass to take 44s or 74s, and nothing in these journeys does. So essentially
+every journey was running the full fifteen — a UI-driven journey on a Compose app rarely produces
+three byte-identical captures in a row, and `strictStability` is false, so failing to stabilise is
+silent and simply costs the remaining replays.
+
+The budget is now explicit: startup keeps 8/3 because it is one short journey feeding
+`startup-prof.txt`, everything else takes 4/2. That bounds a capture at `1x8 + 21x4 = 92` cold starts
+against 330, so roughly 22 minutes rather than 81.
+
+**A hypothesis worth recording as dead.** The first suspect was `waitForIdle()`: the generator calls
+it 49 times, configures no `Configurator` timeout so the UiAutomator default of 10s applies, and this
+app has continuously-animating Liquid Glass surfaces — an app that never idles turns each call into a
+10-second no-op. Measured instead of assumed, and it is false: `os.kei` foreground on Home renders
+**0 frames in 4 seconds**, so the window does reach idle and `waitForIdle` returns immediately. Do not
+re-open this one without re-measuring first.
+
+**The trade being made.** `collect` accumulates the *union* of methods across iterations, so fewer
+replays can mean fewer rules rather than just less confirmation. It is a good trade here because the
+journeys are deterministic scripts over the same code, and the 2026-08-31 recapture came back 96.33%
+baseline and 98.46% startup rules unmodified against its predecessor — the marginal yield per extra
+replay is close to nothing. Compare rule counts after the next capture anyway;
+`scripts/qa/baseline_profile_freshness.sh` prints both.
+
+## The startup profile now covers the first scroll
+
+`includeInStartupProfile` is what feeds `startup-prof.txt`, and the `startup` journey was the only one
+setting it — while doing nothing but reaching Home. Dex layout therefore covered launch and nothing
+the user does next, leaving the first fling to the interpreter on a fresh install, which is exactly
+where first-run jank is felt. The journey now flings twice after launch through the same
+`flingVisibleScrollable` helper the Home journey already uses.

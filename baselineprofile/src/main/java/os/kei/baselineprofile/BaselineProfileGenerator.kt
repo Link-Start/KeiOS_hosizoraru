@@ -24,9 +24,18 @@ class BaselineProfileGenerator {
     fun startup() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = STARTUP_MAX_ITERATIONS,
+            stableIterations = STARTUP_STABLE_ITERATIONS,
             includeInStartupProfile = true,
         ) {
             launchHomeFromColdStart()
+            // The first scroll belongs in the *startup* profile, not only in the baseline one.
+            // `includeInStartupProfile` is what feeds `startup-prof.txt`, which drives dex layout for
+            // the launch window, and this was the only journey setting it -- so the layout covered
+            // reaching Home and nothing the user does next. The first fling after launch is precisely
+            // where first-run jank is perceived, and it was being left to the interpreter.
+            // Same helper `homeAndGitHubInteractions` already flings with, so the path is proven.
+            flingVisibleScrollable(times = 2)
         }
     }
 
@@ -34,6 +43,8 @@ class BaselineProfileGenerator {
     fun homeAndGitHubInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -52,6 +63,8 @@ class BaselineProfileGenerator {
     fun osPageInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -69,6 +82,8 @@ class BaselineProfileGenerator {
     fun mcpPageInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -101,6 +116,8 @@ class BaselineProfileGenerator {
     fun baPageInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -141,6 +158,8 @@ class BaselineProfileGenerator {
     fun baSlotCardInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -198,6 +217,8 @@ class BaselineProfileGenerator {
     fun gitHubReleaseListInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -265,6 +286,8 @@ class BaselineProfileGenerator {
     fun baDailyTemplateEditorInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchDailyTemplateFromTileLongPress()
@@ -285,6 +308,8 @@ class BaselineProfileGenerator {
     fun baCalendarPoolRouteInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -308,6 +333,8 @@ class BaselineProfileGenerator {
     fun settingsRouteInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -329,6 +356,8 @@ class BaselineProfileGenerator {
     fun gitHubActionsHistoryRouteInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -365,6 +394,8 @@ class BaselineProfileGenerator {
     fun homeAboutAndWebDavRouteInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -390,6 +421,8 @@ class BaselineProfileGenerator {
     fun mcpSkillRouteInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -435,6 +468,8 @@ class BaselineProfileGenerator {
     fun presentationChromeInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -463,6 +498,8 @@ class BaselineProfileGenerator {
     fun cardPileInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -485,6 +522,8 @@ class BaselineProfileGenerator {
     fun osShellRunnerRouteInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -521,6 +560,8 @@ class BaselineProfileGenerator {
     fun baGuideCatalogInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -605,6 +646,8 @@ class BaselineProfileGenerator {
     fun gitHubTrackedCardInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -653,6 +696,8 @@ class BaselineProfileGenerator {
     fun gitHubChromeSheetInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -710,6 +755,8 @@ class BaselineProfileGenerator {
     fun sharedIntentWindowInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchActivityFromColdStart(
@@ -764,6 +811,8 @@ class BaselineProfileGenerator {
     fun debugComponentLabInteractions() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -855,6 +904,8 @@ class BaselineProfileGenerator {
     fun tabletAndFoldNavigationShapes() {
         rule.collect(
             packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             try {
@@ -967,6 +1018,36 @@ private fun MacrobenchmarkScope.clickTestTag(tag: String) {
 }
 
 /** A clipped header reports single-digit pixels; anything that thin is not worth tapping. */
+/**
+ * How many times each journey is replayed, and why these are not the library defaults.
+ *
+ * `BaselineProfileRule.collect` defaults to `maxIterations = 15, stableIterations = 3`: replay until
+ * three consecutive captures produce an identical profile, giving up after fifteen. Those defaults
+ * are sized for a handful of journeys. This file has 22, and a UI-driven journey on a Compose app
+ * rarely produces three byte-identical captures in a row, so in practice almost every one ran the
+ * full fifteen.
+ *
+ * That is where the capture time went. The 2026-08-31 run took 1h21m for 36 tests, of which the 14
+ * macrobenchmarks were skipped, leaving 22 journeys and 4860 seconds. 22 x 15 is 330 cold starts at
+ * 14.7s each, which is what a cold start plus a deep navigation actually costs. The other readings
+ * do not fit: three iterations would demand 74s per pass, which nothing here takes.
+ *
+ * So the budget is set explicitly. Startup keeps a wider one because it is a single short journey and
+ * it feeds `startup-prof.txt`, where rule quality matters most per byte. Everything else gets four,
+ * which bounds the run at 1x8 + 21x4 = 92 cold starts.
+ *
+ * The trade is real and worth naming: `collect` accumulates the *union* of methods seen across
+ * iterations, so fewer replays can mean fewer rules, not merely less confirmation. It is a good trade
+ * here because these journeys are deterministic scripts over the same code, and the 2026-08-31
+ * recapture came back 96.33% baseline and 98.46% startup rules unmodified against the previous one --
+ * the marginal rule yield per extra replay is close to nothing. Check the rule counts after the next
+ * capture anyway; `scripts/qa/baseline_profile_freshness.sh` prints them.
+ */
+private const val STARTUP_MAX_ITERATIONS = 8
+private const val STARTUP_STABLE_ITERATIONS = 3
+private const val JOURNEY_MAX_ITERATIONS = 4
+private const val JOURNEY_STABLE_ITERATIONS = 2
+
 private const val MIN_TAPPABLE_HEIGHT_PX = 40
 
 /**

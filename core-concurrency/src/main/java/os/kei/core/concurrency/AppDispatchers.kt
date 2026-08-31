@@ -57,10 +57,21 @@ object AppDispatchers {
 
     /**
      * MCP server operations: tool execution, Ktor request handling.
-     * Bounded to 4 threads — MCP tools are mostly delegating to other dispatchers,
-     * but need headroom for concurrent client sessions.
+     *
+     * This is the MCP handler pool. kotlin-sdk 0.15.0 dispatches every inbound request onto
+     * `ProtocolOptions.handlerCoroutineContext`, which `LocalMcpService` pins to this dispatcher, so
+     * the bound here is the single gate on how much MCP work runs at once — the SDK's own admission
+     * semaphore sits far above it at 64.
+     *
+     * Bounded to 12 rather than the original 4. Four was set when the SDK processed inbound messages
+     * serially and each tool hopped here from the transport read loop; once handlers began arriving
+     * concurrently, four threads shared by the 30s network and 60s deep-scan profiles meant a handful
+     * of long tools could park every 4-second cache read behind them. Twelve keeps a feature-local cap
+     * for Android 17 fair scheduling while leaving room for the long profiles to overlap short ones.
+     * MCP tools mostly delegate onward to [githubNetwork], [baFetch] and friends, so threads here are
+     * held briefly and the real work stays inside its own domain's cap.
      */
-    val mcpServer: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
+    val mcpServer: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(12)
 
     /**
      * OS page operations: shell commands, system property reads, Shizuku calls.

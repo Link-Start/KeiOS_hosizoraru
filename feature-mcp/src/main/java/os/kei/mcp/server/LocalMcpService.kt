@@ -7,6 +7,7 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.privilege.PrivilegedShell
 import java.util.Locale
 
@@ -112,6 +113,11 @@ class LocalMcpService(
                 version = environment.appVersionName
             ),
             options = ServerOptions(
+                // kotlin-sdk 0.15.0 runs every inbound handler here instead of on the transport read
+                // loop. Left at its Dispatchers.Default default it would put IO-shaped tool work on the
+                // CPU pool; pinning it to the MCP domain dispatcher keeps that work on IO threads and
+                // makes AppDispatchers.mcpServer the one place MCP concurrency is capped.
+                handlerCoroutineContext = AppDispatchers.mcpServer,
                 capabilities = ServerCapabilities(
                     tools = ServerCapabilities.Tools(listChanged = false),
                     resources = ServerCapabilities.Resources(listChanged = false, subscribe = false),

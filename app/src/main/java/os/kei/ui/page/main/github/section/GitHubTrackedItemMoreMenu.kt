@@ -181,6 +181,7 @@ internal fun GitHubTrackedItemMoreActions(
                                 add(
                                     LiquidGlassActionMenuActionRow(
                                         id = "fdroid_detail",
+                                        testTag = KeiOsTestTags.GitHubFdroidDetailMenuItem,
                                         text = stringResource(R.string.github_fdroid_detail_title),
                                         leadingIcon = detailIcon,
                                         onClick = {

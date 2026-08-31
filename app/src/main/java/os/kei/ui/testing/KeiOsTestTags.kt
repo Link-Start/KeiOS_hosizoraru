@@ -52,6 +52,14 @@ object KeiOsTestTags {
     /** A tracked card's overflow trigger, and the release entry inside it. */
     const val GitHubTrackedItemMoreButton = "github_tracked_item_more_button"
     const val GitHubReleaseMenuItem = "github_release_menu_item"
+
+    /**
+     * The overflow entry that opens the F-Droid detail sheet, which only an F-Droid track offers.
+     *
+     * Tagged as a finder as much as a handle: a journey cannot tell which tracked card is the F-Droid
+     * one from the outside, so it opens overflows until this appears.
+     */
+    const val GitHubFdroidDetailMenuItem = "github_fdroid_detail_menu_item"
     const val GitHubReleaseTagFilterButton = "github_release_tag_filter_button"
 
     /**

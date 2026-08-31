@@ -642,3 +642,46 @@ capture's 35 minutes, and not otherwise. The rest of the movement is the BA and 
 which fetch real content over the network.
 
 So the sum is mostly a measure of what the device did while the capture ran. Read the named components.
+
+## The F-Droid subsystem, which had been shipping uncompiled
+
+The oversized-response fixture was the first time any capture had spoken to an F-Droid repository, and
+it only ever spoke to a broken one. Everything the client does after a *successful* response was still
+untouched: `GitHubFdroidDetailSheet` is 713 lines and collected **2 rules**, `FdroidCandidateSelector`
+and `FdroidAppSearchService` collected none, `FdroidMetadataSidecar` 8. Nearly six thousand lines, for
+one reason -- a capture tracks only what it can reach, and there was no F-Droid repository on the other
+end of a capture's network.
+
+There is one now. The fixture server answers two ways by path: the oversized headers for the
+diagnostics track, and a real package API response for a second, *succeeding* track. Two versions in
+it, with `suggestedVersionCode` pointing at the older one, because that is the shape a real repository
+uses to hold back a release and it gives `FdroidCandidateSelector` a choice to make rather than a
+single answer to return. Confirmed on the device: the sheet reads `Version 1.0.0 / 12` while the feed
+also offers 13, so the suggestion is being honoured rather than the maximum taken.
+
+Measured from `gitHubFdroidTrackInteractions` alone:
+
+| component | before | after |
+| --- | ---: | ---: |
+| `GitHubFdroidDetailSheet` | 2 | **75** |
+| `FdroidMetadataSidecar` | 8 | **87** |
+| `FdroidReleaseCheckSource` | 26 | 44 |
+| `FdroidPackageApiClient` | 35 | 39 |
+| `FdroidCandidateSelector` | **0** | 8 |
+| all `fdroid` rules | ~164 | **725** |
+
+The sheet is reached **by capability rather than position**: the detail action composes only for an
+F-Droid track, so the journey opens overflows until the tagged item appears and dismisses the ones that
+turn out to be other cards. Position would be a bet on the sort order, which is the fixture's own
+labels -- the same bet that broke `gitHubReleaseListInteractions` earlier in this document.
+
+Its own `@Test`, too. The fixture import is idempotent so it costs one cold start, and a journey that
+depends on another journey having run first is the ordering assumption that has already cost two
+captures here.
+
+**What is still uncovered, and why it was left.** `FdroidAppSearchService` (514 lines) and
+`GitHubTrackEditFdroidDiscoverySection` (680) are both on the *search* path: adding an F-Droid app
+through the track-edit sheet, which means driving a source-mode dropdown and then a query field. This
+file already records why that is a different class of risk -- "driving a text field from a journey
+depends on focus and the IME in a way a tab tap does not" -- so it is named here rather than attempted
+at the end of a long change.

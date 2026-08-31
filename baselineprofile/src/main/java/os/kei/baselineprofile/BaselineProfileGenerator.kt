@@ -444,6 +444,45 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * An F-Droid track, and the detail sheet only an F-Droid track can open.
+     *
+     * `GitHubFdroidDetailSheet` is 713 lines and collected **2 rules**; `FdroidAppSearchService` and
+     * `FdroidCandidateSelector` collected none. Nearly six thousand lines of F-Droid support shipped
+     * essentially uncompiled, for one reason: a capture tracks only what it can reach, and until the
+     * loopback fixture existed there was no F-Droid repository on the other end of a capture's network.
+     *
+     * Its own `@Test` rather than another step on the history journey. The fixture import is idempotent,
+     * so this costs one cold start and keeps the two concerns separable -- and, more to the point, a
+     * journey that depends on another journey having run first is the ordering bet that has already
+     * cost this file two captures.
+     */
+    @Test
+    fun gitHubFdroidTrackInteractions() {
+        oversizedResponseServer = startOversizedResponseServer()
+        rule.collect(
+            packageName = targetAppId(),
+            maxIterations = JOURNEY_MAX_ITERATIONS,
+            stableIterations = JOURNEY_STABLE_ITERATIONS,
+            includeInStartupProfile = false,
+        ) {
+            seedFailingGitHubTracks()
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+            waitForTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON, timeoutMs = 20_000)
+            // The sheet draws what the last check left behind, so the check has to have happened.
+            seedGitHubHistory()
+            awaitGitHubRefreshSettled()
+
+            openFdroidDetailSheet()
+        }
+    }
+
+    /**
      * The two routes Home pushes besides Settings. About renders the changelog and the component
      * inventory; the WebDAV card opens the sync route. Both were reachable only through paths no
      * journey walked, so every class on them was interpreted on first entry.
@@ -1322,9 +1361,12 @@ private fun startOversizedResponseServer(): Closeable {
                     // Drained rather than parsed: what the client asked for makes no difference to an
                     // answer that is the same size lie every time. Reading it at all is only so the
                     // response does not race the request into a reset.
-                    socket.getInputStream().read(ByteArray(OVERSIZED_FIXTURE_REQUEST_BUFFER_BYTES))
+                    val buffer = ByteArray(OVERSIZED_FIXTURE_REQUEST_BUFFER_BYTES)
+                    val read = socket.getInputStream().read(buffer)
+                    val requestLine =
+                        if (read > 0) String(buffer, 0, read).substringBefore('\r') else ""
                     socket.getOutputStream().apply {
-                        write(OVERSIZED_FIXTURE_RESPONSE.toByteArray())
+                        write(fixtureResponseFor(requestLine).toByteArray())
                         flush()
                     }
                 }
@@ -1333,6 +1375,45 @@ private fun startOversizedResponseServer(): Closeable {
     }.apply { isDaemon = true }.start()
     return Closeable { runCatching { server.close() } }
 }
+
+/**
+ * One server, two answers, chosen by path.
+ *
+ * The oversized answer is the diagnostics fixture. The catalogue answer is the other half of the same
+ * problem: everything the F-Droid client does *after* a successful response -- parsing versions,
+ * choosing a candidate, building a snapshot, and the detail sheet that draws it -- was uncovered for the
+ * same reason, that a capture has no F-Droid repository to talk to. Now it has one.
+ */
+private fun fixtureResponseFor(requestLine: String): String =
+    if (FDROID_CATALOG_FIXTURE_PATH in requestLine) {
+        val body = FDROID_CATALOG_FIXTURE_BODY
+        "HTTP/1.1 200 OK\r\n" +
+            "Content-Type: application/json\r\n" +
+            "Content-Length: ${body.toByteArray().size}\r\n" +
+            "Connection: close\r\n\r\n" +
+            body
+    } else {
+        OVERSIZED_FIXTURE_RESPONSE
+    }
+
+/** The path segment the catalogue track's repository URL produces, before `/api/v1/packages/...`. */
+private const val FDROID_CATALOG_FIXTURE_PATH = "/catalog/api/v1/packages/"
+
+/**
+ * A minimal but honest F-Droid package API response: two versions, newest first after sorting.
+ *
+ * Two rather than one so `FdroidCandidateSelector` has a choice to make instead of a single answer to
+ * return, and `suggestedVersionCode` points at the older of them, which is the shape a real repository
+ * uses to hold back a release.
+ */
+private const val FDROID_CATALOG_FIXTURE_BODY =
+    """{"packageName":"os.kei.baselineprofile.fdroid","suggestedVersionCode":12,"packages":[""" +
+        """{"versionName":"1.1.0","versionCode":13,"apkName":"keios-fixture-1.1.0.apk",""" +
+        """"hash":"6f1ed002ab5595859014ebf0951522d9d3b1a2f7b0e0e1e6c4d5a3b2c1d0e9f8",""" +
+        """"size":1048576,"minSdkVersion":35,"targetSdkVersion":37,"added":1750000000000},""" +
+        """{"versionName":"1.0.0","versionCode":12,"apkName":"keios-fixture-1.0.0.apk",""" +
+        """"hash":"9b74c9897bac770ffc029102a8c4af33ec1c1f2b0e0e1e6c4d5a3b2c1d0e9f80",""" +
+        """"size":1000000,"minSdkVersion":35,"targetSdkVersion":37,"added":1740000000000}]}"""
 
 private const val OVERSIZED_FIXTURE_PORT = 38921
 private const val OVERSIZED_FIXTURE_SOCKET_TIMEOUT_MS = 5_000
@@ -1410,6 +1491,43 @@ private fun MacrobenchmarkScope.seedFailingGitHubTracks() {
 
 /** A missed tap costs one more pass; a genuinely stuck window still fails the run. */
 private const val JSON_IMPORT_CONFIRM_ATTEMPTS = 3
+
+/**
+ * Opens the F-Droid detail sheet from whichever tracked card offers it.
+ *
+ * By position would be a bet on the sort order, which is the display title and therefore the fixture's
+ * own labels. By capability is not: the detail action is composed only for an F-Droid track, so opening
+ * overflows until [GITHUB_FDROID_DETAIL_MENU_ITEM] appears finds the right card whatever the list does.
+ * Menus that turn out to be the wrong card are dismissed rather than left stacked.
+ */
+private fun MacrobenchmarkScope.openFdroidDetailSheet() {
+    repeat(FDROID_OVERFLOW_SCAN_ATTEMPTS) { index ->
+        val more =
+            runCatching {
+                device.findObjects(testTagSelector(GITHUB_TRACKED_ITEM_MORE_BUTTON)).getOrNull(index)
+            }.getOrNull() ?: return@repeat
+        if (runCatching { more.click() }.isFailure) return@repeat
+        device.waitForIdle()
+        if (device.wait(Until.hasObject(testTagSelector(GITHUB_FDROID_DETAIL_MENU_ITEM)), 5_000)) {
+            clickTestTag(GITHUB_FDROID_DETAIL_MENU_ITEM)
+            waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 20_000)
+            // The sheet is long: versions, anti-features, the repository block and the install rows all
+            // sit below the fold, and none of them composes until scrolled to.
+            flingVisibleScrollable(times = 2)
+            dismissTheOpenOverlay(LIQUID_SHEET_PANEL)
+            return
+        }
+        device.pressBack()
+        device.waitForIdle()
+    }
+    error(
+        "No tracked card offered testTag=$GITHUB_FDROID_DETAIL_MENU_ITEM in ${targetAppId()}; the " +
+            "F-Droid fixture is not tracked. On screen: ${visibleTextSummary()}",
+    )
+}
+
+/** The fixture labels sort the F-Droid tracks high, but this walks rather than assuming they do. */
+private const val FDROID_OVERFLOW_SCAN_ATTEMPTS = 4
 
 /**
  * Makes a package event happen to a tracked package, so the Apps tab has records to draw.
@@ -2038,6 +2156,7 @@ private const val DAILY_TEMPLATE_ACTIVITY_CLASS = "os.kei.ui.page.main.ba.BaDail
 private const val DAILY_TILE_ACCOUNT_SERVICE_CLASS = "os.kei.core.tile.BaDailyDoneAccountTileService1"
 /** The release list page and the handles a journey needs to reach and drive it. */
 private const val GITHUB_TRACKED_ITEM_MORE_BUTTON = "github_tracked_item_more_button"
+private const val GITHUB_FDROID_DETAIL_MENU_ITEM = "github_fdroid_detail_menu_item"
 private const val GITHUB_RELEASE_MENU_ITEM = "github_release_menu_item"
 private const val GITHUB_RELEASE_PAGE_ROOT = "github_release_page_root"
 private const val GITHUB_RELEASE_CARD_FIRST = "github_release_card_first"
@@ -2170,7 +2289,12 @@ private val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
         """"repoUrl":"http://127.0.0.1:$OVERSIZED_FIXTURE_PORT/fdroid/repo",""" +
         """"owner":"keios-baseline-profile","repo":"oversized-feed",""" +
         """"packageName":"os.kei.baselineprofile.oversized",""" +
-        """"appLabel":"zz-baseline-profile-oversized-feed"}]}"""
+        """"appLabel":"zz-baseline-profile-oversized-feed"},""" +
+        """{"sourceMode":"fdroid_repository",""" +
+        """"repoUrl":"http://127.0.0.1:$OVERSIZED_FIXTURE_PORT/catalog/repo",""" +
+        """"owner":"keios-baseline-profile","repo":"catalog-feed",""" +
+        """"packageName":"os.kei.baselineprofile.fdroid",""" +
+        """"appLabel":"zz-baseline-profile-fdroid-catalog"}]}"""
 
 /**
  * A repository the share window can resolve, and that the app is not already tracking.

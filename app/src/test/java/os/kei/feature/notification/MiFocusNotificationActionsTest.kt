@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
 )
 class MiFocusNotificationActionsTest {
     @Test
-    fun `mark read action targets exported focus receiver with foreground delivery`() {
+    fun `mark read action targets the unexported focus receiver with foreground delivery`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val pendingIntent =
             MiFocusNotificationActions.markReadPendingIntent(
@@ -49,7 +49,11 @@ class MiFocusNotificationActionsTest {
             savedIntent.getIntExtra(MiFocusNotificationActionReceiver.EXTRA_NOTIFICATION_ID, -1),
         )
         assertTrue(savedIntent.flags and Intent.FLAG_RECEIVER_FOREGROUND != 0)
-        assertTrue(isReceiverExported(context))
+        // Must stay unexported. The action can only arrive as this PendingIntent, which carries our
+        // own identity, so exporting the receiver adds no delivery path and only lets any installed
+        // app fire mark-read by component name. Verified on HyperOS: the Super Island still renders
+        // and still carries both actions with the receiver unexported.
+        assertFalse(isReceiverExported(context))
     }
 
     @Test

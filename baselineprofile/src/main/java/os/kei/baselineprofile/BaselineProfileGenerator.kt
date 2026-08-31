@@ -367,6 +367,8 @@ class BaselineProfileGenerator {
                 pageTag = GITHUB_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
+            seedGitHubHistory()
+
             waitForTestTag(GITHUB_ACTIONS_HISTORY_BUTTON, timeoutMs = 15_000)
             clickTestTag(GITHUB_ACTIONS_HISTORY_BUTTON)
             waitForTestTag(GITHUB_ACTIONS_HISTORY_PAGE_ROOT, timeoutMs = 20_000)
@@ -1210,6 +1212,42 @@ private const val SCROLL_INTO_REACH_ATTEMPTS = 14
  * Deliberately shorter than [flingVisibleScrollable]: a fling exists to collect the scroll path, while
  * this exists to land one card in the tappable band, and a fling overshoots a one-line card.
  */
+/**
+ * Runs one refresh so the history route has something other than empty states to draw.
+ *
+ * The route's journey walks all four tabs, but a capture installs the app fresh and those tabs render
+ * history the app accumulates over time. On a clean device three of them were empty states, and
+ * `GitHubRefreshHistoryDiagnostics`, `GitHubTrackChangeHistoryCards` and `GitHubAppInstallHistoryCards`
+ * collected no rules at all while the rest of the route collected 549. That is a fixture gap, not a
+ * tagging one.
+ *
+ * One pull-to-refresh closes part of it. Verified on the API 37 AVD from a `pm clear` state: before the
+ * pull `github_refresh_history` does not exist on disk, a single pull creates it, and the Refresh tab
+ * then reports "2 of 2 records shown" with a real finished timestamp instead of its empty state.
+ *
+ * It closes only that part, which is worth being exact about. The same pull also *creates* the
+ * `github_track_change_history` file, but the store stays empty -- the Tracking tab still reads
+ * "0 of 0 records shown / No tracking records", and the Apps tab "No app records". A file existing is
+ * not a record existing. Those two need a real tracked-repo change and a real app install, so
+ * `GitHubTrackChangeHistoryCards` and `GitHubAppInstallHistoryCards` remain uncovered.
+ *
+ * It does not need the network to succeed. `GitHubRefreshHistoryService` records the run's `outcome`
+ * whatever it turns out to be, and `failedCount` is a field on the record, so a refresh that fails
+ * still writes one -- which keeps this deterministic on a machine with no GitHub token.
+ *
+ * Deliberately no wait for completion afterwards. The refresh is asynchronous and the journey spends
+ * several seconds navigating into the route before it needs the data, and `collect` kills the process
+ * between replays without clearing app data, so a seed from one iteration serves the rest. Rules are
+ * the union across iterations, so the cards only have to render once.
+ */
+private fun MacrobenchmarkScope.seedGitHubHistory() {
+    val centerX = device.displayWidth / 2
+    val top = (device.displayHeight * 0.34f).toInt()
+    val bottom = (device.displayHeight * 0.72f).toInt()
+    device.swipe(centerX, top, centerX, bottom, 24)
+    device.waitForIdle()
+}
+
 private fun MacrobenchmarkScope.nudgeVisibleScrollable(forward: Boolean) {
     val centerX = device.displayWidth / 2
     val near = (device.displayHeight * 0.62f).toInt()

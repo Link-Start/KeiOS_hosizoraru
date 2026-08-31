@@ -158,12 +158,23 @@ added it walks all 21 journeys a second time against the diagnostic APK for an i
   state. The journey is best-effort by design and cannot cost a capture, so an occasional miss shows
   up as these rules going absent rather than as a failure. Check for it before trusting a release
   profile to carry them.
-- **`github.history`'s tabs — walked, but their cards do not compose.** All four categories are
-  selected now and the package collects 549 rules, and yet `GitHubAppInstallHistoryCards`,
-  `GitHubRefreshHistoryDiagnostics` and `GitHubTrackChangeHistoryCards` still carry none. Nothing is
-  wrong with the journey: a capture installs the app fresh, and those three tabs render history the
-  app accumulates over time, so on a clean device they are empty states. Covering the cards means
-  seeding history before the journey runs, which is a fixture problem rather than a tagging one.
+- **`github.history`'s tabs — the Refresh tab is covered now; the other two are not.** All four
+  categories are selected and the package collects 549 rules. A capture installs the app fresh, and
+  these tabs render history the app accumulates over time, so on a clean device they were all empty
+  states and the three card components collected nothing.
+  `gitHubActionsHistoryRouteInteractions` now calls `seedGitHubHistory()` — one pull-to-refresh on the
+  GitHub page before entering the route. Verified on the API 37 AVD from a `pm clear` state:
+  `github_refresh_history` does not exist beforehand, the pull creates it, and the Refresh tab goes
+  from its empty state to "2 of 2 records shown" with a real finished timestamp. It does not need the
+  network to succeed, because `GitHubRefreshHistoryService` records the run's `outcome` whatever it is
+  and `failedCount` is a field on the record, so a failed refresh still writes one.
+  **The other two stay uncovered, and the distinction is worth keeping.** The same pull also creates
+  the `github_track_change_history` *file*, but the store stays empty — the Tracking tab still reads
+  "0 of 0 records shown / No tracking records" and the Apps tab "No app records". A file existing is
+  not a record existing, and it would have been easy to claim the fix covered all three on the strength
+  of `ls`. `GitHubTrackChangeHistoryCards` needs a real tracked-repo change and
+  `GitHubAppInstallHistoryCards` needs a real app install; the second is not something a capture can
+  reasonably do.
 - **The BA account sheet**, which does not open under a synthetic tap on its toolbar action. Noted
   on `presentationChromeInteractions` and still true.
 - **The feedback window** (`feedback`, 28 KB). It is `exported="false"`, and `am start` runs as the

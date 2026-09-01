@@ -69,8 +69,7 @@ internal data class MainPagerBaPageState(
     val preloadingEnabled: Boolean,
     val onOpenPoolGuideDetail: (String) -> Unit,
     val onOpenBaGuideCatalog: () -> Unit,
-    val onOpenBaActivityCalendar: (Int?) -> Unit,
-    val onOpenBaPool: (Int?) -> Unit,
+    val onOpenBaCalendarPool: (Int?) -> Unit,
     val requestedAccountId: String?,
     val requestedAccountToken: Int,
 )
@@ -173,8 +172,7 @@ internal fun MainPagerPageHost(
                         preloadingEnabled = baState.preloadingEnabled,
                         onOpenPoolStudentGuide = baState.onOpenPoolGuideDetail,
                         onOpenGuideCatalog = baState.onOpenBaGuideCatalog,
-                        onOpenActivityCalendar = baState.onOpenBaActivityCalendar,
-                        onOpenPool = baState.onOpenBaPool,
+                        onOpenCalendarPool = baState.onOpenBaCalendarPool,
                         requestedAccountId = baState.requestedAccountId,
                         requestedAccountToken = baState.requestedAccountToken,
                     )

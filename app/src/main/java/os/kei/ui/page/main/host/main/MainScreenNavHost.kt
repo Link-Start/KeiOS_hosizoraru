@@ -21,8 +21,8 @@ import os.kei.ui.page.main.about.page.AboutPage
 import os.kei.ui.page.main.back.BackNavigationRuntimeController
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeController
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
-import os.kei.ui.page.main.ba.BaActivityCalendarPage
-import os.kei.ui.page.main.ba.BaPoolPage
+import os.kei.ui.page.main.ba.BaCalendarPoolPage
+import os.kei.ui.page.main.ba.BaCalendarPoolTab
 import os.kei.ui.page.main.ba.toInitialServerSelection
 import os.kei.ui.page.main.github.history.GitHubActionsNotificationHistoryPage
 import os.kei.ui.page.main.github.release.GitHubReleaseListPage
@@ -186,8 +186,7 @@ internal fun MainScreenNavHost(
                             onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
                             onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
                             routeAtTop = rememberNavEntryAtTop(),
-                            onOpenBaActivityCalendar = pagerCoordinator.onOpenBaActivityCalendar,
-                            onOpenBaPool = pagerCoordinator.onOpenBaPool,
+                            onOpenBaCalendarPool = pagerCoordinator.onOpenBaCalendarPool,
                             requestedBottomPage = pagerCoordinator.requestedBottomPage,
                             requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
                             requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
@@ -342,20 +341,18 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.BaActivityCalendar> { route ->
+                    entry<KeiosRoute.BaCalendarPool> { route ->
                         MainScreenRouteBackgroundHost(prefsState = prefsState) {
-                            BaActivityCalendarPage(
+                            BaCalendarPoolPage(
                                 targetServerSelection = route.toInitialServerSelection(),
+                                initialTab =
+                                    if (route.showPool) {
+                                        BaCalendarPoolTab.Pool
+                                    } else {
+                                        BaCalendarPoolTab.Calendar
+                                    },
                                 onClose = onRouteBack,
-                            )
-                        }
-                    }
-                    entry<KeiosRoute.BaPool> { route ->
-                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
-                            BaPoolPage(
-                                targetServerSelection = route.toInitialServerSelection(),
-                                onClose = onRouteBack,
-                                // The pool page used to swap in the guide behind a boolean with its own
+                                // The banner half used to swap in the guide behind a boolean with its own
                                 // back handler; it is a back-stack push like every other detail page
                                 // now. The URL is already saved by preparePoolGuideOpen, so the guide
                                 // reads it back the same way it does on the canonical path, and the

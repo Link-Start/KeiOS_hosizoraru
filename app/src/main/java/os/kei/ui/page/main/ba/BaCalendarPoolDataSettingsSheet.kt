@@ -87,23 +87,22 @@ internal fun BaCalendarPoolDataSettingsSheet(
 
             SheetSectionHeader(stringResource(R.string.ba_settings_section_content))
             SheetSectionCard(surfaceTone = SheetCardSurfaceTone.Readable) {
-                when (pageKind) {
-                    BaCalendarPoolPageKind.Calendar -> {
-                        SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_activity)) {
-                            AppSwitch(
-                                checked = snapshot.showEndedActivities,
-                                onCheckedChange = onShowEndedActivitiesChange,
-                            )
-                        }
+                val showActivityToggle = pageKind != BaCalendarPoolPageKind.Pool
+                val showPoolToggle = pageKind != BaCalendarPoolPageKind.Calendar
+                if (showActivityToggle) {
+                    SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_activity)) {
+                        AppSwitch(
+                            checked = snapshot.showEndedActivities,
+                            onCheckedChange = onShowEndedActivitiesChange,
+                        )
                     }
-
-                    BaCalendarPoolPageKind.Pool -> {
-                        SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_pool)) {
-                            AppSwitch(
-                                checked = snapshot.showEndedPools,
-                                onCheckedChange = onShowEndedPoolsChange,
-                            )
-                        }
+                }
+                if (showPoolToggle) {
+                    SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_pool)) {
+                        AppSwitch(
+                            checked = snapshot.showEndedPools,
+                            onCheckedChange = onShowEndedPoolsChange,
+                        )
                     }
                 }
                 SheetControlRow(label = stringResource(R.string.ba_settings_label_show_images)) {

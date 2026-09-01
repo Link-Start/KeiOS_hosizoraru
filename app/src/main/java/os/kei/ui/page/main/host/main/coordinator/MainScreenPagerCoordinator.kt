@@ -40,8 +40,7 @@ internal data class MainScreenPagerCoordinator(
     val onRequestedBottomPageConsumed: () -> Unit,
     val onBaGuideCatalogOpen: () -> Unit,
     val onBaGuideCatalogBack: () -> Unit,
-    val onOpenBaActivityCalendar: (Int?) -> Unit,
-    val onOpenBaPool: (Int?) -> Unit,
+    val onOpenBaCalendarPool: (Int?) -> Unit,
 )
 
 internal fun buildMainScreenPagerCoordinator(
@@ -61,8 +60,7 @@ internal fun buildMainScreenPagerCoordinator(
     onRequestedBottomPageConsumed: () -> Unit,
     onBaGuideCatalogOpen: () -> Unit,
     onBaGuideCatalogBack: () -> Unit,
-    onOpenBaActivityCalendar: (Int?) -> Unit,
-    onOpenBaPool: (Int?) -> Unit,
+    onOpenBaCalendarPool: (Int?) -> Unit,
 ): MainScreenPagerCoordinator =
     MainScreenPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
@@ -85,8 +83,7 @@ internal fun buildMainScreenPagerCoordinator(
         privilegedShell = privilegedShell,
         mcpServerManager = mcpServerManager,
         onOpenGuideDetail = onOpenGuideDetail,
-        onOpenBaActivityCalendar = onOpenBaActivityCalendar,
-        onOpenBaPool = onOpenBaPool,
+        onOpenBaCalendarPool = onOpenBaCalendarPool,
         requestedBottomPage = requestedBottomPage,
         requestedBottomPageToken = requestedBottomPageToken,
         requestedGitHubRefreshToken = requestedGitHubRefreshToken,

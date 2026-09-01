@@ -47,8 +47,7 @@ fun BAPage(
     preloadingEnabled: Boolean = false,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
-    onOpenActivityCalendar: (Int?) -> Unit = {},
-    onOpenPool: (Int?) -> Unit = {},
+    onOpenCalendarPool: (Int?) -> Unit = {},
     requestedAccountId: String? = null,
     requestedAccountToken: Int = 0,
 ) {
@@ -408,15 +407,10 @@ fun BAPage(
                 backdrop = backdrops.topBar,
                 runtime = runtime,
                 unreadCounts = calendarPoolUnreadCounts,
-                onOpenCalendar = {
-                    val serverIndex = currentServerIndexState.value
-                    calendarPoolViewModel.markUnreadRead(BaCalendarPoolUnreadKind.Calendar, serverIndex)
-                    onOpenActivityCalendar(serverIndex)
-                },
-                onOpenPool = {
-                    val serverIndex = currentServerIndexState.value
-                    calendarPoolViewModel.markUnreadRead(BaCalendarPoolUnreadKind.Pool, serverIndex)
-                    onOpenPool(serverIndex)
+                onOpenCalendarPool = {
+                    // The page marks each half read as its tab comes up, so nothing is cleared here: a
+                    // teacher who opens the calendar has not seen the banners yet.
+                    onOpenCalendarPool(currentServerIndexState.value)
                 },
                 onOpenGuideCatalog = onOpenGuideCatalog,
                 onOpenDailyDone = officeViewModel::showDailyDoneSheet,

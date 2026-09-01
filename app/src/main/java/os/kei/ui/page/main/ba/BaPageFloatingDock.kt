@@ -20,7 +20,6 @@ import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.os.appLucideLibraryIcon
 import os.kei.ui.page.main.os.appLucideListChecksIcon
-import os.kei.ui.page.main.os.appLucideMailIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
@@ -34,8 +33,7 @@ internal fun BoxScope.BaPageFloatingDock(
     backdrop: Backdrop?,
     runtime: MainPageRuntime,
     unreadCounts: BaCalendarPoolUnreadCounts = BaCalendarPoolUnreadCounts(),
-    onOpenCalendar: () -> Unit,
-    onOpenPool: () -> Unit,
+    onOpenCalendarPool: () -> Unit,
     onOpenGuideCatalog: () -> Unit,
     onOpenDailyDone: () -> Unit,
 ) {
@@ -54,7 +52,6 @@ internal fun BoxScope.BaPageFloatingDock(
             label = "ba_floating_action_dock_bottom",
         )
     val calendarIcon = appLucideCalendarIcon()
-    val poolIcon = appLucideMailIcon()
     val catalogIcon = appLucideLibraryIcon()
     // A checklist rather than the quick-settings tile's own mark, which was tried first and rejected on
     // the device. That mark is `ic_ba_schale` plus a tick — and the same emblem is the BA tab icon in the
@@ -63,32 +60,26 @@ internal fun BoxScope.BaPageFloatingDock(
     // it; it does not carry it here.
     val dailyDoneIcon = appLucideListChecksIcon()
     val moreIcon = appLucideMoreIcon()
-    val calendarDescription = stringResource(R.string.ba_calendar_cd_open_activity)
-    val poolDescription = stringResource(R.string.ba_pool_cd_open_activity)
+    val calendarPoolDescription = stringResource(R.string.ba_calendar_pool_cd_open)
     val catalogDescription = stringResource(R.string.ba_overview_cd_open_catalog)
     val dailyDoneDescription = stringResource(R.string.ba_daily_done_cd_open_sheet)
     val expandDescription = stringResource(R.string.common_expand)
     val primaryIconTint = MiuixTheme.colorScheme.primary
-    val currentOnOpenCalendar = rememberUpdatedState(onOpenCalendar)
-    val currentOnOpenPool = rememberUpdatedState(onOpenPool)
+    val currentOnOpenCalendarPool = rememberUpdatedState(onOpenCalendarPool)
     val currentOnOpenGuideCatalog = rememberUpdatedState(onOpenGuideCatalog)
     val currentOnOpenDailyDone = rememberUpdatedState(onOpenDailyDone)
-    val openCalendarClick = remember { { currentOnOpenCalendar.value() } }
-    val openPoolClick = remember { { currentOnOpenPool.value() } }
+    val openCalendarPoolClick = remember { { currentOnOpenCalendarPool.value() } }
     val openGuideCatalogClick = remember { { currentOnOpenGuideCatalog.value() } }
     val openDailyDoneClick = remember { { currentOnOpenDailyDone.value() } }
-    val calendarBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.calendarCount)
-    val poolBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.poolCount)
+    // One badge for one button: the two lists are two tabs of one page now, so the figure a teacher
+    // needs before opening it is the total, not either half.
+    val calendarPoolBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.totalCount)
     // The collapsed badge's *label* is now derived by the dock from the actions it hides, which
     // reproduces this total without the call site being able to get it wrong. Kept only to phrase the
     // tooltip, which still needs the exact figure.
-    val calendarBadgeTooltip =
-        calendarBadgeLabel?.let {
-            stringResource(R.string.ba_calendar_unread_badge_tooltip, unreadCounts.calendarCount)
-        }
-    val poolBadgeTooltip =
-        poolBadgeLabel?.let {
-            stringResource(R.string.ba_pool_unread_badge_tooltip, unreadCounts.poolCount)
+    val calendarPoolBadgeTooltip =
+        calendarPoolBadgeLabel?.let {
+            stringResource(R.string.ba_calendar_pool_unread_badge_tooltip, unreadCounts.totalCount)
         }
     val compactBadgeTooltip =
         if (unreadCounts.totalCount > 0) {
@@ -99,15 +90,10 @@ internal fun BoxScope.BaPageFloatingDock(
     val actions =
         remember(
             calendarIcon,
-            calendarDescription,
-            calendarBadgeLabel,
-            calendarBadgeTooltip,
-            openCalendarClick,
-            poolIcon,
-            poolDescription,
-            poolBadgeLabel,
-            poolBadgeTooltip,
-            openPoolClick,
+            calendarPoolDescription,
+            calendarPoolBadgeLabel,
+            calendarPoolBadgeTooltip,
+            openCalendarPoolClick,
             catalogIcon,
             catalogDescription,
             openGuideCatalogClick,
@@ -119,21 +105,12 @@ internal fun BoxScope.BaPageFloatingDock(
             listOf(
                 AppFloatingDockAction(
                     icon = calendarIcon,
-                    contentDescription = calendarDescription,
+                    contentDescription = calendarPoolDescription,
                     iconTint = primaryIconTint,
-                    testTag = KeiOsTestTags.BaDockOpenCalendar,
-                    badgeLabel = calendarBadgeLabel,
-                    tooltipText = calendarBadgeTooltip,
-                    onClick = openCalendarClick,
-                ),
-                AppFloatingDockAction(
-                    icon = poolIcon,
-                    contentDescription = poolDescription,
-                    iconTint = primaryIconTint,
-                    testTag = KeiOsTestTags.BaDockOpenPool,
-                    badgeLabel = poolBadgeLabel,
-                    tooltipText = poolBadgeTooltip,
-                    onClick = openPoolClick,
+                    testTag = KeiOsTestTags.BaDockOpenCalendarPool,
+                    badgeLabel = calendarPoolBadgeLabel,
+                    tooltipText = calendarPoolBadgeTooltip,
+                    onClick = openCalendarPoolClick,
                 ),
                 AppFloatingDockAction(
                     icon = catalogIcon,

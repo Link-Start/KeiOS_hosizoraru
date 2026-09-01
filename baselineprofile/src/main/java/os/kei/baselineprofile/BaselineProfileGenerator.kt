@@ -324,8 +324,12 @@ class BaselineProfileGenerator {
                 settledTag = MAIN_PAGER_SETTLED_BA,
             )
 
-            openDockRouteAndReturn(BA_DOCK_OPEN_CALENDAR)
-            openDockRouteAndReturn(BA_DOCK_OPEN_POOL)
+            // One dock action now, and the banner list is its second tab rather than a second route.
+            // Still both list paths: the tab tap is what reaches the half the calendar journey does not.
+            openDockRouteAndReturn(
+                dockTag = BA_DOCK_OPEN_CALENDAR_POOL,
+                secondTabTag = BA_CALENDAR_POOL_TAB_POOL,
+            )
         }
     }
 
@@ -1175,7 +1179,10 @@ private fun MacrobenchmarkScope.pushRouteAndReturn(
  * Pushes a route from the BA floating dock, exercises it, then pops back. Both directions matter:
  * the pop replays the covered entry's restore path, which is what a user feels on the way out.
  */
-private fun MacrobenchmarkScope.openDockRouteAndReturn(dockTag: String) {
+private fun MacrobenchmarkScope.openDockRouteAndReturn(
+    dockTag: String,
+    secondTabTag: String? = null,
+) {
     waitForTestTag(dockTag, timeoutMs = 15_000)
     val action = device.findObject(testTagSelector(dockTag))
         ?: error("Unable to find dock action testTag=$dockTag in ${targetAppId()}")
@@ -1187,6 +1194,14 @@ private fun MacrobenchmarkScope.openDockRouteAndReturn(dockTag: String) {
     }
     device.waitForIdle()
     flingVisibleScrollable(times = 2)
+    // A tabbed route's other half is a second list with its own entry cards, and nothing else in the
+    // capture reaches it now that it is no longer its own dock action.
+    if (secondTabTag != null) {
+        waitForTestTag(secondTabTag, timeoutMs = 15_000)
+        device.findObject(testTagSelector(secondTabTag))?.click()
+        device.waitForIdle()
+        flingVisibleScrollable(times = 2)
+    }
     device.pressBack()
     waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
     device.waitForIdle()
@@ -2119,8 +2134,10 @@ private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
 
 /** A menu row, used as the "menu is open" signal — see [presentationChromeInteractions]. */
 private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
-private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
-private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
+private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
+
+/** The merged route's second category tab, from `tabbedPageCategoryTabTestTag("ba_calendar_pool", 1)`. */
+private const val BA_CALENDAR_POOL_TAB_POOL = "ba_calendar_pool_tab_1"
 /** The cafe's headpat card — see [BaselineProfileGenerator.baSlotCardInteractions]. */
 private const val BA_COOLDOWN_CARD_FIRST = "ba_cooldown_card_first"
 

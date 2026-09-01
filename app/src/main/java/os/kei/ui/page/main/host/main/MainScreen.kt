@@ -112,10 +112,19 @@ fun MainScreen(
         navigator.popUntil { it == KeiosRoute.Main }
         when (hostState.requestedBaCalendarPoolRoute) {
             MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR ->
-                navigator.push(KeiosRoute.BaActivityCalendar(serverIndex = serverIndex, nonce = nonce))
+                navigator.push(
+                    KeiosRoute.BaCalendarPool(serverIndex = serverIndex, nonce = nonce),
+                )
 
+            // Same route, opened on its other tab. A banner notification still lands on the banners.
             MainActivity.TARGET_ROUTE_BA_POOL ->
-                navigator.push(KeiosRoute.BaPool(serverIndex = serverIndex, nonce = nonce))
+                navigator.push(
+                    KeiosRoute.BaCalendarPool(
+                        serverIndex = serverIndex,
+                        showPool = true,
+                        nonce = nonce,
+                    ),
+                )
         }
     }
     LaunchedEffect(guideNavigationViewModel, navigator) {
@@ -190,17 +199,9 @@ fun MainScreen(
                 },
                 // The nonce keeps the content key unique when the same server is opened again while
                 // an earlier instance is still on the stack; NavDisplay rejects duplicate keys.
-                onOpenBaActivityCalendar = { serverIndex ->
+                onOpenBaCalendarPool = { serverIndex ->
                     navigator.push(
-                        KeiosRoute.BaActivityCalendar(
-                            serverIndex = serverIndex,
-                            nonce = SystemClock.elapsedRealtimeNanos(),
-                        ),
-                    )
-                },
-                onOpenBaPool = { serverIndex ->
-                    navigator.push(
-                        KeiosRoute.BaPool(
+                        KeiosRoute.BaCalendarPool(
                             serverIndex = serverIndex,
                             nonce = SystemClock.elapsedRealtimeNanos(),
                         ),

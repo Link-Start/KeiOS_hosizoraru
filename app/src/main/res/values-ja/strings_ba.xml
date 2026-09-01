@@ -48,7 +48,12 @@
     <string name="ba_calendar_title_format">イベントカレンダー | %1$s</string>
     <string name="ba_calendar_activity_title">イベントカレンダー</string>
     <string name="ba_calendar_cd_open_activity">イベントカレンダーを開く</string>
+    <string name="ba_calendar_pool_cd_open">イベントカレンダーと募集を開く</string>
+    <string name="ba_calendar_tab">カレンダー</string>
+    <string name="ba_calendar_pool_title_format">カレンダーと募集 · %1$s</string>
+    <string name="ba_pool_tab">募集</string>
     <string name="ba_calendar_unread_badge_tooltip">イベントカレンダーに %1$d 件の新しい変更</string>
+    <string name="ba_calendar_pool_cd_refresh">カレンダーと募集を更新</string>
     <string name="ba_calendar_cd_refresh">イベントカレンダーを更新</string>
     <string name="ba_calendar_empty_all">イベントはありません</string>
     <string name="ba_calendar_empty_active">開催中または開催予定のイベントはありません</string>

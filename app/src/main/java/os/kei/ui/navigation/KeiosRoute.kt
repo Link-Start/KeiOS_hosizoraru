@@ -45,15 +45,10 @@ sealed interface KeiosRoute : NavKey {
      *   earlier instance is still on the back stack; NavDisplay rejects duplicate content keys.
      */
     @Serializable
-    data class BaActivityCalendar(
+    data class BaCalendarPool(
         val serverIndex: Int? = null,
-        val nonce: Long = 0L
-    ) : KeiosRoute
-
-    /** @see BaActivityCalendar for the parameter contract. */
-    @Serializable
-    data class BaPool(
-        val serverIndex: Int? = null,
+        /** Which half opens first; the page's own bottom bar switches between them after that. */
+        val showPool: Boolean = false,
         val nonce: Long = 0L
     ) : KeiosRoute
 

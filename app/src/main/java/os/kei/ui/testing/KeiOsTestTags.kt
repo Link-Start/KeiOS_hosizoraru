@@ -102,8 +102,24 @@ object KeiOsTestTags {
 
     /** The configure button inside that card, which opens the craft sheet. */
     const val BaCraftSlotFirst = "ba_craft_slot_first"
-    const val BaDockOpenCalendar = "ba_dock_open_calendar"
-    const val BaDockOpenPool = "ba_dock_open_pool"
+    /**
+     * The dock's first action, which pushes the merged calendar-and-banner route.
+     *
+     * One tag where there were two: the two lists became two tabs of one page, which is what freed a dock
+     * slot. A journey that wants the banner half taps this and then the page's second category tab.
+     */
+    const val BaDockOpenCalendarPool = "ba_dock_open_calendar_pool"
+    const val BaCalendarPoolPageRoot = "ba_calendar_pool_page_root"
+
+    /**
+     * The merged route's two category tabs.
+     *
+     * A second spelling of `tabbedPageCategoryTabTestTag("ba_calendar_pool", index)`, which the chrome
+     * derives rather than being handed — see the contract test that pins the two together. The banner half
+     * is only reachable through its tab now, so a journey that wants it needs this.
+     */
+    const val BaCalendarPoolTabCalendar = "ba_calendar_pool_tab_0"
+    const val BaCalendarPoolTabPool = "ba_calendar_pool_tab_1"
 
     /**
      * The dock's third action, which pushes the guide catalog.

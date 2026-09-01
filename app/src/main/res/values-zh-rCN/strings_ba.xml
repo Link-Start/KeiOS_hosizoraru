@@ -48,7 +48,12 @@
     <string name="ba_calendar_title_format">活动日历 · %1$s</string>
     <string name="ba_calendar_activity_title">活动日历</string>
     <string name="ba_calendar_cd_open_activity">打开活动日历</string>
+    <string name="ba_calendar_pool_cd_open">打开活动日历与卡池</string>
+    <string name="ba_calendar_tab">活动日历</string>
+    <string name="ba_calendar_pool_title_format">活动日历与卡池 · %1$s</string>
+    <string name="ba_pool_tab">卡池信息</string>
     <string name="ba_calendar_unread_badge_tooltip">活动日历有 %1$d 条新变化</string>
+    <string name="ba_calendar_pool_cd_refresh">刷新活动日历与卡池</string>
     <string name="ba_calendar_cd_refresh">刷新活动日历</string>
     <string name="ba_calendar_empty_all">暂无活动</string>
     <string name="ba_calendar_empty_active">暂无进行中或即将开始的活动</string>

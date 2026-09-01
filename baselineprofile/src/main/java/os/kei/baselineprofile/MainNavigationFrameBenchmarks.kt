@@ -385,13 +385,13 @@ class MainNavigationFrameBenchmarks {
                     pageTag = BA_PAGE_ROOT,
                     settledTag = MAIN_PAGER_SETTLED_BA,
                 )
-                waitForTag(BA_DOCK_OPEN_POOL)
+                waitForTag(BA_DOCK_OPEN_CALENDAR_POOL)
             },
             measureBlock = {
                 traceSection("benchmark:ba_pool_route_push") {
-                    clickTag(BA_DOCK_OPEN_POOL)
-                    check(device.wait(Until.gone(By.res(BA_DOCK_OPEN_POOL)), PAGE_TIMEOUT_MS)) {
-                        "Timed out waiting for the pool route to cover the BA page"
+                    clickTag(BA_DOCK_OPEN_CALENDAR_POOL)
+                    check(device.wait(Until.gone(By.res(BA_DOCK_OPEN_CALENDAR_POOL)), PAGE_TIMEOUT_MS)) {
+                        "Timed out waiting for the calendar/banner route to cover the BA page"
                     }
                     settleRouteTransition()
                 }
@@ -578,7 +578,7 @@ private const val HOME_PAGE_ROOT = "home_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
-private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
+private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
 private const val HOME_SETTINGS_BUTTON = "home_settings_button"
 private const val SETTINGS_PAGE_ROOT = "settings_page_root"
 /**

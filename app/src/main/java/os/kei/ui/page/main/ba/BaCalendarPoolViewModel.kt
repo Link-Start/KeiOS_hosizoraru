@@ -64,6 +64,15 @@ internal data class BaCalendarPoolChromeUiState(
 internal enum class BaCalendarPoolPageKind {
     Calendar,
     Pool,
+
+    /**
+     * Both lists on screen at once, which is the tablet's shape.
+     *
+     * Only the data-settings sheet cares: with one list showing, offering the other's "hide what has
+     * ended" toggle would be a switch for something off screen, and with both showing, hiding either is
+     * a switch the teacher can watch work.
+     */
+    Both,
 }
 
 private data class BaCalendarRequestKey(
@@ -378,6 +387,11 @@ internal class BaCalendarPoolViewModel(
                 when (pageKind) {
                     BaCalendarPoolPageKind.Calendar -> requestCalendarReload()
                     BaCalendarPoolPageKind.Pool -> requestPoolReload()
+                    // Both lists are on screen, so a shortened interval has to reach both of them.
+                    BaCalendarPoolPageKind.Both -> {
+                        requestCalendarReload()
+                        requestPoolReload()
+                    }
                 }
             }
         }

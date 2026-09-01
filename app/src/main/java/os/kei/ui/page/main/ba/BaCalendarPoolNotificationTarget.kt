@@ -38,14 +38,7 @@ internal fun Intent?.toBaCalendarPoolInitialServerSelection(token: Long): BaCale
  * The route carries what the intent extra used to: which server to jump to, and a nonce that tells
  * the page a fresh request arrived even when the server index is unchanged.
  */
-internal fun KeiosRoute.BaActivityCalendar.toInitialServerSelection(): BaCalendarPoolInitialServerSelection =
-    BaCalendarPoolInitialServerSelection(
-        serverIndex = serverIndex?.takeIf { it in 0..2 },
-        token = nonce,
-    )
-
-/** @see KeiosRoute.BaActivityCalendar.toInitialServerSelection */
-internal fun KeiosRoute.BaPool.toInitialServerSelection(): BaCalendarPoolInitialServerSelection =
+internal fun KeiosRoute.BaCalendarPool.toInitialServerSelection(): BaCalendarPoolInitialServerSelection =
     BaCalendarPoolInitialServerSelection(
         serverIndex = serverIndex?.takeIf { it in 0..2 },
         token = nonce,

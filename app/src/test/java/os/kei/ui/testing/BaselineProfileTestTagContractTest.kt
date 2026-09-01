@@ -145,6 +145,14 @@ class BaselineProfileTestTagContractTest {
         assertEquals(KeiOsTestTags.GitHubHistoryTabTracking, tabbedPageCategoryTabTestTag("github_history", 2))
         assertEquals(KeiOsTestTags.GitHubHistoryTabApps, tabbedPageCategoryTabTestTag("github_history", 3))
         assertEquals(KeiOsTestTags.AboutTabLab, tabbedPageCategoryTabTestTag("about", 3))
+        assertEquals(
+            KeiOsTestTags.BaCalendarPoolTabCalendar,
+            tabbedPageCategoryTabTestTag("ba_calendar_pool", 0),
+        )
+        assertEquals(
+            KeiOsTestTags.BaCalendarPoolTabPool,
+            tabbedPageCategoryTabTestTag("ba_calendar_pool", 1),
+        )
     }
 
     /**
@@ -162,6 +170,10 @@ class BaselineProfileTestTagContractTest {
         assertTrue(
             """labelPrefix = "github_history"""" in sourceFile(GITHUB_HISTORY_PAGE),
             "$GITHUB_HISTORY_PAGE must keep the prefix the GitHubHistoryTab* tags are spelled from",
+        )
+        assertTrue(
+            """labelPrefix = "ba_calendar_pool"""" in sourceFile(BA_CALENDAR_POOL_PAGE),
+            "$BA_CALENDAR_POOL_PAGE must keep the prefix the BaCalendarPoolTab* tags are spelled from",
         )
     }
 
@@ -197,6 +209,9 @@ private val COMPONENT_TAG_SOURCES =
         "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/MiuixSnapshotAdapters.kt",
         "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/UnsavedSheetDismiss.kt",
     )
+
+private const val BA_CALENDAR_POOL_PAGE =
+    "app/src/main/java/os/kei/ui/page/main/ba/BaCalendarPoolPage.kt"
 
 private const val SCENE_BACKDROP_HOST =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SceneBackdropScope.kt"

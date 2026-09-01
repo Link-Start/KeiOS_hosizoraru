@@ -48,7 +48,12 @@
     <string name="ba_calendar_title_format">Event Calendar | %1$s</string>
     <string name="ba_calendar_activity_title">Event Calendar</string>
     <string name="ba_calendar_cd_open_activity">Open event calendar</string>
+    <string name="ba_calendar_pool_cd_open">Open event calendar and banners</string>
+    <string name="ba_calendar_tab">Calendar</string>
+    <string name="ba_calendar_pool_title_format">Calendar &amp; banners · %1$s</string>
+    <string name="ba_pool_tab">Banners</string>
     <string name="ba_calendar_unread_badge_tooltip">Event calendar has %1$d new changes</string>
+    <string name="ba_calendar_pool_cd_refresh">Refresh calendar and banners</string>
     <string name="ba_calendar_cd_refresh">Refresh event calendar</string>
     <string name="ba_calendar_empty_all">No events</string>
     <string name="ba_calendar_empty_active">No active or upcoming events</string>

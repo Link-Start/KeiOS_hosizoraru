@@ -312,9 +312,15 @@ fun AppPageTwoColumnLists(
     secondary: LazyListScope.() -> Unit,
 ) {
     val gutter = appPageSideGutter(maxContentWidth)
+    // The top inset belongs to whichever element is actually at the top. Handing it to both would inset the
+    // columns a second time below the header; handing it to neither loses the header entirely — a page
+    // wrapped in AppEdgeStackKeepAlive is measured taller than its bounds and placed that far *up*, so an
+    // un-inset header sits in the invisible headroom above the screen and is clipped away. That is exactly
+    // what hid BA's account card.
+    val topInset = innerPadding.calculateTopPadding() + topExtra
     val columnPadding =
         PaddingValues(
-            top = innerPadding.calculateTopPadding() + topExtra,
+            top = if (header == null) topInset else 0.dp,
             bottom = innerPadding.calculateBottomPadding() + bottomExtra,
         )
     Column(
@@ -326,8 +332,13 @@ fun AppPageTwoColumnLists(
     ) {
         // Anything that belongs to the page rather than to one column — an account switcher, a status hub —
         // sits above both and does not scroll with either. In one column it could simply be the first card;
-        // across two there is no "first".
-        header?.invoke()
+        // across two there is no "first". It stays put while the columns move under it, which for the card
+        // that names whose data this is reads as a gain rather than a loss.
+        if (header != null) {
+            Box(modifier = Modifier.padding(top = topInset, bottom = sectionSpacing)) {
+                header()
+            }
+        }
         Row(
             // Weighted, so a header takes its height off the columns rather than out of the window.
             modifier = Modifier.weight(1f),

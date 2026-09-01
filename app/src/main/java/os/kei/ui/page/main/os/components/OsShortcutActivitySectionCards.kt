@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.os.components
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -17,7 +16,7 @@ import os.kei.ui.page.main.os.shortcut.normalizeShortcutIntentExtras
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 
-internal fun LazyListScope.addShortcutActivityCards(
+internal fun OsCardSink.addShortcutActivityCards(
     cards: List<OsActivityShortcutCard>,
     iconBitmaps: Map<String, Bitmap>,
     contentBackdrop: Backdrop,
@@ -29,7 +28,7 @@ internal fun LazyListScope.addShortcutActivityCards(
 ) {
     cards.forEach { card ->
         val shortcutConfig = card.config
-        item(key = "os-activity-${card.id}", contentType = "os_shortcut_activity_card") {
+        card(key = "os-activity-${card.id}", contentType = OS_ACTIVITY_CARD_CONTENT_TYPE) {
             AppLiquidAccordionCard(
                 backdrop = contentBackdrop,
                 title = shortcutConfig.title.ifBlank { defaultCardTitle },

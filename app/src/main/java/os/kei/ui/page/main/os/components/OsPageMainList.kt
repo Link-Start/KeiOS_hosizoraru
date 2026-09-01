@@ -50,6 +50,10 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import os.kei.ui.page.main.widget.chrome.AppPageColumnGap
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
@@ -149,6 +153,7 @@ internal data class OsPageMainListSearchDockState(
 internal fun OsPageMainList(
     context: Context,
     listState: LazyListState,
+    columnCount: Int,
     innerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
     topBarProducer: LayerBackdrop,
@@ -394,23 +399,10 @@ internal fun OsPageMainList(
             state = edgeStackState,
             modifier = Modifier.fillMaxSize(),
         ) {
-        AppPageLazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-            state = listState,
-            // Every card used to be followed by its own 8dp Spacer item, which doubled the
-            // list's item count: half of what the lazy column composed, measured and recorded
-            // each frame was an empty box. The arrangement produces the identical gap for free.
-            // The trailing 8dp the last spacer contributed moves into the bottom padding.
-            innerPadding =
-                PaddingValues(bottom = innerPadding.calculateBottomPadding() + OsSectionGap),
-            // The headroom is invisible viewport above the list, so the content inset has to absorb it
-            // or the first card starts that far off screen.
-            topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
-            sectionSpacing = OsSectionGap,
-        ) {
+        // Built once and laid out twice: the same cards become one list on a phone and two columns
+        // on a tablet, so the two shapes cannot drift about which cards exist or in what order.
+        val osCards =
+            buildOsCards {
             addTopInfoCard(
                 visible = isCardVisible(OsSectionCard.TOP_INFO),
                 contentBackdrop = contentBackdrop,
@@ -607,6 +599,58 @@ internal fun OsPageMainList(
                 onOpenActivity = onOpenActivityShortcutCard,
                 onHeaderLongClick = onOpenActivityShortcutCardEditor,
             )
+            }
+        val lanes =
+            if (columnCount >= 2) {
+                osCardLanes(
+                    cards = osCards,
+                    shellCardKey = osKeyValueCardKey(OsSectionCard.SHELL_RUNNER),
+                )
+            } else {
+                null
+            }
+        AppPageLazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+            state = listState,
+            // Every card used to be followed by its own 8dp Spacer item, which doubled the
+            // list's item count: half of what the lazy column composed, measured and recorded
+            // each frame was an empty box. The arrangement produces the identical gap for free.
+            // The trailing 8dp the last spacer contributed moves into the bottom padding.
+            innerPadding =
+                PaddingValues(bottom = innerPadding.calculateBottomPadding() + OsSectionGap),
+            // The headroom is invisible viewport above the list, so the content inset has to absorb it
+            // or the first card starts that far off screen.
+            topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
+            sectionSpacing = OsSectionGap,
+        ) {
+            if (lanes == null) {
+                osCardItems(osCards)
+            } else {
+                // One item holding both lanes, rather than a staggered grid. The second column is
+                // *reserved*, not packed, so the layout has to place by kind -- which no
+                // height-packed container can do. The cost is that a wide page composes its cards
+                // together instead of as the list reaches them; on a tablet the viewport already
+                // holds most of them, and they are collapsed accordions until a teacher opens one.
+                item(key = "os-card-lanes", contentType = "os_card_lanes") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap)) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(OsSectionGap),
+                        ) {
+                            lanes.primary.forEach { entry -> entry.content() }
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(OsSectionGap),
+                        ) {
+                            lanes.secondary.forEach { entry -> entry.content() }
+                        }
+                    }
+                }
+            }
         }
         }
         }

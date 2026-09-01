@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,7 +49,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal fun LazyListScope.addShellCommandCards(
+internal fun OsCardSink.addShellCommandCards(
     cards: List<OsShellCommandCard>,
     contentBackdrop: Backdrop,
     expandedStates: Map<String, Boolean>,
@@ -60,7 +59,7 @@ internal fun LazyListScope.addShellCommandCards(
     onRunCard: (OsShellCommandCard) -> Unit,
 ) {
     cards.forEach { card ->
-        item(
+        card(
             key = "os-shell-command-${card.id}",
             contentType = "os_shell_command_card",
         ) {

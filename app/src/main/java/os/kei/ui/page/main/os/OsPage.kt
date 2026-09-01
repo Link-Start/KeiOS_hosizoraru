@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.os
 
 import androidx.compose.foundation.lazy.rememberLazyListState
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -47,6 +49,10 @@ fun OsPage(
     enableSearchBar: Boolean = true,
 ) {
     val listState = rememberLazyListState()
+    // Two columns on a tablet or an unfolded fold. The OS list keeps a single lazy column either way;
+    // the wide shape puts two lanes inside one of its items, because the second lane is reserved by
+    // kind rather than packed by height. See osCardLanes.
+    val osColumnCount = appPageColumnCount()
     val pageScope = rememberCoroutineScope()
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
@@ -623,6 +629,7 @@ fun OsPage(
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides osGlassRuntime) {
         OsPageScaffoldShell(
+            contentMaxWidth = appPageContentMaxWidthFor(osColumnCount),
             scrollBehavior = scrollBehavior,
             topBarColor = topBarMaterialBackdrop,
             topBarBackdrop = backdrops.topBar,
@@ -662,6 +669,7 @@ fun OsPage(
             OsPageMainList(
                 context = context,
                 listState = listState,
+                columnCount = osColumnCount,
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
                 topBarProducer = backdrops.topBarProducer,

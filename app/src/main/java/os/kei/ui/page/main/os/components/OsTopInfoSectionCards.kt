@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -26,7 +25,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal fun LazyListScope.addTopInfoCard(
+internal fun OsCardSink.addTopInfoCard(
     visible: Boolean,
     contentBackdrop: Backdrop,
     displayedTopInfoRows: List<InfoRow>,
@@ -38,7 +37,7 @@ internal fun LazyListScope.addTopInfoCard(
     exportAction: @Composable () -> Unit,
 ) {
     if (!visible) return
-    item(key = "os-top-info-card", contentType = "os_top_info_card") {
+    card(key = "os-top-info-card", contentType = "os_top_info_card") {
         AppLiquidAccordionCard(
             backdrop = contentBackdrop,
             title = stringResource(R.string.os_section_top_info_title),

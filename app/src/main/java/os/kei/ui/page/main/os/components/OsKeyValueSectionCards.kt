@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,7 +21,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal const val SMALL_INFO_ROW_COUNT = 24
 
-internal fun LazyListScope.addKeyValueSectionCard(
+/** The key a key-value section card carries, so the lane split can name one without restating it. */
+internal fun osKeyValueCardKey(card: OsSectionCard): String = "os-section-${card.name}"
+
+internal fun OsCardSink.addKeyValueSectionCard(
     visible: Boolean,
     card: OsSectionCard,
     contentBackdrop: Backdrop,
@@ -35,7 +37,7 @@ internal fun LazyListScope.addKeyValueSectionCard(
     exportAction: @Composable () -> Unit,
 ) {
     if (!visible) return
-    item(key = "os-section-${card.name}", contentType = "os_key_value_card") {
+    card(key = osKeyValueCardKey(card), contentType = "os_key_value_card") {
         AppLiquidAccordionCard(
             backdrop = contentBackdrop,
             title = title,

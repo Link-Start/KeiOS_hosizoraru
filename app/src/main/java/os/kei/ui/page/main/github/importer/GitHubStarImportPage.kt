@@ -28,6 +28,9 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -40,11 +43,19 @@ internal fun GitHubStarImportPage(
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
+    // The candidate list gets its own scroll: on a tablet it is a lane beside the controls rather than the
+    // rest of one column, so filtering a long list must not drag the source picker off the top.
+    val candidateListState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
     val viewModel: GitHubStarImportViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listUiState = uiState.listUiState
+    // Controls on the left, the list they act on on the right -- but only once there *is* a list. Before a
+    // preview loads the right lane would be empty, so the page stays a single column until then, which is
+    // also the state where the source card and its guide want the full width to be read in.
+    val columnCount = if (uiState.preview == null) 1 else appPageColumnCount()
+    val wideLayout = columnCount >= 2
     val sourceRequirementMessage = stringResource(uiState.source.requirementMessageRes)
     val listUrlRequirementMessage = stringResource(StarImportUiSource.ListUrl.requirementMessageRes)
     val loadingPhaseRes = uiState.loadingPhaseRes
@@ -100,6 +111,7 @@ internal fun GitHubStarImportPage(
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
         titleBackdrop = pageBackdrop,
+        contentMaxWidth = appPageContentMaxWidthFor(columnCount),
         reserveTopEndActionSpace = false,
         navigationIcon = {
             AppLiquidNavigationButton(
@@ -122,16 +134,10 @@ internal fun GitHubStarImportPage(
             )
         },
     ) { innerPadding ->
-        AppPageLazyColumn(
-            innerPadding = innerPadding,
-            state = listState,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .layerBackdrop(pageBackdrop),
-            sectionSpacing = 8.dp,
-        ) {
+        // The two halves the page has always been, now named: everything you set, and the list you set it
+        // on. Stacked they run in this order, which is the order they were in before; side by side the
+        // controls stay put while the candidates scroll.
+        val controlItems: LazyListScope.() -> Unit = {
             item(
                 key = "star-import-source",
                 contentType = "star_import_source",
@@ -237,10 +243,40 @@ internal fun GitHubStarImportPage(
                         onImport = viewModel::requestImport,
                     )
                 }
+            }
+        }
+        val candidateItems: LazyListScope.() -> Unit = {
+            if (uiState.preview != null) {
                 starImportCandidateRows(
                     rows = listUiState.filteredRows,
                     onToggle = viewModel::toggleCandidate,
                 )
+            }
+        }
+        val listModifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .layerBackdrop(pageBackdrop)
+        if (wideLayout) {
+            AppPageTwoColumnLists(
+                innerPadding = innerPadding,
+                primaryState = listState,
+                secondaryState = candidateListState,
+                modifier = listModifier,
+                sectionSpacing = 8.dp,
+                primary = controlItems,
+                secondary = candidateItems,
+            )
+        } else {
+            AppPageLazyColumn(
+                innerPadding = innerPadding,
+                state = listState,
+                modifier = listModifier,
+                sectionSpacing = 8.dp,
+            ) {
+                controlItems()
+                candidateItems()
             }
         }
     }

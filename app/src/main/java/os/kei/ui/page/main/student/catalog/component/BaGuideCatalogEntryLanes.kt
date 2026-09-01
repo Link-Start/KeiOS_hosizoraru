@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import os.kei.ui.page.main.widget.chrome.appPageAlternatingLanes
 
 /**
  * Splits an ordered catalogue list into [columnCount] lanes by alternating entries.
@@ -29,21 +30,7 @@ import androidx.compose.ui.unit.Dp
 internal fun <T> baGuideCatalogEntryLanes(
     entries: List<T>,
     columnCount: Int,
-): List<List<T>> {
-    val columns = columnCount.coerceAtLeast(1)
-    if (columns == 1) return listOf(entries)
-    if (entries.isEmpty()) return List(columns) { emptyList() }
-    return List(columns) { lane ->
-        val size = (entries.size - lane + columns - 1) / columns
-        ArrayList<T>(size.coerceAtLeast(0)).also { laneEntries ->
-            var index = lane
-            while (index < entries.size) {
-                laneEntries += entries[index]
-                index += columns
-            }
-        }
-    }
-}
+): List<List<T>> = appPageAlternatingLanes(entries, columnCount)
 
 /**
  * Where a lane's entry sits in the flat list.

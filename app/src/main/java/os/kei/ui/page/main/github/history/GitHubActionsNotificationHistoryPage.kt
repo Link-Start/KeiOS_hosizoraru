@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -61,6 +63,11 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
+import os.kei.ui.page.main.widget.chrome.appPageAlternatingLanes
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
+import os.kei.ui.page.main.widget.chrome.rememberAppPageScrollTarget
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
@@ -107,6 +114,28 @@ internal fun GitHubActionsNotificationHistoryPage(
     val appIconState by viewModel.appIconState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val listState = rememberLazyListState()
+    val secondaryListState = rememberLazyListState()
+    // Two lanes on a tablet or an unfolded fold, scrolling independently. Records alternate between them,
+    // so each lane stays in date order -- see `appPageAlternatingLanes`.
+    val pageColumnCount = appPageColumnCount()
+    val currentDisplayRecordCount =
+        when (uiState.historyMode) {
+            GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
+            GitHubHistoryMode.Actions -> uiState.records.size
+            GitHubHistoryMode.Tracking -> uiState.trackChangeRecords.size
+            GitHubHistoryMode.Apps -> uiState.appInstallRecords.size
+        }
+    // Loading, error and both empty states are a single card with no records behind them. Split, that card
+    // would sit in the left half with an empty right half beside it, so those states stay on one lane and
+    // the card keeps the width -- and the centring -- it has on every other page.
+    val columnCount =
+        if (uiState.loading || uiState.errorMessage.isNotBlank() || currentDisplayRecordCount == 0) {
+            1
+        } else {
+            pageColumnCount
+        }
+    val wideLayout = columnCount >= 2
+    val scrollTarget = rememberAppPageScrollTarget(listState, secondaryListState, wideLayout)
     val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
@@ -120,7 +149,7 @@ internal fun GitHubActionsNotificationHistoryPage(
     val bottomChromeScrollState =
         rememberTabbedPageChromeScrollState(
             visible = bottomBarVisible,
-            activeListStateProvider = { listState },
+            activeListStateProvider = { scrollTarget.scrollableState },
             onVisibleChange = { bottomBarVisible = it },
         )
     val pageNestedScrollConnection =
@@ -132,15 +161,33 @@ internal fun GitHubActionsNotificationHistoryPage(
             )
         }
     val selectHistoryCategory =
-        remember(categories, scope, listState, viewModel, bottomChromeScrollState) {
+        remember(categories, scope, scrollTarget, viewModel, bottomChromeScrollState) {
             { index: Int ->
                 categories.getOrNull(index)?.let { mode ->
                     viewModel.setHistoryMode(mode)
                     bottomChromeScrollState.showNow()
-                    scope.launch { listState.animateScrollToItem(0) }
+                    scope.launch { scrollTarget.scrollToTop() }
                 }
                 Unit
             }
+        }
+    // Alternating lane slices, computed once per record set rather than per lane. `withIndex` because a
+    // lane no longer knows where its records sit in the whole list, and the entrance cascade does.
+    val refreshRecordLanes =
+        remember(uiState.refreshRecords, columnCount) {
+            appPageAlternatingLanes(uiState.refreshRecords.withIndex().toList(), columnCount)
+        }
+    val actionsRecordLanes =
+        remember(uiState.records, columnCount) {
+            appPageAlternatingLanes(uiState.records.withIndex().toList(), columnCount)
+        }
+    val trackChangeRecordLanes =
+        remember(uiState.trackChangeRecords, columnCount) {
+            appPageAlternatingLanes(uiState.trackChangeRecords.withIndex().toList(), columnCount)
+        }
+    val appInstallRecordLanes =
+        remember(uiState.appInstallRecords, columnCount) {
+            appPageAlternatingLanes(uiState.appInstallRecords.withIndex().toList(), columnCount)
         }
     var expandedRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var expandedRefreshRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
@@ -177,13 +224,6 @@ internal fun GitHubActionsNotificationHistoryPage(
             GitHubHistoryMode.Actions -> uiState.totalRecordCount
             GitHubHistoryMode.Tracking -> uiState.totalTrackChangeRecordCount
             GitHubHistoryMode.Apps -> uiState.totalAppInstallRecordCount
-        }
-    val currentDisplayRecordCount =
-        when (uiState.historyMode) {
-            GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
-            GitHubHistoryMode.Actions -> uiState.records.size
-            GitHubHistoryMode.Tracking -> uiState.trackChangeRecords.size
-            GitHubHistoryMode.Apps -> uiState.appInstallRecords.size
         }
     val searchActive = uiState.searchQuery.trim().isNotEmpty()
     val iconPackageNames =
@@ -272,7 +312,8 @@ internal fun GitHubActionsNotificationHistoryPage(
 
     LaunchedEffect(searchActive, uiState.searchQuery) {
         if (searchActive) {
-            listState.scrollToItem(0)
+            // Both lanes: a new search result set has nothing to do with where either lane was left.
+            scrollTarget.scrollToTop()
         }
     }
 
@@ -285,8 +326,9 @@ internal fun GitHubActionsNotificationHistoryPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
+        contentMaxWidth = appPageContentMaxWidthFor(columnCount),
         onTitleClick = {
-            scope.launch { listState.animateScrollToItem(0) }
+            scope.launch { scrollTarget.scrollToTop() }
         },
         navigationIcon = {
             AppLiquidNavigationButton(
@@ -406,237 +448,282 @@ internal fun GitHubActionsNotificationHistoryPage(
                 state = edgeStackState,
                 modifier = Modifier.fillMaxSize(),
             ) {
-            AppPageLazyColumn(
-                innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
-                state = listState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .preferPeakFrameRateForTabbedPageSwitch(historyContentSwitchState)
-                        .nestedScroll(pageNestedScrollConnection),
-                bottomExtra =
-                    appPageBottomPaddingWithFloatingOverlay(
-                        AppChromeTokens.floatingBottomBarOuterHeight,
-                    ),
-                // This page's inset is derived at runtime from whether the pinned hub shows, so the
-                // headroom is added to whichever value that produced rather than to the shared default.
-                topExtra = appEdgeStackKeepAliveTopPadding(listTopPadding),
-                sectionSpacing = CardLayoutRhythm.denseSectionGap,
-            ) {
-                when {
-                    uiState.loading -> {
-                        item(
-                            key = "github-actions-history-loading",
-                            contentType = "github-actions-history-state",
-                        ) {
-                            GitHubActionsHistoryStateCard(
-                                title = stringResource(R.string.github_actions_history_loading_title),
-                                summary = stringResource(R.string.github_history_loading_summary),
-                                modifier =
-                                    tabbedPageContentItemModifier(
-                                        switchState = historyContentSwitchState,
-                                        itemIndex = 0,
-                                    ),
-                            )
+            val laneContents =
+                List(columnCount) { lane ->
+                    val laneContent: LazyListScope.() -> Unit = {
+                    when {
+                        // Status cards belong to the list, not to a column: emitted once, in the leading lane.
+                        uiState.loading -> {
+                            if (lane == 0) {
+                                item(
+                                    key = "github-actions-history-loading",
+                                    contentType = "github-actions-history-state",
+                                ) {
+                                    GitHubActionsHistoryStateCard(
+                                        title = stringResource(R.string.github_actions_history_loading_title),
+                                        summary = stringResource(R.string.github_history_loading_summary),
+                                        modifier =
+                                            tabbedPageContentItemModifier(
+                                                switchState = historyContentSwitchState,
+                                                itemIndex = 0,
+                                            ),
+                                    )
+                                }
+                            }
                         }
-                    }
 
-                    uiState.errorMessage.isNotBlank() -> {
-                        item(
-                            key = "github-actions-history-error",
-                            contentType = "github-actions-history-state",
-                        ) {
-                            GitHubActionsHistoryStateCard(
-                                title = stringResource(R.string.github_actions_history_error_title),
-                                summary =
-                                    stringResource(
-                                        R.string.github_actions_history_error_summary,
-                                        uiState.errorMessage,
-                                    ),
-                                modifier =
-                                    tabbedPageContentItemModifier(
-                                        switchState = historyContentSwitchState,
-                                        itemIndex = 0,
-                                    ),
-                            )
+                        uiState.errorMessage.isNotBlank() -> {
+                            if (lane == 0) {
+                                item(
+                                    key = "github-actions-history-error",
+                                    contentType = "github-actions-history-state",
+                                ) {
+                                    GitHubActionsHistoryStateCard(
+                                        title = stringResource(R.string.github_actions_history_error_title),
+                                        summary =
+                                            stringResource(
+                                                R.string.github_actions_history_error_summary,
+                                                uiState.errorMessage,
+                                            ),
+                                        modifier =
+                                            tabbedPageContentItemModifier(
+                                                switchState = historyContentSwitchState,
+                                                itemIndex = 0,
+                                            ),
+                                    )
+                                }
+                            }
                         }
-                    }
 
-                    currentTotalRecordCount == 0 -> {
-                        item(
-                            key = "github-actions-history-empty",
-                            contentType = "github-actions-history-state",
-                        ) {
-                            val emptyTitle =
-                                when (uiState.historyMode) {
-                                    GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_title
-                                    GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_title
-                                    GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_title
-                                    GitHubHistoryMode.Apps -> R.string.github_history_apps_empty_title
+                        currentTotalRecordCount == 0 -> {
+                            if (lane == 0) {
+                                item(
+                                    key = "github-actions-history-empty",
+                                    contentType = "github-actions-history-state",
+                                ) {
+                                    val emptyTitle =
+                                        when (uiState.historyMode) {
+                                            GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_title
+                                            GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_title
+                                            GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_title
+                                            GitHubHistoryMode.Apps -> R.string.github_history_apps_empty_title
+                                        }
+                                    val emptySummary =
+                                        when (uiState.historyMode) {
+                                            GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_summary
+                                            GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_summary
+                                            GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_summary
+                                            GitHubHistoryMode.Apps -> R.string.github_history_apps_empty_summary
+                                        }
+                                    GitHubActionsHistoryStateCard(
+                                        title = stringResource(emptyTitle),
+                                        summary = stringResource(emptySummary),
+                                        modifier =
+                                            tabbedPageContentItemModifier(
+                                                switchState = historyContentSwitchState,
+                                                itemIndex = 1,
+                                            ),
+                                    )
                                 }
-                            val emptySummary =
-                                when (uiState.historyMode) {
-                                    GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_summary
-                                    GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_summary
-                                    GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_summary
-                                    GitHubHistoryMode.Apps -> R.string.github_history_apps_empty_summary
-                                }
-                            GitHubActionsHistoryStateCard(
-                                title = stringResource(emptyTitle),
-                                summary = stringResource(emptySummary),
-                                modifier =
-                                    tabbedPageContentItemModifier(
-                                        switchState = historyContentSwitchState,
-                                        itemIndex = 1,
-                                    ),
-                            )
+                            }
                         }
-                    }
 
-                    else -> {
-                        if (currentDisplayRecordCount == 0) {
-                            item(
-                                key = "github-actions-history-filtered-empty",
-                                contentType = "github-actions-history-state",
-                            ) {
-                                GitHubActionsHistoryStateCard(
-                                    title =
-                                        if (searchActive) {
-                                            stringResource(R.string.common_no_matched_results)
-                                        } else {
-                                            stringResource(R.string.github_actions_history_empty_filtered_title)
-                                        },
-                                    summary =
-                                        if (searchActive) {
-                                            stringResource(R.string.github_history_empty_search_summary)
-                                        } else {
-                                            stringResource(R.string.github_actions_history_empty_filtered_summary)
-                                        },
-                                    modifier =
-                                        tabbedPageContentItemModifier(
-                                            switchState = historyContentSwitchState,
-                                            itemIndex = 1,
-                                        ),
-                                )
-                            }
-                        }
-                        when (uiState.historyMode) {
-                            GitHubHistoryMode.Refresh -> {
-                                itemsIndexed(
-                                    items = uiState.refreshRecords,
-                                    key = { _, item -> githubRefreshHistoryRecordKey(item) },
-                                    contentType = { _, _ -> "github-refresh-history-record" },
-                                ) { index, item ->
-                                    val recordKey = githubRefreshHistoryRecordKey(item)
-                                    val expanded = recordKey in expandedRefreshRecordKeys
-                                    GitHubRefreshHistoryRecordCard(
-                                        item = item,
-                                        expanded = expanded,
+                        else -> {
+                            if (currentDisplayRecordCount == 0 && lane == 0) {
+                                item(
+                                    key = "github-actions-history-filtered-empty",
+                                    contentType = "github-actions-history-state",
+                                ) {
+                                    GitHubActionsHistoryStateCard(
+                                        title =
+                                            if (searchActive) {
+                                                stringResource(R.string.common_no_matched_results)
+                                            } else {
+                                                stringResource(R.string.github_actions_history_empty_filtered_title)
+                                            },
+                                        summary =
+                                            if (searchActive) {
+                                                stringResource(R.string.github_history_empty_search_summary)
+                                            } else {
+                                                stringResource(R.string.github_actions_history_empty_filtered_summary)
+                                            },
                                         modifier =
                                             tabbedPageContentItemModifier(
                                                 switchState = historyContentSwitchState,
-                                                itemIndex = index + 1,
+                                                itemIndex = 1,
                                             ),
-                                        onExpandedChange = { nextExpanded ->
-                                            expandedRefreshRecordKeys =
-                                                if (nextExpanded) {
-                                                    (expandedRefreshRecordKeys + recordKey).distinct()
-                                                } else {
-                                                    expandedRefreshRecordKeys - recordKey
-                                                }
-                                        },
-                                        onRetryRefreshTargets = { viewModel.requestRetryRefresh(item.record) },
                                     )
                                 }
                             }
-                            GitHubHistoryMode.Actions -> {
-                                itemsIndexed(
-                                    items = uiState.records,
-                                    key = { _, item -> githubActionsHistoryRecordKey(item) },
-                                    contentType = { _, _ -> "github-actions-history-record" },
-                                ) { index, item ->
-                                    val recordKey = githubActionsHistoryRecordKey(item)
-                                    val expanded = recordKey in expandedRecordKeys
-                                    GitHubActionsHistoryRecordCard(
-                                        item = item,
-                                        appIconBitmap = appIconState.bitmaps[item.packageName.trim()],
-                                        expanded = expanded,
-                                        modifier =
-                                            tabbedPageContentItemModifier(
-                                                switchState = historyContentSwitchState,
-                                                itemIndex = index + 1,
-                                            ),
-                                        onExpandedChange = { nextExpanded ->
-                                            expandedRecordKeys =
-                                                if (nextExpanded) {
-                                                    (expandedRecordKeys + recordKey).distinct()
-                                                } else {
-                                                    expandedRecordKeys - recordKey
-                                                }
-                                        },
-                                        onOpenTrackActions = { onOpenTrackActions(item.record.trackId) },
-                                    )
+                            when (uiState.historyMode) {
+                                GitHubHistoryMode.Refresh -> {
+                                    items(
+                                        items = refreshRecordLanes[lane],
+                                        key = { indexed -> indexed.value.let { item -> githubRefreshHistoryRecordKey(item) } },
+                                        contentType = { "github-refresh-history-record" },
+                                    ) { indexed ->
+                                        // The record's place in the whole list, not in this lane, so the
+                                        // entrance cascade still runs left to right and top to bottom.
+                                        val index = indexed.index
+                                        val item = indexed.value
+                                        val recordKey = githubRefreshHistoryRecordKey(item)
+                                        val expanded = recordKey in expandedRefreshRecordKeys
+                                        GitHubRefreshHistoryRecordCard(
+                                            item = item,
+                                            expanded = expanded,
+                                            modifier =
+                                                tabbedPageContentItemModifier(
+                                                    switchState = historyContentSwitchState,
+                                                    itemIndex = index + 1,
+                                                ),
+                                            onExpandedChange = { nextExpanded ->
+                                                expandedRefreshRecordKeys =
+                                                    if (nextExpanded) {
+                                                        (expandedRefreshRecordKeys + recordKey).distinct()
+                                                    } else {
+                                                        expandedRefreshRecordKeys - recordKey
+                                                    }
+                                            },
+                                            onRetryRefreshTargets = { viewModel.requestRetryRefresh(item.record) },
+                                        )
+                                    }
                                 }
-                            }
-                            GitHubHistoryMode.Tracking -> {
-                                itemsIndexed(
-                                    items = uiState.trackChangeRecords,
-                                    key = { _, item -> githubTrackChangeHistoryRecordKey(item) },
-                                    contentType = { _, _ -> "github-track-change-history-record" },
-                                ) { index, item ->
-                                    val recordKey = githubTrackChangeHistoryRecordKey(item)
-                                    val expanded = recordKey in expandedTrackChangeRecordKeys
-                                    GitHubTrackChangeHistoryRecordCard(
-                                        item = item,
-                                        appIconBitmap = appIconState.bitmaps[item.record.packageName.trim()],
-                                        expanded = expanded,
-                                        modifier =
-                                            tabbedPageContentItemModifier(
-                                                switchState = historyContentSwitchState,
-                                                itemIndex = index + 1,
-                                            ),
-                                        onExpandedChange = { nextExpanded ->
-                                            expandedTrackChangeRecordKeys =
-                                                if (nextExpanded) {
-                                                    (expandedTrackChangeRecordKeys + recordKey).distinct()
-                                                } else {
-                                                    expandedTrackChangeRecordKeys - recordKey
-                                                }
-                                        },
-                                    )
+                                GitHubHistoryMode.Actions -> {
+                                    items(
+                                        items = actionsRecordLanes[lane],
+                                        key = { indexed -> indexed.value.let { item -> githubActionsHistoryRecordKey(item) } },
+                                        contentType = { "github-actions-history-record" },
+                                    ) { indexed ->
+                                        // The record's place in the whole list, not in this lane, so the
+                                        // entrance cascade still runs left to right and top to bottom.
+                                        val index = indexed.index
+                                        val item = indexed.value
+                                        val recordKey = githubActionsHistoryRecordKey(item)
+                                        val expanded = recordKey in expandedRecordKeys
+                                        GitHubActionsHistoryRecordCard(
+                                            item = item,
+                                            appIconBitmap = appIconState.bitmaps[item.packageName.trim()],
+                                            expanded = expanded,
+                                            modifier =
+                                                tabbedPageContentItemModifier(
+                                                    switchState = historyContentSwitchState,
+                                                    itemIndex = index + 1,
+                                                ),
+                                            onExpandedChange = { nextExpanded ->
+                                                expandedRecordKeys =
+                                                    if (nextExpanded) {
+                                                        (expandedRecordKeys + recordKey).distinct()
+                                                    } else {
+                                                        expandedRecordKeys - recordKey
+                                                    }
+                                            },
+                                            onOpenTrackActions = { onOpenTrackActions(item.record.trackId) },
+                                        )
+                                    }
                                 }
-                            }
-                            GitHubHistoryMode.Apps -> {
-                                itemsIndexed(
-                                    items = uiState.appInstallRecords,
-                                    key = { _, item -> githubAppInstallHistoryRecordKey(item) },
-                                    contentType = { _, _ -> "github-app-install-history-record" },
-                                ) { index, item ->
-                                    val recordKey = githubAppInstallHistoryRecordKey(item)
-                                    val expanded = recordKey in expandedAppInstallRecordKeys
-                                    GitHubAppInstallHistoryRecordCard(
-                                        item = item,
-                                        appIconBitmap = appIconState.bitmaps[item.record.packageName.trim()],
-                                        expanded = expanded,
-                                        modifier =
-                                            tabbedPageContentItemModifier(
-                                                switchState = historyContentSwitchState,
-                                                itemIndex = index + 1,
-                                            ),
-                                        onExpandedChange = { nextExpanded ->
-                                            expandedAppInstallRecordKeys =
-                                                if (nextExpanded) {
-                                                    (expandedAppInstallRecordKeys + recordKey).distinct()
-                                                } else {
-                                                    expandedAppInstallRecordKeys - recordKey
-                                                }
-                                        },
-                                    )
+                                GitHubHistoryMode.Tracking -> {
+                                    items(
+                                        items = trackChangeRecordLanes[lane],
+                                        key = { indexed -> indexed.value.let { item -> githubTrackChangeHistoryRecordKey(item) } },
+                                        contentType = { "github-track-change-history-record" },
+                                    ) { indexed ->
+                                        // The record's place in the whole list, not in this lane, so the
+                                        // entrance cascade still runs left to right and top to bottom.
+                                        val index = indexed.index
+                                        val item = indexed.value
+                                        val recordKey = githubTrackChangeHistoryRecordKey(item)
+                                        val expanded = recordKey in expandedTrackChangeRecordKeys
+                                        GitHubTrackChangeHistoryRecordCard(
+                                            item = item,
+                                            appIconBitmap = appIconState.bitmaps[item.record.packageName.trim()],
+                                            expanded = expanded,
+                                            modifier =
+                                                tabbedPageContentItemModifier(
+                                                    switchState = historyContentSwitchState,
+                                                    itemIndex = index + 1,
+                                                ),
+                                            onExpandedChange = { nextExpanded ->
+                                                expandedTrackChangeRecordKeys =
+                                                    if (nextExpanded) {
+                                                        (expandedTrackChangeRecordKeys + recordKey).distinct()
+                                                    } else {
+                                                        expandedTrackChangeRecordKeys - recordKey
+                                                    }
+                                            },
+                                        )
+                                    }
+                                }
+                                GitHubHistoryMode.Apps -> {
+                                    items(
+                                        items = appInstallRecordLanes[lane],
+                                        key = { indexed -> indexed.value.let { item -> githubAppInstallHistoryRecordKey(item) } },
+                                        contentType = { "github-app-install-history-record" },
+                                    ) { indexed ->
+                                        // The record's place in the whole list, not in this lane, so the
+                                        // entrance cascade still runs left to right and top to bottom.
+                                        val index = indexed.index
+                                        val item = indexed.value
+                                        val recordKey = githubAppInstallHistoryRecordKey(item)
+                                        val expanded = recordKey in expandedAppInstallRecordKeys
+                                        GitHubAppInstallHistoryRecordCard(
+                                            item = item,
+                                            appIconBitmap = appIconState.bitmaps[item.record.packageName.trim()],
+                                            expanded = expanded,
+                                            modifier =
+                                                tabbedPageContentItemModifier(
+                                                    switchState = historyContentSwitchState,
+                                                    itemIndex = index + 1,
+                                                ),
+                                            onExpandedChange = { nextExpanded ->
+                                                expandedAppInstallRecordKeys =
+                                                    if (nextExpanded) {
+                                                        (expandedAppInstallRecordKeys + recordKey).distinct()
+                                                    } else {
+                                                        expandedAppInstallRecordKeys - recordKey
+                                                    }
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
+                    }
+                    laneContent
                 }
+            val listBottomExtra =
+                appPageBottomPaddingWithFloatingOverlay(AppChromeTokens.floatingBottomBarOuterHeight)
+            val listModifier =
+                Modifier
+                    .fillMaxSize()
+                    .preferPeakFrameRateForTabbedPageSwitch(historyContentSwitchState)
+                    .nestedScroll(pageNestedScrollConnection)
+            val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
+            // This page's inset is derived at runtime from whether the pinned hub shows, so the headroom is
+            // added to whichever value that produced rather than to the shared default.
+            val listTopExtra = appEdgeStackKeepAliveTopPadding(listTopPadding)
+            if (wideLayout) {
+                AppPageTwoColumnLists(
+                    innerPadding = listInnerPadding,
+                    primaryState = listState,
+                    secondaryState = secondaryListState,
+                    modifier = listModifier,
+                    bottomExtra = listBottomExtra,
+                    topExtra = listTopExtra,
+                    sectionSpacing = CardLayoutRhythm.denseSectionGap,
+                    primary = laneContents[0],
+                    secondary = laneContents[1],
+                )
+            } else {
+                AppPageLazyColumn(
+                    innerPadding = listInnerPadding,
+                    state = listState,
+                    modifier = listModifier,
+                    bottomExtra = listBottomExtra,
+                    topExtra = listTopExtra,
+                    sectionSpacing = CardLayoutRhythm.denseSectionGap,
+                    content = laneContents[0],
+                )
             }
             }
         }

@@ -431,8 +431,37 @@ fun AppPageTwoColumnPanes(
  * no longer share a baseline to pack against.
  */
 fun <T> appPageAlternatingLanes(cards: List<T>): Pair<List<T>, List<T>> =
-    cards.withIndex().partition { (index, _) -> index % 2 == 0 }
-        .let { (even, odd) -> even.map { it.value } to odd.map { it.value } }
+    appPageAlternatingLanes(cards, columnCount = 2).let { lanes -> lanes[0] to lanes[1] }
+
+/**
+ * The same rule for any number of lanes, and for a list that is genuinely *ordered* rather than a set of
+ * peer cards.
+ *
+ * Halving would be the obvious split and is the wrong one: lanes scroll independently, so a first half and
+ * a second half would put the middle of the list at the top of the second lane and make browsing it
+ * nonsense. Alternating keeps every lane sorted on its own, and while the lanes sit level with each other,
+ * reading across a row is the list from start to end.
+ *
+ * Wrap the items in [withIndex] first where the position in the flat list still matters — a staggered
+ * entrance animation, say — since a lane on its own no longer knows it.
+ */
+fun <T> appPageAlternatingLanes(
+    items: List<T>,
+    columnCount: Int,
+): List<List<T>> {
+    val columns = columnCount.coerceAtLeast(1)
+    if (columns == 1) return listOf(items)
+    return List(columns) { lane ->
+        val size = (items.size - lane + columns - 1) / columns
+        ArrayList<T>(size.coerceAtLeast(0)).also { laneItems ->
+            var index = lane
+            while (index < items.size) {
+                laneItems += items[index]
+                index += columns
+            }
+        }
+    }
+}
 
 /**
  * [AppPageLazyColumn]'s layout contract, in columns that pack independently.

@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.mcp
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,12 +22,18 @@ internal fun BindMcpPageEffects(
     pageUiState: McpPageUiState,
     runtime: MainPageRuntime,
     listState: LazyListState,
-    gridState: LazyStaggeredGridState,
+    secondaryListState: LazyListState,
     wideLayout: Boolean,
 ) {
-    // Two containers, one on screen. Everything that watches a scroll position follows the active one, or
-    // the bottom bar stops hiding on scroll and a tab re-tap scrolls a list nobody is looking at.
-    val scrollTarget = rememberAppPageScrollTarget(listState, gridState, wideLayout)
+    // Two columns that scroll apart, so the chrome follows the first one. Either can move it through the
+    // shared nested scroll; reading one keeps the show-again check from flapping when they disagree, and
+    // the scroll-to-top signal moves both.
+    val scrollTarget =
+        rememberAppPageScrollTarget(
+            listState = listState,
+            secondaryState = secondaryListState,
+            wideLayout = wideLayout,
+        )
     BindLazyListScrollBoundsEffect(
         listState = scrollTarget.scrollableState,
         isActive = runtime.isPageActive,

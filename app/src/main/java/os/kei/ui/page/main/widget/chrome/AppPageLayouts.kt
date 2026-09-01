@@ -4,11 +4,14 @@ package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.foundation.OverscrollEffect
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -275,6 +278,92 @@ fun AppPageLazyColumn(
         content = content,
     )
 }
+
+/**
+ * Two content columns that scroll independently.
+ *
+ * The staggered grid this replaces gave the width but not the throughput: one scroll container means a
+ * flick anywhere moves both columns, so a tablet still walks a page at a phone's pace and the second column
+ * is only ever decoration. Two containers make each column its own list — the one under your finger moves
+ * and the other stays where you left it, which is the point of having two.
+ *
+ * The cost is that lanes can no longer be packed by height. A masonry layout decides which column a card
+ * lands in by measuring the columns, and that answer is meaningless once they scroll apart. So the caller
+ * assigns lanes, and every page that uses this has a rule for it: alternate for peers, or by kind where the
+ * page has a reason — see `osCardLanes` and BA's card groups.
+ *
+ * Horizontal padding sits on the row rather than in each list's content padding, because the two lists now
+ * have an inside edge that is not a page edge; [AppPageColumnGap] is that edge, and only the outer two
+ * carry the page gutter.
+ */
+@Composable
+fun AppPageTwoColumnLists(
+    innerPadding: PaddingValues,
+    primaryState: LazyListState,
+    secondaryState: LazyListState,
+    modifier: Modifier = Modifier,
+    bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
+    topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
+    sectionSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
+    userScrollEnabled: Boolean = true,
+    maxContentWidth: Dp = LocalAppPageContentMaxWidth.current,
+    header: (@Composable () -> Unit)? = null,
+    primary: LazyListScope.() -> Unit,
+    secondary: LazyListScope.() -> Unit,
+) {
+    val gutter = appPageSideGutter(maxContentWidth)
+    val columnPadding =
+        PaddingValues(
+            top = innerPadding.calculateTopPadding() + topExtra,
+            bottom = innerPadding.calculateBottomPadding() + bottomExtra,
+        )
+    Column(
+        modifier =
+            modifier.padding(
+                start = AppChromeTokens.pageHorizontalPadding + gutter,
+                end = AppChromeTokens.pageHorizontalPadding + gutter,
+            ),
+    ) {
+        // Anything that belongs to the page rather than to one column — an account switcher, a status hub —
+        // sits above both and does not scroll with either. In one column it could simply be the first card;
+        // across two there is no "first".
+        header?.invoke()
+        Row(
+            // Weighted, so a header takes its height off the columns rather than out of the window.
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap),
+        ) {
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                state = primaryState,
+                userScrollEnabled = userScrollEnabled,
+                contentPadding = columnPadding,
+                verticalArrangement = Arrangement.spacedBy(sectionSpacing),
+                content = primary,
+            )
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                state = secondaryState,
+                userScrollEnabled = userScrollEnabled,
+                contentPadding = columnPadding,
+                verticalArrangement = Arrangement.spacedBy(sectionSpacing),
+                content = secondary,
+            )
+        }
+    }
+}
+
+/**
+ * Splits a page's cards into two lanes by alternating them.
+ *
+ * For a page whose cards are peers — Settings, About, MCP — this is the assignment that keeps reading order
+ * intact across a row: first card top-left, second top-right, third under the first. Height packing would
+ * read better down a single scroll and is exactly what independent columns cannot have, since the columns
+ * no longer share a baseline to pack against.
+ */
+fun <T> appPageAlternatingLanes(cards: List<T>): Pair<List<T>, List<T>> =
+    cards.withIndex().partition { (index, _) -> index % 2 == 0 }
+        .let { (even, odd) -> even.map { it.value } to odd.map { it.value } }
 
 /**
  * [AppPageLazyColumn]'s layout contract, in columns that pack independently.

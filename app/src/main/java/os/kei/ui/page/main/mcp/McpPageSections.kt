@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.mcp
 
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.kyant.backdrop.Backdrop
@@ -199,14 +198,10 @@ internal fun LazyListScope.mcpSectionItems(
     }
 }
 
-/** The same sections as staggered cells, so a tablet packs two columns instead of one long strip. */
-internal fun LazyStaggeredGridScope.mcpSectionCells(
+/** One lane of the two-column layout: the sections it was given, one list item each. */
+internal fun LazyListScope.mcpSectionLane(
     sections: List<McpPageSection>,
     input: McpSectionRenderInput,
 ) {
-    sections.forEach { section ->
-        item(key = section.key, contentType = section.contentType) {
-            McpPageSectionContent(section = section, input = input)
-        }
-    }
+    mcpSectionItems(sections = sections, input = input)
 }

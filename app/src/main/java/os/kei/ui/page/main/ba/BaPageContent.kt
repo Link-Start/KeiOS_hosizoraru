@@ -8,10 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import os.kei.R
@@ -52,7 +48,7 @@ import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
-import os.kei.ui.page.main.widget.chrome.AppPageColumnGap
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
 
 @Immutable
 internal data class BaPageContentState(
@@ -129,7 +125,7 @@ internal fun BaPageContent(
     innerPadding: PaddingValues,
     contentBottomPadding: Dp,
     listState: LazyListState,
-    gridState: LazyStaggeredGridState,
+    secondaryListState: LazyListState,
     columnCount: Int,
     nestedScrollConnection: NestedScrollConnection,
     state: BaPageContentState,
@@ -168,46 +164,29 @@ internal fun BaPageContent(
     ) {
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
     if (columnCount >= 2) {
-        LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Fixed(columnCount),
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
-            state = gridState,
-            // The column's own padding, unchanged. Built here rather than through AppPageStaggeredGrid
-            // because this page already builds its own container to keep the *asymmetric* edge padding —
-            // the shared helper takes one symmetric gutter and would push content under the sidebar rail.
-            contentPadding =
-                PaddingValues(
-                    top = appEdgeStackKeepAliveTopPadding(stackLine),
-                    bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
-                    start = pageStartPadding,
-                    end = pageEndPadding,
-                ),
-            verticalItemSpacing = pageGap,
-            horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap),
-        ) {
-            BaPageCardGroups.forEach { group ->
-                item(
-                    key = group.key,
-                    contentType = group.contentType,
-                    span = group.span,
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(pageGap)) {
-                        group.cards.forEach { card ->
-                            BaPageCardContent(
-                                card = card,
-                                backdrop = backdrop,
-                                state = state,
-                                actions = actions,
-                                openCards = openSlotCards,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        AppPageTwoColumnLists(
+            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding() + contentBottomPadding),
+            primaryState = listState,
+            secondaryState = secondaryListState,
+            modifier = Modifier.fillMaxSize().nestedScroll(nestedScrollConnection),
+            topExtra = appEdgeStackKeepAliveTopPadding(stackLine),
+            bottomExtra = pageGap,
+            sectionSpacing = pageGap,
+            // The account switcher belongs to the page, not to a lane: it names whose office this is, and
+            // it is a horizontal pager, so halving it would leave the accounts swiped through in a
+            // column-wide strip beside the cards they select for.
+            header = {
+                BaPageCardContent(
+                    card = BaPageCard.Account,
+                    backdrop = backdrop,
+                    state = state,
+                    actions = actions,
+                    openCards = openSlotCards,
+                )
+            },
+            primary = { baPageCardLane(BaPrimaryLaneGroups, backdrop, state, actions, openSlotCards, pageGap) },
+            secondary = { baPageCardLane(BaSecondaryLaneGroups, backdrop, state, actions, openSlotCards, pageGap) },
+        )
     } else {
         LazyColumn(
             modifier =
@@ -308,67 +287,41 @@ internal enum class BaCooldownKind(val key: String) {
 private class BaPageCardGroup(
     val key: String,
     val contentType: BaPageContentType,
-    val span: StaggeredGridItemSpan,
     val cards: List<BaPageCard>,
 )
 
-private val BaPageCardGroups: List<BaPageCardGroup> =
-    buildList {
-        add(
-            BaPageCardGroup(
-                key = "ba-group-account",
-                contentType = BaPageContentType.Account,
-                // The page's identity and a horizontal pager: halved, the accounts would be swiped
-                // through in a column-wide strip while the cards they select for sit beside it.
-                span = StaggeredGridItemSpan.FullLine,
-                cards = listOf(BaPageCard.Account),
-            ),
-        )
-        add(
-            BaPageCardGroup(
-                key = "ba-group-pools",
-                contentType = BaPageContentType.Ap,
-                span = StaggeredGridItemSpan.SingleLane,
-                cards = listOf(BaPageCard.Ap, BaPageCard.Cafe),
-            ),
-        )
-        add(
-            BaPageCardGroup(
-                key = "ba-group-cooldowns",
-                contentType = BaPageContentType.CooldownSlot,
-                span = StaggeredGridItemSpan.SingleLane,
-                cards = BaCooldownKind.entries.map { kind -> BaPageCard.Cooldown(kind) },
-            ),
-        )
-        add(
-            BaPageCardGroup(
-                key = "ba-group-craft",
-                contentType = BaPageContentType.Craft,
-                span = StaggeredGridItemSpan.SingleLane,
-                cards = listOf(BaPageCard.CraftOverview),
-            ),
-        )
-        // One group per craft function, for the same reason as the pools and the cooldowns. Left to flow
-        // individually the grid interleaved them by height -- Crafting 2 beside Crafting 1, Material
-        // fusion 1 above Crafting 3 -- and the slots are numbered, so reading them row by row read the
-        // numbers out of order. Generate is one set and Fusion is another; each keeps its own lane and
-        // its own counting.
-        BaCraftFunction.entries.forEach { function ->
-            add(
-                BaPageCardGroup(
-                    key = "ba-group-craft-${function.name}",
-                    contentType = BaPageContentType.CraftSlot,
-                    span = StaggeredGridItemSpan.SingleLane,
-                    cards =
-                        (0 until BA_CRAFT_SLOT_COUNT).map { index ->
-                            BaPageCard.CraftSlot(function = function, index = index)
-                        },
-                ),
-            )
+/** One lane: its groups in order, each group's cards kept together inside one list item. */
+private fun LazyListScope.baPageCardLane(
+    groups: List<BaPageCardGroup>,
+    backdrop: Backdrop?,
+    state: BaPageContentState,
+    actions: BaPageContentActions,
+    openCards: MutableMap<String, Unit>,
+    cardGap: Dp,
+) {
+    groups.forEach { group ->
+        item(key = group.key, contentType = group.contentType) {
+            Column(verticalArrangement = Arrangement.spacedBy(cardGap)) {
+                group.cards.forEach { card ->
+                    BaPageCardContent(
+                        card = card,
+                        backdrop = backdrop,
+                        state = state,
+                        actions = actions,
+                        openCards = openCards,
+                    )
+                }
+            }
         }
     }
+}
 
-/** The office list, in the game's own reading order. Static: nothing here depends on state. */
+/**
+ * The office list in one column, in the game's own reading order.
+ *
+ * The phone's shape, and it stays flat: each card is its own list item, exactly as it was before there were
+ * lanes at all.
+ */
 private val BaPageCards: List<BaPageCard> =
     buildList {
         add(BaPageCard.Account)
@@ -382,6 +335,63 @@ private val BaPageCards: List<BaPageCard> =
             }
         }
     }
+
+/**
+ * The first column: the two AP pools, then the Generate craft slots.
+ *
+ * Lanes are assigned, not packed. Two columns that scroll apart have no shared baseline to pack against,
+ * and the assignment has to hold still anyway — a teacher reads AP beside Cafe and expects them to stay
+ * beside each other whether or not one is expanded.
+ */
+private val BaPrimaryLaneGroups: List<BaPageCardGroup> =
+    buildList {
+        add(
+            BaPageCardGroup(
+                key = "ba-group-pools",
+                contentType = BaPageContentType.Ap,
+                // One reading: how much do I have, in both places.
+                cards = listOf(BaPageCard.Ap, BaPageCard.Cafe),
+            ),
+        )
+        add(craftFunctionGroup(BaCraftFunction.Generate))
+    }
+
+/** The second column: the three cafe cooldowns, the Craft Chamber summary, then the Fusion slots. */
+private val BaSecondaryLaneGroups: List<BaPageCardGroup> =
+    buildList {
+        add(
+            BaPageCardGroup(
+                key = "ba-group-cooldowns",
+                contentType = BaPageContentType.CooldownSlot,
+                // One set: a teacher scans the three together and the game presents them together.
+                cards = BaCooldownKind.entries.map { kind -> BaPageCard.Cooldown(kind) },
+            ),
+        )
+        add(
+            BaPageCardGroup(
+                key = "ba-group-craft",
+                contentType = BaPageContentType.Craft,
+                cards = listOf(BaPageCard.CraftOverview),
+            ),
+        )
+        add(craftFunctionGroup(BaCraftFunction.Fusion))
+    }
+
+/**
+ * All six slots of one craft function, together.
+ *
+ * The slots are numbered, so splitting a function across columns would read its numbers out of order.
+ * Generate takes one column and Fusion the other, each counting 1-6 down its own lane.
+ */
+private fun craftFunctionGroup(function: BaCraftFunction): BaPageCardGroup =
+    BaPageCardGroup(
+        key = "ba-group-craft-${function.name}",
+        contentType = BaPageContentType.CraftSlot,
+        cards =
+            (0 until BA_CRAFT_SLOT_COUNT).map { index ->
+                BaPageCard.CraftSlot(function = function, index = index)
+            },
+    )
 
 /** One office card, without the list item around it. */
 @Composable

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -39,7 +38,8 @@ import os.kei.ui.page.main.mcp.state.McpPageOverviewState
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.AppPageStaggeredGrid
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
+import os.kei.ui.page.main.widget.chrome.appPageAlternatingLanes
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
@@ -61,7 +61,7 @@ internal fun McpPageContent(
     runtime: MainPageRuntime,
     innerPadding: PaddingValues,
     listState: LazyListState,
-    gridState: LazyStaggeredGridState,
+    secondaryListState: LazyListState,
     columnCount: Int,
     scrollBehavior: ScrollBehavior,
     backdrops: MainPageBackdropSet,
@@ -148,17 +148,18 @@ internal fun McpPageContent(
         val listBottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding)
         val listTopExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)
         if (columnCount >= 2) {
-            AppPageStaggeredGrid(
+            val (left, right) = appPageAlternatingLanes(sections)
+            AppPageTwoColumnLists(
                 innerPadding = listInnerPadding,
-                state = gridState,
-                columnCount = columnCount,
+                primaryState = listState,
+                secondaryState = secondaryListState,
                 modifier = listModifier,
                 bottomExtra = listBottomExtra,
                 topExtra = listTopExtra,
                 sectionSpacing = 12.dp,
-            ) {
-                mcpSectionCells(sections = sections, input = sectionInput)
-            }
+                primary = { mcpSectionLane(sections = left, input = sectionInput) },
+                secondary = { mcpSectionLane(sections = right, input = sectionInput) },
+            )
         } else {
             AppPageLazyColumn(
                 innerPadding = listInnerPadding,

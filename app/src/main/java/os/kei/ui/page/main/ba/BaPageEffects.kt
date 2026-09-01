@@ -4,7 +4,6 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -166,7 +165,7 @@ internal fun shouldApplyBaForegroundApCommittedResult(
 @Composable
 internal fun BaPageCommonEffects(
     listState: LazyListState,
-    gridState: LazyStaggeredGridState,
+    secondaryListState: LazyListState,
     wideLayout: Boolean,
     scrollBehavior: ScrollBehavior,
     scrollToTopSignal: Int,
@@ -188,9 +187,14 @@ internal fun BaPageCommonEffects(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     val runtimeTickerCoordinator = rememberBaRuntimeTickerCoordinator()
-    // Two containers, one on screen: on a tablet the office cards are a staggered grid and the column is
-    // idle. Everything that reads a scroll position follows whichever is showing.
-    val scrollTarget = rememberAppPageScrollTarget(listState, gridState, wideLayout)
+    // Two columns that scroll apart on a tablet. The chrome reads the first; scrolling to the top moves
+    // both, because that signal belongs to the page rather than to a lane.
+    val scrollTarget =
+        rememberAppPageScrollTarget(
+            listState = listState,
+            secondaryState = secondaryListState,
+            wideLayout = wideLayout,
+        )
     BindLazyListScrollBoundsEffect(
         listState = scrollTarget.scrollableState,
         isActive = isPageActive,

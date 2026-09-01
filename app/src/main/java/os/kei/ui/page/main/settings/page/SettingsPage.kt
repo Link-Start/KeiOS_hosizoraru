@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -273,34 +271,34 @@ fun SettingsPage(
     val keepAliveListState = rememberLazyListState()
     val interfaceListState = rememberLazyListState()
     val dataListState = rememberLazyListState()
-    val accessGridState = rememberLazyStaggeredGridState()
-    val keepAliveGridState = rememberLazyStaggeredGridState()
-    val interfaceGridState = rememberLazyStaggeredGridState()
-    val dataGridState = rememberLazyStaggeredGridState()
+    val accessSecondaryState = rememberLazyListState()
+    val keepAliveSecondaryState = rememberLazyListState()
+    val interfaceSecondaryState = rememberLazyListState()
+    val dataSecondaryState = rememberLazyListState()
     val categoryListStates =
         remember(
             accessListState,
             keepAliveListState,
             interfaceListState,
             dataListState,
-            accessGridState,
-            keepAliveGridState,
-            interfaceGridState,
-            dataGridState,
+            accessSecondaryState,
+            keepAliveSecondaryState,
+            interfaceSecondaryState,
+            dataSecondaryState,
         ) {
             SettingsCategoryListStates(
                 access = accessListState,
                 keepAlive = keepAliveListState,
                 interfaceState = interfaceListState,
                 data = dataListState,
-                accessGrid = accessGridState,
-                keepAliveGrid = keepAliveGridState,
-                interfaceGrid = interfaceGridState,
-                dataGrid = dataGridState,
+                accessSecondary = accessSecondaryState,
+                keepAliveSecondary = keepAliveSecondaryState,
+                interfaceSecondary = interfaceSecondaryState,
+                dataSecondary = dataSecondaryState,
             )
         }
     val searchListState = rememberLazyListState()
-    val searchGridState = rememberLazyStaggeredGridState()
+    val searchSecondaryState = rememberLazyListState()
     // Which of the two shapes this page is in right now. Everything that reads a scroll position -- the
     // bottom chrome's hide-on-scroll, the title tap that returns to the top -- has to follow it, or it would
     // be asking the column about a grid the reader is actually looking at.
@@ -331,27 +329,19 @@ fun SettingsPage(
         remember(activeCategoryProvider, categoryListStates, wideSettingsLayout) {
             {
                 val category = activeCategoryProvider()
-                if (wideSettingsLayout) {
-                    categoryListStates.gridForCategory(category)
-                } else {
-                    categoryListStates.forCategory(category)
-                }
+                // The chrome follows the first column. Both are the same page and either can move it;
+                // pinning it to one keeps the hide-on-scroll from fighting itself when they disagree.
+                categoryListStates.forCategory(category)
             }
         }
     val activeChromeListStateProvider: () -> ScrollableState =
         remember(
             searchActive,
             searchListState,
-            searchGridState,
-            wideSettingsLayout,
             activePageScrollStateProvider,
         ) {
             {
-                when {
-                    searchActive && wideSettingsLayout -> searchGridState
-                    searchActive -> searchListState
-                    else -> activePageScrollStateProvider()
-                }
+                if (searchActive) searchListState else activePageScrollStateProvider()
             }
         }
     val bottomChromeScrollState =
@@ -494,11 +484,12 @@ fun SettingsPage(
         contentMaxWidth = appPageContentMaxWidthFor(settingsColumnCount),
         onTitleClick = {
             scope.launch {
-                // Both shapes scroll to their own first item; only one of them is on screen.
-                when (val scrollState = activeChromeListStateProvider()) {
-                    is LazyListState -> scrollState.animateScrollToItem(0)
-                    is LazyStaggeredGridState -> scrollState.animateScrollToItem(0)
-                    else -> Unit
+                // Both columns, since the title belongs to the page rather than to either of them.
+                (activeChromeListStateProvider() as? LazyListState)?.animateScrollToItem(0)
+                if (wideSettingsLayout && !searchActive) {
+                    categoryListStates.secondaryForCategory(activeCategoryProvider()).animateScrollToItem(0)
+                } else if (wideSettingsLayout) {
+                    searchSecondaryState.animateScrollToItem(0)
                 }
             }
         },
@@ -572,7 +563,7 @@ fun SettingsPage(
                 SettingsSearchContent(
                     innerPadding = innerPadding,
                     searchListState = searchListState,
-                    searchGridState = searchGridState,
+                    searchSecondaryState = searchSecondaryState,
                     matchingSearchTargets = matchingSearchTargets,
                     settingsSearchCardInput = settingsSearchCardInput,
                     chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,

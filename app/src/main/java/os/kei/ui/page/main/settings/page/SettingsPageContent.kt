@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,7 +22,8 @@ import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.AppPageStaggeredGrid
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
+import os.kei.ui.page.main.widget.chrome.appPageAlternatingLanes
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun SettingsSearchContent(
     innerPadding: PaddingValues,
     searchListState: LazyListState,
-    searchGridState: LazyStaggeredGridState,
+    searchSecondaryState: LazyListState,
     matchingSearchTargets: List<SettingsSearchTarget>,
     settingsSearchCardInput: SettingsSearchCardRenderInput,
     chromeNestedScrollConnection: NestedScrollConnection,
@@ -102,21 +102,19 @@ internal fun SettingsSearchContent(
         }
         return
     }
-    AppPageStaggeredGrid(
+    val (searchLeft, searchRight) =
+        appPageAlternatingLanes(matchingSearchTargets.map { target -> target.card })
+    AppPageTwoColumnLists(
         innerPadding = innerPadding,
-        state = searchGridState,
-        columnCount = columnCount,
+        primaryState = searchListState,
+        secondaryState = searchSecondaryState,
         modifier = contentModifier,
         bottomExtra = bottomExtra,
         sectionSpacing = 12.dp,
         userScrollEnabled = !sliderInteractionActive,
-    ) {
-        settingsCardCells(
-            cards = matchingSearchTargets.map { target -> target.card },
-            input = settingsSearchCardInput,
-            isSearchResult = true,
-        )
-    }
+        primary = { settingsCardLane(searchLeft, settingsSearchCardInput, isSearchResult = true) },
+        secondary = { settingsCardLane(searchRight, settingsSearchCardInput, isSearchResult = true) },
+    )
 }
 
 @Composable
@@ -177,17 +175,18 @@ internal fun SettingsCategoryPagerContent(
                 settingsCategoryItems(category, settingsSearchCardInput)
             }
         } else {
-            AppPageStaggeredGrid(
+            val (left, right) = appPageAlternatingLanes(settingsCategoryCards(category))
+            AppPageTwoColumnLists(
                 innerPadding = innerPadding,
-                state = listStates.gridForCategory(category),
-                columnCount = columnCount,
+                primaryState = pageListState,
+                secondaryState = listStates.secondaryForCategory(category),
                 modifier = pageModifier,
                 bottomExtra = pageBottomExtra,
                 sectionSpacing = 12.dp,
                 userScrollEnabled = !sliderInteractionActive,
-            ) {
-                settingsCardCells(settingsCategoryCards(category), settingsSearchCardInput)
-            }
+                primary = { settingsCardLane(left, settingsSearchCardInput) },
+                secondary = { settingsCardLane(right, settingsSearchCardInput) },
+            )
         }
     }
 }
@@ -204,10 +203,10 @@ internal data class SettingsCategoryListStates(
     val keepAlive: LazyListState,
     val interfaceState: LazyListState,
     val data: LazyListState,
-    val accessGrid: LazyStaggeredGridState,
-    val keepAliveGrid: LazyStaggeredGridState,
-    val interfaceGrid: LazyStaggeredGridState,
-    val dataGrid: LazyStaggeredGridState,
+    val accessSecondary: LazyListState,
+    val keepAliveSecondary: LazyListState,
+    val interfaceSecondary: LazyListState,
+    val dataSecondary: LazyListState,
 ) {
     fun forCategory(category: SettingsCategory): LazyListState =
         when (category) {
@@ -217,11 +216,12 @@ internal data class SettingsCategoryListStates(
             SettingsCategory.Data -> data
         }
 
-    fun gridForCategory(category: SettingsCategory): LazyStaggeredGridState =
+    /** The second column's own scroll position, so the two columns keep their places apart. */
+    fun secondaryForCategory(category: SettingsCategory): LazyListState =
         when (category) {
-            SettingsCategory.Access -> accessGrid
-            SettingsCategory.KeepAlive -> keepAliveGrid
-            SettingsCategory.Interface -> interfaceGrid
-            SettingsCategory.Data -> dataGrid
+            SettingsCategory.Access -> accessSecondary
+            SettingsCategory.KeepAlive -> keepAliveSecondary
+            SettingsCategory.Interface -> interfaceSecondary
+            SettingsCategory.Data -> dataSecondary
         }
 }

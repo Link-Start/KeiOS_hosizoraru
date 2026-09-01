@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.about.page
 
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import os.kei.ui.page.main.about.model.AboutAppDetails
@@ -261,26 +260,13 @@ internal fun aboutCategoryCardList(
     aboutCardsForCategory(category)
         .filter { card -> !state.searchActive || card in matchingCards }
 
-/**
- * The same cards as cells of a staggered grid.
- *
- * One cell per card, so a card is still composed only when its column reaches it. About's cards vary far
- * more in height than Settings' do -- Licenses and Permissions are long, Lab is a single row -- which is
- * exactly the case a staggered flow is for and a paired row is worst at.
- */
-internal fun LazyStaggeredGridScope.aboutCardCells(
+/** One lane of the two-column layout: the cards it was given, one list item each. */
+internal fun LazyListScope.aboutCardLane(
     cards: List<AboutSearchCard>,
     state: AboutCardRenderState,
     actions: AboutCardActions,
 ) {
-    cards.forEach { card ->
-        item(
-            key = "about_card_${card.name}",
-            contentType = "about_card",
-        ) {
-            AboutSearchCardContent(card = card, state = state, actions = actions)
-        }
-    }
+    cards.forEach { card -> aboutCardItem(card = card, state = state, actions = actions) }
 }
 
 private val AboutOverviewCards = listOf(AboutSearchCard.App, AboutSearchCard.Release, AboutSearchCard.GitHub)

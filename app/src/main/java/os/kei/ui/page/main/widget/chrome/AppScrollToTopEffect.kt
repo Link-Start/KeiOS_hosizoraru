@@ -7,7 +7,6 @@ package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -43,29 +42,29 @@ internal fun rememberAppPageScrollTarget(listState: LazyListState): AppPageScrol
         )
     }
 
-/** The active container of the two a two-column page holds. */
+/**
+ * The two columns of a wide page, read as one.
+ *
+ * The chrome reads the *first* column: either can move it through the shared nested scroll, and reading
+ * one keeps the show-again check from flapping when the two disagree about whether there is anywhere left
+ * to go. Scrolling to the top moves both, because that signal belongs to the page rather than to a lane.
+ */
 @Composable
 internal fun rememberAppPageScrollTarget(
     listState: LazyListState,
-    gridState: LazyStaggeredGridState,
+    secondaryState: LazyListState,
     wideLayout: Boolean,
 ): AppPageScrollTarget =
-    remember(listState, gridState, wideLayout) {
-        if (wideLayout) {
-            AppPageScrollTarget(
-                scrollableState = gridState,
-                firstVisibleItemIndex = { gridState.firstVisibleItemIndex },
-                firstVisibleItemScrollOffset = { gridState.firstVisibleItemScrollOffset },
-                scrollToTop = { gridState.animateScrollToItem(0) },
-            )
-        } else {
-            AppPageScrollTarget(
-                scrollableState = listState,
-                firstVisibleItemIndex = { listState.firstVisibleItemIndex },
-                firstVisibleItemScrollOffset = { listState.firstVisibleItemScrollOffset },
-                scrollToTop = { listState.animateScrollToItem(0) },
-            )
-        }
+    remember(listState, secondaryState, wideLayout) {
+        AppPageScrollTarget(
+            scrollableState = listState,
+            firstVisibleItemIndex = { listState.firstVisibleItemIndex },
+            firstVisibleItemScrollOffset = { listState.firstVisibleItemScrollOffset },
+            scrollToTop = {
+                listState.animateScrollToItem(0)
+                if (wideLayout) secondaryState.animateScrollToItem(0)
+            },
+        )
     }
 
 /**

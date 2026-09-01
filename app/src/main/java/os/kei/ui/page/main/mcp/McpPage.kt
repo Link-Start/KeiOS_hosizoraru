@@ -7,7 +7,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -108,7 +107,7 @@ fun McpPage(
         )
 
     val listState = rememberLazyListState()
-    val gridState = rememberLazyStaggeredGridState()
+    val secondaryListState = rememberLazyListState()
     // Two columns on a tablet or an unfolded fold, one everywhere else. MCP is eleven independent
     // accordion cards, which is what the staggered flow is for.
     val mcpColumnCount = appPageColumnCount()
@@ -325,7 +324,7 @@ fun McpPage(
         pageUiState = pageUiState,
         runtime = runtime,
         listState = listState,
-        gridState = gridState,
+        secondaryListState = secondaryListState,
         wideLayout = mcpColumnCount >= 2,
     )
 
@@ -342,11 +341,9 @@ fun McpPage(
             contentMaxWidth = appPageContentMaxWidthFor(mcpColumnCount),
             onTitleClick = {
                 pageScope.launch {
-                    if (mcpColumnCount >= 2) {
-                        gridState.animateScrollToItem(0)
-                    } else {
-                        listState.animateScrollToItem(0)
-                    }
+                    // Both columns: the title belongs to the page, not to one of its lanes.
+                    listState.animateScrollToItem(0)
+                    if (mcpColumnCount >= 2) secondaryListState.animateScrollToItem(0)
                 }
             },
             actions = {
@@ -368,7 +365,7 @@ fun McpPage(
                 runtime = runtime,
                 innerPadding = innerPadding,
                 listState = listState,
-                gridState = gridState,
+                secondaryListState = secondaryListState,
                 columnCount = mcpColumnCount,
                 scrollBehavior = scrollBehavior,
                 backdrops = backdrops,

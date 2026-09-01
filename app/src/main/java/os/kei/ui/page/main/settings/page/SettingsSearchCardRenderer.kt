@@ -2,7 +2,6 @@ package os.kei.ui.page.main.settings.page
 
 import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import os.kei.core.log.AppLogLevel
@@ -278,30 +277,13 @@ internal fun LazyListScope.settingsCategoryItems(
 internal fun settingsCategoryCards(category: SettingsCategory): List<SettingsSearchCard> =
     settingsCardsForCategory(category)
 
-/**
- * The same cards as cells of a staggered grid.
- *
- * One cell per card, exactly as the column emits one item per card, so a card is still composed only when
- * its column reaches it. The grid decides which column each one lands in, which is the whole point: cards
- * here are accordions and a collapsed one next to an expanded one would otherwise leave a dead half-column.
- */
-internal fun LazyStaggeredGridScope.settingsCardCells(
+/** One lane of the two-column layout: the cards it was given, one list item each. */
+internal fun LazyListScope.settingsCardLane(
     cards: List<SettingsSearchCard>,
     input: SettingsSearchCardRenderInput,
     isSearchResult: Boolean = false,
 ) {
-    cards.forEach { card ->
-        item(
-            key = "settings_card_${card.name}",
-            contentType = "settings_card",
-        ) {
-            SettingsSearchCardContent(
-                card = card,
-                input = input,
-                isSearchResult = isSearchResult,
-            )
-        }
-    }
+    cards.forEach { card -> settingsCardItem(card, input, isSearchResult) }
 }
 
 private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsSearchCard> =

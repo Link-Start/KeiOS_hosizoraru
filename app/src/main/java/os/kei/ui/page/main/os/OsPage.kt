@@ -53,6 +53,7 @@ fun OsPage(
     // the wide shape puts two lanes inside one of its items, because the second lane is reserved by
     // kind rather than packed by height. See osCardLanes.
     val osColumnCount = appPageColumnCount()
+    val secondaryListState = rememberLazyListState()
     val pageScope = rememberCoroutineScope()
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
@@ -644,7 +645,9 @@ fun OsPage(
             onRefresh = actionState.refreshAllSections,
             onTitleClick = {
                 pageScope.launch {
+                    // Both columns: the title belongs to the page, not to a lane.
                     listState.animateScrollToItem(0)
+                    if (osColumnCount >= 2) secondaryListState.animateScrollToItem(0)
                 }
             },
         ) { innerPadding ->
@@ -669,6 +672,7 @@ fun OsPage(
             OsPageMainList(
                 context = context,
                 listState = listState,
+                secondaryListState = secondaryListState,
                 columnCount = osColumnCount,
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,

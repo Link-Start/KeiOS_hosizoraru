@@ -5,7 +5,6 @@ package os.kei.ui.page.main.ba
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -57,7 +56,7 @@ fun BAPage(
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
-    val gridState = rememberLazyStaggeredGridState()
+    val secondaryListState = rememberLazyListState()
     // Two columns on a tablet or an unfolded fold, one everywhere else. Eighteen office cards, all
     // independent and most of them one line tall collapsed.
     val baColumnCount = appPageColumnCount()
@@ -326,7 +325,7 @@ fun BAPage(
 
     BaPageCommonEffects(
         listState = listState,
-        gridState = gridState,
+        secondaryListState = secondaryListState,
         wideLayout = wideBaLayout,
         scrollBehavior = scrollBehavior,
         scrollToTopSignal = runtime.scrollToTopSignal,
@@ -376,11 +375,9 @@ fun BAPage(
                         titleBackdrop = backdrops.topBar,
                         onTitleClick = {
                             pageScope.launch {
-                                if (wideBaLayout) {
-                                    gridState.animateScrollToItem(0)
-                                } else {
-                                    listState.animateScrollToItem(0)
-                                }
+                                // Both columns: the title belongs to the page, not to a lane.
+                                listState.animateScrollToItem(0)
+                                if (wideBaLayout) secondaryListState.animateScrollToItem(0)
                             }
                         },
                     )
@@ -392,7 +389,7 @@ fun BAPage(
                     innerPadding = innerPadding,
                     contentBottomPadding = runtime.contentBottomPadding,
                     listState = listState,
-                    gridState = gridState,
+                    secondaryListState = secondaryListState,
                     columnCount = baColumnCount,
                     nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                     state = pageContentState,

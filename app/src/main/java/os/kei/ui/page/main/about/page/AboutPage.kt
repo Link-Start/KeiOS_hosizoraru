@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,7 +47,8 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.AppPageStaggeredGrid
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
+import os.kei.ui.page.main.widget.chrome.appPageAlternatingLanes
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
@@ -104,11 +103,11 @@ fun AboutPage(
     val techListState = rememberLazyListState()
     val labListState = rememberLazyListState()
     val searchListState = rememberLazyListState()
-    val overviewGridState = rememberLazyStaggeredGridState()
-    val systemGridState = rememberLazyStaggeredGridState()
-    val techGridState = rememberLazyStaggeredGridState()
-    val labGridState = rememberLazyStaggeredGridState()
-    val searchGridState = rememberLazyStaggeredGridState()
+    val overviewSecondaryState = rememberLazyListState()
+    val systemSecondaryState = rememberLazyListState()
+    val techSecondaryState = rememberLazyListState()
+    val labSecondaryState = rememberLazyListState()
+    val searchSecondaryState = rememberLazyListState()
     // Two columns on a tablet or an unfolded fold, one everywhere else. Both scroll positions are kept, so
     // the shape a reader returns to still holds the place they left.
     val aboutColumnCount = appPageColumnCount()
@@ -130,19 +129,19 @@ fun AboutPage(
         if (scrollToTopSignal > 0) {
             val category = categories.getOrNull(pagerState.settledPage)
             if (category != null) {
+                when (category) {
+                    AboutCategory.Overview -> overviewListState.animateScrollToItem(0)
+                    AboutCategory.System -> systemListState.animateScrollToItem(0)
+                    AboutCategory.Tech -> techListState.animateScrollToItem(0)
+                    AboutCategory.Lab -> labListState.animateScrollToItem(0)
+                }
                 if (wideAboutLayout) {
+                    // Both columns: the signal belongs to the page, not to one of its lanes.
                     when (category) {
-                        AboutCategory.Overview -> overviewGridState.animateScrollToItem(0)
-                        AboutCategory.System -> systemGridState.animateScrollToItem(0)
-                        AboutCategory.Tech -> techGridState.animateScrollToItem(0)
-                        AboutCategory.Lab -> labGridState.animateScrollToItem(0)
-                    }
-                } else {
-                    when (category) {
-                        AboutCategory.Overview -> overviewListState.animateScrollToItem(0)
-                        AboutCategory.System -> systemListState.animateScrollToItem(0)
-                        AboutCategory.Tech -> techListState.animateScrollToItem(0)
-                        AboutCategory.Lab -> labListState.animateScrollToItem(0)
+                        AboutCategory.Overview -> overviewSecondaryState.animateScrollToItem(0)
+                        AboutCategory.System -> systemSecondaryState.animateScrollToItem(0)
+                        AboutCategory.Tech -> techSecondaryState.animateScrollToItem(0)
+                        AboutCategory.Lab -> labSecondaryState.animateScrollToItem(0)
                     }
                 }
             }
@@ -176,11 +175,6 @@ fun AboutPage(
             systemListState,
             techListState,
             labListState,
-            overviewGridState,
-            systemGridState,
-            techGridState,
-            labGridState,
-            wideAboutLayout,
         ) {
             {
                 val activeCategoryIndex =
@@ -189,21 +183,13 @@ fun AboutPage(
                     } else {
                         pagerState.settledPage
                     }.coerceIn(0, categories.lastIndex)
-                val category = categories[activeCategoryIndex]
-                if (wideAboutLayout) {
-                    when (category) {
-                        AboutCategory.Overview -> overviewGridState
-                        AboutCategory.System -> systemGridState
-                        AboutCategory.Tech -> techGridState
-                        AboutCategory.Lab -> labGridState
-                    }
-                } else {
-                    when (category) {
-                        AboutCategory.Overview -> overviewListState
-                        AboutCategory.System -> systemListState
-                        AboutCategory.Tech -> techListState
-                        AboutCategory.Lab -> labListState
-                    }
+                // The chrome follows the first column. Either column can move it through the shared
+                // nested scroll; reading one keeps the show-again check from flapping when they disagree.
+                when (categories[activeCategoryIndex]) {
+                    AboutCategory.Overview -> overviewListState
+                    AboutCategory.System -> systemListState
+                    AboutCategory.Tech -> techListState
+                    AboutCategory.Lab -> labListState
                 }
             }
         }
@@ -211,16 +197,10 @@ fun AboutPage(
         remember(
             searchActive,
             searchListState,
-            searchGridState,
-            wideAboutLayout,
             activePageListStateProvider,
         ) {
             {
-                when {
-                    searchActive && wideAboutLayout -> searchGridState
-                    searchActive -> searchListState
-                    else -> activePageListStateProvider()
-                }
+                if (searchActive) searchListState else activePageListStateProvider()
             }
         }
     val bottomChromeScrollState =
@@ -352,11 +332,7 @@ fun AboutPage(
         contentMaxWidth = appPageContentMaxWidthFor(aboutColumnCount),
         onTitleClick = {
             scope.launch {
-                when (val scrollState = activeChromeListStateProvider()) {
-                    is LazyListState -> scrollState.animateScrollToItem(0)
-                    is LazyStaggeredGridState -> scrollState.animateScrollToItem(0)
-                    else -> Unit
-                }
+                (activeChromeListStateProvider() as? LazyListState)?.animateScrollToItem(0)
             }
         },
         navigationIcon = {
@@ -412,20 +388,18 @@ fun AboutPage(
                     .layerBackdrop(bottomBarBackdrop)
             val searchBottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight
             if (matchingSearchTargets.isNotEmpty() && wideAboutLayout) {
-                AppPageStaggeredGrid(
+                val (left, right) =
+                    appPageAlternatingLanes(matchingSearchTargets.map { target -> target.card })
+                AppPageTwoColumnLists(
                     innerPadding = innerPadding,
-                    state = searchGridState,
-                    columnCount = aboutColumnCount,
+                    primaryState = searchListState,
+                    secondaryState = searchSecondaryState,
                     modifier = searchModifier,
                     bottomExtra = searchBottomExtra,
                     sectionSpacing = 14.dp,
-                ) {
-                    aboutCardCells(
-                        cards = matchingSearchTargets.map { target -> target.card },
-                        state = cardRenderState,
-                        actions = cardActions,
-                    )
-                }
+                    primary = { aboutCardLane(left, cardRenderState, cardActions) },
+                    secondary = { aboutCardLane(right, cardRenderState, cardActions) },
+                )
             } else {
                 AppPageLazyColumn(
                     innerPadding = innerPadding,
@@ -495,31 +469,30 @@ fun AboutPage(
                         .nestedScroll(pageNestedScrollConnection)
                 val pageBottomExtra = contentBottomPadding + AppChromeTokens.floatingBottomBarOuterHeight
                 if (wideAboutLayout) {
-                    AppPageStaggeredGrid(
+                    val (left, right) =
+                        appPageAlternatingLanes(
+                            aboutCategoryCardList(
+                                category = category,
+                                matchingCards = matchingSearchCards,
+                                state = cardRenderState,
+                            ),
+                        )
+                    AppPageTwoColumnLists(
                         innerPadding = innerPadding,
-                        state =
+                        primaryState = pageListState,
+                        secondaryState =
                             when (category) {
-                                AboutCategory.Overview -> overviewGridState
-                                AboutCategory.System -> systemGridState
-                                AboutCategory.Tech -> techGridState
-                                AboutCategory.Lab -> labGridState
+                                AboutCategory.Overview -> overviewSecondaryState
+                                AboutCategory.System -> systemSecondaryState
+                                AboutCategory.Tech -> techSecondaryState
+                                AboutCategory.Lab -> labSecondaryState
                             },
-                        columnCount = aboutColumnCount,
                         modifier = pageModifier,
                         bottomExtra = pageBottomExtra,
                         sectionSpacing = 14.dp,
-                    ) {
-                        aboutCardCells(
-                            cards =
-                                aboutCategoryCardList(
-                                    category = category,
-                                    matchingCards = matchingSearchCards,
-                                    state = cardRenderState,
-                                ),
-                            state = cardRenderState,
-                            actions = cardActions,
-                        )
-                    }
+                        primary = { aboutCardLane(left, cardRenderState, cardActions) },
+                        secondary = { aboutCardLane(right, cardRenderState, cardActions) },
+                    )
                 } else {
                     AppPageLazyColumn(
                         innerPadding = innerPadding,

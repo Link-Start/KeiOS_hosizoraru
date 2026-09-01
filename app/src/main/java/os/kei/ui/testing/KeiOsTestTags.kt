@@ -113,6 +113,14 @@ object KeiOsTestTags {
      * shipped profile, because nothing could reach them.
      */
     const val BaDockOpenGuideCatalog = "ba_dock_open_guide_catalog"
+
+    /**
+     * The dock's fourth action, which opens the daily-done template as a page sheet.
+     *
+     * The same sheet [BaDailyTemplateHeadpatSwitch] is tagged inside, reached without a tile: the tile
+     * long-press route needs a tile added first, and a teacher who never added one had no way in.
+     */
+    const val BaDockDailyDone = "ba_dock_daily_done"
     const val BaGuideCatalogPageRoot = "ba_guide_catalog_page_root"
 
     /** The catalog's first entry card, which is the only way into the student guide. */

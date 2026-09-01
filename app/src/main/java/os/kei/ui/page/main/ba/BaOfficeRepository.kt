@@ -7,6 +7,7 @@ import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaCraftState
+import os.kei.ui.page.main.ba.support.BaDailyDoneConfig
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 internal object BaOfficeRepository {
@@ -80,6 +81,17 @@ internal object BaOfficeRepository {
     suspend fun saveCraftCardExpandedAsync(expanded: Boolean) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveCraftCardExpanded(expanded)
+        }
+    }
+
+    suspend fun loadDailyDoneConfigAsync(): BaDailyDoneConfig =
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.loadDailyDoneConfig()
+        }
+
+    suspend fun saveDailyDoneConfigAsync(config: BaDailyDoneConfig) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveDailyDoneConfig(config)
         }
     }
 

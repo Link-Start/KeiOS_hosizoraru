@@ -5,6 +5,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
+import os.kei.ui.page.main.ba.support.BaDailyDoneConfig
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
@@ -74,6 +75,12 @@ internal open class BaOfficePageRepository(
 
     open suspend fun saveCraftCardExpanded(expanded: Boolean) {
         BaOfficeRepository.saveCraftCardExpandedAsync(expanded)
+    }
+
+    open suspend fun loadDailyDoneConfig(): BaDailyDoneConfig = BaOfficeRepository.loadDailyDoneConfigAsync()
+
+    open suspend fun saveDailyDoneConfig(config: BaDailyDoneConfig) {
+        BaOfficeRepository.saveDailyDoneConfigAsync(config)
     }
 
     suspend fun restoreServerSelection(currentServerIndex: Int): BaOfficeServerRestorePersistenceResult? =

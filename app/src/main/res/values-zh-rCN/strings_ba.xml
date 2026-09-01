@@ -908,7 +908,7 @@
     <string name="ba_daily_template_scope_all">所有启用的账号</string>
     <string name="ba_daily_template_scope_account_format">仅 %1$s</string>
     <string name="ba_daily_template_scope_unbound">磁贴未绑定账号</string>
-    <string name="ba_daily_template_scope_summary">这里的设定就是磁贴单击、桌面快捷方式与 MCP 共用的模板。</string>
+    <string name="ba_daily_template_scope_summary">这里的设定就是 BA 页面按钮、磁贴单击、桌面快捷方式与 MCP 共用的模板。</string>
     <string name="ba_daily_template_ap_title">AP 余量</string>
     <string name="ba_daily_template_ap_summary">执行后玩家 AP 保留的数值，填 0 就是花光。咖啡厅 AP 一定清零，所以没有对应选项。</string>
     <string name="ba_daily_template_ap_label">保留 AP</string>
@@ -934,4 +934,5 @@
     <string name="ba_daily_template_saved">模板已保存</string>
     <string name="ba_daily_template_edit">编辑模板</string>
     <string name="ba_daily_template_row_label">日常模板</string>
+    <string name="ba_daily_done_cd_open_sheet">完成日常</string>
 </resources>

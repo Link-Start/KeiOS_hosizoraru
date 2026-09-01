@@ -330,6 +330,29 @@ internal fun BaPageSheetHost(
         onFillCafeStoredAp = apMutationCallbacks.onFillCafeStoredAp,
         onDismissRequest = viewModel::hideCafeApToolsSheet,
     )
+    // The daily-done template, reached from the floating dock. The same editor the tiles open on a
+    // long-press, hosted in-page instead of in BaDailyDoneTemplateActivity's translucent window — which
+    // is also what lets it sample the page's own backdrop rather than falling back to an opaque fill.
+    BaDailyDoneTemplateSheet(
+        show = routeState.dailyDoneSheet.show,
+        scope = BaDailyDoneTemplateScope.AllAccounts,
+        config = routeState.dailyDoneSheet.config,
+        backdrop = backdrop,
+        applying = routeState.dailyDoneSheet.applying,
+        onSave = viewModel::saveDailyDoneTemplate,
+        onApply = { draft ->
+            viewModel.applyDailyDoneTemplate(
+                config = draft,
+                // Read at the tap, not inside the view model: the pending tick belongs to the office
+                // this page is showing, and only the page knows which account it is holding it for.
+                currentRuntimeUpdate =
+                    office
+                        .applyRuntimeTick()
+                        ?.withAccountId(accountUiState.activeAccountId),
+            )
+        },
+        onDismissRequest = viewModel::hideDailyDoneSheet,
+    )
     BaCafeCooldownEditSheet(
         show = routeState.cafeCooldownEditTarget != null,
         target = routeState.cafeCooldownEditTarget,

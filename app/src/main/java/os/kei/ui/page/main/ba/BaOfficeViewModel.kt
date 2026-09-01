@@ -15,12 +15,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.ext.showToast
 import os.kei.core.log.AppLogger
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
+import os.kei.ui.page.main.ba.support.BaDailyDoneConfig
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 internal class BaOfficeViewModel private constructor(
@@ -28,6 +31,12 @@ internal class BaOfficeViewModel private constructor(
     private val repository: BaOfficePageRepository,
     private val persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit,
     private val scheduleBaApThreshold: () -> Unit,
+    /**
+     * Runs the saved daily-done template and reports the outcome. Injected for the same reason the two
+     * above are: it writes straight to the settings store and toasts, neither of which a unit test can
+     * stand up.
+     */
+    private val applyDailyDone: suspend (BaAccountId?) -> Unit,
 ) : AndroidViewModel(application) {
     private val defaultSnapshot = BaPageSnapshot()
     private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
@@ -101,6 +110,9 @@ internal class BaOfficeViewModel private constructor(
         persistRuntimeUpdate = { update -> update.persistAsync() },
         scheduleBaApThreshold = {
             AppBackgroundScheduler.scheduleBaApThreshold(application)
+        },
+        applyDailyDone = { accountId ->
+            BaDailyDoneRunner.applyAndToast(context = application, accountId = accountId)
         },
     )
 
@@ -224,6 +236,126 @@ internal class BaOfficeViewModel private constructor(
     fun hideCafeApToolsSheet() {
         _chromeUiState.update { state ->
             state.copy(showCafeApToolsSheet = false)
+        }
+    }
+
+    /**
+     * Opens the daily-done template sheet with the template already read.
+     *
+     * Read here rather than by the sheet, and before [BaDailyDoneSheetUiState.show] flips. The record is
+     * global — the tiles, the launcher shortcuts and MCP apply the same one — so it has to be re-read on
+     * every opening, and reading it once the sheet is already up would show a frame of compiled-in
+     * defaults before snapping to the teacher's values.
+     */
+    fun showDailyDoneSheet() {
+        viewModelScope.launch {
+            try {
+                val config = repository.loadDailyDoneConfig()
+                _chromeUiState.update { state ->
+                    state
+                        .withoutFloatingPopups()
+                        .copy(
+                            dailyDoneSheet =
+                                BaDailyDoneSheetUiState(
+                                    show = true,
+                                    config = config,
+                                ),
+                        )
+                }
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(BaOfficeEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    /**
+     * Closes the sheet. Deliberately does not stop a run in flight — see [applyDailyDoneTemplate], which
+     * owns its own scope precisely so that dismissing the sheet cannot leave half the accounts applied.
+     */
+    fun hideDailyDoneSheet() {
+        _chromeUiState.update { state ->
+            state.copy(dailyDoneSheet = state.dailyDoneSheet.copy(show = false))
+        }
+    }
+
+    /** Records the template a later trigger will apply, without running it now. */
+    fun saveDailyDoneTemplate(config: BaDailyDoneConfig) {
+        viewModelScope.launch {
+            try {
+                repository.saveDailyDoneConfig(config)
+                closeDailyDoneSheet(config)
+                getApplication<Application>().showToast(R.string.ba_daily_template_saved)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                _events.emit(BaOfficeEvent.OperationFailed(error))
+            }
+        }
+    }
+
+    /**
+     * Saves the template and runs it across every enabled account.
+     *
+     * All accounts, like the tile the dock button stands in for and like the launcher shortcut. Not a
+     * silent choice: the sheet names its scope above the controls, which is the whole reason this entry
+     * point summons a sheet instead of applying on the tap.
+     *
+     * Three orderings here are load-bearing.
+     *
+     * [currentRuntimeUpdate] goes first. The page keeps AP and the cafe pool in memory between runtime
+     * ticks, so without flushing them the template plans against a staler pool than the one on screen —
+     * and can report "already done" for a page the reload then visibly changes underneath the toast.
+     *
+     * The template is saved before it is applied, so what just ran is also what a later tile tap will
+     * run; the same ordering [BaDailyDoneTemplateActivity] keeps for the same reason.
+     *
+     * The reload last is not a nicety. The run writes straight to the store, so the office still holds
+     * the pre-run values: without re-reading them the cards keep showing the old pool *and* the next
+     * runtime tick persists it back over the template.
+     *
+     * On [viewModelScope] rather than the sheet's own scope, because leaving the page mid-run would
+     * otherwise cancel the pass between two accounts.
+     */
+    fun applyDailyDoneTemplate(
+        config: BaDailyDoneConfig,
+        currentRuntimeUpdate: BaRuntimePersistenceUpdate?,
+    ) {
+        if (_chromeUiState.value.dailyDoneSheet.applying) return
+        _chromeUiState.update { state ->
+            state.copy(dailyDoneSheet = state.dailyDoneSheet.copy(applying = true))
+        }
+        viewModelScope.launch {
+            try {
+                currentRuntimeUpdate?.let { update -> persistRuntimeUpdate(update) }
+                repository.saveDailyDoneConfig(config)
+                // A null target is the store's "every enabled account" filter.
+                applyDailyDone(null)
+                reloadRuntimeSettings()
+                closeDailyDoneSheet(config)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                // Left open on failure. The error arrives as a toast, and closing the sheet under it
+                // would take the teacher's edits with it; the stored template is untouched here, so the
+                // draft in the sheet survives and the same tap can be repeated.
+                _events.emit(BaOfficeEvent.OperationFailed(error))
+            } finally {
+                _chromeUiState.update { state ->
+                    state.copy(dailyDoneSheet = state.dailyDoneSheet.copy(applying = false))
+                }
+            }
+        }
+    }
+
+    /** Closes the sheet on the template that was just written, so a reopen starts from it. */
+    private fun closeDailyDoneSheet(config: BaDailyDoneConfig) {
+        _chromeUiState.update { state ->
+            state.copy(
+                dailyDoneSheet =
+                    state.dailyDoneSheet.copy(
+                        show = false,
+                        config = config,
+                    ),
+            )
         }
     }
 
@@ -406,15 +538,20 @@ internal class BaOfficeViewModel private constructor(
 
     fun refreshRuntimeSettingsFromStore() {
         viewModelScope.launch {
-            val snapshot = repository.loadInitialSnapshot()
-            val accountState = repository.loadAccountState()
-            applyOfficeSnapshot(
-                snapshot = snapshot,
-                accountState = accountState,
-                persistRuntimeTick = true,
-            )
-            scheduleBaApThreshold()
+            reloadRuntimeSettings()
         }
+    }
+
+    /** The body of [refreshRuntimeSettingsFromStore], for callers that already own a coroutine. */
+    private suspend fun reloadRuntimeSettings() {
+        val snapshot = repository.loadInitialSnapshot()
+        val accountState = repository.loadAccountState()
+        applyOfficeSnapshot(
+            snapshot = snapshot,
+            accountState = accountState,
+            persistRuntimeTick = true,
+        )
+        scheduleBaApThreshold()
     }
 
     fun selectActiveAccount(
@@ -701,12 +838,14 @@ internal class BaOfficeViewModel private constructor(
             repository: BaOfficePageRepository,
             persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit,
             scheduleBaApThreshold: () -> Unit,
+            applyDailyDone: suspend (BaAccountId?) -> Unit = {},
         ): BaOfficeViewModel =
             BaOfficeViewModel(
                 application = application,
                 repository = repository,
                 persistRuntimeUpdate = persistRuntimeUpdate,
                 scheduleBaApThreshold = scheduleBaApThreshold,
+                applyDailyDone = applyDailyDone,
             )
     }
 }

@@ -906,7 +906,7 @@
     <string name="ba_daily_template_scope_all">有効なすべてのアカウント</string>
     <string name="ba_daily_template_scope_account_format">%1$s のみ</string>
     <string name="ba_daily_template_scope_unbound">このタイルにアカウントが未割り当てです</string>
-    <string name="ba_daily_template_scope_summary">ここの設定は、タイルのタップ・ホームのショートカット・MCP が共通で使うテンプレートです。</string>
+    <string name="ba_daily_template_scope_summary">ここの設定は、BA ページのボタン・タイルのタップ・ホームのショートカット・MCP が共通で使うテンプレートです。</string>
     <string name="ba_daily_template_ap_title">AP の残量</string>
     <string name="ba_daily_template_ap_summary">実行後に残す AP。0 なら使い切りです。カフェ AP は必ず 0 になるため設定はありません。</string>
     <string name="ba_daily_template_ap_label">残す AP</string>
@@ -932,4 +932,5 @@
     <string name="ba_daily_template_saved">テンプレートを保存しました</string>
     <string name="ba_daily_template_edit">テンプレートを編集</string>
     <string name="ba_daily_template_row_label">デイリーテンプレート</string>
+    <string name="ba_daily_done_cd_open_sheet">デイリーを完了</string>
 </resources>

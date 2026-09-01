@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import os.kei.ui.page.main.ba.support.BaCraftFunction
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import java.io.File
 import kotlin.test.assertEquals
@@ -114,7 +115,11 @@ class BaPageBackdropTest {
             BaOfficeChromeUiState(showNotificationSettingsSheet = true),
             BaOfficeChromeUiState(showApLimitToolsSheet = true),
             BaOfficeChromeUiState(showCafeApToolsSheet = true),
+            BaOfficeChromeUiState(dailyDoneSheet = BaDailyDoneSheetUiState(show = true)),
             BaOfficeChromeUiState(cafeCooldownEditTarget = BaCafeCooldownEditTarget.Headpat),
+            BaOfficeChromeUiState(
+                craftSlotEditTarget = BaCraftSlotEditTarget(function = BaCraftFunction.Generate, index = 0),
+            ),
         ).forEach { state ->
             assertTrue(state.hasVisiblePageSheet)
         }

@@ -908,7 +908,7 @@
     <string name="ba_daily_template_scope_all">Every enabled account</string>
     <string name="ba_daily_template_scope_account_format">%1$s only</string>
     <string name="ba_daily_template_scope_unbound">This tile has no account bound</string>
-    <string name="ba_daily_template_scope_summary">These settings are the one template a tile tap, a launcher shortcut and MCP all apply.</string>
+    <string name="ba_daily_template_scope_summary">These settings are the one template the BA page button, a tile tap, a launcher shortcut and MCP all apply.</string>
     <string name="ba_daily_template_ap_title">AP left over</string>
     <string name="ba_daily_template_ap_summary">The player AP the run leaves behind; 0 means spent to empty. Cafe AP always lands on zero, so it has no setting here.</string>
     <string name="ba_daily_template_ap_label">Keep AP</string>
@@ -934,4 +934,5 @@
     <string name="ba_daily_template_saved">Template saved</string>
     <string name="ba_daily_template_edit">Edit template</string>
     <string name="ba_daily_template_row_label">Daily template</string>
+    <string name="ba_daily_done_cd_open_sheet">Complete dailies</string>
 </resources>

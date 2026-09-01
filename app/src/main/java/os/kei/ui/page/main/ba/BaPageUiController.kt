@@ -29,6 +29,7 @@ internal data class BaPageRouteState(
     val showNotificationSettingsSheet: Boolean,
     val showApLimitToolsSheet: Boolean,
     val showCafeApToolsSheet: Boolean,
+    val dailyDoneSheet: BaDailyDoneSheetUiState,
     val cafeCooldownEditTarget: BaCafeCooldownEditTarget?,
     val craftSlotEditTarget: BaCraftSlotEditTarget?,
     val popupState: BaPagePopupState,
@@ -72,6 +73,7 @@ internal fun buildBaPageRouteState(
         showNotificationSettingsSheet = chromeUiState.showNotificationSettingsSheet,
         showApLimitToolsSheet = chromeUiState.showApLimitToolsSheet,
         showCafeApToolsSheet = chromeUiState.showCafeApToolsSheet,
+        dailyDoneSheet = chromeUiState.dailyDoneSheet,
         cafeCooldownEditTarget = chromeUiState.cafeCooldownEditTarget,
         craftSlotEditTarget = chromeUiState.craftSlotEditTarget,
         popupState =

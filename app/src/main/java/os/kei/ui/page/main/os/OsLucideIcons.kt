@@ -153,6 +153,10 @@ internal fun appLucideMailIcon(): ImageVector = osLucideVector(LucideR.drawable.
 @Composable
 internal fun appLucideListIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_list)
 
+/** A ticked checklist: the daily-done run, which is a list of chores marked off in one tap. */
+@Composable
+internal fun appLucideListChecksIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_list_checks)
+
 @Composable
 internal fun appLucideChevronUpIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_chevron_up)
 

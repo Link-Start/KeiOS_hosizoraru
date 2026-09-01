@@ -400,6 +400,7 @@ fun BAPage(
                     onOpenPool(serverIndex)
                 },
                 onOpenGuideCatalog = onOpenGuideCatalog,
+                onOpenDailyDone = officeViewModel::showDailyDoneSheet,
             )
         }
 

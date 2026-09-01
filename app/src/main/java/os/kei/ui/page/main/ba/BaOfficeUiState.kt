@@ -5,6 +5,7 @@ import kotlinx.coroutines.CancellationException
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
+import os.kei.ui.page.main.ba.support.BaDailyDoneConfig
 import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
@@ -34,6 +35,23 @@ internal data class BaOfficeServerUiState(
     val serverIndex: Int = BaPageSnapshot().serverIndex,
 )
 
+/**
+ * The daily-done template sheet, opened from the floating dock.
+ *
+ * Carries the template itself rather than letting the sheet read it: the template is global — the tiles,
+ * the launcher shortcuts and MCP all apply the same record — so it has to be re-read on every opening,
+ * and loading it before [show] flips is what keeps the sheet from drawing one frame of defaults and then
+ * snapping to the stored values.
+ *
+ * [applying] is state and not a local flag because the run outlives the sheet: it is launched on the
+ * view-model's scope so that leaving the page mid-run cannot stop it half way through the accounts.
+ */
+internal data class BaDailyDoneSheetUiState(
+    val show: Boolean = false,
+    val config: BaDailyDoneConfig = BaDailyDoneConfig(),
+    val applying: Boolean = false,
+)
+
 internal data class BaOfficeChromeUiState(
     val showSettingsSheet: Boolean = false,
     val showAccountManagementSheet: Boolean = false,
@@ -41,6 +59,7 @@ internal data class BaOfficeChromeUiState(
     val showNotificationSettingsSheet: Boolean = false,
     val showApLimitToolsSheet: Boolean = false,
     val showCafeApToolsSheet: Boolean = false,
+    val dailyDoneSheet: BaDailyDoneSheetUiState = BaDailyDoneSheetUiState(),
     val cafeCooldownEditTarget: BaCafeCooldownEditTarget? = null,
     val craftSlotEditTarget: BaCraftSlotEditTarget? = null,
     val showCafeLevelPopup: Boolean = false,
@@ -58,6 +77,7 @@ internal val BaOfficeChromeUiState.hasVisiblePageSheet: Boolean
             showNotificationSettingsSheet ||
             showApLimitToolsSheet ||
             showCafeApToolsSheet ||
+            dailyDoneSheet.show ||
             cafeCooldownEditTarget != null ||
             craftSlotEditTarget != null
 

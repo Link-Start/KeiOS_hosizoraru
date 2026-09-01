@@ -19,6 +19,7 @@ import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.os.appLucideLibraryIcon
+import os.kei.ui.page.main.os.appLucideListChecksIcon
 import os.kei.ui.page.main.os.appLucideMailIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
@@ -36,6 +37,7 @@ internal fun BoxScope.BaPageFloatingDock(
     onOpenCalendar: () -> Unit,
     onOpenPool: () -> Unit,
     onOpenGuideCatalog: () -> Unit,
+    onOpenDailyDone: () -> Unit,
 ) {
     val dockAlignment =
         if (runtime.floatingDockSide == AppFloatingDockSide.Start) {
@@ -54,18 +56,27 @@ internal fun BoxScope.BaPageFloatingDock(
     val calendarIcon = appLucideCalendarIcon()
     val poolIcon = appLucideMailIcon()
     val catalogIcon = appLucideLibraryIcon()
+    // A checklist rather than the quick-settings tile's own mark, which was tried first and rejected on
+    // the device. That mark is `ic_ba_schale` plus a tick — and the same emblem is the BA tab icon in the
+    // bottom bar directly under this dock, where the tick is far too small to separate them: the button
+    // read as "BA", not as "dailies". The tick carries the tile fine in the shade, with no emblem beside
+    // it; it does not carry it here.
+    val dailyDoneIcon = appLucideListChecksIcon()
     val moreIcon = appLucideMoreIcon()
     val calendarDescription = stringResource(R.string.ba_calendar_cd_open_activity)
     val poolDescription = stringResource(R.string.ba_pool_cd_open_activity)
     val catalogDescription = stringResource(R.string.ba_overview_cd_open_catalog)
+    val dailyDoneDescription = stringResource(R.string.ba_daily_done_cd_open_sheet)
     val expandDescription = stringResource(R.string.common_expand)
     val primaryIconTint = MiuixTheme.colorScheme.primary
     val currentOnOpenCalendar = rememberUpdatedState(onOpenCalendar)
     val currentOnOpenPool = rememberUpdatedState(onOpenPool)
     val currentOnOpenGuideCatalog = rememberUpdatedState(onOpenGuideCatalog)
+    val currentOnOpenDailyDone = rememberUpdatedState(onOpenDailyDone)
     val openCalendarClick = remember { { currentOnOpenCalendar.value() } }
     val openPoolClick = remember { { currentOnOpenPool.value() } }
     val openGuideCatalogClick = remember { { currentOnOpenGuideCatalog.value() } }
+    val openDailyDoneClick = remember { { currentOnOpenDailyDone.value() } }
     val calendarBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.calendarCount)
     val poolBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.poolCount)
     // The collapsed badge's *label* is now derived by the dock from the actions it hides, which
@@ -100,6 +111,9 @@ internal fun BoxScope.BaPageFloatingDock(
             catalogIcon,
             catalogDescription,
             openGuideCatalogClick,
+            dailyDoneIcon,
+            dailyDoneDescription,
+            openDailyDoneClick,
             primaryIconTint,
         ) {
             listOf(
@@ -127,6 +141,15 @@ internal fun BoxScope.BaPageFloatingDock(
                     iconTint = primaryIconTint,
                     testTag = KeiOsTestTags.BaDockOpenGuideCatalog,
                     onClick = openGuideCatalogClick,
+                ),
+                // Last, so it sits where the collapsed dock's single button was: the three above are
+                // routes, this one is the only action, and it is the one worth reaching by thumb.
+                AppFloatingDockAction(
+                    icon = dailyDoneIcon,
+                    contentDescription = dailyDoneDescription,
+                    iconTint = primaryIconTint,
+                    testTag = KeiOsTestTags.BaDockDailyDone,
+                    onClick = openDailyDoneClick,
                 ),
             )
         }

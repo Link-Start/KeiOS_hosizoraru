@@ -126,4 +126,38 @@ class AppNavigationPlacementTest {
         assertTrue(appNavigationVisible(AppNavigationPlacement.Top, scrolledAway = true))
         assertTrue(appNavigationVisible(AppNavigationPlacement.Sidebar, scrolledAway = true))
     }
+
+    /**
+     * A pushed route owns its top row, so both ends of it come in with the content column.
+     *
+     * The numbers are the Pad AVD's real gutters. 280dp landscape is what the back button used to be adrift
+     * by: measured on the device, the content column started at 294dp while the button started at 14dp.
+     */
+    @Test
+    fun `a page's top row chrome follows the content column`() {
+        listOf(AppNavigationPlacement.Bottom, AppNavigationPlacement.Sidebar).forEach { placement ->
+            assertEquals(280.dp, appTopBarChromeGutterFor(placement, 280.dp), "placement=$placement")
+            assertEquals(40.dp, appTopBarChromeGutterFor(placement, 40.dp), "placement=$placement")
+        }
+    }
+
+    /**
+     * At the top tab bar the row belongs to the app, not the page, so it spans the window at both ends.
+     *
+     * Keeping the gutter there pulled the trailing actions into the centred tab bar on the Pad at 1280dp,
+     * and would now do the same to the leading chrome.
+     */
+    @Test
+    fun `the app's own top row spans the window`() {
+        assertEquals(0.dp, appTopBarChromeGutterFor(AppNavigationPlacement.Top, 280.dp))
+        assertEquals(0.dp, appTopBarChromeGutterFor(AppNavigationPlacement.Top, 40.dp))
+    }
+
+    /** A phone has no gutter to take, so no placement moves by a pixel. */
+    @Test
+    fun `a phone top row is unmoved at every placement`() {
+        AppNavigationPlacement.entries.forEach { placement ->
+            assertEquals(0.dp, appTopBarChromeGutterFor(placement, 0.dp), "placement=$placement")
+        }
+    }
 }

@@ -78,7 +78,9 @@ fun AppTopBarSection(
                     Modifier
                         .align(Alignment.TopStart)
                         .padding(
-                            start = appTopBarEdgePaddingStart(),
+                            // The same term the actions take at the other end. A back button pinned to the
+                            // true window edge returns you to a page whose column starts a gutter away.
+                            start = appTopBarEdgePaddingStart() + appTopBarChromeGutter(),
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
             ) {
@@ -119,7 +121,7 @@ fun AppTopBarSection(
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(
-                            end = appTopBarEdgePadding() + appTopBarActionGutter(),
+                            end = appTopBarEdgePadding() + appTopBarChromeGutter(),
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
                 content = actions,

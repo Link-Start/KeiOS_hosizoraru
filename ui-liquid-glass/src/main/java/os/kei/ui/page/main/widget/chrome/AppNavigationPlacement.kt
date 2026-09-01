@@ -121,20 +121,42 @@ fun appTopBarCentreIsNavigation(): Boolean =
     LocalAppNavigationPlacement.current == AppNavigationPlacement.Top
 
 /**
- * Trailing inset for the actions in the top row.
+ * Whether the top row's own chrome follows the content column in, given [contentGutter].
  *
- * Zero once the tab bar is up there. The content gutter exists to keep a page's trailing controls attached to
- * its content column, which is right while the top row belongs to the page — but at [AppNavigationPlacement.Top]
- * the row belongs to the *app*: title at the leading edge, tab bar centred, actions at the trailing edge, all
- * spanning the window. Keeping the gutter there pulls the actions inward until they collide with the centred
- * tab bar, which is exactly what it did on the Pad at 1280dp.
+ * Zero once the tab bar is up there. The content gutter exists to keep a page's controls attached to its
+ * content column, which is right while the top row belongs to the page — but at [AppNavigationPlacement.Top]
+ * the row belongs to the *app*: sidebar toggle and title at the leading edge, tab bar centred, actions at the
+ * trailing edge, all spanning the window. Keeping the gutter there pulls the chrome inward until it collides
+ * with the centred tab bar, which is exactly what it did on the Pad at 1280dp.
  *
- * Everywhere else this is just [appPageSideGutter], so a pushed route — which has no tab bar over it — keeps
- * its actions on its own content column.
+ * Everywhere else this is just the gutter, so a pushed route — which has no tab bar over it — keeps its
+ * controls on its own content column.
+ *
+ * Pure, so the rule can be pinned by a test rather than read off a screenshot.
+ */
+fun appTopBarChromeGutterFor(
+    placement: AppNavigationPlacement,
+    contentGutter: Dp,
+): Dp = if (placement == AppNavigationPlacement.Top) 0.dp else contentGutter
+
+/**
+ * Inset for the top row's chrome at the current placement — **both** ends of it.
+ *
+ * One helper rather than one per side, because the two ends disagreeing is the defect this closes. The
+ * trailing actions took the gutter from the first Pad round; the navigation icon kept the bare window margin,
+ * so on a pushed route in landscape the back button sat **242dp** outside the column its page occupied while
+ * the action opposite it was flush with that column's trailing edge. Measured on the Pad AVD: content column
+ * 294–986dp, page-jump field ending at 976dp, back button starting at 14dp. One row, two rules.
+ *
+ * The distance was never arbitrary — it *is* the gutter, so it is 280dp in landscape and 40dp in portrait,
+ * which is why the same page looked settled in one orientation and split in the other. Zero on every phone.
  */
 @Composable
-fun appTopBarActionGutter(): Dp =
-    if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Top) 0.dp else appPageSideGutter()
+fun appTopBarChromeGutter(): Dp =
+    appTopBarChromeGutterFor(
+        placement = LocalAppNavigationPlacement.current,
+        contentGutter = appPageSideGutter(),
+    )
 
 /**
  * Edge margin for the top row's own chrome — the title card and the trailing toolbar.

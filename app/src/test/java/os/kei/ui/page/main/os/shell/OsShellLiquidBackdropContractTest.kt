@@ -46,7 +46,12 @@ class OsShellLiquidBackdropContractTest {
         assertTrue("AppTextInputContent(" in shellInputSource)
         assertFalse("BasicTextField(" in shellInputSource)
         assertTrue("ShellLiquidPanelSurface(" in shellInputSource)
-        assertTrue("fieldModifier = Modifier.heightIn(min = minHeight - 24.dp)" in shellInputSource)
+        // The bounded field is still what the stacked shape gets, which is the half of this contract
+        // that matters: a lazy list item has no height to fill, so a field that tried to fill one would
+        // collapse to nothing. `fillHeight` is the two-pane opt-in, and only a bounded pane passes it.
+        assertTrue("Modifier.heightIn(min = minHeight - 24.dp)" in shellInputSource)
+        assertTrue("if (fillHeight) {" in shellInputSource)
+        assertTrue("fillHeight: Boolean = false," in shellInputSource)
         assertTrue("singleLine = false" in shellInputSource)
         assertTrue("keyboardOptions = KeyboardOptions.Default" in shellInputSource)
         assertTrue("focusRequester = focusRequester" in shellInputSource)

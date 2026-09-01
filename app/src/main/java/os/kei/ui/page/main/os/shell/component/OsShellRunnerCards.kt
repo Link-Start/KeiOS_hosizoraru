@@ -5,6 +5,7 @@ package os.kei.ui.page.main.os.shell.component
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -43,6 +44,14 @@ internal fun OsShellRunnerInputCard(
     onRunCommand: () -> Unit,
     onStopCommand: () -> Unit,
     onOpenSaveCommandSheet: () -> Unit,
+    /**
+     * Stretch the panel to whatever height the card is given, instead of sizing it to its own bounds.
+     *
+     * The page hands this `true` only in the two-pane shape, where the card fills a column and the panel is
+     * the only thing in it that can absorb the slack. Stacked on a phone the card has no height to fill --
+     * its parent is a lazy list item -- so the bounded default is the only thing that works there.
+     */
+    fillAvailableHeight: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val isDark = isAppInDarkTheme()
@@ -105,6 +114,7 @@ internal fun OsShellRunnerInputCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .then(if (fillAvailableHeight) Modifier.weight(1f) else Modifier)
                     .padding(horizontal = 14.dp)
                     .padding(bottom = 14.dp),
         ) {
@@ -114,7 +124,11 @@ internal fun OsShellRunnerInputCard(
                 label = inputHint,
                 minHeight = 136.dp,
                 focusRequestToken = focusRequestToken,
-                modifier = Modifier.fillMaxWidth(),
+                fillHeight = fillAvailableHeight,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .then(if (fillAvailableHeight) Modifier.fillMaxHeight() else Modifier),
             )
         }
     }
@@ -133,6 +147,14 @@ internal fun OsShellRunnerOutputCard(
     onFormatOutput: () -> Unit,
     onCopyOutput: () -> Unit,
     onClearOutput: () -> Unit,
+    /**
+     * Stretch the panel to whatever height the card is given, instead of sizing it to its own bounds.
+     *
+     * The page hands this `true` only in the two-pane shape, where the card fills a column and the panel is
+     * the only thing in it that can absorb the slack. Stacked on a phone the card has no height to fill --
+     * its parent is a lazy list item -- so the bounded default is the only thing that works there.
+     */
+    fillAvailableHeight: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     AppSurfaceCard(
@@ -175,9 +197,16 @@ internal fun OsShellRunnerOutputCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .animateContentSize()
-                    .heightIn(min = 160.dp, max = 320.dp)
-                    .padding(horizontal = 14.dp)
+                    .then(
+                        if (fillAvailableHeight) {
+                            // No animateContentSize: the height is the pane's, not the output's, so there
+                            // is nothing to animate and the growing-card animation would only fight the
+                            // window whenever the keyboard opens.
+                            Modifier.weight(1f)
+                        } else {
+                            Modifier.animateContentSize().heightIn(min = 160.dp, max = 320.dp)
+                        },
+                    ).padding(horizontal = 14.dp)
                     .padding(bottom = 14.dp),
         )
     }

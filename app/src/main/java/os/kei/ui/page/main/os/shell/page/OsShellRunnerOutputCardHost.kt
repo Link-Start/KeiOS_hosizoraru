@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerOutputCard
@@ -24,6 +25,8 @@ internal fun OsShellRunnerOutputCardHost(
     onFormatOutput: () -> Unit,
     onCopyOutput: () -> Unit,
     onClearOutput: () -> Unit,
+    fillAvailableHeight: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val rawOutputState by shellRunnerViewModel.outputState.collectAsStateWithLifecycle()
     val outputSnapshot = remember(rawOutputState) { rawOutputState.toOutputSnapshot() }
@@ -37,6 +40,8 @@ internal fun OsShellRunnerOutputCardHost(
     )
 
     OsShellRunnerOutputCard(
+        modifier = modifier,
+        fillAvailableHeight = fillAvailableHeight,
         outputTitle = textBundle.outputTitle,
         outputHint = textBundle.outputHint,
         outputSnapshot = outputSnapshot,

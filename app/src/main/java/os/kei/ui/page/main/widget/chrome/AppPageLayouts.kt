@@ -365,6 +365,53 @@ fun AppPageTwoColumnLists(
 }
 
 /**
+ * Two content panes side by side, each filling the page's height.
+ *
+ * [AppPageTwoColumnLists] is for a page whose columns are *lists* -- an unknown number of cards, packed by a
+ * lane rule, scrolled independently. This is for the other shape: a page that is exactly two things, both of
+ * which want to be as tall as the window rather than as tall as their content. Shell is that page -- a
+ * command editor and its output -- and stacking them left a card of each in the middle of the panel with the
+ * rest of it empty.
+ *
+ * Neither pane scrolls the page; each scrolls inside itself, which is why nothing here takes a
+ * [LazyListState] and why the caller should not hand this a nested-scroll connection. Collapsing the top bar
+ * would change [innerPadding] under panes that are measured from it, so the bar stays put and the split
+ * holds still.
+ *
+ * Same gutter and same content cap as the rest of the page family, so a page can switch between this and a
+ * single column without its chrome moving.
+ */
+@Composable
+fun AppPageTwoColumnPanes(
+    innerPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
+    bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
+    maxContentWidth: Dp = LocalAppPageContentMaxWidth.current,
+    primary: @Composable () -> Unit,
+    secondary: @Composable () -> Unit,
+) {
+    val gutter = appPageSideGutter(maxContentWidth)
+    Row(
+        modifier =
+            modifier
+                .padding(
+                    start = AppChromeTokens.pageHorizontalPadding + gutter,
+                    end = AppChromeTokens.pageHorizontalPadding + gutter,
+                ).padding(
+                    top = innerPadding.calculateTopPadding() + topExtra,
+                    bottom = innerPadding.calculateBottomPadding() + bottomExtra,
+                ),
+        horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap),
+    ) {
+        // The weight lives here rather than in the slots, so a caller cannot give one pane more than the
+        // other by accident: two panes, one split, and each fills what it is given.
+        Box(modifier = Modifier.weight(1f).fillMaxHeight()) { primary() }
+        Box(modifier = Modifier.weight(1f).fillMaxHeight()) { secondary() }
+    }
+}
+
+/**
  * Splits a page's cards into two lanes by alternating them.
  *
  * For a page whose cards are peers — Settings, About, MCP — this is the assignment that keeps reading order

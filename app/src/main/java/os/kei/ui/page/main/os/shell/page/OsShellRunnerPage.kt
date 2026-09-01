@@ -180,8 +180,10 @@ fun OsShellRunnerPage(
         commandInput = commandInput,
         runningCommand = commandExecutionState.runningCommand,
         startupFocusRequestToken = pageState.startupFocusRequestToken,
-        outputContent = {
+        outputContent = { outputModifier, fillAvailableHeight ->
             OsShellRunnerOutputCardHost(
+                modifier = outputModifier,
+                fillAvailableHeight = fillAvailableHeight,
                 shellRunnerViewModel = shellRunnerViewModel,
                 textBundle = textBundle,
                 outputScrollState = outputScrollState,

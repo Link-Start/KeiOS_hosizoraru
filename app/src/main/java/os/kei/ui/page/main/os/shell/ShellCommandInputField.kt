@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.os.shell
 
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.BasicText
@@ -29,6 +30,14 @@ internal fun ShellCommandInputField(
     label: String,
     minHeight: Dp = 136.dp,
     focusRequestToken: Int = 0,
+    /**
+     * Take the whole pane rather than [minHeight].
+     *
+     * Only meaningful inside a bounded parent. The editor is then as tall as the split, so a long command
+     * scrolls inside the field instead of growing the card, and the whole pane is a tap target for the
+     * caret rather than the first four lines of it.
+     */
+    fillHeight: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -72,8 +81,16 @@ internal fun ShellCommandInputField(
             onValueChange = onValueChange,
             label = label,
             style = inputContentStyle,
-            modifier = Modifier.fillMaxWidth(),
-            fieldModifier = Modifier.heightIn(min = minHeight - 24.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .then(if (fillHeight) Modifier.fillMaxHeight() else Modifier),
+            fieldModifier =
+                if (fillHeight) {
+                    Modifier.fillMaxHeight()
+                } else {
+                    Modifier.heightIn(min = minHeight - 24.dp)
+                },
             enabled = true,
             readOnly = false,
             singleLine = false,

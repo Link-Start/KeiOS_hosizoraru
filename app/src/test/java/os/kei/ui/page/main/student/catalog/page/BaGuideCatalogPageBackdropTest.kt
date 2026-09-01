@@ -122,29 +122,26 @@ class BaGuideCatalogPageBackdropTest {
 
         assertSourceContains(
             source = catalogSource,
-            "state = tabListState.listState",
+            "laneStates = laneStates",
             ".nestedScroll(nestedScrollConnection)",
             "key = \"ba-guide-catalog-error-\${tab.name}\"",
             "key = \"ba-guide-catalog-empty-\${tab.name}\"",
         )
         assertSourceContains(
             source = memorySource,
-            "state = listState",
+            "laneStates = laneStates",
             ".nestedScroll(nestedScrollConnection)",
             "key = \"memory-lobby-error\"",
             "key = \"memory-lobby-empty\"",
-            // Items are rows now, so the key is the identity of whichever entry opens the row rather than
-            // of the lone entry in it. The property being pinned is the same one: keyed by content, never
-            // by index, so a filter change re-keys only the rows whose leading entry actually moved.
-            "key = { row -> \"memory-lobby-\${row.entries.first().contentId}\" }",
+            "key = { entry -> \"memory-lobby-\${entry.contentId}\" }",
         )
         assertSourceContains(
             source = studentBgmSource,
-            "state = listState",
+            "laneStates = laneStates",
             "userScrollEnabled = !sliderInteractionActive",
             ".nestedScroll(nestedScrollConnection)",
             "key = \"student-bgm-empty\"",
-            "key = { it.entries.first().entry.contentId }",
+            "key = { it.entry.contentId }",
         )
         STATUS_LEAF_SOURCES.map(::sourceFile).forEach { source ->
             assertSourceContains(
@@ -154,15 +151,18 @@ class BaGuideCatalogPageBackdropTest {
                 // deliberately *different* helpers: only the leading edge can have the sidebar rail on it.
                 // The token is still correct inside a card, where there is no page edge to centre against.
                 // Both are identical to the token on every phone, so this pins a contract rather than a look.
-                "start = appPageEdgePaddingStart()",
-                "end = appPageEdgePaddingEnd()",
-                "verticalArrangement = Arrangement.spacedBy(entryListGap)",
+                "startPadding = appPageEdgePaddingStart()",
+                "endPadding = appPageEdgePaddingEnd()",
+                // The gap is the shared container's now, and it is the same token in both axes: the
+                // lanes' inside edge should read as the same rhythm as the space between rows.
+                "verticalGap = entryListGap",
+                "horizontalGap = entryListGap",
             )
             // All three leaves stack, so all three shift their list up inside `AppEdgeStackKeepAlive` and
             // must add that headroom back to their own content inset. Passing the page inset straight
             // through — which is what this used to assert — would now start the first card off screen.
             assertTrue(
-                "top = appEdgeStackKeepAliveTopPadding(" in source,
+                "topPadding = appEdgeStackKeepAliveTopPadding(" in source,
                 "A stacking leaf must absorb the keep-alive headroom into its content inset",
             )
         }

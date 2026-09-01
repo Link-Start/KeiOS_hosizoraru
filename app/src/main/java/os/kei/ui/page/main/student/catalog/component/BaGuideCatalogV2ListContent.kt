@@ -39,6 +39,7 @@ import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabConten
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.student.catalog.state.visibleCatalogEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import androidx.compose.foundation.lazy.LazyListScope
 import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
@@ -114,40 +115,51 @@ internal fun BaGuideCatalogV2ListContent(
             filteredEntriesEmpty = tabListState.filteredEntries.isEmpty(),
         )
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
+    // Two lanes on a tablet or an unfolded fold, scrolling independently. Entries alternate between them,
+    // so each lane is still the list in order -- see `baGuideCatalogEntryLanes`. A loading or empty state
+    // has no entries to split, and a lone status card off to the left of an empty second lane reads as a
+    // layout bug, so those states stay on one lane.
+    val pageColumnCount = appPageColumnCount()
+    val columnCount = if (uiState.showLoading || uiState.showEmpty) 1 else pageColumnCount
+    val laneStates = tabListState.laneStates(columnCount)
+    val laneEntries =
+        remember(tabListState.displayedEntries, columnCount) {
+            baGuideCatalogEntryLanes(entries = tabListState.displayedEntries, columnCount = columnCount)
+        }
     val requestVisibleImages by rememberUpdatedState(onRequestVisibleImages)
     val consumedScrollToTopSignal = remember(tab) { mutableIntStateOf(0) }
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > consumedScrollToTopSignal.intValue && isPageActive) {
             consumedScrollToTopSignal.intValue = scrollToTopSignal
-            tabListState.listState.animateScrollToItem(0)
+            laneStates.forEach { state -> state.animateScrollToItem(0) }
         } else {
             consumedScrollToTopSignal.intValue = scrollToTopSignal
         }
     }
-    LaunchedEffect(tabListState.listState, isPageActive, snapshotFlowManager) {
+    LaunchedEffect(laneStates, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                tabListState.listState.canScrollBackward to tabListState.listState.canScrollForward
+                // Either lane, because the chrome expands for content that cannot scroll at all, and a
+                // page with one short lane beside a long one is not that.
+                laneStates.baGuideCatalogAnyLaneCanScrollBackward() to
+                    laneStates.baGuideCatalogAnyLaneCanScrollForward()
             }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
-    // Two columns on a tablet or an unfolded fold. The list keeps one order and one scroll -- see
-    // `baGuideCatalogEntryRows` for why an ordered list must not split into two independent lanes.
-    val columnsPerRow = appPageColumnCount()
-    val entryRows =
-        remember(tabListState.displayedEntries, columnsPerRow) {
-            baGuideCatalogEntryRows(
-                entries = tabListState.displayedEntries,
-                columnsPerRow = columnsPerRow,
-            )
+    // The error card sits in the leading lane only, so only that lane's entries start one item down.
+    val entryStartIndex = if (uiState.showError) 1 else 0
+    val laneEntryStartIndices =
+        remember(columnCount, entryStartIndex) {
+            List(columnCount) { lane -> if (lane == 0) entryStartIndex else 0 }
         }
     LaunchedEffect(
-        tabListState.listState,
+        laneStates,
         tabListState.displayedEntries,
-        entryRows,
+        columnCount,
+        laneEntryStartIndices,
         uiState.showError,
         uiState.showLoading,
         uiState.showEmpty,
@@ -157,24 +169,18 @@ internal fun BaGuideCatalogV2ListContent(
         if (!isPageActive || uiState.showLoading || uiState.showEmpty || tabListState.displayedEntries.isEmpty()) {
             return@LaunchedEffect
         }
-        val entryStartIndex = if (uiState.showError) 1 else 0
         snapshotFlowManager
             .snapshotFlow {
-                val visibleItems = tabListState.listState.layoutInfo.visibleItemsInfo
+                // Both lanes at once, resolved back to flat entry indices: preloading follows the screen,
+                // and with two lanes the screen is both of them at whatever offsets they have drifted to.
                 buildBaGuideCatalogVisibleImageRequestUrls(
                     displayedEntries = tabListState.displayedEntries,
-                    // Resolved through the rows, because with two columns a visible item covers two
-                    // entries -- and with a full-span row in the list it is not even a fixed multiple.
-                    visibleItemRange =
-                        baGuideCatalogVisibleEntryRange(
-                            rows = entryRows,
-                            visibleItemRange =
-                                BaGuideVisibleItemRange(
-                                    firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
-                                    lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
-                                    visibleItemCount = visibleItems.size,
-                                ),
-                            entryStartIndex = entryStartIndex,
+                    visibleItemIndices =
+                        baGuideCatalogVisibleLaneEntryIndices(
+                            laneVisibleItemIndices = laneStates.baGuideCatalogLaneVisibleItemIndices(),
+                            laneEntryStartIndices = laneEntryStartIndices,
+                            columnCount = columnCount,
+                            entryCount = tabListState.displayedEntries.size,
                         ),
                     entryStartIndex = 0,
                 )
@@ -230,69 +236,76 @@ internal fun BaGuideCatalogV2ListContent(
                 .fillMaxWidth()
                 .weight(1f),
     ) {
-    LazyColumn(
-        state = tabListState.listState,
+    val laneContents =
+        laneEntries.mapIndexed { lane, entries ->
+            val laneContent: LazyListScope.() -> Unit = {
+                // Status cards belong to the list, not to a column, so they are emitted once -- in the
+                // leading lane -- rather than mirrored into both.
+                if (lane == 0 && uiState.showError) {
+                    item(
+                        key = "ba-guide-catalog-error-${tab.name}",
+                        contentType = "ba_guide_catalog_status",
+                    ) {
+                        LiquidInfoBlock(
+                            backdrop = catalogSceneBackdrop,
+                            title = uiState.syncStatusTitle,
+                            subtitle = uiState.errorText,
+                            body = uiState.syncStatusBody,
+                            accent = Color(0xFFEF4444),
+                        )
+                    }
+                }
+                if (lane == 0 && uiState.showLoading) {
+                    item(
+                        key = "ba-guide-catalog-loading-${tab.name}",
+                        contentType = "ba_guide_catalog_loading",
+                    ) {
+                        AppAronaLoadingPanel(accent = accent)
+                    }
+                }
+                if (uiState.showEmpty) {
+                    if (lane == 0) {
+                        item(
+                            key = "ba-guide-catalog-empty-${tab.name}",
+                            contentType = "ba_guide_catalog_status",
+                        ) {
+                            LiquidInfoBlock(
+                                backdrop = catalogSceneBackdrop,
+                                title = uiState.emptyTitle,
+                                subtitle = uiState.emptySubtitle,
+                                accent = accent,
+                            )
+                        }
+                    }
+                } else if (!uiState.showLoading) {
+                    renderBaGuideCatalogEntryListAdapter(
+                        laneEntries = entries,
+                        hasMoreEntries = tabListState.hasMoreEntries,
+                        favoriteCatalogEntries = favoriteCatalogEntries,
+                        accent = accent,
+                        loadingMoreText = uiState.loadingMoreText,
+                        laneIndex = lane,
+                        onOpenGuide = onOpenGuide,
+                        onToggleFavorite = onToggleFavorite,
+                    )
+                }
+            }
+            laneContent
+        }
+    BaGuideCatalogLaneLists(
+        laneStates = laneStates,
+        startPadding = appPageEdgePaddingStart(),
+        endPadding = appPageEdgePaddingEnd(),
+        topPadding = appEdgeStackKeepAliveTopPadding(listTopPadding),
+        bottomPadding = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+        horizontalGap = entryListGap,
+        verticalGap = entryListGap,
         modifier =
             Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection),
-        contentPadding =
-            PaddingValues(
-                top = appEdgeStackKeepAliveTopPadding(listTopPadding),
-                bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                start = appPageEdgePaddingStart(),
-                end = appPageEdgePaddingEnd(),
-            ),
-        verticalArrangement = Arrangement.spacedBy(entryListGap),
-    ) {
-        if (uiState.showError) {
-            item(
-                key = "ba-guide-catalog-error-${tab.name}",
-                contentType = "ba_guide_catalog_status",
-            ) {
-                LiquidInfoBlock(
-                    backdrop = catalogSceneBackdrop,
-                    title = uiState.syncStatusTitle,
-                    subtitle = uiState.errorText,
-                    body = uiState.syncStatusBody,
-                    accent = Color(0xFFEF4444),
-                )
-            }
-        }
-        if (uiState.showLoading) {
-            item(
-                key = "ba-guide-catalog-loading-${tab.name}",
-                contentType = "ba_guide_catalog_loading",
-            ) {
-                AppAronaLoadingPanel(accent = accent)
-            }
-        }
-        if (uiState.showEmpty) {
-            item(
-                key = "ba-guide-catalog-empty-${tab.name}",
-                contentType = "ba_guide_catalog_status",
-            ) {
-                LiquidInfoBlock(
-                    backdrop = catalogSceneBackdrop,
-                    title = uiState.emptyTitle,
-                    subtitle = uiState.emptySubtitle,
-                    accent = accent,
-                )
-            }
-        } else if (!uiState.showLoading) {
-            renderBaGuideCatalogEntryListAdapter(
-                entryRows = entryRows,
-                hasMoreEntries = tabListState.hasMoreEntries,
-                favoriteCatalogEntries = favoriteCatalogEntries,
-                accent = accent,
-                loadingMoreText = uiState.loadingMoreText,
-                columnsPerRow = columnsPerRow,
-                entryGap = entryListGap,
-                onOpenGuide = onOpenGuide,
-                onToggleFavorite = onToggleFavorite,
-            )
-        }
-    }
+        lanes = laneContents,
+    )
     }
     }
     }

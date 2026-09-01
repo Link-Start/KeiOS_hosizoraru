@@ -78,6 +78,7 @@ internal fun BaGuideCatalogTabContent(
     }
     BaGuideCatalogTabListLayout(
         listState = tabListState.listState,
+        secondaryListState = tabListState.secondaryListState,
         nestedScrollConnection = nestedScrollConnection,
         innerPadding = innerPadding,
         uiState = tabContentUiState,

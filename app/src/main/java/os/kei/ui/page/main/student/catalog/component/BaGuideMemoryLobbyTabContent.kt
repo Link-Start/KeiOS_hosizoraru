@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -121,11 +121,27 @@ internal fun BaGuideMemoryLobbyTabContent(
             isPageActive = isPageActive,
         )
     val listState = listStateHolder.listState
+    val secondaryListState = listStateHolder.secondaryListState
     val displayedEntries = listStateHolder.displayedEntries
     val showError = !error.isNullOrBlank()
     val showLoading = effectiveLoading && allStudentEntries.isEmpty()
     val showEmpty = !effectiveLoading && visibleFilteredEntries.isEmpty()
     val entryStartIndex = if (showError) MEMORY_LOBBY_ENTRY_START_INDEX + 1 else MEMORY_LOBBY_ENTRY_START_INDEX
+    // Two lanes on a tablet or an unfolded fold, scrolling independently and alternating so each lane
+    // stays sorted -- see `baGuideCatalogEntryLanes`. A loading or empty state has no entries to split.
+    val pageColumnCount = appPageColumnCount()
+    val columnCount = if (showLoading || showEmpty) 1 else pageColumnCount
+    val laneStates =
+        if (columnCount >= 2) listOf(listState, secondaryListState) else listOf(listState)
+    val laneEntries =
+        remember(displayedEntries, columnCount) {
+            baGuideCatalogEntryLanes(entries = displayedEntries, columnCount = columnCount)
+        }
+    // Status cards sit in the leading lane only, so only that lane's entries start further down.
+    val laneEntryStartIndices =
+        remember(columnCount, entryStartIndex) {
+            List(columnCount) { lane -> if (lane == 0) entryStartIndex else 0 }
+        }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var consumedScrollToTopSignal by remember { mutableStateOf(0) }
     var expandedContentIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
@@ -158,41 +174,32 @@ internal fun BaGuideMemoryLobbyTabContent(
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > consumedScrollToTopSignal && isPageActive) {
             consumedScrollToTopSignal = scrollToTopSignal
-            listState.animateScrollToItem(0)
+            laneStates.forEach { state -> state.animateScrollToItem(0) }
         } else {
             consumedScrollToTopSignal = scrollToTopSignal
         }
     }
-    LaunchedEffect(listState, isPageActive, snapshotFlowManager) {
+    LaunchedEffect(laneStates, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                listState.canScrollBackward to listState.canScrollForward
+                // Either lane: the chrome expands for content that cannot scroll at all, and one short
+                // lane beside a long one is not that.
+                laneStates.baGuideCatalogAnyLaneCanScrollBackward() to
+                    laneStates.baGuideCatalogAnyLaneCanScrollForward()
             }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
-    // Two columns on a tablet or an unfolded fold, flowing row-major so the list keeps one order and one
-    // scroll. An expanded entry takes the whole row: it opens a lobby illustration taller than the viewport,
-    // and pairing that with a collapsed entry would leave most of a panel-height cell empty.
-    val columnsPerRow = appPageColumnCount()
-    val entryRows =
-        remember(displayedEntries, columnsPerRow, expandedContentIds) {
-            baGuideCatalogEntryRows(
-                entries = displayedEntries,
-                columnsPerRow = columnsPerRow,
-                isFullSpan = { entry -> entry.contentId in expandedContentIds },
-            )
-        }
     LaunchedEffect(
-        listState,
+        laneStates,
         displayedEntries,
-        entryRows,
+        columnCount,
+        laneEntryStartIndices,
         isPageActive,
         showLoading,
         showEmpty,
-        entryStartIndex,
         snapshotFlowManager,
         lookupCoordinator,
     ) {
@@ -201,31 +208,26 @@ internal fun BaGuideMemoryLobbyTabContent(
         }
         snapshotFlowManager
             .snapshotFlow {
-                val visibleItems = listState.layoutInfo.visibleItemsInfo
-                // Resolved through the rows: one visible item is two entries in two columns, and only
-                // one where that row is a full span.
-                val visibleItemRange =
-                    baGuideCatalogVisibleEntryRange(
-                        rows = entryRows,
-                        visibleItemRange =
-                            BaGuideVisibleItemRange(
-                                firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
-                                lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
-                                visibleItemCount = visibleItems.size,
-                            ),
-                        entryStartIndex = entryStartIndex,
+                // Both lanes at once, resolved back to flat entry indices: preloading follows the screen,
+                // and with two lanes the screen is both of them at whatever offsets they have drifted to.
+                val visibleEntryIndices =
+                    baGuideCatalogVisibleLaneEntryIndices(
+                        laneVisibleItemIndices = laneStates.baGuideCatalogLaneVisibleItemIndices(),
+                        laneEntryStartIndices = laneEntryStartIndices,
+                        columnCount = columnCount,
+                        entryCount = displayedEntries.size,
                     )
                 BaGuideMemoryLobbyVisibleWork(
                     imageUrls =
                         buildBaGuideCatalogVisibleImageRequestUrls(
                             displayedEntries = displayedEntries,
-                            visibleItemRange = visibleItemRange,
+                            visibleItemIndices = visibleEntryIndices,
                             entryStartIndex = 0,
                         ),
                     prewarmEntries =
                         buildBaGuideStudentBgmVisiblePrewarmEntries(
                             displayedEntries = displayedEntries,
-                            visibleItemRange = visibleItemRange,
+                            visibleItemIndices = visibleEntryIndices,
                             entryStartIndex = 0,
                             limit = MEMORY_LOBBY_VISIBLE_PREWARM_LIMIT,
                         ),
@@ -287,118 +289,120 @@ internal fun BaGuideMemoryLobbyTabContent(
                 .fillMaxWidth()
                 .weight(1f),
     ) {
-    LazyColumn(
-        state = listState,
+    val laneContents =
+        laneEntries.mapIndexed { lane, entries ->
+            val laneContent: LazyListScope.() -> Unit = {
+                // Status cards belong to the list, not to a column: emitted once, in the leading lane.
+                if (lane == 0 && showError) {
+                    item(
+                        key = "memory-lobby-error",
+                        contentType = "memory_lobby_status",
+                    ) {
+                        LiquidInfoBlock(
+                            backdrop = catalogSceneBackdrop,
+                            title = stringResource(R.string.ba_catalog_sync_status_title),
+                            subtitle = error.orEmpty(),
+                            body = stringResource(R.string.ba_catalog_sync_status_body_retry),
+                            accent = Color(0xFFEF4444),
+                        )
+                    }
+                }
+                if (lane == 0 && showLoading) {
+                    item(
+                        key = "memory-lobby-loading",
+                        contentType = "memory_lobby_status",
+                    ) {
+                        AppAronaLoadingPanel(accent = accent)
+                    }
+                }
+
+                if (showEmpty) {
+                    if (lane == 0) {
+                        item(
+                            key = "memory-lobby-empty",
+                            contentType = "memory_lobby_status",
+                        ) {
+                            LiquidInfoBlock(
+                                backdrop = catalogSceneBackdrop,
+                                title = stringResource(R.string.ba_catalog_empty_title),
+                                subtitle =
+                                    stringResource(
+                                        if (searchQuery.isNotBlank()) {
+                                            R.string.ba_catalog_empty_subtitle_search
+                                        } else {
+                                            R.string.ba_catalog_empty_subtitle_default
+                                        },
+                                    ),
+                                accent = accent,
+                            )
+                        }
+                    }
+                } else if (!showLoading) {
+                    items(
+                        items = entries,
+                        key = { entry -> "memory-lobby-${entry.contentId}" },
+                        contentType = { "memory_lobby_entry" },
+                    ) { entry ->
+                        val expanded = entry.contentId in expandedContentIds
+                        BaGuideMemoryLobbyCard(
+                            entry = entry,
+                            lookupState = lookupStates[entry.contentId] ?: BaGuideMemoryLobbyLookupState.Idle,
+                            expanded = expanded,
+                            favorite = entry.contentId in favoriteContentIds,
+                            accent = accent,
+                            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                            onToggleExpanded = {
+                                expandedContentIds =
+                                    if (expanded) {
+                                        expandedContentIds - entry.contentId
+                                    } else {
+                                        expandedContentIds + entry.contentId
+                                    }
+                            },
+                            onResolve = {
+                                lookupCoordinator.resolveEntry(
+                                    entry = entry,
+                                    allowNetwork = true,
+                                )
+                            },
+                            onOpenGuide = {
+                                onRequestGuideDetailTab(entry.detailUrl, GuideBottomTab.Gallery)
+                                onOpenGuide(entry.detailUrl)
+                            },
+                            onToggleFavorite = { onToggleFavorite(entry.contentId) },
+                        )
+                    }
+
+                    // One spinner for the list, in the leading lane, not one per column.
+                    if (lane == 0 && listStateHolder.hasMoreEntries) {
+                        item(
+                            key = "memory-lobby-loading-more",
+                            contentType = "memory_lobby_loading_more",
+                        ) {
+                            BaGuideCatalogLoadingMoreRow(
+                                loadingMoreText = stringResource(R.string.ba_catalog_loading_more),
+                                accent = accent,
+                            )
+                        }
+                    }
+                }
+            }
+            laneContent
+        }
+    BaGuideCatalogLaneLists(
+        laneStates = laneStates,
+        startPadding = appPageEdgePaddingStart(),
+        endPadding = appPageEdgePaddingEnd(),
+        topPadding = appEdgeStackKeepAliveTopPadding(listTopPadding),
+        bottomPadding = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+        horizontalGap = entryListGap,
+        verticalGap = entryListGap,
         modifier =
             Modifier
                 .fillMaxSize()
                 .nestedScroll(nestedScrollConnection),
-        contentPadding =
-            PaddingValues(
-                top = appEdgeStackKeepAliveTopPadding(listTopPadding),
-                bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                start = appPageEdgePaddingStart(),
-                end = appPageEdgePaddingEnd(),
-            ),
-        verticalArrangement = Arrangement.spacedBy(entryListGap),
-    ) {
-        if (showError) {
-            item(
-                key = "memory-lobby-error",
-                contentType = "memory_lobby_status",
-            ) {
-                LiquidInfoBlock(
-                    backdrop = catalogSceneBackdrop,
-                    title = stringResource(R.string.ba_catalog_sync_status_title),
-                    subtitle = error.orEmpty(),
-                    body = stringResource(R.string.ba_catalog_sync_status_body_retry),
-                    accent = Color(0xFFEF4444),
-                )
-            }
-        }
-        if (showLoading) {
-            item(
-                key = "memory-lobby-loading",
-                contentType = "memory_lobby_status",
-            ) {
-                AppAronaLoadingPanel(accent = accent)
-            }
-        }
-
-        if (showEmpty) {
-            item(
-                key = "memory-lobby-empty",
-                contentType = "memory_lobby_status",
-            ) {
-                LiquidInfoBlock(
-                    backdrop = catalogSceneBackdrop,
-                    title = stringResource(R.string.ba_catalog_empty_title),
-                    subtitle =
-                        stringResource(
-                            if (searchQuery.isNotBlank()) {
-                                R.string.ba_catalog_empty_subtitle_search
-                            } else {
-                                R.string.ba_catalog_empty_subtitle_default
-                            },
-                        ),
-                    accent = accent,
-                )
-            }
-        } else if (!showLoading) {
-            items(
-                items = entryRows,
-                key = { row -> "memory-lobby-${row.entries.first().contentId}" },
-                contentType = { "memory_lobby_entry" },
-            ) { row ->
-                BaGuideCatalogEntryRowLayout(
-                    row = row,
-                    columnsPerRow = columnsPerRow,
-                    horizontalGap = entryListGap,
-                ) { entry, _ ->
-                val expanded = entry.contentId in expandedContentIds
-                BaGuideMemoryLobbyCard(
-                    entry = entry,
-                    lookupState = lookupStates[entry.contentId] ?: BaGuideMemoryLobbyLookupState.Idle,
-                    expanded = expanded,
-                    favorite = entry.contentId in favoriteContentIds,
-                    accent = accent,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                    onToggleExpanded = {
-                        expandedContentIds =
-                            if (expanded) {
-                                expandedContentIds - entry.contentId
-                            } else {
-                                expandedContentIds + entry.contentId
-                            }
-                    },
-                    onResolve = {
-                        lookupCoordinator.resolveEntry(
-                            entry = entry,
-                            allowNetwork = true,
-                        )
-                    },
-                    onOpenGuide = {
-                        onRequestGuideDetailTab(entry.detailUrl, GuideBottomTab.Gallery)
-                        onOpenGuide(entry.detailUrl)
-                    },
-                    onToggleFavorite = { onToggleFavorite(entry.contentId) },
-                )
-                }
-            }
-
-            if (listStateHolder.hasMoreEntries) {
-                item(
-                    key = "memory-lobby-loading-more",
-                    contentType = "memory_lobby_loading_more",
-                ) {
-                    BaGuideCatalogLoadingMoreRow(
-                        loadingMoreText = stringResource(R.string.ba_catalog_loading_more),
-                        accent = accent,
-                    )
-                }
-            }
-        }
-    }
+        lanes = laneContents,
+    )
     }
     }
     }

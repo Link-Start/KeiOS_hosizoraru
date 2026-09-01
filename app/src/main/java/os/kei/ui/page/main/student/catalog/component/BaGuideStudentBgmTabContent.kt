@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -142,36 +142,39 @@ internal fun BaGuideStudentBgmTabContent(
         }
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listState = rememberLazyListState()
-    // Two columns on a tablet or an unfolded fold, flowing row-major so the list keeps one order and one
-    // scroll. Every music row is the same height, so they simply pair up.
-    val columnsPerRow = appPageColumnCount()
+    val secondaryListState = rememberLazyListState()
+    // Two lanes on a tablet or an unfolded fold, scrolling independently and alternating so each lane
+    // stays sorted -- see `baGuideCatalogEntryLanes`. A status-only state has no entries to split.
+    val pageColumnCount = appPageColumnCount()
+    val columnCount = if (effectiveLoading && allStudentEntries.isEmpty()) 1 else pageColumnCount
+    val laneStates =
+        if (columnCount >= 2) listOf(listState, secondaryListState) else listOf(listState)
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(visibleFilteredEntries.size, tabState) {
         tabState.resetVisibleCount(visibleFilteredEntries.size)
     }
-    LaunchedEffect(isPageActive, listState, visibleFilteredEntries.size, columnsPerRow, snapshotFlowManager, tabState) {
+    LaunchedEffect(isPageActive, laneStates, visibleFilteredEntries.size, snapshotFlowManager, tabState) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                val layoutInfo = listState.layoutInfo
-                val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                Triple(
-                    lastVisible,
-                    layoutInfo.totalItemsCount,
-                    layoutInfo.visibleItemsInfo.size.coerceAtLeast(6),
-                )
+                // Both lanes, each judged against its own end: a lane holds every other entry, so its own
+                // item count is the right yardstick for "nearly through it". An empty second lane never
+                // triggers, which is what keeps the single-lane condition unchanged.
+                val nearEnd = laneStates.any { state -> state.reachedStudentBgmLoadMoreTrigger() }
+                // Items across both lanes, because a batch is measured in entries and two lanes show
+                // twice as many for the same amount of scrolling.
+                val viewportItems =
+                    laneStates
+                        .sumOf { state -> state.layoutInfo.visibleItemsInfo.size }
+                        .coerceAtLeast(6)
+                nearEnd to viewportItems
             }.distinctUntilChanged()
-            .collect { (lastVisible, totalCount, viewportItems) ->
+            .collect { (nearEnd, viewportItems) ->
                 if (tabState.visibleCount >= visibleFilteredEntries.size) return@collect
-                if (totalCount <= 0) return@collect
-                val triggerIndex = (totalCount - 1 - STUDENT_BGM_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
-                if (lastVisible < triggerIndex) return@collect
+                if (!nearEnd) return@collect
                 tabState.appendVisibleBatch(
                     totalCount = visibleFilteredEntries.size,
-                    // Items are rows here, and a batch is measured in entries: two columns halve the item
-                    // count for the same amount of list on screen, so without this the page appends half
-                    // as much per step and the list runs dry sooner than it used to.
-                    viewportItems = viewportItems * columnsPerRow,
+                    viewportItems = viewportItems,
                 )
             }
     }
@@ -230,44 +233,49 @@ internal fun BaGuideStudentBgmTabContent(
     }
     val displayedBgmModel = displayedDerivedState.model
     val displayedRows = displayedBgmModel.rows
-    val entryRows =
-        remember(displayedRows, columnsPerRow) {
-            baGuideCatalogEntryRows(entries = displayedRows, columnsPerRow = columnsPerRow)
+    val laneRows =
+        remember(displayedRows, columnCount) {
+            baGuideCatalogEntryLanes(entries = displayedRows, columnCount = columnCount)
         }
-    // Below the rows on purpose: the preload window is expressed in *item* indices, so it can only be
-    // resolved once the row grouping those items come from exists. `displayedRows` and
-    // `displayedEntries` are the same entries in the same order, which is what lets one row shape
-    // index into the other -- the mapping this effect already relied on before there were rows.
-    LaunchedEffect(isPageActive, listState, displayedEntries, entryRows, snapshotFlowManager, lookupCoordinator) {
+    val laneEntryStartIndices =
+        remember(columnCount) {
+            List(columnCount) { lane -> if (lane == 0) STUDENT_BGM_ENTRY_START_INDEX else 0 }
+        }
+    // `displayedRows` and `displayedEntries` are the same entries in the same order, which is what lets a
+    // lane index computed from one address the other -- the mapping this effect already relied on.
+    LaunchedEffect(
+        isPageActive,
+        laneStates,
+        displayedEntries,
+        columnCount,
+        laneEntryStartIndices,
+        snapshotFlowManager,
+        lookupCoordinator,
+    ) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                val visibleItems = listState.layoutInfo.visibleItemsInfo
-                BaGuideVisibleItemRange(
-                    firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
-                    lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
-                    visibleItemCount = visibleItems.size,
+                // Both lanes at once, resolved back to flat entry indices: preloading follows the screen,
+                // and with two lanes the screen is both of them at whatever offsets they have drifted to.
+                baGuideCatalogVisibleLaneEntryIndices(
+                    laneVisibleItemIndices = laneStates.baGuideCatalogLaneVisibleItemIndices(),
+                    laneEntryStartIndices = laneEntryStartIndices,
+                    columnCount = columnCount,
+                    entryCount = displayedEntries.size,
                 )
             }.distinctUntilChanged()
-            .collect { visibleItemRange ->
-                // Resolved through the rows: one visible item is two entries in two columns.
-                val visibleEntryRange =
-                    baGuideCatalogVisibleEntryRange(
-                        rows = entryRows,
-                        visibleItemRange = visibleItemRange,
-                        entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
-                    )
+            .collect { visibleEntryIndices ->
                 val imageUrls =
                     buildBaGuideCatalogVisibleImageRequestUrls(
                         displayedEntries = displayedEntries,
-                        visibleItemRange = visibleEntryRange,
+                        visibleItemIndices = visibleEntryIndices,
                         entryStartIndex = 0,
                     )
                 requestVisibleImages(imageUrls)
                 val prewarmEntries =
                     buildBaGuideStudentBgmVisiblePrewarmEntries(
                         displayedEntries = displayedEntries,
-                        visibleItemRange = visibleEntryRange,
+                        visibleItemIndices = visibleEntryIndices,
                         entryStartIndex = 0,
                     )
                 lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)
@@ -325,8 +333,8 @@ internal fun BaGuideStudentBgmTabContent(
         snapshotFlowManager
             .snapshotFlow {
                 Triple(
-                    listState.canScrollBackward,
-                    listState.canScrollForward,
+                    laneStates.baGuideCatalogAnyLaneCanScrollBackward(),
+                    laneStates.baGuideCatalogAnyLaneCanScrollForward(),
                     listState.isScrollInProgress,
                 )
             }.distinctUntilChanged()
@@ -382,109 +390,113 @@ internal fun BaGuideStudentBgmTabContent(
             state = edgeStackState,
             modifier = Modifier.fillMaxSize(),
         ) {
-        LazyColumn(
-            state = listState,
-            userScrollEnabled = !sliderInteractionActive,
+        val laneContents =
+            laneRows.mapIndexed { lane, rows ->
+                val laneContent: LazyListScope.() -> Unit = {
+                    // The loading panel and the header belong to the list, not to a column: emitted once,
+                    // in the leading lane, rather than mirrored into both.
+                    if (effectiveLoading && allStudentEntries.isEmpty()) {
+                        if (lane == 0) {
+                            item(
+                                key = "student-bgm-loading",
+                                contentType = "student_bgm_status",
+                            ) {
+                                AppAronaLoadingPanel(accent = accent)
+                            }
+                        }
+                    } else if (lane == 0) {
+                        item(
+                            key = "student-bgm-header",
+                            contentType = "student_bgm_header",
+                        ) {
+                            BaGuideStudentBgmHeader(
+                                totalCount = allStudentEntries.size,
+                                displayedCount = visibleFilteredEntries.size,
+                                resolvedCount = displayedBgmModel.resolvedCount,
+                                favoriteCount = favoriteContentIds.size,
+                                searchActive = searchQuery.isNotBlank(),
+                                favoritesHidden = favoritesHidden,
+                                accent = accent,
+                                onToggleFavoritesHidden = {
+                                    if (favoriteContentIds.isNotEmpty()) {
+                                        favoritesHidden = !favoritesHidden
+                                    }
+                                },
+                            )
+                        }
+                    }
+
+                    if (showEmptyStatus) {
+                        if (lane == 0) {
+                            item(
+                                key = "student-bgm-empty",
+                                contentType = "student_bgm_status",
+                            ) {
+                                LiquidInfoBlock(
+                                    backdrop = catalogSceneBackdrop,
+                                    title = stringResource(R.string.ba_catalog_empty_title),
+                                    subtitle = stringResource(R.string.ba_catalog_empty_subtitle_search),
+                                    accent = accent,
+                                )
+                            }
+                        }
+                    } else {
+                        items(
+                            items = rows,
+                            key = { it.entry.contentId },
+                            contentType = { "student_bgm_entry" },
+                        ) { row ->
+                            val entry = row.entry
+                            val selected = row.readyAudioUrl == selectedAudioUrl
+                            BaGuideStudentBgmCard(
+                                // Tapping this card is what loads androidx.media3 at all. Only the first
+                                // one is tagged: one handle is all a journey needs, and every row would
+                                // put a resource id on a list that can run to hundreds. Keyed off the
+                                // list's first entry rather than an index, which with alternating lanes
+                                // is still the first card of the leading lane.
+                                modifier =
+                                    if (displayedRows.firstOrNull()?.entry?.contentId == entry.contentId) {
+                                        Modifier.testTag(KeiOsTestTags.BaGuideCatalogStudentBgmFirst)
+                                    } else {
+                                        Modifier
+                                    },
+                                entry = entry,
+                                lookupState = row.displayState,
+                                selected = selected,
+                                playing = selected && selectedPlaybackIsPlaying,
+                                favorite = row.favorite,
+                                accent = accent,
+                                onOpenGuide = { actions.openStudentGuide(entry) },
+                                onPlay = { actions.playEntry(entry) },
+                                onToggleFavorite = { actions.toggleEntryFavorite(entry) },
+                            )
+                        }
+                    }
+                }
+                laneContent
+            }
+        BaGuideCatalogLaneLists(
+            laneStates = laneStates,
+            startPadding = appPageEdgePaddingStart(),
+            endPadding = appPageEdgePaddingEnd(),
+            topPadding = appEdgeStackKeepAliveTopPadding(innerPadding.calculateTopPadding()),
+            bottomPadding =
+                listBottomChromePadding +
+                    AppChromeTokens.pageSectionGap +
+                    if (showNowPlaying) {
+                        if (nowPlayingExpanded) 210.dp else 96.dp
+                    } else {
+                        0.dp
+                    },
+            horizontalGap = entryListGap,
+            verticalGap = entryListGap,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection),
-            contentPadding =
-                PaddingValues(
-                    top = appEdgeStackKeepAliveTopPadding(innerPadding.calculateTopPadding()),
-                    bottom =
-                        listBottomChromePadding +
-                            AppChromeTokens.pageSectionGap +
-                            if (showNowPlaying) {
-                                if (nowPlayingExpanded) 210.dp else 96.dp
-                            } else {
-                                0.dp
-                            },
-                    start = appPageEdgePaddingStart(),
-                    end = appPageEdgePaddingEnd(),
-                ),
-            verticalArrangement = Arrangement.spacedBy(entryListGap),
-        ) {
-            if (effectiveLoading && allStudentEntries.isEmpty()) {
-                item(
-                    key = "student-bgm-loading",
-                    contentType = "student_bgm_status",
-                ) {
-                    AppAronaLoadingPanel(accent = accent)
-                }
-            } else {
-                item(
-                    key = "student-bgm-header",
-                    contentType = "student_bgm_header",
-                ) {
-                    BaGuideStudentBgmHeader(
-                        totalCount = allStudentEntries.size,
-                        displayedCount = visibleFilteredEntries.size,
-                        resolvedCount = displayedBgmModel.resolvedCount,
-                        favoriteCount = favoriteContentIds.size,
-                        searchActive = searchQuery.isNotBlank(),
-                        favoritesHidden = favoritesHidden,
-                        accent = accent,
-                        onToggleFavoritesHidden = {
-                            if (favoriteContentIds.isNotEmpty()) {
-                                favoritesHidden = !favoritesHidden
-                            }
-                        },
-                    )
-                }
-            }
-
-            if (showEmptyStatus) {
-                item(
-                    key = "student-bgm-empty",
-                    contentType = "student_bgm_status",
-                ) {
-                    LiquidInfoBlock(
-                        backdrop = catalogSceneBackdrop,
-                        title = stringResource(R.string.ba_catalog_empty_title),
-                        subtitle = stringResource(R.string.ba_catalog_empty_subtitle_search),
-                        accent = accent,
-                    )
-                }
-            } else {
-                items(
-                    items = entryRows,
-                    key = { it.entries.first().entry.contentId },
-                    contentType = { "student_bgm_entry" },
-                ) { entryRow ->
-                    BaGuideCatalogEntryRowLayout(
-                        row = entryRow,
-                        columnsPerRow = columnsPerRow,
-                        horizontalGap = entryListGap,
-                    ) { row, _ ->
-                    val entry = row.entry
-                    val selected = row.readyAudioUrl == selectedAudioUrl
-                    BaGuideStudentBgmCard(
-                        // Tapping this card is what loads androidx.media3 at all. Only the first one is
-                        // tagged: one handle is all a journey needs, and every row would put a resource
-                        // id on a list that can run to hundreds. Keyed off the first row's id rather than
-                        // an index, so `items` keeps the key and contentType spelling
-                        // `BaGuideCatalogPageBackdropTest` pins.
-                        modifier =
-                            if (displayedRows.firstOrNull()?.entry?.contentId == entry.contentId) {
-                                Modifier.testTag(KeiOsTestTags.BaGuideCatalogStudentBgmFirst)
-                            } else {
-                                Modifier
-                            },
-                        entry = entry,
-                        lookupState = row.displayState,
-                        selected = selected,
-                        playing = selected && selectedPlaybackIsPlaying,
-                        favorite = row.favorite,
-                        accent = accent,
-                        onOpenGuide = { actions.openStudentGuide(entry) },
-                        onPlay = { actions.playEntry(entry) },
-                        onToggleFavorite = { actions.toggleEntryFavorite(entry) },
-                    )
-                    }
-                }
-            }
-        }
+            userScrollEnabled = !sliderInteractionActive,
+            lanes = laneContents,
+        )
         }
         }
 
@@ -513,7 +525,7 @@ internal fun BaGuideStudentBgmTabContent(
                     expanded = nowPlayingExpanded,
                     onExpandedChange = onNowPlayingExpandedChange,
                     onOpenQueue = {
-                        pageScope.launch { listState.animateScrollToItem(0) }
+                        pageScope.launch { laneStates.forEach { state -> state.animateScrollToItem(0) } }
                     },
                     onPrevious = {
                         actions.selectQueueOffset(-1, true, true)
@@ -547,4 +559,17 @@ internal fun BaGuideStudentBgmTabContent(
             }
         }
     }
+}
+
+/**
+ * Whether this lane is within [STUDENT_BGM_LOAD_MORE_THRESHOLD] of its own last item.
+ *
+ * An empty lane never triggers: with one lane the second has no items, and a `lastVisible` of -1 against
+ * a trigger index of 0 would otherwise read as "at the end" and append forever.
+ */
+private fun androidx.compose.foundation.lazy.LazyListState.reachedStudentBgmLoadMoreTrigger(): Boolean {
+    val layoutInfo = layoutInfo
+    if (layoutInfo.totalItemsCount <= 0) return false
+    val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return false
+    return lastVisible >= (layoutInfo.totalItemsCount - 1 - STUDENT_BGM_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
 }

@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.student.catalog.state
 
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,10 +23,15 @@ internal const val CATALOG_RELEASE_DATE_FETCH_LIMIT_PER_PASS = 12
 @Stable
 internal data class BaGuideCatalogTabListState(
     val listState: LazyListState,
+    val secondaryListState: LazyListState,
     val filteredEntries: List<BaGuideCatalogEntry>,
     val displayedEntries: List<BaGuideCatalogEntry>,
     val hasMoreEntries: Boolean,
-)
+) {
+    /** Both lanes when the list is split, one when it is not — see [laneStates]. */
+    fun laneStates(columnCount: Int): List<LazyListState> =
+        if (columnCount >= 2) listOf(listState, secondaryListState) else listOf(listState)
+}
 
 @Composable
 internal fun rememberBaGuideCatalogTabListState(
@@ -40,6 +46,9 @@ internal fun rememberBaGuideCatalogTabListState(
     // LazyListState instance lives for the entire Activity session — scroll
     // position is naturally preserved across tab switches.
     val listState = remember(tab) { LazyListState() }
+    // The second lane's state lives here rather than in the leaf, because paging is what has to see both:
+    // each lane holds every other entry, so either one reaching its end means the list needs more.
+    val secondaryListState = remember(tab) { LazyListState() }
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     // Use remember (not rememberSaveable) so it resets on Activity recreate.
     var loadedCount by remember(tab) { mutableIntStateOf(0) }
@@ -64,27 +73,39 @@ internal fun rememberBaGuideCatalogTabListState(
             loadedCount = minOf(filteredEntries.size, CATALOG_BATCH_SIZE)
         }
     }
-    LaunchedEffect(isPageActive, listState, filteredEntries.size, loading, snapshotFlowManager) {
+    LaunchedEffect(
+        isPageActive,
+        listState,
+        secondaryListState,
+        filteredEntries.size,
+        loading,
+        snapshotFlowManager,
+    ) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                val layoutInfo = listState.layoutInfo
-                val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-                Triple(
-                    lastVisible,
-                    layoutInfo.totalItemsCount,
-                    layoutInfo.visibleItemsInfo.size.coerceAtLeast(6),
+                // Both lanes, and each judged against its own end. A lane holds every other entry, so its
+                // own `totalItemsCount` is the right yardstick for "nearly through it" -- and when there is
+                // only one lane the second is empty, contributes nothing, and this is the old condition.
+                val primary = listState.layoutInfo
+                val secondary = secondaryListState.layoutInfo
+                BaGuideCatalogLoadMoreSignal(
+                    nearEnd =
+                        primary.reachedLoadMoreTrigger() || secondary.reachedLoadMoreTrigger(),
+                    // Items on screen across both lanes: the batch is measured in entries, and two lanes
+                    // show twice as many for the same amount of scrolling.
+                    viewportItems =
+                        (primary.visibleItemsInfo.size + secondary.visibleItemsInfo.size)
+                            .coerceAtLeast(6),
                 )
             }.distinctUntilChanged()
-            .collect { (lastVisible, totalCount, viewportItems) ->
+            .collect { signal ->
                 if (loading) return@collect
                 if (loadedCount >= filteredEntries.size) return@collect
-                if (totalCount <= 0) return@collect
-                val triggerIndex = (totalCount - 1 - CATALOG_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
-                if (lastVisible < triggerIndex) return@collect
+                if (!signal.nearEnd) return@collect
 
                 val appendBatch =
-                    max(CATALOG_BATCH_SIZE, viewportItems * 3)
+                    max(CATALOG_BATCH_SIZE, signal.viewportItems * 3)
                         .coerceAtMost(CATALOG_BATCH_SIZE * 3)
                 loadedCount = minOf(loadedCount + appendBatch, filteredEntries.size)
             }
@@ -103,12 +124,30 @@ internal fun rememberBaGuideCatalogTabListState(
         }
     }
 
-    return remember(listState, filteredEntries, displayedEntries) {
+    return remember(listState, secondaryListState, filteredEntries, displayedEntries) {
         BaGuideCatalogTabListState(
             listState = listState,
+            secondaryListState = secondaryListState,
             filteredEntries = filteredEntries,
             displayedEntries = displayedEntries,
             hasMoreEntries = visibleCount < filteredEntries.size,
         )
     }
+}
+
+private data class BaGuideCatalogLoadMoreSignal(
+    val nearEnd: Boolean,
+    val viewportItems: Int,
+)
+
+/**
+ * Whether this lane is within [CATALOG_LOAD_MORE_THRESHOLD] of its own last item.
+ *
+ * An empty lane never triggers: with one column the second lane has no items, and a `lastVisible` of -1
+ * against a trigger index of 0 would otherwise read as "at the end" and append forever.
+ */
+private fun LazyListLayoutInfo.reachedLoadMoreTrigger(): Boolean {
+    if (totalItemsCount <= 0) return false
+    val lastVisible = visibleItemsInfo.lastOrNull()?.index ?: return false
+    return lastVisible >= (totalItemsCount - 1 - CATALOG_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
 }

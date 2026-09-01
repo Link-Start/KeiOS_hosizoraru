@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -25,6 +25,7 @@ import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 @Composable
 internal fun BaGuideCatalogTabListLayout(
     listState: LazyListState,
+    secondaryListState: LazyListState,
     nestedScrollConnection: NestedScrollConnection,
     innerPadding: PaddingValues,
     uiState: BaGuideCatalogTabContentUiState,
@@ -40,10 +41,14 @@ internal fun BaGuideCatalogTabListLayout(
     val statusBackdrop = rememberLayerBackdrop()
     val showStatusBackdrop = uiState.showError || uiState.showEmpty
     val entryListGap = rememberBaGuideCatalogEntryListGap()
-    val columnsPerRow = appPageColumnCount()
-    val entryRows =
-        remember(displayedEntries, columnsPerRow) {
-            baGuideCatalogEntryRows(entries = displayedEntries, columnsPerRow = columnsPerRow)
+    // Two lanes on a tablet, alternating so each lane stays sorted -- see `baGuideCatalogEntryLanes`.
+    // A status-only state has no entries to split and stays on one lane.
+    val pageColumnCount = appPageColumnCount()
+    val columnCount = if (uiState.showEmpty) 1 else pageColumnCount
+    val laneStates = if (columnCount >= 2) listOf(listState, secondaryListState) else listOf(listState)
+    val laneEntries =
+        remember(displayedEntries, columnCount) {
+            baGuideCatalogEntryLanes(entries = displayedEntries, columnCount = columnCount)
         }
     Box(modifier = Modifier.fillMaxSize()) {
         if (showStatusBackdrop) {
@@ -54,60 +59,66 @@ internal fun BaGuideCatalogTabListLayout(
                         .layerBackdrop(statusBackdrop),
             )
         }
-        LazyColumn(
-            state = listState,
+        val laneContents =
+            laneEntries.mapIndexed { lane, entries ->
+                val laneContent: LazyListScope.() -> Unit = {
+                    // One status card for the list, in the leading lane, rather than one per column.
+                    if (lane == 0 && uiState.showError) {
+                        item(
+                            key = "ba-guide-tab-error",
+                            contentType = "ba_guide_catalog_status",
+                        ) {
+                            LiquidInfoBlock(
+                                backdrop = statusBackdrop,
+                                title = uiState.syncStatusTitle,
+                                subtitle = uiState.errorText,
+                                body = uiState.syncStatusBody,
+                                accent = Color(0xFFEF4444),
+                            )
+                        }
+                    }
+                    if (uiState.showEmpty) {
+                        if (lane == 0) {
+                            item(
+                                key = "ba-guide-tab-empty",
+                                contentType = "ba_guide_catalog_status",
+                            ) {
+                                LiquidInfoBlock(
+                                    backdrop = statusBackdrop,
+                                    title = uiState.emptyTitle,
+                                    subtitle = uiState.emptySubtitle,
+                                    accent = accent,
+                                )
+                            }
+                        }
+                    } else {
+                        renderBaGuideCatalogEntryListAdapter(
+                            laneEntries = entries,
+                            hasMoreEntries = hasMoreEntries,
+                            favoriteCatalogEntries = favoriteCatalogEntries,
+                            accent = accent,
+                            loadingMoreText = uiState.loadingMoreText,
+                            laneIndex = lane,
+                            onOpenGuide = onOpenGuide,
+                            onToggleFavorite = onToggleFavorite,
+                        )
+                    }
+                }
+                laneContent
+            }
+        BaGuideCatalogLaneLists(
+            laneStates = laneStates,
+            startPadding = appPageEdgePaddingStart(),
+            endPadding = appPageEdgePaddingEnd(),
+            topPadding = innerPadding.calculateTopPadding(),
+            bottomPadding = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+            horizontalGap = entryListGap,
+            verticalGap = entryListGap,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection),
-            contentPadding =
-                PaddingValues(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                    start = appPageEdgePaddingStart(),
-                    end = appPageEdgePaddingEnd(),
-                ),
-            verticalArrangement = Arrangement.spacedBy(entryListGap),
-        ) {
-            if (uiState.showError) {
-                item(
-                    key = "ba-guide-tab-error",
-                    contentType = "ba_guide_catalog_status",
-                ) {
-                    LiquidInfoBlock(
-                        backdrop = statusBackdrop,
-                        title = uiState.syncStatusTitle,
-                        subtitle = uiState.errorText,
-                        body = uiState.syncStatusBody,
-                        accent = Color(0xFFEF4444),
-                    )
-                }
-            }
-            if (uiState.showEmpty) {
-                item(
-                    key = "ba-guide-tab-empty",
-                    contentType = "ba_guide_catalog_status",
-                ) {
-                    LiquidInfoBlock(
-                        backdrop = statusBackdrop,
-                        title = uiState.emptyTitle,
-                        subtitle = uiState.emptySubtitle,
-                        accent = accent,
-                    )
-                }
-            } else {
-                renderBaGuideCatalogEntryListAdapter(
-                    entryRows = entryRows,
-                    hasMoreEntries = hasMoreEntries,
-                    favoriteCatalogEntries = favoriteCatalogEntries,
-                    accent = accent,
-                    loadingMoreText = uiState.loadingMoreText,
-                    columnsPerRow = columnsPerRow,
-                    entryGap = entryListGap,
-                    onOpenGuide = onOpenGuide,
-                    onToggleFavorite = onToggleFavorite,
-                )
-            }
-        }
+            lanes = laneContents,
+        )
     }
 }

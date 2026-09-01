@@ -5,12 +5,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
@@ -20,47 +19,40 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal fun LazyListScope.renderBaGuideCatalogEntryListAdapter(
-    entryRows: List<BaGuideCatalogEntryRow<BaGuideCatalogEntry>>,
+    laneEntries: List<BaGuideCatalogEntry>,
     hasMoreEntries: Boolean,
     favoriteCatalogEntries: Map<Long, Long>,
     accent: Color,
     loadingMoreText: String,
-    columnsPerRow: Int,
-    entryGap: Dp,
+    laneIndex: Int,
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
 ) {
-    items(
-        items = entryRows,
-        // Still the entry's own identity, now the identity of whichever entry opens the row. Index keys
-        // would re-key every row on a filter change; this re-keys only rows whose leading entry moved.
-        key = { row -> row.entries.first().let { entry -> "${entry.tab.name}-${entry.entryId}-${entry.contentId}" } },
-        contentType = { "ba_guide_catalog_entry" },
-    ) { row ->
-        BaGuideCatalogEntryRowLayout(
-            row = row,
-            columnsPerRow = columnsPerRow,
-            horizontalGap = entryGap,
-        ) { entry, entryIndex ->
-            BaGuideCatalogEntryCard(
-                entry = entry,
-                isFavorite = favoriteCatalogEntries.containsKey(entry.contentId),
-                onOpenGuide = onOpenGuide,
-                onToggleFavorite = onToggleFavorite,
-                // The baseline profile's only way into the student guide: the entries carry student names,
-                // which differ per catalog and per language, so nothing else here is a stable handle. It
-                // follows the first *entry*, which in two columns is still the first card of the first row.
-                modifier =
-                    if (entryIndex == 0) {
-                        Modifier.testTag(KeiOsTestTags.BaGuideCatalogEntryFirst)
-                    } else {
-                        Modifier
-                    },
-            )
-        }
+    itemsIndexed(
+        items = laneEntries,
+        key = { _, entry -> "${entry.tab.name}-${entry.entryId}-${entry.contentId}" },
+        contentType = { _, _ -> "ba_guide_catalog_entry" },
+    ) { index, entry ->
+        BaGuideCatalogEntryCard(
+            entry = entry,
+            isFavorite = favoriteCatalogEntries.containsKey(entry.contentId),
+            onOpenGuide = onOpenGuide,
+            onToggleFavorite = onToggleFavorite,
+            // The baseline profile's only way into the student guide: the entries carry student names,
+            // which differ per catalog and per language, so nothing else here is a stable handle. It goes
+            // on the list's very first entry, which with alternating lanes is the first of the first lane.
+            modifier =
+                if (index == 0 && laneIndex == 0) {
+                    Modifier.testTag(KeiOsTestTags.BaGuideCatalogEntryFirst)
+                } else {
+                    Modifier
+                },
+        )
     }
 
-    if (hasMoreEntries) {
+    // Only the leading lane carries the spinner: one list, one "loading more", and two of them side by
+    // side would read as two separate loads.
+    if (hasMoreEntries && laneIndex == 0) {
         item(
             key = "ba-guide-catalog-loading-more",
             contentType = "ba_guide_catalog_loading_more",

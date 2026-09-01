@@ -144,14 +144,11 @@ private fun BaGuideCatalogPageTabContent(
     onRequestVisibleCatalogImages: (List<String>) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
 ) {
-    // Only the three list tabs widen. The cap is published here rather than at the page root because the
-    // bottom chrome -- four tabs, a search dock and the now-playing bar -- is a sibling of these and must
-    // keep the single-column width: a bar stretched to a two-column page puts its first tab and its last
-    // a panel apart. The Play tab is a single queue and keeps the single cap too.
-    val listTabColumnCount =
-        if (pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm) 1 else appPageColumnCount()
+    // Published here rather than at the page root because the bottom chrome -- four tabs, a search dock
+    // and the now-playing bar -- is a sibling of these and must keep the single-column width: a bar
+    // stretched to a two-column page puts its first tab and its last a panel apart.
     CompositionLocalProvider(
-        LocalAppPageContentMaxWidth provides appPageContentMaxWidthFor(listTabColumnCount),
+        LocalAppPageContentMaxWidth provides appPageContentMaxWidthFor(appPageColumnCount()),
     ) {
     when {
         resolvedCatalogTab != null -> {

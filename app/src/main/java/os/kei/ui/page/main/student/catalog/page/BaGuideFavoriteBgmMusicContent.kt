@@ -46,6 +46,7 @@ import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageU
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 
 @Composable
@@ -84,6 +85,13 @@ internal fun BaGuideFavoriteBgmMusicContent(
 ) {
     val contentBackdrop = LocalLiquidParentBackdrop.current
     val listState = rememberLazyListState()
+    // The queue's own scroll, because on a tablet it is a pane beside the album rather than the rest of
+    // one list -- scrolling the track list must not drag the artwork off the top of the window.
+    val trackListState = rememberLazyListState()
+    val columnCount = appPageColumnCount()
+    // Split, the album pane does not scroll at all, so the queue is the only thing the chrome can watch.
+    val paneStates =
+        if (columnCount >= 2) listOf(trackListState) else listOf(listState)
     val lifecycleOwner = LocalLifecycleOwner.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     val requestVisibleImages by rememberUpdatedState(onRequestVisibleImages)
@@ -148,11 +156,14 @@ internal fun BaGuideFavoriteBgmMusicContent(
             playbackCoordinator.updateQueue(displayedFavorites)
         }
     }
-    LaunchedEffect(listState, isPageActive, snapshotFlowManager) {
+    LaunchedEffect(paneStates, isPageActive, snapshotFlowManager) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                listState.canScrollBackward to listState.canScrollForward
+                // Either pane: the chrome expands for content that cannot scroll at all, and an album
+                // pane that fits beside a queue that does not is not that.
+                paneStates.any { state -> state.canScrollBackward } to
+                    paneStates.any { state -> state.canScrollForward }
             }.distinctUntilChanged()
             .collect { (canScrollBackward, canScrollForward) ->
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
@@ -290,6 +301,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
             offlineTrackCount = favoriteOfflineCacheState.offlineAudioUrls.size,
             showFooter = false,
             listState = listState,
+            trackListState = trackListState,
+            columnCount = columnCount,
             collapseProgress = 0f,
             bottomBarScrollConnection = bottomBarScrollConnection,
             userScrollEnabled = true,

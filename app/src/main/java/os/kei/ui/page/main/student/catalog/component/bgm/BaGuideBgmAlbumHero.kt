@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -57,6 +58,16 @@ internal fun BaGuideBgmAlbumHero(
     artworkImageUrl: String = "",
     showAlbumTitle: Boolean = true,
     promoteSectionTitle: Boolean = false,
+    /**
+     * Fit the album to the height it is given instead of sizing it from the width.
+     *
+     * The two-pane shape passes this. Its left pane does not scroll, so everything below the artwork --
+     * the title, the transport row, the volume slider -- has to be on screen at rest, and the only thing
+     * that can give is the artwork. Measured last with whatever height the rest left over, and squared by
+     * its own aspect ratio, so it shrinks on a short window and grows on a tall one without a reserve
+     * height written down anywhere to drift out of date.
+     */
+    fillAvailableHeight: Boolean = false,
 ) {
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val density = LocalDensity.current
@@ -120,17 +131,32 @@ internal fun BaGuideBgmAlbumHero(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .then(if (fillAvailableHeight) Modifier.fillMaxHeight() else Modifier)
                 .graphicsLayer {
                     scaleX = 1f - collapseProgress * 0.04f
                     scaleY = 1f - collapseProgress * 0.04f
                 },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement =
+            if (fillAvailableHeight) {
+                // Centred, so a short album sits in the middle of its pane rather than against the top.
+                Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+            } else {
+                Arrangement.spacedBy(12.dp)
+            },
     ) {
         BaGuideBgmAlbumArtwork(
             accent = accent,
             backdrop = contentBackdrop,
             imageUrl = artworkImageUrl,
+            modifier =
+                if (fillAvailableHeight) {
+                    // `fill = false` so the square keeps its ratio rather than stretching to the slack;
+                    // the aspect ratio then takes whichever of the pane's width or that slack is smaller.
+                    Modifier.weight(1f, fill = false)
+                } else {
+                    Modifier.fillMaxWidth(0.72f)
+                },
         )
         Column(
             modifier = Modifier.fillMaxWidth(),

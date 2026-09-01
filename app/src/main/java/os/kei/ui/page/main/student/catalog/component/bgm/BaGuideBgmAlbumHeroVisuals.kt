@@ -55,6 +55,14 @@ internal fun BaGuideBgmAlbumArtwork(
     accent: Color,
     backdrop: Backdrop?,
     imageUrl: String = "",
+    /**
+     * Sizes the square before its aspect ratio is applied.
+     *
+     * The default is the stacked shape's rule -- 72% of the width, height follows. A pane that is taller
+     * than it is wide, or shorter, passes something that bounds the *height* instead and lets the ratio
+     * pick whichever of the two is smaller.
+     */
+    modifier: Modifier = Modifier.fillMaxWidth(0.72f),
 ) {
     val shape = RoundedRectangle(28.dp)
     LiquidSurface(
@@ -64,10 +72,7 @@ internal fun BaGuideBgmAlbumArtwork(
         surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.18f),
         chromaticAberration = true,
         isInteractive = false,
-        modifier =
-            Modifier
-                .fillMaxWidth(0.72f)
-                .aspectRatio(1f),
+        modifier = modifier.aspectRatio(1f),
         contentAlignment = Alignment.Center,
     ) {
         Box(

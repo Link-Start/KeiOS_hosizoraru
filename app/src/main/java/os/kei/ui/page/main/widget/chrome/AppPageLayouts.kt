@@ -14,9 +14,14 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -141,6 +146,14 @@ fun AppPageScaffold(
     searchBarAnimationLabelPrefix: String = "appPageSearch",
     searchBarContent: (@Composable BoxScope.() -> Unit)? = null,
     onTitleClick: () -> Unit = {},
+    /**
+     * Widest this page's content column may get.
+     *
+     * Published to the whole page rather than handed to the list, because the top row is laid out beside the
+     * content, not inside it: both ends of that row centre against this, so a page that widens its column
+     * without saying so leaves its own back button behind on the old one.
+     */
+    contentMaxWidth: Dp = AppPageContentMaxWidth,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val hasSearchBar = searchBarContent != null
@@ -170,50 +183,52 @@ fun AppPageScaffold(
                 )
             }
         }
-    Box(modifier = modifier) {
-        AppScaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = scaffoldTopBar,
-            bottomBar = bottomBar,
-            floatingToolbar = floatingToolbar,
-            floatingToolbarPosition = floatingToolbarPosition,
-            snackbarHost = snackbarHost,
-            content = { innerPadding ->
-                val layoutDirection = LocalLayoutDirection.current
-                val searchBarPlaceholderHeight = searchBarPlaceholderHeightState.value
-                val adjustedPadding =
-                    remember(innerPadding, layoutDirection, searchBarPlaceholderHeight) {
-                        PaddingValues(
-                            top = innerPadding.calculateTopPadding() + searchBarPlaceholderHeight,
-                            bottom = innerPadding.calculateBottomPadding(),
-                            start = innerPadding.calculateStartPadding(layoutDirection),
-                            end = innerPadding.calculateEndPadding(layoutDirection),
-                        )
-                    }
-                currentContent.value(adjustedPadding)
-            },
-        )
-        AppTopBarSection(
-            title = title,
-            largeTitle = largeTitle,
-            scrollBehavior = scrollBehavior,
-            color = Color.Transparent,
-            navigationIcon = navigationIcon,
-            titleBackdrop = titleBackdrop,
-            titleEndReserve =
-                if (reserveTopEndActionSpace) {
-                    AppChromeTokens.topBarTitleActionReserve
-                } else {
-                    null
+    CompositionLocalProvider(LocalAppPageContentMaxWidth provides contentMaxWidth) {
+        Box(modifier = modifier) {
+            AppScaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = scaffoldTopBar,
+                bottomBar = bottomBar,
+                floatingToolbar = floatingToolbar,
+                floatingToolbarPosition = floatingToolbarPosition,
+                snackbarHost = snackbarHost,
+                content = { innerPadding ->
+                    val layoutDirection = LocalLayoutDirection.current
+                    val searchBarPlaceholderHeight = searchBarPlaceholderHeightState.value
+                    val adjustedPadding =
+                        remember(innerPadding, layoutDirection, searchBarPlaceholderHeight) {
+                            PaddingValues(
+                                top = innerPadding.calculateTopPadding() + searchBarPlaceholderHeight,
+                                bottom = innerPadding.calculateBottomPadding(),
+                                start = innerPadding.calculateStartPadding(layoutDirection),
+                                end = innerPadding.calculateEndPadding(layoutDirection),
+                            )
+                        }
+                    currentContent.value(adjustedPadding)
                 },
-            onTitleClick = onTitleClick,
-            searchBarVisible = searchBarVisible,
-            searchBarAnimationLabelPrefix = searchBarAnimationLabelPrefix,
-            searchBarContent = searchBarContent,
-        )
-        AppTopEndActionBarOverlay {
-            Row {
-                actions()
+            )
+            AppTopBarSection(
+                title = title,
+                largeTitle = largeTitle,
+                scrollBehavior = scrollBehavior,
+                color = Color.Transparent,
+                navigationIcon = navigationIcon,
+                titleBackdrop = titleBackdrop,
+                titleEndReserve =
+                    if (reserveTopEndActionSpace) {
+                        AppChromeTokens.topBarTitleActionReserve
+                    } else {
+                        null
+                    },
+                onTitleClick = onTitleClick,
+                searchBarVisible = searchBarVisible,
+                searchBarAnimationLabelPrefix = searchBarAnimationLabelPrefix,
+                searchBarContent = searchBarContent,
+            )
+            AppTopEndActionBarOverlay {
+                Row {
+                    actions()
+                }
             }
         }
     }
@@ -228,6 +243,14 @@ fun AppPageLazyColumn(
     topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
     sectionSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     userScrollEnabled: Boolean = true,
+    /**
+     * Widest this page's content column may get before the surplus becomes gutter.
+     *
+     * Opt-in, and the default is the single-column cap every page has had. A page that lays its cards out in
+     * two columns passes [appPageContentMaxWidthFor], which roughly doubles it — otherwise two columns would
+     * be carved out of one column's width and each half would be narrower than a phone.
+     */
+    maxContentWidth: Dp = LocalAppPageContentMaxWidth.current,
     // Follows LocalOverscrollFactory: MiuixOverscrollFactory app-wide (spring placement
     // translation, no RenderEffect), lifting the 767b191c3 global disable.
     overscrollEffect: OverscrollEffect? = rememberOverscrollEffect(),
@@ -246,9 +269,53 @@ fun AppPageLazyColumn(
                 // Padding rather than a width constraint on the list itself, so the scroll surface, the
                 // overscroll stretch and the edge-stacked card pile still span the whole panel. Only the
                 // content is centred; the gesture area is not narrowed.
-                sideGutter = appPageSideGutter(),
+                sideGutter = appPageSideGutter(maxContentWidth),
             ),
         verticalArrangement = Arrangement.spacedBy(sectionSpacing),
+        content = content,
+    )
+}
+
+/**
+ * [AppPageLazyColumn]'s layout contract, in columns that pack independently.
+ *
+ * The same content padding, the same gutter, the same section rhythm — only the flow differs. A staggered
+ * grid rather than rows of equal-height cells because these cards are accordions: pairing them by row means
+ * a collapsed card sits beside an expanded one and the shorter side leaves a dead half-column, which is the
+ * exact complaint this exists to answer. Each column here takes the next card as soon as it has room, so a
+ * tall card on the left simply lets the right column run ahead.
+ *
+ * Still lazy, which is the reason not to hand-build two [androidx.compose.foundation.layout.Column]s inside a
+ * single list item: that would give the same packing while composing every card at once, and the Interface
+ * category alone is nine cards of sliders and pickers.
+ */
+@Composable
+fun AppPageStaggeredGrid(
+    innerPadding: PaddingValues,
+    state: LazyStaggeredGridState,
+    columnCount: Int,
+    modifier: Modifier = Modifier,
+    bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
+    topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
+    sectionSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
+    userScrollEnabled: Boolean = true,
+    maxContentWidth: Dp = LocalAppPageContentMaxWidth.current,
+    content: LazyStaggeredGridScope.() -> Unit,
+) {
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(columnCount),
+        modifier = modifier,
+        state = state,
+        userScrollEnabled = userScrollEnabled,
+        contentPadding =
+            appPageContentPadding(
+                innerPadding = innerPadding,
+                bottomExtra = bottomExtra,
+                topExtra = topExtra,
+                sideGutter = appPageSideGutter(maxContentWidth),
+            ),
+        verticalItemSpacing = sectionSpacing,
+        horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap),
         content = content,
     )
 }

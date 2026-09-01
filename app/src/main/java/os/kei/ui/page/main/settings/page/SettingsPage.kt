@@ -5,12 +5,16 @@ package os.kei.ui.page.main.settings.page
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +53,8 @@ import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationC
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
 import os.kei.ui.testing.KeiOsTestTags
 import os.kei.ui.testing.pageRootTestTag
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
@@ -267,16 +273,38 @@ fun SettingsPage(
     val keepAliveListState = rememberLazyListState()
     val interfaceListState = rememberLazyListState()
     val dataListState = rememberLazyListState()
+    val accessGridState = rememberLazyStaggeredGridState()
+    val keepAliveGridState = rememberLazyStaggeredGridState()
+    val interfaceGridState = rememberLazyStaggeredGridState()
+    val dataGridState = rememberLazyStaggeredGridState()
     val categoryListStates =
-        remember(accessListState, keepAliveListState, interfaceListState, dataListState) {
+        remember(
+            accessListState,
+            keepAliveListState,
+            interfaceListState,
+            dataListState,
+            accessGridState,
+            keepAliveGridState,
+            interfaceGridState,
+            dataGridState,
+        ) {
             SettingsCategoryListStates(
                 access = accessListState,
                 keepAlive = keepAliveListState,
                 interfaceState = interfaceListState,
                 data = dataListState,
+                accessGrid = accessGridState,
+                keepAliveGrid = keepAliveGridState,
+                interfaceGrid = interfaceGridState,
+                dataGrid = dataGridState,
             )
         }
     val searchListState = rememberLazyListState()
+    val searchGridState = rememberLazyStaggeredGridState()
+    // Which of the two shapes this page is in right now. Everything that reads a scroll position -- the
+    // bottom chrome's hide-on-scroll, the title tap that returns to the top -- has to follow it, or it would
+    // be asking the column about a grid the reader is actually looking at.
+    val settingsColumnCount = appPageColumnCount()
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
@@ -298,17 +326,31 @@ fun SettingsPage(
                 ]
             }
         }
-    val activePageListStateProvider =
-        remember(activeCategoryProvider, categoryListStates) {
-            { categoryListStates.forCategory(activeCategoryProvider()) }
-        }
-    val activeChromeListStateProvider =
-        remember(searchActive, searchListState, activePageListStateProvider) {
+    val wideSettingsLayout = settingsColumnCount >= 2
+    val activePageScrollStateProvider: () -> ScrollableState =
+        remember(activeCategoryProvider, categoryListStates, wideSettingsLayout) {
             {
-                if (searchActive) {
-                    searchListState
+                val category = activeCategoryProvider()
+                if (wideSettingsLayout) {
+                    categoryListStates.gridForCategory(category)
                 } else {
-                    activePageListStateProvider()
+                    categoryListStates.forCategory(category)
+                }
+            }
+        }
+    val activeChromeListStateProvider: () -> ScrollableState =
+        remember(
+            searchActive,
+            searchListState,
+            searchGridState,
+            wideSettingsLayout,
+            activePageScrollStateProvider,
+        ) {
+            {
+                when {
+                    searchActive && wideSettingsLayout -> searchGridState
+                    searchActive -> searchListState
+                    else -> activePageScrollStateProvider()
                 }
             }
         }
@@ -447,9 +489,17 @@ fun SettingsPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,
+        // The whole page, chrome included, centres on this. Two columns roughly double it; on a phone the
+        // count is always one and this is the value every page has always used.
+        contentMaxWidth = appPageContentMaxWidthFor(settingsColumnCount),
         onTitleClick = {
             scope.launch {
-                activeChromeListStateProvider().animateScrollToItem(0)
+                // Both shapes scroll to their own first item; only one of them is on screen.
+                when (val scrollState = activeChromeListStateProvider()) {
+                    is LazyListState -> scrollState.animateScrollToItem(0)
+                    is LazyStaggeredGridState -> scrollState.animateScrollToItem(0)
+                    else -> Unit
+                }
             }
         },
         navigationIcon = {
@@ -522,6 +572,7 @@ fun SettingsPage(
                 SettingsSearchContent(
                     innerPadding = innerPadding,
                     searchListState = searchListState,
+                    searchGridState = searchGridState,
                     matchingSearchTargets = matchingSearchTargets,
                     settingsSearchCardInput = settingsSearchCardInput,
                     chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,

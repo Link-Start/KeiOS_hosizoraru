@@ -244,6 +244,27 @@ fun appPageSideGutterStart(): Dp =
 @Composable
 fun appPageSideGutterEnd(): Dp = appPageSideGutter()
 
+/**
+ * The same insets for floating bottom chrome, pinned to the **single-column** cap.
+ *
+ * Chrome is not content. A page may widen its content column to lay cards out in two — Settings does — but a
+ * five-tab strip and its search dock stretched to match would put the first tab and the last a panel apart,
+ * which is the "two halves too far to read as one row" failure the content cap exists to prevent, reappearing
+ * in the one element that cannot fold. So the bar keeps the width it has always had and stays centred over a
+ * wider page rather than growing with it.
+ *
+ * Identical to [appPageSideGutterStart] / [appPageSideGutterEnd] on every page that has not widened its
+ * column, which is every page but one, and identically zero on a phone.
+ */
+@Composable
+fun appBottomChromeSideGutterStart(): Dp =
+    appPageSideGutter(AppPageContentMaxWidth) +
+        if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Sidebar) AppSidebarWidth else 0.dp
+
+/** Trailing half of [appBottomChromeSideGutterStart]. */
+@Composable
+fun appBottomChromeSideGutterEnd(): Dp = appPageSideGutter(AppPageContentMaxWidth)
+
 /** [appPageEdgePadding] for the leading edge, which the sidebar rail shares. */
 @Composable
 fun appPageEdgePaddingStart(): Dp = AppChromeTokens.pageHorizontalPadding + appPageSideGutterStart()

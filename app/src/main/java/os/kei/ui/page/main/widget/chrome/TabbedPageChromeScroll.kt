@@ -1,6 +1,6 @@
 package os.kei.ui.page.main.widget.chrome
 
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,7 +28,7 @@ internal class TabbedPageChromeScrollState internal constructor(
 @Composable
 internal fun rememberTabbedPageChromeScrollState(
     visible: Boolean,
-    activeListStateProvider: () -> LazyListState,
+    activeListStateProvider: () -> ScrollableState,
     onVisibleChange: (Boolean) -> Unit,
 ): TabbedPageChromeScrollState {
     val density = LocalDensity.current
@@ -88,7 +88,11 @@ internal fun rememberTabbedPageChromeScrollState(
     return state
 }
 
-internal fun LazyListState.canMoveForTabbedPageChrome(deltaY: Float): Boolean =
+/**
+ * [ScrollableState], not `LazyListState`: the chrome only ever asks whether there is anywhere left to go, and
+ * a settings category on a tablet is a staggered grid rather than a column. Both answer this identically.
+ */
+internal fun ScrollableState.canMoveForTabbedPageChrome(deltaY: Float): Boolean =
     when {
         deltaY < -1f -> canScrollForward
         deltaY > 1f -> canScrollBackward
@@ -96,7 +100,7 @@ internal fun LazyListState.canMoveForTabbedPageChrome(deltaY: Float): Boolean =
     }
 
 internal fun tabbedPageContentNestedScrollConnection(
-    listState: LazyListState,
+    listState: ScrollableState,
     chrome: NestedScrollConnection,
     delegate: NestedScrollConnection,
 ): NestedScrollConnection =

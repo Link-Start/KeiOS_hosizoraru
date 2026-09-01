@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -23,6 +24,53 @@ import androidx.compose.ui.unit.dp
 val AppPageContentMaxWidth: Dp = 720.dp
 
 /**
+ * Smallest width a device must have *in its narrow dimension* before a page may lay out in two columns.
+ *
+ * The gate is `smallestScreenWidthDp`, not the current width, and that is the whole point: it describes the
+ * **device**, not the moment. A phone is 360–440dp on its narrow side and stays there however it is held, so
+ * it can never reach this — which matters because a phone turned on its side is ~817dp wide and would
+ * otherwise sail past a width-only test and get a tablet layout on a 375dp-tall screen. A fold's outer screen
+ * fails it for the same reason and its inner screen passes, which is the distinction that actually matters.
+ *
+ * 600dp because that is the line Android itself draws — the `sw600dp` resource qualifier, and the width at
+ * which targetSdk 36 stops honouring a portrait lock. Borrowing it means the app agrees with the platform
+ * about what a tablet is rather than inventing a second answer.
+ */
+val AppLargeScreenMinSmallestWidth: Dp = 600.dp
+
+/** Gap between the two content columns, when a page is laid out in two. */
+val AppPageColumnGap: Dp = 16.dp
+
+/** Whether this is a tablet or an unfolded fold, from the device's narrow dimension. See [AppLargeScreenMinSmallestWidth]. */
+fun appLargeScreenDeviceFor(smallestWidthDp: Dp): Boolean = smallestWidthDp >= AppLargeScreenMinSmallestWidth
+
+/**
+ * How many columns a page that opts into the wide layout gets.
+ *
+ * Two conditions, because they answer different questions. [largeScreenDevice] asks "is this hardware a
+ * tablet or an unfolded fold" and never changes as the device is turned. [availableWidth] asks "is there room
+ * *now*", and [AppDualPaneMinWidth] is the answer the codebase already derived for it: two columns of
+ * [AppPaneMinWidth], the narrowest this app's rows have ever been laid out for. A large-screen device in a
+ * narrowed split-screen window therefore drops back to one column, which is right — the window is
+ * phone-shaped even though the device is not.
+ */
+fun appPageColumnCountFor(
+    availableWidth: Dp,
+    largeScreenDevice: Boolean,
+): Int = if (largeScreenDevice && availableWidth >= AppDualPaneMinWidth) 2 else 1
+
+/**
+ * The content cap for [columnCount] columns.
+ *
+ * Two columns are allowed twice the single column's width plus the gap between them, so each one lands close
+ * to [AppPageContentMaxWidth] rather than half of it. Anything wider still becomes gutter: on the Pad at
+ * 1280dp this consumes the whole panel and leaves none, and only past ~1456dp would a two-column page start
+ * centring itself again.
+ */
+fun appPageContentMaxWidthFor(columnCount: Int): Dp =
+    if (columnCount >= 2) AppPageContentMaxWidth * 2f + AppPageColumnGap else AppPageContentMaxWidth
+
+/**
  * Extra inset each side needs so a content column of at most [maxContentWidth] sits centred in
  * [availableWidth].
  *
@@ -35,7 +83,8 @@ val AppPageContentMaxWidth: Dp = 720.dp
 fun appPageSideGutterFor(
     availableWidth: Dp,
     maxContentWidth: Dp = AppPageContentMaxWidth,
-): Dp = ((availableWidth - maxContentWidth) / 2f).coerceAtLeast(0.dp)
+    minimumGutter: Dp = 0.dp,
+): Dp = ((availableWidth - maxContentWidth) / 2f).coerceAtLeast(minimumGutter)
 
 /**
  * The gutter for the space the caller is actually laid out in.
@@ -48,11 +97,51 @@ fun appPageSideGutterFor(
  * chrome that floats over them. An overlay pinned to the true window edge while the content sits 280dp inside
  * it is worse than no gutter at all — the actions stop belonging to the page they act on.
  */
+/**
+ * The content cap the page being composed is actually using.
+ *
+ * Published by the page, because the top row is a *sibling* of the list rather than its parent: a page that
+ * widens its column has to tell its own chrome, or the back button centres on a column that is no longer
+ * there. That was visible the moment Settings went to two columns — content from 14dp, back button from
+ * 294dp, the two laid out against different pages.
+ *
+ * Defaults to the single-column cap, so a page that never opts in is unchanged.
+ */
+val LocalAppPageContentMaxWidth = compositionLocalOf { AppPageContentMaxWidth }
+
+/**
+ * Edge inset a page keeps once its column is wide enough to reach the window edge.
+ *
+ * The single-column cap always leaves a gutter on a large window, so this never applied before. A two-column
+ * page consumes the whole panel, and then all that stands between a card and the bezel is
+ * `pageHorizontalPadding` — which is a *phone* margin, and reads on a 1280dp panel exactly the way the top
+ * row's 14dp did before [AppTopBarRegularEdgePadding] stepped it up. Same reasoning, same step: twice the
+ * phone margin rather than a new number.
+ */
+val AppWideContentEdgeInset: Dp = AppChromeTokens.pageHorizontalPadding
+
 @Composable
-fun appPageSideGutter(maxContentWidth: Dp = AppPageContentMaxWidth): Dp =
+fun appPageSideGutter(maxContentWidth: Dp = LocalAppPageContentMaxWidth.current): Dp =
     appPageSideGutterFor(
         availableWidth = appContentWidth(),
         maxContentWidth = maxContentWidth,
+        // A wider-than-single-column cap is what a page passes when it lays out in columns, and it is the
+        // only case where the gutter can reach zero on a large screen.
+        minimumGutter = if (maxContentWidth > AppPageContentMaxWidth) AppWideContentEdgeInset else 0.dp,
+    )
+
+/**
+ * Columns for the space the caller is laid out in, on the device it is running on.
+ *
+ * Opt-in: a page gets this only by asking, because two columns are right for a page of independent cards and
+ * wrong for one long ordered list. [appContentWidth] rather than the display, so a pane or a split-screen
+ * window narrows it; `smallestScreenWidthDp` for the device half, which no orientation changes.
+ */
+@Composable
+fun appPageColumnCount(): Int =
+    appPageColumnCountFor(
+        availableWidth = appContentWidth(),
+        largeScreenDevice = appLargeScreenDeviceFor(LocalConfiguration.current.smallestScreenWidthDp.dp),
     )
 
 /**

@@ -174,9 +174,10 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     val gap = TabbedPageBottomChromeSearchGap
     // The category bar and the search dock size themselves from the width they are given, so folding the
     // large-screen gutter into the outer padding narrows the whole bottom chrome onto the content column
-    // instead of stretching a five-tab strip across 1280dp. Zero on phones.
-    val outerStartPadding = AppChromeTokens.pageHorizontalPadding + appPageSideGutterStart()
-    val outerEndPadding = AppChromeTokens.pageHorizontalPadding + appPageSideGutterEnd()
+    // instead of stretching a five-tab strip across 1280dp. Zero on phones. Pinned to the single-column cap
+    // on purpose: a page that widens its column for two columns of cards must not drag this bar out with it.
+    val outerStartPadding = AppChromeTokens.pageHorizontalPadding + appBottomChromeSideGutterStart()
+    val outerEndPadding = AppChromeTokens.pageHorizontalPadding + appBottomChromeSideGutterEnd()
     val effectiveSearchExpanded = searchEnabled && searchExpanded
     val categoryDockExpanded =
         tabbedPageCategoryDockExpanded(

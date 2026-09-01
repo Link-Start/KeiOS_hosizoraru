@@ -685,3 +685,31 @@ through the track-edit sheet, which means driving a source-mode dropdown and the
 file already records why that is a different class of risk -- "driving a text field from a journey
 depends on focus and the IME in a way a tab tap does not" -- so it is named here rather than attempted
 at the end of a long change.
+
+## Measured: 23/23 in 35m 24s, and the first capture whose total went up
+
+| | before | after |
+| --- | ---: | ---: |
+| `baseline-prof.txt` | 71,372 | **72,507** (+1,135) |
+| `startup-prof.txt` | 24,711 | 24,710 |
+| all `fdroid` rules | 446 | **727** |
+| `GitHubFdroidDetailSheet` | 2 | **75** |
+| `FdroidMetadataSidecar` | 8 | **87** |
+| `FdroidReleaseCheckSource` | 21 | 45 |
+| `FdroidCandidateSelector` | **0** | 8 |
+
+The three history components held at 18 / 21 / 27. This is also the first capture in this run of work
+whose *total* moved up rather than down, which is what a new journey looks like against the noise the
+section above describes: +1,135 is well outside the +-150 the undriven background refresh and the
+network-dependent journeys have been swinging by.
+
+**The capture before this one failed, and not on anything here.** `baGuideCatalogInteractions` could
+not bring `ba_guide_catalog_dock_favorite_bgm` back into view after its eight retries, having run 265s
+against its usual 231s. Two readings were available and the flattering one is not automatically right,
+so the suspicion worth testing was mine: four permanently-failing tracked fixtures mean every app start
+now runs a refresh that fails them, one of which reaches api.github.com, and that is real contention for
+a journey which loads remote content. Tested directly -- seed the fixtures with the F-Droid journey,
+then run the BA journey alone against that state in a second `am instrument` invocation so the data
+persists -- and it passed. Combined with that journey passing every other capture, including this one,
+the balance is a flake in a network-dependent journey rather than interference. One data point is not
+proof of absence; if it recurs there is now a way to reproduce it in eight minutes.

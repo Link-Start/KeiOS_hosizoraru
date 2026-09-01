@@ -193,6 +193,14 @@ internal fun LiquidSheetPresentation(
     val userResized = remember { mutableStateOf(false) }
 
     val windowHeightPx = with(density) { windowInfo.containerDpSize.height.toPx() }
+    // Whether the sheet's own surface reaches both window edges, which is what decides how far the
+    // scrim's blurred plate has to reach. See [liquidSheetScrimBlurHeightPx].
+    val sheetSpansWindowWidth =
+        liquidSheetSpansWindowWidth(
+            windowWidth = windowInfo.containerDpSize.width,
+            sheetMaxWidth = sheetMaxWidth,
+            outsideMarginWidth = outsideMargin.width,
+        )
     val topInsetPx = with(density) { topInset.toPx() }
     val minimumHeightPx = with(density) { minimumHeight.toPx() }
     val dismissThresholdPx = with(density) { dismissDragThreshold.toPx() }
@@ -227,6 +235,7 @@ internal fun LiquidSheetPresentation(
             sheetHeightPx = currentHeightPx(),
             offsetPx = offsetPx(),
             cornerRadiusPx = with(density) { cornerRadius.toPx() },
+            sheetSpansWindowWidth = sheetSpansWindowWidth,
         )
 
     // Built here rather than passed in: the material has to invert the sheet's own translation for
@@ -694,13 +703,40 @@ internal fun liquidSheetOffsetPx(
  * the blur continues behind the rounded shoulders instead of ending in a visible straight line across
  * them. It deliberately stops there: the sheet blurs its own region, and extending this underneath
  * would pay for those pixels twice.
+ *
+ * That trade only holds while the sheet actually covers everything below the plate, which is
+ * [sheetSpansWindowWidth]. On a phone it always does — the width cap is 480dp against a 360-440dp window
+ * and the outside margin is zero. On a tablet the cap wins and the sheet becomes a centred panel: measured
+ * on the Pad AVD at 1280dp it is 592dp wide, leaving **344dp of bare window down each side**, and stopping
+ * the plate at its top edge drew a hard horizontal line straight across all three — blurred above,
+ * dimmed-but-sharp below, with the sheet floating in it.
+ *
+ * So a sheet that does not span the width asks for the whole height instead, the same way
+ * [os.kei.ui.page.main.widget.dialog.LiquidModalPresentation] already does for cards, which never span it.
+ * The double-draw under the sheet is the cheaper mistake: `docs/planning/liquid-sheet-frame-cost.md`
+ * measured an open sheet's cost as the number of glass controls in it, explicitly *not* blurred area.
  */
+/**
+ * Whether the sheet's surface reaches both window edges.
+ *
+ * Both halves matter. The width cap is what turns the sheet into a centred panel on a tablet, and a
+ * non-zero outside margin would leave a bare strip down each side even at a width that otherwise fills
+ * the window — a seam is a seam whether it is 344dp or 8dp wide.
+ */
+internal fun liquidSheetSpansWindowWidth(
+    windowWidth: Dp,
+    sheetMaxWidth: Dp,
+    outsideMarginWidth: Dp,
+): Boolean = outsideMarginWidth <= 0.dp && sheetMaxWidth >= windowWidth
+
 internal fun liquidSheetScrimBlurHeightPx(
     windowHeightPx: Float,
     sheetHeightPx: Float,
     offsetPx: Float,
     cornerRadiusPx: Float,
+    sheetSpansWindowWidth: Boolean = true,
 ): Int {
+    if (!sheetSpansWindowWidth) return Int.MAX_VALUE
     val sheetTop = windowHeightPx - sheetHeightPx + offsetPx
     return (sheetTop + cornerRadiusPx.coerceAtLeast(0f))
         .coerceIn(0f, windowHeightPx.coerceAtLeast(0f))

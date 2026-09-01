@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.sheet
 
+import androidx.compose.ui.unit.dp
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -109,6 +110,71 @@ class LiquidGlassBottomSheetMathTest {
                 sheetHeightPx = 700f,
                 offsetPx = 700f,
                 cornerRadiusPx = 84f,
+            ),
+        )
+    }
+
+    /**
+     * A phone's sheet spans the window; a tablet's does not, and that is what the plate has to follow.
+     *
+     * The widths are the real ones: 426dp is the phone AVD against a 480dp compact cap, 1280dp is the Pad
+     * in landscape against the 592dp panel measured there.
+     */
+    @Test
+    fun onlyASheetThatReachesBothEdgesSpansTheWindow() {
+        assertTrue(
+            liquidSheetSpansWindowWidth(
+                windowWidth = 426.dp,
+                sheetMaxWidth = 480.dp,
+                outsideMarginWidth = 0.dp,
+            ),
+            "A phone's cap is wider than its window, so the sheet fills it",
+        )
+        assertFalse(
+            liquidSheetSpansWindowWidth(
+                windowWidth = 1_280.dp,
+                sheetMaxWidth = 592.dp,
+                outsideMarginWidth = 0.dp,
+            ),
+            "The Pad's cap wins and leaves bare window down both sides",
+        )
+        // A margin leaves a strip however wide the sheet is allowed to be. A seam is a seam.
+        assertFalse(
+            liquidSheetSpansWindowWidth(
+                windowWidth = 426.dp,
+                sheetMaxWidth = 480.dp,
+                outsideMarginWidth = 8.dp,
+            ),
+        )
+    }
+
+    /**
+     * A sheet that leaves window bare beside it takes the whole height instead of stopping at its own top.
+     *
+     * Stopping there is only correct while the sheet covers everything below the plate; on the Pad it drew
+     * a hard horizontal line with dimmed-but-unblurred page either side of the panel.
+     */
+    @Test
+    fun aSheetThatDoesNotSpanTheWindowBlursAllOfIt() {
+        assertEquals(
+            Int.MAX_VALUE,
+            liquidSheetScrimBlurHeightPx(
+                windowHeightPx = 1_600f,
+                sheetHeightPx = 1_200f,
+                offsetPx = 0f,
+                cornerRadiusPx = 84f,
+                sheetSpansWindowWidth = false,
+            ),
+        )
+        // And the sheet that does span it is unchanged, which is every phone.
+        assertEquals(
+            504,
+            liquidSheetScrimBlurHeightPx(
+                windowHeightPx = 1_120f,
+                sheetHeightPx = 700f,
+                offsetPx = 0f,
+                cornerRadiusPx = 84f,
+                sheetSpansWindowWidth = true,
             ),
         )
     }

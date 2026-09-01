@@ -33,8 +33,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * - **The blur radius is fixed; only alpha animates.** Animating a radius rebuilds the RenderEffect
  *   every frame, while alpha is a layer property the RenderThread already handles. Same constraint as
  *   everything else in `docs/planning/hwui-frame-budget.md`.
- * - **The plate stops at the sheet's top edge.** The sheet blurs its own region already, so extending
- *   this one underneath would pay for the same pixels twice.
+ * - **The plate stops where its caller says it does.** A sheet that reaches both window edges asks it to
+ *   stop at its own top edge, because the sheet blurs its own region and extending underneath would pay
+ *   for those pixels twice. Anything that leaves window bare beside it — a centred card, or a sheet
+ *   capped narrower than a tablet's window — asks for the whole height instead. See
+ *   [liquidSheetScrimBlurHeightPx].
  */
 @Composable
 internal fun LiquidSheetScrim(

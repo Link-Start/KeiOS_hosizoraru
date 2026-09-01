@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -16,6 +17,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
@@ -38,6 +40,11 @@ internal fun BaGuideCatalogTabListLayout(
     val statusBackdrop = rememberLayerBackdrop()
     val showStatusBackdrop = uiState.showError || uiState.showEmpty
     val entryListGap = rememberBaGuideCatalogEntryListGap()
+    val columnsPerRow = appPageColumnCount()
+    val entryRows =
+        remember(displayedEntries, columnsPerRow) {
+            baGuideCatalogEntryRows(entries = displayedEntries, columnsPerRow = columnsPerRow)
+        }
     Box(modifier = Modifier.fillMaxSize()) {
         if (showStatusBackdrop) {
             Box(
@@ -90,11 +97,13 @@ internal fun BaGuideCatalogTabListLayout(
                 }
             } else {
                 renderBaGuideCatalogEntryListAdapter(
-                    displayedEntries = displayedEntries,
+                    entryRows = entryRows,
                     hasMoreEntries = hasMoreEntries,
                     favoriteCatalogEntries = favoriteCatalogEntries,
                     accent = accent,
                     loadingMoreText = uiState.loadingMoreText,
+                    columnsPerRow = columnsPerRow,
+                    entryGap = entryListGap,
                     onOpenGuide = onOpenGuide,
                     onToggleFavorite = onToggleFavorite,
                 )

@@ -52,6 +52,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -141,11 +142,14 @@ internal fun BaGuideStudentBgmTabContent(
         }
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listState = rememberLazyListState()
+    // Two columns on a tablet or an unfolded fold, flowing row-major so the list keeps one order and one
+    // scroll. Every music row is the same height, so they simply pair up.
+    val columnsPerRow = appPageColumnCount()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     LaunchedEffect(visibleFilteredEntries.size, tabState) {
         tabState.resetVisibleCount(visibleFilteredEntries.size)
     }
-    LaunchedEffect(isPageActive, listState, visibleFilteredEntries.size, snapshotFlowManager, tabState) {
+    LaunchedEffect(isPageActive, listState, visibleFilteredEntries.size, columnsPerRow, snapshotFlowManager, tabState) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
@@ -164,7 +168,10 @@ internal fun BaGuideStudentBgmTabContent(
                 if (lastVisible < triggerIndex) return@collect
                 tabState.appendVisibleBatch(
                     totalCount = visibleFilteredEntries.size,
-                    viewportItems = viewportItems,
+                    // Items are rows here, and a batch is measured in entries: two columns halve the item
+                    // count for the same amount of list on screen, so without this the page appends half
+                    // as much per step and the list runs dry sooner than it used to.
+                    viewportItems = viewportItems * columnsPerRow,
                 )
             }
     }
@@ -176,34 +183,6 @@ internal fun BaGuideStudentBgmTabContent(
                 visibleFilteredEntries.subList(0, tabState.visibleCount)
             }
         }
-    LaunchedEffect(isPageActive, listState, displayedEntries, snapshotFlowManager, lookupCoordinator) {
-        if (!isPageActive) return@LaunchedEffect
-        snapshotFlowManager
-            .snapshotFlow {
-                val visibleItems = listState.layoutInfo.visibleItemsInfo
-                BaGuideVisibleItemRange(
-                    firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
-                    lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
-                    visibleItemCount = visibleItems.size,
-                )
-            }.distinctUntilChanged()
-            .collect { visibleItemRange ->
-                val imageUrls =
-                    buildBaGuideCatalogVisibleImageRequestUrls(
-                        displayedEntries = displayedEntries,
-                        visibleItemRange = visibleItemRange,
-                        entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
-                    )
-                requestVisibleImages(imageUrls)
-                val prewarmEntries =
-                    buildBaGuideStudentBgmVisiblePrewarmEntries(
-                        displayedEntries = displayedEntries,
-                        visibleItemRange = visibleItemRange,
-                        entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
-                    )
-                lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)
-            }
-    }
 
     fun setNowPlayingVisible(visible: Boolean) {
         onNowPlayingVisibleChange(visible)
@@ -251,6 +230,49 @@ internal fun BaGuideStudentBgmTabContent(
     }
     val displayedBgmModel = displayedDerivedState.model
     val displayedRows = displayedBgmModel.rows
+    val entryRows =
+        remember(displayedRows, columnsPerRow) {
+            baGuideCatalogEntryRows(entries = displayedRows, columnsPerRow = columnsPerRow)
+        }
+    // Below the rows on purpose: the preload window is expressed in *item* indices, so it can only be
+    // resolved once the row grouping those items come from exists. `displayedRows` and
+    // `displayedEntries` are the same entries in the same order, which is what lets one row shape
+    // index into the other -- the mapping this effect already relied on before there were rows.
+    LaunchedEffect(isPageActive, listState, displayedEntries, entryRows, snapshotFlowManager, lookupCoordinator) {
+        if (!isPageActive) return@LaunchedEffect
+        snapshotFlowManager
+            .snapshotFlow {
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                BaGuideVisibleItemRange(
+                    firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
+                    lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
+                    visibleItemCount = visibleItems.size,
+                )
+            }.distinctUntilChanged()
+            .collect { visibleItemRange ->
+                // Resolved through the rows: one visible item is two entries in two columns.
+                val visibleEntryRange =
+                    baGuideCatalogVisibleEntryRange(
+                        rows = entryRows,
+                        visibleItemRange = visibleItemRange,
+                        entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
+                    )
+                val imageUrls =
+                    buildBaGuideCatalogVisibleImageRequestUrls(
+                        displayedEntries = displayedEntries,
+                        visibleItemRange = visibleEntryRange,
+                        entryStartIndex = 0,
+                    )
+                requestVisibleImages(imageUrls)
+                val prewarmEntries =
+                    buildBaGuideStudentBgmVisiblePrewarmEntries(
+                        displayedEntries = displayedEntries,
+                        visibleItemRange = visibleEntryRange,
+                        entryStartIndex = 0,
+                    )
+                lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)
+            }
+    }
     val displayedPlayableFavorites = displayedBgmModel.playableFavorites
     LaunchedEffect(playbackCoordinator, displayedPlayableFavorites, isPageActive) {
         if (isPageActive) {
@@ -426,10 +448,15 @@ internal fun BaGuideStudentBgmTabContent(
                 }
             } else {
                 items(
-                    items = displayedRows,
-                    key = { it.entry.contentId },
+                    items = entryRows,
+                    key = { it.entries.first().entry.contentId },
                     contentType = { "student_bgm_entry" },
-                ) { row ->
+                ) { entryRow ->
+                    BaGuideCatalogEntryRowLayout(
+                        row = entryRow,
+                        columnsPerRow = columnsPerRow,
+                        horizontalGap = entryListGap,
+                    ) { row, _ ->
                     val entry = row.entry
                     val selected = row.readyAudioUrl == selectedAudioUrl
                     BaGuideStudentBgmCard(
@@ -454,6 +481,7 @@ internal fun BaGuideStudentBgmTabContent(
                         onPlay = { actions.playEntry(entry) },
                         onToggleFavorite = { actions.toggleEntryFavorite(entry) },
                     )
+                    }
                 }
             }
         }

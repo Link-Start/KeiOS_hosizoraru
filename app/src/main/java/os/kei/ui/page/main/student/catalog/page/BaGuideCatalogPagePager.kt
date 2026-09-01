@@ -5,6 +5,7 @@ package os.kei.ui.page.main.student.catalog.page
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +27,9 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
+import os.kei.ui.page.main.widget.chrome.LocalAppPageContentMaxWidth
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
@@ -140,6 +144,15 @@ private fun BaGuideCatalogPageTabContent(
     onRequestVisibleCatalogImages: (List<String>) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
 ) {
+    // Only the three list tabs widen. The cap is published here rather than at the page root because the
+    // bottom chrome -- four tabs, a search dock and the now-playing bar -- is a sibling of these and must
+    // keep the single-column width: a bar stretched to a two-column page puts its first tab and its last
+    // a panel apart. The Play tab is a single queue and keeps the single cap too.
+    val listTabColumnCount =
+        if (pageTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm) 1 else appPageColumnCount()
+    CompositionLocalProvider(
+        LocalAppPageContentMaxWidth provides appPageContentMaxWidthFor(listTabColumnCount),
+    ) {
     when {
         resolvedCatalogTab != null -> {
             val catalogTab = resolvedCatalogTab
@@ -264,5 +277,6 @@ private fun BaGuideCatalogPageTabContent(
                 onRequestGuideDetailTab = pageActions.onRequestGuideDetailTab,
             )
         }
+    }
     }
 }

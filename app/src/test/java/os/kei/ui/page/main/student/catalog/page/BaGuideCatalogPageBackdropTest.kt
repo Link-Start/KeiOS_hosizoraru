@@ -133,7 +133,10 @@ class BaGuideCatalogPageBackdropTest {
             ".nestedScroll(nestedScrollConnection)",
             "key = \"memory-lobby-error\"",
             "key = \"memory-lobby-empty\"",
-            "key = { entry -> \"memory-lobby-\${entry.contentId}\" }",
+            // Items are rows now, so the key is the identity of whichever entry opens the row rather than
+            // of the lone entry in it. The property being pinned is the same one: keyed by content, never
+            // by index, so a filter change re-keys only the rows whose leading entry actually moved.
+            "key = { row -> \"memory-lobby-\${row.entries.first().contentId}\" }",
         )
         assertSourceContains(
             source = studentBgmSource,
@@ -141,7 +144,7 @@ class BaGuideCatalogPageBackdropTest {
             "userScrollEnabled = !sliderInteractionActive",
             ".nestedScroll(nestedScrollConnection)",
             "key = \"student-bgm-empty\"",
-            "key = { it.entry.contentId }",
+            "key = { it.entries.first().entry.contentId }",
         )
         STATUS_LEAF_SOURCES.map(::sourceFile).forEach { source ->
             assertSourceContains(

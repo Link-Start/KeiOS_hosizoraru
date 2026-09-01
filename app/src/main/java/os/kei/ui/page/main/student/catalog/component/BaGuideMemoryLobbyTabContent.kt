@@ -41,6 +41,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedSt
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -172,9 +173,22 @@ internal fun BaGuideMemoryLobbyTabContent(
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
+    // Two columns on a tablet or an unfolded fold, flowing row-major so the list keeps one order and one
+    // scroll. An expanded entry takes the whole row: it opens a lobby illustration taller than the viewport,
+    // and pairing that with a collapsed entry would leave most of a panel-height cell empty.
+    val columnsPerRow = appPageColumnCount()
+    val entryRows =
+        remember(displayedEntries, columnsPerRow, expandedContentIds) {
+            baGuideCatalogEntryRows(
+                entries = displayedEntries,
+                columnsPerRow = columnsPerRow,
+                isFullSpan = { entry -> entry.contentId in expandedContentIds },
+            )
+        }
     LaunchedEffect(
         listState,
         displayedEntries,
+        entryRows,
         isPageActive,
         showLoading,
         showEmpty,
@@ -188,24 +202,31 @@ internal fun BaGuideMemoryLobbyTabContent(
         snapshotFlowManager
             .snapshotFlow {
                 val visibleItems = listState.layoutInfo.visibleItemsInfo
+                // Resolved through the rows: one visible item is two entries in two columns, and only
+                // one where that row is a full span.
                 val visibleItemRange =
-                    BaGuideVisibleItemRange(
-                        firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
-                        lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
-                        visibleItemCount = visibleItems.size,
+                    baGuideCatalogVisibleEntryRange(
+                        rows = entryRows,
+                        visibleItemRange =
+                            BaGuideVisibleItemRange(
+                                firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
+                                lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
+                                visibleItemCount = visibleItems.size,
+                            ),
+                        entryStartIndex = entryStartIndex,
                     )
                 BaGuideMemoryLobbyVisibleWork(
                     imageUrls =
                         buildBaGuideCatalogVisibleImageRequestUrls(
                             displayedEntries = displayedEntries,
                             visibleItemRange = visibleItemRange,
-                            entryStartIndex = entryStartIndex,
+                            entryStartIndex = 0,
                         ),
                     prewarmEntries =
                         buildBaGuideStudentBgmVisiblePrewarmEntries(
                             displayedEntries = displayedEntries,
                             visibleItemRange = visibleItemRange,
-                            entryStartIndex = entryStartIndex,
+                            entryStartIndex = 0,
                             limit = MEMORY_LOBBY_VISIBLE_PREWARM_LIMIT,
                         ),
                 )
@@ -325,10 +346,15 @@ internal fun BaGuideMemoryLobbyTabContent(
             }
         } else if (!showLoading) {
             items(
-                items = displayedEntries,
-                key = { entry -> "memory-lobby-${entry.contentId}" },
+                items = entryRows,
+                key = { row -> "memory-lobby-${row.entries.first().contentId}" },
                 contentType = { "memory_lobby_entry" },
-            ) { entry ->
+            ) { row ->
+                BaGuideCatalogEntryRowLayout(
+                    row = row,
+                    columnsPerRow = columnsPerRow,
+                    horizontalGap = entryListGap,
+                ) { entry, _ ->
                 val expanded = entry.contentId in expandedContentIds
                 BaGuideMemoryLobbyCard(
                     entry = entry,
@@ -357,6 +383,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                     },
                     onToggleFavorite = { onToggleFavorite(entry.contentId) },
                 )
+                }
             }
 
             if (listStateHolder.hasMoreEntries) {

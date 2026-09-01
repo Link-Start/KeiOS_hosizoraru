@@ -39,6 +39,7 @@ import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabConten
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.student.catalog.state.visibleCatalogEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -133,9 +134,20 @@ internal fun BaGuideCatalogV2ListContent(
                 onScrollBoundsChange(canScrollBackward, canScrollForward)
             }
     }
+    // Two columns on a tablet or an unfolded fold. The list keeps one order and one scroll -- see
+    // `baGuideCatalogEntryRows` for why an ordered list must not split into two independent lanes.
+    val columnsPerRow = appPageColumnCount()
+    val entryRows =
+        remember(tabListState.displayedEntries, columnsPerRow) {
+            baGuideCatalogEntryRows(
+                entries = tabListState.displayedEntries,
+                columnsPerRow = columnsPerRow,
+            )
+        }
     LaunchedEffect(
         tabListState.listState,
         tabListState.displayedEntries,
+        entryRows,
         uiState.showError,
         uiState.showLoading,
         uiState.showEmpty,
@@ -151,13 +163,20 @@ internal fun BaGuideCatalogV2ListContent(
                 val visibleItems = tabListState.listState.layoutInfo.visibleItemsInfo
                 buildBaGuideCatalogVisibleImageRequestUrls(
                     displayedEntries = tabListState.displayedEntries,
+                    // Resolved through the rows, because with two columns a visible item covers two
+                    // entries -- and with a full-span row in the list it is not even a fixed multiple.
                     visibleItemRange =
-                        BaGuideVisibleItemRange(
-                            firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
-                            lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
-                            visibleItemCount = visibleItems.size,
+                        baGuideCatalogVisibleEntryRange(
+                            rows = entryRows,
+                            visibleItemRange =
+                                BaGuideVisibleItemRange(
+                                    firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
+                                    lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
+                                    visibleItemCount = visibleItems.size,
+                                ),
+                            entryStartIndex = entryStartIndex,
                         ),
-                    entryStartIndex = entryStartIndex,
+                    entryStartIndex = 0,
                 )
             }.distinctUntilChanged()
             .collect { imageUrls ->
@@ -262,11 +281,13 @@ internal fun BaGuideCatalogV2ListContent(
             }
         } else if (!uiState.showLoading) {
             renderBaGuideCatalogEntryListAdapter(
-                displayedEntries = tabListState.displayedEntries,
+                entryRows = entryRows,
                 hasMoreEntries = tabListState.hasMoreEntries,
                 favoriteCatalogEntries = favoriteCatalogEntries,
                 accent = accent,
                 loadingMoreText = uiState.loadingMoreText,
+                columnsPerRow = columnsPerRow,
+                entryGap = entryListGap,
                 onOpenGuide = onOpenGuide,
                 onToggleFavorite = onToggleFavorite,
             )

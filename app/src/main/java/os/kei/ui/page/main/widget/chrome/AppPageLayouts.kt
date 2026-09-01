@@ -83,21 +83,26 @@ internal fun appPageBackdropBaseColor(): Color {
 }
 
 /**
- * [sideGutter] is the large-screen centring inset from [appPageSideGutter]; it is `0.dp` on every phone, so
- * the default keeps this function's old behaviour exactly. Call sites that can see a composition should pass
- * the real one — [AppPageLazyColumn] does.
+ * The side gutters are the large-screen centring insets from [appPageSideGutterStart] and
+ * [appPageSideGutterEnd]; both are `0.dp` on every phone, so the defaults keep this function's old behaviour
+ * exactly. Call sites that can see a composition should pass the real ones — [AppPageLazyColumn] does.
+ *
+ * Two of them, not one, because only the leading edge has the sidebar rail on it. A symmetric gutter is
+ * right for centring and wrong for the rail, and taking one number for both is what slid every list card on
+ * OS, MCP, GitHub and BA underneath it the moment the navigation moved to the side.
  */
 fun appPageContentPadding(
     innerPadding: PaddingValues,
     bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
     topExtra: Dp = 0.dp,
-    sideGutter: Dp = 0.dp,
+    sideGutterStart: Dp = 0.dp,
+    sideGutterEnd: Dp = 0.dp,
 ): PaddingValues =
     PaddingValues(
         top = innerPadding.calculateTopPadding() + topExtra,
         bottom = innerPadding.calculateBottomPadding() + bottomExtra,
-        start = AppChromeTokens.pageHorizontalPadding + sideGutter,
-        end = AppChromeTokens.pageHorizontalPadding + sideGutter,
+        start = AppChromeTokens.pageHorizontalPadding + sideGutterStart,
+        end = AppChromeTokens.pageHorizontalPadding + sideGutterEnd,
     )
 
 fun appPageBottomPaddingWithFloatingOverlay(contentBottomPadding: Dp): Dp =
@@ -272,7 +277,8 @@ fun AppPageLazyColumn(
                 // Padding rather than a width constraint on the list itself, so the scroll surface, the
                 // overscroll stretch and the edge-stacked card pile still span the whole panel. Only the
                 // content is centred; the gesture area is not narrowed.
-                sideGutter = appPageSideGutter(maxContentWidth),
+                sideGutterStart = appPageSideGutterStart(maxContentWidth),
+                sideGutterEnd = appPageSideGutterEnd(maxContentWidth),
             ),
         verticalArrangement = Arrangement.spacedBy(sectionSpacing),
         content = content,
@@ -311,7 +317,11 @@ fun AppPageTwoColumnLists(
     primary: LazyListScope.() -> Unit,
     secondary: LazyListScope.() -> Unit,
 ) {
-    val gutter = appPageSideGutter(maxContentWidth)
+    // Asymmetric: only the leading edge has the sidebar rail on it, so the two edges cannot share one
+    // number. Identical on a phone and on any tablet whose navigation is at the top, where the rail's
+    // contribution is zero.
+    val gutterStart = appPageSideGutterStart(maxContentWidth)
+    val gutterEnd = appPageSideGutterEnd(maxContentWidth)
     // The top inset belongs to whichever element is actually at the top. Handing it to both would inset the
     // columns a second time below the header; handing it to neither loses the header entirely — a page
     // wrapped in AppEdgeStackKeepAlive is measured taller than its bounds and placed that far *up*, so an
@@ -326,8 +336,8 @@ fun AppPageTwoColumnLists(
     Column(
         modifier =
             modifier.padding(
-                start = AppChromeTokens.pageHorizontalPadding + gutter,
-                end = AppChromeTokens.pageHorizontalPadding + gutter,
+                start = AppChromeTokens.pageHorizontalPadding + gutterStart,
+                end = AppChromeTokens.pageHorizontalPadding + gutterEnd,
             ),
     ) {
         // Anything that belongs to the page rather than to one column — an account switcher, a status hub —
@@ -391,13 +401,14 @@ fun AppPageTwoColumnPanes(
     primary: @Composable () -> Unit,
     secondary: @Composable () -> Unit,
 ) {
-    val gutter = appPageSideGutter(maxContentWidth)
+    val gutterStart = appPageSideGutterStart(maxContentWidth)
+    val gutterEnd = appPageSideGutterEnd(maxContentWidth)
     Row(
         modifier =
             modifier
                 .padding(
-                    start = AppChromeTokens.pageHorizontalPadding + gutter,
-                    end = AppChromeTokens.pageHorizontalPadding + gutter,
+                    start = AppChromeTokens.pageHorizontalPadding + gutterStart,
+                    end = AppChromeTokens.pageHorizontalPadding + gutterEnd,
                 ).padding(
                     top = innerPadding.calculateTopPadding() + topExtra,
                     bottom = innerPadding.calculateBottomPadding() + bottomExtra,
@@ -459,7 +470,8 @@ fun AppPageStaggeredGrid(
                 innerPadding = innerPadding,
                 bottomExtra = bottomExtra,
                 topExtra = topExtra,
-                sideGutter = appPageSideGutter(maxContentWidth),
+                sideGutterStart = appPageSideGutterStart(maxContentWidth),
+                sideGutterEnd = appPageSideGutterEnd(maxContentWidth),
             ),
         verticalItemSpacing = sectionSpacing,
         horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap),

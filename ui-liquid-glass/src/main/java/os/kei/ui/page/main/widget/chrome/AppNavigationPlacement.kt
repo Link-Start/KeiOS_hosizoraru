@@ -236,13 +236,14 @@ fun appTopRowFitsTitle(
  * Asymmetric by exactly [AppSidebarWidth], because only the leading edge has a rail on it.
  */
 @Composable
-fun appPageSideGutterStart(): Dp =
-    appPageSideGutter() +
+fun appPageSideGutterStart(maxContentWidth: Dp = LocalAppPageContentMaxWidth.current): Dp =
+    appPageSideGutter(maxContentWidth) +
         if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Sidebar) AppSidebarWidth else 0.dp
 
 /** Trailing inset for page content. Just the gutter — nothing floats against the trailing edge. */
 @Composable
-fun appPageSideGutterEnd(): Dp = appPageSideGutter()
+fun appPageSideGutterEnd(maxContentWidth: Dp = LocalAppPageContentMaxWidth.current): Dp =
+    appPageSideGutter(maxContentWidth)
 
 /**
  * The same insets for floating bottom chrome, pinned to the **single-column** cap.

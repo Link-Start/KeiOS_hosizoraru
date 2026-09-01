@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import os.kei.ui.page.main.mcp.state.McpPageOverviewState
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.AppPageStaggeredGrid
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
@@ -59,6 +61,8 @@ internal fun McpPageContent(
     runtime: MainPageRuntime,
     innerPadding: PaddingValues,
     listState: LazyListState,
+    gridState: LazyStaggeredGridState,
+    columnCount: Int,
     scrollBehavior: ScrollBehavior,
     backdrops: MainPageBackdropSet,
     backdropProducerActive: Boolean,
@@ -126,126 +130,45 @@ internal fun McpPageContent(
             state = edgeStackState,
             modifier = Modifier.fillMaxSize(),
         ) {
-        AppPageLazyColumn(
-            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
-            state = listState,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-            bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
-            topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
-            sectionSpacing = 12.dp,
-        ) {
-            item(key = "mcp-onboarding-guide", contentType = "mcp_onboarding_guide_section") {
-                McpOnboardingGuideSection(
-                    backdrop = backdrops.contentMaterial,
-                    expanded = pageUiState.onboardingExpanded,
-                    onExpandedChange = actions.onOnboardingExpandedChange,
-                    onCopyCurrentConfig = actions.onCopyCurrentConfig,
-                    onCopySkillResource = actions.onCopySkillResource,
-                    onCopySubAgentResource = actions.onCopySubAgentResource,
-                    onCopyWorkflowResource = actions.onCopyWorkflowResource,
-                )
+        val sections = mcpPageSections(toolBuckets)
+        val sectionInput =
+            McpSectionRenderInput(
+                uiState = uiState,
+                pageUiState = pageUiState,
+                toolBuckets = toolBuckets,
+                backdrop = backdrops.contentMaterial,
+                subtitleColor = subtitleColor,
+                actions = actions,
+            )
+        val listModifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+        val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
+        val listBottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding)
+        val listTopExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)
+        if (columnCount >= 2) {
+            AppPageStaggeredGrid(
+                innerPadding = listInnerPadding,
+                state = gridState,
+                columnCount = columnCount,
+                modifier = listModifier,
+                bottomExtra = listBottomExtra,
+                topExtra = listTopExtra,
+                sectionSpacing = 12.dp,
+            ) {
+                mcpSectionCells(sections = sections, input = sectionInput)
             }
-            item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
-                McpServiceControlSection(
-                    backdrop = backdrops.contentMaterial,
-                    expanded = pageUiState.controlExpanded,
-                    contentVisible = true,
-                    onExpandedChange = actions.onControlExpandedChange,
-                    onSendTestNotification = actions.onSendTestNotification,
-                    onShowResetConfigConfirm = actions.onShowResetConfigConfirm,
-                    onCopySkillResource = actions.onCopySkillResource,
-                    onCopyWorkflowResource = actions.onCopyWorkflowResource,
-                )
-            }
-            item(key = "mcp-tool-entrypoints", contentType = "mcp_tool_entrypoints_section") {
-                McpToolEntrypointsSection(
-                    backdrop = backdrops.contentMaterial,
-                    buckets = toolBuckets,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    onSearchQueryChange = actions.onToolsSearchQueryChange,
-                    expanded = pageUiState.toolEntrypointsExpanded,
-                    onExpandedChange = actions.onToolEntrypointsExpandedChange,
-                )
-            }
-            item(key = "mcp-tool-runtime", contentType = "mcp_tool_runtime_section") {
-                McpToolRuntimeSection(
-                    backdrop = backdrops.contentMaterial,
-                    tools = toolBuckets.runtimeTools,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    expanded = pageUiState.runtimeToolsExpanded,
-                    onExpandedChange = actions.onRuntimeToolsExpandedChange,
-                )
-            }
-            item(key = "mcp-tool-system", contentType = "mcp_tool_system_section") {
-                McpToolSystemSection(
-                    backdrop = backdrops.contentMaterial,
-                    tools = toolBuckets.systemTools,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    expanded = pageUiState.systemToolsExpanded,
-                    onExpandedChange = actions.onSystemToolsExpandedChange,
-                )
-            }
-            item(key = "mcp-tool-github", contentType = "mcp_tool_github_section") {
-                McpToolGithubSection(
-                    backdrop = backdrops.contentMaterial,
-                    tools = toolBuckets.githubTools,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    expanded = pageUiState.githubToolsExpanded,
-                    onExpandedChange = actions.onGithubToolsExpandedChange,
-                )
-            }
-            item(key = "mcp-tool-ba", contentType = "mcp_tool_ba_section") {
-                McpToolBaSection(
-                    backdrop = backdrops.contentMaterial,
-                    tools = toolBuckets.baTools,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    expanded = pageUiState.baToolsExpanded,
-                    onExpandedChange = actions.onBaToolsExpandedChange,
-                )
-            }
-            item(key = "mcp-tool-codex", contentType = "mcp_tool_codex_section") {
-                McpToolCodexSection(
-                    backdrop = backdrops.contentMaterial,
-                    tools = toolBuckets.codexTools,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    expanded = pageUiState.codexToolsExpanded,
-                    onExpandedChange = actions.onCodexToolsExpandedChange,
-                )
-            }
-            item(key = "mcp-tool-workflows", contentType = "mcp_tool_workflows_section") {
-                McpToolWorkflowSection(
-                    backdrop = backdrops.contentMaterial,
-                    tools = toolBuckets.workflowTools,
-                    searchQuery = pageUiState.toolsSearchQuery,
-                    expanded = pageUiState.workflowToolsExpanded,
-                    onExpandedChange = actions.onWorkflowToolsExpandedChange,
-                )
-            }
-            if (toolBuckets.advancedTools.isNotEmpty()) {
-                item(key = "mcp-tool-advanced", contentType = "mcp_tool_advanced_section") {
-                    McpToolAdvancedSection(
-                        backdrop = backdrops.contentMaterial,
-                        tools = toolBuckets.advancedTools,
-                        searchQuery = pageUiState.toolsSearchQuery,
-                        expanded = pageUiState.advancedToolsExpanded,
-                        onExpandedChange = actions.onAdvancedToolsExpandedChange,
-                    )
-                }
-            }
-            item(key = "mcp-logs", contentType = "mcp_logs_section") {
-                McpLogsSection(
-                    backdrop = backdrops.contentMaterial,
-                    expanded = pageUiState.logsExpanded,
-                    onExpandedChange = actions.onLogsExpandedChange,
-                    uiState = uiState,
-                    logsExporting = pageUiState.logsExporting,
-                    onExportLogs = actions.onExportLogs,
-                    onClearLogs = actions.onClearLogs,
-                    subtitleColor = subtitleColor,
-                )
+        } else {
+            AppPageLazyColumn(
+                innerPadding = listInnerPadding,
+                state = listState,
+                modifier = listModifier,
+                bottomExtra = listBottomExtra,
+                topExtra = listTopExtra,
+                sectionSpacing = 12.dp,
+            ) {
+                mcpSectionItems(sections = sections, input = sectionInput)
             }
         }
         }

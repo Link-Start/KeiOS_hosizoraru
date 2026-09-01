@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +38,8 @@ import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
 import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -105,6 +108,10 @@ fun McpPage(
         )
 
     val listState = rememberLazyListState()
+    val gridState = rememberLazyStaggeredGridState()
+    // Two columns on a tablet or an unfolded fold, one everywhere else. MCP is eleven independent
+    // accordion cards, which is what the staggered flow is for.
+    val mcpColumnCount = appPageColumnCount()
     val pageScope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdropEffectsEnabled = runtime.isPageActive && !runtime.isPagerScrollInProgress
@@ -329,9 +336,15 @@ fun McpPage(
             topBarColor = topBarMaterialBackdrop,
             titleBackdrop = backdrops.topBar,
             reserveTopEndActionSpace = true,
+            // The whole page, chrome included, centres on this.
+            contentMaxWidth = appPageContentMaxWidthFor(mcpColumnCount),
             onTitleClick = {
                 pageScope.launch {
-                    listState.animateScrollToItem(0)
+                    if (mcpColumnCount >= 2) {
+                        gridState.animateScrollToItem(0)
+                    } else {
+                        listState.animateScrollToItem(0)
+                    }
                 }
             },
             actions = {
@@ -353,6 +366,8 @@ fun McpPage(
                 runtime = runtime,
                 innerPadding = innerPadding,
                 listState = listState,
+                gridState = gridState,
+                columnCount = mcpColumnCount,
                 scrollBehavior = scrollBehavior,
                 backdrops = backdrops,
                 backdropProducerActive = pageBackdropEffectsEnabled && pageUiState.showEditSheet,

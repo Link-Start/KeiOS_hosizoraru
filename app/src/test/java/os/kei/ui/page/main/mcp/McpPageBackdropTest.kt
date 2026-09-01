@@ -64,10 +64,19 @@ class McpPageBackdropTest {
     @Test
     fun topBarProducerStaysIndependentFromContentConsumers() {
         val source = sourceFile(MCP_PAGE_CONTENT_SOURCE)
+        val sectionsSource = sourceFile(MCP_PAGE_SECTIONS_SOURCE)
 
         assertEquals(1, source.occurrencesOf(".layerBackdrop(backdrops.topBarProducer)"))
         assertEquals(0, source.occurrencesOf(".layerBackdrop(backdrops.contentProducer)"))
-        assertEquals(12, source.occurrencesOf("backdrop = backdrops.content"))
+        // Two here since the cards moved into their own renderer: the status hub pinned above the list,
+        // and the single input every card in the list draws its material from.
+        assertEquals(2, source.occurrencesOf("backdrop = backdrops.content"))
+        // And every card consumes that input -- counted against the enum rather than a literal, so
+        // adding a section without wiring its backdrop fails here instead of rendering a flat plate.
+        assertEquals(
+            McpPageSection.entries.size,
+            sectionsSource.occurrencesOf("backdrop = backdrop,"),
+        )
     }
 
     @Test
@@ -113,6 +122,9 @@ private const val MCP_PAGE_SOURCE =
 
 private const val MCP_PAGE_CONTENT_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/mcp/McpPageContent.kt"
+
+private const val MCP_PAGE_SECTIONS_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/mcp/McpPageSections.kt"
 
 private const val MCP_PAGE_SHEETS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/mcp/McpPageSheets.kt"

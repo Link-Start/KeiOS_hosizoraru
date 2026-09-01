@@ -15,6 +15,7 @@ import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
+import os.kei.ui.page.main.widget.chrome.rememberAppPageScrollTarget
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val GITHUB_PAGE_ACTIVE_SYNC_DELAY_MS = 120L
@@ -118,7 +119,7 @@ internal fun BindGitHubPageLifecycleCoordinator(
 
     BindScrollToTopEffect(
         scrollToTopSignal = scrollToTopSignal,
-        listState = listState,
+        target = rememberAppPageScrollTarget(listState),
         isActive = isPageDataActive,
     )
 

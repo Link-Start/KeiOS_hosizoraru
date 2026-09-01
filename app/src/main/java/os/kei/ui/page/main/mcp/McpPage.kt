@@ -325,6 +325,8 @@ fun McpPage(
         pageUiState = pageUiState,
         runtime = runtime,
         listState = listState,
+        gridState = gridState,
+        wideLayout = mcpColumnCount >= 2,
     )
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides mcpGlassRuntime) {

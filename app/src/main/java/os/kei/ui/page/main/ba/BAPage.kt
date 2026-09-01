@@ -5,6 +5,7 @@ package os.kei.ui.page.main.ba
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -34,6 +35,9 @@ import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.chrome.AppScaffold
+import os.kei.ui.page.main.widget.chrome.LocalAppPageContentMaxWidth
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -53,6 +57,11 @@ fun BAPage(
     val lifecycleOwner = LocalLifecycleOwner.current
     val pageScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    val gridState = rememberLazyStaggeredGridState()
+    // Two columns on a tablet or an unfolded fold, one everywhere else. Eighteen office cards, all
+    // independent and most of them one line tall collapsed.
+    val baColumnCount = appPageColumnCount()
+    val wideBaLayout = baColumnCount >= 2
     val saveFailedFormat = stringResource(R.string.common_save_failed_with_reason)
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdropEffectsEnabled =
@@ -317,6 +326,8 @@ fun BAPage(
 
     BaPageCommonEffects(
         listState = listState,
+        gridState = gridState,
+        wideLayout = wideBaLayout,
         scrollBehavior = scrollBehavior,
         scrollToTopSignal = runtime.scrollToTopSignal,
         isPageActive = settledWorkActive,
@@ -344,7 +355,12 @@ fun BAPage(
     LaunchedEffect(baRouteState.serverIndex, calendarPoolViewModel) {
         calendarPoolViewModel.refreshUnreadCounts(baRouteState.serverIndex)
     }
-    CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
+    // Published to the whole page, chrome included: BA builds its own scaffold rather than going through
+    // AppPageScaffold, so it provides the cap itself. See LocalAppPageContentMaxWidth.
+    CompositionLocalProvider(
+        LocalGlassEffectRuntime provides baGlassRuntime,
+        LocalAppPageContentMaxWidth provides appPageContentMaxWidthFor(baColumnCount),
+    ) {
         MainPageContentBackdropScene(
             contentProducer = null,
             sheetProducer = backdrops.sheetProducer,
@@ -360,7 +376,11 @@ fun BAPage(
                         titleBackdrop = backdrops.topBar,
                         onTitleClick = {
                             pageScope.launch {
-                                listState.animateScrollToItem(0)
+                                if (wideBaLayout) {
+                                    gridState.animateScrollToItem(0)
+                                } else {
+                                    listState.animateScrollToItem(0)
+                                }
                             }
                         },
                     )
@@ -372,6 +392,8 @@ fun BAPage(
                     innerPadding = innerPadding,
                     contentBottomPadding = runtime.contentBottomPadding,
                     listState = listState,
+                    gridState = gridState,
+                    columnCount = baColumnCount,
                     nestedScrollConnection = scrollBehavior.nestedScrollConnection,
                     state = pageContentState,
                     actions = pageContentActions,

@@ -4,6 +4,7 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +24,7 @@ import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
+import os.kei.ui.page.main.widget.chrome.rememberAppPageScrollTarget
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
 import os.kei.ui.page.main.widget.chrome.isPageSettledAtTop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -164,6 +166,8 @@ internal fun shouldApplyBaForegroundApCommittedResult(
 @Composable
 internal fun BaPageCommonEffects(
     listState: LazyListState,
+    gridState: LazyStaggeredGridState,
+    wideLayout: Boolean,
     scrollBehavior: ScrollBehavior,
     scrollToTopSignal: Int,
     isPageActive: Boolean,
@@ -184,8 +188,11 @@ internal fun BaPageCommonEffects(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     val runtimeTickerCoordinator = rememberBaRuntimeTickerCoordinator()
+    // Two containers, one on screen: on a tablet the office cards are a staggered grid and the column is
+    // idle. Everything that reads a scroll position follows whichever is showing.
+    val scrollTarget = rememberAppPageScrollTarget(listState, gridState, wideLayout)
     BindLazyListScrollBoundsEffect(
-        listState = listState,
+        listState = scrollTarget.scrollableState,
         isActive = isPageActive,
         onScrollBoundsChange = onScrollBoundsChange,
     )
@@ -197,7 +204,7 @@ internal fun BaPageCommonEffects(
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > consumedScrollToTopSignal) {
             onConsumedScrollToTopSignalChange(scrollToTopSignal)
-            listState.animateScrollToItem(0)
+            scrollTarget.scrollToTop()
             expandTopAppBarToPageTop(
                 scrollBehavior = scrollBehavior,
                 animationsEnabled = transitionAnimationsEnabled,
@@ -207,13 +214,13 @@ internal fun BaPageCommonEffects(
         }
     }
 
-    LaunchedEffect(listState, scrollBehavior, transitionAnimationsEnabled, snapshotFlowManager) {
+    LaunchedEffect(scrollTarget, scrollBehavior, transitionAnimationsEnabled, snapshotFlowManager) {
         snapshotFlowManager
             .snapshotFlow {
                 isPageSettledAtTop(
-                    firstVisibleItemIndex = listState.firstVisibleItemIndex,
-                    firstVisibleItemScrollOffset = listState.firstVisibleItemScrollOffset,
-                    listScrollInProgress = listState.isScrollInProgress,
+                    firstVisibleItemIndex = scrollTarget.firstVisibleItemIndex(),
+                    firstVisibleItemScrollOffset = scrollTarget.firstVisibleItemScrollOffset(),
+                    listScrollInProgress = scrollTarget.scrollableState.isScrollInProgress,
                 )
             }.distinctUntilChanged()
             .collectLatest { settledAtTop ->
@@ -226,7 +233,7 @@ internal fun BaPageCommonEffects(
             }
     }
 
-    LaunchedEffect(runtimeEffectsActive, listState, office, runtimeTickerCoordinator) {
+    LaunchedEffect(runtimeEffectsActive, scrollTarget, office, runtimeTickerCoordinator) {
         if (runtimeEffectsActive) {
             runtimePersistenceCoordinator.submit(office.normalizeRuntimeState())
             val nowMs = System.currentTimeMillis()
@@ -235,7 +242,7 @@ internal fun BaPageCommonEffects(
         }
         runtimeTickerCoordinator.run(
             isPageActive = { runtimeEffectsActive },
-            isScrollInProgress = { listState.isScrollInProgress },
+            isScrollInProgress = { scrollTarget.scrollableState.isScrollInProgress },
         ) { frame ->
             if (frame.applyRuntimeTick) {
                 runtimePersistenceCoordinator.submit(office.applyRuntimeTick(frame.nowMs))
@@ -249,8 +256,8 @@ internal fun BaPageCommonEffects(
         }
     }
 
-    LaunchedEffect(runtimeEffectsActive, listState) {
-        snapshotFlow { listState.isScrollInProgress }
+    LaunchedEffect(runtimeEffectsActive, scrollTarget) {
+        snapshotFlow { scrollTarget.scrollableState.isScrollInProgress }
             .distinctUntilChanged()
             .collectLatest { scrolling ->
                 if (runtimeEffectsActive && !scrolling) {

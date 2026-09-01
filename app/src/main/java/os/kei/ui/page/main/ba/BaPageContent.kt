@@ -3,11 +3,15 @@
 package os.kei.ui.page.main.ba
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import os.kei.R
@@ -48,6 +52,7 @@ import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
+import os.kei.ui.page.main.widget.chrome.AppPageColumnGap
 
 @Immutable
 internal data class BaPageContentState(
@@ -124,6 +129,8 @@ internal fun BaPageContent(
     innerPadding: PaddingValues,
     contentBottomPadding: Dp,
     listState: LazyListState,
+    gridState: LazyStaggeredGridState,
+    columnCount: Int,
     nestedScrollConnection: NestedScrollConnection,
     state: BaPageContentState,
     actions: BaPageContentActions,
@@ -160,24 +167,233 @@ internal fun BaPageContent(
                 .layerBackdrop(topBarBackdrop),
     ) {
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
-    LazyColumn(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
-        state = listState,
-        contentPadding =
-            PaddingValues(
-                // The headroom is invisible viewport above the list, so the inset has to absorb it or
-                // the first card would start that far off screen.
-                top = appEdgeStackKeepAliveTopPadding(stackLine),
-                bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
-                start = pageStartPadding,
-                end = pageEndPadding,
+    if (columnCount >= 2) {
+        LazyVerticalStaggeredGrid(
+            columns = StaggeredGridCells.Fixed(columnCount),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            state = gridState,
+            // The column's own padding, unchanged. Built here rather than through AppPageStaggeredGrid
+            // because this page already builds its own container to keep the *asymmetric* edge padding —
+            // the shared helper takes one symmetric gutter and would push content under the sidebar rail.
+            contentPadding =
+                PaddingValues(
+                    top = appEdgeStackKeepAliveTopPadding(stackLine),
+                    bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
+                    start = pageStartPadding,
+                    end = pageEndPadding,
+                ),
+            verticalItemSpacing = pageGap,
+            horizontalArrangement = Arrangement.spacedBy(AppPageColumnGap),
+        ) {
+            BaPageCardGroups.forEach { group ->
+                item(
+                    key = group.key,
+                    contentType = group.contentType,
+                    span = group.span,
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(pageGap)) {
+                        group.cards.forEach { card ->
+                            BaPageCardContent(
+                                card = card,
+                                backdrop = backdrop,
+                                state = state,
+                                actions = actions,
+                                openCards = openSlotCards,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            state = listState,
+            contentPadding =
+                PaddingValues(
+                    // The headroom is invisible viewport above the list, so the inset has to absorb it or
+                    // the first card would start that far off screen.
+                    top = appEdgeStackKeepAliveTopPadding(stackLine),
+                    bottom = innerPadding.calculateBottomPadding() + contentBottomPadding + pageGap,
+                    start = pageStartPadding,
+                    end = pageEndPadding,
+                ),
+            verticalArrangement = Arrangement.spacedBy(pageGap),
+        ) {
+            BaPageCards.forEach { card ->
+                item(key = card.key, contentType = card.contentType) {
+                    BaPageCardContent(
+                        card = card,
+                        backdrop = backdrop,
+                        state = state,
+                        actions = actions,
+                        openCards = openSlotCards,
+                    )
+                }
+            }
+        }
+    }
+        }
+    }
+}
+
+/**
+ * One card in the office list, as data.
+ *
+ * Pure values — objects and a pair of primitives — so the identity a lazy container keys and skips on is
+ * stable across recompositions. The alternative, a list of composable lambdas built in composition, would
+ * hand every item a new lambda every frame and none of the eighteen cards could ever skip.
+ */
+internal sealed interface BaPageCard {
+    val key: String
+    val contentType: BaPageContentType
+
+    data object Account : BaPageCard {
+        override val key: String = "ba-account"
+        override val contentType: BaPageContentType = BaPageContentType.Account
+    }
+
+    data object Ap : BaPageCard {
+        override val key: String = "ba-ap"
+        override val contentType: BaPageContentType = BaPageContentType.Ap
+    }
+
+    data object Cafe : BaPageCard {
+        override val key: String = "ba-cafe"
+        override val contentType: BaPageContentType = BaPageContentType.Cafe
+    }
+
+    data class Cooldown(val kind: BaCooldownKind) : BaPageCard {
+        override val key: String = kind.key
+        override val contentType: BaPageContentType = BaPageContentType.CooldownSlot
+    }
+
+    data object CraftOverview : BaPageCard {
+        override val key: String = "ba-craft"
+        override val contentType: BaPageContentType = BaPageContentType.Craft
+    }
+
+    data class CraftSlot(val function: BaCraftFunction, val index: Int) : BaPageCard {
+        override val key: String = "ba-craft-${function.name}-$index"
+        override val contentType: BaPageContentType = BaPageContentType.CraftSlot
+    }
+}
+
+/** The three cafe cooldowns, as an address rather than a built entry. */
+internal enum class BaCooldownKind(val key: String) {
+    Headpat("ba-cooldown-headpat"),
+    InviteTicket1("ba-cooldown-invite-1"),
+    InviteTicket2("ba-cooldown-invite-2"),
+}
+
+/**
+ * What the two-column layout actually packs: a *group* of cards, not a card.
+ *
+ * A staggered grid places by height, and left to itself it split the office in ways the page is not read
+ * in — Cafe landing under Headpat, Invite Ticket 1 in the other column from Invite Ticket 2. The two AP
+ * pools are one reading ("how much do I have, in both places"), and the three cafe cooldowns are one set;
+ * a teacher scans them together and the game presents them together. So they travel as units and the grid
+ * packs those, which keeps the flow for everything genuinely independent — the craft slots — while the
+ * groups keep their own lane.
+ *
+ * The single-column path does **not** use this. On a phone the cards are already in one lane and each is
+ * its own list item, so grouping there would only cost laziness and change keys for no visible gain.
+ */
+private class BaPageCardGroup(
+    val key: String,
+    val contentType: BaPageContentType,
+    val span: StaggeredGridItemSpan,
+    val cards: List<BaPageCard>,
+)
+
+private val BaPageCardGroups: List<BaPageCardGroup> =
+    buildList {
+        add(
+            BaPageCardGroup(
+                key = "ba-group-account",
+                contentType = BaPageContentType.Account,
+                // The page's identity and a horizontal pager: halved, the accounts would be swiped
+                // through in a column-wide strip while the cards they select for sit beside it.
+                span = StaggeredGridItemSpan.FullLine,
+                cards = listOf(BaPageCard.Account),
             ),
-        verticalArrangement = Arrangement.spacedBy(pageGap),
-    ) {
-        item(key = "ba-account", contentType = BaPageContentType.Account) {
+        )
+        add(
+            BaPageCardGroup(
+                key = "ba-group-pools",
+                contentType = BaPageContentType.Ap,
+                span = StaggeredGridItemSpan.SingleLane,
+                cards = listOf(BaPageCard.Ap, BaPageCard.Cafe),
+            ),
+        )
+        add(
+            BaPageCardGroup(
+                key = "ba-group-cooldowns",
+                contentType = BaPageContentType.CooldownSlot,
+                span = StaggeredGridItemSpan.SingleLane,
+                cards = BaCooldownKind.entries.map { kind -> BaPageCard.Cooldown(kind) },
+            ),
+        )
+        add(
+            BaPageCardGroup(
+                key = "ba-group-craft",
+                contentType = BaPageContentType.Craft,
+                span = StaggeredGridItemSpan.SingleLane,
+                cards = listOf(BaPageCard.CraftOverview),
+            ),
+        )
+        // One group per craft function, for the same reason as the pools and the cooldowns. Left to flow
+        // individually the grid interleaved them by height -- Crafting 2 beside Crafting 1, Material
+        // fusion 1 above Crafting 3 -- and the slots are numbered, so reading them row by row read the
+        // numbers out of order. Generate is one set and Fusion is another; each keeps its own lane and
+        // its own counting.
+        BaCraftFunction.entries.forEach { function ->
+            add(
+                BaPageCardGroup(
+                    key = "ba-group-craft-${function.name}",
+                    contentType = BaPageContentType.CraftSlot,
+                    span = StaggeredGridItemSpan.SingleLane,
+                    cards =
+                        (0 until BA_CRAFT_SLOT_COUNT).map { index ->
+                            BaPageCard.CraftSlot(function = function, index = index)
+                        },
+                ),
+            )
+        }
+    }
+
+/** The office list, in the game's own reading order. Static: nothing here depends on state. */
+private val BaPageCards: List<BaPageCard> =
+    buildList {
+        add(BaPageCard.Account)
+        add(BaPageCard.Ap)
+        add(BaPageCard.Cafe)
+        BaCooldownKind.entries.forEach { kind -> add(BaPageCard.Cooldown(kind)) }
+        add(BaPageCard.CraftOverview)
+        BaCraftFunction.entries.forEach { function ->
+            (0 until BA_CRAFT_SLOT_COUNT).forEach { index ->
+                add(BaPageCard.CraftSlot(function = function, index = index))
+            }
+        }
+    }
+
+/** One office card, without the list item around it. */
+@Composable
+private fun BaPageCardContent(
+    card: BaPageCard,
+    backdrop: Backdrop?,
+    state: BaPageContentState,
+    actions: BaPageContentActions,
+    openCards: MutableMap<String, Unit>,
+) {
+    when (card) {
+        BaPageCard.Account ->
             BaAccountPagerCard(
                 backdrop = backdrop,
                 accounts = state.accountUiState.accounts,
@@ -186,9 +402,8 @@ internal fun BaPageContent(
                 onAccountSelected = actions.onAccountSelected,
                 onEditAccount = actions.onEditAccount,
             )
-        }
 
-        item(key = "ba-ap", contentType = BaPageContentType.Ap) {
+        BaPageCard.Ap ->
             BaApCard(
                 backdrop = backdrop,
                 clockState = state.clockState,
@@ -201,9 +416,8 @@ internal fun BaPageContent(
                 onApCurrentDone = actions.onApCurrentDone,
                 onOpenApLimitTools = actions.onOpenApLimitTools,
             )
-        }
 
-        item(key = "ba-cafe", contentType = BaPageContentType.Cafe) {
+        BaPageCard.Cafe ->
             BaCafeCard(
                 backdrop = backdrop,
                 clockState = state.clockState,
@@ -223,36 +437,32 @@ internal fun BaPageContent(
                 onOpenCafeApTools = actions.onOpenCafeApTools,
                 onClaimCafeStoredAp = actions.onClaimCafeStoredAp,
             )
-        }
 
-        // One card per cooldown, the way the GitHub page lists a tracked project: visible by default,
-        // expandable for the exact instant and the editor, and its own lazy item — so a card off screen
-        // composes nothing, unlike a row inside a tall card.
-        baCooldownCards(
-            backdrop = backdrop,
-            state = state,
-            actions = actions,
-            openCards = openSlotCards,
-        )
+        is BaPageCard.Cooldown ->
+            BaCooldownCard(
+                backdrop = backdrop,
+                entry = baCooldownEntry(kind = card.kind, state = state, actions = actions),
+                firstOfItsKind = card.kind == BaCooldownKind.entries.first(),
+                state = state,
+                openCards = openCards,
+            )
 
-        item(key = "ba-craft", contentType = BaPageContentType.Craft) {
+        BaPageCard.CraftOverview ->
             BaCraftOverviewCard(
                 backdrop = backdrop,
                 clockState = state.clockState,
                 craft = state.officeState.craft,
             )
-        }
 
-        // No fold over these: the pile already gets them out of the way as the page scrolls, and a
-        // disclosure that hides six one-line cards buys nothing now that they cost one surface each.
-        baCraftSlotCards(
-            backdrop = backdrop,
-            state = state,
-            actions = actions,
-            openCards = openSlotCards,
-        )
-    }
-        }
+        is BaPageCard.CraftSlot ->
+            BaCraftSlotCardItem(
+                backdrop = backdrop,
+                function = card.function,
+                index = card.index,
+                state = state,
+                actions = actions,
+                openCards = openCards,
+            )
     }
 }
 
@@ -262,128 +472,124 @@ internal fun BaPageContent(
  * The maths lives here rather than in the card so the card stays a presentation of "is it ready, and
  * when" — the same shape the craft slots use — instead of learning two different cooldown rules.
  */
-private fun LazyListScope.baCooldownCards(
-    backdrop: Backdrop?,
+private fun baCooldownEntry(
+    kind: BaCooldownKind,
     state: BaPageContentState,
     actions: BaPageContentActions,
-    openCards: MutableMap<String, Unit>,
-) {
+): BaCooldownCardEntry {
     val office = state.officeState
     val serverIndex = state.serverIndex
-    val entries =
-        listOf(
+    return when (kind) {
+        BaCooldownKind.Headpat ->
             BaCooldownCardEntry(
-                key = "ba-cooldown-headpat",
+                key = kind.key,
                 titleRes = R.string.ba_cafe_action_headpat,
                 iconRes = R.drawable.fx_tex_ch0071_prop_05_small,
                 usedAtMs = office.coffeeHeadpatMs,
                 availableAtOf = { used -> calculateNextHeadpatAvailableMs(used, serverIndex) },
                 onUse = actions.onTouchHead,
                 onEdit = actions.onEditHeadpatCooldown,
-            ),
+            )
+
+        BaCooldownKind.InviteTicket1 ->
             BaCooldownCardEntry(
-                key = "ba-cooldown-invite-1",
+                key = kind.key,
                 titleRes = R.string.ba_cafe_action_invite_ticket_1,
                 iconRes = R.drawable.cafe_icon_coupon_small,
                 usedAtMs = office.coffeeInvite1UsedMs,
                 availableAtOf = ::calculateInviteTicketAvailableMs,
                 onUse = actions.onUseInviteTicket1,
                 onEdit = actions.onEditInviteTicket1Cooldown,
-            ),
+            )
+
+        BaCooldownKind.InviteTicket2 ->
             BaCooldownCardEntry(
-                key = "ba-cooldown-invite-2",
+                key = kind.key,
                 titleRes = R.string.ba_cafe_action_invite_ticket_2,
                 iconRes = R.drawable.cafe_icon_coupon_small,
                 usedAtMs = office.coffeeInvite2UsedMs,
                 availableAtOf = ::calculateInviteTicketAvailableMs,
                 onUse = actions.onUseInviteTicket2,
                 onEdit = actions.onEditInviteTicket2Cooldown,
-            ),
-        )
-
-    items(
-        items = entries,
-        key = { entry -> entry.key },
-        contentType = { BaPageContentType.CooldownSlot },
-    ) { entry ->
-        val uiNowMs = state.clockState.uiMinuteMs.longValue
-        val availableAt = entry.availableAtOf(entry.usedAtMs)
-        val ready = entry.usedAtMs <= 0L || availableAt <= uiNowMs
-        val label = stringResource(entry.titleRes)
-        BaCooldownSlotCard(
-            backdrop = backdrop,
-            title = label,
-            iconRes = entry.iconRes,
-            ready = ready,
-            usedAtMs = entry.usedAtMs,
-            // A ready cooldown's stored instant is in the past, and "available at some time yesterday"
-            // is not what the teacher wants to read; now is the honest answer.
-            availableAtMs = if (ready) uiNowMs else availableAt,
-            accentColor = BaSlotCardAccent.Cafe,
-            countdownColor = BaSlotCardAccent.Countdown,
-            uiNowMs = uiNowMs,
-            expanded = openCards.containsKey(entry.key),
-            onExpandedChange = { open ->
-                if (open) openCards[entry.key] = Unit else openCards.remove(entry.key)
-            },
-            onUse = entry.onUse,
-            onEditCooldown = entry.onEdit,
-            actionLabel = label,
-            // The profile journey's handle on a cooldown card; the first one is enough.
-            cardTestTag = KeiOsTestTags.BaCooldownCardFirst.takeIf { entry.key == entries.first().key },
-            adjustTestTag = KeiOsTestTags.BaCooldownAdjustButton.takeIf { entry.key == entries.first().key },
-        )
+            )
     }
 }
 
-/** The six Craft Chamber slots, one card each, in the game's own order. */
-private fun LazyListScope.baCraftSlotCards(
+@Composable
+private fun BaCooldownCard(
     backdrop: Backdrop?,
+    entry: BaCooldownCardEntry,
+    firstOfItsKind: Boolean,
+    state: BaPageContentState,
+    openCards: MutableMap<String, Unit>,
+) {
+    val uiNowMs = state.clockState.uiMinuteMs.longValue
+    val availableAt = entry.availableAtOf(entry.usedAtMs)
+    val ready = entry.usedAtMs <= 0L || availableAt <= uiNowMs
+    val label = stringResource(entry.titleRes)
+    BaCooldownSlotCard(
+        backdrop = backdrop,
+        title = label,
+        iconRes = entry.iconRes,
+        ready = ready,
+        usedAtMs = entry.usedAtMs,
+        // A ready cooldown's stored instant is in the past, and "available at some time yesterday"
+        // is not what the teacher wants to read; now is the honest answer.
+        availableAtMs = if (ready) uiNowMs else availableAt,
+        accentColor = BaSlotCardAccent.Cafe,
+        countdownColor = BaSlotCardAccent.Countdown,
+        uiNowMs = uiNowMs,
+        expanded = openCards.containsKey(entry.key),
+        onExpandedChange = { open ->
+            if (open) openCards[entry.key] = Unit else openCards.remove(entry.key)
+        },
+        onUse = entry.onUse,
+        onEditCooldown = entry.onEdit,
+        actionLabel = label,
+        // The profile journey's handle on a cooldown card; the first one is enough.
+        cardTestTag = KeiOsTestTags.BaCooldownCardFirst.takeIf { firstOfItsKind },
+        adjustTestTag = KeiOsTestTags.BaCooldownAdjustButton.takeIf { firstOfItsKind },
+    )
+}
+
+/** One of the six Craft Chamber slots per function, in the game's own order. */
+@Composable
+private fun BaCraftSlotCardItem(
+    backdrop: Backdrop?,
+    function: BaCraftFunction,
+    index: Int,
     state: BaPageContentState,
     actions: BaPageContentActions,
     openCards: MutableMap<String, Unit>,
 ) {
-    val addresses =
-        BaCraftFunction.entries.flatMap { function ->
-            (0 until BA_CRAFT_SLOT_COUNT).map { index -> function to index }
-        }
-    items(
-        items = addresses,
-        key = { (function, index) -> "ba-craft-${function.name}-$index" },
-        contentType = { BaPageContentType.CraftSlot },
-    ) { (function, index) ->
-        val key = "ba-craft-${function.name}-$index"
-        val uiNowMs = state.clockState.uiMinuteMs.longValue
-        BaCraftSlotCard(
-            backdrop = backdrop,
-            title =
-                stringResource(
-                    R.string.ba_craft_slot_button_format,
-                    stringResource(baCraftFunctionLabelRes(function)),
-                    // The game numbers its slots from one; do not leak the index.
-                    index + 1,
-                ),
-            function = function,
-            slot = state.officeState.craft.slotAt(function, index),
-            accentColor = BaSlotCardAccent.Craft,
-            countdownColor = BaSlotCardAccent.Countdown,
-            uiNowMs = uiNowMs,
-            expanded = openCards.containsKey(key),
-            onExpandedChange = { open ->
-                if (open) openCards[key] = Unit else openCards.remove(key)
-            },
-            onConfigure = { actions.onConfigureCraftSlot(function, index) },
-            onClear = { actions.onClearCraftSlot(function, index) },
-            // The profile journey's way in: the first card is how it knows the section is open, and the
-            // configure button inside it is how it reaches the craft sheet.
-            cardTestTag =
-                KeiOsTestTags.BaCraftSlotCardFirst
-                    .takeIf { function == BaCraftFunction.Generate && index == 0 },
-            buttonTestTag =
-                KeiOsTestTags.BaCraftSlotFirst
-                    .takeIf { function == BaCraftFunction.Generate && index == 0 },
-        )
-    }
+    val key = "ba-craft-${function.name}-$index"
+    val uiNowMs = state.clockState.uiMinuteMs.longValue
+    val first = function == BaCraftFunction.Generate && index == 0
+    BaCraftSlotCard(
+        backdrop = backdrop,
+        title =
+            stringResource(
+                R.string.ba_craft_slot_button_format,
+                stringResource(baCraftFunctionLabelRes(function)),
+                // The game numbers its slots from one; do not leak the index.
+                index + 1,
+            ),
+        function = function,
+        slot = state.officeState.craft.slotAt(function, index),
+        accentColor = BaSlotCardAccent.Craft,
+        countdownColor = BaSlotCardAccent.Countdown,
+        uiNowMs = uiNowMs,
+        expanded = openCards.containsKey(key),
+        onExpandedChange = { open ->
+            if (open) openCards[key] = Unit else openCards.remove(key)
+        },
+        onConfigure = { actions.onConfigureCraftSlot(function, index) },
+        onClear = { actions.onClearCraftSlot(function, index) },
+        // The profile journey's way in: the first card is how it knows the section is open, and the
+        // configure button inside it is how it reaches the craft sheet.
+        cardTestTag = KeiOsTestTags.BaCraftSlotCardFirst.takeIf { first },
+        buttonTestTag = KeiOsTestTags.BaCraftSlotFirst.takeIf { first },
+    )
 }
 
 private class BaCooldownCardEntry(

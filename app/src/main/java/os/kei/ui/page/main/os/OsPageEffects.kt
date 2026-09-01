@@ -13,6 +13,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.FlowPreview
 import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
+import os.kei.ui.page.main.widget.chrome.rememberAppPageScrollTarget
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -214,7 +215,7 @@ internal fun BindOsScrollToTopEffect(
 ) {
     BindScrollToTopEffect(
         scrollToTopSignal = scrollToTopSignal,
-        listState = listState,
+        target = rememberAppPageScrollTarget(listState),
         isActive = true,
     )
 }

@@ -3,11 +3,13 @@
 package os.kei.ui.page.main.mcp
 
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.widget.chrome.BindScrollToTopEffect
+import os.kei.ui.page.main.widget.chrome.rememberAppPageScrollTarget
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.mcp.state.McpToolBucketInput
@@ -21,9 +23,14 @@ internal fun BindMcpPageEffects(
     pageUiState: McpPageUiState,
     runtime: MainPageRuntime,
     listState: LazyListState,
+    gridState: LazyStaggeredGridState,
+    wideLayout: Boolean,
 ) {
+    // Two containers, one on screen. Everything that watches a scroll position follows the active one, or
+    // the bottom bar stops hiding on scroll and a tab re-tap scrolls a list nobody is looking at.
+    val scrollTarget = rememberAppPageScrollTarget(listState, gridState, wideLayout)
     BindLazyListScrollBoundsEffect(
-        listState = listState,
+        listState = scrollTarget.scrollableState,
         isActive = runtime.isPageActive,
         onScrollBoundsChange = runtime.onScrollBoundsChange,
     )
@@ -50,7 +57,7 @@ internal fun BindMcpPageEffects(
     }
     BindScrollToTopEffect(
         scrollToTopSignal = runtime.scrollToTopSignal,
-        listState = listState,
+        target = scrollTarget,
         isActive = runtime.isPageActive,
     )
 }

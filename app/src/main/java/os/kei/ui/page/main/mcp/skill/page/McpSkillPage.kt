@@ -24,6 +24,8 @@ import os.kei.ui.page.main.mcp.skill.state.rememberMcpSkillPageTextBundle
 import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.testing.KeiOsTestTags
 import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -39,6 +41,8 @@ fun McpSkillPage(
     val context = LocalContext.current
     val textBundle = rememberMcpSkillPageTextBundle()
     val listState = rememberLazyListState()
+    val secondaryListState = rememberLazyListState()
+    val columnCount = appPageColumnCount()
     val scrollBehavior = MiuixScrollBehavior()
     val titleColor = MiuixTheme.colorScheme.onBackground
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant
@@ -79,6 +83,7 @@ fun McpSkillPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarMaterialBackdrop,
         titleBackdrop = topBarBackdrop,
+        contentMaxWidth = appPageContentMaxWidthFor(columnCount),
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = MiuixIcons.Regular.Back,
@@ -95,6 +100,8 @@ fun McpSkillPage(
             contentState = contentState,
             textBundle = textBundle,
             onCopyCurrentConfig = { viewModel.requestCopyCurrentConfig(mcpServerManager) },
+            secondaryListState = secondaryListState,
+            wideLayout = columnCount >= 2,
             emptyItemText = textBundle.emptyItemText,
             titleColor = titleColor,
             subtitleColor = subtitleColor,

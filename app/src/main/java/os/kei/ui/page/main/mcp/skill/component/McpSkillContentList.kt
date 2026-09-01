@@ -4,6 +4,7 @@ package os.kei.ui.page.main.mcp.skill.component
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
 
 @Composable
 internal fun McpSkillContentList(
@@ -45,6 +47,8 @@ internal fun McpSkillContentList(
     contentState: McpSkillPageContentState,
     textBundle: McpSkillPageTextBundle,
     onCopyCurrentConfig: () -> Unit,
+    secondaryListState: LazyListState,
+    wideLayout: Boolean,
     emptyItemText: String,
     titleColor: Color,
     subtitleColor: Color,
@@ -110,16 +114,10 @@ internal fun McpSkillContentList(
         remember(contentState.sections) {
             contentState.sections.toStableMcpSkillSectionRows()
         }
-    AppPageLazyColumn(
-        innerPadding = innerPadding,
-        state = listState,
-        modifier =
-            modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
-        bottomExtra = AppChromeTokens.pageBottomInsetExtra,
-        sectionSpacing = AppChromeTokens.pageSectionGap,
-    ) {
+    // One item builder per card, rather than one list body, because the two shapes need the same cards in
+    // two different orders: stacked reads top to bottom, and split reads down one lane and then the other.
+    // Composing them from named pieces is what keeps the phone's order exactly what it was.
+    val onboardingItem: LazyListScope.() -> Unit = {
         item(
             key = "mcp-skill-onboarding",
             contentType = "mcp_skill_onboarding",
@@ -139,6 +137,8 @@ internal fun McpSkillContentList(
                 onCopyCurrentConfig = onCopyCurrentConfig,
             )
         }
+    }
+    val quickCopyItem: LazyListScope.() -> Unit = {
         item(
             key = "mcp-skill-quick-copy",
             contentType = "mcp_skill_quick_copy",
@@ -152,6 +152,8 @@ internal fun McpSkillContentList(
                 onCopy = { action -> copyText(action.label, action.payload) },
             )
         }
+    }
+    val resourcesItem: LazyListScope.() -> Unit = {
         item(
             key = "mcp-skill-resources",
             contentType = "mcp_skill_resources",
@@ -165,6 +167,8 @@ internal fun McpSkillContentList(
                 onCopy = { action -> copyText(action.title, action.payload) },
             )
         }
+    }
+    val flowsItem: LazyListScope.() -> Unit = {
         item(
             key = "mcp-skill-flows",
             contentType = "mcp_skill_flows",
@@ -175,6 +179,8 @@ internal fun McpSkillContentList(
                 subtitleColor = subtitleColor,
             )
         }
+    }
+    val referenceItems: LazyListScope.() -> Unit = {
         item(
             key = "mcp-skill-reference",
             contentType = "mcp_skill_reference",
@@ -203,6 +209,49 @@ internal fun McpSkillContentList(
                     emptyItemText = emptyItemText,
                 )
             }
+        }
+    }
+
+    val listModifier =
+        modifier
+            .fillMaxSize()
+            .nestedScroll(nestedScrollConnection)
+    if (wideLayout) {
+        // Procedure on the left, catalogue on the right: connect, copy what you need, run one of the
+        // sequences -- against the URIs and the full document you read *from*. The reference card and the
+        // sections it expands into stay together on the right, which is the load-bearing half of the rule:
+        // expanding it adds an unbounded number of cards, and they land in the lane that is already the
+        // reading lane instead of shoving the buttons off screen.
+        AppPageTwoColumnLists(
+            innerPadding = innerPadding,
+            primaryState = listState,
+            secondaryState = secondaryListState,
+            modifier = listModifier,
+            bottomExtra = AppChromeTokens.pageBottomInsetExtra,
+            sectionSpacing = AppChromeTokens.pageSectionGap,
+            primary = {
+                onboardingItem()
+                quickCopyItem()
+                flowsItem()
+            },
+            secondary = {
+                resourcesItem()
+                referenceItems()
+            },
+        )
+    } else {
+        AppPageLazyColumn(
+            innerPadding = innerPadding,
+            state = listState,
+            modifier = listModifier,
+            bottomExtra = AppChromeTokens.pageBottomInsetExtra,
+            sectionSpacing = AppChromeTokens.pageSectionGap,
+        ) {
+            onboardingItem()
+            quickCopyItem()
+            resourcesItem()
+            flowsItem()
+            referenceItems()
         }
     }
 }

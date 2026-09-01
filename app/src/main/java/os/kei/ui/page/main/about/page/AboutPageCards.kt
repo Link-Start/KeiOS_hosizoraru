@@ -3,6 +3,8 @@
 package os.kei.ui.page.main.about.page
 
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.about.model.AboutComponentEntry
@@ -72,165 +74,211 @@ internal fun LazyListScope.aboutCardItem(
         key = "about_card_${card.name}",
         contentType = "about_card",
     ) {
-        val palette = state.palette
-        when (card) {
-            AboutSearchCard.App -> {
-                AboutAppCardSection(
-                    details = state.appDetails,
-                    cardColor = palette.infoCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.App),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.App, it) },
-                )
-            }
+        AboutSearchCardContent(card = card, state = state, actions = actions)
+    }
+}
 
-            AboutSearchCard.GitHub -> {
-                AboutGitHubCardSection(
-                    details = state.techDetails,
-                    cardColor = palette.githubCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.GitHub),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.GitHub, it) },
-                    onOpenProjectUrl = actions.onOpenExternalUrl,
-                )
-            }
+/**
+ * One About card, without the list item around it.
+ *
+ * Split out for the same reason the settings renderer was: on a tablet a card is a cell of a staggered
+ * grid rather than a row of a column, and only the placement differs. The `when` below is unchanged.
+ */
+@Composable
+internal fun AboutSearchCardContent(
+    card: AboutSearchCard,
+    state: AboutCardRenderState,
+    actions: AboutCardActions,
+) {
+    val palette = state.palette
+    when (card) {
+        AboutSearchCard.App -> {
+            AboutAppCardSection(
+                details = state.appDetails,
+                cardColor = palette.infoCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.App),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.App, it) },
+            )
+        }
 
-            AboutSearchCard.Release -> {
-                AboutReleaseCardSection(
-                    cardColor = palette.releaseCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Release),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Release, it) },
-                )
-            }
+        AboutSearchCard.GitHub -> {
+            AboutGitHubCardSection(
+                details = state.techDetails,
+                cardColor = palette.githubCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.GitHub),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.GitHub, it) },
+                onOpenProjectUrl = actions.onOpenExternalUrl,
+            )
+        }
 
-            AboutSearchCard.Runtime -> {
-                AboutRuntimeStatusCardSection(
-                    cardColor = palette.runtimeCardColor,
-                    accent = palette.accent,
-                    privilegeReady = state.privilegeReady,
-                    readyColor = palette.readyColor,
-                    notReadyColor = palette.notReadyColor,
-                    subtitleColor = palette.subtitleColor,
-                    notificationPermissionGranted = state.notificationPermissionGranted,
-                    privilegeDetailMap = state.privilegeDetailMap,
-                    permissionCount = state.permissionEntries.size,
-                    componentCount = state.componentEntries.size,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Runtime),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Runtime, it) },
-                    onCheckPrivilege = actions.onCheckPrivilege,
-                )
-            }
+        AboutSearchCard.Release -> {
+            AboutReleaseCardSection(
+                cardColor = palette.releaseCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Release),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Release, it) },
+            )
+        }
 
-            AboutSearchCard.Network -> {
-                AboutNetworkServiceCardSection(
-                    rows = state.techDetails.networkRows,
-                    cardColor = palette.networkServiceCardColor,
-                    titleColor = palette.readyColor,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Network),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Network, it) },
-                )
-            }
+        AboutSearchCard.Runtime -> {
+            AboutRuntimeStatusCardSection(
+                cardColor = palette.runtimeCardColor,
+                accent = palette.accent,
+                privilegeReady = state.privilegeReady,
+                readyColor = palette.readyColor,
+                notReadyColor = palette.notReadyColor,
+                subtitleColor = palette.subtitleColor,
+                notificationPermissionGranted = state.notificationPermissionGranted,
+                privilegeDetailMap = state.privilegeDetailMap,
+                permissionCount = state.permissionEntries.size,
+                componentCount = state.componentEntries.size,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Runtime),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Runtime, it) },
+                onCheckPrivilege = actions.onCheckPrivilege,
+            )
+        }
 
-            AboutSearchCard.Media -> {
-                AboutMediaStorageCardSection(
-                    rows = state.techDetails.mediaRows,
-                    cardColor = palette.mediaStorageCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Media),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Media, it) },
-                )
-            }
+        AboutSearchCard.Network -> {
+            AboutNetworkServiceCardSection(
+                rows = state.techDetails.networkRows,
+                cardColor = palette.networkServiceCardColor,
+                titleColor = palette.readyColor,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Network),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Network, it) },
+            )
+        }
 
-            AboutSearchCard.Permission -> {
-                AboutPermissionCardSection(
-                    cardColor = palette.githubCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    readyColor = palette.readyColor,
-                    notReadyColor = palette.notReadyColor,
-                    entries = state.permissionEntries,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Permission),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Permission, it) },
-                )
-            }
+        AboutSearchCard.Media -> {
+            AboutMediaStorageCardSection(
+                rows = state.techDetails.mediaRows,
+                cardColor = palette.mediaStorageCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Media),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Media, it) },
+            )
+        }
 
-            AboutSearchCard.Component -> {
-                AboutComponentCardSection(
-                    cardColor = aboutCardColor(Color(0x2234D399), MiuixTheme.colorScheme.surfaceContainer),
-                    titleColor = palette.readyColor,
-                    subtitleColor = palette.subtitleColor,
-                    accent = palette.accent,
-                    entries = state.componentEntries,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Component),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Component, it) },
-                )
-            }
+        AboutSearchCard.Permission -> {
+            AboutPermissionCardSection(
+                cardColor = palette.githubCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                readyColor = palette.readyColor,
+                notReadyColor = palette.notReadyColor,
+                entries = state.permissionEntries,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Permission),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Permission, it) },
+            )
+        }
 
-            AboutSearchCard.Build -> {
-                AboutBuildSdkCardSection(
-                    rows = state.techDetails.buildRows,
-                    cardColor = palette.buildCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Build),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Build, it) },
-                )
-            }
+        AboutSearchCard.Component -> {
+            AboutComponentCardSection(
+                cardColor = aboutCardColor(Color(0x2234D399), MiuixTheme.colorScheme.surfaceContainer),
+                titleColor = palette.readyColor,
+                subtitleColor = palette.subtitleColor,
+                accent = palette.accent,
+                entries = state.componentEntries,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Component),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Component, it) },
+            )
+        }
 
-            AboutSearchCard.Ui -> {
-                AboutUiFrameworkCardSection(
-                    rows = state.techDetails.uiRows,
-                    cardColor = palette.uiFrameworkCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Ui),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Ui, it) },
-                )
-            }
+        AboutSearchCard.Build -> {
+            AboutBuildSdkCardSection(
+                rows = state.techDetails.buildRows,
+                cardColor = palette.buildCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Build),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Build, it) },
+            )
+        }
 
-            AboutSearchCard.ProjectLicense -> {
-                AboutProjectLicenseCardSection(
-                    cardColor = palette.projectLicenseCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded =
-                        aboutCardExpanded(
-                            state.searchActive,
-                            state.expansionState,
-                            AboutSearchCard.ProjectLicense,
-                        ),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.ProjectLicense, it) },
-                    onOpenLicenseUrl = actions.onOpenExternalUrl,
-                )
-            }
+        AboutSearchCard.Ui -> {
+            AboutUiFrameworkCardSection(
+                rows = state.techDetails.uiRows,
+                cardColor = palette.uiFrameworkCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Ui),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Ui, it) },
+            )
+        }
 
-            AboutSearchCard.License -> {
-                AboutLicenseCardSection(
-                    cardColor = palette.licenseCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.License),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.License, it) },
-                    onOpenSourceUrl = actions.onOpenExternalUrl,
-                )
-            }
+        AboutSearchCard.ProjectLicense -> {
+            AboutProjectLicenseCardSection(
+                cardColor = palette.projectLicenseCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded =
+                    aboutCardExpanded(
+                        state.searchActive,
+                        state.expansionState,
+                        AboutSearchCard.ProjectLicense,
+                    ),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.ProjectLicense, it) },
+                onOpenLicenseUrl = actions.onOpenExternalUrl,
+            )
+        }
 
-            AboutSearchCard.Lab -> {
-                AboutComponentLabCardSection(
-                    cardColor = palette.componentLabCardColor,
-                    accent = palette.accent,
-                    subtitleColor = palette.subtitleColor,
-                    expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Lab),
-                    onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Lab, it) },
-                    onOpenComponentLab = actions.onOpenComponentLab,
-                )
-            }
+        AboutSearchCard.License -> {
+            AboutLicenseCardSection(
+                cardColor = palette.licenseCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.License),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.License, it) },
+                onOpenSourceUrl = actions.onOpenExternalUrl,
+            )
+        }
+
+        AboutSearchCard.Lab -> {
+            AboutComponentLabCardSection(
+                cardColor = palette.componentLabCardColor,
+                accent = palette.accent,
+                subtitleColor = palette.subtitleColor,
+                expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Lab),
+                onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Lab, it) },
+                onOpenComponentLab = actions.onOpenComponentLab,
+            )
+        }
+    }
+}
+
+/** The cards a category shows, already filtered by the active search. */
+internal fun aboutCategoryCardList(
+    category: AboutCategory,
+    matchingCards: Set<AboutSearchCard>,
+    state: AboutCardRenderState,
+): List<AboutSearchCard> =
+    aboutCardsForCategory(category)
+        .filter { card -> !state.searchActive || card in matchingCards }
+
+/**
+ * The same cards as cells of a staggered grid.
+ *
+ * One cell per card, so a card is still composed only when its column reaches it. About's cards vary far
+ * more in height than Settings' do -- Licenses and Permissions are long, Lab is a single row -- which is
+ * exactly the case a staggered flow is for and a paired row is worst at.
+ */
+internal fun LazyStaggeredGridScope.aboutCardCells(
+    cards: List<AboutSearchCard>,
+    state: AboutCardRenderState,
+    actions: AboutCardActions,
+) {
+    cards.forEach { card ->
+        item(
+            key = "about_card_${card.name}",
+            contentType = "about_card",
+        ) {
+            AboutSearchCardContent(card = card, state = state, actions = actions)
         }
     }
 }

@@ -1120,7 +1120,7 @@ private fun MacrobenchmarkScope.clickTestTag(tag: String) {
  *
  * `BaselineProfileRule.collect` defaults to `maxIterations = 15, stableIterations = 3`: replay until
  * three consecutive captures produce an identical profile, giving up after fifteen. Those defaults
- * are sized for a handful of journeys. This file has 22, and a UI-driven journey on a Compose app
+ * are sized for a handful of journeys. This file has 23, and a UI-driven journey on a Compose app
  * rarely produces three byte-identical captures in a row, so in practice almost every one ran the
  * full fifteen.
  *
@@ -1131,7 +1131,8 @@ private fun MacrobenchmarkScope.clickTestTag(tag: String) {
  *
  * So the budget is set explicitly. Startup keeps a wider one because it is a single short journey and
  * it feeds `startup-prof.txt`, where rule quality matters most per byte. Everything else gets four,
- * which bounds the run at 1x8 + 21x4 = 92 cold starts.
+ * which bounds the run at 1x8 + 22x4 = 96 cold starts. (It was 92 when this was written, against 22
+ * journeys; keep the arithmetic honest when a journey is added.)
  *
  * The trade is real and worth naming: `collect` accumulates the *union* of methods seen across
  * iterations, so fewer replays can mean fewer rules, not merely less confirmation. It is a good trade

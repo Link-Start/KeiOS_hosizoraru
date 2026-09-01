@@ -4,6 +4,36 @@ How the shipped ART profile is generated, what it actually covers, and why the j
 ones they are. Companion to `scripts/qa/baseline_profile_freshness.sh`, which answers the narrower
 question of whether the committed capture is still current.
 
+## Where this stands, as of 2026-09-01
+
+Everything below is in the order it was learned, corrections included, which is useful when you are
+about to repeat one of the mistakes and unhelpful when you just want the current picture. This is the
+current picture.
+
+| | |
+| --- | --- |
+| Journeys | 23, plus 14 macrobenchmarks the capture skips |
+| Iteration budget | startup 8/3, every other journey 4/2 |
+| A capture costs | ~35 minutes, 96 cold starts, on the API 37 AVD |
+| Last capture | 23/23, 72,507 baseline rules, 24,710 startup rules |
+
+**Read the named components, not the total.** Three captures moved the total while every driven
+component stayed identical. The sum is dominated by things no journey drives -- the *scheduled*
+background refresh is collected only if its job happens to fire inside the capture's 35 minutes -- and
+by journeys that fetch real content over the network. A change worth believing shows up in the
+component, as `+1,135` did when the F-Droid journey landed.
+
+**Reproduce failures with `am instrument`, not with a capture.** Driving eight journeys in one
+instrumentation pass puts a late journey in a realistic state in about fifteen minutes instead of
+forty. Two real failures in this document were found that way after captures had only pointed at them
+vaguely, and the ordering is JUnit's `MethodSorters.DEFAULT` -- a hash over method names, so a subset's
+order is stable but is not the full run's.
+
+**Known gaps, all deliberate:** `FdroidAppSearchService` and `GitHubTrackEditFdroidDiscoverySection`
+(the F-Droid *search* path, which needs a dropdown and a query field); `GitHubTrackChangeHistoryCards`
+and `GitHubAppInstallHistoryCards` cover one action arm each rather than all of them; and the
+`feedback` window, for the reason `sharedIntentWindowInteractions` records.
+
 ## What the two reference implementations do
 
 ### Miuix's example app
@@ -261,7 +291,8 @@ three byte-identical captures in a row, and `strictStability` is false, so faili
 silent and simply costs the remaining replays.
 
 The budget is now explicit: startup keeps 8/3 because it is one short journey feeding
-`startup-prof.txt`, everything else takes 4/2. That bounds a capture at `1x8 + 21x4 = 92` cold starts
+`startup-prof.txt`, everything else takes 4/2. That bounds a capture at `1x8 + 22x4 = 96` cold starts
+(92 when this was written, against 22 journeys)
 against 330, so roughly 22 minutes rather than 81.
 
 **A hypothesis worth recording as dead.** The first suspect was `waitForIdle()`: the generator calls

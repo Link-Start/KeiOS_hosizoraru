@@ -252,10 +252,18 @@ internal fun MainPagerSidebarToggle(
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Which toggle this is, for instrumentation.
+     *
+     * A route that offers its own rail — the student guide does — puts a second one of these on
+     * screen over a pager that still holds the first. One tag for both would make a profile journey's
+     * tap ambiguous, so the caller names it.
+     */
+    testTag: String = KeiOsTestTags.MainSidebarToggle,
 ) {
     val description = if (expanded) "Show tab bar" else "Show sidebar"
     AppLiquidFloatingSurface(
-        modifier = modifier.size(AppSidebarToggleSize).testTag(KeiOsTestTags.MainSidebarToggle),
+        modifier = modifier.size(AppSidebarToggleSize).testTag(testTag),
         shape = RoundedCornerShape(14.dp),
         backdrop = backdrop,
         onClick = onClick,

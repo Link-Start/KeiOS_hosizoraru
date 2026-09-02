@@ -43,7 +43,8 @@ import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderStat
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.appPageSideGutter
+import os.kei.ui.page.main.widget.chrome.appPageSideGutterEnd
+import os.kei.ui.page.main.widget.chrome.appPageSideGutterStart
 import os.kei.ui.page.main.widget.chrome.rememberAppPageBackdrop
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -206,8 +207,13 @@ internal fun BaStudentGuidePagerPage(
                     PaddingValues(
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                         bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                        start = 16.dp + appPageSideGutter(),
-                        end = 16.dp + appPageSideGutter(),
+                        // Asymmetric, because only the leading edge can have a rail on it. The rail
+                        // floats over this page rather than narrowing it -- same arrangement as the
+                        // pager, which is what lets the page background run the full width -- so the
+                        // content is what steps clear of it. Identical on a phone, where the rail's
+                        // contribution is zero.
+                        start = 16.dp + appPageSideGutterStart(),
+                        end = 16.dp + appPageSideGutterEnd(),
                     ),
             ) {
                 item(
@@ -322,8 +328,8 @@ private fun BaStudentGuidePagerLoadingOverlay(
                 .padding(
                     top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     bottom = innerPadding.calculateBottomPadding(),
-                    start = 20.dp + appPageSideGutter(),
-                    end = 20.dp + appPageSideGutter(),
+                    start = 20.dp + appPageSideGutterStart(),
+                    end = 20.dp + appPageSideGutterEnd(),
                 ),
         contentAlignment = Alignment.Center,
     ) {

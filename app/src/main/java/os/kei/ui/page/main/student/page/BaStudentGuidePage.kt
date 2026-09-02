@@ -48,6 +48,12 @@ import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
 import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
 import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
+import os.kei.ui.page.main.student.page.component.BaStudentGuideSidebar
+import os.kei.ui.page.main.widget.chrome.appNavigationPlacementFor
+import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
+import os.kei.ui.page.main.widget.chrome.LocalAppNavigationPlacement
+import os.kei.core.prefs.UiPrefs
+import androidx.compose.ui.platform.LocalConfiguration
 import os.kei.ui.page.main.student.page.component.BaStudentGuidePagerContent
 import os.kei.ui.page.main.student.page.state.BaStudentGuideViewModel
 import os.kei.ui.page.main.student.page.state.BindBaStudentGuideForegroundAudioGuard
@@ -114,6 +120,7 @@ fun BaStudentGuidePage(
     }
     // Keep top-level backdrop only for navigator/pager layer and bottom bar.
     val navBackdrop = rememberAppPageBackdrop("nav-$activationCount")
+    val guideWindowWidth = LocalConfiguration.current.screenWidthDp.dp
     // Top action bar uses its own backdrop instance to avoid cross-layer recursion.
     val topBarBackdrop = rememberAppPageBackdrop("topbar-$activationCount")
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
@@ -198,6 +205,31 @@ fun BaStudentGuidePage(
             animationsEnabled = transitionAnimationsEnabled,
         )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // Six sections is one past the five a bottom bar can label on a phone, so on a panel this page takes
+    // the same converted shape the pager offers: a leading rail with the labels down the side. Optional,
+    // and it is the *app's* option -- the stored preference the pager's toggle writes, so the two shapes
+    // never disagree about which one the reader asked for. Below AppSidebarMinWindowWidth the preference
+    // is kept but not applied, exactly as appNavigationPlacementFor does for the pager.
+    var guideSidebarPreferred by remember { mutableStateOf(UiPrefs.isSidebarNavigationPreferred()) }
+    val guideNavigationPlacement =
+        remember(guideWindowWidth, guideSidebarPreferred) {
+            appNavigationPlacementFor(
+                availableWidth = guideWindowWidth,
+                sidebarPreferred = guideSidebarPreferred,
+            ).let { placement ->
+                // Only the converted shape is adopted here. A route has no app-level tab bar to move to
+                // the top row, so `Top` would only strip this page's own top-row gutter.
+                if (placement == AppNavigationPlacement.Sidebar) placement else AppNavigationPlacement.Bottom
+            }
+        }
+    val guideUsesSidebar = guideNavigationPlacement == AppNavigationPlacement.Sidebar
+    val onGuideConvertToBottomBar: () -> Unit =
+        remember {
+            {
+                guideSidebarPreferred = false
+                UiPrefs.setSidebarNavigationPreferred(false)
+            }
+        }
     var bottomBarVisible by rememberSaveable { mutableStateOf(true) }
     val guidePageListStates = remember { mutableStateMapOf<Int, LazyListState>() }
     val fallbackGuideListState = remember { LazyListState() }
@@ -342,6 +374,11 @@ fun BaStudentGuidePage(
         )
     CompositionLocalProvider(
         LocalGuideMediaImageBitmaps provides guideMediaImageState.bitmaps,
+        // Published so the page insets *itself* past the rail. The rail floats over the content rather
+        // than narrowing it -- the same arrangement the pager uses, and what lets a managed background
+        // still run the full width -- so every container that centres on the content column adds
+        // AppSidebarWidth to its leading gutter off the back of this. Bottom is the default and a no-op.
+        LocalAppNavigationPlacement provides guideNavigationPlacement,
         LocalGuideMediaImageMissingKeys provides guideMediaImageState.missingKeys,
         LocalGuideMediaGifTargets provides guideMediaImageState.resolvedGifTargets,
         LocalGuideMediaImageRequester provides guideViewModel::requestGuideMediaImages,
@@ -384,6 +421,9 @@ fun BaStudentGuidePage(
                     )
                 },
                 bottomBar = {
+                    // Nothing to switch down here while the rail is up, and a bar plus a rail would be
+                    // the same control twice.
+                    if (!guideUsesSidebar) {
                     BaStudentGuideBottomBar(
                         visible = bottomBarVisible,
                         navigationBarBottom = navigationBarBottom,
@@ -402,8 +442,10 @@ fun BaStudentGuidePage(
                             bottomChromeScrollState.showNow()
                         },
                     )
+                    }
                 },
             ) { innerPadding ->
+                Box(modifier = Modifier.fillMaxSize()) {
                 BaStudentGuidePagerContent(
                     sourceUrl = sourceUrl,
                     info = info,
@@ -447,6 +489,19 @@ fun BaStudentGuidePage(
                     onListScrollInProgressChange = {},
                     onSelectedVoiceLanguageChange = guideViewModel::updateSelectedVoiceLanguage,
                 )
+                if (guideUsesSidebar) {
+                    BaStudentGuideSidebar(
+                        title = pageTitle,
+                        tabs = bottomTabsList,
+                        selectedIndex = pagerState.targetPage.coerceIn(bottomTabsList.indices),
+                        backdrop = navBackdrop,
+                        topInset = innerPadding.calculateTopPadding(),
+                        bottomInset = innerPadding.calculateBottomPadding(),
+                        onSelected = selectBottomTabAction,
+                        onConvertToBottomBar = onGuideConvertToBottomBar,
+                    )
+                }
+                }
             }
             AppTopEndActionBarOverlay {
                 LiquidToolbar(

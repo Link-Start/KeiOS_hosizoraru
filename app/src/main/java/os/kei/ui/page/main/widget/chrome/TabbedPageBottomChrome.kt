@@ -64,6 +64,44 @@ internal interface TabbedPageCategory {
 // ── Shared constants ─────────────────────────────────────────────────────────
 
 internal val TabbedPageBottomChromeSearchGap: Dp = 8.dp
+
+/** Tabs a filled bar carries, which is the rhythm a content-sized one borrows its tab width from. */
+internal const val TabbedPageFilledBarTabReference = 4
+
+/**
+ * Widest one tab of a self-measured bar gets before the bar stops growing with the window.
+ *
+ * Proportion alone runs away at the top end: a fold's 673dp inner screen would give a 159dp tab, and two
+ * of those are the slab again in a wider frame. Past this the bar stays a pill and lets the page keep the
+ * surplus.
+ */
+internal val TabbedPageSizedTabMaxWidth: Dp = 120.dp
+
+/**
+ * Floor for one tab in a bar that measures itself rather than dividing a width it was given.
+ *
+ * Derived from [availableWidth] rather than fixed, because a fixed dp is only consistent in *physical*
+ * size — which is the one thing that was never in question. What differs between devices is how much dp
+ * there is: 96dp is 48% of a 426dp phone's bar and 58% of a 360dp one's, so one number sized on one AVD
+ * reads as correct there and cramped or roomy elsewhere. Sharing the rhythm of a *filled* bar instead
+ * makes the two shapes agree on every screen: four tabs across whatever bar there is, less its own
+ * padding, which is ~97dp on a 426dp phone and ~81dp on a 360dp one.
+ *
+ * Both ends are clamped. Below [AppChromeTokens.floatingBottomBarOuterHeight] a tab stops being a square
+ * target; above [TabbedPageSizedTabMaxWidth] proportion stops being the point — see there.
+ *
+ * A floor, not a width: a large font scale pushes the label past it and the tab grows on its own, which
+ * is the behaviour that setting is asking for.
+ */
+internal fun tabbedPageSizedTabMinWidth(
+    availableWidth: Dp,
+    barHorizontalPadding: Dp = AppChromeTokens.floatingBottomBarHorizontalPadding * 2f,
+    referenceTabCount: Int = TabbedPageFilledBarTabReference,
+    minimum: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
+    maximum: Dp = TabbedPageSizedTabMaxWidth,
+): Dp =
+    ((availableWidth - barHorizontalPadding) / referenceTabCount.coerceAtLeast(1).toFloat())
+        .coerceIn(minimum, maximum)
 internal val TabbedPageBottomChromeCompactHeightMax: Dp = 480.dp
 internal const val TabbedPageBottomChromeMotionMs = 220
 
@@ -260,6 +298,12 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         selectedPageProvider = selectedPageProvider,
                         collapsedDockWidth = collapsedDockWidth,
                         sizedToTabs = barSizedToTabs,
+                        tabMinWidth =
+                            if (barSizedToTabs) {
+                                tabbedPageSizedTabMinWidth(availableWidth = collapsedDockWidth)
+                            } else {
+                                AppChromeTokens.floatingBottomBarOuterHeight
+                            },
                         backdrop = backdrop,
                         isLiquidEffectEnabled = isLiquidEffectEnabled,
                         interactionEnabled = interactionEnabled,
@@ -343,6 +387,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     selectedPageProvider: () -> Int,
     collapsedDockWidth: Dp,
     sizedToTabs: Boolean,
+    tabMinWidth: Dp,
     backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     interactionEnabled: Boolean,
@@ -381,7 +426,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
                 // pages a baseline-profile journey walks.
                 modifier =
                     Modifier
-                        .defaultMinSize(minWidth = 62.dp)
+                        .defaultMinSize(minWidth = tabMinWidth)
                         .testTag(tabbedPageCategoryTabTestTag(labelPrefix, index)),
                 content = tabContent,
             )

@@ -48,9 +48,13 @@ class TabbedPageCategoryBarWidthTest {
 
         val (start, end) = barBounds()
         val width = end - start
-        // Half the page would be ~196dp per tab. The pill is comfortably under that for both together.
-        assertTrue(width < 260.dp, "expected a content-sized pill, got $width")
-        assertTrue(width > 100.dp, "two tabs still need room for their labels, got $width")
+        // Two tabs at the floor a filled bar settles on, so the two shapes share one rhythm. Not the
+        // bar's own height reused as a width, which is what an unfloored measure gives and reads as a
+        // sliver: half the page per tab at one extreme, a 66dp square at the other, and this between.
+        // 420dp less the page's 14dp margins is 392dp of bar; four tabs of that, less the bar's own 4dp
+        // each side, is the floor -- and two of those is the pill.
+        assertDp(width, tabbedPageSizedTabMinWidth(availableWidth = 392.dp) * 2, "content-sized width")
+        assertTrue(width < 260.dp, "still well clear of the ~390dp a filled bar takes, got $width")
         // Centred, because nothing else is on the row to align against.
         val leading = start
         val trailing = 420.dp - end
@@ -108,6 +112,17 @@ class TabbedPageCategoryBarWidthTest {
         val first = tabBounds(0)
         val last = tabBounds(TestCategory.entries.lastIndex)
         return first.first to last.second
+    }
+
+    private fun assertDp(
+        actual: Dp,
+        expected: Dp,
+        label: String,
+    ) {
+        assertTrue(
+            abs(actual.value - expected.value) <= 1.5f,
+            "$label: expected $expected, got $actual",
+        )
     }
 
     private fun tabBounds(index: Int): Pair<Dp, Dp> {

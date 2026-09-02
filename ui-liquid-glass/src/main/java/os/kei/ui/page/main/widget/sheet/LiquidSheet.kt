@@ -75,6 +75,15 @@ private const val LIQUID_SHEET_BLOCKED_DRAG_RESISTANCE = 0.35f
  */
 const val LiquidSheetPanelTestTag = "liquid_sheet_panel"
 
+/**
+ * The shared drag region above every Liquid sheet.
+ *
+ * A profile or frame benchmark needs to start the gesture on the grabber instead of the scrolling
+ * content. Keeping this component-owned mirrors [LiquidSheetPanelTestTag] and avoids one tag per
+ * business sheet.
+ */
+const val LiquidSheetDragRegionTestTag = "liquid_sheet_drag_region"
+
 private val LiquidSheetDismissVelocityThreshold = 800.dp
 
 private const val LIQUID_SHEET_ENTER_DAMPING = 0.92f
@@ -397,6 +406,14 @@ internal fun LiquidSheetPresentation(
         scope.launch { animateHeightTo(resolved, settleSpec()) }
     }
 
+    // These are queried by semantics and pointer callbacks. Keeping the hot resized-height read out
+    // of Composition prevents every drag delta and every height-spring frame from recomposing the
+    // whole sheet tree; the required height change still invalidates Layout below.
+    fun canExpand(): Boolean = liquidSheetCanGrow(currentHeightPx(), maxHeightPx())
+
+    fun canCollapse(): Boolean =
+        currentHeightPx() > minVisibleHeightPx() + LIQUID_SHEET_HEIGHT_EPSILON_PX
+
     /**
      * Ends a drag the sheet owned: dismiss, or spring back to rest.
      *
@@ -618,13 +635,11 @@ internal fun LiquidSheetPresentation(
                     if (enableNestedScroll) Modifier.nestedScroll(nestedScrollConnection) else Modifier,
                 ).wrapContentHeight()
                 .heightIn(max = maxSheetHeight)
-                .then(
-                    if (userResized.value) {
-                        Modifier.liquidSheetOptionalHeightPx { currentHeightPx().roundToInt() }
-                    } else {
-                        Modifier
-                    },
-                ).onSizeChanged { size ->
+                // Reading `userResized` inside this Layout lambda avoids a one-off composition of
+                // the complete material/content tree when the first drag takes ownership.
+                .liquidSheetOptionalHeightPx {
+                    if (userResized.value) currentHeightPx().roundToInt() else 0
+                }.onSizeChanged { size ->
                     // Read off the layout pass and never written back into it: placement is a
                     // graphicsLayer translation, so this cannot feed the measure loop the previous
                     // sheet created by writing its height from onGloballyPositioned.
@@ -642,8 +657,8 @@ internal fun LiquidSheetPresentation(
                 startAction = startAction,
                 endAction = endAction,
                 dragHandleColor = dragHandleColor,
-                canExpand = liquidSheetCanGrow(currentHeightPx(), maxHeightPx()),
-                canCollapse = currentHeightPx() > minVisibleHeightPx() + LIQUID_SHEET_HEIGHT_EPSILON_PX,
+                canExpand = ::canExpand,
+                canCollapse = ::canCollapse,
                 canDismiss = allowDismiss,
                 onExpand = { resizeTo(maxHeightPx()) },
                 onCollapse = { resizeTo(minVisibleHeightPx()) },

@@ -32,6 +32,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.collapse
 import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.expand
@@ -67,8 +68,8 @@ internal fun LiquidSheetTopChrome(
     startAction: (@Composable () -> Unit)?,
     endAction: (@Composable () -> Unit)?,
     dragHandleColor: Color,
-    canExpand: Boolean,
-    canCollapse: Boolean,
+    canExpand: () -> Boolean,
+    canCollapse: () -> Boolean,
     canDismiss: Boolean,
     onExpand: () -> Unit,
     onCollapse: () -> Unit,
@@ -88,11 +89,12 @@ internal fun LiquidSheetTopChrome(
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
-                if (canExpand) expand { onExpand(); true }
-                if (canCollapse) collapse { onCollapse(); true }
+                if (canExpand()) expand { onExpand(); true }
+                if (canCollapse()) collapse { onCollapse(); true }
                 if (canDismiss) dismiss { onDismiss(); true }
             }.pointerHoverIcon(PointerIcon.Hand)
-            .pointerInput(canExpand, canCollapse) {
+            .testTag(LiquidSheetDragRegionTestTag)
+            .pointerInput(canExpand, canCollapse, onExpand, onCollapse) {
                 detectTapGestures(
                     onPress = {
                         pressProgress.floatValue = 1f
@@ -106,7 +108,7 @@ internal fun LiquidSheetTopChrome(
                     // Apple: tapping the grabber cycles the detents. Expanding wins while there is
                     // room, otherwise the tap collapses.
                     onTap = {
-                        if (canExpand) onExpand() else if (canCollapse) onCollapse()
+                        if (canExpand()) onExpand() else if (canCollapse()) onCollapse()
                     },
                 )
             }.draggable(

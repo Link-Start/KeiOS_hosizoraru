@@ -96,6 +96,26 @@ class LiquidSheetPresentationContractTest {
             "if (dismissInProgress.value) return" in presentation,
         )
     }
+
+    @Test
+    fun dragHeightReadsStayOutOfComposition() {
+        val presentation = sheetSource(LIQUID_SHEET_PRESENTATION_SOURCE)
+        val chrome = sheetSource(LIQUID_SHEET_CHROME_SOURCE)
+
+        assertTrue(
+            "The resized height should be read by the layout modifier",
+            ".liquidSheetOptionalHeightPx {\n                    if (userResized.value)" in presentation,
+        )
+        assertFalse(
+            "Drag capability values read in Composition recompose the sheet on every delta",
+            "canExpand = liquidSheetCanGrow(currentHeightPx()" in presentation,
+        )
+        assertTrue("canExpand = ::canExpand" in presentation)
+        assertTrue("canCollapse = ::canCollapse" in presentation)
+        assertTrue("canExpand: () -> Boolean" in chrome)
+        assertTrue("canCollapse: () -> Boolean" in chrome)
+        assertTrue(".testTag(LiquidSheetDragRegionTestTag)" in chrome)
+    }
 }
 
 private fun sheetSource(relativePath: String): String {
@@ -110,5 +130,7 @@ private const val LIQUID_SHEET_ENTRY_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidGlassBottomSheet.kt"
 private const val LIQUID_SHEET_PRESENTATION_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheet.kt"
+private const val LIQUID_SHEET_CHROME_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheetChrome.kt"
 private const val SCENE_BACKDROP_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SceneBackdropScope.kt"

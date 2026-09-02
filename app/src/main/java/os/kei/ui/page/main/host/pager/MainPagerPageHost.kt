@@ -39,6 +39,13 @@ internal data class MainPagerHomePageState(
     val privilegeStatus: PrivilegeStatus,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
+    /**
+     * Whether the pager is still the top nav entry, from `rememberNavEntryAtTop`.
+     *
+     * A preference decides whether the background *may* drift; this decides whether anyone can see
+     * it. Behind a settled full-screen route nobody can -- see [os.kei.ui.page.main.home.HomePage].
+     */
+    val pagerAtTop: Boolean,
     val visibleBottomPages: Set<BottomPage>,
     val homeAppOverview: HomeAppOverview,
     val homeMcpOverview: HomeMcpOverview,
@@ -139,6 +146,7 @@ internal fun MainPagerPageHost(
                         runtimeNowMs = homeState.homeRuntimeNowMs,
                         homeIconHdrEnabled = homeState.homeIconHdrEnabled,
                         homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
+                        pagerAtTop = homeState.pagerAtTop,
                         runtime = runtime,
                         visibleBottomPages = homeState.visibleBottomPages,
                         visibleOverviewCards = homeState.visibleOverviewCards,

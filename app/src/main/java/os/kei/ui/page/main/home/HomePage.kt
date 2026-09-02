@@ -126,6 +126,8 @@ fun HomePage(
     runtimeNowMs: Long,
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean = false,
+    /** Whether the pager is the top nav entry rather than a layer under a settled route. */
+    pagerAtTop: Boolean = true,
     runtime: MainPageRuntime = MainPageRuntime(),
     visibleBottomPages: Set<BottomPage>,
     visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
@@ -155,9 +157,22 @@ fun HomePage(
     )
 
     val effectBackgroundEnabled = runtime.isPageActive
+    // `pagerAtTop` is the same argument the modal-presentation gate in BgEffectBackground makes, one
+    // layer out: a settled full-screen route covers this background completely, so the drift cannot
+    // be seen -- but the loop still invalidates the draw tree and every glass surface above it still
+    // re-rasterizes. Measured on the API 37 phone AVD: Settings open over Home rendered 166 frames in
+    // a 3s dwell at p50 36ms, and three captures a second apart were pixel-identical. That is a page
+    // rendering 55fps of the same image. `routeAtTop` already stops the pager's backdrop *capture*
+    // (MainPagerLayout); this stops the invalidation that was still driving it.
+    //
+    // Only playback stops. `animTime` accrues from real elapsed time and re-anchors on resume, so the
+    // drift picks up where it left off when the route leaves rather than jumping.
     val homeDynamicActive =
-        runtime.isDataActive ||
-            (homeDynamicFullEffectEnabled && runtime.isPageActive)
+        pagerAtTop &&
+            (
+                runtime.isDataActive ||
+                    (homeDynamicFullEffectEnabled && runtime.isPageActive)
+            )
     val dynamicBackgroundEnabled =
         homeDynamicActive &&
             (homeDynamicFullEffectEnabled || !runtime.isPagerScrollInProgress)

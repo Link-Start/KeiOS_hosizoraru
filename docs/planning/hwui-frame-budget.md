@@ -213,3 +213,89 @@ and measures **no change at all** to `record draw`: 1.51/1.59/1.65 after against
 before. A fixed-height empty Spacer records no draw commands; the item overhead was in composition
 and measurement, and `measure+layout` was already 0.04ms. Worth keeping for the code, not for the
 frames.
+
+## Idle frames: the metric that needs no per-frame capture
+
+`scripts/perf/idle_dwell.sh` resets the counter, leaves a scene alone for three seconds and counts
+what it drew anyway. A scene that redraws nothing when nothing changes reports zero, and the figure
+does not swing between runs the way the jank counter does. Measured on `KeiOS_API37_Validation`
+(phone AVD, no LTPO, so the cap is 60 rather than the panel-following rate hardware shows):
+
+| scene | idle frames/s | total p50 |
+|---|---:|---:|
+| home | 59.7 | 24 |
+| github / os / mcp / ba | **0** | — |
+| pad: github / os / mcp / ba, two lanes | **0** | — |
+| Settings route **over Home** | 55.3 | 36 |
+| About route **over Home** | 60.0 | 29 |
+| Calendar/Pool route **over BA** | 0 | — |
+
+Only Home redraws at rest, which is its animated background and is the design. Everything else is
+silent — including every two-lane page, so the wide layouts do not introduce an idle cost.
+
+### A route over Home inherited Home's redraw rate
+
+The two route rows above were a defect, not a design. `BgEffectBackground` already suspends the
+drift while a modal presentation covers it, for the reason its own comment gives: the drift cannot be
+seen but is still paid for, because the loop invalidates the draw tree and every glass surface above
+re-rasterizes. A pushed *route* was not in that gate, so Settings over Home rendered 166 frames in a
+three-second dwell at p50 36ms — worse than Home itself, because the route's own glass was
+re-composited on every invalidation. Three captures a second apart were **pixel-identical**: 55fps of
+the same image.
+
+`rememberNavEntryAtTop` already published the fact and `MainPagerLayout` already used it to stop the
+pager's backdrop *capture*; it simply never reached the loop that was driving it. Threading it into
+Home's `homeDynamicActive` takes both route rows to 0, leaves Home itself at 61.7/s and p50 25, and
+the drift resumes at 181 frames per dwell when the route pops. Playback only: `animTime` accrues from
+real elapsed time, so it picks up where it paused rather than jumping.
+
+## Calendar/Pool is the heaviest scene in the app
+
+Scroll, four flings each way, same AVD. `gpu p50` is from the summary; the stages are
+`frame_stages.py` over `dumpsys gfxinfo <pkg> framestats` (per-frame capture needs
+`setprop debug.hwui.profile true`, which is why the aggregate table above exists).
+
+| scene | frames | total p50 | p90 | gpu p50 | deadline missed |
+|---|---:|---:|---:|---:|---:|
+| **calendar/pool** | 302 | **57** | 81 | 11 | **65%** |
+| **ba office** | 107 | **65** | 101 | 18 | **57%** |
+| settings | 381 | 34 | 48 | 15 | 9% |
+| os | 457 | 26 | 36 | 18 | 7% |
+| github | 306 | 23 | 31 | 17 | 6% |
+| mcp | 439 | 22 | 32 | 15 | 7% |
+
+Calendar/Pool has the *lowest* GPU of the set and the worst total, so the cost is not the glass
+shader. Stages, against mcp as the control:
+
+| stage p50 | calendar/pool | mcp |
+|---|---:|---:|
+| all of Compose | 1.07 | 1.15 |
+| sync (upload) | **3.00** | 0.17 |
+| RT issue->swap | **22.47** | 3.22 |
+| swap->completed | 10.35 | 12.45 |
+
+Compose is 1ms on both, as everywhere else. The difference is RenderThread CPU at 7x and layer/bitmap
+upload at 18x — full-width photographic covers, in a long list, under glass.
+
+**No appearance-neutral saving was found here.** The obvious one is the decode budget, and it is
+already conservative: `GAMEKEE_COVER_DEFAULT_DECODE_DIMENSION` is 960px against a card drawn at
+~1194px on this AVD, so the covers are already being *upscaled*. Lowering it would soften the image,
+which is the visual cost this work is not allowed to pay. BA office is the overscroll-stretch case
+already recorded above, not a new finding.
+
+## What the Backdrop library rules out
+
+Asked against the library's own documentation (`backdrop` MCP), for the lever left open in "What is
+left" above:
+
+- **There is no downscale or render-scale for a backdrop.** Capture and sampling happen at screen
+  resolution, and no documented option changes that. The "sample a lower-resolution backdrop"
+  idea is therefore not available today, and needs a library feature request rather than a change
+  here.
+- `exportedBackdrop` exists to break the feedback loop when a `drawBackdrop` samples a layer its own
+  content draws into — it is a correctness tool, not a way to skip re-recording.
+- The three usage mistakes the docs warn about are all already avoided in this codebase: transforms
+  go through `drawBackdrop`'s `layerBlock` rather than an enclosing `graphicsLayer` (20+ sites, with
+  the reason written down at `LiquidMenuSurface` and `LiquidSurfaces`), `rememberCombinedBackdrop`
+  merges the three places that need two sources, and `exportedBackdrop` is contract-tested where a
+  layer is reused. There is no waste of that kind left to harvest.

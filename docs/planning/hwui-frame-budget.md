@@ -299,3 +299,44 @@ left" above:
   the reason written down at `LiquidMenuSurface` and `LiquidSurfaces`), `rememberCombinedBackdrop`
   merges the three places that need two sources, and `exportedBackdrop` is contract-tested where a
   layer is reused. There is no waste of that kind left to harvest.
+
+## Calendar/Pool: six levers measured, none survived
+
+The heaviest scene in the app, so it got the search. All on `KeiOS_API37_Validation`, per-frame
+stages from `framestats`. Recorded because each of these looks obviously right on paper.
+
+**The covers are not what puts the page over budget.** "Show event/banner images" is a user setting,
+so it isolates them without a build. Off: total p50 **83.77** against **84.12** on. The page is over
+budget either way. Per-stage the covers do cost something — `RT issue->swap` 17.73 off against 22.47
+on, so ~4.7ms of RenderThread — but the total does not move, because a frame this far past the
+deadline is bounded by the backed-up queue rather than by its own work. Read the stages here, not the
+totals.
+
+**`sync` is glass, not bitmaps.** 3.00ms with covers on, 3.35ms with them off, against 0.17ms on mcp.
+Layer recording for the glass panels, exactly as the sheet case in [cullWhenFullyClipped] describes.
+Which also kills the `Bitmap.Config.HARDWARE` idea: hardware bitmaps would remove a CPU->GPU upload
+that the numbers say is not being paid.
+
+**The decode budget is already conservative.** `GAMEKEE_COVER_DEFAULT_DECODE_DIMENSION` is 960px
+against a card drawn at ~1194px, so the covers are already *upscaled*. Lowering it softens the image,
+which is the one cost this work may not pay.
+
+**The cover cache is not thrashing.** 64MiB against ~1.9MiB a cover — about 33 of them resident, on a
+page that shows a dozen.
+
+**`cullWhenFullyClipped` on the BA glass surface does not pay.** `BaLiquidSurfaceColumn` builds the
+same `edgeStack.modifier.then(modifier)` that `AppFeatureCards` finishes with `.cullWhenFullyClipped()`,
+so extending it looked like closing a gap — and the pile survives it, checked on the device, despite
+the edge stack translating piled cards back into view through `layerBlock`. But it measured nothing on
+the calendar list, which has little keep-alive headroom to cull, and BA office came out at p50 81/85
+over two passes against a 65 reading earlier the same session. Two passes agreeing on "no better" and
+a per-panel `GlobalPositionAwareModifierNode` that is not free: reverted rather than shipped on faith.
+
+**`bottomBarBackdrop` cannot be gated on the bar being visible.** The pattern works for the pager
+(`MainPagerLayout`, `routeAtTop`), but when this bar hides it swaps to a compact dock that samples the
+same layer, so nothing stops needing it.
+
+What is left on this page is the glass material and the content: full-width photographic covers, in a
+long list, each panel its own offscreen layer. Every remaining reduction goes through fewer or smaller
+glass surfaces, or smaller images. Sheets and every two-lane page render **0 frames at rest**, so
+there is nothing idle to reclaim there either.

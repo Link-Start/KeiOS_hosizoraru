@@ -84,7 +84,10 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.core.AppDualActionRow
@@ -136,6 +139,7 @@ internal fun GitHubReleaseListPage(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val listState = rememberLazyListState()
+    val secondaryListState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
@@ -145,13 +149,22 @@ internal fun GitHubReleaseListPage(
     val openNotes = remember { mutableStateMapOf<String, Unit>() }
     // Assets default open, so this tracks what the reader has *closed* rather than what they opened.
     val closedAssets = remember { mutableStateMapOf<String, Unit>() }
+    // A release that is closed again keeps its place in the reading lane, so this remembers what the reader
+    // has been through rather than what is open right now. Both go to the lane rule.
+    val keptInReadingLane = remember { mutableStateMapOf<String, Unit>() }
     var seededPage by remember { mutableStateOf(-1) }
     var pageInput by remember { mutableStateOf("") }
+    val readingIds = openReleases.keys + keptInReadingLane.keys
+    // One column while there is nothing to lane: a notice about the whole list does not belong in a
+    // half-width lane with an empty one beside it.
+    val columnCount = if (uiState.rows.isEmpty()) 1 else appPageColumnCount()
 
     LaunchedEffect(uiState.page, uiState.rows.size, viewModel.defaultExpandedIds) {
         pageInput = uiState.tagQuery.ifBlank { uiState.page.toString() }
         if (seededPage == uiState.page || uiState.rows.isEmpty()) return@LaunchedEffect
         seededPage = uiState.page
+        // A new page of results is a new list to read: none of what was held is on screen any more.
+        keptInReadingLane.clear()
         viewModel.defaultExpandedIds.forEach { id ->
             if (uiState.rows.any { row -> row.entry.id == id }) {
                 openReleases[id] = Unit
@@ -169,6 +182,7 @@ internal fun GitHubReleaseListPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
+        contentMaxWidth = appPageContentMaxWidthFor(columnCount),
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),
@@ -209,42 +223,94 @@ internal fun GitHubReleaseListPage(
                 modifier = Modifier.fillMaxSize().layerBackdrop(pageBackdrop),
             ) {
                 CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
-                    AppPageLazyColumn(
-                        innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        topExtra = appEdgeStackKeepAliveTopPadding(listTopPadding),
-                        bottomExtra = AppChromeTokens.floatingBottomBarOuterHeight + 24.dp,
-                    ) {
+                    val onToggleRelease: (String, Boolean) -> Unit = { id, open ->
+                        if (open) {
+                            openReleases[id] = Unit
+                            // Recorded on opening rather than on closing, so the release keeps its lane
+                            // through the close that follows.
+                            keptInReadingLane[id] = Unit
+                            viewModel.ensureDetail(id)
+                        } else {
+                            openReleases.remove(id)
+                        }
+                    }
+                    val onShareAsset: (GitHubReleaseAssetFile) -> Unit = { asset ->
+                        val send =
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, asset.downloadUrl)
+                            }
+                        context.startActivity(
+                            Intent.createChooser(send, asset.name)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                    val lanes =
+                        remember(uiState.rows, readingIds, columnCount) {
+                            if (columnCount >= 2) {
+                                githubReleaseLanesFor(rows = uiState.rows, readingIds = readingIds)
+                            } else {
+                                GitHubReleaseLanes(
+                                    first = uiState.rows.withIndex().toList(),
+                                    second = emptyList(),
+                                )
+                            }
+                        }
+                    // The browsing lane carries the list's own notices -- loading, empty, past the end --
+                    // because those describe the list rather than one of its halves.
+                    val browsingLane: LazyListScope.() -> Unit = {
                         releaseListBody(
                             uiState = uiState,
+                            rows = lanes.first,
                             onToggleAllAssets = viewModel::toggleAllAssets,
                             compareUrlOf = viewModel::compareUrl,
                             lookupConfig = uiState.lookupConfig,
                             openReleases = openReleases,
                             openNotes = openNotes,
                             closedAssets = closedAssets,
-                            onToggleRelease = { id, open ->
-                                if (open) {
-                                    openReleases[id] = Unit
-                                    viewModel.ensureDetail(id)
-                                } else {
-                                    openReleases.remove(id)
-                                }
-                            },
+                            onToggleRelease = onToggleRelease,
                             onOpenLink = { url -> uriHandler.openUri(url) },
                             packageName = uiState.packageName,
-                            onShare = { asset ->
-                                val send =
-                                    Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, asset.downloadUrl)
-                                    }
-                                context.startActivity(
-                                    Intent.createChooser(send, asset.name)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                )
-                            },
+                            onShare = onShareAsset,
+                        )
+                    }
+                    val readingLane: LazyListScope.() -> Unit = {
+                        releaseCards(
+                            rows = lanes.second,
+                            openReleases = openReleases,
+                            openNotes = openNotes,
+                            closedAssets = closedAssets,
+                            onToggleRelease = onToggleRelease,
+                            onOpenLink = { url -> uriHandler.openUri(url) },
+                            onShare = onShareAsset,
+                            onToggleAllAssets = viewModel::toggleAllAssets,
+                            compareUrlOf = viewModel::compareUrl,
+                            lookupConfig = uiState.lookupConfig,
+                            packageName = uiState.packageName,
+                        )
+                    }
+                    val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
+                    val listTopExtra = appEdgeStackKeepAliveTopPadding(listTopPadding)
+                    val listBottomExtra = AppChromeTokens.floatingBottomBarOuterHeight + 24.dp
+                    if (columnCount >= 2) {
+                        AppPageTwoColumnLists(
+                            innerPadding = listInnerPadding,
+                            primaryState = listState,
+                            secondaryState = secondaryListState,
+                            modifier = Modifier.fillMaxSize(),
+                            topExtra = listTopExtra,
+                            bottomExtra = listBottomExtra,
+                            primary = browsingLane,
+                            secondary = readingLane,
+                        )
+                    } else {
+                        AppPageLazyColumn(
+                            innerPadding = listInnerPadding,
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            topExtra = listTopExtra,
+                            bottomExtra = listBottomExtra,
+                            content = browsingLane,
                         )
                     }
                 }
@@ -273,6 +339,7 @@ internal fun GitHubReleaseListPage(
 
 private fun LazyListScope.releaseListBody(
     uiState: GitHubReleaseListUiState,
+    rows: List<IndexedValue<GitHubReleaseRow>>,
     openReleases: MutableMap<String, Unit>,
     openNotes: MutableMap<String, Unit>,
     closedAssets: MutableMap<String, Unit>,
@@ -317,7 +384,7 @@ private fun LazyListScope.releaseListBody(
                 GitHubReleaseNotice(textRes = R.string.github_release_tag_filter_unavailable)
             }
             releaseCards(
-                uiState = uiState,
+                rows = rows,
                 openReleases = openReleases,
                 openNotes = openNotes,
                 closedAssets = closedAssets,
@@ -332,7 +399,7 @@ private fun LazyListScope.releaseListBody(
         }
 
         else -> releaseCards(
-            uiState = uiState,
+            rows = rows,
             openReleases = openReleases,
             openNotes = openNotes,
             closedAssets = closedAssets,
@@ -348,7 +415,7 @@ private fun LazyListScope.releaseListBody(
 }
 
 private fun LazyListScope.releaseCards(
-    uiState: GitHubReleaseListUiState,
+    rows: List<IndexedValue<GitHubReleaseRow>>,
     openReleases: MutableMap<String, Unit>,
     openNotes: MutableMap<String, Unit>,
     closedAssets: MutableMap<String, Unit>,
@@ -361,11 +428,12 @@ private fun LazyListScope.releaseCards(
     packageName: String,
 ) {
     items(
-        count = uiState.rows.size,
-        key = { index -> uiState.rows[index].entry.id },
+        count = rows.size,
+        key = { index -> rows[index].value.entry.id },
         contentType = { "github_release" },
     ) { index ->
-        val row = uiState.rows[index]
+        val indexed = rows[index]
+        val row = indexed.value
         GitHubReleaseCard(
             row = row,
             expanded = openReleases.containsKey(row.entry.id),
@@ -384,7 +452,8 @@ private fun LazyListScope.releaseCards(
             compareUrl = compareUrlOf(row),
             lookupConfig = lookupConfig,
             packageName = packageName,
-            cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { index == 0 },
+            // The first release *on the page*, which a lane on its own no longer knows.
+            cardTestTag = KeiOsTestTags.GitHubReleaseCardFirst.takeIf { indexed.index == 0 },
         )
     }
 }

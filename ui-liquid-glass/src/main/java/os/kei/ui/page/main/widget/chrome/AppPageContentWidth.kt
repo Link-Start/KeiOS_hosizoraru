@@ -160,13 +160,30 @@ fun appPageEdgePadding(): Dp = AppChromeTokens.pageHorizontalPadding + appPageSi
 val AppFloatingDockEdgeSpacing: Dp = 14.dp
 
 /**
- * Horizontal padding for a floating action dock pinned to one side of the page.
+ * Leading-edge padding for a floating action dock, when the dock is aligned to that edge.
  *
  * [isDockSide] is whether *this* edge is the one the dock is aligned to; the opposite edge gets zero, because
  * only the aligned side's padding moves an edge-aligned child. Four pages placed this dock with the same
- * hand-written pair of expressions and the same `14.dp`; they now share one, which is also what makes adding
- * the large-screen gutter a single change rather than four.
+ * hand-written pair of expressions and the same `14.dp`; they now share one, which is also what makes moving
+ * them all a single change rather than four.
+ *
+ * The **chrome** gutter, not the content one, and that is the whole design of it. A dock that followed its
+ * page's content column ended up against the bezel of a 1280dp panel — geometrically consistent with the
+ * cards, and the least reachable spot on the whole device, since a hand holding a tablet reaches *inward*.
+ * On the single-column cap it lands exactly where the About and Settings pages already put their search
+ * button, because [AppFloatingDockEdgeSpacing] and `pageHorizontalPadding` are the same 14dp: one reachable
+ * column of controls whatever the page behind it does with its width.
+ *
+ * One function per edge, because the two edges genuinely differ once a sidebar is up — the same asymmetry
+ * [appPageSideGutterStart] and [appPageEdgePaddingStart] already carry. A single side-agnostic helper took the
+ * trailing gutter for both, so the dock landed *underneath* the rail whenever the grip-aware side flipped to
+ * leading, which on a tablet is just holding it in the other hand.
  */
 @Composable
-fun appFloatingDockSidePadding(isDockSide: Boolean): Dp =
-    if (isDockSide) AppFloatingDockEdgeSpacing + appPageSideGutterEnd() else 0.dp
+fun appFloatingDockStartPadding(isDockSide: Boolean): Dp =
+    if (isDockSide) AppFloatingDockEdgeSpacing + appBottomChromeSideGutterStart() else 0.dp
+
+/** Trailing half of [appFloatingDockStartPadding]. Nothing floats against the trailing edge, so just the gutter. */
+@Composable
+fun appFloatingDockEndPadding(isDockSide: Boolean): Dp =
+    if (isDockSide) AppFloatingDockEdgeSpacing + appBottomChromeSideGutterEnd() else 0.dp

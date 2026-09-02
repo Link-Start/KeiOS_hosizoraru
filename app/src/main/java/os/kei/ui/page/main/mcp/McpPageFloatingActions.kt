@@ -20,7 +20,8 @@ import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.os.osLucideRunIcon
-import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockEndPadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockStartPadding
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
@@ -40,8 +41,8 @@ internal fun BoxScope.McpPageFloatingActionDock(
         } else {
             Alignment.BottomEnd
         }
-    val dockStartPadding = appFloatingDockSidePadding(runtime.floatingDockSide == AppFloatingDockSide.Start)
-    val dockEndPadding = appFloatingDockSidePadding(runtime.floatingDockSide == AppFloatingDockSide.End)
+    val dockStartPadding = appFloatingDockStartPadding(runtime.floatingDockSide == AppFloatingDockSide.Start)
+    val dockEndPadding = appFloatingDockEndPadding(runtime.floatingDockSide == AppFloatingDockSide.End)
     val dockBottomState =
         rememberAppFloatingDockBottomState(
             contentBottomPadding = runtime.contentBottomPadding,

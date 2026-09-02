@@ -48,7 +48,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.AppScaffold
-import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockEndPadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockStartPadding
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
@@ -105,8 +106,8 @@ internal fun GitHubMainContent(
         } else {
             androidx.compose.ui.Alignment.BottomEnd
         }
-    val dockStartPadding = appFloatingDockSidePadding(layout.floatingDockSide == AppFloatingDockSide.Start)
-    val dockEndPadding = appFloatingDockSidePadding(layout.floatingDockSide == AppFloatingDockSide.End)
+    val dockStartPadding = appFloatingDockStartPadding(layout.floatingDockSide == AppFloatingDockSide.Start)
+    val dockEndPadding = appFloatingDockEndPadding(layout.floatingDockSide == AppFloatingDockSide.End)
     val refreshStatus =
         when (overview.refreshState) {
             OverviewRefreshState.Refreshing -> AppFloatingRefreshStatus.Refreshing
@@ -233,8 +234,8 @@ internal fun GitHubMainContent(
     ) {
         // Published here because this page builds its own chrome rather than going through
         // AppPageScaffold: the top row is a sibling of the lists and has to centre against the same
-        // column they use. The floating docks stay on the single-column cap of their own accord --
-        // `appBottomChromeSideGutter*` pins them to it.
+        // column they use. The floating docks are deliberately *not* on this cap -- they stay on the
+        // single-column chrome cap, which `appBottomChromeSideGutter*` pins them to.
         CompositionLocalProvider(
             LocalAppPageContentMaxWidth provides appPageContentMaxWidthFor(layout.columnCount),
         ) {

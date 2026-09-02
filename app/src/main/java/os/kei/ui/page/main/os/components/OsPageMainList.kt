@@ -58,7 +58,8 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
-import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockEndPadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockStartPadding
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
@@ -281,8 +282,8 @@ internal fun OsPageMainList(
         } else {
             Alignment.BottomEnd
         }
-    val dockStartPadding = appFloatingDockSidePadding(floatingDockSide == AppFloatingDockSide.Start)
-    val dockEndPadding = appFloatingDockSidePadding(floatingDockSide == AppFloatingDockSide.End)
+    val dockStartPadding = appFloatingDockStartPadding(floatingDockSide == AppFloatingDockSide.Start)
+    val dockEndPadding = appFloatingDockEndPadding(floatingDockSide == AppFloatingDockSide.End)
     val refreshStatus =
         when (systemOverviewState) {
             SystemOverviewState.Refreshing -> AppFloatingRefreshStatus.Refreshing

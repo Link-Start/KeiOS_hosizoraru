@@ -44,6 +44,7 @@ import os.kei.ui.page.main.github.section.GitHubMainContentSurfaces
 import os.kei.ui.page.main.github.section.GitHubMainContentTracked
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
+import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -65,6 +66,10 @@ fun GitHubPage(
     val systemDmOption = remember(context) { systemDownloadManagerOption(context) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    // Two lanes on a tablet or an unfolded fold: collapsed cards on the left, the ones being read on the
+    // right. See `githubTrackedLanesFor` for why a card moves rather than expanding where it sits.
+    val secondaryListState = rememberLazyListState()
+    val githubColumnCount = appPageColumnCount()
     val scrollBehavior = MiuixScrollBehavior()
     val isDark = isAppInDarkTheme()
     val githubPageViewModel: GitHubPageViewModel = applicationViewModel(create = ::GitHubPageViewModel)
@@ -167,6 +172,24 @@ fun GitHubPage(
                 openLinkFailureMessage = openLinkFailureMessage,
             )
         }
+    val pinnedTrackIdSet = remember(state.pinnedTrackIds) { state.pinnedTrackIds.toSet() }
+    val laneDetainedTrackIdSet = remember(state.laneDetainedTrackIds) { state.laneDetainedTrackIds.toSet() }
+    // Opening a card in the wide layout moves it into the reading lane, and it stays there once collapsed.
+    val onTrackedCardExpandedChange: (String, Boolean) -> Unit =
+        remember(actions, githubColumnCount) {
+            { itemId, expanded ->
+                actions.setTrackedCardExpanded(itemId, expanded)
+                if (expanded && githubColumnCount >= 2) {
+                    actions.detainTrackedCardInReadingLane(itemId)
+                }
+            }
+        }
+    // Leaving the page is what sends the reading lane's cards home. Doing it on collapse instead would
+    // pull a card out from under the reader the moment they closed it; doing it never would let the lane
+    // silently accumulate everything they had ever opened.
+    LaunchedEffect(runtime.isPageActive) {
+        if (!runtime.isPageActive) actions.releaseTrackedReadingLane()
+    }
     DisposableEffect(actions) {
         onDispose { actions.dispose() }
     }
@@ -320,6 +343,8 @@ fun GitHubPage(
                 GitHubMainContentLayout(
                     contentBottomPadding = runtime.contentBottomPadding,
                     listState = listState,
+                    secondaryListState = secondaryListState,
+                    columnCount = githubColumnCount,
                     scrollBehavior = scrollBehavior,
                     bottomBarVisible = runtime.bottomBarVisible,
                     floatingDockSide = runtime.floatingDockSide,
@@ -378,6 +403,8 @@ fun GitHubPage(
                     apkInfoResults = state.apkInfoResults,
                     managedInstallLoading = state.managedInstallLoading,
                     actionsRecommendedRunSnapshots = state.actionsRecommendedRunSnapshots,
+                    pinnedTrackIds = pinnedTrackIdSet,
+                    laneDetainedTrackIds = laneDetainedTrackIdSet,
                     expansionState = trackedItemsExpansionState,
                     relativeTimeNowMillis = contentDerivedState.relativeTimeNowMillis,
                 ),
@@ -430,7 +457,8 @@ fun GitHubPage(
                     onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
                     onOpenFdroidDetail = actions::openFdroidDetail,
                     onOpenReleaseList = { item -> onOpenReleaseList(item.id) },
-                    onTrackedCardExpandedChange = actions::setTrackedCardExpanded,
+                    onTrackedCardExpandedChange = onTrackedCardExpandedChange,
+                    onToggleTrackedPinned = { item -> actions.toggleTrackedPinned(item.id) },
                     onCollapseTrackedCard = actions::collapseTrackedCard,
                     onCollapseApkAssetPanel = actions::collapseApkAssetPanel,
                     onLoadApkAssets = { item, itemState, toggleOnlyWhenCached, includeAllAssets, allowLatestReleaseFallback ->

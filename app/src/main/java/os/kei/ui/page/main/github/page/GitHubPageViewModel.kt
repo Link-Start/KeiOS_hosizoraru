@@ -573,6 +573,7 @@ internal class GitHubPageViewModel(
                                 trackedModifiedAtById = state.trackedModifiedAtById.toMap(),
                                 pendingShareImportTrack = state.pendingShareImportTrack,
                                 selfPackageName = BuildConfig.APPLICATION_ID,
+                                pinnedTrackIds = state.pinnedTrackIds,
                                 nowMillis = 0L,
                             )
                         }.conflate()

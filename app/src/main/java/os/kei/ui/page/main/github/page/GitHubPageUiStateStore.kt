@@ -11,7 +11,14 @@ import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 internal data class GitHubPageUiState(
     val sortMode: GitHubSortMode = GitHubSortMode.Update,
     val sortDirection: GitHubSortDirection = GitHubSortDirection.Forward,
-    val trackedFilterMode: GitHubTrackedFilterMode = GitHubTrackedFilterMode.All
+    val trackedFilterMode: GitHubTrackedFilterMode = GitHubTrackedFilterMode.All,
+    /**
+     * Track ids the reader has pinned, newest pin first.
+     *
+     * Ordered rather than a set because two pinned items still need a stable order between them, and the
+     * order the reader pinned them in is the only one the app knows anything about.
+     */
+    val pinnedTrackIds: List<String> = emptyList(),
 )
 
 internal object GitHubPageUiStateStore {
@@ -19,6 +26,7 @@ internal object GitHubPageUiStateStore {
     private const val KEY_SORT_MODE = "sort_mode"
     private const val KEY_SORT_DIRECTION = "sort_direction"
     private const val KEY_TRACKED_FILTER_MODE = "tracked_filter_mode"
+    private const val KEY_PINNED_TRACK_IDS = "pinned_track_ids"
 
     private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
@@ -30,6 +38,9 @@ internal object GitHubPageUiStateStore {
             ),
             trackedFilterMode = decodeGitHubTrackedFilterMode(
                 store.decodeString(KEY_TRACKED_FILTER_MODE).orEmpty()
+            ),
+            pinnedTrackIds = decodeGitHubPinnedTrackIds(
+                store.decodeString(KEY_PINNED_TRACK_IDS).orEmpty()
             )
         )
     }
@@ -45,7 +56,30 @@ internal object GitHubPageUiStateStore {
     fun setTrackedFilterMode(value: GitHubTrackedFilterMode) {
         store.encode(KEY_TRACKED_FILTER_MODE, value.storageId)
     }
+
+    fun setPinnedTrackIds(value: List<String>) {
+        store.encode(KEY_PINNED_TRACK_IDS, encodeGitHubPinnedTrackIds(value))
+    }
 }
+
+/**
+ * Newline-separated, because a track id is opaque to this store and a newline is the one character it
+ * cannot contain.
+ */
+internal fun encodeGitHubPinnedTrackIds(value: List<String>): String =
+    value.asSequence()
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .distinct()
+        .joinToString(separator = "\n")
+
+internal fun decodeGitHubPinnedTrackIds(value: String): List<String> =
+    value.split('\n')
+        .asSequence()
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .distinct()
+        .toList()
 
 internal fun decodeGitHubSortMode(value: String): GitHubSortMode {
     return GitHubSortMode.fromStorageId(value.trim()) ?: GitHubSortMode.Update

@@ -161,6 +161,18 @@ internal class GitHubPageState(
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(pageUiState.sortMode)
     var sortDirection by mutableStateOf(pageUiState.sortDirection)
+    /** Pinned track ids, newest first. Persisted -- a pin is a decision, not a session detail. */
+    var pinnedTrackIds by mutableStateOf(pageUiState.pinnedTrackIds)
+    /**
+     * Track ids currently held in the wide layout's second lane.
+     *
+     * A card lands here by being expanded and *stays* after it is collapsed again, so a reader can open
+     * one, read it, close it, and still have it where they left it rather than watching it jump back
+     * across the page. Deliberately not persisted and cleared on leaving the page: it is a record of
+     * what this visit opened, and carrying it into the next visit would make the lane fill up over time
+     * with things nobody asked to keep.
+     */
+    var laneDetainedTrackIds by mutableStateOf(emptyList<String>())
     var pendingDeleteItem by sheetState::pendingDeleteItem
     var overviewRefreshState by overviewState::overviewRefreshState
     var lastRefreshMs by overviewState::lastRefreshMs
@@ -241,6 +253,9 @@ internal class GitHubPageState(
         }
         if (sortDirection == defaultPageUiState.sortDirection) {
             sortDirection = snapshot.pageUiState.sortDirection
+        }
+        if (pinnedTrackIds == defaultPageUiState.pinnedTrackIds) {
+            pinnedTrackIds = snapshot.pageUiState.pinnedTrackIds
         }
         if (actionsBranchesExpanded == defaultActionsState.branchesExpanded) {
             actionsBranchesExpanded = snapshot.actionsSectionExpansionState.branchesExpanded

@@ -48,22 +48,28 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
 ) {
     val context = runtime.context
     if (content.trackedItems.isEmpty()) {
-        item {
-            MiuixInfoItem(
-                stringResource(R.string.github_list_label_track_list),
-                stringResource(R.string.github_list_msg_empty),
-            )
+        if (content.showListStatus) {
+            item {
+                MiuixInfoItem(
+                    stringResource(R.string.github_list_label_track_list),
+                    stringResource(R.string.github_list_msg_empty),
+                )
+            }
         }
     } else if (content.filteredTracked.isEmpty()) {
-        item {
-            MiuixInfoItem(
-                stringResource(R.string.github_list_label_search_result),
-                stringResource(R.string.github_list_msg_no_match),
-            )
+        if (content.showListStatus) {
+            item {
+                MiuixInfoItem(
+                    stringResource(R.string.github_list_label_search_result),
+                    stringResource(R.string.github_list_msg_no_match),
+                )
+            }
         }
     } else {
         items(
-            items = content.sortedTracked,
+            // This lane's cards. One column and the lane is the whole list; a wide window splits it, and
+            // which half a card is in is decided by `githubTrackedLanesFor`, not here.
+            items = content.laneTracked,
             key = { it.id },
             contentType = { "tracked_app" },
         ) { item ->
@@ -128,6 +134,7 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                         lookupConfig = content.lookupConfig,
                         checkState = checkState,
                         assetState = assetState,
+                        pinned = item.id in content.pinnedTrackIds,
                         actions = actions,
                         context = context,
                     )

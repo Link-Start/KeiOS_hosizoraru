@@ -29,6 +29,8 @@ import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
+import os.kei.ui.page.main.os.appLucidePinIcon
+import os.kei.ui.page.main.os.appLucidePinOffIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
@@ -43,7 +45,9 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 
 private val GitHubTrackedItemMoreMenuMinWidth = 156.dp
 private val GitHubTrackedItemMoreMenuMaxWidth = 196.dp
-private val GitHubTrackedItemMoreMenuMaxHeight = 276.dp
+// Six rows is the common case now that pinning is one of them, and at 276dp the sixth pushed Delete --
+// the last row -- out of view. Raised to fit six outright; the rarer seven-row case still scrolls.
+private val GitHubTrackedItemMoreMenuMaxHeight = 324.dp
 private const val GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION = 0.50f
 private val releaseNotesSupportedGitPlatforms =
     setOf(
@@ -60,6 +64,8 @@ internal fun GitHubTrackedItemMoreActions(
     state: VersionCheckUi,
     iconTint: Color,
     showReleaseNotesAction: Boolean,
+    pinned: Boolean,
+    onTogglePinned: (GitHubTrackedApp) -> Unit,
     onRefreshTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenActionsSheet: (GitHubTrackedApp) -> Unit,
     onOpenReleaseNotes: () -> Unit,
@@ -122,6 +128,8 @@ internal fun GitHubTrackedItemMoreActions(
     val detailIcon = appLucideInfoIcon()
     val releaseNotesIcon = appLucideNotesIcon()
     val ignoreIcon = appLucidePauseIcon()
+    val pinIcon = appLucidePinIcon()
+    val pinOffIcon = appLucidePinOffIcon()
     val deleteIcon = appLucideTrashIcon()
     val menuMaxWidth =
         (appWindowWidthDp() * GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION)
@@ -218,6 +226,27 @@ internal fun GitHubTrackedItemMoreActions(
                                     ),
                                 )
                             }
+                            // Above the version actions and below refresh: pinning is about where the
+                            // card lives rather than about this release, so it reads as a list action.
+                            add(
+                                LiquidGlassActionMenuActionRow(
+                                    id = "pin",
+                                    testTag = KeiOsTestTags.GitHubTrackedItemPinMenuItem,
+                                    text =
+                                        stringResource(
+                                            if (pinned) {
+                                                R.string.github_item_menu_unpin
+                                            } else {
+                                                R.string.github_item_menu_pin
+                                            },
+                                        ),
+                                    leadingIcon = if (pinned) pinOffIcon else pinIcon,
+                                    onClick = {
+                                        menuExpanded = false
+                                        onTogglePinned(item)
+                                    },
+                                ),
+                            )
                             if (showIgnoreCurrentVersionAction) {
                                 add(
                                     LiquidGlassActionMenuActionRow(

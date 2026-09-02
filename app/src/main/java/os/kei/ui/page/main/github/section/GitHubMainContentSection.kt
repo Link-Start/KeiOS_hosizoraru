@@ -39,6 +39,12 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
+import os.kei.ui.page.main.widget.chrome.LocalAppPageContentMaxWidth
+import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
+import os.kei.ui.page.main.github.page.githubTrackedLanesFor
+import os.kei.ui.page.main.github.page.GitHubTrackedLanes
+import androidx.compose.foundation.lazy.LazyListScope
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
 import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -225,6 +231,13 @@ internal fun GitHubMainContent(
                 .fillMaxSize()
                 .testTag(KeiOsTestTags.GitHubPageRoot),
     ) {
+        // Published here because this page builds its own chrome rather than going through
+        // AppPageScaffold: the top row is a sibling of the lists and has to centre against the same
+        // column they use. The floating docks stay on the single-column cap of their own accord --
+        // `appBottomChromeSideGutter*` pins them to it.
+        CompositionLocalProvider(
+            LocalAppPageContentMaxWidth provides appPageContentMaxWidthFor(layout.columnCount),
+        ) {
         AppScaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
@@ -296,17 +309,26 @@ internal fun GitHubMainContent(
                         state = edgeStackState,
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                    AppPageLazyColumn(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
-                        state = layout.listState,
-                        innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
-                        bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
-                        topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
-                        sectionSpacing = CardLayoutRhythm.denseSectionGap,
-                    ) {
+                    val lanes =
+                        remember(
+                            tracked.sortedTracked,
+                            tracked.pinnedTrackIds,
+                            tracked.laneDetainedTrackIds,
+                            layout.columnCount,
+                        ) {
+                            if (layout.columnCount >= 2) {
+                                githubTrackedLanesFor(
+                                    sortedTracked = tracked.sortedTracked,
+                                    pinnedIds = tracked.pinnedTrackIds.toList(),
+                                    detainedIds = tracked.laneDetainedTrackIds,
+                                )
+                            } else {
+                                GitHubTrackedLanes(first = tracked.sortedTracked, second = emptyList())
+                            }
+                        }
+                    // The browsing lane also carries the share-import cards and the list's own empty
+                    // states: those describe the list, not one of its halves.
+                    val browsingLane: LazyListScope.() -> Unit = {
                         if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
                             item(
                                 key = "github_pending_share_import_track",
@@ -372,6 +394,8 @@ internal fun GitHubMainContent(
                                     trackedItems = tracked.trackedItems,
                                     filteredTracked = tracked.filteredTracked,
                                     sortedTracked = tracked.sortedTracked,
+                                    laneTracked = lanes.first,
+                                    pinnedTrackIds = tracked.pinnedTrackIds,
                                     installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
                                     appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
                                 ),
@@ -413,6 +437,7 @@ internal fun GitHubMainContent(
                                     onOpenFdroidDetail = actions.onOpenFdroidDetail,
                                     onOpenReleaseList = actions.onOpenReleaseList,
                                     onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
+                                    onToggleTrackedPinned = actions.onToggleTrackedPinned,
                                     onCollapseTrackedCard = actions.onCollapseTrackedCard,
                                     onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
                                     onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
@@ -426,6 +451,107 @@ internal fun GitHubMainContent(
                                     onOpenApkInDownloader = actions.onOpenApkInDownloader,
                                     onShareApkLink = actions.onShareApkLink,
                                 ),
+                        )
+                    }
+                    // Empty until a card is opened or pinned, which is the whole point: the list keeps its
+                    // full height until the reader asks to read something.
+                    val readingLane: LazyListScope.() -> Unit = {
+                        GitHubTrackedItemsSection(
+                            content =
+                                GitHubTrackedItemsContent(
+                                    lookupConfig = overview.lookupConfig,
+                                    trackedItems = tracked.trackedItems,
+                                    filteredTracked = tracked.filteredTracked,
+                                    sortedTracked = tracked.sortedTracked,
+                                    laneTracked = lanes.second,
+                                    showListStatus = false,
+                                    pinnedTrackIds = tracked.pinnedTrackIds,
+                                    installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
+                                    appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
+                                ),
+                            surfaces =
+                                GitHubTrackedItemsSurfaces(
+                                    contentBackdrop = surfaces.contentBackdrop,
+                                    isDark = surfaces.isDark,
+                                ),
+                            checkState =
+                                GitHubTrackedItemsCheckState(
+                                    checkStates = tracked.checkStates,
+                                    itemRefreshLoading = tracked.itemRefreshLoading,
+                                    actionsRecommendedRunSnapshots = tracked.actionsRecommendedRunSnapshots,
+                                ),
+                            assetState =
+                                GitHubTrackedItemsAssetState(
+                                    apkAssetBundles = tracked.apkAssetBundles,
+                                    apkAssetLoading = tracked.apkAssetLoading,
+                                    apkAssetErrors = tracked.apkAssetErrors,
+                                    apkAssetExpanded = tracked.apkAssetExpanded,
+                                    apkInfoResults = tracked.apkInfoResults,
+                                    managedInstallLoading = tracked.managedInstallLoading,
+                                ),
+                            expansionState =
+                                tracked.expansionState,
+                            runtime =
+                                GitHubTrackedItemsRuntime(
+                                    context = context,
+                                    supportedAbis = supportedAbis,
+                                    relativeTimeNowMillis = tracked.relativeTimeNowMillis,
+                                ),
+                            actions =
+                                GitHubTrackedItemsActions(
+                                    onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                                    onOpenActionsSheet = actions.onOpenActionsSheet,
+                                    onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
+                                    onIgnoreCurrentTrackedVersion = actions.onIgnoreCurrentTrackedVersion,
+                                    onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
+                                    onOpenFdroidDetail = actions.onOpenFdroidDetail,
+                                    onOpenReleaseList = actions.onOpenReleaseList,
+                                    onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
+                                    onToggleTrackedPinned = actions.onToggleTrackedPinned,
+                                    onCollapseTrackedCard = actions.onCollapseTrackedCard,
+                                    onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
+                                    onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
+                                    onPreReleaseVersionExpandedChange = actions.onPreReleaseVersionExpandedChange,
+                                    onCollapseApkAssetPanel = actions.onCollapseApkAssetPanel,
+                                    onLoadApkAssets = actions.onLoadApkAssets,
+                                    onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
+                                    onOpenExternalUrl = actions.onOpenExternalUrl,
+                                    onOpenApkInfo = actions.onOpenApkInfo,
+                                    onInstallApk = actions.onInstallApk,
+                                    onOpenApkInDownloader = actions.onOpenApkInDownloader,
+                                    onShareApkLink = actions.onShareApkLink,
+                                ),
+                        )
+                    }
+                    val listModifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(layout.scrollBehavior.nestedScrollConnection)
+                    val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
+                    val listBottomExtra =
+                        appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding)
+                    val listTopExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)
+                    if (layout.columnCount >= 2) {
+                        AppPageTwoColumnLists(
+                            innerPadding = listInnerPadding,
+                            primaryState = layout.listState,
+                            secondaryState = layout.secondaryListState,
+                            modifier = listModifier,
+                            bottomExtra = listBottomExtra,
+                            topExtra = listTopExtra,
+                            sectionSpacing = CardLayoutRhythm.denseSectionGap,
+                            primary = browsingLane,
+                            secondary = readingLane,
+                        )
+                    } else {
+                        AppPageLazyColumn(
+                            modifier = listModifier,
+                            state = layout.listState,
+                            innerPadding = listInnerPadding,
+                            bottomExtra = listBottomExtra,
+                            topExtra = listTopExtra,
+                            sectionSpacing = CardLayoutRhythm.denseSectionGap,
+                            content = browsingLane,
                         )
                     }
                 }
@@ -509,6 +635,7 @@ internal fun GitHubMainContent(
                 onOpenStarImport = actions.onOpenStarImport,
             )
         }
+    }
     }
 }
 

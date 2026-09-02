@@ -76,11 +76,19 @@ class GitHubPageBackdropTest {
         assertTrue(".nestedScroll(layout.scrollBehavior.nestedScrollConnection)" in source)
         assertTrue("AppEdgeStackKeepAlive(" in source)
         assertTrue("state = layout.listState," in source)
-        assertTrue("innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())," in source)
+        // Hoisted into locals now that two lane shapes share them, so both branches are laid out the
+        // same way by construction rather than by two copies staying in step.
+        assertTrue(
+            "val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())" in source,
+        )
         // The keep-alive box shifts the list up by its headroom, so the list's own top inset has to
         // absorb it. The compiler cannot catch a host that adopts the shift and forgets the inset.
-        assertTrue("topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)," in source)
-        assertTrue("bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding)" in source)
+        assertTrue("val listTopExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)" in source)
+        assertTrue(
+            "appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding)" in source,
+        )
+        assertTrue("topExtra = listTopExtra," in source)
+        assertTrue("bottomExtra = listBottomExtra," in source)
     }
 
     @Test

@@ -36,6 +36,7 @@ internal data class GitHubPageContentInput(
     val trackedModifiedAtById: Map<String, Long>,
     val pendingShareImportTrack: GitHubPendingShareImportTrack?,
     val selfPackageName: String,
+    val pinnedTrackIds: List<String>,
     val nowMillis: Long
 )
 
@@ -189,7 +190,13 @@ internal class GitHubPageContentStateDeriver(
             val (activeTracked, archivedTracked) = sortedBySelectedMode.partition { item ->
                 !item.isRepositoryArchived(input.checkStates[item.id])
             }
-            val sortedTracked = activeTracked + archivedTracked
+            // Pins go ahead of the sort *and* of the archived partition: the reader pinned a track to keep
+            // it in sight, and one with nothing to report is the case they reached for the pin to solve.
+            val sortedTracked =
+                githubTrackedSortedWithPinsFirst(
+                    sortedTracked = activeTracked + archivedTracked,
+                    pinnedIds = input.pinnedTrackIds,
+                )
             val pendingShareImportRepoOverlapCount = input.pendingShareImportTrack?.let { pending ->
                 input.trackedItems.count { item ->
                     item.owner.equals(pending.owner, ignoreCase = true) &&

@@ -47,6 +47,7 @@ internal fun GitHubTrackedItemHeaderActions(
     lookupConfig: GitHubLookupConfig,
     checkState: GitHubTrackedItemsCheckState,
     assetState: GitHubTrackedItemsAssetState,
+    pinned: Boolean,
     actions: GitHubTrackedItemsActions,
     context: Context,
 ) {
@@ -92,6 +93,8 @@ internal fun GitHubTrackedItemHeaderActions(
             state = state,
             iconTint = actionState.iconTint,
             showReleaseNotesAction = lookupConfig.decisionAssistEnabled,
+            pinned = pinned,
+            onTogglePinned = actions.onToggleTrackedPinned,
             onRefreshTrackedItem = actions.onRefreshTrackedItem,
             onOpenActionsSheet = actions.onOpenActionsSheet,
             onOpenReleaseNotes = {

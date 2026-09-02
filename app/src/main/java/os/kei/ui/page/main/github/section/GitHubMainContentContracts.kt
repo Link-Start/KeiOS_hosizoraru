@@ -28,6 +28,9 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 internal data class GitHubMainContentLayout(
     val contentBottomPadding: Dp,
     val listState: LazyListState,
+    /** The reading lane's own scroll, so opening a card does not move the list you were scanning. */
+    val secondaryListState: LazyListState,
+    val columnCount: Int,
     val scrollBehavior: ScrollBehavior,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
@@ -83,6 +86,9 @@ internal data class GitHubMainContentTracked(
     val managedInstallLoading: SnapshotStateMap<String, Boolean>,
     val actionsRecommendedRunSnapshots: SnapshotStateMap<String, GitHubActionsRecommendedRunSnapshot>,
     val expansionState: GitHubTrackedItemsExpansionState,
+    val pinnedTrackIds: Set<String>,
+    /** Cards held in the reading lane by having been opened this visit. See `githubTrackedLanesFor`. */
+    val laneDetainedTrackIds: Set<String>,
     val relativeTimeNowMillis: Long,
 )
 
@@ -128,6 +134,7 @@ internal data class GitHubMainContentActions(
     val onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
     val onOpenReleaseList: (GitHubTrackedApp) -> Unit,
     val onTrackedCardExpandedChange: (String, Boolean) -> Unit,
+    val onToggleTrackedPinned: (GitHubTrackedApp) -> Unit,
     val onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onCollapseApkAssetPanel: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,

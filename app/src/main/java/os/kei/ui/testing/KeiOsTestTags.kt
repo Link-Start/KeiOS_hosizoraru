@@ -51,6 +51,7 @@ object KeiOsTestTags {
 
     /** A tracked card's overflow trigger, and the release entry inside it. */
     const val GitHubTrackedItemMoreButton = "github_tracked_item_more_button"
+    const val GitHubTrackedItemPinMenuItem = "github_tracked_item_pin_menu_item"
     const val GitHubReleaseMenuItem = "github_release_menu_item"
 
     /**

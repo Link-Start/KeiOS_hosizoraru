@@ -449,6 +449,7 @@ class GitHubPageContentStateDeriverTest {
         trackedModifiedAtById: Map<String, Long> = emptyMap(),
         pendingShareImportTrack: GitHubPendingShareImportTrack? = null,
         selfPackageName: String = "os.kei",
+        pinnedTrackIds: List<String> = emptyList(),
         nowMillis: Long = 0L
     ): GitHubPageContentInput {
         return GitHubPageContentInput(
@@ -463,6 +464,7 @@ class GitHubPageContentStateDeriverTest {
             trackedAddedAtById = trackedAddedAtById,
             trackedModifiedAtById = trackedModifiedAtById,
             pendingShareImportTrack = pendingShareImportTrack,
+            pinnedTrackIds = pinnedTrackIds,
             selfPackageName = selfPackageName,
             nowMillis = nowMillis
         )

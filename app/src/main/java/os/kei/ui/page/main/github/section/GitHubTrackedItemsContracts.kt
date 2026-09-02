@@ -18,6 +18,20 @@ internal data class GitHubTrackedItemsContent(
     val trackedItems: List<GitHubTrackedApp>,
     val filteredTracked: List<GitHubTrackedApp>,
     val sortedTracked: List<GitHubTrackedApp>,
+    /**
+     * The cards this lane renders, which is all of [sortedTracked] in one column and one of the two lanes
+     * in a wide window. Kept beside [sortedTracked] rather than replacing it because the empty and
+     * no-match states, and the profile's handle on the first card, are properties of the whole list.
+     */
+    val laneTracked: List<GitHubTrackedApp> = sortedTracked,
+    val pinnedTrackIds: Set<String> = emptySet(),
+    /**
+     * Whether this lane speaks for the list as a whole.
+     *
+     * "Nothing tracked" and "nothing matched" are statements about the list, so exactly one lane may make
+     * them -- the browsing lane. Without this the reading lane would repeat them beside it.
+     */
+    val showListStatus: Boolean = true,
     val installedAppLabelsByPackage: Map<String, String>,
     val appLastUpdatedAtByTrackId: Map<String, Long>,
 )
@@ -65,6 +79,7 @@ internal data class GitHubTrackedItemsActions(
     val onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
     val onOpenReleaseList: (GitHubTrackedApp) -> Unit,
     val onTrackedCardExpandedChange: (String, Boolean) -> Unit,
+    val onToggleTrackedPinned: (GitHubTrackedApp) -> Unit,
     val onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     val onStableVersionExpandedChange: (String, Boolean) -> Unit,

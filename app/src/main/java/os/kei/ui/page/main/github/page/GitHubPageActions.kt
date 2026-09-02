@@ -229,6 +229,40 @@ internal class GitHubPageActions(
         GitHubPageUiStateStore.setSortDirection(value)
     }
 
+    /**
+     * Pins or unpins a track, newest pin first.
+     *
+     * On a phone that puts it at the top of the list. In the wide layout the second lane is where a pinned
+     * track lives instead -- see `githubTrackedLanesFor` -- so pinning it there is what keeps it on screen
+     * while the first lane scrolls.
+     */
+    /** Holds a card in the wide layout's reading lane until the reader leaves the page. */
+    fun detainTrackedCardInReadingLane(itemId: String) {
+        val normalizedId = itemId.trim()
+        if (normalizedId.isEmpty()) return
+        if (normalizedId in env.state.laneDetainedTrackIds) return
+        env.state.laneDetainedTrackIds = env.state.laneDetainedTrackIds + normalizedId
+    }
+
+    /** Sends every held card back to the browsing lane. Called when the page stops being visible. */
+    fun releaseTrackedReadingLane() {
+        if (env.state.laneDetainedTrackIds.isEmpty()) return
+        env.state.laneDetainedTrackIds = emptyList()
+    }
+
+    fun toggleTrackedPinned(itemId: String) {
+        val normalizedId = itemId.trim()
+        if (normalizedId.isEmpty()) return
+        val next =
+            if (normalizedId in env.state.pinnedTrackIds) {
+                env.state.pinnedTrackIds - normalizedId
+            } else {
+                listOf(normalizedId) + env.state.pinnedTrackIds.filterNot { it == normalizedId }
+            }
+        env.state.pinnedTrackIds = next
+        GitHubPageUiStateStore.setPinnedTrackIds(next)
+    }
+
     fun setTrackedFilterMode(value: GitHubTrackedFilterMode) {
         env.state.trackedFilterMode = value
         GitHubPageUiStateStore.setTrackedFilterMode(value)

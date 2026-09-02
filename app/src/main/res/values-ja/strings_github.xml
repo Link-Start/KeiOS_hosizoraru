@@ -1125,6 +1125,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_item_label_actions_run">Actions Run</string>
     <string name="github_item_actions_run_value">%1$s · 記録 %2$s</string>
     <string name="github_item_actions_run_not_recorded">未記録</string>
+    <string name="github_item_menu_pin">最上部に固定</string>
+    <string name="github_item_menu_unpin">固定を解除</string>
     <string name="github_item_menu_ignore_current_version">本版を無視</string>
     <string name="github_toast_no_current_update_to_ignore">無視できる現在のバージョン更新はありません</string>
     <string name="github_toast_track_update_ignored">現在のバージョン更新を無視しました</string>

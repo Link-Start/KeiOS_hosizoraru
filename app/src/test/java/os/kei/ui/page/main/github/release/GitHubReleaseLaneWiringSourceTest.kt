@@ -69,8 +69,23 @@ class GitHubReleaseLaneWiringSourceTest {
 
         val lanes = source.substringAfter("val readingIds =").substringBefore("\n")
         assertTrue(
-            "openReleases.keys + keptInReadingLane.keys" in lanes,
+            "anchorIds + openReleases.keys + keptInReadingLane.keys" in lanes,
             "Anything open is being read, however it came to be open -- including the seeded expansions",
+        )
+    }
+
+    @Test
+    fun theTwoAnchorsAreLanedByRuleAndOnlyOnTheFirstPage() {
+        val source = sourceFile(PAGE_SOURCE)
+
+        assertTrue(
+            "githubReleaseAnchorIds(rows = uiState.rows, firstPage = uiState.page == 1)" in source,
+            "The latest and the newest pre-release sit in the reading lane by rule, not by being open",
+        )
+        assertEquals(
+            1,
+            Regex("githubReleaseAnchorIds\\(").findAll(source).count(),
+            "One place decides the anchors",
         )
     }
 

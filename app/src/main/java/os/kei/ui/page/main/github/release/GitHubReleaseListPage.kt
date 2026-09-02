@@ -154,7 +154,13 @@ internal fun GitHubReleaseListPage(
     val keptInReadingLane = remember { mutableStateMapOf<String, Unit>() }
     var seededPage by remember { mutableStateOf(-1) }
     var pageInput by remember { mutableStateOf("") }
-    val readingIds = openReleases.keys + keptInReadingLane.keys
+    // The two anchors are in the reading lane by rule rather than by being open -- see
+    // githubReleaseAnchorIds.
+    val anchorIds =
+        remember(uiState.rows, uiState.page) {
+            githubReleaseAnchorIds(rows = uiState.rows, firstPage = uiState.page == 1)
+        }
+    val readingIds = anchorIds + openReleases.keys + keptInReadingLane.keys
     // One column while there is nothing to lane: a notice about the whole list does not belong in a
     // half-width lane with an empty one beside it.
     val columnCount = if (uiState.rows.isEmpty()) 1 else appPageColumnCount()

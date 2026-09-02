@@ -82,6 +82,62 @@ class MainNavigationFrameBenchmarks {
         )
     }
 
+    /**
+     * Shared Liquid Sheet motion with the generated profile applied.
+     *
+     * The generator uses the same strategy sheet and gesture order, so this measures the exact code
+     * path the profile is expected to precompile rather than treating "sheet opened" as motion
+     * coverage.
+     */
+    @Test
+    fun liquidSheetMotionBaselineProfile() =
+        measureLiquidSheetMotion(CompilationMode.Partial(BaselineProfileMode.Require))
+
+    /** A/B sibling that establishes how much Sheet motion ART compilation can actually recover. */
+    @Test
+    fun liquidSheetMotionCompilationNone() = measureLiquidSheetMotion(CompilationMode.None())
+
+    @OptIn(ExperimentalMetricApi::class)
+    private fun measureLiquidSheetMotion(compilationMode: CompilationMode) {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = traceBreakdownMetrics(),
+            compilationMode = compilationMode,
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                    pageTag = GITHUB_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_GITHUB,
+                )
+                waitForTag(GITHUB_STRATEGY_SHEET_BUTTON)
+                clickTag(GITHUB_STRATEGY_SHEET_BUTTON)
+                waitForTag(LIQUID_SHEET_PANEL)
+                waitForTag(LIQUID_SHEET_DRAG_REGION)
+            },
+            measureBlock = {
+                traceSection("benchmark:liquid_sheet_expand_drag") {
+                    dragLiquidSheetRegion(up = true)
+                }
+                traceSection("benchmark:liquid_sheet_content_scroll") {
+                    swipeLiquidSheetContent(up = true)
+                    swipeLiquidSheetContent(up = true)
+                    swipeLiquidSheetContent(up = false)
+                    swipeLiquidSheetContent(up = false)
+                }
+                traceSection("benchmark:liquid_sheet_collapse_drag") {
+                    dragLiquidSheetRegion(up = false)
+                }
+            },
+        )
+    }
+
     @Test
     fun homeGitHubMcpHome() {
         rule.measureRepeated(
@@ -362,12 +418,13 @@ class MainNavigationFrameBenchmarks {
     }
 
     /**
-     * The push the calendar/pool migration created, from the BA floating dock. Its covered page is
-     * the heaviest surface in the app, so if the cost tracks what the covered layer keeps drawing
-     * rather than what the entering layer composes, this is where it shows.
+     * The merged Calendar/Pool route: one dock entry, one page, and a phone-only category switch.
+     *
+     * A wide window renders both lists side by side and removes the category bar, so the switch section
+     * is conditional. The route-root wait is the stable arrival signal for both layouts.
      */
     @Test
-    fun baPoolRoutePushAndPop() {
+    fun baCalendarPoolRouteInteractions() {
         rule.measureRepeated(
             packageName = targetAppId,
             metrics = listOf(FrameTimingMetric()),
@@ -388,14 +445,20 @@ class MainNavigationFrameBenchmarks {
                 waitForTag(BA_DOCK_OPEN_CALENDAR_POOL)
             },
             measureBlock = {
-                traceSection("benchmark:ba_pool_route_push") {
+                traceSection("benchmark:ba_calendar_pool_route_push") {
                     clickTag(BA_DOCK_OPEN_CALENDAR_POOL)
-                    check(device.wait(Until.gone(By.res(BA_DOCK_OPEN_CALENDAR_POOL)), PAGE_TIMEOUT_MS)) {
-                        "Timed out waiting for the calendar/banner route to cover the BA page"
+                    check(device.wait(Until.hasObject(By.res(BA_CALENDAR_POOL_PAGE_ROOT)), PAGE_TIMEOUT_MS)) {
+                        "Timed out waiting for the merged Calendar/Pool page"
                     }
                     settleRouteTransition()
                 }
-                traceSection("benchmark:ba_pool_route_pop") {
+                if (device.findObject(By.res(BA_CALENDAR_POOL_TAB_POOL)) != null) {
+                    traceSection("benchmark:ba_calendar_pool_tab_switch") {
+                        clickTag(BA_CALENDAR_POOL_TAB_POOL)
+                        settleRouteTransition()
+                    }
+                }
+                traceSection("benchmark:ba_calendar_pool_route_pop") {
                     device.pressBack()
                     waitForTag(BA_PAGE_ROOT)
                     settleRouteTransition()
@@ -534,6 +597,49 @@ class MainNavigationFrameBenchmarks {
             Thread.sleep(HOME_SCROLL_BETWEEN_SWIPES_MS)
         }
     }
+
+    private fun androidx.benchmark.macro.MacrobenchmarkScope.dragLiquidSheetRegion(up: Boolean) {
+        val bounds = device.findObject(By.res(LIQUID_SHEET_DRAG_REGION))?.visibleBounds
+            ?: error("Unable to find Liquid Sheet drag region")
+        val distance = (device.displayHeight * LIQUID_SHEET_DRAG_DISTANCE_FRACTION).toInt()
+        val startY = bounds.centerY()
+        val endY =
+            (if (up) startY - distance else startY + distance)
+                .coerceIn(1, device.displayHeight - 2)
+        check(
+            device.swipe(
+                bounds.centerX(),
+                startY,
+                bounds.centerX(),
+                endY,
+                LIQUID_SHEET_DRAG_STEPS,
+            ),
+        ) {
+            "Unable to drag Liquid Sheet ${if (up) "up" else "down"}"
+        }
+        Thread.sleep(LIQUID_SHEET_GESTURE_SETTLE_MS)
+    }
+
+    private fun androidx.benchmark.macro.MacrobenchmarkScope.swipeLiquidSheetContent(up: Boolean) {
+        val bounds = device.findObject(By.res(LIQUID_SHEET_PANEL))?.visibleBounds
+            ?: error("Unable to find Liquid Sheet panel")
+        val upperY = bounds.top + (bounds.height() * LIQUID_SHEET_CONTENT_UPPER_FRACTION).toInt()
+        val lowerY = bounds.top + (bounds.height() * LIQUID_SHEET_CONTENT_LOWER_FRACTION).toInt()
+        val startY = if (up) lowerY else upperY
+        val endY = if (up) upperY else lowerY
+        check(
+            device.swipe(
+                bounds.centerX(),
+                startY,
+                bounds.centerX(),
+                endY,
+                LIQUID_SHEET_CONTENT_SCROLL_STEPS,
+            ),
+        ) {
+            "Unable to scroll Liquid Sheet content ${if (up) "up" else "down"}"
+        }
+        Thread.sleep(LIQUID_SHEET_BETWEEN_SWIPES_MS)
+    }
 }
 
 @OptIn(ExperimentalMetricApi::class)
@@ -577,10 +683,16 @@ private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
 private const val HOME_PAGE_ROOT = "home_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
+private const val GITHUB_STRATEGY_SHEET_BUTTON = "github_strategy_sheet_button"
 private const val BA_PAGE_ROOT = "ba_page_root"
 private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
+private const val BA_CALENDAR_POOL_PAGE_ROOT = "ba_calendar_pool_page_root"
+private const val BA_CALENDAR_POOL_TAB_POOL = "ba_calendar_pool_tab_1"
 private const val HOME_SETTINGS_BUTTON = "home_settings_button"
 private const val SETTINGS_PAGE_ROOT = "settings_page_root"
+private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
+private const val LIQUID_SHEET_DRAG_REGION = "liquid_sheet_drag_region"
+
 /**
  * RenderThread/UI slice names for the plan's P0 breakdown. "%" is a TraceProcessor wildcard, used
  * where the exact HWUI slice name carries a per-frame suffix.
@@ -625,3 +737,10 @@ private const val MCP_SCROLL_FLING_COUNT = 3
 private const val MCP_SCROLL_UPPER_FRACTION = 0.30f
 private const val MCP_SCROLL_LOWER_FRACTION = 0.78f
 private const val MCP_SCROLL_STEPS = 18
+private const val LIQUID_SHEET_DRAG_STEPS = 72
+private const val LIQUID_SHEET_CONTENT_SCROLL_STEPS = 18
+private const val LIQUID_SHEET_DRAG_DISTANCE_FRACTION = 0.14f
+private const val LIQUID_SHEET_CONTENT_UPPER_FRACTION = 0.34f
+private const val LIQUID_SHEET_CONTENT_LOWER_FRACTION = 0.82f
+private const val LIQUID_SHEET_GESTURE_SETTLE_MS = 480L
+private const val LIQUID_SHEET_BETWEEN_SWIPES_MS = 160L

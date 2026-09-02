@@ -7,22 +7,22 @@ import org.junit.Test
 import os.kei.ui.page.main.widget.chrome.tabbedPageCategoryTabTestTag
 
 /**
- * The macrobenchmark module cannot depend on the app's source set, so [BaselineProfileGenerator]
- * re-spells every test tag as its own string constant. A drift between the two spellings fails
+ * The macrobenchmark module cannot depend on the app's source set, so its profile and measurement
+ * sources re-spell every test tag as a string constant. A drift between the two spellings fails
  * only on a device, minutes into a profile run, as `Timed out waiting for testTag=…`. This walks
  * the same ground in a second.
  */
 class BaselineProfileTestTagContractTest {
     @Test
-    fun everyTagTheGeneratorWaitsForIsDeclaredInTheApp() {
+    fun everyTagTheProfileSourcesWaitForIsDeclaredInTheApp() {
         val declared = keiOsTestTagValues() + componentOwnedTagValues()
-        val generatorTags = generatorTagConstants()
+        val profileTags = profileTagConstants()
 
-        assertTrue(generatorTags.isNotEmpty(), "Unable to parse tag constants out of the generator")
-        generatorTags.forEach { (constant, value) ->
+        assertTrue(profileTags.isNotEmpty(), "Unable to parse tag constants out of the profile sources")
+        profileTags.forEach { (constant, value) ->
             assertTrue(
                 value in declared,
-                "$constant = \"$value\" matches no declared tag; the journey would time out",
+                "$constant = \"$value\" matches no declared tag; a profile task would time out",
             )
         }
     }
@@ -65,28 +65,6 @@ class BaselineProfileTestTagContractTest {
         )
     }
 
-    @Test
-    fun theClassNamesTheTileLongPressJourneyStartsStillExist() {
-        // The journey opens the daily-template editor with `am start -n <pkg>/<class>`, and the
-        // macrobenchmark module cannot see either class to reference it. A rename would fail as a start
-        // that never brings the sheet up, minutes into a run, so the two literals are checked against the
-        // manifest that declares them here instead.
-        val manifest = sourceFile("app/src/main/AndroidManifest.xml")
-        val classNames = generatorClassNameConstants()
-
-        // Vacuously passing is the failure mode to guard here: the filter is by shape, so a rewritten
-        // constant could drop out of it and take the check with it.
-        assertTrue(classNames.isNotEmpty(), "Unable to parse class-name constants out of the generator")
-        classNames.forEach { (constant, className) ->
-            val relativeName = className.removePrefix(APP_NAMESPACE)
-            assertTrue(
-                relativeName in manifest,
-                "$constant = \"$className\" is declared by no manifest component; the journey would " +
-                    "start nothing",
-            )
-        }
-    }
-
     /**
      * A journey helper that nothing calls collects nothing, and says nothing about it.
      *
@@ -127,6 +105,166 @@ class BaselineProfileTestTagContractTest {
                 "$constant is declared and never used, so the path it names is uncovered",
             )
         }
+    }
+
+    @Test
+    fun theDefaultProfileKeepsItsJourneyAndReplayBudget() {
+        val source = generatorSourceWithoutComments()
+        val journeyCount = JOURNEY_DECLARATION.findAll(source).count()
+        val iterationBudgets =
+            INT_CONST_DECLARATION
+                .findAll(source)
+                .associate { match -> match.groupValues[1] to match.groupValues[2].toInt() }
+        val replayBudget =
+            MAX_ITERATION_USE
+                .findAll(source)
+                .sumOf { match ->
+                    val constant = match.groupValues[1]
+                    requireNotNull(iterationBudgets[constant]) {
+                        "Unable to resolve maxIterations constant $constant"
+                    }
+                }
+
+        assertEquals(6, journeyCount, "The default profile should stay reviewable as six user journeys")
+        assertEquals(16, replayBudget, "The default profile replay budget changed; justify it in the plan")
+    }
+
+    @Test
+    fun theDefaultProfileStaysDeterministic() {
+        val source = generatorSourceWithoutComments()
+
+        FORBIDDEN_PROFILE_FIXTURES.forEach { token ->
+            assertTrue(
+                token !in source,
+                "The default profile contains $token; keep network and package-state fixtures in tests",
+            )
+        }
+    }
+
+    @Test
+    fun startupOwnsTheStartupProfileAndIncludesAFirstScroll() {
+        val source = generatorSourceWithoutComments()
+        val startupJourney =
+            requireNotNull(
+                Regex(
+                    """fun startupAndFirstScroll\(\).*?(?=\n\s*@Test|\n})""",
+                    RegexOption.DOT_MATCHES_ALL,
+                ).find(source),
+            ).value
+
+        assertEquals(1, Regex("""includeInStartupProfile\s*=\s*true""").findAll(source).count())
+        assertTrue("flingVisibleScrollable" in startupJourney)
+    }
+
+    @Test
+    fun startupHasAnExplicitFullyDrawnSignal() {
+        val source = sourceFile(MAIN_PAGER_PAGE_HOST)
+
+        assertTrue("import androidx.activity.compose.ReportDrawn" in source)
+        assertTrue("ReportDrawn()" in source)
+    }
+
+    @Test
+    fun liquidSheetMotionStaysInTheProfileAndHasAnABBenchmark() {
+        val generator = sourceFile(GENERATOR_SOURCE)
+        val benchmarks = sourceFile(MAIN_NAVIGATION_BENCHMARK_SOURCE)
+
+        assertTrue("openExerciseAndDismissLiquidSheet(GITHUB_STRATEGY_SHEET_BUTTON)" in generator)
+        assertTrue("dragLiquidSheetRegion(up = true)" in generator)
+        assertTrue("swipeWithinTestTag(LIQUID_SHEET_PANEL, up = true)" in generator)
+        assertTrue("swipeWithinTestTag(LIQUID_SHEET_PANEL, up = false)" in generator)
+        assertTrue("dragLiquidSheetRegion(up = false)" in generator)
+        assertTrue("fun liquidSheetMotionBaselineProfile()" in benchmarks)
+        assertTrue("fun liquidSheetMotionCompilationNone()" in benchmarks)
+        assertTrue("CompilationMode.Partial(BaselineProfileMode.Require)" in benchmarks)
+        assertTrue("CompilationMode.None()" in benchmarks)
+    }
+
+    @Test
+    fun adaptiveSidebarShapeChangesWaitForTheSharedChromeTag() {
+        val generator = sourceFile(GENERATOR_SOURCE)
+
+        assertEquals(
+            2,
+            "waitForTestTag(MAIN_SIDEBAR_TOGGLE, timeoutMs = 15_000)"
+                .toRegex(RegexOption.LITERAL)
+                .findAll(generator)
+                .count(),
+            "Both adaptive sidebar shape changes must wait for the transient top chrome to settle",
+        )
+    }
+
+    @Test
+    fun pushedRoutesProveTheForegroundPageDisappeared() {
+        val generator = sourceFile(GENERATOR_SOURCE)
+
+        assertEquals(
+            2,
+            "returnFromPushedRoute(pageTag = pageTag, returnTag = returnTag)"
+                .toRegex(RegexOption.LITERAL)
+                .findAll(generator)
+                .count(),
+            "Phone and adaptive route helpers must share foreground-page dismissal proof",
+        )
+        assertTrue("Until.gone(testTagSelector(pageTag))" in generator)
+        assertTrue("PUSH_ROUTE_MAX_BACK_ATTEMPTS = 2" in generator)
+    }
+
+    @Test
+    fun compactBottomBarsWaitForTheirExpandedTarget() {
+        val generator = sourceFile(GENERATOR_SOURCE)
+
+        assertTrue("device.click(bounds.centerX(), bounds.centerY())" in generator)
+        assertTrue(
+            "device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)" in generator,
+            "Liquid dock expansion must wait for fresh tab semantics before retrying",
+        )
+        assertEquals(
+            2,
+            "device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)"
+                .toRegex(RegexOption.LITERAL)
+                .findAll(generator)
+                .count(),
+            "Both compact-dock taps and reverse-scroll expansion must wait for fresh semantics",
+        )
+    }
+
+    @Test
+    fun liquidSheetGesturesHaveOneBoundedInjectionRetry() {
+        val generator = sourceFile(GENERATOR_SOURCE)
+
+        assertEquals(
+            3,
+            "swipeWithInjectionRetry("
+                .toRegex(RegexOption.LITERAL)
+                .findAll(generator)
+                .count(),
+            "The helper declaration plus Sheet drag and content swipe calls must stay wired",
+        )
+        assertTrue("GESTURE_INJECTION_ATTEMPTS = 2" in generator)
+    }
+
+    @Test
+    fun calendarAndPoolStayOneProfileRoute() {
+        val generator = sourceFile(GENERATOR_SOURCE)
+        val benchmarks = sourceFile(MAIN_NAVIGATION_BENCHMARK_SOURCE)
+        val mergedPage = sourceFile(BA_CALENDAR_POOL_PAGE)
+        val profileSources = "$generator\n$benchmarks"
+
+        assertTrue("BA_DOCK_OPEN_CALENDAR_POOL" in profileSources)
+        assertTrue("BA_CALENDAR_POOL_PAGE_ROOT" in profileSources)
+        assertTrue("BA_CALENDAR_POOL_TAB_POOL" in profileSources)
+        assertTrue(
+            "\"ba_dock_open_calendar\"" !in profileSources,
+            "The removed standalone Calendar dock tag returned to a profile source",
+        )
+        assertTrue(
+            "\"ba_dock_open_pool\"" !in profileSources,
+            "The removed standalone Pool dock tag returned to a profile source",
+        )
+        assertTrue("fun baCalendarPoolRouteInteractions()" in benchmarks)
+        assertTrue("if (wide)" in generator)
+        assertTrue("if (!bothColumns)" in mergedPage)
     }
 
     /**
@@ -224,11 +362,13 @@ private const val SCENE_BACKDROP_HOST =
  * snake_case identifiers and a class name is not, so the shape is the filter;
  * `theClassNamesTheTileLongPressJourneyStartsStillExist` covers what this skips.
  */
-private fun generatorTagConstants(): List<Pair<String, String>> =
-    generatorConstants().filter { (_, value) -> TAG_SHAPED.matches(value) }
-
-private fun generatorClassNameConstants(): List<Pair<String, String>> =
-    generatorConstants().filter { (_, value) -> value.startsWith(APP_NAMESPACE) }
+private fun profileTagConstants(): List<Pair<String, String>> =
+    PROFILE_SOURCE_FILES.flatMap { relativePath ->
+        CONST_DECLARATION
+            .findAll(sourceFile(relativePath))
+            .map { match -> match.groupValues[1] to match.groupValues[2] }
+            .filter { (_, value) -> TAG_SHAPED.matches(value) }
+    }
 
 private fun generatorConstants(): List<Pair<String, String>> =
     CONST_DECLARATION
@@ -237,9 +377,6 @@ private fun generatorConstants(): List<Pair<String, String>> =
         .toList()
 
 private val TAG_SHAPED = Regex("""[a-z0-9_]+""")
-
-/** Class names stay on the manifest namespace even when the installed applicationId has a suffix. */
-private const val APP_NAMESPACE = "os.kei."
 
 private val SCOPED_HELPER = Regex("""private fun MacrobenchmarkScope\.(\w+)\s*\(""")
 
@@ -257,7 +394,29 @@ private fun generatorSourceWithoutComments(): String =
 private const val GENERATOR_SOURCE =
     "baselineprofile/src/main/java/os/kei/baselineprofile/BaselineProfileGenerator.kt"
 
+private const val MAIN_NAVIGATION_BENCHMARK_SOURCE =
+    "baselineprofile/src/main/java/os/kei/baselineprofile/MainNavigationFrameBenchmarks.kt"
+
+private val PROFILE_SOURCE_FILES =
+    listOf(
+        GENERATOR_SOURCE,
+        MAIN_NAVIGATION_BENCHMARK_SOURCE,
+    )
+
 private val CONST_DECLARATION = Regex("""const val (\w+)\s*(?:=\s*)?\n?\s*"([^"]+)"""")
+private val INT_CONST_DECLARATION = Regex("""const val (\w+_MAX_ITERATIONS)\s*=\s*(\d+)""")
+private val MAX_ITERATION_USE = Regex("""maxIterations\s*=\s*(\w+_MAX_ITERATIONS)""")
+private val JOURNEY_DECLARATION = Regex("""@Test\s+fun\s+\w+\s*\(""")
+
+private val FORBIDDEN_PROFILE_FIXTURES =
+    listOf(
+        "ServerSocket",
+        "http://",
+        "https://",
+        "pm hide",
+        "pm unhide",
+        "ACTION_SEND",
+    )
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
@@ -292,3 +451,6 @@ private const val ABOUT_BOTTOM_CHROME =
 
 private const val GITHUB_HISTORY_PAGE =
     "app/src/main/java/os/kei/ui/page/main/github/history/GitHubActionsNotificationHistoryPage.kt"
+
+private const val MAIN_PAGER_PAGE_HOST =
+    "app/src/main/java/os/kei/ui/page/main/host/pager/MainPagerPageHost.kt"

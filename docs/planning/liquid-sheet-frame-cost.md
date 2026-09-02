@@ -1,5 +1,53 @@
 # Why scrolling a Liquid sheet is not smooth
 
+## Current verdict — 2026-09-02
+
+The checked-in release measurements and current source identify two layers of cost:
+
+1. The dominant steady-state category is RenderThread work from `drawBackdrop` layers. The Sheet
+   surface records and rasterizes one large offscreen layer, `exportedBackdrop` records that surface
+   again for glass children, and every composed visible glass card contributes its own layer. The
+   latest representative runs put Sheet scrolling around 108–116ms total with roughly 30–35ms in
+   RenderThread. ART compilation cannot remove these layer costs.
+2. The Sheet also read `resizedHeightPx` from Composition to calculate grabber expand/collapse
+   capability. Every drag delta and height-spring frame could therefore recompose the whole Sheet
+   container. The read now happens from callback providers, while `userResized` is read by the exact-
+   height Layout modifier. Resize still performs the required Layout work and avoids Composition work.
+
+The modal-presentation freeze remains effective: an untouched Sheet produces zero background-driven
+frames. Active dragging and content scrolling legitimately request frames, which exposes the
+RenderThread glass floor.
+
+The Baseline Profile now drives one representative Strategy Sheet through expand, content scroll in
+both directions, collapse and dismissal. This precompiles gesture dispatch, nested-scroll arbitration,
+height layout and settle code on first use. Matching `BaselineProfileMode.Require` and
+`CompilationMode.None` frame benchmarks measure its real contribution without attributing the
+RenderThread floor to ART.
+
+The matching 2026-09-02 R8 `benchmarkRelease` A/B on the A17 API 37 AVD completed five iterations per
+mode. The Profile reduced median Compose recomposition total from 4.07ms to 2.05ms (49.7%) and median
+maximum `Choreographer#doFrame` from 81.43ms to 76.44ms (6.1%). End-to-end frame CPU P95 measured
+99.82ms with the Profile and 99.13ms with no compilation; frame-overrun P95 measured 128.25ms and
+129.01ms. This is direct evidence that the Profile removes meaningful first-use JVM/Compose work while
+leaving the visible frame floor almost unchanged. DrawFrame/Drawing median maxima remained about
+76.59/68.84ms with the Profile, keeping rendering and glass composition as the next optimization
+boundary. These emulator values are diagnostic comparisons, with physical-device Perfetto evidence
+required for a shipping performance claim.
+
+Material and motion values remain unchanged: the backdrop source, blur, vibrancy, lens, refraction,
+highlight, shadows, fills, corner radius and Folme spring constants retain their current values. The
+appearance-preserving long-term lever is cache/reuse support in the backdrop node for an unchanged
+source and geometry. That capability is still unavailable through the shipped kyant API; any local
+approximation needs pixel-diff proof before adoption.
+
+That cache directly targets content scrolling, where the Sheet geometry stays fixed. A detent resize
+changes the surface height and rounded top edge on every frame; preserving the same lens field there
+needs incremental/cached layer support upstream, or a pre-rasterized maximum surface with moving clip
+and top-edge reconstruction that passes pixel comparison. The current library exposes neither path.
+
+The sections below are the chronological experiment log. Later measurements supersede early
+hypotheses while preserving the evidence and rejected directions.
+
 Reported as "the frame rate looks a bit low when scrolling up and down in a liquid sheet". Measured
 on the API 37 AVD (`KeiOS_API37_Validation`, 1280x2856 @480dpi, 120Hz, vsync interval 8.33ms) against
 the installed `os.kei` 1.13.0 — no rebuild, so this is the shipped build's behaviour. Harness:

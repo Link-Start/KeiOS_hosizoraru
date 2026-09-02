@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.host.pager
 
+import androidx.activity.compose.ReportDrawn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -124,6 +125,10 @@ internal fun MainPagerPageHost(
                         checkNotNull(homePageState) {
                             "Home page state is required for the Home tab"
                         }
+                    // Reaching the real Home branch means the retained pager state and the first
+                    // meaningful app surface are ready for this frame. StartupTimingMetric can now
+                    // report timeToFullDisplay instead of falling back to initial display.
+                    ReportDrawn()
                     HomePage(
                         privilegeStatus = homeState.privilegeStatus,
                         homeAppOverview = homeState.homeAppOverview,

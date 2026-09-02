@@ -1,7 +1,5 @@
 package os.kei.baselineprofile
 
-import android.content.Intent
-import android.service.quicksettings.TileService
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.benchmark.macro.junit4.BaselineProfileRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -10,22 +8,41 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Until
-import java.io.Closeable
-import java.net.InetSocketAddress
-import java.net.ServerSocket
-import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+/**
+ * The default profile is intentionally a small set of user journeys.
+ *
+ * A Baseline Profile is an install-time compilation budget. It should make startup, the main page
+ * switch, first scrolls and the app's common routes warm. Feature diagnostics, debug catalogues and
+ * network-dependent edge cases belong to functional tests: collecting them here enlarged the profile,
+ * made the run depend on remote state and stretched a capture to 23 journeys.
+ *
+ * The maximum replay budget is 16:
+ *
+ *  - startup: 5
+ *  - main pages: 3
+ *  - common routes: 2
+ *  - GitHub core: 2
+ *  - BA core: 2
+ *  - adaptive layouts: 2
+ *
+ * Each non-startup journey groups adjacent interactions behind one cold start. This preserves distinct
+ * failure names while avoiding a new process launch for every screen.
+ */
 @RunWith(AndroidJUnit4::class)
 @LargeTest
 class BaselineProfileGenerator {
     @get:Rule
     val rule = BaselineProfileRule()
 
+    /**
+     * Startup plus the first user gesture. This is the only journey included in startup-prof.txt.
+     */
     @Test
-    fun startup() {
+    fun startupAndFirstScroll() {
         rule.collect(
             packageName = targetAppId(),
             maxIterations = STARTUP_MAX_ITERATIONS,
@@ -33,316 +50,61 @@ class BaselineProfileGenerator {
             includeInStartupProfile = true,
         ) {
             launchHomeFromColdStart()
-            // The first scroll belongs in the *startup* profile, not only in the baseline one.
-            // `includeInStartupProfile` is what feeds `startup-prof.txt`, which drives dex layout for
-            // the launch window, and this was the only journey setting it -- so the layout covered
-            // reaching Home and nothing the user does next. The first fling after launch is precisely
-            // where first-run jank is perceived, and it was being left to the interpreter.
-            // Same helper `homeAndGitHubInteractions` already flings with, so the path is proven.
             flingVisibleScrollable(times = 2)
         }
     }
 
+    /**
+     * Every primary destination, its enter transition and its first list movement.
+     */
     @Test
-    fun homeAndGitHubInteractions() {
+    fun mainPagesAndNavigation() {
         rule.collect(
             packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
+            maxIterations = CORE_MAX_ITERATIONS,
+            stableIterations = CORE_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
-
             flingVisibleScrollable(times = 2)
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
-            flingVisibleScrollable(times = 2)
-        }
-    }
 
-    @Test
-    fun osPageInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
+            navigateAndScrollMainPage(
                 tabTag = MAIN_BOTTOM_TAB_OS,
                 pageTag = OS_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_OS,
             )
-            flingVisibleScrollable(times = 3)
-        }
-    }
-
-    @Test
-    fun mcpPageInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
-            clickAndWaitForPage(
+            navigateAndScrollMainPage(
                 tabTag = MAIN_BOTTOM_TAB_MCP,
                 pageTag = MCP_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_MCP,
             )
-            clickAndWaitForPage(
+            navigateAndScrollMainPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+            navigateAndScrollMainPage(
+                tabTag = MAIN_BOTTOM_TAB_BA,
+                pageTag = BA_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_BA,
+            )
+            navigateToMainPage(
                 tabTag = MAIN_BOTTOM_TAB_HOME,
                 pageTag = HOME_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_HOME,
             )
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_MCP,
-                pageTag = MCP_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_MCP,
-            )
-            flingVisibleScrollable(times = 3)
-        }
-    }
-
-    @Test
-    fun baPageInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_BA,
-                pageTag = BA_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_BA,
-            )
-            flingVisibleScrollable(times = 3)
         }
     }
 
     /**
-     * The BA office's slot cards: the shape the page took when its rows became cards.
-     *
-     * Three things live here that no other journey reaches, and all three are new since the page was
-     * rebuilt around one card per cooldown and per craft slot.
-     *
-     * **The accordion.** Nine `AppLiquidAccordionCard`s replaced two tall cards, and each one expands and
-     * collapses through `appExpandIn`/`appExpandOut` on glass inside a lazy list. Both card kinds are
-     * walked because they animate the same accordion but compose different bodies — a cooldown's is a
-     * progress bar and two facts, a craft slot's is its node composition — and the first composition of
-     * either happens mid-animation, which is where an interpreted class costs a dropped frame.
-     *
-     * **The pile.** The office list became an edge-stack host, so BA cards now recede, blur and dim into
-     * the top edge as they leave. `cardPileInteractions` covers that transform on the OS page; this covers
-     * it on a list of *cards with their own glass*, which is the combination the BA page has and the OS
-     * page does not.
-     *
-     * **The craft sheet, reached the way it now is** — through a card's own configure button rather than a
-     * row. The sheet itself was already profiled; the path into it was not.
-     *
-     * No fold to drive any more: the Craft Chamber card became an overview with no disclosure of its own,
-     * so the slot cards are always in the list and the journey can go straight at them.
+     * Common route pushes and the shared presentation layer.
      */
     @Test
-    fun baSlotCardInteractions() {
+    fun commonRoutesAndChrome() {
         rule.collect(
             packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_BA,
-                pageTag = BA_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_BA,
-            )
-
-            // A cooldown card, both directions of its accordion, and the editor it can now reach —
-            // `BaCafeCooldownEditSheet` had no journey at all, and it is only reachable from inside an
-            // expanded card, so the accordion has to be walked to get there.
-            scrollTestTagIntoReach(BA_COOLDOWN_CARD_FIRST)
-            clickTaggedCardHeader(BA_COOLDOWN_CARD_FIRST)
-            waitForTestTag(BA_COOLDOWN_ADJUST_BUTTON, timeoutMs = 15_000)
-            // The body opens below the header, so the editor's button lands past the tappable band even
-            // though the card itself was in reach when it was tapped — measured at cy 2298 of 2856.
-            scrollTestTagIntoReach(BA_COOLDOWN_ADJUST_BUTTON)
-            openAndDismissOverlay(
-                triggerTag = BA_COOLDOWN_ADJUST_BUTTON,
-                panelTag = LIQUID_SHEET_PANEL,
-            )
-            scrollTestTagIntoReach(BA_COOLDOWN_CARD_FIRST)
-            collapseTaggedCard(cardTag = BA_COOLDOWN_CARD_FIRST, bodyTag = BA_COOLDOWN_ADJUST_BUTTON)
-
-            // Then a craft slot card, and the sheet its configure button opens.
-            scrollTestTagIntoReach(BA_CRAFT_SLOT_CARD_FIRST)
-            clickTaggedCardHeader(BA_CRAFT_SLOT_CARD_FIRST)
-            waitForTestTag(BA_CRAFT_SLOT_FIRST, timeoutMs = 15_000)
-            scrollTestTagIntoReach(BA_CRAFT_SLOT_FIRST)
-            openAndDismissOverlay(
-                triggerTag = BA_CRAFT_SLOT_FIRST,
-                panelTag = LIQUID_SHEET_PANEL,
-            )
-
-            // The list is long enough to scroll now, so the pile actually engages.
-            flingVisibleScrollable(times = 3)
-            dragSlowly(times = 2)
-        }
-    }
-
-    /**
-     * The release list, which is a page nothing had ever walked.
-     *
-     * It is reached the way a user reaches it — a tracked card's overflow menu — so the menu's own
-     * popup is on the path too. Then the parts that only exist here: the accordion over a lazy list of
-     * ten cards with the pile engaged on the *open* ones, the release notes' markdown blocks, and the
-     * asset rows, which are the tracked card's own asset row composed on a different surface.
-     *
-     * Paging is walked because a second page is a fresh fetch into an already-composed list, which is
-     * the one path here that is not first-composition.
-     */
-    @Test
-    fun gitHubReleaseListInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
-
-            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON)
-            clickTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON)
-            waitForTestTag(GITHUB_RELEASE_MENU_ITEM, timeoutMs = 15_000)
-            clickTestTag(GITHUB_RELEASE_MENU_ITEM)
-            waitForTestTag(GITHUB_RELEASE_PAGE_ROOT, timeoutMs = 20_000)
-            device.waitForIdle()
-
-            // Waited for before it is scrolled to, unlike the BA cards [scrollTestTagIntoReach] was
-            // written for. Those exist only once a scroll composes them; these arrive over the network
-            // and land at the top of the list, so scrolling immediately walks an empty list fourteen
-            // times and gives up — which is how a capture died three quarters of the way through on a
-            // slow fetch, taking every journey after it with it.
-            waitForTestTag(GITHUB_RELEASE_CARD_FIRST, timeoutMs = 45_000)
-
-            // The first card opens itself, so this walks the other direction first and back, which is
-            // the accordion exit the page otherwise never plays.
-            scrollTestTagIntoReach(GITHUB_RELEASE_CARD_FIRST)
-            clickTaggedCardHeader(GITHUB_RELEASE_CARD_FIRST)
-            device.waitForIdle()
-            clickTaggedCardHeader(GITHUB_RELEASE_CARD_FIRST)
-            device.waitForIdle()
-
-            // The pile only does anything once cards move under the top edge.
-            flingVisibleScrollable(times = 2)
-            dragSlowly(times = 1)
-
-            // A second page: same list, new content, no first composition.
-            if (device.findObject(testTagSelector(GITHUB_RELEASE_NEXT_PAGE_BUTTON)) != null) {
-                clickTestTag(GITHUB_RELEASE_NEXT_PAGE_BUTTON)
-                device.waitForIdle()
-            }
-
-            device.pressBack()
-            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
-            device.waitForIdle()
-        }
-    }
-
-    /**
-     * The daily-done template editor, which nothing else can reach.
-     *
-     * It is not a page and not a sheet on a page: a QS tile long-press starts
-     * `BaDailyDoneTemplateActivity` into a translucent window, from a process that is usually dead. So
-     * everything on that path — the activity, its window configuration, `SceneBackdropHost`, and the
-     * sheet's whole first composition — was being interpreted on a user's first long-press.
-     *
-     * The switch is toggled deliberately rather than for its own sake: a clean sheet closes straight
-     * out, and only a dirty one routes the exit through the unsaved-changes confirmation, which is a
-     * second overlay stacked on the first. That pair of exit animations is the part no other journey has.
-     *
-     * The helpers for this landed without it. They sat here uncalled through two profile captures while
-     * the KDoc above claimed the coverage, which is why `theGeneratorCallsEveryHelperItDeclares` exists.
-     */
-    @Test
-    fun baDailyTemplateEditorInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchDailyTemplateFromTileLongPress()
-
-            waitForTestTag(BA_DAILY_TEMPLATE_HEADPAT_SWITCH, timeoutMs = 15_000)
-            clickTestTag(BA_DAILY_TEMPLATE_HEADPAT_SWITCH)
-            discardTheOpenSheetsEdit()
-        }
-    }
-
-    /**
-     * The activity calendar and pool pages became nav routes, so their first composition now runs
-     * inside the push transition instead of behind an activity launch. Nothing had ever profiled
-     * them — the shipped profile carried 606 BaCalendarPool* rules and not one for either page
-     * composable — which left the whole route path to be interpreted on first entry, mid-animation.
-     */
-    @Test
-    fun baCalendarPoolRouteInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_BA,
-                pageTag = BA_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_BA,
-            )
-
-            // One dock action now, and the banner list is its second tab rather than a second route.
-            // Still both list paths: the tab tap is what reaches the half the calendar journey does not.
-            openDockRouteAndReturn(
-                dockTag = BA_DOCK_OPEN_CALENDAR_POOL,
-                secondTabTag = BA_CALENDAR_POOL_TAB_POOL,
-            )
-        }
-    }
-
-    /**
-     * The Settings route: the most-reached push in the app, and still cold on first entry. Its
-     * category pager shares MainLoadedPager, so this also covers the section-switch path there.
-     */
-    @Test
-    fun settingsRouteInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
+            maxIterations = FEATURE_MAX_ITERATIONS,
+            stableIterations = FEATURE_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
@@ -352,155 +114,6 @@ class BaselineProfileGenerator {
                 pageTag = SETTINGS_PAGE_ROOT,
                 returnTag = HOME_PAGE_ROOT,
             )
-        }
-    }
-
-    /**
-     * The GitHub Actions history route. Its tabbed section switch had no profile coverage at all —
-     * TabbedPageContentMotion resolved to zero rules — so that path was interpreted on first use,
-     * the same gap the calendar and pool pages had before they got a journey.
-     */
-    @Test
-    fun gitHubActionsHistoryRouteInteractions() {
-        // Started here rather than inside the block: `collect` replays the block once per iteration,
-        // and the second replay met its own still-bound socket with EADDRINUSE. The fixture belongs to
-        // the test, not to the pass.
-        oversizedResponseServer = startOversizedResponseServer()
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            seedFailingGitHubTracks()
-            launchHomeFromColdStart()
-            // After the launch, not before: the receiver that turns a package event into a record is
-            // registered at runtime in `KeiOSApp`, so a dead process hears nothing. And early rather
-            // than late, because it records on an application-scoped coroutine and the route reads the
-            // store once when it opens.
-            seedGitHubAppInstallHistory()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
-            // Before the pull, not after: a pull-to-refresh on a page whose tracked list has not loaded
-            // yet targets nothing, finishes instantly, and writes a `0/0 done, failed 0` record --
-            // which is a record with nothing to diagnose, and it is the newest one, so it is the one
-            // this journey then goes and expands. `clickAndWaitForPage` proves the page arrived, not
-            // that its store did.
-            waitForTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON, timeoutMs = 20_000)
-            seedGitHubHistory()
-            awaitGitHubRefreshSettled()
-
-            waitForTestTag(GITHUB_ACTIONS_HISTORY_BUTTON, timeoutMs = 15_000)
-            clickTestTag(GITHUB_ACTIONS_HISTORY_BUTTON)
-            waitForTestTag(GITHUB_ACTIONS_HISTORY_PAGE_ROOT, timeoutMs = 20_000)
-
-            // All four categories, not just the one the route lands on. Refresh diagnostics, the
-            // track-change cards and the install-history cards each live behind their own tab, and a
-            // journey that only flings the default tab leaves all three uncompiled.
-            GITHUB_HISTORY_TABS.forEach { tab ->
-                clickBottomBarTab(tab)
-                flingVisibleScrollable(times = 1)
-                // Both of these cards are collapsible, and a collapsed one composes its header and
-                // stops -- which is why the two files were at zero rules while the tab they live on was
-                // being selected and flung on every capture. Selecting a tab is not rendering its
-                // content.
-                when (tab) {
-                    GITHUB_HISTORY_TAB_TRACKING ->
-                        expandHistoryRecord(
-                            cardTag = GITHUB_TRACK_CHANGE_HISTORY_CARD,
-                            bodyTag = GITHUB_TRACK_CHANGE_HISTORY_DETAILS,
-                        )
-
-                    GITHUB_HISTORY_TAB_APPS ->
-                        expandHistoryRecord(
-                            cardTag = GITHUB_APP_INSTALL_HISTORY_CARD,
-                            bodyTag = GITHUB_APP_INSTALL_HISTORY_DETAILS,
-                        )
-                }
-            }
-
-            // Deliberately last in GITHUB_HISTORY_TABS, so the route is sitting on Refresh here.
-            expandRefreshRecordWithDiagnostics()
-            collectHistoryPullToRefresh()
-
-            device.pressBack()
-            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
-            device.waitForIdle()
-        }
-    }
-
-    /**
-     * The loopback server the oversized-response fixture answers from, closed however the test ends.
-     *
-     * A field with an `@After` rather than a `use` block, so a journey that throws mid-pass still gives
-     * the port back.
-     */
-    private var oversizedResponseServer: Closeable? = null
-
-    @After
-    fun stopOversizedResponseServer() {
-        oversizedResponseServer?.let { server -> runCatching { server.close() } }
-        oversizedResponseServer = null
-    }
-
-    /**
-     * An F-Droid track, and the detail sheet only an F-Droid track can open.
-     *
-     * `GitHubFdroidDetailSheet` is 713 lines and collected **2 rules**; `FdroidAppSearchService` and
-     * `FdroidCandidateSelector` collected none. Nearly six thousand lines of F-Droid support shipped
-     * essentially uncompiled, for one reason: a capture tracks only what it can reach, and until the
-     * loopback fixture existed there was no F-Droid repository on the other end of a capture's network.
-     *
-     * Its own `@Test` rather than another step on the history journey. The fixture import is idempotent,
-     * so this costs one cold start and keeps the two concerns separable -- and, more to the point, a
-     * journey that depends on another journey having run first is the ordering bet that has already
-     * cost this file two captures.
-     */
-    @Test
-    fun gitHubFdroidTrackInteractions() {
-        oversizedResponseServer = startOversizedResponseServer()
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            seedFailingGitHubTracks()
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
-            waitForTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON, timeoutMs = 20_000)
-            // The sheet draws what the last check left behind, so the check has to have happened.
-            seedGitHubHistory()
-            awaitGitHubRefreshSettled()
-
-            openFdroidDetailSheet()
-        }
-    }
-
-    /**
-     * The two routes Home pushes besides Settings. About renders the changelog and the component
-     * inventory; the WebDAV card opens the sync route. Both were reachable only through paths no
-     * journey walked, so every class on them was interpreted on first entry.
-     */
-    @Test
-    fun homeAboutAndWebDavRouteInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
             pushRouteAndReturn(
                 entryTag = HOME_ABOUT_BUTTON,
                 pageTag = ABOUT_PAGE_ROOT,
@@ -510,25 +123,22 @@ class BaselineProfileGenerator {
                 entryTag = HOME_WEBDAV_CARD,
                 pageTag = WEBDAV_SYNC_PAGE_ROOT,
                 returnTag = HOME_PAGE_ROOT,
+                flings = 1,
             )
-        }
-    }
 
-    /**
-     * The MCP skill route, pushed from the MCP page's action bar. It renders Markdown, which is the
-     * most expensive first composition of any pushed route in the app.
-     */
-    @Test
-    fun mcpSkillRouteInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
+            navigateToMainPage(
+                tabTag = MAIN_BOTTOM_TAB_OS,
+                pageTag = OS_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_OS,
+            )
+            pushRouteAndReturn(
+                entryTag = OS_SHELL_RUNNER_BUTTON,
+                pageTag = OS_SHELL_RUNNER_PAGE_ROOT,
+                returnTag = OS_PAGE_ROOT,
+                flings = 1,
+            )
 
-            clickAndWaitForPage(
+            navigateToMainPage(
                 tabTag = MAIN_BOTTOM_TAB_MCP,
                 pageTag = MCP_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_MCP,
@@ -538,518 +148,260 @@ class BaselineProfileGenerator {
                 pageTag = MCP_SKILL_PAGE_ROOT,
                 returnTag = MCP_PAGE_ROOT,
             )
-        }
-    }
 
-    /**
-     * The menu — the whole presentation layer, which had no coverage at all.
-     *
-     * Every journey before this one walked pages and routes, so not one class in the overlay layer was
-     * ever profiled: the menu presentation, the shared overlay host and the shared presentation
-     * material were all interpreted the first time a user opened them. That is the worst case for it,
-     * and for exactly the reason recorded on the calendar and pool journeys above — a menu composes
-     * *inside* its present transition, so an interpreted class there costs a dropped frame rather than
-     * a slower launch.
-     *
-     * The GitHub top-bar menu is the one to use: it routes through `SnapshotWindowListPopup` into the
-     * menu presentation and renders a `LiquidGlassActionMenu` inside it, so one tap reaches the menu
-     * surface, the action-menu layouts, the dropdown rows, the overlay host and the shared material.
-     *
-     * It waits on a menu *row*, not on the panel container. A bare `Modifier.testTag` on a container
-     * with no other semantics never becomes its own accessibility node, so `SnapshotMenuPanelTestTag`
-     * is invisible to UiAutomator — verified by dumping the hierarchy with the menu open, where the
-     * rows appear and the panel does not.
-     *
-     * Sheets are no longer the gap this used to name: [baSlotCardInteractions] opens one and
-     * [baDailyTemplateEditorInteractions] opens a second plus an action sheet. What is still uncovered is
-     * the BA *account* sheet specifically, which does not open under a synthetic tap on its toolbar
-     * action — and an unverified wait here costs a 25-minute run, so it is left alone deliberately.
-     */
-    @Test
-    fun presentationChromeInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
+            navigateToMainPage(
                 tabTag = MAIN_BOTTOM_TAB_GITHUB,
                 pageTag = GITHUB_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
-            openAndDismissOverlay(
+            openMenuAndDismiss(
                 triggerTag = GITHUB_IMPORT_MENU_BUTTON,
-                panelTag = GITHUB_IMPORT_TRACKS,
+                rowTag = GITHUB_IMPORT_TRACKS,
             )
         }
     }
 
     /**
-     * The card pile at a standstill, which a fling never reaches.
+     * The frequent GitHub work: inspect a tracked app and open the two primary editing sheets.
      *
-     * The other journeys fling, and a fling crosses the stack line so fast that the receding states in
-     * between are barely sampled. The pile's transform, its progressive blur and its scrim only run
-     * while a card is *part way* into the pile, so a slow drag that parks it there is what gets that
-     * code compiled. OS is the page to do it on: it is the most card-dense one in the app.
+     * A fresh install can legitimately have no tracked card. The page, navigation and edit surfaces
+     * still collect deterministically; the card branch becomes available once user state exists.
      */
     @Test
-    fun cardPileInteractions() {
+    fun gitHubTrackingCore() {
         rule.collect(
             packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
+            maxIterations = FEATURE_MAX_ITERATIONS,
+            stableIterations = FEATURE_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_OS,
-                pageTag = OS_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_OS,
-            )
-            dragSlowly(times = 3)
-        }
-    }
-
-    /**
-     * The shell runner, which stopped being an activity and became a route. That move put its first
-     * composition inside the push transition, where an interpreted class costs a dropped frame
-     * rather than a slower activity launch — the same trap the calendar and pool pages fell into.
-     */
-    @Test
-    fun osShellRunnerRouteInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_OS,
-                pageTag = OS_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_OS,
-            )
-            pushRouteAndReturn(
-                entryTag = OS_SHELL_RUNNER_BUTTON,
-                pageTag = OS_SHELL_RUNNER_PAGE_ROOT,
-                returnTag = OS_PAGE_ROOT,
-            )
-        }
-    }
-
-    /**
-     * The guide catalog and the student guide it opens — together the largest hole this profile had.
-     *
-     * About a hundred composable files under `student.` resolved to not one rule in the shipped profile,
-     * and the reason was mechanical rather than editorial: the only way in is the BA dock's third action,
-     * and that action carried no test tag, so no journey could reach either route. Both are pushed routes,
-     * which means every class on them was interpreted *inside* a push transition — the trap already
-     * recorded on the calendar and pool journey — over a page that then composes a tab pager, a lazy list
-     * of entry cards with the pile engaged, and a media-heavy detail with its own pager.
-     *
-     * The detail half is conditional on purpose. Catalog entries come from a synced dataset, so a device
-     * that has not synced shows an empty state, which is a legitimate thing to profile rather than a
-     * reason to fail a half-hour run. When entries are present the guide is opened; when they are not, the
-     * catalog's own first composition is still collected.
-     */
-    @Test
-    fun baGuideCatalogInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_BA,
-                pageTag = BA_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_BA,
+            navigateToMainPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
 
-            waitForTestTag(BA_DOCK_OPEN_GUIDE_CATALOG, timeoutMs = 15_000)
-            clickTestTag(BA_DOCK_OPEN_GUIDE_CATALOG)
-            waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 25_000)
+            if (waitForOptionalTestTag(GITHUB_TRACKED_ITEM_CARD_FIRST, timeoutMs = 8_000)) {
+                scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_CARD_FIRST)
+                clickTaggedCardHeader(GITHUB_TRACKED_ITEM_CARD_FIRST)
+                flingVisibleScrollable(times = 1)
 
-            // The detail *first*, while the first entry is still where it composed. Scrolling before this
-            // is what left `student.page` at 57 rules and `student.section` at zero in the first capture:
-            // the entry is a lazy item, so a fling disposes it and takes the only tag on it with it.
-            if (waitForOptionalTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST, timeoutMs = 15_000)) {
-                scrollTestTagIntoReach(BA_GUIDE_CATALOG_ENTRY_FIRST)
-                clickTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST)
-                waitForTestTag(BA_STUDENT_GUIDE_PAGE_ROOT, timeoutMs = 30_000)
-                flingVisibleScrollable(times = 3)
-                // Every one of the guide's tabs, which is the ~290KB of `student.section` and
-                // `student.tabcontent` that nothing has ever composed. Tapped rather than swiped: the
-                // guide's tab bar is a bar, not a pager, and two horizontal swipes over its content left
-                // the page exactly where it was.
-                GUIDE_BOTTOM_TABS.forEach { tab ->
-                    clickBottomBarTab(tab)
-                    flingVisibleScrollable(times = 1)
+                scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+                clickTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON)
+                if (waitForOptionalTestTag(GITHUB_ACTIONS_MENU_ITEM, timeoutMs = 5_000)) {
+                    clickTestTag(GITHUB_ACTIONS_MENU_ITEM)
+                    waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 12_000)
+                    dismissTheOpenOverlay(LIQUID_SHEET_PANEL)
+                } else {
+                    device.pressBack()
+                    device.waitForIdle()
                 }
-                device.pressBack()
-                waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 20_000)
             }
-
-            flingVisibleScrollable(times = 2)
-            dragSlowly(times = 1)
-
-            // The catalog's own dock: memory lobby, student BGM, favourite BGM. Tapped rather than
-            // swiped for the same reason as the guide's tabs — it is a bar, and a horizontal swipe over
-            // the content leaves the page exactly where it was.
-            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
-            flingVisibleScrollable(times = 2)
-            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
-            flingVisibleScrollable(times = 1)
-
-            // Playing a track, which is the only thing that loads androidx.media3 at all. The BGM
-            // *interface* composes on every catalog tab because the mini player is always there, so a
-            // capture can look like it covers playback while carrying no ExoPlayer, MediaSession or
-            // extractor rules — which is exactly what the capture before this one did.
-            if (waitForOptionalTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST, timeoutMs = 15_000)) {
-                scrollTestTagIntoReach(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
-                clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
-                // The player prepares off the main thread, so the scrolling below is both coverage and
-                // the wall time it needs. Waiting on a tag would only prove the row redrew.
-                flingVisibleScrollable(times = 2)
-            }
-
-            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
-            flingVisibleScrollable(times = 1)
-            clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT)
-
-            device.pressBack()
-            waitForTestTag(BA_PAGE_ROOT, timeoutMs = 20_000)
-            device.waitForIdle()
-        }
-    }
-
-    /**
-     * A tracked card opened, which is where the GitHub page keeps almost all of its content.
-     *
-     * Every GitHub journey before this one scrolled a list of *collapsed* cards, and a collapsed card
-     * composes its header and nothing else. The asset panel, the asset rows, the version sections and the
-     * health cards under it — the densest thing on the page, and the part a user actually reads — had no
-     * rules at all. Both directions of the accordion are walked for the reason [baSlotCardInteractions]
-     * records: the exit animation composes as much as the entry does.
-     *
-     * The Actions sheet then comes off the same card's overflow, and is conditional because that row only
-     * exists for GitHub repository tracks — an F-Droid track first in the sort order would otherwise fail
-     * the run rather than skip a step.
-     */
-    @Test
-    fun gitHubTrackedCardInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
-
-            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_CARD_FIRST)
-            clickTaggedCardHeader(GITHUB_TRACKED_ITEM_CARD_FIRST)
-            device.waitForIdle()
-            flingVisibleScrollable(times = 1)
-            dragSlowly(times = 1)
-            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_CARD_FIRST)
-            clickTaggedCardHeader(GITHUB_TRACKED_ITEM_CARD_FIRST)
-            device.waitForIdle()
-
-            scrollTestTagIntoReach(GITHUB_TRACKED_ITEM_MORE_BUTTON)
-            clickTestTag(GITHUB_TRACKED_ITEM_MORE_BUTTON)
-            if (waitForOptionalTestTag(GITHUB_ACTIONS_MENU_ITEM, timeoutMs = 10_000)) {
-                clickTestTag(GITHUB_ACTIONS_MENU_ITEM)
-                waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 25_000)
-                dismissTheOpenOverlay(LIQUID_SHEET_PANEL)
-            } else {
-                device.pressBack()
-                device.waitForIdle()
-            }
-        }
-    }
-
-    /**
-     * The three sheets the GitHub page's own chrome opens, and the star importer beside them.
-     *
-     * The track editor is the app's most-used form — adding or editing a tracked repository is the whole
-     * point of the page — and it, the strategy sheet and the check-logic sheet were all uncovered, which
-     * is roughly 200KB of source composed for the first time under a sheet's present transition. None of
-     * the three had a test tag on its trigger before this journey, which is why they had none.
-     *
-     * The star importer is a separate activity rather than a sheet, so it is proven by the GitHub page
-     * going *away* rather than by a tag of its own: it has no page root, and adding one would be a tag
-     * that exists only to be waited on.
-     */
-    @Test
-    fun gitHubChromeSheetInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchHomeFromColdStart()
-
-            clickAndWaitForPage(
-                tabTag = MAIN_BOTTOM_TAB_GITHUB,
-                pageTag = GITHUB_PAGE_ROOT,
-                settledTag = MAIN_PAGER_SETTLED_GITHUB,
-            )
 
             openAndDismissOverlay(
                 triggerTag = GITHUB_ADD_TRACKED_BUTTON,
                 panelTag = LIQUID_SHEET_PANEL,
             )
-            openAndDismissOverlay(
-                triggerTag = GITHUB_STRATEGY_SHEET_BUTTON,
-                panelTag = LIQUID_SHEET_PANEL,
-            )
-            openAndDismissOverlay(
-                triggerTag = GITHUB_CHECK_LOGIC_SHEET_BUTTON,
-                panelTag = LIQUID_SHEET_PANEL,
-            )
-
-            clickTestTag(GITHUB_IMPORT_MENU_BUTTON)
-            waitForTestTag(GITHUB_IMPORT_STARS, timeoutMs = 15_000)
-            clickTestTag(GITHUB_IMPORT_STARS)
-            check(device.wait(Until.gone(testTagSelector(GITHUB_PAGE_ROOT)), 20_000)) {
-                "Timed out waiting for the star importer to take the window in ${targetAppId()}"
-            }
-            device.waitForIdle()
-            flingVisibleScrollable(times = 2)
-            device.pressBack()
-            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 20_000)
-            device.waitForIdle()
+            openExerciseAndDismissLiquidSheet(GITHUB_STRATEGY_SHEET_BUTTON)
         }
     }
 
     /**
-     * The two windows another app hands KeiOS an intent to open.
+     * BA office cards, the merged calendar route, the daily sheet and the media catalogue.
      *
-     * Both start from a dead process into their own activity, which is the worst case an ART profile can
-     * fix: the Compose setup, the window chrome and the flow's first composition all run interpreted while
-     * the user is looking at an empty window. `github.share` alone is 50-odd files and had no rules.
-     *
-     * The share window is driven with the intent a share sheet would send it, and everything after the
-     * launch is conditional: resolving a repository is a network round trip, and a run must not fail
-     * because GitHub was slow. The resolving state composes either way, which is the part worth having.
-     *
-     * The *feedback* window is the one deliberately not here. It is `exported="false"`, so
-     * [launchActivityFromColdStart] cannot reach it — see that helper for the platform reason — and the
-     * only other way in is a button inside an expandable card most of the way down the settings page.
-     * That is a three-tag chain for 28KB of source, so it is left for whoever wants it.
+     * Two representative student-detail tabs replace the former six-tab sweep. The catalogue still
+     * includes Students, Lobby, Music and Play because each is a distinct high-level experience and
+     * playing one row is the only path that warms Media3.
      */
     @Test
-    fun sharedIntentWindowInteractions() {
+    fun baOfficeAndCatalogCore() {
         rule.collect(
             packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
-            includeInStartupProfile = false,
-        ) {
-            launchActivityFromColdStart(
-                className = SHARE_IMPORT_ACTIVITY_CLASS,
-                arguments =
-                    "-a ${Intent.ACTION_SEND} -t text/plain " +
-                        "--es ${Intent.EXTRA_TEXT} $SHARE_IMPORT_SAMPLE_URL",
-            )
-            // The resolving sheet is what always appears; the asset picker is one of several states the
-            // flow can settle into, so it is waited for second and softly. Waiting only on the picker is
-            // what made the first capture collect the flow's coordinators and none of its UI.
-            if (waitForOptionalTestTag(LIQUID_SHEET_PANEL, timeoutMs = 20_000)) {
-                waitForOptionalTestTag(GITHUB_SHARE_IMPORT_CANCEL, timeoutMs = 15_000)
-                device.pressBack()
-                device.waitForIdle()
-            } else {
-                device.pressBack()
-            }
-            device.waitForIdle()
-
-            // The other window, which a file manager or a share sheet opens with a KeiOS export. The
-            // payload is deliberately an empty document: what is being collected is the window and the
-            // import screen's first composition, not a real merge into the user's tracked list.
-            launchActivityFromColdStart(
-                className = JSON_IMPORT_ACTIVITY_CLASS,
-                arguments =
-                    "-a ${Intent.ACTION_SEND} -t text/plain " +
-                        "--es ${Intent.EXTRA_TEXT} $JSON_IMPORT_SAMPLE_PAYLOAD",
-            )
-            flingVisibleScrollable(times = 1)
-            device.pressBack()
-            device.waitForIdle()
-        }
-    }
-
-    /**
-     * The component lab and the Liquid catalogue behind it.
-     *
-     * Left out of the first pass on the argument that a developer catalogue earns fewer rules per byte
-     * than anything a user opens — which is still true, and is why it is one journey rather than
-     * several. It ships, though: both activities are manifest-declared and About links to them.
-     *
-     * Reached through About's fourth category tab rather than through the page's search. The lab card
-     * is not one of About's three overview cards, so search was the only other way in, and driving a
-     * text field from a journey depends on focus and the IME in a way a tab tap does not.
-     *
-     * Both activities are `exported="false"`, so neither can be started by name — see
-     * [launchActivityFromColdStart] for why. The catalogue is where nearly all the weight is: a dozen
-     * sample cards on one lazy list, each a component this app draws elsewhere.
-     */
-    @Test
-    fun debugComponentLabInteractions() {
-        rule.collect(
-            packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
+            maxIterations = FEATURE_MAX_ITERATIONS,
+            stableIterations = FEATURE_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             launchHomeFromColdStart()
+            navigateToMainPage(
+                tabTag = MAIN_BOTTOM_TAB_BA,
+                pageTag = BA_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_BA,
+            )
+            flingVisibleScrollable(times = 2)
+            dragVisibleScrollable(times = 1)
 
-            waitForTestTag(HOME_ABOUT_BUTTON, timeoutMs = 15_000)
-            clickTestTag(HOME_ABOUT_BUTTON)
-            waitForTestTag(ABOUT_PAGE_ROOT, timeoutMs = 15_000)
-
-            // The tab is re-selected on every attempt rather than once up front. The lab row is composed
-            // only while About's pager is settled on its lab page, and something about a capture's
-            // timing loses that between finding the row and tapping it — the failure reported the About
-            // page still up, its tab bar still up, and the row simply not composed.
-            val labOpened =
-                openWindowFrom(
-                    triggerTag = ABOUT_COMPONENT_LAB_BUTTON,
-                    arrivalTag = DEBUG_COMPONENT_LAB_PAGE_ROOT,
-                    required = false,
-                    prepare = { clickBottomBarTab(ABOUT_TAB_LAB) },
-                )
-
-            // Not required, deliberately. This is the one journey whose target was argued against on its
-            // merits — a developer catalogue earns fewer rules per byte than anything a user opens — and
-            // it must not be able to cost a fifty-minute capture. When the lab does not open, About's own
-            // lab tab is still walked, which is real coverage and the reason the journey gets this far.
-            if (labOpened) {
-                flingVisibleScrollable(times = 1)
-                val catalogueOpened =
-                    openWindowFrom(
-                        triggerTag = DEBUG_LIQUID_CATALOG_BUTTON,
-                        arrivalTag = DEBUG_LIQUID_CATALOG_PAGE_ROOT,
+            if (waitForOptionalTestTag(BA_COOLDOWN_CARD_FIRST, timeoutMs = 5_000)) {
+                scrollTestTagIntoReach(BA_COOLDOWN_CARD_FIRST)
+                clickTaggedCardHeader(BA_COOLDOWN_CARD_FIRST)
+                if (waitForOptionalTestTag(BA_COOLDOWN_ADJUST_BUTTON, timeoutMs = 5_000)) {
+                    openAndDismissOverlay(
+                        triggerTag = BA_COOLDOWN_ADJUST_BUTTON,
+                        panelTag = LIQUID_SHEET_PANEL,
                         required = false,
                     )
-                if (catalogueOpened) {
-                    // One long list, every card a different component: the rare journey where scrolling
-                    // to the end is the whole point.
-                    flingVisibleScrollable(times = 8)
-                    dragSlowly(times = 2)
-                    device.pressBack()
-                    device.waitForIdle()
                 }
-                device.pressBack()
-                device.waitForIdle()
             }
 
-            flingVisibleScrollable(times = 2)
-            device.pressBack()
-            device.waitForIdle()
+            openBaCalendarPoolAndReturn()
+            openAndDismissOverlay(
+                triggerTag = BA_DOCK_DAILY_DONE,
+                panelTag = LIQUID_SHEET_PANEL,
+                required = false,
+            )
+
+            if (openWindowFrom(
+                    triggerTag = BA_DOCK_OPEN_GUIDE_CATALOG,
+                    arrivalTag = BA_GUIDE_CATALOG_PAGE_ROOT,
+                    required = false,
+                )
+            ) {
+                if (waitForOptionalTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST, timeoutMs = 8_000)) {
+                    scrollTestTagIntoReach(BA_GUIDE_CATALOG_ENTRY_FIRST)
+                    clickTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST)
+                    if (waitForOptionalTestTag(BA_STUDENT_GUIDE_PAGE_ROOT, timeoutMs = 15_000)) {
+                        flingVisibleScrollable(times = 1)
+                        clickBottomBarTab(BA_STUDENT_GUIDE_TAB_PROFILE)
+                        flingVisibleScrollable(times = 1)
+                        clickBottomBarTab(BA_STUDENT_GUIDE_TAB_SKILLS)
+                        device.pressBack()
+                        waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 15_000)
+                    }
+                }
+
+                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
+                flingVisibleScrollable(times = 1)
+                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
+                if (waitForOptionalTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST, timeoutMs = 8_000)) {
+                    scrollTestTagIntoReach(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                    clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                    flingVisibleScrollable(times = 1)
+                }
+                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+                flingVisibleScrollable(times = 1)
+                clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT)
+
+                device.pressBack()
+                waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
+            }
         }
     }
 
     /**
-     * The tablet and fold navigation shapes: the top tab bar, and the sidebar it converts into.
+     * The wide branches added by the recent two-lane UI work, followed by a live fold transition.
      *
-     * ## Why this forces the geometry instead of requiring a tablet
-     *
-     * Every other journey here runs in whatever window the device happens to have. These two shapes only exist
-     * at `>= 600dp` and `>= 660dp`, so on a phone they would never be compiled into the profile — and a profile
-     * generated on a *tablet* has the opposite hole, because the floating bottom bar never renders there.
-     * Neither device alone produces a complete profile, and merging two runs is a process step that gets
-     * forgotten.
-     *
-     * So the journey resizes the window itself. `MainActivity` declares `screenSize|screenLayout|smallestScreenSize`
-     * in `configChanges`, so this reflows rather than recreating the Activity — the reflow is exactly the code
-     * path worth compiling anyway, since a fold does it every time it opens.
-     *
-     * ## Why the sizes are in dp and why the *short* side matters
-     *
-     * The first version of this passed physical pixels straight to `wm size`, which made it silently
-     * density-dependent: `2560x1600` is 1280x800dp on the Pad AVD at density 320 and 853x533dp on the phone
-     * AVD at 480. It failed on the phone AVD with `Unable to find testTag=main_sidebar_toggle`, and the
-     * reason is a two-step trap worth stating.
-     *
-     * `MainActivity` still declares `screenOrientation="sensorPortrait"`, and from targetSdk 36 that request
-     * is ignored *only* on a display whose **smallest** width is >= 600dp. At 853x533dp the short side is
-     * 533dp, so the request was honoured, the window was flipped to portrait at 533dp wide, the placement
-     * fell back to `Bottom`, and the toggle under test never composed. The failure looked like a missing test
-     * tag; it was a forced rotation.
-     *
-     * So both tablet-shaped steps below keep their *short* side past 600dp as well as their long side past
-     * 660dp. Getting only the long side right reproduces exactly the bug above.
-     *
-     * ## Why the geometry is restored in a `finally`
-     *
-     * `wm size` outlives the process. Leaving a 1280dp override behind would silently invalidate every later
-     * journey in the same run and every macrobenchmark on that device afterwards, and the symptom — a phone
-     * profile missing its bottom bar — looks like a code problem rather than a leaked shell command.
+     * One forced 1000x800dp window exercises Settings, About, OS, Shell, MCP, Skill, BA, Calendar,
+     * Catalogue and GitHub in their wide forms. Both lane coordinates are scrolled independently.
+     * The final 775dp -> 500dp transition covers sidebar-to-bottom-bar reflow without another cold start.
      */
     @Test
-    fun tabletAndFoldNavigationShapes() {
+    fun adaptiveLargeScreenCore() {
         rule.collect(
             packageName = targetAppId(),
-            maxIterations = JOURNEY_MAX_ITERATIONS,
-            stableIterations = JOURNEY_STABLE_ITERATIONS,
+            maxIterations = ADAPTIVE_MAX_ITERATIONS,
+            stableIterations = ADAPTIVE_STABLE_ITERATIONS,
             includeInStartupProfile = false,
         ) {
             try {
-                // Tablet-shaped: long side past the 660dp sidebar floor, short side past the 600dp line that
-                // decides whether the manifest's portrait request is ignored. Both, or the window rotates.
                 forceWindowSizeDp(widthDp = 1000, heightDp = 800)
                 launchHomeFromColdStart()
 
-                // Tab bar shape: the same tab test tags, now in the top row.
-                clickAndWaitForPage(
+                pushWideRouteAndReturn(
+                    entryTag = HOME_SETTINGS_BUTTON,
+                    pageTag = SETTINGS_PAGE_ROOT,
+                    returnTag = HOME_PAGE_ROOT,
+                )
+                pushWideRouteAndReturn(
+                    entryTag = HOME_ABOUT_BUTTON,
+                    pageTag = ABOUT_PAGE_ROOT,
+                    returnTag = HOME_PAGE_ROOT,
+                )
+
+                navigateToMainPage(
                     tabTag = MAIN_BOTTOM_TAB_OS,
                     pageTag = OS_PAGE_ROOT,
                     settledTag = MAIN_PAGER_SETTLED_OS,
                 )
-                flingVisibleScrollable(times = 2)
+                exerciseWideLanes()
+                pushWideRouteAndReturn(
+                    entryTag = OS_SHELL_RUNNER_BUTTON,
+                    pageTag = OS_SHELL_RUNNER_PAGE_ROOT,
+                    returnTag = OS_PAGE_ROOT,
+                )
 
-                // Convert to the sidebar, drive it, and convert back — both directions of the morph.
+                // Scrolling both wide lanes can briefly rebuild the top chrome while the shared
+                // pager settles. Wait for the adaptable-navigation control to re-enter the
+                // accessibility tree before converting the tab bar to a sidebar.
+                waitForTestTag(MAIN_SIDEBAR_TOGGLE, timeoutMs = 15_000)
                 clickTestTag(MAIN_SIDEBAR_TOGGLE)
-                waitForTestTag(MAIN_SIDEBAR_ROW_HOME)
-                clickTestTag(MAIN_SIDEBAR_ROW_MCP)
-                waitForTestTag(MCP_PAGE_ROOT)
-                flingVisibleScrollable(times = 2)
-                clickTestTag(MAIN_SIDEBAR_ROW_BA)
-                waitForTestTag(BA_PAGE_ROOT)
+                waitForTestTag(MAIN_SIDEBAR_ROW_MCP)
+                clickSidebarPage(
+                    rowTag = MAIN_SIDEBAR_ROW_MCP,
+                    pageTag = MCP_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_MCP,
+                )
+                exerciseWideLanes()
+                pushWideRouteAndReturn(
+                    entryTag = MCP_SKILL_BUTTON,
+                    pageTag = MCP_SKILL_PAGE_ROOT,
+                    returnTag = MCP_PAGE_ROOT,
+                )
+
+                clickSidebarPage(
+                    rowTag = MAIN_SIDEBAR_ROW_BA,
+                    pageTag = BA_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_BA,
+                )
+                exerciseWideLanes()
+                openBaCalendarPoolAndReturn(wide = true)
+
+                if (openWindowFrom(
+                        triggerTag = BA_DOCK_OPEN_GUIDE_CATALOG,
+                        arrivalTag = BA_GUIDE_CATALOG_PAGE_ROOT,
+                        required = false,
+                    )
+                ) {
+                    exerciseWideLanes()
+                    clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
+                    exerciseWideLanes()
+                    clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_STUDENT_BGM)
+                    if (waitForOptionalTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST, timeoutMs = 8_000)) {
+                        scrollTestTagIntoReach(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                        clickTestTag(BA_GUIDE_CATALOG_STUDENT_BGM_FIRST)
+                    }
+                    clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM)
+                    exerciseWideLanes()
+                    device.pressBack()
+                    waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
+                }
+
+                clickSidebarPage(
+                    rowTag = MAIN_SIDEBAR_ROW_GITHUB,
+                    pageTag = GITHUB_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_GITHUB,
+                )
+                exerciseWideLanes()
+                if (openWindowFrom(
+                        triggerTag = GITHUB_ACTIONS_HISTORY_BUTTON,
+                        arrivalTag = GITHUB_ACTIONS_HISTORY_PAGE_ROOT,
+                        required = false,
+                    )
+                ) {
+                    clickBottomBarTab(GITHUB_HISTORY_TAB_ACTIONS)
+                    exerciseWideLanes()
+                    clickBottomBarTab(GITHUB_HISTORY_TAB_TRACKING)
+                    exerciseWideLanes()
+                    device.pressBack()
+                    waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
+                }
+
+                // The sidebar row selection above can still be settling its chrome layer. Keep
+                // this second shape conversion deterministic for the following window reflow.
+                waitForTestTag(MAIN_SIDEBAR_TOGGLE, timeoutMs = 15_000)
                 clickTestTag(MAIN_SIDEBAR_TOGGLE)
-
-                // A fold opening and closing: the width crosses both thresholds while the app is running.
-                // 775dp is past 660dp so the sidebar is still offered; its 800dp short side keeps the window
-                // from rotating. 500dp is under both, which is the compact shape and the point of the step —
-                // and there the portrait request applies again, which is correct rather than incidental.
-                forceWindowSizeDp(widthDp = 775, heightDp = 800) // fold inner
-                device.waitForIdle()
-                forceWindowSizeDp(widthDp = 500, heightDp = 800) // compact, back to the bottom bar
-                device.waitForIdle()
-
-                // Returning to Home here is a *navigation*, not a wait. The sidebar left the app on BA and
-                // resizing does not move it, so the previous `waitForHome()` could only ever time out — it
-                // was unreachable behind the rotation bug above, and surfaced the moment that was fixed.
-                //
-                // Going through the tab is also the assertion worth making: at 500dp the bottom bar is the
-                // only way to move between sections, so a tap that lands proves the compact shape came back
-                // rather than merely that the window resized.
-                clickAndWaitForPage(
+                forceWindowSizeDp(widthDp = 775, heightDp = 800)
+                forceWindowSizeDp(widthDp = 500, heightDp = 800)
+                navigateToMainPage(
                     tabTag = MAIN_BOTTOM_TAB_HOME,
                     pageTag = HOME_PAGE_ROOT,
                     settledTag = MAIN_PAGER_SETTLED_HOME,
@@ -1061,54 +413,254 @@ class BaselineProfileGenerator {
     }
 }
 
-/**
- * Overrides the window size for the rest of the journey, in **dp**.
- *
- * Every threshold this journey exercises is expressed in dp, so the sizes have to be too. Passing pixels
- * instead is what made the first version pass on one AVD and fail on another purely because their densities
- * differ — see the journey's KDoc.
- */
-private fun MacrobenchmarkScope.forceWindowSizeDp(
-    widthDp: Int,
-    heightDp: Int,
+private const val STARTUP_MAX_ITERATIONS = 5
+private const val STARTUP_STABLE_ITERATIONS = 2
+private const val CORE_MAX_ITERATIONS = 3
+private const val CORE_STABLE_ITERATIONS = 2
+private const val FEATURE_MAX_ITERATIONS = 2
+private const val FEATURE_STABLE_ITERATIONS = 2
+private const val ADAPTIVE_MAX_ITERATIONS = 2
+private const val ADAPTIVE_STABLE_ITERATIONS = 2
+
+private fun MacrobenchmarkScope.navigateAndScrollMainPage(
+    tabTag: String,
+    pageTag: String,
+    settledTag: String,
 ) {
-    val densityDpi = deviceDensityDpi()
-    forceWindowSize(
-        widthPx = widthDp * densityDpi / 160,
-        heightPx = heightDp * densityDpi / 160,
+    navigateToMainPage(tabTag, pageTag, settledTag)
+    flingVisibleScrollable(times = 2)
+}
+
+private fun MacrobenchmarkScope.navigateToMainPage(
+    tabTag: String,
+    pageTag: String,
+    settledTag: String,
+) {
+    clickBottomBarTab(tabTag)
+    waitForTestTag(pageTag, timeoutMs = 15_000)
+    waitForTestTag(settledTag, timeoutMs = 15_000)
+}
+
+private fun MacrobenchmarkScope.clickSidebarPage(
+    rowTag: String,
+    pageTag: String,
+    settledTag: String,
+) {
+    clickTestTag(rowTag)
+    waitForTestTag(pageTag, timeoutMs = 15_000)
+    waitForTestTag(settledTag, timeoutMs = 15_000)
+}
+
+private fun MacrobenchmarkScope.pushRouteAndReturn(
+    entryTag: String,
+    pageTag: String,
+    returnTag: String,
+    flings: Int = 2,
+) {
+    openWindowFrom(triggerTag = entryTag, arrivalTag = pageTag)
+    flingVisibleScrollable(times = flings)
+    returnFromPushedRoute(pageTag = pageTag, returnTag = returnTag)
+}
+
+private fun MacrobenchmarkScope.pushWideRouteAndReturn(
+    entryTag: String,
+    pageTag: String,
+    returnTag: String,
+) {
+    openWindowFrom(triggerTag = entryTag, arrivalTag = pageTag)
+    exerciseWideLanes()
+    returnFromPushedRoute(pageTag = pageTag, returnTag = returnTag)
+}
+
+/**
+ * Leaves a pushed route and proves the pushed page actually disappeared.
+ *
+ * Several route roots stay composed underneath the pushed page, so seeing [returnTag] alone is not
+ * proof of a pop. Shell Runner also focuses its editor and opens the IME: its first Back closes the
+ * keyboard and its second Back pops the route. Other routes complete on the first attempt.
+ */
+private fun MacrobenchmarkScope.returnFromPushedRoute(
+    pageTag: String,
+    returnTag: String,
+) {
+    repeat(PUSH_ROUTE_MAX_BACK_ATTEMPTS) {
+        device.pressBack()
+        if (device.wait(Until.gone(testTagSelector(pageTag)), PUSH_ROUTE_GONE_TIMEOUT_MS)) {
+            waitForTestTag(returnTag, timeoutMs = 15_000)
+            return
+        }
+    }
+    error("Unable to leave pushed route testTag=$pageTag in ${targetAppId()}")
+}
+
+private fun MacrobenchmarkScope.openBaCalendarPoolAndReturn(wide: Boolean = false) {
+    if (!openWindowFrom(
+            triggerTag = BA_DOCK_OPEN_CALENDAR_POOL,
+            arrivalTag = BA_CALENDAR_POOL_PAGE_ROOT,
+            required = false,
+        )
+    ) {
+        return
+    }
+
+    if (wide) {
+        // The merged page shows Calendar and Pool side by side at this width and removes the category
+        // bar. Driving both lane coordinates covers the two lists; looking for the phone-only Pool tab
+        // here would time out on exactly the new UI this journey exists to profile.
+        exerciseWideLanes()
+    } else {
+        flingVisibleScrollable(times = 1)
+        clickBottomBarTab(BA_CALENDAR_POOL_TAB_POOL)
+        flingVisibleScrollable(times = 1)
+    }
+    device.pressBack()
+    waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
+}
+
+private fun MacrobenchmarkScope.openAndDismissOverlay(
+    triggerTag: String,
+    panelTag: String,
+    required: Boolean = true,
+): Boolean {
+    val opened = openWindowFrom(triggerTag, panelTag, required)
+    if (opened) dismissTheOpenOverlay(panelTag)
+    return opened
+}
+
+/**
+ * Compiles the shared Sheet paths that opening and pressing Back never reaches.
+ *
+ * The strategy sheet is deterministic, long and lazy. Expanding through the grabber first lets the
+ * following swipes belong to its content; the final grabber drag warms resize, nested-scroll
+ * arbitration, layout-height updates and the settle spring without adding another cold start.
+ */
+private fun MacrobenchmarkScope.openExerciseAndDismissLiquidSheet(triggerTag: String) {
+    openWindowFrom(triggerTag = triggerTag, arrivalTag = LIQUID_SHEET_PANEL)
+    waitForTestTag(LIQUID_SHEET_DRAG_REGION, timeoutMs = 12_000)
+
+    dragLiquidSheetRegion(up = true)
+    swipeWithinTestTag(LIQUID_SHEET_PANEL, up = true)
+    swipeWithinTestTag(LIQUID_SHEET_PANEL, up = false)
+    dragLiquidSheetRegion(up = false)
+
+    dismissTheOpenOverlay(LIQUID_SHEET_PANEL)
+}
+
+private fun MacrobenchmarkScope.dragLiquidSheetRegion(up: Boolean) {
+    val bounds = device.findObject(testTagSelector(LIQUID_SHEET_DRAG_REGION))?.visibleBounds
+        ?: error("Unable to find Liquid Sheet drag region in ${targetAppId()}")
+    val distance = (device.displayHeight * LIQUID_SHEET_DRAG_DISTANCE_FRACTION).toInt()
+    val startY = bounds.centerY()
+    val endY =
+        (if (up) startY - distance else startY + distance)
+            .coerceIn(1, device.displayHeight - 2)
+    swipeWithInjectionRetry(
+        startX = bounds.centerX(),
+        startY = startY,
+        endX = bounds.centerX(),
+        endY = endY,
+        steps = DRAG_STEPS,
+        failureMessage = "Unable to drag Liquid Sheet ${if (up) "up" else "down"}",
     )
 }
 
-/**
- * Overrides the window size for the rest of the journey, in physical pixels — what `wm size` actually takes.
- */
-private fun MacrobenchmarkScope.forceWindowSize(
-    widthPx: Int,
-    heightPx: Int,
+private fun MacrobenchmarkScope.swipeWithinTestTag(tag: String, up: Boolean) {
+    val bounds = device.findObject(testTagSelector(tag))?.visibleBounds
+        ?: error("Unable to find testTag=$tag in ${targetAppId()}")
+    val upperY = bounds.top + (bounds.height() * LIQUID_SHEET_CONTENT_UPPER_FRACTION).toInt()
+    val lowerY = bounds.top + (bounds.height() * LIQUID_SHEET_CONTENT_LOWER_FRACTION).toInt()
+    val startY = if (up) lowerY else upperY
+    val endY = if (up) upperY else lowerY
+    swipeWithInjectionRetry(
+        startX = bounds.centerX(),
+        startY = startY,
+        endX = bounds.centerX(),
+        endY = endY,
+        steps = FLING_STEPS,
+        failureMessage = "Unable to scroll Liquid Sheet content ${if (up) "up" else "down"}",
+    )
+}
+
+private fun MacrobenchmarkScope.swipeWithInjectionRetry(
+    startX: Int,
+    startY: Int,
+    endX: Int,
+    endY: Int,
+    steps: Int,
+    failureMessage: String,
 ) {
-    device.executeShellCommand("wm size ${widthPx}x$heightPx")
+    repeat(GESTURE_INJECTION_ATTEMPTS) {
+        if (device.swipe(startX, startY, endX, endY, steps)) {
+            device.waitForIdle()
+            return
+        }
+        device.waitForIdle()
+    }
+    error(failureMessage)
+}
+
+private fun MacrobenchmarkScope.openMenuAndDismiss(
+    triggerTag: String,
+    rowTag: String,
+) {
+    clickVisibleTag(triggerTag)
+    waitForTestTag(rowTag, timeoutMs = 12_000)
+    device.pressBack()
+    check(device.wait(Until.gone(testTagSelector(rowTag)), 12_000)) {
+        "Timed out waiting for menu row testTag=$rowTag to dismiss in ${targetAppId()}"
+    }
     device.waitForIdle()
 }
 
-/**
- * The device's effective density, so dp can be converted to the pixels `wm size` wants.
- *
- * Prefers an override when one is set: `wm density` reports both, and a device someone has changed the density
- * on would otherwise be measured against a figure it is not using. Fails loudly rather than guessing a default
- * — a silently wrong density is precisely the failure this helper exists to remove.
- */
-private fun MacrobenchmarkScope.deviceDensityDpi(): Int {
-    val output = device.executeShellCommand("wm density")
-    val override = Regex("Override density: (\\d+)").find(output)?.groupValues?.get(1)?.toIntOrNull()
-    val physical = Regex("Physical density: (\\d+)").find(output)?.groupValues?.get(1)?.toIntOrNull()
-    return override ?: physical
-        ?: error("Could not read the device density from `wm density`, got: $output")
+private fun MacrobenchmarkScope.dismissTheOpenOverlay(panelTag: String) {
+    device.pressBack()
+    check(device.wait(Until.gone(testTagSelector(panelTag)), 15_000)) {
+        "Timed out waiting for testTag=$panelTag to dismiss in ${targetAppId()}"
+    }
+    device.waitForIdle()
 }
 
-/** Returns the window to the device's own size. Must run even when the journey fails. */
-private fun MacrobenchmarkScope.resetWindowSize() {
-    device.executeShellCommand("wm size reset")
+private fun MacrobenchmarkScope.openWindowFrom(
+    triggerTag: String,
+    arrivalTag: String,
+    required: Boolean = true,
+): Boolean {
+    repeat(OPEN_WINDOW_ATTEMPTS) {
+        if (clickVisibleTag(triggerTag, timeoutMs = 6_000) &&
+            device.wait(Until.hasObject(testTagSelector(arrivalTag)), 12_000)
+        ) {
+            device.waitForIdle()
+            return true
+        }
+        nudgeVisibleScrollable(forward = true)
+    }
+
+    check(!required) {
+        "testTag=$triggerTag never opened testTag=$arrivalTag in ${targetAppId()}"
+    }
+    return false
+}
+
+private fun MacrobenchmarkScope.clickVisibleTag(
+    tag: String,
+    timeoutMs: Long = 8_000,
+): Boolean {
+    if (!waitForOptionalTestTag(tag, timeoutMs)) {
+        // A page fling turns its action bar into a compact dock. Reveal it once before treating a
+        // route action as absent; this is the common path into BA calendar/catalog after scrolling.
+        val compactDock = device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK)) ?: return false
+        runCatching { compactDock.click() }
+        device.waitForIdle()
+        if (!waitForOptionalTestTag(tag, timeoutMs = 2_000)) return false
+    }
+    val bounds = device.findObject(testTagSelector(tag))?.visibleBounds ?: return false
+    if (bounds.centerY() > (device.displayHeight * 0.88f).toInt()) {
+        nudgeVisibleScrollable(forward = true)
+    }
+    val settled = device.findObject(testTagSelector(tag))?.visibleBounds ?: return false
+    device.click(settled.centerX(), settled.centerY())
     device.waitForIdle()
+    return true
 }
 
 private fun MacrobenchmarkScope.clickTestTag(tag: String) {
@@ -1118,143 +670,14 @@ private fun MacrobenchmarkScope.clickTestTag(tag: String) {
     device.waitForIdle()
 }
 
-/** A clipped header reports single-digit pixels; anything that thin is not worth tapping. */
-/**
- * How many times each journey is replayed, and why these are not the library defaults.
- *
- * `BaselineProfileRule.collect` defaults to `maxIterations = 15, stableIterations = 3`: replay until
- * three consecutive captures produce an identical profile, giving up after fifteen. Those defaults
- * are sized for a handful of journeys. This file has 23, and a UI-driven journey on a Compose app
- * rarely produces three byte-identical captures in a row, so in practice almost every one ran the
- * full fifteen.
- *
- * That is where the capture time went. The 2026-08-31 run took 1h21m for 36 tests, of which the 14
- * macrobenchmarks were skipped, leaving 22 journeys and 4860 seconds. 22 x 15 is 330 cold starts at
- * 14.7s each, which is what a cold start plus a deep navigation actually costs. The other readings
- * do not fit: three iterations would demand 74s per pass, which nothing here takes.
- *
- * So the budget is set explicitly. Startup keeps a wider one because it is a single short journey and
- * it feeds `startup-prof.txt`, where rule quality matters most per byte. Everything else gets four,
- * which bounds the run at 1x8 + 22x4 = 96 cold starts. (It was 92 when this was written, against 22
- * journeys; keep the arithmetic honest when a journey is added.)
- *
- * The trade is real and worth naming: `collect` accumulates the *union* of methods seen across
- * iterations, so fewer replays can mean fewer rules, not merely less confirmation. It is a good trade
- * here because these journeys are deterministic scripts over the same code, and the 2026-08-31
- * recapture came back 96.33% baseline and 98.46% startup rules unmodified against the previous one --
- * the marginal rule yield per extra replay is close to nothing. Check the rule counts after the next
- * capture anyway; `scripts/qa/baseline_profile_freshness.sh` prints them.
- */
-private const val STARTUP_MAX_ITERATIONS = 8
-private const val STARTUP_STABLE_ITERATIONS = 3
-private const val JOURNEY_MAX_ITERATIONS = 4
-private const val JOURNEY_STABLE_ITERATIONS = 2
-
-private const val MIN_TAPPABLE_HEIGHT_PX = 40
-
-/**
- * Taps a control that pushes a nav route, exercises the route, then pops back.
- *
- * Both directions matter: the pop replays the covered entry's restore path, which is what a user
- * feels on the way out.
- */
-private fun MacrobenchmarkScope.pushRouteAndReturn(
-    entryTag: String,
-    pageTag: String,
-    returnTag: String,
-) {
-    // Through [openWindowFrom] rather than a single click, because a tap that lands on the right node
-    // and opens nothing is the recurring failure on this device: a card under the floating bottom bar,
-    // or a list still settling under the tap. This is what timed out on the WebDAV card an hour into a
-    // capture, on a journey that had passed three captures before it.
-    openWindowFrom(triggerTag = entryTag, arrivalTag = pageTag)
-    flingVisibleScrollable(times = 2)
-
-    device.pressBack()
-    waitForTestTag(returnTag, timeoutMs = 15_000)
+private fun MacrobenchmarkScope.clickTaggedCardHeader(tag: String) {
+    val bounds = device.findObject(testTagSelector(tag))?.visibleBounds
+        ?: error("Unable to find card testTag=$tag in ${targetAppId()}")
+    val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
+    device.click(bounds.centerX(), bounds.top + inset)
     device.waitForIdle()
 }
 
-/**
- * Pushes a route from the BA floating dock, exercises it, then pops back. Both directions matter:
- * the pop replays the covered entry's restore path, which is what a user feels on the way out.
- */
-private fun MacrobenchmarkScope.openDockRouteAndReturn(
-    dockTag: String,
-    secondTabTag: String? = null,
-) {
-    waitForTestTag(dockTag, timeoutMs = 15_000)
-    val action = device.findObject(testTagSelector(dockTag))
-        ?: error("Unable to find dock action testTag=$dockTag in ${targetAppId()}")
-    action.click()
-    device.waitForIdle()
-    // The route settles over the push transition; the dock belongs to the covered page and goes away.
-    check(device.wait(Until.gone(testTagSelector(dockTag)), 15_000)) {
-        "Timed out waiting for the route pushed by testTag=$dockTag in ${targetAppId()}"
-    }
-    device.waitForIdle()
-    flingVisibleScrollable(times = 2)
-    // A tabbed route's other half is a second list with its own entry cards, and nothing else in the
-    // capture reaches it now that it is no longer its own dock action.
-    if (secondTabTag != null) {
-        waitForTestTag(secondTabTag, timeoutMs = 15_000)
-        device.findObject(testTagSelector(secondTabTag))?.click()
-        device.waitForIdle()
-        flingVisibleScrollable(times = 2)
-    }
-    device.pressBack()
-    waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
-    device.waitForIdle()
-}
-
-/**
- * Starts the daily-done template editor from a dead process, exactly as a tile long-press does.
- *
- * `TileService.ACTION_QS_TILE_PREFERENCES` and `Intent.EXTRA_COMPONENT_NAME` are read from the platform
- * rather than restated, so a renamed constant fails to compile instead of failing 20 minutes into a run.
- * The two app class names cannot be — the macrobenchmark module has no view of the app's source set — so
- * they are literals, and `BaselineProfileTestTagContractTest` checks them against the manifest.
- */
-private fun MacrobenchmarkScope.launchDailyTemplateFromTileLongPress() {
-    pressHome()
-    grantRuntimePermissions()
-    device.executeShellCommand("am force-stop ${targetAppId()}")
-    device.executeShellCommand(
-        "am start -W -a ${TileService.ACTION_QS_TILE_PREFERENCES} " +
-            "-n ${targetAppId()}/$DAILY_TEMPLATE_ACTIVITY_CLASS " +
-            "--ecn ${Intent.EXTRA_COMPONENT_NAME} ${targetAppId()}/$DAILY_TILE_ACCOUNT_SERVICE_CLASS",
-    )
-    waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 15_000)
-    device.waitForIdle()
-}
-
-/**
- * Leaves an edited sheet through its unsaved-changes confirmation, discarding the edit.
- *
- * Waits on the discard action rather than on the panel, because the sheet underneath still carries
- * [LIQUID_SHEET_PANEL] while the confirmation is up — the panel tag cannot tell the two apart. Both
- * surfaces are then waited *gone*, so the pair of exit animations is collected as well.
- */
-private fun MacrobenchmarkScope.discardTheOpenSheetsEdit() {
-    device.pressBack()
-    waitForTestTag(UNSAVED_SHEET_DISMISS_DISCARD, timeoutMs = 15_000)
-    clickTestTag(UNSAVED_SHEET_DISMISS_DISCARD)
-    check(device.wait(Until.gone(testTagSelector(LIQUID_SHEET_PANEL)), 15_000)) {
-        "Timed out waiting for the edited sheet to dismiss in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-/**
- * Scrolls until a tagged node is a real target: composed at all, tall enough to hit, and clear of both
- * the pile band under the top bar and the band the floating dock draws over.
- *
- * "Composed at all" is the part that bites, and it is why this no longer waits for the tag first. Each
- * cooldown and craft slot is its own lazy item now, so a card below the fold has no semantics node to
- * wait for — scrolling is what brings it into existence, and waiting first only buys a timeout. Nor can
- * the walk be one-directional: the keep-alive headroom keeps a card composed after it recedes into the
- * pile, where it reports a clipped height beneath the top bar, so an overshoot has to be walked back.
- */
 private fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
     val safeTop = (device.displayHeight * SCROLL_SAFE_TOP_FRACTION).toInt()
     val safeBottom = (device.displayHeight * SCROLL_SAFE_BOTTOM_FRACTION).toInt()
@@ -1272,1096 +695,104 @@ private fun MacrobenchmarkScope.scrollTestTagIntoReach(tag: String) {
     error("Unable to bring testTag=$tag into reach in ${targetAppId()}")
 }
 
-/**
- * Scrolls a lazy list until a tag is composed, then taps it where it lands.
- *
- * [scrollTestTagIntoReach] is the one to reach for on a page whose lower fifth belongs to a floating
- * bar: it insists the target sit inside a safe band before tapping, because a control under the dock
- * takes no taps. This is for the opposite shape -- a control that *is* the bottom of the list. The
- * JSON import window's action row settles around 93% of the way down the screen with nothing after it,
- * so the band check can never be satisfied, and the scroll loop spends its whole budget swiping a list
- * that is already at its end. That is how this journey first failed, several lines after the tag it was
- * looking for had become visible.
- */
-private fun MacrobenchmarkScope.scrollTestTagIntoViewAndClick(tag: String) {
-    repeat(SCROLL_INTO_REACH_ATTEMPTS) {
-        val node = device.findObject(testTagSelector(tag))
-        if (node != null && node.visibleBounds.height() >= MIN_TAPPABLE_HEIGHT_PX) {
-            node.click()
-            device.waitForIdle()
-            return
-        }
-        nudgeVisibleScrollable(forward = true)
-    }
-    error("Unable to scroll testTag=$tag into view in ${targetAppId()}")
-}
-
-/**
- * Taps a card's header rather than the middle of the card.
- *
- * [clickTestTag] clicks a node's centre, which is the header only while the card is collapsed. On an
- * expanded card the centre lands in the body, and the tap is a silent no-op: nothing fails, the card
- * stays open, and the exit animation half of the accordion is never collected. Measured on the BA page,
- * an expanded cooldown card spans 508px against a 216px header.
- */
-private fun MacrobenchmarkScope.clickTaggedCardHeader(tag: String) {
-    val bounds = device.findObject(testTagSelector(tag))?.visibleBounds
-        ?: error("Unable to find card testTag=$tag in ${targetAppId()}")
-    // A quarter in from the top stays inside the header of a collapsed card, and the cap keeps a tall
-    // expanded card's quarter from reaching past its header into the body.
-    val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
-    device.click(bounds.centerX(), bounds.top + inset)
-    device.waitForIdle()
-}
-
-/**
- * Collapses a card and proves it collapsed, by waiting for a control only its body carries.
- *
- * Without the proof a missed header tap reads as success — which is exactly how the collapse half of
- * this journey went uncollected while the test still passed.
- */
-private fun MacrobenchmarkScope.collapseTaggedCard(
-    cardTag: String,
-    bodyTag: String,
-) {
-    clickTaggedCardHeader(cardTag)
-    check(device.wait(Until.gone(testTagSelector(bodyTag)), 15_000)) {
-        "Card testTag=$cardTag did not collapse in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-/** Keeps a header tap inside the header of even a fully expanded card. */
-private const val MAX_HEADER_TAP_INSET_PX = 100
-
-/** The pile band under the top bar and the band the floating dock draws over. */
-private const val SCROLL_SAFE_TOP_FRACTION = 0.22f
-private const val SCROLL_SAFE_BOTTOM_FRACTION = 0.80f
-
-/** Enough nudges to walk the BA page end to end at roughly a quarter of a screen each. */
-private const val SCROLL_INTO_REACH_ATTEMPTS = 14
-
-/**
- * Scrolls roughly a quarter of a screen, either way.
- *
- * Deliberately shorter than [flingVisibleScrollable]: a fling exists to collect the scroll path, while
- * this exists to land one card in the tappable band, and a fling overshoots a one-line card.
- */
-/**
- * A loopback server whose every answer claims a body far larger than any limit the app will read.
- *
- * The last uncovered corner of the refresh diagnostics: `rememberFailureLimitDetail` and
- * `formatDiagnosticBytes` draw the limit/declared/observed/stage row, and only a
- * `response_too_large` failure has those fields. Nothing on the network can be relied upon to send
- * one, so the fixture sends it -- from inside the instrumentation process, over loopback, to the app
- * on the same device. The test APK already merges `INTERNET`, so this needs no manifest change.
- *
- * It never sends a body. `stringLimitedBlocking` compares `Content-Length` against its limit before
- * reading a byte and throws at the `DeclaredLength` stage, so a header is the entire fixture: the
- * declared 99999999 is about 95 MiB against the F-Droid package API's 8 MiB.
- *
- * `reuseAddress` so a socket still in TIME_WAIT from the previous *run* does not refuse the bind, and a
- * daemon accept loop because nothing joins this thread. It does not help against a socket that is still
- * open, which is why the caller starts this once per test rather than once per replay.
- */
-private fun startOversizedResponseServer(): Closeable {
-    val server = ServerSocket()
-    server.reuseAddress = true
-    server.bind(InetSocketAddress("127.0.0.1", OVERSIZED_FIXTURE_PORT))
-    Thread {
-        while (!server.isClosed) {
-            val client = runCatching { server.accept() }.getOrNull() ?: break
-            runCatching {
-                client.use { socket ->
-                    socket.soTimeout = OVERSIZED_FIXTURE_SOCKET_TIMEOUT_MS
-                    // Drained rather than parsed: what the client asked for makes no difference to an
-                    // answer that is the same size lie every time. Reading it at all is only so the
-                    // response does not race the request into a reset.
-                    val buffer = ByteArray(OVERSIZED_FIXTURE_REQUEST_BUFFER_BYTES)
-                    val read = socket.getInputStream().read(buffer)
-                    val requestLine =
-                        if (read > 0) String(buffer, 0, read).substringBefore('\r') else ""
-                    socket.getOutputStream().apply {
-                        write(fixtureResponseFor(requestLine).toByteArray())
-                        flush()
-                    }
-                }
-            }
-        }
-    }.apply { isDaemon = true }.start()
-    return Closeable { runCatching { server.close() } }
-}
-
-/**
- * One server, two answers, chosen by path.
- *
- * The oversized answer is the diagnostics fixture. The catalogue answer is the other half of the same
- * problem: everything the F-Droid client does *after* a successful response -- parsing versions,
- * choosing a candidate, building a snapshot, and the detail sheet that draws it -- was uncovered for the
- * same reason, that a capture has no F-Droid repository to talk to. Now it has one.
- */
-private fun fixtureResponseFor(requestLine: String): String =
-    if (FDROID_CATALOG_FIXTURE_PATH in requestLine) {
-        val body = FDROID_CATALOG_FIXTURE_BODY
-        "HTTP/1.1 200 OK\r\n" +
-            "Content-Type: application/json\r\n" +
-            "Content-Length: ${body.toByteArray().size}\r\n" +
-            "Connection: close\r\n\r\n" +
-            body
-    } else {
-        OVERSIZED_FIXTURE_RESPONSE
-    }
-
-/** The path segment the catalogue track's repository URL produces, before `/api/v1/packages/...`. */
-private const val FDROID_CATALOG_FIXTURE_PATH = "/catalog/api/v1/packages/"
-
-/**
- * A minimal but honest F-Droid package API response: two versions, newest first after sorting.
- *
- * Two rather than one so `FdroidCandidateSelector` has a choice to make instead of a single answer to
- * return, and `suggestedVersionCode` points at the older of them, which is the shape a real repository
- * uses to hold back a release.
- */
-private const val FDROID_CATALOG_FIXTURE_BODY =
-    """{"packageName":"os.kei.baselineprofile.fdroid","suggestedVersionCode":12,"packages":[""" +
-        """{"versionName":"1.1.0","versionCode":13,"apkName":"keios-fixture-1.1.0.apk",""" +
-        """"hash":"6f1ed002ab5595859014ebf0951522d9d3b1a2f7b0e0e1e6c4d5a3b2c1d0e9f8",""" +
-        """"size":1048576,"minSdkVersion":35,"targetSdkVersion":37,"added":1750000000000},""" +
-        """{"versionName":"1.0.0","versionCode":12,"apkName":"keios-fixture-1.0.0.apk",""" +
-        """"hash":"9b74c9897bac770ffc029102a8c4af33ec1c1f2b0e0e1e6c4d5a3b2c1d0e9f80",""" +
-        """"size":1000000,"minSdkVersion":35,"targetSdkVersion":37,"added":1740000000000}]}"""
-
-private const val OVERSIZED_FIXTURE_PORT = 38921
-private const val OVERSIZED_FIXTURE_SOCKET_TIMEOUT_MS = 5_000
-private const val OVERSIZED_FIXTURE_REQUEST_BUFFER_BYTES = 4096
-
-/** Headers only, and `Connection: close` so the client stops waiting for the body that never comes. */
-private const val OVERSIZED_FIXTURE_RESPONSE =
-    "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: application/json\r\n" +
-        "Content-Length: 99999999\r\n" +
-        "Connection: close\r\n\r\n"
-
-/**
- * Imports two tracked projects that cannot possibly refresh, so the next refresh records failures.
- *
- * The history route's Refresh tab needed a record before it drew anything, and [seedGitHubHistory] gave
- * it one. That was not enough, and the way it was not enough is the point. `GitHubRefreshHistoryCards`
- * collected 41 rules from those records while `GitHubRefreshHistoryDiagnostics` still collected zero:
- * `GitHubRefreshHistoryDiagnosticPills` returns on `hasRefreshTraceDiagnostics()` and
- * `GitHubRefreshFailureSummaryBlock` is drawn once per `failureSummaries` entry, so a clean run leaves
- * both with nothing to say. The gap was never "no history"; it was "no *failing* history", and on a
- * freshly installed app there is nothing tracked for a refresh to fail on either.
- *
- * So the fixture is two tracked items, imported through the app's own JSON import window — the same
- * activity [sharedIntentWindowInteractions] already starts, here with a real payload instead of `{}`,
- * which also means the planner, the applier and the sample list get compiled for the first time.
- *
- * The two are chosen to fail differently, because `rememberFailureCategoryLabel` branches on the
- * category and one fixture would compile one arm of it:
- *
- * | fixture | category | measured |
- * | --- | --- | --- |
- * | a repository that does not exist | `http_error` | HTTP 404 in 81ms |
- * | a direct APK on a closed local port | `network_error` | connection refused in 474ms |
- *
- * Neither depends on the device having working internet, only on what the failure is *called*: with no
- * network the 404 becomes a DNS failure, which is still a failure and still writes a record. The
- * loopback fixture leaves the device entirely — port 9 is discard, and nothing listens on it — so the
- * capture is not leaning on a third party being reachable to produce its rules.
- *
- * Verified end to end on the API 37 AVD before this shipped: both items land in the track store, the
- * next pull reports `failed=2`, and the expanded record draws the pills, both failure blocks with
- * their differing category labels, and the retry row that `refreshHistoryRetryTargetIds` gates on
- * failures.
- */
-private fun MacrobenchmarkScope.seedFailingGitHubTracks() {
-    launchActivityFromColdStart(
-        className = JSON_IMPORT_ACTIVITY_CLASS,
-        arguments =
-            "-a ${Intent.ACTION_SEND} -t text/plain " +
-                // Unquoted, and the payload carries no spaces, because `UiDevice.executeShellCommand`
-                // is not a shell: it splits the string on whitespace and hands the pieces to
-                // `Runtime.exec`, so a quote is a literal character in the extra rather than a
-                // grouping. Wrapping the JSON in quotes made it arrive as `'{"format":...}'`, which
-                // the router reads as neither an object nor an array and files as an unknown file --
-                // a preview screen with nothing to confirm, which is how this first failed.
-                "--es ${Intent.EXTRA_TEXT} $JSON_IMPORT_FAILING_TRACKS_PAYLOAD",
-    )
-    waitForTestTag(JSON_IMPORT_PAGE_ROOT, timeoutMs = 20_000)
-    // The action card sits below the preview and the sample list, so it has to be scrolled to rather
-    // than waited for: a lazy list does not compose what is off screen, and the tag is only applied in
-    // the one state where the button imports -- not while it reads "Processing" or "Close".
-    // Retried for the reason [openWindowFrom] is: a tap that lands on the right node and does nothing
-    // is the failure mode on these pages, and the button going away is the only thing that separates
-    // an applied import from a missed one.
-    repeat(JSON_IMPORT_CONFIRM_ATTEMPTS) {
-        scrollTestTagIntoViewAndClick(JSON_IMPORT_CONFIRM)
-        if (device.wait(Until.gone(testTagSelector(JSON_IMPORT_CONFIRM)), 10_000)) {
-            device.waitForIdle()
-            return
-        }
-    }
-    error("The JSON import window never applied its tracked-project fixture in ${targetAppId()}")
-}
-
-/** A missed tap costs one more pass; a genuinely stuck window still fails the run. */
-private const val JSON_IMPORT_CONFIRM_ATTEMPTS = 3
-
-/**
- * Opens the F-Droid detail sheet from whichever tracked card offers it.
- *
- * By position would be a bet on the sort order, which is the display title and therefore the fixture's
- * own labels. By capability is not: the detail action is composed only for an F-Droid track, so opening
- * overflows until [GITHUB_FDROID_DETAIL_MENU_ITEM] appears finds the right card whatever the list does.
- * Menus that turn out to be the wrong card are dismissed rather than left stacked.
- */
-private fun MacrobenchmarkScope.openFdroidDetailSheet() {
-    repeat(FDROID_OVERFLOW_SCAN_ATTEMPTS) { index ->
-        val more =
-            runCatching {
-                device.findObjects(testTagSelector(GITHUB_TRACKED_ITEM_MORE_BUTTON)).getOrNull(index)
-            }.getOrNull() ?: return@repeat
-        if (runCatching { more.click() }.isFailure) return@repeat
-        device.waitForIdle()
-        if (device.wait(Until.hasObject(testTagSelector(GITHUB_FDROID_DETAIL_MENU_ITEM)), 5_000)) {
-            clickTestTag(GITHUB_FDROID_DETAIL_MENU_ITEM)
-            waitForTestTag(LIQUID_SHEET_PANEL, timeoutMs = 20_000)
-            // The sheet is long: versions, anti-features, the repository block and the install rows all
-            // sit below the fold, and none of them composes until scrolled to.
-            flingVisibleScrollable(times = 2)
-            dismissTheOpenOverlay(LIQUID_SHEET_PANEL)
-            return
-        }
-        device.pressBack()
-        device.waitForIdle()
-    }
-    error(
-        "No tracked card offered testTag=$GITHUB_FDROID_DETAIL_MENU_ITEM in ${targetAppId()}; the " +
-            "F-Droid fixture is not tracked. On screen: ${visibleTextSummary()}",
-    )
-}
-
-/** The fixture labels sort the F-Droid tracks high, but this walks rather than assuming they do. */
-private const val FDROID_OVERFLOW_SCAN_ATTEMPTS = 4
-
-/**
- * Makes a package event happen to a tracked package, so the Apps tab has records to draw.
- *
- * `GitHubAppInstallHistoryCards` was the last of the three history components at zero rules, and unlike
- * the other two nothing the app does to itself produces one: `recordPackageChangedBlocking` returns
- * early unless a tracked item names the package the broadcast is about, and the only writer is the
- * runtime receiver in `KeiOSApp` reacting to a real `PACKAGE_ADDED`/`REMOVED`/`REPLACED`. So the third
- * fixture tracks [APP_INSTALL_FIXTURE_PACKAGE], and this makes that package come and go.
- *
- * `pm hide` / `pm unhide` rather than an uninstall and a reinstall. Hiding is what
- * `setApplicationHiddenSettingAsUser` does: the platform broadcasts `PACKAGE_REMOVED` and then
- * `PACKAGE_ADDED`, which is exactly the pair wanted, while the APK is never touched and no data is
- * lost. Verified on the API 37 AVD by watching other listeners react to both, and by reading back
- * `hidden=false` afterwards.
- *
- * The pair is deliberate: `buildPackageChangeResult` maps a removal to `Uninstalled` and an add with no
- * previous snapshot to `Installed`, so two events give two records with two different actions, which is
- * two arms of `rememberAppInstallActionLabel`, `appInstallActionColor` and
- * `rememberAppInstallVersionChange` instead of one. `PACKAGE_CHANGED` was the obvious cheaper trigger
- * and is useless here -- that branch writes no records at all, only a snapshot.
- *
- * Unhiding is the restore, and it runs even if hiding threw, because the alternative is leaving a
- * package hidden on somebody's device. The check afterwards is there so that failing to restore fails
- * the run rather than going unnoticed.
- */
-private fun MacrobenchmarkScope.seedGitHubAppInstallHistory() {
-    try {
-        device.executeShellCommand("pm hide $APP_INSTALL_FIXTURE_PACKAGE")
-        device.waitForIdle()
-    } finally {
-        device.executeShellCommand("pm unhide $APP_INSTALL_FIXTURE_PACKAGE")
-        device.waitForIdle()
-    }
-    val state = device.executeShellCommand("dumpsys package $APP_INSTALL_FIXTURE_PACKAGE")
-    check("hidden=false" in state) {
-        "$APP_INSTALL_FIXTURE_PACKAGE was left hidden on the device; restore it with " +
-            "`adb shell pm unhide $APP_INSTALL_FIXTURE_PACKAGE`"
-    }
-}
-
-/**
- * Runs one refresh so the history route has something other than empty states to draw.
- *
- * The route's journey walks all four tabs, but a capture installs the app fresh and those tabs render
- * history the app accumulates over time. On a clean device three of them were empty states, and
- * `GitHubRefreshHistoryDiagnostics`, `GitHubTrackChangeHistoryCards` and `GitHubAppInstallHistoryCards`
- * collected no rules at all while the rest of the route collected 549. That is a fixture gap, not a
- * tagging one.
- *
- * One pull-to-refresh closes part of it. Verified on the API 37 AVD from a `pm clear` state: before the
- * pull `github_refresh_history` does not exist on disk, a single pull creates it, and the Refresh tab
- * then reports "2 of 2 records shown" with a real finished timestamp instead of its empty state.
- * Following [seedFailingGitHubTracks], the same pull now has two targets and fails both of them, which
- * is what fills the diagnostics that the record alone never did.
- *
- * It closes only that part, which is worth being exact about. The same pull also *creates* the
- * `github_track_change_history` file, but the store stays empty -- the Tracking tab still reads
- * "0 of 0 records shown / No tracking records", and the Apps tab "No app records". A file existing is
- * not a record existing. Those two need a real tracked-repo change and a real app install, so
- * `GitHubTrackChangeHistoryCards` and `GitHubAppInstallHistoryCards` remain uncovered.
- *
- * It does not need the network to succeed. `GitHubRefreshHistoryService` records the run's `outcome`
- * whatever it turns out to be, and `failedCount` is a field on the record, so a refresh that fails
- * still writes one -- which keeps this deterministic on a machine with no GitHub token.
- *
- * Deliberately no wait for completion afterwards. The refresh is asynchronous and the journey spends
- * several seconds navigating into the route before it needs the data, and `collect` kills the process
- * between replays without clearing app data, so a seed from one iteration serves the rest. Rules are
- * the union across iterations, so the cards only have to render once.
- */
-private fun MacrobenchmarkScope.seedGitHubHistory() {
-    pullToRefresh()
-}
-
-/**
- * Waits for the GitHub page's refresh batch to stop running before the journey navigates off it.
- *
- * The batch is scoped to the page, so pushing the history route a second after pulling cancels it. That
- * does not fail anything -- `GitHubRefreshHistoryService` still writes a record -- it writes a *useless*
- * one: measured on the API 37 AVD, the journey's own timing turned a three-item refresh into
- * `0/3 done, updates 0, failed 0, Interrupted`, and an interrupted batch has no failures to report, no
- * slow items and no stop reason, so `hasRefreshTraceDiagnostics` returns false and the record draws
- * exactly what a clean one draws. Ten seconds on the page instead, and the same refresh lands as
- * `3/3 done, failed 2, Partial failed`.
- *
- * Waiting on the ring rather than on a delay because the number is not the point: what the journey
- * needs is for the batch to be over, and how long that takes depends on how fast the two fixtures fail.
- */
-private fun MacrobenchmarkScope.awaitGitHubRefreshSettled() {
-    // Softly: a batch of two unreachable items can be over before the first poll, and a refresh that
-    // never started is already settled.
-    waitForOptionalTestTag(GITHUB_OVERVIEW_REFRESHING, timeoutMs = 10_000)
-    check(device.wait(Until.gone(testTagSelector(GITHUB_OVERVIEW_REFRESHING)), 60_000)) {
-        "The GitHub page refresh never finished in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-/**
- * Pulls the history list to refresh, on purpose and last.
- *
- * The route has a pull-to-refresh of its own -- `pullRefreshSessionActive` and the `LaunchedEffect`
- * that watches `uiState.loading` through it -- and nothing else in this journey goes near it. It was
- * collected by accident for exactly one capture, as a side effect of a scroll-to-top that happened to
- * be three backward nudges, and it left when that did: `refreshStarted` went 29 rules back to the 16
- * that predate this work.
- *
- * So it is done deliberately now, and it is done **after every tap this journey needs**. That ordering
- * is the whole lesson of the capture before this one: a pull leaves the list reloading long enough to
- * swallow the next tap, measured by hand as the same header tap opening a card and then not opening it
- * with three nudges in front of it. Here nothing follows, so there is nothing to swallow.
- *
- * Repeated rather than done once because a pull only arms at the top of the list and the expanded
- * record above leaves it scrolled well down. Each pass is a long backward drag: the early ones scroll,
- * the last ones pull.
- */
-private fun MacrobenchmarkScope.collectHistoryPullToRefresh() {
-    repeat(HISTORY_PULL_ATTEMPTS) { pullToRefresh() }
-    check(device.wait(Until.hasObject(testTagSelector(GITHUB_REFRESH_HISTORY_CARD)), 20_000)) {
-        "The history pull-to-refresh left no record cards in ${targetAppId()}. " +
-            "On screen: ${visibleTextSummary()}"
-    }
-}
-
-/**
- * Enough long backward drags to walk an expanded record back to the top and still pull there.
- *
- * The fling before this one covers about 1.2 screens forward and each drag here about 0.38 back, so
- * four would only just arrive. Six leaves room for a record tall enough to need it, and the extra
- * drags cost a second each and land on the pull they are there for.
- */
-private const val HISTORY_PULL_ATTEMPTS = 6
-
-/** A drag long enough to arm a pull-to-refresh, starting below the top bar. */
-private fun MacrobenchmarkScope.pullToRefresh() {
-    val centerX = device.displayWidth / 2
-    val top = (device.displayHeight * 0.34f).toInt()
-    val bottom = (device.displayHeight * 0.72f).toInt()
-    device.swipe(centerX, top, centerX, bottom, 24)
-    device.waitForIdle()
-}
-
-/**
- * Opens a refresh record that has diagnostics to draw, and proves it found one.
- *
- * Two things are being worked around. The cards are collapsed on entry -- `expandedRefreshRecordKeys`
- * starts empty -- so everything below the header is uncomposed until one is tapped. And *which* record
- * carries failures depends on what the device did last, which is why every card gets the same tag
- * instead of the first one getting a "first" tag: the visible cards are walked in order, and a card
- * that turns out to be clean is closed again so the next one keeps its position.
- *
- * The wait on [GITHUB_REFRESH_HISTORY_DIAGNOSTICS] is the proof, and it is deliberately fatal. An
- * expanded record with no diagnostics collects the same rules a collapsed one nearly does and reports
- * success either way, which is exactly how this path stayed at zero rules through a capture that
- * looked green. If the fixture ever stops taking, the run should say so.
- */
-private fun MacrobenchmarkScope.expandRefreshRecordWithDiagnostics() {
-    expandHistoryRecord(
-        cardTag = GITHUB_REFRESH_HISTORY_CARD,
-        bodyTag = GITHUB_REFRESH_HISTORY_DIAGNOSTICS,
-    )
-    // The failure blocks and the retry row are the tail of an expanded record, well past a screen of
-    // scheduler and performance rows.
-    flingVisibleScrollable(times = 3)
-}
-
-/**
- * Expands the first history record on the showing tab that proves it opened.
- *
- * `bodyTag` is a handle that exists only inside an expanded card, so waiting for it separates a header
- * tap that worked from one that landed and did nothing. For the refresh tab it proves more than that:
- * the diagnostic pills compose only for a record with failures, so it is also the check on the
- * failing-refresh fixture.
- *
- * The card-absent case is checked first and separately. "The tab has no cards" and "the cards do not
- * open" have different causes and different fixes, and a capture that reported only the second spent
- * half an hour saying the wrong thing.
- */
-private fun MacrobenchmarkScope.expandHistoryRecord(
-    cardTag: String,
-    bodyTag: String,
-) {
-    check(device.wait(Until.hasObject(testTagSelector(cardTag)), 20_000)) {
-        "No cards with testTag=$cardTag in ${targetAppId()}; the route is on the wrong tab, or that " +
-            "tab's store is empty. On screen: ${visibleTextSummary()}"
-    }
-    repeat(HISTORY_RECORD_RELOAD_ATTEMPTS) {
-        if (openHistoryRecord(cardTag = cardTag, bodyTag = bodyTag)) return
-        // Only *after* a failed pass, never before a tap. The route is not live on the store --
-        // `GitHubActionsNotificationHistoryViewModel` reads it once from `init` -- so a record still
-        // being written when the page loaded needs this pull to appear. But a pull leaves the list
-        // reloading for long enough to swallow the tap that follows it, which is measurable by hand:
-        // the same header tap at the same coordinates opens a card, and does not open it when three
-        // backward nudges come first. Waiting for the cards to be back before the next pass is the
-        // difference between a retry and a second way to fail.
-        pullToRefresh()
-        check(device.wait(Until.hasObject(testTagSelector(cardTag)), 20_000)) {
-            "The reload left no cards with testTag=$cardTag in ${targetAppId()}. " +
-                "On screen: ${visibleTextSummary()}"
-        }
-    }
-    val cardCount = device.findObjects(testTagSelector(cardTag)).size
-    error(
-        "No record composed testTag=$bodyTag in ${targetAppId()} across " +
-            "$HISTORY_RECORD_RELOAD_ATTEMPTS passes over $cardCount visible testTag=$cardTag cards. " +
-            "On screen: ${visibleTextSummary()}",
-    )
-}
-
-/**
- * The window's visible text, for a failure message.
- *
- * A count of cards says the walk happened and says nothing about *which* records it walked, and the
- * difference between "the refresh failed as intended and the pills are missing" and "the refresh
- * targeted nothing because the list had not loaded" is entirely in the record's own summary line. Two
- * captures were spent inferring that from timings.
- */
-private fun MacrobenchmarkScope.visibleTextSummary(): String {
-    val hierarchy =
-        runCatching {
-            java.io.ByteArrayOutputStream().also { device.dumpWindowHierarchy(it) }.toString()
-        }.getOrElse { error -> return "unavailable (${error.javaClass.simpleName})" }
-    val text =
-        Regex("""text="([^"]+)"""")
-            .findAll(hierarchy)
-            .map { match -> match.groupValues[1] }
-            .filter { value -> value.isNotBlank() }
-            .take(VISIBLE_TEXT_SUMMARY_LIMIT)
-            .joinToString(" | ")
-    // The ids as well as the text, because the two answer different questions. Text says which record
-    // is on screen; ids say whether its tags reached UiAutomator at all -- and a capture already spent
-    // 44 minutes reporting a screen whose text showed the very pills the tag was not matching.
-    val ids =
-        Regex("""resource-id="([^"]+)"""")
-            .findAll(hierarchy)
-            .map { match -> match.groupValues[1] }
-            .filter { value -> value.isNotBlank() && !value.contains(':') }
-            .distinct()
-            .take(VISIBLE_TEXT_SUMMARY_LIMIT)
-            .joinToString(", ")
-    return "$text || ids: $ids"
-}
-
-/** Enough to name the first couple of records and no more. */
-private const val VISIBLE_TEXT_SUMMARY_LIMIT = 24
-
-/** One pass over the visible records: expand, keep the first that draws its body, close the rest. */
-private fun MacrobenchmarkScope.openHistoryRecord(
-    cardTag: String,
-    bodyTag: String,
-): Boolean {
-    // A card left open by an earlier pass is the answer, not something to toggle shut. Without this the
-    // walk oscillates: it taps the header of an already-expanded card, spends its wait watching a
-    // collapsed one, taps again to "restore", and reports failure with the body on screen.
-    if (device.hasObject(testTagSelector(bodyTag))) return true
-    // No scrolling first, deliberately. Walking the visible cards is what covers position here: every
-    // record this journey creates has failures, so whichever one the tab loop's fling left on screen
-    // will do, and scrolling back to the top costs a swallowed tap for nothing.
-    repeat(HISTORY_RECORD_CARD_ATTEMPTS) { index ->
-        // Read through runCatching, re-queried every pass, and retried in place. These lists recompose
-        // underneath a journey -- the staleness [clickBottomBarTab] documents -- so a handle that
-        // answered `findObjects` a moment ago throws `StaleObjectException` from `visibleBounds` rather
-        // than returning null. That is not a missing card, it is a moving one, and skipping to the next
-        // index on it would quietly walk past the newest record, which is the only one this journey has
-        // any reason to expect diagnostics from.
-        val bounds = boundsOfSettledCard(cardTag = cardTag, index = index) ?: return@repeat
-        val inset = minOf(bounds.height() / 4, MAX_HEADER_TAP_INSET_PX)
-        device.click(bounds.centerX(), bounds.top + inset)
-        device.waitForIdle()
-        if (device.wait(Until.hasObject(testTagSelector(bodyTag)), 5_000)) {
-            return true
-        }
-        device.click(bounds.centerX(), bounds.top + inset)
-        device.waitForIdle()
-    }
-    return false
-}
-
-/** Re-reads one card's bounds until they stop moving, or gives up on it. */
-private fun MacrobenchmarkScope.boundsOfSettledCard(
-    cardTag: String,
-    index: Int,
-): android.graphics.Rect? {
-    repeat(STALE_CARD_READ_ATTEMPTS) {
-        val bounds =
-            runCatching {
-                device.findObjects(testTagSelector(cardTag))
-                    .getOrNull(index)
-                    ?.visibleBounds
-            }.getOrNull()
-        if (bounds != null) return bounds
-        device.waitForIdle()
-    }
-    return null
-}
-
-/** Enough of the visible records to find one that opens, without walking the whole tab. */
-private const val HISTORY_RECORD_CARD_ATTEMPTS = 3
-
-/** A card that is still moving settles well inside this; one that is absent never will. */
-private const val STALE_CARD_READ_ATTEMPTS = 4
-
-/** Enough re-reads to outlast a record that is still being written when the route opens. */
-private const val HISTORY_RECORD_RELOAD_ATTEMPTS = 3
-
-private fun MacrobenchmarkScope.nudgeVisibleScrollable(forward: Boolean) {
-    val centerX = device.displayWidth / 2
-    val near = (device.displayHeight * 0.62f).toInt()
-    val far = (device.displayHeight * 0.38f).toInt()
-    if (forward) {
-        device.swipe(centerX, near, centerX, far, 24)
-    } else {
-        device.swipe(centerX, far, centerX, near, 24)
-    }
-    device.waitForIdle()
-}
-
-/**
- * Opens an overlay from a tagged trigger, lets it settle, and dismisses it with back.
- *
- * Waits for the panel to be *gone* rather than for a fixed delay, so the exit animation is collected
- * too — a dismissal recomposes and re-animates the same surface, and it is what the user feels last.
- */
-private fun MacrobenchmarkScope.openAndDismissOverlay(
-    triggerTag: String,
-    panelTag: String,
-) {
-    waitForTestTag(triggerTag, timeoutMs = 15_000)
-    val trigger = device.findObject(testTagSelector(triggerTag))
-        ?: error("Unable to find overlay trigger testTag=$triggerTag in ${targetAppId()}")
-    trigger.click()
-    waitForTestTag(panelTag, timeoutMs = 15_000)
-
-    device.pressBack()
-    check(device.wait(Until.gone(testTagSelector(panelTag)), 15_000)) {
-        "Timed out waiting for testTag=$panelTag to dismiss in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-/**
- * Waits for a tag and reports whether it arrived, instead of failing the run.
- *
- * For steps whose *presence* is data-dependent — a catalog that has not synced, a menu row only GitHub
- * repository tracks carry, a share resolution waiting on the network. A hard wait there turns a
- * legitimate device state into a failure half an hour into a capture, and the alternative of dropping the
- * step loses the coverage on every device that does have the data.
- */
-private fun MacrobenchmarkScope.waitForOptionalTestTag(
-    tag: String,
-    timeoutMs: Long,
-): Boolean {
-    val arrived = device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs) == true
-    device.waitForIdle()
-    return arrived
-}
-
-/**
- * Taps a tab on one of the app's collapsing bottom bars, bringing the bar back if a scroll put it away.
- *
- * Both the catalog's dock and the student guide's tab bar are `AnimatedCompactBottomBar`s: scrolling
- * down collapses them to a pill and the expanded tabs leave the composition entirely, tags and all. So
- * a journey that flings one tab's content and then reaches for the next tab finds nothing.
- *
- * The pill is tapped rather than scrolled back to, because scrolling back is not always available: a
- * tab whose content does not fill the screen — the catalog's favourites tab with no favourites — has
- * no scroll range to give, and a capture died there after eight backward nudges did nothing. A nudge
- * is still tried when no pill is showing, for the case where the bar is merely off screen.
- *
- * Worth stating because it cost two captures: the guide's bar does *not* hide on every tab. Scrolling
- * its profile tab leaves the bar alone and scrolling its skills tab does not, so a check on one tab is
- * no evidence about the others.
- */
 private fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
     repeat(BOTTOM_BAR_REEXPAND_ATTEMPTS) {
-        // Clicked through the node already in hand rather than by looking the tag up a second time.
-        // These two bars cross-fade, so a tag that answered `findObject` a moment ago can be gone by the
-        // time a second lookup runs — which failed a run as "Unable to find testTag=compact_bottom_bar_dock"
-        // one line after something had just found it. A stale handle throws instead, and another pass
-        // around this loop is the right answer to that.
         val tab = device.findObject(testTagSelector(tag))
-        if (tab != null) {
-            if (runCatching { tab.click() }.isSuccess) {
-                device.waitForIdle()
-                return
-            }
-        } else {
-            val pill = device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK))
-            if (pill != null) {
-                runCatching { pill.click() }
-                device.waitForIdle()
-            } else {
-                nudgeVisibleScrollable(forward = false)
-            }
-        }
-    }
-    error("Unable to bring bottom bar tab testTag=$tag back into view in ${targetAppId()}")
-}
-
-/** The collapsed dock that stands in for whichever bottom bar a scroll has put away. */
-private const val COMPACT_BOTTOM_BAR_DOCK = "compact_bottom_bar_dock"
-
-/** Enough backward nudges to undo the flings a tab's own step makes, with room to spare. */
-private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8
-
-/**
- * Taps something that opens a window, and proves the window arrived — retrying the tap if it did not.
- *
- * A tap that lands on the right node and does nothing is the failure mode here. The About page keeps a
- * floating bottom bar over the lower fifth of the screen, so a row that is composed and findable can
- * still be under the bar, and the tap goes to the bar. Bringing the trigger into the tappable band
- * first is most of the fix; retrying covers the rest, because these lists settle for a moment after a
- * tab switch and a node can move between being found and being clicked.
- */
-private fun MacrobenchmarkScope.openWindowFrom(
-    triggerTag: String,
-    arrivalTag: String,
-    required: Boolean = true,
-    prepare: MacrobenchmarkScope.() -> Unit = {},
-): Boolean {
-    repeat(OPEN_WINDOW_ATTEMPTS) {
-        prepare()
-        if (!waitForOptionalTestTag(triggerTag, timeoutMs = 12_000)) return@repeat
-        val bounds = settledBoundsOf(triggerTag)
-        if (bounds != null) {
-            device.click(bounds.centerX(), bounds.centerY())
+        if (tab != null && runCatching { tab.click() }.isSuccess) {
             device.waitForIdle()
-            if (device.wait(Until.hasObject(testTagSelector(arrivalTag)), 12_000)) {
-                device.waitForIdle()
-                return true
-            }
+            return
         }
-        // The tap landed on the node and nothing opened, so the node was under the floating bottom bar
-        // and the bar took it. Scrolling forward lifts it clear.
-        //
-        // Deliberately not [scrollTestTagIntoReach]: that insists the node sit inside the tappable band
-        // and scrolls until it does, which is right for a long lazy list and wrong here. About's lab tab
-        // is a single short card, so its row sits above the band with nothing to scroll, and insisting
-        // walked fourteen no-op nudges into "Unable to bring testTag=about_component_lab_button into
-        // reach" for a row that was perfectly tappable where it was.
-        nudgeVisibleScrollable(forward = true)
+
+        val compactDock = device.findObject(testTagSelector(COMPACT_BOTTOM_BAR_DOCK))
+        if (compactDock != null) {
+            // The shared tag sits on the visual Liquid surface while its clickable semantics can
+            // belong to a descendant. UiObject2.click() therefore warns that the tagged node is
+            // non-clickable even though tapping its bounds is the correct user interaction. A
+            // compact-to-expanded transition also keeps stale semantics around for a few frames;
+            // wait for the requested tab instead of burning through every retry during animation.
+            val bounds = compactDock.visibleBounds
+            device.click(bounds.centerX(), bounds.centerY())
+            device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)
+            device.waitForIdle()
+        } else {
+            nudgeVisibleScrollable(forward = false)
+            // A reverse scroll asks the shared chrome controller to expand the bar. Compose can be
+            // idle before the 240ms visual transition publishes fresh tab semantics, so wait for
+            // this exact destination before the next lookup.
+            device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)
+        }
     }
-    // Says what was actually on screen, because "it did not open" is not a diagnosis. A trigger that has
-    // gone reports differently from one sitting there being tapped to no effect, and the resumed
-    // activity says whether something else took the window.
-    val whereAmI =
-        listOf(
-            HOME_PAGE_ROOT,
-            ABOUT_PAGE_ROOT,
-            ABOUT_TAB_LAB,
-            ABOUT_COMPONENT_LAB_BUTTON,
-            DEBUG_COMPONENT_LAB_PAGE_ROOT,
-        ).filter { tag -> device.findObject(testTagSelector(tag)) != null }
-    val bounds = device.findObject(testTagSelector(triggerTag))?.visibleBounds
-    val resumed =
-        device
-            .executeShellCommand("dumpsys activity activities")
-            .lineSequence()
-            .firstOrNull { line -> "topResumedActivity" in line }
-            ?.trim()
-            .orEmpty()
-    val report =
-        "testTag=$triggerTag never opened testTag=$arrivalTag in ${targetAppId()}; " +
-            "trigger bounds=$bounds, on screen=$whereAmI, $resumed"
-    check(!required) { report }
-    return false
+    error("Unable to bring navigation tab testTag=$tag into view in ${targetAppId()}")
 }
 
-/** A tap, a nudge, a second tap. A third would be hiding a real failure rather than a settling list. */
-private const val OPEN_WINDOW_ATTEMPTS = 3
-
-/**
- * The node's bounds once they stop moving, or null if they never do.
- *
- * `waitForIdle` does not cover a Compose pager mid-animation, so a tag can be found, report bounds, and
- * be somewhere else by the time the tap lands — the tap then hits whatever slid under it. That is what
- * the About lab row was doing: found, tapped, nothing opened, and by the third attempt the row was not
- * composed at all because the tap had gone to the page sliding past. Two identical readings in a row is
- * the cheapest proof the layout has settled.
- */
-private fun MacrobenchmarkScope.settledBoundsOf(tag: String): android.graphics.Rect? {
-    var previous = device.findObject(testTagSelector(tag))?.visibleBounds
-    repeat(BOUNDS_SETTLE_ATTEMPTS) {
-        device.waitForIdle()
-        val current = device.findObject(testTagSelector(tag))?.visibleBounds
-        if (current != null && current == previous) return current
-        previous = current
-    }
-    return previous
+private fun MacrobenchmarkScope.exerciseWideLanes() {
+    flingVisibleScrollable(times = 1, horizontalFraction = WIDE_PRIMARY_LANE_X)
+    flingVisibleScrollable(times = 1, horizontalFraction = WIDE_SECONDARY_LANE_X)
 }
 
-/** Each pass costs a `waitForIdle`, so this is roughly a second of settling at worst. */
-private const val BOUNDS_SETTLE_ATTEMPTS = 6
-
-/** Dismisses an open overlay with back, and waits out its exit animation rather than a fixed delay. */
-private fun MacrobenchmarkScope.dismissTheOpenOverlay(panelTag: String) {
-    device.pressBack()
-    check(device.wait(Until.gone(testTagSelector(panelTag)), 15_000)) {
-        "Timed out waiting for testTag=$panelTag to dismiss in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-/**
- * Starts one of the app's other activities from a dead process, the way the system does.
- *
- * `force-stop` first is the whole point: these windows are only ever entered cold — a share sheet hands
- * one an intent and the process starts to receive it — so profiling them from a warm process would
- * collect the cheap path and miss the expensive one.
- *
- * **Exported activities only.** `am start` runs as the shell uid, which on this platform does not hold
- * `START_ANY_ACTIVITY`, so an `exported="false"` activity comes back as
- * `SecurityException: Permission Denial: … not exported from uid …` and this times out. Confirmed
- * against `FeedbackIssueActivity` and `GitHubStarImportActivity`; the star importer is reached through
- * its menu row instead, which is why [gitHubChromeSheetInteractions] taps rather than starts it.
- */
-private fun MacrobenchmarkScope.launchActivityFromColdStart(
-    className: String,
-    arguments: String = "",
+private fun MacrobenchmarkScope.flingVisibleScrollable(
+    times: Int,
+    horizontalFraction: Float = DEFAULT_SCROLL_X,
 ) {
-    pressHome()
-    grantRuntimePermissions()
-    device.executeShellCommand("am force-stop ${targetAppId()}")
-    device.executeShellCommand(
-        "am start -W -n ${targetAppId()}/$className $arguments".trim(),
-    )
-    check(device.wait(Until.hasObject(By.pkg(targetAppId()).depth(0)), 20_000)) {
-        "Timed out waiting for $className to take the window in ${targetAppId()}"
-    }
-    device.waitForIdle()
-}
-
-/**
- * Drags roughly one card at a time, slowly, so cards sit part way into the pile.
- *
- * 120 steps against [flingVisibleScrollable]'s 24: the step count is the whole point, because the
- * receding transform, blur and scrim only run for cards mid-pile and a fling skips straight past them.
- */
-private fun MacrobenchmarkScope.dragSlowly(times: Int) {
-    val centerX = device.displayWidth / 2
-    val startY = (device.displayHeight * 0.68f).toInt()
-    val endY = (device.displayHeight * 0.42f).toInt()
+    val centerX = (device.displayWidth * horizontalFraction).toInt()
+    val startY = (device.displayHeight * 0.74f).toInt()
+    val endY = (device.displayHeight * 0.34f).toInt()
     repeat(times) {
-        device.swipe(centerX, startY, centerX, endY, 120)
+        device.swipe(centerX, startY, centerX, endY, FLING_STEPS)
         device.waitForIdle()
     }
 }
 
-private fun MacrobenchmarkScope.waitForHome() {
-    check(device.wait(Until.hasObject(By.pkg(targetAppId()).depth(0)), 10_000)) {
-        "Timed out waiting for target package ${targetAppId()}"
+private fun MacrobenchmarkScope.dragVisibleScrollable(times: Int) {
+    val centerX = (device.displayWidth * DEFAULT_SCROLL_X).toInt()
+    val startY = (device.displayHeight * 0.68f).toInt()
+    val endY = (device.displayHeight * 0.47f).toInt()
+    repeat(times) {
+        device.swipe(centerX, startY, centerX, endY, DRAG_STEPS)
+        device.waitForIdle()
     }
-    waitForTestTag(HOME_PAGE_ROOT, timeoutMs = 10_000)
+}
+
+private fun MacrobenchmarkScope.nudgeVisibleScrollable(forward: Boolean) {
+    val centerX = (device.displayWidth * DEFAULT_SCROLL_X).toInt()
+    val upperY = (device.displayHeight * 0.40f).toInt()
+    val lowerY = (device.displayHeight * 0.66f).toInt()
+    val startY = if (forward) lowerY else upperY
+    val endY = if (forward) upperY else lowerY
+    device.swipe(centerX, startY, centerX, endY, NUDGE_STEPS)
     device.waitForIdle()
 }
 
-private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
-private const val MAIN_SIDEBAR_TOGGLE = "main_sidebar_toggle"
-private const val MAIN_SIDEBAR_ROW_HOME = "main_sidebar_row_home"
-private const val MAIN_SIDEBAR_ROW_MCP = "main_sidebar_row_mcp"
-private const val MAIN_SIDEBAR_ROW_BA = "main_sidebar_row_ba"
-private const val MAIN_BOTTOM_TAB_OS = "main_bottom_tab_os"
-private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
-private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
-private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
-private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
-private const val MAIN_PAGER_SETTLED_OS = "main_pager_settled_os"
-private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
-private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
-private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
-private const val HOME_PAGE_ROOT = "home_page_root"
-private const val HOME_SETTINGS_BUTTON = "home_settings_button"
-private const val HOME_ABOUT_BUTTON = "home_about_button"
-private const val HOME_WEBDAV_CARD = "home_webdav_card"
-private const val SETTINGS_PAGE_ROOT = "settings_page_root"
-private const val ABOUT_PAGE_ROOT = "about_page_root"
-private const val WEBDAV_SYNC_PAGE_ROOT = "webdav_sync_page_root"
-private const val OS_PAGE_ROOT = "os_page_root"
-private const val OS_SHELL_RUNNER_BUTTON = "os_shell_runner_button"
-private const val OS_SHELL_RUNNER_PAGE_ROOT = "os_shell_runner_page_root"
-private const val MCP_PAGE_ROOT = "mcp_page_root"
-private const val MCP_SKILL_BUTTON = "mcp_skill_button"
-private const val MCP_SKILL_PAGE_ROOT = "mcp_skill_page_root"
-private const val GITHUB_PAGE_ROOT = "github_page_root"
-private const val BA_PAGE_ROOT = "ba_page_root"
-private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
-
-/** A menu row, used as the "menu is open" signal — see [presentationChromeInteractions]. */
-private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
-private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
-
-/** The merged route's second category tab, from `tabbedPageCategoryTabTestTag("ba_calendar_pool", 1)`. */
-private const val BA_CALENDAR_POOL_TAB_POOL = "ba_calendar_pool_tab_1"
-/** The cafe's headpat card — see [BaselineProfileGenerator.baSlotCardInteractions]. */
-private const val BA_COOLDOWN_CARD_FIRST = "ba_cooldown_card_first"
-
-/** The cooldown editor's entry point, inside that card. */
-private const val BA_COOLDOWN_ADJUST_BUTTON = "ba_cooldown_adjust_button"
-
-/** The first craft slot's own card, which the journey expands to reach its configure button. */
-private const val BA_CRAFT_SLOT_CARD_FIRST = "ba_craft_slot_card_first"
-
-/** The configure button inside that card, which opens the craft sheet. */
-private const val BA_CRAFT_SLOT_FIRST = "ba_craft_slot_first"
-
-/**
- * Any sheet's panel, from `LiquidSheetPanelTestTag`. Declared in ui-liquid-glass rather than
- * `KeiOsTestTags`, because the sheet component and not a page owns it.
- */
-private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
-
-/** One switch in the daily-done template editor — see [BaselineProfileGenerator.baDailyTemplateEditorInteractions]. */
-private const val BA_DAILY_TEMPLATE_HEADPAT_SWITCH = "ba_daily_template_headpat_switch"
-
-/**
- * Any sheet's unsaved-changes discard action, from `UnsavedSheetDismissDiscardTestTag`. Component-owned
- * for the same reason [LIQUID_SHEET_PANEL] is: the journey cannot name the sheet it happens to be in.
- */
-private const val UNSAVED_SHEET_DISMISS_DISCARD = "unsaved_sheet_dismiss_discard"
-
-/**
- * The two app classes the tile long-press names. Not test tags — see
- * [launchDailyTemplateFromTileLongPress] for why they have to be literals, and
- * `BaselineProfileTestTagContractTest` for what keeps them honest.
- */
-private const val DAILY_TEMPLATE_ACTIVITY_CLASS = "os.kei.ui.page.main.ba.BaDailyDoneTemplateActivity"
-private const val DAILY_TILE_ACCOUNT_SERVICE_CLASS = "os.kei.core.tile.BaDailyDoneAccountTileService1"
-/** The release list page and the handles a journey needs to reach and drive it. */
-private const val GITHUB_TRACKED_ITEM_MORE_BUTTON = "github_tracked_item_more_button"
-private const val GITHUB_FDROID_DETAIL_MENU_ITEM = "github_fdroid_detail_menu_item"
-private const val GITHUB_RELEASE_MENU_ITEM = "github_release_menu_item"
-private const val GITHUB_RELEASE_PAGE_ROOT = "github_release_page_root"
-private const val GITHUB_RELEASE_CARD_FIRST = "github_release_card_first"
-private const val GITHUB_RELEASE_NEXT_PAGE_BUTTON = "github_release_next_page_button"
-
-/** The BA dock's guide-catalog action, and the two routes behind it. */
-private const val BA_DOCK_OPEN_GUIDE_CATALOG = "ba_dock_open_guide_catalog"
-private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
-private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
-
-/** The catalog's own dock, and the row on its BGM tab whose whole card is a play button. */
-private const val BA_GUIDE_CATALOG_DOCK_STUDENT = "ba_guide_catalog_dock_student"
-private const val BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY = "ba_guide_catalog_dock_memory_lobby"
-private const val BA_GUIDE_CATALOG_DOCK_STUDENT_BGM = "ba_guide_catalog_dock_student_bgm"
-private const val BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM = "ba_guide_catalog_dock_favorite_bgm"
-private const val BA_GUIDE_CATALOG_STUDENT_BGM_FIRST = "ba_guide_catalog_student_bgm_first"
-private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
-
-/** The guide's six bottom tabs, in bar order. Walked whole: each one composes a different section set. */
-private const val BA_STUDENT_GUIDE_TAB_ARCHIVE = "ba_student_guide_tab_archive"
-private const val BA_STUDENT_GUIDE_TAB_SKILLS = "ba_student_guide_tab_skills"
-private const val BA_STUDENT_GUIDE_TAB_PROFILE = "ba_student_guide_tab_profile"
-private const val BA_STUDENT_GUIDE_TAB_VOICE = "ba_student_guide_tab_voice"
-private const val BA_STUDENT_GUIDE_TAB_GALLERY = "ba_student_guide_tab_gallery"
-private const val BA_STUDENT_GUIDE_TAB_SIMULATE = "ba_student_guide_tab_simulate"
-
-private val GUIDE_BOTTOM_TABS =
-    listOf(
-        BA_STUDENT_GUIDE_TAB_ARCHIVE,
-        BA_STUDENT_GUIDE_TAB_SKILLS,
-        BA_STUDENT_GUIDE_TAB_VOICE,
-        BA_STUDENT_GUIDE_TAB_GALLERY,
-        BA_STUDENT_GUIDE_TAB_SIMULATE,
-        BA_STUDENT_GUIDE_TAB_PROFILE,
+private fun MacrobenchmarkScope.forceWindowSizeDp(
+    widthDp: Int,
+    heightDp: Int,
+) {
+    val densityDpi = deviceDensityDpi()
+    forceWindowSize(
+        widthPx = widthDp * densityDpi / 160,
+        heightPx = heightDp * densityDpi / 160,
     )
+}
 
-/** The GitHub page's own chrome: a card to open, three sheets, and the star importer. */
-private const val GITHUB_TRACKED_ITEM_CARD_FIRST = "github_tracked_item_card_first"
-private const val GITHUB_ACTIONS_MENU_ITEM = "github_actions_menu_item"
-private const val GITHUB_ADD_TRACKED_BUTTON = "github_add_tracked_button"
-private const val GITHUB_STRATEGY_SHEET_BUTTON = "github_strategy_sheet_button"
-private const val GITHUB_CHECK_LOGIC_SHEET_BUTTON = "github_check_logic_sheet_button"
-private const val GITHUB_IMPORT_STARS = "github_import_stars"
+private fun MacrobenchmarkScope.forceWindowSize(
+    widthPx: Int,
+    heightPx: Int,
+) {
+    device.executeShellCommand("wm size ${widthPx}x$heightPx")
+    device.waitForIdle()
+}
 
-/** The share window's cancel, which is the first control its asset picker offers. */
-private const val GITHUB_SHARE_IMPORT_CANCEL = "github_share_import_cancel"
+private fun MacrobenchmarkScope.deviceDensityDpi(): Int {
+    val output = device.executeShellCommand("wm density")
+    val override = Regex("Override density: (\\d+)").find(output)?.groupValues?.get(1)?.toIntOrNull()
+    val physical = Regex("Physical density: (\\d+)").find(output)?.groupValues?.get(1)?.toIntOrNull()
+    return override ?: physical
+        ?: error("Could not read the device density from wm density: $output")
+}
 
-/**
- * The other two activities a journey starts by name, checked against the manifest by
- * `BaselineProfileTestTagContractTest` for the reason [launchDailyTemplateFromTileLongPress] records.
- */
-private const val SHARE_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.github.share.GitHubShareImportActivity"
-private const val JSON_IMPORT_ACTIVITY_CLASS = "os.kei.ui.page.main.jsonimport.KeiOSJsonImportActivity"
-
-/**
- * An empty export, so the import screen composes without changing anything the next journey reads.
- *
- * `{}` reaches the router as an object with no `format`, no `items` and nothing that looks like either,
- * so the window settles on its unknown-file branch. That is the state being collected here, and it is
- * the same state this argument reached back when it was quoted -- the quotes were doing nothing but
- * arriving as characters, see [seedFailingGitHubTracks] for why.
- */
-private const val JSON_IMPORT_SAMPLE_PAYLOAD = "{}"
-
-/**
- * The installed package the third fixture tracks, so a package event can be made to happen to it.
- *
- * `GitHubAppInstallHistoryService` records nothing for a package no tracked item names, so the Apps tab
- * needs a track whose `packageName` is something already on the device -- and then a real
- * `PACKAGE_REMOVED`/`PACKAGE_ADDED` for it. The easter egg is the least consequential thing that is
- * present on every Android build this app runs on, checked on both the API 37 AVD and the physical
- * device: no data, no service, and nothing depending on it for the two seconds it is away.
- *
- * **It has to be a package the app is willing to look at, which is not obvious.** The first choice was
- * `com.android.cts.ctsshim`, which looked ideal and produced only half the records: hiding it wrote
- * `Uninstalled` and unhiding it wrote nothing. The reason is in `shouldIgnoreInstalledApp` --
- * `FLAG_HAS_CODE == 0` is one of its ignore rules, and the CTS shims are code-less stub APKs, so
- * `querySnapshot` returned null and the add branch bails on a null snapshot. The removal branch does
- * not, because it synthesises the previous snapshot it needs. Checked with `dumpsys package`: the shims
- * have no `HAS_CODE`, the easter egg does.
- */
-private const val APP_INSTALL_FIXTURE_PACKAGE = "com.android.egg"
-
-private const val JSON_IMPORT_PAGE_ROOT = "json_import_page_root"
-private const val JSON_IMPORT_CONFIRM = "json_import_confirm"
-
-/**
- * A real export, holding the two tracked projects [seedFailingGitHubTracks] needs to have fail.
- *
- * Minimal on purpose: `parseTrackedItem` rejects an entry only when `repoUrl`, `owner` or `repo` is
- * blank, and everything else on a tracked project has a default. `packageName` names apps that are not
- * installed, which is fine -- a missing local install is a version comparison the check never reaches,
- * because the remote half fails first.
- *
- * The repository is one under the account this app is developed from rather than an invented owner, so
- * a fixture that starts passing means someone created it rather than that GitHub changed its mind about
- * unknown names. The subscription points at the discard port on loopback, which nothing listens on.
- *
- * **The labels start with `zz-` so the fixtures sort last, and that is load-bearing.** The tracked list
- * defaults to `GitHubSortMode.Update` ascending, which falls through to the display title once nothing
- * is updatable, and the display title of a labelled track is its label. Two fixtures named for what
- * they are sorted above "KeiOS" and became the *first* tracked card — which is the card
- * [gitHubReleaseListInteractions] opens the overflow of, so that journey went looking for releases on a
- * repository that does not exist and died 45 seconds later. It took a capture 32 minutes in to say so.
- *
- * **No spaces anywhere in here, including inside the labels.** This whole string arrives as one argv
- * token only because `Runtime.exec` splits the command on whitespace, and there is no shell in the way
- * to put it back together -- see [seedFailingGitHubTracks]. Spelling the labels as prose is what broke
- * the second attempt at this: the extra arrived cut off at the first space, the router filed the
- * remainder as an unknown file, and the window drew a preview with no confirm button to find.
- */
-private val JSON_IMPORT_FAILING_TRACKS_PAYLOAD =
-    """{"format":"keios.github.tracked/v4","schemaVersion":4,"items":[""" +
-        """{"sourceMode":"github_repository",""" +
-        """"repoUrl":"https://github.com/hosizoraru/keios-baseline-profile-missing",""" +
-        """"owner":"hosizoraru","repo":"keios-baseline-profile-missing",""" +
-        """"packageName":"os.kei.baselineprofile.missing",""" +
-        """"appLabel":"zz-baseline-profile-missing-repo"},""" +
-        """{"sourceMode":"direct_apk",""" +
-        """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile.apk",""" +
-        """"owner":"keios-baseline-profile","repo":"unreachable-apk",""" +
-        """"packageName":"os.kei.baselineprofile.unreachable",""" +
-        """"appLabel":"zz-baseline-profile-unreachable-apk"},""" +
-        """{"sourceMode":"direct_apk",""" +
-        """"repoUrl":"http://127.0.0.1:9/keios-baseline-profile-installed.apk",""" +
-        """"owner":"keios-baseline-profile","repo":"installed-package",""" +
-        """"packageName":"$APP_INSTALL_FIXTURE_PACKAGE",""" +
-        """"appLabel":"zz-baseline-profile-installed-package"},""" +
-        """{"sourceMode":"fdroid_repository",""" +
-        """"repoUrl":"http://127.0.0.1:$OVERSIZED_FIXTURE_PORT/fdroid/repo",""" +
-        """"owner":"keios-baseline-profile","repo":"oversized-feed",""" +
-        """"packageName":"os.kei.baselineprofile.oversized",""" +
-        """"appLabel":"zz-baseline-profile-oversized-feed"},""" +
-        """{"sourceMode":"fdroid_repository",""" +
-        """"repoUrl":"http://127.0.0.1:$OVERSIZED_FIXTURE_PORT/catalog/repo",""" +
-        """"owner":"keios-baseline-profile","repo":"catalog-feed",""" +
-        """"packageName":"os.kei.baselineprofile.fdroid",""" +
-        """"appLabel":"zz-baseline-profile-fdroid-catalog"}]}"""
-
-/**
- * A repository the share window can resolve, and that the app is not already tracking.
- *
- * KeiOS's own repository was the obvious choice and the wrong one: an already-tracked repository settles
- * the flow without a decision to make, so the window wrote its result and closed before composing
- * anything. That capture collected the coordinators and the result writer and not one sheet. This is a
- * library rather than an app, so nothing that ships APKs would have it tracked.
- */
-private const val SHARE_IMPORT_SAMPLE_URL = "https://github.com/JetBrains/compose-multiplatform"
-
-private const val GITHUB_OVERVIEW_REFRESHING = "github_overview_refreshing"
-private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
-private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
-
-/** Every refresh record card carries this, and only a record with something to report carries the other. */
-private const val GITHUB_REFRESH_HISTORY_CARD = "github_refresh_history_card"
-private const val GITHUB_REFRESH_HISTORY_DIAGNOSTICS = "github_refresh_history_diagnostics"
-
-/** The other two tabs' cards, and the bodies that prove one of them opened. */
-private const val GITHUB_TRACK_CHANGE_HISTORY_CARD = "github_track_change_history_card"
-private const val GITHUB_TRACK_CHANGE_HISTORY_DETAILS = "github_track_change_history_details"
-private const val GITHUB_APP_INSTALL_HISTORY_CARD = "github_app_install_history_card"
-private const val GITHUB_APP_INSTALL_HISTORY_DETAILS = "github_app_install_history_details"
-
-/** The history route's four category tabs: refresh, actions, tracking, apps. */
-private const val GITHUB_HISTORY_TAB_REFRESH = "github_history_tab_0"
-private const val GITHUB_HISTORY_TAB_ACTIONS = "github_history_tab_1"
-private const val GITHUB_HISTORY_TAB_TRACKING = "github_history_tab_2"
-private const val GITHUB_HISTORY_TAB_APPS = "github_history_tab_3"
-
-private val GITHUB_HISTORY_TABS =
-    listOf(
-        GITHUB_HISTORY_TAB_ACTIONS,
-        GITHUB_HISTORY_TAB_TRACKING,
-        GITHUB_HISTORY_TAB_APPS,
-        GITHUB_HISTORY_TAB_REFRESH,
-    )
-
-/** About's lab tab, and the two debug windows it is the only route to. */
-private const val ABOUT_TAB_LAB = "about_tab_3"
-private const val ABOUT_COMPONENT_LAB_BUTTON = "about_component_lab_button"
-private const val DEBUG_COMPONENT_LAB_PAGE_ROOT = "debug_component_lab_page_root"
-private const val DEBUG_LIQUID_CATALOG_BUTTON = "debug_liquid_catalog_button"
-private const val DEBUG_LIQUID_CATALOG_PAGE_ROOT = "debug_liquid_catalog_page_root"
-
-private fun targetAppId(): String {
-    return InstrumentationRegistry.getArguments().getString("targetAppId")
-        ?: error("targetAppId not passed as instrumentation runner arg")
+private fun MacrobenchmarkScope.resetWindowSize() {
+    device.executeShellCommand("wm size reset")
+    device.waitForIdle()
 }
 
 private fun MacrobenchmarkScope.launchHomeFromColdStart() {
@@ -2371,10 +802,9 @@ private fun MacrobenchmarkScope.launchHomeFromColdStart() {
     device.executeShellCommand("am force-stop ${targetAppId()}")
     device.executeShellCommand(
         "am start -W -a android.intent.action.MAIN " +
-            "-c android.intent.category.LAUNCHER " +
-            "-n $launcherComponent",
+            "-c android.intent.category.LAUNCHER -n $launcherComponent",
     )
-    waitForHome()
+    waitForTestTag(HOME_PAGE_ROOT, timeoutMs = 15_000)
 }
 
 private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
@@ -2397,8 +827,6 @@ internal fun MacrobenchmarkScope.grantRuntimePermissions(packageName: String = t
     }
 }
 
-private fun MacrobenchmarkScope.testTagSelector(tag: String): BySelector = By.res(tag)
-
 private fun MacrobenchmarkScope.waitForTestTag(
     tag: String,
     timeoutMs: Long = 5_000,
@@ -2409,29 +837,99 @@ private fun MacrobenchmarkScope.waitForTestTag(
     device.waitForIdle()
 }
 
-private fun MacrobenchmarkScope.clickAndWaitForPage(
-    tabTag: String,
-    pageTag: String,
-    settledTag: String,
-    timeoutMs: Long = 15_000,
-) {
-    check(device.wait(Until.hasObject(testTagSelector(tabTag)), timeoutMs)) {
-        "Timed out waiting for tab testTag=$tabTag in ${targetAppId()}"
-    }
-    val node = device.findObject(testTagSelector(tabTag))
-        ?: error("Unable to find tab testTag=$tabTag in ${targetAppId()}")
-    node.click()
-    waitForTestTag(pageTag, timeoutMs)
-    waitForTestTag(settledTag, timeoutMs)
-    device.waitForIdle()
+private fun MacrobenchmarkScope.waitForOptionalTestTag(
+    tag: String,
+    timeoutMs: Long,
+): Boolean {
+    val found = device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs)
+    if (found) device.waitForIdle()
+    return found
 }
 
-private fun MacrobenchmarkScope.flingVisibleScrollable(times: Int) {
-    val centerX = device.displayWidth / 2
-    val startY = (device.displayHeight * 0.74f).toInt()
-    val endY = (device.displayHeight * 0.34f).toInt()
-    repeat(times) {
-        device.swipe(centerX, startY, centerX, endY, 24)
-        device.waitForIdle()
-    }
-}
+private fun MacrobenchmarkScope.testTagSelector(tag: String): BySelector = By.res(tag)
+
+private fun targetAppId(): String =
+    InstrumentationRegistry.getArguments().getString("targetAppId")
+        ?: error("targetAppId not passed as instrumentation runner arg")
+
+private const val OPEN_WINDOW_ATTEMPTS = 3
+private const val BOTTOM_BAR_REEXPAND_ATTEMPTS = 8
+private const val BOTTOM_BAR_EXPAND_TIMEOUT_MS = 3_000L
+private const val GESTURE_INJECTION_ATTEMPTS = 2
+private const val SCROLL_INTO_REACH_ATTEMPTS = 12
+private const val MIN_TAPPABLE_HEIGHT_PX = 40
+private const val MAX_HEADER_TAP_INSET_PX = 100
+private const val FLING_STEPS = 24
+private const val PUSH_ROUTE_MAX_BACK_ATTEMPTS = 2
+private const val PUSH_ROUTE_GONE_TIMEOUT_MS = 3_000L
+private const val DRAG_STEPS = 72
+private const val NUDGE_STEPS = 36
+private const val SCROLL_SAFE_TOP_FRACTION = 0.18f
+private const val SCROLL_SAFE_BOTTOM_FRACTION = 0.82f
+private const val DEFAULT_SCROLL_X = 0.50f
+private const val WIDE_PRIMARY_LANE_X = 0.32f
+private const val WIDE_SECONDARY_LANE_X = 0.74f
+private const val LIQUID_SHEET_DRAG_DISTANCE_FRACTION = 0.14f
+private const val LIQUID_SHEET_CONTENT_UPPER_FRACTION = 0.34f
+private const val LIQUID_SHEET_CONTENT_LOWER_FRACTION = 0.82f
+
+private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
+private const val MAIN_BOTTOM_TAB_OS = "main_bottom_tab_os"
+private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
+private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
+private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
+private const val MAIN_SIDEBAR_TOGGLE = "main_sidebar_toggle"
+private const val MAIN_SIDEBAR_ROW_MCP = "main_sidebar_row_mcp"
+private const val MAIN_SIDEBAR_ROW_GITHUB = "main_sidebar_row_github"
+private const val MAIN_SIDEBAR_ROW_BA = "main_sidebar_row_ba"
+private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
+private const val MAIN_PAGER_SETTLED_OS = "main_pager_settled_os"
+private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
+private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
+private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
+private const val HOME_PAGE_ROOT = "home_page_root"
+private const val HOME_SETTINGS_BUTTON = "home_settings_button"
+private const val HOME_ABOUT_BUTTON = "home_about_button"
+private const val HOME_WEBDAV_CARD = "home_webdav_card"
+private const val SETTINGS_PAGE_ROOT = "settings_page_root"
+private const val ABOUT_PAGE_ROOT = "about_page_root"
+private const val WEBDAV_SYNC_PAGE_ROOT = "webdav_sync_page_root"
+private const val OS_PAGE_ROOT = "os_page_root"
+private const val OS_SHELL_RUNNER_BUTTON = "os_shell_runner_button"
+private const val OS_SHELL_RUNNER_PAGE_ROOT = "os_shell_runner_page_root"
+private const val MCP_PAGE_ROOT = "mcp_page_root"
+private const val MCP_SKILL_BUTTON = "mcp_skill_button"
+private const val MCP_SKILL_PAGE_ROOT = "mcp_skill_page_root"
+private const val GITHUB_PAGE_ROOT = "github_page_root"
+private const val GITHUB_TRACKED_ITEM_CARD_FIRST = "github_tracked_item_card_first"
+private const val GITHUB_TRACKED_ITEM_MORE_BUTTON = "github_tracked_item_more_button"
+private const val GITHUB_ACTIONS_MENU_ITEM = "github_actions_menu_item"
+private const val GITHUB_ADD_TRACKED_BUTTON = "github_add_tracked_button"
+private const val GITHUB_STRATEGY_SHEET_BUTTON = "github_strategy_sheet_button"
+private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
+private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
+private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
+private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
+private const val GITHUB_HISTORY_TAB_ACTIONS = "github_history_tab_1"
+private const val GITHUB_HISTORY_TAB_TRACKING = "github_history_tab_2"
+private const val BA_PAGE_ROOT = "ba_page_root"
+private const val BA_COOLDOWN_CARD_FIRST = "ba_cooldown_card_first"
+private const val BA_COOLDOWN_ADJUST_BUTTON = "ba_cooldown_adjust_button"
+private const val BA_DOCK_OPEN_CALENDAR_POOL = "ba_dock_open_calendar_pool"
+private const val BA_CALENDAR_POOL_PAGE_ROOT = "ba_calendar_pool_page_root"
+private const val BA_CALENDAR_POOL_TAB_POOL = "ba_calendar_pool_tab_1"
+private const val BA_DOCK_OPEN_GUIDE_CATALOG = "ba_dock_open_guide_catalog"
+private const val BA_DOCK_DAILY_DONE = "ba_dock_daily_done"
+private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
+private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
+private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
+private const val BA_STUDENT_GUIDE_TAB_SKILLS = "ba_student_guide_tab_skills"
+private const val BA_STUDENT_GUIDE_TAB_PROFILE = "ba_student_guide_tab_profile"
+private const val BA_GUIDE_CATALOG_DOCK_STUDENT = "ba_guide_catalog_dock_student"
+private const val BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY = "ba_guide_catalog_dock_memory_lobby"
+private const val BA_GUIDE_CATALOG_DOCK_STUDENT_BGM = "ba_guide_catalog_dock_student_bgm"
+private const val BA_GUIDE_CATALOG_DOCK_FAVORITE_BGM = "ba_guide_catalog_dock_favorite_bgm"
+private const val BA_GUIDE_CATALOG_STUDENT_BGM_FIRST = "ba_guide_catalog_student_bgm_first"
+private const val COMPACT_BOTTOM_BAR_DOCK = "compact_bottom_bar_dock"
+private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
+private const val LIQUID_SHEET_DRAG_REGION = "liquid_sheet_drag_region"

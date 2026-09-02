@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -43,6 +45,8 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
+import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.chrome.TabbedPageCategory
 import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
@@ -116,6 +120,20 @@ internal fun BaCalendarPoolPage(
     val calendarListState = rememberLazyListState()
     val poolListState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
+    // Only one of the two lists is on screen at a time here, so the chrome follows that one. Both
+    // columns at once have no bar to hide, and the second list would otherwise fight the first for it.
+    val activeListState =
+        when (tabs[pagerState.targetPage.coerceIn(tabs.indices)]) {
+            BaCalendarPoolTab.Calendar -> calendarListState
+            BaCalendarPoolTab.Pool -> poolListState
+        }
+    var bottomBarVisible by remember { mutableStateOf(true) }
+    val bottomChromeScrollState =
+        rememberTabbedPageChromeScrollState(
+            visible = bottomBarVisible,
+            activeListStateProvider = { activeListState },
+            onVisibleChange = { visible -> bottomBarVisible = visible },
+        )
     val pageBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
@@ -124,6 +142,17 @@ internal fun BaCalendarPoolPage(
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
+
+    // The list drives the bottom bar as well as the top one now, so the two share a connection rather
+    // than the top bar taking the scroll on its own -- see GitHubActionsNotificationHistoryPage.
+    val contentNestedScrollConnection =
+        remember(activeListState, bottomChromeScrollState, scrollBehavior.nestedScrollConnection) {
+            tabbedPageContentNestedScrollConnection(
+                listState = activeListState,
+                chrome = bottomChromeScrollState.chromeNestedScrollConnection,
+                delegate = scrollBehavior.nestedScrollConnection,
+            )
+        }
 
     val calendarBusy = calendarUiState.loading || calendarUiState.refreshing
     val poolBusy = poolUiState.loading || poolUiState.refreshing
@@ -300,7 +329,7 @@ internal fun BaCalendarPoolPage(
             // the bar is gone entirely rather than shown inert.
             if (!bothColumns) {
                 TabbedPageBottomChrome(
-                    visible = true,
+                    visible = bottomBarVisible,
                     navigationBarBottom = navigationBarBottom,
                     categories = tabs,
                     selectedPage = pagerState.targetPage.coerceIn(tabs.indices),
@@ -324,6 +353,7 @@ internal fun BaCalendarPoolPage(
                     backdrop = bottomBarBackdrop,
                     isLiquidEffectEnabled = true,
                     onSelectCategory = { index ->
+                        bottomChromeScrollState.showNow()
                         pageScope.launch {
                             pagerState.animateToPage(
                                 target = index.coerceIn(tabs.indices),
@@ -332,8 +362,11 @@ internal fun BaCalendarPoolPage(
                             )
                         }
                     },
-                    onExpandDock = {},
+                    onExpandDock = { bottomChromeScrollState.showNow() },
                     labelPrefix = "ba_calendar_pool",
+                    // Two tabs and no search dock: the bar is the width of "Calendar" and "Banners",
+                    // centred, rather than one half of the page each.
+                    barSizedToTabs = true,
                 )
             }
         },
@@ -412,7 +445,7 @@ internal fun BaCalendarPoolPage(
                             BaActivityCalendarListContent(
                                 innerPadding = innerPadding,
                                 listState = calendarListState,
-                                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                                nestedScrollConnection = contentNestedScrollConnection,
                                 backdrop = pageBackdrop,
                                 serverOptions = serverOptions,
                                 serverIndex = serverIndex,
@@ -440,7 +473,7 @@ internal fun BaCalendarPoolPage(
                             BaPoolListContent(
                                 innerPadding = innerPadding,
                                 listState = poolListState,
-                                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                                nestedScrollConnection = contentNestedScrollConnection,
                                 backdrop = pageBackdrop,
                                 serverOptions = serverOptions,
                                 serverIndex = serverIndex,

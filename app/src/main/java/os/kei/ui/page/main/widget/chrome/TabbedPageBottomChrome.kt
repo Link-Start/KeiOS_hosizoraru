@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -153,6 +154,20 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     onSelectCategory: (Int) -> Unit,
     onExpandDock: () -> Unit,
     labelPrefix: String = "tabbed_page",
+    /**
+     * Whether the category bar sizes itself to its tabs instead of taking the width it is given.
+     *
+     * Filling is right for a bar of four or five tabs, where the width divides into recognisable
+     * buttons. With two it divides into two halves of the page: the merged Calendar/Banners bar spread
+     * one tab across ~200dp, which reads as a section header rather than a switch, and made a page of
+     * two lists look like a page of two enormous ones. Content-sized, it is a pill the width of its own
+     * labels, centred the way the app's other two-item controls are.
+     *
+     * Only for a bar with no search dock beside it: the dock is pinned to the trailing edge, so
+     * centring a narrow bar under one would leave the two floating apart with a hole between them. The
+     * alignment below keeps the leading edge in that case.
+     */
+    barSizedToTabs: Boolean = false,
 ) {
     val safeSelectedPage = selectedPage.coerceIn(0, categories.lastIndex)
     val configuration = LocalConfiguration.current
@@ -197,6 +212,8 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
         )
     val keyboardLiftProvider = remember(keyboardLiftState) { { keyboardLiftState.value } }
     val searchDockAlphaProvider = remember { { TabbedPageBottomChromeSearchDockVisibleAlpha } }
+    val barAlignment =
+        if (barSizedToTabs && !searchEnabled) Alignment.BottomCenter else Alignment.BottomStart
     BoxWithConstraints(
         modifier =
             modifier
@@ -233,7 +250,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                     .fillMaxWidth()
                     .height(size),
             expandedContent = { motionModifier, interactionEnabled ->
-                Box(modifier = motionModifier.align(Alignment.BottomStart)) {
+                Box(modifier = motionModifier.align(barAlignment)) {
                     TabbedPageCategoryBar(
                         labelPrefix = labelPrefix,
                         categories = categories,
@@ -242,6 +259,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         selectedPagePositionProvider = selectedPagePositionProvider,
                         selectedPageProvider = selectedPageProvider,
                         collapsedDockWidth = collapsedDockWidth,
+                        sizedToTabs = barSizedToTabs,
                         backdrop = backdrop,
                         isLiquidEffectEnabled = isLiquidEffectEnabled,
                         interactionEnabled = interactionEnabled,
@@ -250,7 +268,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 }
             },
             compactContent = { motionModifier, interactionEnabled ->
-                Box(modifier = motionModifier.align(Alignment.BottomStart)) {
+                Box(modifier = motionModifier.align(barAlignment)) {
                     TabbedPageCompactCategoryDock(
                         category = categories[safeSelectedPage],
                         backdrop = backdrop,
@@ -324,6 +342,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     selectedPagePositionProvider: (() -> Float?)?,
     selectedPageProvider: () -> Int,
     collapsedDockWidth: Dp,
+    sizedToTabs: Boolean,
     backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     interactionEnabled: Boolean,
@@ -371,8 +390,17 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     LiquidGlassBottomBar(
         modifier =
             Modifier
-                .requiredWidth(collapsedDockWidth)
-                .height(AppChromeTokens.floatingBottomBarOuterHeight),
+                .then(
+                    // A maximum rather than an exact width, which lets the bar's own
+                    // `IntrinsicSize.Min` measure it against its tabs -- each of which is its label,
+                    // floored at 62dp. `requiredWidth` defeats that measurement by construction, which
+                    // is why filling was the only shape this chrome had.
+                    if (sizedToTabs) {
+                        Modifier.widthIn(max = collapsedDockWidth)
+                    } else {
+                        Modifier.requiredWidth(collapsedDockWidth)
+                    },
+                ).height(AppChromeTokens.floatingBottomBarOuterHeight),
         selectedIndex = safeSelectedPage,
         selectedPosition = selectedPagePosition,
         selectedPositionProvider = selectedPagePositionProvider,

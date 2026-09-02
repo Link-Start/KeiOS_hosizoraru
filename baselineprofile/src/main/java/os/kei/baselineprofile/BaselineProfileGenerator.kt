@@ -361,6 +361,21 @@ class BaselineProfileGenerator {
                         required = false,
                     )
                 ) {
+                    // First, while the catalog is still on the tab it opens on and its list is where it
+                    // was left: the guide page, and the rail this width unlocks. Only offered at a width
+                    // that can hold a rail, so this journey is the only place in the profile that can
+                    // reach it -- and it is off by default, so without this the rail's first frame on a
+                    // tablet is JIT-warmed. Ordered like baOfficeAndCatalogCore's, which taps the entry
+                    // on arrival; doing it after the lane flings and the tab tour found nothing.
+                    if (waitForOptionalTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST, timeoutMs = 8_000)) {
+                        scrollTestTagIntoReach(BA_GUIDE_CATALOG_ENTRY_FIRST)
+                        clickTestTag(BA_GUIDE_CATALOG_ENTRY_FIRST)
+                        if (waitForOptionalTestTag(BA_STUDENT_GUIDE_PAGE_ROOT, timeoutMs = 15_000)) {
+                            exerciseGuideSidebarAndRestore()
+                            device.pressBack()
+                            waitForTestTag(BA_GUIDE_CATALOG_PAGE_ROOT, timeoutMs = 15_000)
+                        }
+                    }
                     exerciseWideLanes()
                     clickBottomBarTab(BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY)
                     exerciseWideLanes()
@@ -725,6 +740,40 @@ private fun MacrobenchmarkScope.clickBottomBarTab(tag: String) {
     error("Unable to bring navigation tab testTag=$tag into view in ${targetAppId()}")
 }
 
+/**
+ * Converts the guide to its rail, exercises it, and converts it back.
+ *
+ * The conversion writes a *persisted* preference, which makes this the one journey that changes how the
+ * app looks after the capture ends. So it restores what it found, in a `finally`: a failure between the
+ * two taps would otherwise hand every later journey -- and whoever picks the device up next -- a shape
+ * nobody asked for. See the plan's note on journeys leaving device state behind.
+ *
+ * The toggle keeps one tag in both shapes, so the *row* tag is what confirms the conversion actually
+ * happened; waiting on the toggle again would pass either way.
+ */
+private fun MacrobenchmarkScope.exerciseGuideSidebarAndRestore() {
+    if (!waitForOptionalTestTag(BA_STUDENT_GUIDE_SIDEBAR_TOGGLE, timeoutMs = 8_000)) return
+    var converted = false
+    try {
+        clickTestTag(BA_STUDENT_GUIDE_SIDEBAR_TOGGLE)
+        converted = waitForOptionalTestTag(BA_STUDENT_GUIDE_SIDEBAR_ROW_SKILLS, timeoutMs = 8_000)
+        if (!converted) return
+        // A row tap, so the rail's selection change and the content beside it both compose, and a fling
+        // so the inset content scrolls under the rail rather than only appearing beside it.
+        clickTestTag(BA_STUDENT_GUIDE_SIDEBAR_ROW_SKILLS)
+        device.waitForIdle()
+        flingVisibleScrollable(times = 1, horizontalFraction = WIDE_SECONDARY_LANE_X)
+    } finally {
+        if (converted && waitForOptionalTestTag(BA_STUDENT_GUIDE_SIDEBAR_TOGGLE, timeoutMs = 6_000)) {
+            clickTestTag(BA_STUDENT_GUIDE_SIDEBAR_TOGGLE)
+            // Confirmed by the row going away, for the same reason the conversion is: the toggle is
+            // present either way.
+            device.wait(Until.gone(testTagSelector(BA_STUDENT_GUIDE_SIDEBAR_ROW_SKILLS)), 6_000)
+            device.waitForIdle()
+        }
+    }
+}
+
 private fun MacrobenchmarkScope.exerciseWideLanes() {
     flingVisibleScrollable(times = 1, horizontalFraction = WIDE_PRIMARY_LANE_X)
     flingVisibleScrollable(times = 1, horizontalFraction = WIDE_SECONDARY_LANE_X)
@@ -924,6 +973,8 @@ private const val BA_GUIDE_CATALOG_PAGE_ROOT = "ba_guide_catalog_page_root"
 private const val BA_GUIDE_CATALOG_ENTRY_FIRST = "ba_guide_catalog_entry_first"
 private const val BA_STUDENT_GUIDE_PAGE_ROOT = "ba_student_guide_page_root"
 private const val BA_STUDENT_GUIDE_TAB_SKILLS = "ba_student_guide_tab_skills"
+private const val BA_STUDENT_GUIDE_SIDEBAR_TOGGLE = "ba_student_guide_sidebar_toggle"
+private const val BA_STUDENT_GUIDE_SIDEBAR_ROW_SKILLS = "ba_student_guide_tab_skills_sidebar_row"
 private const val BA_STUDENT_GUIDE_TAB_PROFILE = "ba_student_guide_tab_profile"
 private const val BA_GUIDE_CATALOG_DOCK_STUDENT = "ba_guide_catalog_dock_student"
 private const val BA_GUIDE_CATALOG_DOCK_MEMORY_LOBBY = "ba_guide_catalog_dock_memory_lobby"

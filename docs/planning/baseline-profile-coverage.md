@@ -110,9 +110,26 @@ It covers the recent branches in:
 - BA office lanes and the merged Calendar/Pool route;
 - catalog Students, Lobby, Music and Play layouts, including the album/queue split when data exists;
 - GitHub main content and History lanes when records exist;
-- top navigation, sidebar navigation and a live 775dp to 500dp fold transition.
+- top navigation, sidebar navigation and a live 775dp to 500dp fold transition;
+- the student guide's rail, converted to and back from inside the journey.
 
 The journey restores wm size in finally, so a failure cannot leak tablet geometry into later tests.
+
+### The guide rail is the one journey step that writes a preference
+
+The guide's rail is off by default and stored, so nothing else in the profile ever composes it -- and
+reaching it means *changing* a setting on the capture device rather than only reading one. So that step
+converts back in a `finally` of its own, and the restore is verified rather than assumed: after a run,
+force a tablet window on the capture device and open a guide page. It must show the bottom bar with the
+toggle offered, and no `..._sidebar_row` tags. Checked that way at ab30aaefb.
+
+Two things about the step are load-bearing. It runs **on arrival at the catalog**, before the lane
+flings and the tab tour, because doing it afterwards silently found nothing -- the first entry was no
+longer where `scrollTestTagIntoReach` could reach it, and every wait in that block is optional, so the
+journey passed while compiling none of the rail. And the conversion is confirmed by the *row* tag, not
+the toggle: the toggle keeps one tag in both shapes, so waiting on it again passes either way. When
+changing this step, read the journey's own `BaselineProfileGenerator_adaptiveLargeScreenCore-baseline-prof.txt`
+for `BaStudentGuideSidebar` instead of trusting a green run.
 Content-dependent cards remain optional; the wide page and container branches still execute on a fresh
 install.
 
@@ -159,8 +176,25 @@ A connected smoke run can target one journey through instrumentation. It validat
 and timeouts without producing the complete merged release Profile:
 
     adb shell am instrument -w \
+      -e targetAppId os.kei \
       -e class os.kei.baselineprofile.BaselineProfileGenerator#adaptiveLargeScreenCore \
-      os.kei.baselineprofile.test/androidx.test.runner.AndroidJUnitRunner
+      os.kei.baselineprofile/androidx.test.runner.AndroidJUnitRunner
+
+Two arguments the Gradle task supplies and a hand-run does not:
+
+- The component is `os.kei.baselineprofile`, **not** `os.kei.baselineprofile.test`. A Macrobenchmark
+  module self-instruments -- `pm list instrumentation` reports `target=os.kei.baselineprofile` -- so the
+  `.test` suffix an ordinary androidTest APK carries does not exist here. Without it the command fails in
+  a second with `Unable to find instrumentation info`.
+- `-e targetAppId os.kei`, or every journey dies on the first line with `targetAppId not passed as
+  instrumentation runner arg`.
+
+Check that the run actually started rather than assuming: both failures exit 0 through a pipe, and read
+like a stalled journey rather than a malformed command.
+
+Install both APKs first, or the run instruments a stale build:
+
+    ANDROID_SERIAL=<avd> ./gradlew :app:installNonMinifiedRelease :baselineprofile:installNonMinifiedRelease
 
 This smoke run proves the UI script. Complete Profile collection proof comes from the generation task,
 its per-journey outputs and the merged generated artifacts.

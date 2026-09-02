@@ -154,6 +154,18 @@ object KeiOsTestTags {
      */
     const val BaStudentGuideTabArchive = "ba_student_guide_tab_archive"
     const val BaStudentGuideTabSkills = "ba_student_guide_tab_skills"
+
+    /**
+     * The guide's convert-between-shapes button, in whichever shape it is currently in.
+     *
+     * One tag for the top row's copy and the rail's, because it is one control in two positions --
+     * the same arrangement the pager's has. They are never on screen together: the rail carries it
+     * once the bar is gone.
+     */
+    const val BaStudentGuideSidebarToggle = "ba_student_guide_sidebar_toggle"
+
+    /** One row of the guide's rail. Derived by `guideSidebarRowTestTag`; pinned by the tag contract. */
+    const val BaStudentGuideSidebarRowSkills = "ba_student_guide_tab_skills_sidebar_row"
     const val BaStudentGuideTabProfile = "ba_student_guide_tab_profile"
     const val BaStudentGuideTabVoice = "ba_student_guide_tab_voice"
     const val BaStudentGuideTabGallery = "ba_student_guide_tab_gallery"

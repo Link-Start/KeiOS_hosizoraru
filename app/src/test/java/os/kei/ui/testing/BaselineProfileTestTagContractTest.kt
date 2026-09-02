@@ -4,6 +4,9 @@ import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Test
+import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.page.component.GuideSidebarToggleTestTag
+import os.kei.ui.page.main.student.page.component.guideSidebarRowTestTag
 import os.kei.ui.page.main.widget.chrome.tabbedPageCategoryTabTestTag
 
 /**
@@ -291,6 +294,22 @@ class BaselineProfileTestTagContractTest {
             KeiOsTestTags.BaCalendarPoolTabPool,
             tabbedPageCategoryTabTestTag("ba_calendar_pool", 1),
         )
+    }
+
+    /**
+     * And the guide's rail rows, which derive from the bottom bar's tags rather than being declared.
+     *
+     * The adaptive journey taps one to prove the conversion happened -- the toggle keeps one tag in both
+     * shapes, so it cannot tell them apart. A drift here would make that journey silently skip the rail
+     * and quietly stop compiling it.
+     */
+    @Test
+    fun theDerivedGuideSidebarRowTagsMatchTheDeclaredOnes() {
+        assertEquals(
+            KeiOsTestTags.BaStudentGuideSidebarRowSkills,
+            guideSidebarRowTestTag(GuideBottomTab.Skills),
+        )
+        assertEquals(KeiOsTestTags.BaStudentGuideSidebarToggle, GuideSidebarToggleTestTag)
     }
 
     /**

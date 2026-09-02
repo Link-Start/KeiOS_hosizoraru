@@ -42,6 +42,7 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppSidebarWidth
 import os.kei.ui.page.main.widget.chrome.appTopBarEdgePadding
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -60,8 +61,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * pager's, because six sections and five are not the same question -- see
  * `BaStudentGuideUiPreferencesStore`.
  */
-/** The rail's own convert-back button, distinct from the pager's so a journey's tap is unambiguous. */
-internal const val GuideSidebarToggleTestTag = "ba_student_guide_sidebar_toggle"
+/** The guide's convert button, distinct from the pager's so a journey's tap is unambiguous. */
+internal const val GuideSidebarToggleTestTag = KeiOsTestTags.BaStudentGuideSidebarToggle
 
 /** Gap between the back button and the convert-to-rail button in the top row. */
 internal val GuideSidebarToggleGap: Dp = 8.dp

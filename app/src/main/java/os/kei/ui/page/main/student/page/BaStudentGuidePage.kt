@@ -48,6 +48,15 @@ import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
 import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
 import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
+import os.kei.ui.page.main.widget.chrome.appSidebarAvailableAt
+import os.kei.ui.page.main.widget.chrome.AppSidebarToggleSize
+import os.kei.ui.page.main.student.page.component.GuideSidebarToggleTestTag
+import os.kei.ui.page.main.student.page.component.GuideSidebarToggleGap
+import os.kei.ui.page.main.host.pager.MainPagerSidebarToggle
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import os.kei.ui.page.main.student.page.component.BaStudentGuideSidebar
 import os.kei.ui.page.main.widget.chrome.appNavigationPlacementFor
 import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
@@ -223,11 +232,24 @@ fun BaStudentGuidePage(
             }
         }
     val guideUsesSidebar = guideNavigationPlacement == AppNavigationPlacement.Sidebar
+    // The adaptable style keeps the convert button in *both* shapes. The rail carries its own; this is
+    // the other half, in the top row where the pager puts it, so the rail is reachable from the page
+    // that offers it rather than only from a preference set somewhere else. Hidden below the width a
+    // rail may appear in at all -- offering a shape the window cannot hold is worse than not offering it.
+    val guideSidebarOfferable = appSidebarAvailableAt(guideWindowWidth)
+    val showGuideSidebarToggle = guideSidebarOfferable && !guideUsesSidebar
     val onGuideConvertToBottomBar: () -> Unit =
         remember {
             {
                 guideSidebarPreferred = false
                 UiPrefs.setSidebarNavigationPreferred(false)
+            }
+        }
+    val onGuideConvertToSidebar: () -> Unit =
+        remember {
+            {
+                guideSidebarPreferred = true
+                UiPrefs.setSidebarNavigationPreferred(true)
             }
         }
     var bottomBarVisible by rememberSaveable { mutableStateOf(true) }
@@ -410,13 +432,32 @@ fun BaStudentGuidePage(
                         onTitleClick = {
                             scrollToTopSignal++
                         },
+                        titleStartReserve =
+                            if (showGuideSidebarToggle) {
+                                AppChromeTokens.topBarTitleNavigationReserve +
+                                    AppSidebarToggleSize +
+                                    GuideSidebarToggleGap
+                            } else {
+                                null
+                            },
                         navigationIcon = {
-                            AppLiquidNavigationButton(
-                                icon = appLucideBackIcon(),
-                                contentDescription = pageTitle,
-                                onClick = onBack,
-                                backdrop = topBarBackdrop,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AppLiquidNavigationButton(
+                                    icon = appLucideBackIcon(),
+                                    contentDescription = pageTitle,
+                                    onClick = onBack,
+                                    backdrop = topBarBackdrop,
+                                )
+                                if (showGuideSidebarToggle) {
+                                    Spacer(modifier = Modifier.width(GuideSidebarToggleGap))
+                                    MainPagerSidebarToggle(
+                                        backdrop = topBarBackdrop,
+                                        expanded = false,
+                                        onClick = onGuideConvertToSidebar,
+                                        testTag = GuideSidebarToggleTestTag,
+                                    )
+                                }
+                            }
                         },
                     )
                 },

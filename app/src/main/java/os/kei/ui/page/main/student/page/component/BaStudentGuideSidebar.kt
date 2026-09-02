@@ -62,6 +62,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /** The rail's own convert-back button, distinct from the pager's so a journey's tap is unambiguous. */
 internal const val GuideSidebarToggleTestTag = "ba_student_guide_sidebar_toggle"
 
+/** Gap between the back button and the convert-to-rail button in the top row. */
+internal val GuideSidebarToggleGap: Dp = 8.dp
+
 @Composable
 internal fun BoxScope.BaStudentGuideSidebar(
     title: String,

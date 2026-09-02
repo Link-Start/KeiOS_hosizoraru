@@ -48,6 +48,7 @@ import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
 import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
 import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
 import os.kei.ui.page.main.student.page.component.BaStudentGuideBottomBar
+import os.kei.ui.page.main.student.page.state.BaStudentGuideUiPreferencesStore
 import os.kei.ui.page.main.widget.chrome.appSidebarAvailableAt
 import os.kei.ui.page.main.widget.chrome.AppSidebarToggleSize
 import os.kei.ui.page.main.student.page.component.GuideSidebarToggleTestTag
@@ -215,11 +216,14 @@ fun BaStudentGuidePage(
         )
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     // Six sections is one past the five a bottom bar can label on a phone, so on a panel this page takes
-    // the same converted shape the pager offers: a leading rail with the labels down the side. Optional,
-    // and it is the *app's* option -- the stored preference the pager's toggle writes, so the two shapes
-    // never disagree about which one the reader asked for. Below AppSidebarMinWindowWidth the preference
-    // is kept but not applied, exactly as appNavigationPlacementFor does for the pager.
-    var guideSidebarPreferred by remember { mutableStateOf(UiPrefs.isSidebarNavigationPreferred()) }
+    // the same converted shape the pager offers: a leading rail with the labels down the side.
+    //
+    // Its *own* stored answer, in the guide's own preferences file rather than the app's settings
+    // surface -- see BaStudentGuideUiPreferencesStore. The two pages differ in the thing the choice
+    // turns on, six sections against five, so wanting a rail here says nothing about wanting one there.
+    // Below AppSidebarMinWindowWidth the preference is kept but not applied, exactly as
+    // appNavigationPlacementFor does for the pager.
+    var guideSidebarPreferred by remember { mutableStateOf(BaStudentGuideUiPreferencesStore.isSidebarPreferred()) }
     val guideNavigationPlacement =
         remember(guideWindowWidth, guideSidebarPreferred) {
             appNavigationPlacementFor(
@@ -242,14 +246,14 @@ fun BaStudentGuidePage(
         remember {
             {
                 guideSidebarPreferred = false
-                UiPrefs.setSidebarNavigationPreferred(false)
+                BaStudentGuideUiPreferencesStore.setSidebarPreferred(false)
             }
         }
     val onGuideConvertToSidebar: () -> Unit =
         remember {
             {
                 guideSidebarPreferred = true
-                UiPrefs.setSidebarNavigationPreferred(true)
+                BaStudentGuideUiPreferencesStore.setSidebarPreferred(true)
             }
         }
     var bottomBarVisible by rememberSaveable { mutableStateOf(true) }

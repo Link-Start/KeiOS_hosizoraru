@@ -56,8 +56,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * Deliberately the same vocabulary as `MainPagerSidebar` — regular Liquid Glass for a rail of text, a glass
  * fill on the selected row only, drag-left or the toggle to convert back — because this is the same control
- * in the same shape, one level down. The toggle writes the same stored preference the pager's does: one
- * app, one answer to "do I want a sidebar", so converting here is not undone by walking back out.
+ * in the same shape, one level down. The toggle writes this page's own stored answer rather than the
+ * pager's, because six sections and five are not the same question -- see
+ * `BaStudentGuideUiPreferencesStore`.
  */
 /** The rail's own convert-back button, distinct from the pager's so a journey's tap is unambiguous. */
 internal const val GuideSidebarToggleTestTag = "ba_student_guide_sidebar_toggle"

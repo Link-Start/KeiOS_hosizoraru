@@ -292,6 +292,7 @@ internal fun buildAboutSearchTargets(
                     context.getString(R.string.about_license_row_scope),
                     context.getString(R.string.about_license_row_mix),
                     context.getString(R.string.about_license_row_compliance),
+                    context.getString(R.string.about_license_row_webdav),
                     context.getString(R.string.about_license_row_miuix),
                     context.getString(R.string.about_license_row_androidx_runtime),
                     context.getString(R.string.about_license_row_material_components),

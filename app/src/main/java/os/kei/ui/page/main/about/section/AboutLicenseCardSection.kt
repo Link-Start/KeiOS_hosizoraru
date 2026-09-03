@@ -152,6 +152,12 @@ fun AboutLicenseCardSection(
                 icon = osLucideSettingsIcon(),
             ),
             AboutLicenseEntry(
+                titleRes = R.string.about_license_row_webdav,
+                value = stringResource(R.string.about_license_value_webdav, BuildConfig.DAV4JVM_VERSION),
+                sourceUrl = stringResource(R.string.about_license_url_webdav),
+                icon = osLucideSettingsIcon(),
+            ),
+            AboutLicenseEntry(
                 titleRes = R.string.about_license_row_media_stack,
                 value =
                     stringResource(

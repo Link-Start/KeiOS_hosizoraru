@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">App identity and runtime information</string>
-    <string name="about_card_release_title">Release v1.14.0</string>
-    <string name="about_card_release_subtitle">BA daily workflows, adaptive navigation, and interaction-performance updates</string>
+    <string name="about_card_release_title">Release v1.15.0</string>
+    <string name="about_card_release_subtitle">Two-lane large screens, release and F-Droid version history, startup and traffic work</string>
     <string name="about_card_runtime_title">Runtime status</string>
     <string name="about_card_runtime_subtitle">Quick checks for notifications, Shizuku, and system state</string>
     <string name="about_card_permission_title">Permission list</string>
@@ -334,22 +334,22 @@
     <string name="about_label_api_level">API Level</string>
     <string name="about_label_security_patch">Security patch</string>
 
-    <string name="about_release_row_version">Version line</string>
-    <string name="about_release_value_version">v1.14.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_github">Craft Chamber &amp; reminders</string>
-    <string name="about_release_value_github">Each BA account can manage six Generate and Fusion timers with grade, quantity, total-duration, precise completion reminders, a collapsible summary, and edits to running crafts without resetting their start time</string>
-    <string name="about_release_row_ba_guide">One-tap dailies</string>
-    <string name="about_release_value_ba_guide">Configure remaining AP, headpats, invite tickets, and craft plans; Quick Settings tiles, launcher shortcuts, and MCP can apply the template to one or every account, tile long-press opens the editor, and notifications plus Super Island report results</string>
-    <string name="about_release_row_navigation">Large screens &amp; navigation</string>
-    <string name="about_release_value_navigation">Tablets and foldables gain capped content widths and single/dual-pane thresholds; regular widths move main navigation into the top row, ultra-wide windows offer a remembered, drag-to-close sidebar, and phones retain the compact bottom bar</string>
-    <string name="about_release_row_icon">Catalog &amp; media</string>
-    <string name="about_release_value_icon">Removing a favorite Student Guide BGM now offers Undo, native media notifications are enabled by default for background playback, and catalog widths, scroll edges, and large-screen spacing adapt together</string>
-    <string name="about_release_row_release_gate">Liquid Glass &amp; backgrounds</string>
-    <string name="about_release_value_release_gate">Custom backgrounds now extend through secondary pages while cards and chrome sample one scene; sheets preserve content scrolling, and dropdowns, sliders, and card piles use more consistent materials and feedback</string>
-    <string name="about_release_row_performance">Performance, memory &amp; compatibility</string>
-    <string name="about_release_value_performance">Presentations pause idle background redraws and lazily compose sheet content, while BA office cards drop redundant inner glass; ITGSA fair-memory handling, Android 17, hardened background audio, and Baseline Profile freshness are release-gated</string>
+    <string name="about_release_row_version">Release line</string>
+    <string name="about_release_value_version">v1.15.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_github">Releases, and rolling back</string>
+    <string name="about_release_value_github">A tracked repository now has a release page of its own. Collapsed, a card is the version, when it landed, and whether it is the latest; opened, it is the notes and the files worth offering, so an older build can be installed rather than merely read about. Jump by page number or tag, hide entries that are only tags, and on a tablet an opened release moves to a second lane — where the latest and the newest pre-release already are — so the history keeps its full height</string>
+    <string name="about_release_row_ba_guide">F-Droid version history</string>
+    <string name="about_release_value_ba_guide">F-Droid tracks have their own version history too. It reads the repository\'s package page — about 37 KB rather than a 58 MB index — so every build carries its date, size, ABIs, minSdk and a working download. A third-party repository with no such page is read from its index when the size allows, list first and file details after, instead of a blank wait. Anti-features get their own card stating why that build is flagged, and refreshes now use the same sources: a third-party repository finally yields a hash and a signer, which is what makes the trust check real</string>
+    <string name="about_release_row_navigation">Two lanes on large screens</string>
+    <string name="about_release_value_navigation">The last release set the content width and the dual-pane threshold; this one actually lands two columns on every page. Settings, About, MCP, the OS activity cards, the BA office, the catalog, calendar and pool, and the GitHub tracked list and history all split in two on a tablet or an unfolded fold; OS Shell splits into command and output, and Play into album and queue. Each column scrolls on its own, a tracked card can be pinned to the right lane, a route\'s back button comes in with its content column, and a sheet narrower than the window still blurs the whole one</string>
+    <string name="about_release_row_icon">Catalog and its rail</string>
+    <string name="about_release_value_icon">The student guide\'s bar takes its size and its labels from the width actually available instead of stretching to fill, and on a tablet it can become a rail — one that remembers its own shape rather than following the main pager</string>
+    <string name="about_release_row_release_gate">MCP and security</string>
+    <string name="about_release_value_release_gate">The MCP tool catalog is consolidated to 51 from 54, with a renamed-tool map handed to clients on connect; the SSE stream is heartbeated, and the session notification no longer draws twice on HyperOS. The Mi Focus action receiver and the share-import receiver are both unexported</string>
+    <string name="about_release_row_performance">Performance and startup</string>
+    <string name="about_release_value_performance">Glass cards scrolled out of view stop drawing, long sheets compose lazily, drag state reads move down to layout, and Home stops redrawing its idle background while a route covers it. The baseline profile now reaches the history tabs, the component lab, the catalog and media playback, and the release and F-Droid pages, with capture down from 81 minutes to about 33. F-Droid refreshes read from the cheapest source that can answer, and one repository\'s index is downloaded once rather than twice</string>
     <string name="about_release_row_next">Upgrade advice</string>
-    <string name="about_release_value_next">Recommended for every v1.13.x user, with the largest gains for BA dailies and crafting, tablet or foldable navigation, custom backgrounds, presentations, and Student Guide BGM</string>
+    <string name="about_release_value_next">Recommended for everyone on v1.14.x; tablet and foldable users, and anyone using GitHub version tracking or an F-Droid source, gain the most. If you call MCP tools from outside, check saved calls against the new catalog after the rename</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

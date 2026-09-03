@@ -4,21 +4,30 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertContains
 
+/**
+ * The release card documents a line, so it is pinned to one.
+ *
+ * Every other version on the About page is read from the build, and this card deliberately is not: its
+ * body lists what a particular release brought, so a header that tracked the running build would print
+ * one version above notes describing another. Pinning it here is what makes updating the card a
+ * deliberate act at release time instead of something that silently falls behind — which it had, sitting
+ * at 1.14.0 through 117 commits.
+ */
 class AboutReleaseCardContentTest {
     @Test
-    fun releaseCardPublishesV1140InEverySupportedLocale() {
+    fun releaseCardPublishesV1150InEverySupportedLocale() {
         aboutReleaseResourceFiles().forEach { resourceFile ->
             val resources = resourceFile.readText()
 
             assertContains(
                 resources,
-                """<string name="about_card_release_title">Release v1.14.0</string>""",
-                message = "${resourceFile.path} must publish the v1.14.0 card title",
+                """<string name="about_card_release_title">Release v1.15.0</string>""",
+                message = "${resourceFile.path} must publish the v1.15.0 card title",
             )
             assertContains(
                 resources,
-                """<string name="about_release_value_version">v1.14.0 · Android 15+ · arm64-v8a · targetSdk 37</string>""",
-                message = "${resourceFile.path} must publish the v1.14.0 version line",
+                """<string name="about_release_value_version">v1.15.0 · Android 15+ · arm64-v8a · targetSdk 37</string>""",
+                message = "${resourceFile.path} must publish the v1.15.0 version line",
             )
         }
     }
@@ -30,11 +39,12 @@ class AboutReleaseCardContentTest {
             .readText()
 
         listOf(
-            "制造室与提醒",
-            "一键日常",
-            "大屏与导航",
-            "Liquid Glass 与背景",
-            "性能、内存与兼容",
+            "大屏双栏",
+            "发行版与回滚",
+            "F-Droid 版本历史",
+            "图鉴与侧栏",
+            "MCP 与安全",
+            "性能与启动",
         ).forEach { expected ->
             assertContains(resources, expected)
         }

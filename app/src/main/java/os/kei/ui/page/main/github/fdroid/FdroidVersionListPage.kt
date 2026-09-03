@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -92,6 +93,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageTwoColumnLists
 import os.kei.ui.page.main.widget.chrome.appPageColumnCount
 import os.kei.ui.page.main.widget.chrome.appPageContentMaxWidthFor
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
@@ -102,7 +104,6 @@ import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.markdown.AppMarkdownContent
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
@@ -153,8 +154,10 @@ internal fun FdroidVersionListPage(
 
     val openVersions = remember { mutableStateMapOf<String, Unit>() }
     val openNotes = remember { mutableStateMapOf<String, Unit>() }
-    // The APK section defaults open, so this tracks what the reader has *closed* rather than opened.
+    // The APK and anti-feature sections default open, so these track what the reader has *closed*
+    // rather than what they opened.
     val closedApk = remember { mutableStateMapOf<String, Unit>() }
+    val closedAntiFeatures = remember { mutableStateMapOf<String, Unit>() }
     // A build that is closed again keeps its place in the reading lane, so this remembers what the reader
     // has been through rather than what is open right now. Both go to the lane rule.
     val keptInReadingLane = remember { mutableStateMapOf<String, Unit>() }
@@ -260,6 +263,7 @@ internal fun FdroidVersionListPage(
                                 openVersions = openVersions,
                                 openNotes = openNotes,
                                 closedApk = closedApk,
+                                closedAntiFeatures = closedAntiFeatures,
                                 onToggleVersion = { id, open ->
                                     if (open) {
                                         openVersions[id] = Unit
@@ -339,7 +343,7 @@ internal fun FdroidVersionListPage(
                         .align(Alignment.BottomCenter)
                         .padding(bottom = barBottomInset),
                 backdrop = pageBackdrop,
-                busy = uiState.loading || uiState.refreshing,
+                busy = uiState.loading || uiState.refreshing || uiState.loadingFileDetails,
                 compatibleOnly = uiState.compatibleOnly,
                 onRefresh = viewModel::refresh,
                 onToggleCompatibleOnly = viewModel::toggleCompatibleOnly,
@@ -363,6 +367,7 @@ private class FdroidVersionCardActions(
     val openVersions: MutableMap<String, Unit>,
     val openNotes: MutableMap<String, Unit>,
     val closedApk: MutableMap<String, Unit>,
+    val closedAntiFeatures: MutableMap<String, Unit>,
     val onToggleVersion: (String, Boolean) -> Unit,
     val onOpenLink: (String) -> Unit,
     val onCopyDownloadUrl: (String) -> Unit,
@@ -430,6 +435,13 @@ private fun LazyListScope.fdroidVersionListBody(
                             ),
                     )
                 }
+            } else if (uiState.loadingFileDetails) {
+                // The index is on its way. Said rather than left blank, because it is megabytes and the
+                // history is already readable without it -- and because the alternative wording, "this
+                // repository publishes no files", would be wrong for the minute it takes to arrive.
+                item(key = "fdroid-version-loading-details") {
+                    FdroidVersionNotice(textRes = R.string.github_fdroid_version_loading_file_details)
+                }
             } else if (!uiState.anyFilePublished) {
                 // Said once, about the repository, rather than repeated inside every card. Three builds
                 // each carrying the same paragraph is what made this page read as an apology.
@@ -476,6 +488,15 @@ private fun LazyListScope.fdroidVersionCards(
             onApkExpandedChange = { open ->
                 if (open) actions.closedApk.remove(row.id) else actions.closedApk[row.id] = Unit
             },
+            // Open by default, like the APK section: a warning behind a fold is a warning nobody reads.
+            antiFeaturesExpanded = !actions.closedAntiFeatures.containsKey(row.id),
+            onAntiFeaturesExpandedChange = { open ->
+                if (open) {
+                    actions.closedAntiFeatures.remove(row.id)
+                } else {
+                    actions.closedAntiFeatures[row.id] = Unit
+                }
+            },
             actions = actions,
             // The first build *in this lane*, which a lane on its own no longer knows.
             cardTestTag = KeiOsTestTags.FdroidVersionCardFirst.takeIf { indexed.index == 0 },
@@ -493,6 +514,8 @@ private fun FdroidVersionCard(
     onNotesExpandedChange: (Boolean) -> Unit,
     apkExpanded: Boolean,
     onApkExpandedChange: (Boolean) -> Unit,
+    antiFeaturesExpanded: Boolean,
+    onAntiFeaturesExpandedChange: (Boolean) -> Unit,
     actions: FdroidVersionCardActions,
     cardTestTag: String?,
 ) {
@@ -612,10 +635,13 @@ private fun FdroidVersionCard(
             }
         }
 
-        // F-Droid's own warnings, and the reason a reader would pick an older build over a newer one. A
-        // strip rather than a section, because a build usually has none and never has many.
+        // F-Droid's own warnings, and the reason a reader would pick an older build over a newer one.
         if (version.antiFeatures.isNotEmpty()) {
-            FdroidAntiFeatureStrip(features = version.antiFeatures, isDark = isDark)
+            FdroidAntiFeatureCard(
+                features = version.antiFeatures,
+                expanded = antiFeaturesExpanded,
+                onExpandedChange = onAntiFeaturesExpandedChange,
+            )
         }
 
         // Only when there are notes. The release list shows an empty notes section because it *fetched*
@@ -709,40 +735,64 @@ private fun FdroidVersionCard(
 }
 
 /**
- * The anti-features F-Droid records against a build, as warning pills.
+ * The anti-features F-Droid records against a build, in a section of their own.
  *
- * A plain tinted panel rather than the clickable [GitHubInlineLiquidSurface] the summary strip uses.
- * There is nothing to open — the pills *are* the content — and a surface with a no-op click handler still
- * announces itself to a screen reader as a button.
+ * Its own card rather than a bare tinted strip, and that is the point: a GitHub release has no concept of
+ * these, so nothing on the release page taught the reader what a lone red `NonFreeAdd` beside a version
+ * number is. A titled section names the category once, the way the notes and APK sections do.
+ *
+ * The pills are the tags; the value is the sentence under each one. index-v2 states, per build, *why* it
+ * carries the flag — "The app contains the Tasker plugin", "The app uses Bugsnag" — which is a different
+ * and far more useful thing than the repository's general description of the category. Open by default,
+ * because a warning the reader has to go looking for is not doing its job.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FdroidAntiFeatureStrip(
+private fun FdroidAntiFeatureCard(
     features: List<FdroidAntiFeatureSnapshot>,
-    isDark: Boolean,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
-    FlowRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .appSquircleBackground(
-                    color =
-                        GitHubStatusPalette
-                            .tonedSurface(AppStatusColors.Failed, isDark = isDark)
-                            .copy(alpha = if (isDark) 0.30f else 0.18f),
-                    cornerRadius = 12.dp,
-                ).padding(horizontal = 12.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        features.forEach { feature ->
+    val isDark = isAppInDarkTheme()
+    AppLiquidAccordionCard(
+        backdrop = null,
+        title = stringResource(R.string.github_fdroid_detail_section_anti_features),
+        subtitle = "",
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
+        // Tinted with the warning colour rather than the neutral veil the other sections use, so the one
+        // section that carries a caution does not read as another fold of detail.
+        containerColor =
+            GitHubStatusPalette
+                .tonedSurface(AppStatusColors.Failed, isDark = isDark)
+                .copy(alpha = if (isDark) 0.26f else 0.16f),
+        titleAccessory = {
             FdroidVersionPill(
-                label = feature.label.trim().ifBlank { feature.id },
+                label = features.size.toString(),
                 color = AppStatusColors.Failed,
-                // F-Droid's anti-feature labels are short sentences rather than tags -- "Contains
-                // tracking", "Uses a disabled algorithm" -- and clipping one to a line loses the warning.
-                maxLines = 2,
             )
+        },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            features.forEach { feature ->
+                val reason = feature.description.trim()
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FdroidVersionPill(
+                        label = feature.label.trim().ifBlank { feature.id },
+                        color = AppStatusColors.Failed,
+                        // These read as short sentences rather than tags on some repositories, and
+                        // clipping one to a line loses the warning.
+                        maxLines = 2,
+                    )
+                    if (reason.isNotBlank()) {
+                        Text(
+                            text = reason,
+                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            fontSize = AppTypographyTokens.Supporting.fontSize,
+                            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        )
+                    }
+                }
+            }
         }
     }
 }

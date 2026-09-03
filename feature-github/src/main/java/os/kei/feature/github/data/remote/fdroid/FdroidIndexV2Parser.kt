@@ -179,10 +179,23 @@ object FdroidIndexV2Parser {
         return obj?.entries
             ?.map { entry ->
                 val detail = entry.value.jsonObjectOrNull()
+                // index-v2 uses this key for two different shapes, and the interesting one was being
+                // dropped. The repository's own table describes each anti-feature in general --
+                // `{"Tracking": {"name": {...}, "description": {...}}}`. A *version* instead states why
+                // that build carries it, as a bare locale map: `{"Tracking": {"en-US": "The app uses
+                // Bugsnag."}}`. Read as the general shape, that reason vanished and the pill fell back to
+                // showing the raw id.
+                val named = detail?.localizedString("name").orEmpty()
+                val described = detail?.localizedString("description").orEmpty()
+                val reason = when {
+                    described.isNotBlank() || named.isNotBlank() -> described
+                    // No `name`/`description` wrapper, so the value itself is the localised reason.
+                    else -> entry.value.localizedStringValue()
+                }
                 FdroidAntiFeatureSnapshot(
                     id = entry.key,
-                    label = detail?.localizedString("name").orEmpty(),
-                    description = detail?.localizedString("description").orEmpty()
+                    label = named,
+                    description = reason
                 )
             }
             .orEmpty()

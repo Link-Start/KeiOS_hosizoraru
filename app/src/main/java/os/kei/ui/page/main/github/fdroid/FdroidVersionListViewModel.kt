@@ -17,8 +17,8 @@ import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
-import os.kei.feature.github.domain.fdroid.FdroidPackageSnapshotProvider
 import os.kei.feature.github.domain.fdroid.FdroidVersionHistoryProvider
+import os.kei.feature.github.domain.fdroid.needsRicherSource
 import os.kei.feature.github.model.FdroidTrackedAppConfig
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -65,6 +65,14 @@ internal data class FdroidVersionListUiState(
      * rather than about any one build, so the page says it once instead of on every card.
      */
     val anyFilePublished: Boolean = false,
+    /**
+     * True while the repository's index is being fetched over a history that is already on screen.
+     *
+     * Only ever true for a repository read through the thin package API, whose index is the one source
+     * with files in it — and megabytes, so the page says it is still coming rather than making the reader
+     * wait for it.
+     */
+    val loadingFileDetails: Boolean = false,
     /** The reader's lookup settings, so an APK row judges trust the way the tracked card does. */
     val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
 )
@@ -92,7 +100,7 @@ internal data class FdroidVersionListUiState(
  */
 internal class FdroidVersionListViewModel(
     private val trackId: String,
-    private val snapshotProvider: FdroidPackageSnapshotProvider = FdroidVersionHistoryProvider(),
+    private val historyProvider: FdroidVersionHistoryProvider = FdroidVersionHistoryProvider(),
     private val sidecarLoader: (String) -> FdroidMetadataSidecar? = { id ->
         FdroidMetadataSidecarStore.load(id)
     },
@@ -211,19 +219,26 @@ internal class FdroidVersionListViewModel(
                 // permanently, if the refresh then failed.
                 if (!hasHistory) rebuildRows(cached.versions)
             }
-            val remote = runCatching { snapshotProvider.loadPackageSnapshot(item, forceRefresh).getOrThrow() }
-            remote
+            val quick = runCatching { historyProvider.loadQuick(item, forceRefresh).getOrThrow() }
+            val quickSnapshot = quick.getOrNull()
+            quick
                 .onSuccess { snapshot ->
                     suggestedVersionCode = snapshot.suggestedVersionCode
+                    val wantsDetails = needsRicherSource(snapshot)
                     _uiState.update { state ->
-                        state.copy(loading = false, refreshing = false, liveHistoryLoaded = true)
+                        state.copy(
+                            loading = false,
+                            refreshing = false,
+                            liveHistoryLoaded = true,
+                            loadingFileDetails = wantsDetails,
+                        )
                     }
                     rebuildRows(mergeFdroidVersions(cached = cached.versions, remote = snapshot.versions))
                 }
                 .onFailure { error ->
                     if (error is CancellationException) throw error
-                    // The cached rows stay: a repository that publishes only an index has no package API
-                    // to answer, and the builds already on disk are still the truth about it.
+                    // The cached rows stay: the builds already on disk are still the truth about a
+                    // repository that cannot be reached right now.
                     _uiState.update { state ->
                         state.copy(
                             loading = false,
@@ -231,6 +246,28 @@ internal class FdroidVersionListViewModel(
                             errorMessage = error.message ?: error::class.java.simpleName,
                         )
                     }
+                }
+            // The index, only for a history the quick sources left without files, and only after that
+            // history is already on screen. It is the one source that carries hashes, signers, release
+            // notes and anti-features -- and on IzzyOnDroid it is fourteen megabytes, which is half a
+            // minute of blank page if it is waited on instead.
+            if (quickSnapshot == null || !needsRicherSource(quickSnapshot)) return@launch
+            val rich = runCatching { historyProvider.loadRich(item, forceRefresh).getOrThrow() }
+            rich
+                .onSuccess { snapshot ->
+                    suggestedVersionCode = snapshot.suggestedVersionCode ?: suggestedVersionCode
+                    _uiState.update { state -> state.copy(loadingFileDetails = false) }
+                    // The index decides detail; anything the quick source listed and it did not is kept,
+                    // so a build the API knows about does not vanish when the index omits it.
+                    rebuildRows(
+                        mergeFdroidVersions(cached = quickSnapshot.versions, remote = snapshot.versions),
+                    )
+                }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    // The history stays exactly as it is. It has no files in it, and the page already says
+                    // so -- an error banner over a list that is doing its best would add nothing.
+                    _uiState.update { state -> state.copy(loadingFileDetails = false) }
                 }
         }
     }

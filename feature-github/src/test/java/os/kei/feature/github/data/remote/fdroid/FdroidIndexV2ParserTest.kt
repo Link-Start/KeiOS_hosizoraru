@@ -7,6 +7,85 @@ import kotlin.test.assertNotNull
 
 class FdroidIndexV2ParserTest {
     @Test
+    fun `a version's anti-features keep the reason that build carries them`() {
+        // index-v2 uses one key for two shapes and the interesting one was being dropped. The
+        // repository's table describes a category in general -- {"name": .., "description": ..} -- while a
+        // *version* states why that build is flagged, as a bare locale map. Read as the general shape,
+        // that per-build reason vanished and the UI fell back to printing the raw id.
+        //
+        // Captured from IzzyOnDroid's live index for tk.zwander.lockscreenwidgets.
+        val json =
+            """
+            {
+              "packageName": "com.example.app",
+              "versions": {
+                "a": {
+                  "added": 1788199482000,
+                  "file": { "name": "/com.example.app_216.apk", "size": 1024 },
+                  "manifest": { "versionName": "4.6.0", "versionCode": 216 },
+                  "antiFeatures": {
+                    "NonFreeAdd": { "de": "Die App enh\u00e4lt das Tasker Plugin.", "en-US": "The app contains the Tasker plugin." },
+                    "Tracking": { "de": "Die App verwendet Bugsnag.", "en-US": "The app uses Bugsnag." }
+                  }
+                }
+              }
+            }
+            """.trimIndent()
+
+        val version =
+            FdroidIndexV2Parser
+                .parsePackage(
+                    repoUrl = "https://apt.izzysoft.de/fdroid/repo",
+                    packageName = "com.example.app",
+                    rawJson = json,
+                ).getOrThrow()
+                .versions
+                .single()
+
+        assertEquals(listOf("NonFreeAdd", "Tracking"), version.antiFeatures.map { it.id })
+        assertEquals(
+            listOf("The app contains the Tasker plugin.", "The app uses Bugsnag."),
+            version.antiFeatures.map { it.description },
+        )
+    }
+
+    @Test
+    fun `the repository's own anti-feature table still reads as name and description`() {
+        // The other shape, which must keep working: this is where the general explanation of a category
+        // lives, and it is a labelled object rather than a locale map.
+        val json =
+            """
+            {
+              "packageName": "com.example.app",
+              "metadata": {
+                "antiFeatures": {
+                  "Tracking": {
+                    "name": { "en-US": "Tracking" },
+                    "description": { "en-US": "This app tracks and reports your activity" }
+                  }
+                }
+              },
+              "versions": {
+                "a": { "manifest": { "versionName": "1.0", "versionCode": 1 } }
+              }
+            }
+            """.trimIndent()
+
+        val pkg =
+            FdroidIndexV2Parser
+                .parsePackage(
+                    repoUrl = "https://f-droid.org/repo",
+                    packageName = "com.example.app",
+                    rawJson = json,
+                ).getOrThrow()
+
+        val feature = pkg.antiFeatures.single()
+        assertEquals("Tracking", feature.id)
+        assertEquals("Tracking", feature.label)
+        assertEquals("This app tracks and reports your activity", feature.description)
+    }
+
+    @Test
     fun `parseIndex reads repo metadata and package versions`() {
         val snapshot = FdroidIndexV2Parser.parseIndex(
             repoUrl = "https://f-droid.org/repo",

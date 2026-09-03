@@ -37,21 +37,39 @@ class FdroidVersionHistoryProviderTest {
     }
 
     @Test
-    fun `a repository with no page falls to its index rather than to the thin API`() = runTest {
-        // IzzyOnDroid and the other third-party indexes: no page layout this app knows, but a modest
-        // index that carries hashes, signers and release notes.
-        val api = RecordingSource(snapshot(10L))
+    fun `a repository with no page reaches for its index once the thin API leaves no files`() = runTest {
+        // IzzyOnDroid and the other third-party indexes: no page layout this app knows, and an API that
+        // answers with version numbers only -- so the index, which carries hashes, signers and release
+        // notes, is worth its megabytes here.
+        val index = RecordingSource(snapshot(20L, suggested = 20L))
         val provider =
             FdroidVersionHistoryProvider(
                 pageSource = FailingSource(),
-                indexSource = RecordingSource(snapshot(20L, suggested = 20L)),
-                apiSource = api,
+                indexSource = index,
+                apiSource = RecordingSource(thinSnapshot(10L)),
             )
 
         val result = provider.loadPackageSnapshot(track(), forceRefresh = false).getOrThrow()
 
         assertEquals(20L, result.versions.single().versionCode)
-        assertEquals(0, api.calls)
+        assertEquals(1, index.calls)
+    }
+
+    @Test
+    fun `an index is never streamed for a history that already has its files`() = runTest {
+        // The rule that decides whether megabytes get spent. A page-sourced history names every APK, so
+        // there is nothing the index would add that is worth fourteen megabytes and half a minute.
+        val index = RecordingSource(snapshot(20L))
+        val provider =
+            FdroidVersionHistoryProvider(
+                pageSource = RecordingSource(snapshot(30L, suggested = 30L)),
+                indexSource = index,
+                apiSource = RecordingSource(thinSnapshot(10L)),
+            )
+
+        provider.loadPackageSnapshot(track(), forceRefresh = false)
+
+        assertEquals(0, index.calls)
     }
 
     @Test
@@ -88,7 +106,7 @@ class FdroidVersionHistoryProviderTest {
     fun `a richer source with no suggestion of its own borrows the API's`() = runTest {
         // index-v2 has no suggestedVersionCode field at all, and it drives the track's default selection
         // mode -- leaving it null would move which build the page calls recommended.
-        val api = RecordingSource(snapshot(20L, suggested = 20L))
+        val api = RecordingSource(thinSnapshot(20L, suggested = 20L))
         val provider =
             FdroidVersionHistoryProvider(
                 pageSource = FailingSource(),
@@ -101,7 +119,7 @@ class FdroidVersionHistoryProviderTest {
         assertEquals(20L, result.suggestedVersionCode)
         // The history stays the index's; only the suggestion is borrowed.
         assertEquals(30L, result.versions.single().versionCode)
-        assertEquals(1, api.calls)
+        assertTrue(api.calls >= 1)
     }
 
     @Test
@@ -176,6 +194,20 @@ private class FailingSource : FdroidPackageDetailSource {
         forceRefresh: Boolean,
     ): Result<FdroidPackageSnapshot> = Result.failure(IllegalStateException("unavailable"))
 }
+
+/**
+ * What `/api/v1/packages` answers with: a version name and a code, and no file at all.
+ *
+ * The distinction the tiering turns on — `needsRicherSource` reads exactly this — so a fixture that
+ * always named an APK would make every quick answer look rich and the index would never be reached.
+ */
+private fun thinSnapshot(
+    versionCode: Long,
+    suggested: Long? = null,
+): FdroidPackageSnapshot =
+    snapshot(versionCode, suggested).let { base ->
+        base.copy(versions = base.versions.map { it.copy(apkName = "", apkPath = "") })
+    }
 
 private fun snapshot(
     versionCode: Long,

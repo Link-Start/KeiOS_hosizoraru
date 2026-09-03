@@ -1739,6 +1739,7 @@
     <string name="github_fdroid_version_apk_unavailable">No APK recorded for this version; a refresh may fill it in</string>
     <string name="github_fdroid_version_apk_not_published">The package API for this repository lists version numbers only, with no file details for this version</string>
     <string name="github_fdroid_version_files_not_published">The package API for this repository lists version numbers only, so no APK details or downloads are available here</string>
+    <string name="github_fdroid_version_loading_file_details">Reading the repository index for file details — it is large, so the first load can be slow…</string>
     <string name="github_fdroid_version_filter_compatible">Show only versions this device can install</string>
     <string name="github_fdroid_version_copy_download">Copy download link</string>
     <string name="github_fdroid_version_sdk_min_format">min %1$d</string>

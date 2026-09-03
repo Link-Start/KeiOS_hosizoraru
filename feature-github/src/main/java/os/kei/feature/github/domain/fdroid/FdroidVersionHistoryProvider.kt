@@ -38,20 +38,57 @@ class FdroidVersionHistoryProvider(
     private val indexSource: FdroidPackageDetailSource = FdroidIndexPackageSource(),
     private val apiSource: FdroidPackageDetailSource = FdroidPackageApiSource(),
 ) : FdroidPackageSnapshotProvider {
+    /**
+     * The sources that answer in a request or two, for a page that has to appear now.
+     *
+     * The page when the repository has one this app reads, and the thin API otherwise. Both are small
+     * enough that waiting on them is not waiting.
+     */
+    suspend fun loadQuick(
+        item: GitHubTrackedApp,
+        forceRefresh: Boolean,
+    ): Result<FdroidPackageSnapshot> {
+        val identity = item.identityOrFailure().getOrElse { error -> return Result.failure(error) }
+        val page = pageSource.load(identity.normalizedRepoUrl, identity.packageName, forceRefresh)
+        if (page.isSuccess) return page.withSuggestionFrom(identity.normalizedRepoUrl, identity.packageName)
+        return apiSource.load(identity.normalizedRepoUrl, identity.packageName, forceRefresh)
+    }
+
+    /**
+     * The repository's index, which is worth its bytes only when the cheap sources left nothing.
+     *
+     * Megabytes rather than kilobytes — IzzyOnDroid's is fourteen and took half a minute on a first
+     * load — so it is fetched *after* the history is already on screen rather than instead of it, and only
+     * when [needsRicherSource] says the quick answer has no files in it. A repository with a page needs
+     * none of this; one read through the thin API needs all of it, since that endpoint publishes version
+     * numbers and nothing else.
+     */
+    suspend fun loadRich(
+        item: GitHubTrackedApp,
+        forceRefresh: Boolean,
+    ): Result<FdroidPackageSnapshot> {
+        val identity = item.identityOrFailure().getOrElse { error -> return Result.failure(error) }
+        return indexSource
+            .load(identity.normalizedRepoUrl, identity.packageName, forceRefresh)
+            .withSuggestionFrom(identity.normalizedRepoUrl, identity.packageName)
+    }
+
     override suspend fun loadPackageSnapshot(
         item: GitHubTrackedApp,
         forceRefresh: Boolean,
     ): Result<FdroidPackageSnapshot> {
-        val identity = buildFdroidRepositoryTrackIdentity(item.repoUrl, item.packageName)
-            ?: return Result.failure(IllegalArgumentException("invalid F-Droid repository URL or package"))
-        val repoUrl = identity.normalizedRepoUrl
-        val packageName = identity.packageName
-        val page = pageSource.load(repoUrl, packageName, forceRefresh)
-        if (page.isSuccess) return page.withSuggestionFrom(repoUrl, packageName)
-        val index = indexSource.load(repoUrl, packageName, forceRefresh)
-        if (index.isSuccess) return index.withSuggestionFrom(repoUrl, packageName)
-        return apiSource.load(repoUrl, packageName, forceRefresh)
+        val quick = loadQuick(item, forceRefresh)
+        val snapshot = quick.getOrNull()
+        if (snapshot != null && !needsRicherSource(snapshot)) return quick
+        val rich = loadRich(item, forceRefresh)
+        return if (rich.isSuccess) rich else quick
     }
+
+    private fun GitHubTrackedApp.identityOrFailure() =
+        runCatching {
+            buildFdroidRepositoryTrackIdentity(repoUrl, packageName)
+                ?: error("invalid F-Droid repository URL or package")
+        }
 
     /**
      * Fills in the repository's own recommendation when the richer source did not state one.
@@ -143,6 +180,18 @@ class FdroidPackageApiSource(
     ): Result<FdroidPackageSnapshot> =
         client.fetchPackage(repoBaseUrl = repoUrl, packageName = packageName)
 }
+
+/**
+ * Whether a history arrived without any file details, so the repository's index is worth fetching.
+ *
+ * The one question that decides whether megabytes get spent. A page-sourced history already names every
+ * APK; a history from `/api/v1/packages` names none, because that endpoint publishes version numbers and
+ * nothing else — no file, no size, no hash.
+ */
+fun needsRicherSource(snapshot: FdroidPackageSnapshot): Boolean =
+    snapshot.versions.none { version ->
+        version.apkPath.isNotBlank() || version.apkName.isNotBlank()
+    }
 
 /**
  * Big enough for a third-party repository's whole index, far too small for f-droid.org's.

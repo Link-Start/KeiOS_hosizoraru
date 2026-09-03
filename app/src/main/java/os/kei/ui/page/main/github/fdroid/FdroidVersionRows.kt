@@ -197,24 +197,33 @@ private fun String.normalizedVersionName(): String = trim().removePrefix("v").re
 /**
  * The cached record that describes this remote build, or -1.
  *
- * A remote entry that names its APK is matched on that name and nothing else. The version-code fallback
- * is only for the thin entry, which carries no name to match on — that being the whole reason it needs
- * enriching.
+ * Three cases, and the middle one is the whole subtlety:
  *
- * The distinction is a safety one rather than a tidiness one. Letting a named build fall back to the
- * code would hand `app_20_arm64.apk` the hash and signer of `app_20_armv7.apk` whenever the cache
- * happened to hold only the other split, and the APK trust check verifies a download against exactly
- * those fields. Better an unenriched row that offers no hash than a row that offers the wrong one.
+ * 1. Same version code, same APK name — the same file. Claim it.
+ * 2. Same version code, and the cached record names no file at all. Also claim it: a record with no file
+ *    identity cannot be "a different file", and it is what a sidecar written from `/api/v1/packages`
+ *    looks like, since that endpoint publishes no file. Leaving it unclaimed is what made every version
+ *    render twice — once from the page, once from the nameless cache — with the same version code and two
+ *    different row ids.
+ * 3. Same version code, *different* APK name. Do not claim it. This is the safety case: handing
+ *    `app_20_arm64.apk` the hash and signer of `app_20_armv7.apk` because the cache happened to hold only
+ *    the other split would make the APK trust check verify a download against the wrong file's
+ *    fingerprint. Better an unenriched row that offers no hash than one that asserts a false one. (A
+ *    nameless record cannot carry a hash either, so case 2 can never smuggle one in.)
  */
 private fun List<FdroidVersionSnapshot>.indexOfBestMatch(version: FdroidVersionSnapshot): Int {
     val apkName = version.apkName.trim()
-    if (apkName.isNotBlank()) {
-        return indexOfFirst { candidate ->
-            candidate.versionCode == version.versionCode &&
-                candidate.apkName.trim().equals(apkName, ignoreCase = true)
-        }
+    if (apkName.isBlank()) {
+        return indexOfFirst { candidate -> candidate.versionCode == version.versionCode }
     }
-    return indexOfFirst { candidate -> candidate.versionCode == version.versionCode }
+    val sameFile = indexOfFirst { candidate ->
+        candidate.versionCode == version.versionCode &&
+            candidate.apkName.trim().equals(apkName, ignoreCase = true)
+    }
+    if (sameFile >= 0) return sameFile
+    return indexOfFirst { candidate ->
+        candidate.versionCode == version.versionCode && candidate.apkName.isBlank()
+    }
 }
 
 /** Field by field, the remote value when it said something and the cached one when it did not. */

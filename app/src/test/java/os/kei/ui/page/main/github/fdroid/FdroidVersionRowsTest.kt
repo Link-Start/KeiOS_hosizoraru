@@ -152,6 +152,41 @@ class FdroidVersionMergeTest {
     }
 
     @Test
+    fun `a named build claims a nameless cached record instead of rendering beside it`() {
+        // The regression this exists for: the page reads f-droid.org's package page, so its records name
+        // their APK, while a sidecar written from `/api/v1/packages` names nothing -- that endpoint
+        // publishes no file. Refusing the match left both, and every version rendered twice with the same
+        // version code and two different row ids.
+        val merged =
+            mergeFdroidVersions(
+                cached = listOf(thinFdroidVersion(20L).copy(addedAtMillis = 1_700_000_000_000L)),
+                remote = listOf(fdroidVersion(20L, apkName = "app_20.apk", addedAtMillis = null)),
+            )
+
+        assertEquals(1, merged.size, "one build, one row: ${merged.map { it.apkName }}")
+        assertEquals("app_20.apk", merged.single().apkName)
+        // And the nameless record's own facts still carry across.
+        assertEquals(1_700_000_000_000L, merged.single().addedAtMillis)
+    }
+
+    @Test
+    fun `a nameless cached record is claimed once, not by every split of its version code`() {
+        val merged =
+            mergeFdroidVersions(
+                cached = listOf(thinFdroidVersion(20L)),
+                remote =
+                    listOf(
+                        fdroidVersion(20L, apkName = "app_20_arm64.apk"),
+                        fdroidVersion(20L, apkName = "app_20_armv7.apk"),
+                    ),
+            )
+
+        // Two real files stay two rows; the one cached record does not multiply into both.
+        assertEquals(2, merged.size)
+        assertEquals(merged.size, merged.map { version -> fdroidVersionRowId(version) }.toSet().size)
+    }
+
+    @Test
     fun `a thin build still takes the version code's cached record, which is the whole point`() {
         val merged =
             mergeFdroidVersions(

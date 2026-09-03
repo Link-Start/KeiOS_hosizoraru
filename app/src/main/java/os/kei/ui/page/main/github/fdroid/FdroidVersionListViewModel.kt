@@ -17,8 +17,8 @@ import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
-import os.kei.feature.github.domain.fdroid.FdroidPackageApiSnapshotProvider
 import os.kei.feature.github.domain.fdroid.FdroidPackageSnapshotProvider
+import os.kei.feature.github.domain.fdroid.FdroidVersionHistoryProvider
 import os.kei.feature.github.model.FdroidTrackedAppConfig
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -78,11 +78,12 @@ internal data class FdroidVersionListUiState(
  * every build there has ever been and almost nothing about any of them.
  *
  * So this holds two sources instead of paging one. The refresh sidecar on disk is opened first and shown
- * immediately — it has full records for the eight newest builds and needs no network, which is what lets
- * the page open at all on a repository that is unreachable. The package API then supplies the rest of the
- * history and [mergeFdroidVersions] lays the detail back over it. A failure at that second step is
- * reported without taking the cached list down, because a repository that publishes only an index has no
- * package API to answer and the eight builds already on disk are still the truth about it.
+ * immediately — it needs no network, which is what lets the page open at all on a repository that is
+ * unreachable, though it holds only the eight newest builds and, for a repository read through the
+ * package API, holds them thinly. [FdroidVersionHistoryProvider] then supplies the real history, and
+ * [mergeFdroidVersions] lays whatever the cache knew back over it. A failure at that second step is
+ * reported without taking the cached list down, because the builds already on disk are still the truth
+ * about a repository that cannot be reached right now.
  *
  * Writes no F-Droid state. The sidecar is read-only here — a refresh from the tracked card is what
  * maintains it, and browsing a history is not a reason to move which build the track holds as selected.
@@ -91,7 +92,7 @@ internal data class FdroidVersionListUiState(
  */
 internal class FdroidVersionListViewModel(
     private val trackId: String,
-    private val snapshotProvider: FdroidPackageSnapshotProvider = FdroidPackageApiSnapshotProvider(),
+    private val snapshotProvider: FdroidPackageSnapshotProvider = FdroidVersionHistoryProvider(),
     private val sidecarLoader: (String) -> FdroidMetadataSidecar? = { id ->
         FdroidMetadataSidecarStore.load(id)
     },

@@ -147,6 +147,7 @@ class FdroidPackagePageSource(
  */
 class FdroidIndexPackageSource(
     private val client: FdroidRepositoryIndexClient = FdroidRepositoryIndexClient(),
+    private val trackedPackages: FdroidTrackedPackageDirectory = FdroidTrackStorePackageDirectory,
     private val maxIndexBytes: Long = DEFAULT_MAX_HISTORY_INDEX_BYTES,
 ) : FdroidPackageDetailSource {
     override suspend fun load(
@@ -157,7 +158,11 @@ class FdroidIndexPackageSource(
         client
             .fetchIndexV2Packages(
                 repoBaseUrl = repoUrl,
-                packageNames = setOf(packageName),
+                // Every package tracked in this repository, not just this one. The index cache is keyed by
+                // the set asked for, so asking for the same set the refresh batch asks for means the two
+                // share one entry and one download instead of pulling the same megabytes twice. See
+                // fdroidTrackedPackagesIn.
+                packageNames = trackedPackages.packagesIn(repoUrl) + packageName,
                 forceRefresh = forceRefresh,
                 maxIndexBytes = maxIndexBytes,
             ).mapCatching { repository ->

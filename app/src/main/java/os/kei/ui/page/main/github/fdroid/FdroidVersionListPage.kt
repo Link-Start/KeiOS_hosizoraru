@@ -251,6 +251,7 @@ internal fun FdroidVersionListPage(
                             uiState.packagePageUrl,
                             uiState.packageName,
                             uiState.repositoryUrl,
+                            uiState.anyFilePublished,
                             uiState.lookupConfig,
                             clipboardLabel,
                             copiedToast,
@@ -290,6 +291,7 @@ internal fun FdroidVersionListPage(
                                 packagePageUrl = uiState.packagePageUrl,
                                 packageName = uiState.packageName,
                                 repoUrl = uiState.repositoryUrl,
+                                anyFilePublished = uiState.anyFilePublished,
                                 lookupConfig = uiState.lookupConfig,
                             )
                         }
@@ -368,6 +370,7 @@ private class FdroidVersionCardActions(
     val packagePageUrl: String,
     val packageName: String,
     val repoUrl: String,
+    val anyFilePublished: Boolean,
     val lookupConfig: GitHubLookupConfig,
 )
 
@@ -426,6 +429,12 @@ private fun LazyListScope.fdroidVersionListBody(
                                 uiState.errorMessage,
                             ),
                     )
+                }
+            } else if (!uiState.anyFilePublished) {
+                // Said once, about the repository, rather than repeated inside every card. Three builds
+                // each carrying the same paragraph is what made this page read as an apology.
+                item(key = "fdroid-version-no-files") {
+                    FdroidVersionNotice(textRes = R.string.github_fdroid_version_files_not_published)
                 }
             } else if (!uiState.liveHistoryLoaded) {
                 // "This package has eight versions" and "we only kept eight" look identical otherwise.
@@ -511,50 +520,43 @@ private fun FdroidVersionCard(
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    AppCompactIconAction(
-                        icon = osLucideCopyIcon(),
-                        contentDescription = stringResource(R.string.github_fdroid_version_copy_download),
-                        tint = MiuixTheme.colorScheme.primary,
-                        enabled = row.downloadUrl.isNotBlank(),
-                        onClick = { actions.onCopyDownloadUrl(row.downloadUrl) },
-                    )
-                    AppCompactIconAction(
-                        icon = appLucideExternalLinkIcon(),
-                        contentDescription = stringResource(R.string.github_release_open_in_browser),
-                        tint = MiuixTheme.colorScheme.primary,
-                        enabled = actions.packagePageUrl.isNotBlank(),
-                        onClick = { actions.onOpenLink(actions.packagePageUrl) },
-                    )
+                    // Absent rather than dimmed when there is nothing to copy. `AppCompactIconAction`
+                    // keeps the tint it is given whatever `enabled` says, so a disabled copy button reads
+                    // as a live one that does nothing -- and a repository whose index publishes no file
+                    // has that on every row.
+                    if (row.downloadUrl.isNotBlank()) {
+                        AppCompactIconAction(
+                            icon = osLucideCopyIcon(),
+                            contentDescription =
+                                stringResource(R.string.github_fdroid_version_copy_download),
+                            tint = MiuixTheme.colorScheme.primary,
+                            enabled = true,
+                            onClick = { actions.onCopyDownloadUrl(row.downloadUrl) },
+                        )
+                    }
+                    if (actions.packagePageUrl.isNotBlank()) {
+                        AppCompactIconAction(
+                            icon = appLucideExternalLinkIcon(),
+                            contentDescription = stringResource(R.string.github_release_open_in_browser),
+                            tint = MiuixTheme.colorScheme.primary,
+                            enabled = true,
+                            onClick = { actions.onOpenLink(actions.packagePageUrl) },
+                        )
+                    }
                 }
             }
         },
+        // Exactly one badge inline, and the date only when there is no badge to show.
+        //
+        // The title shares this row with the accessory, the header actions and the chevron, and it is the
+        // *anchored* card -- installed and recommended at once -- that carries the most badges. Two
+        // English badges beside two action icons squeezed "2.1.3.0" onto two lines. So the row states the
+        // single most decision-relevant fact and the summary strip below carries the full set.
         titleAccessory = {
-            if (row.installed) {
-                FdroidVersionPill(
-                    label = stringResource(R.string.github_fdroid_version_badge_installed),
-                    color = GitHubStatusPalette.Active,
-                )
-            }
-            if (row.recommended) {
-                FdroidVersionPill(
-                    label = stringResource(R.string.github_fdroid_version_badge_recommended),
-                    color = AppStatusColors.Fresh,
-                )
-            }
-            row.channel.preReleaseLabelRes()?.let { labelRes ->
-                FdroidVersionPill(label = stringResource(labelRes), color = FdroidPreReleaseColor)
-            }
-            // Said on the collapsed card too, unlike the date: a build this device cannot install is a
-            // reason to skip the row rather than a detail to find inside it.
-            if (!row.compatible) {
-                FdroidVersionPill(
-                    label = stringResource(R.string.github_fdroid_version_badge_incompatible),
-                    color = AppStatusColors.Failed,
-                )
-            }
-            // Collapsed, the date is the next thing a reader needs. Open, the header carries actions and
-            // the summary strip states the date, so it stops competing for the title.
-            if (!expanded) {
+            val badge = row.primaryBadge()
+            if (badge != null) {
+                FdroidVersionPill(label = stringResource(badge.labelRes), color = badge.color())
+            } else {
                 formatReleaseUpdatedAtCompact(version.addedAtMillis)?.let { label ->
                     FdroidVersionPill(label = label, color = AppStatusColors.Cached)
                 }
@@ -582,6 +584,12 @@ private fun FdroidVersionCard(
                     label = version.versionCode.toString(),
                     color = GitHubStatusPalette.Stable,
                 )
+                // The full badge set, since the title row shows at most one of them. Also what keeps this
+                // strip from rendering as a tall band around a single pill on a repository whose index
+                // publishes nothing but version names and codes.
+                row.badges().forEach { badge ->
+                    FdroidVersionPill(label = stringResource(badge.labelRes), color = badge.color())
+                }
                 formatReleaseUpdatedAtCompact(version.addedAtMillis)?.let { label ->
                     FdroidVersionPill(label = label, color = AppStatusColors.Cached)
                 }
@@ -607,18 +615,17 @@ private fun FdroidVersionCard(
             FdroidAntiFeatureStrip(features = version.antiFeatures, isDark = isDark)
         }
 
-        FdroidVersionNestedCard(
-            title = stringResource(R.string.github_fdroid_detail_label_release_notes),
-            expanded = notesExpanded,
-            onExpandedChange = onNotesExpandedChange,
-        ) {
-            val notes = version.whatsNew.trim()
-            if (notes.isBlank()) {
-                Text(
-                    text = stringResource(R.string.github_fdroid_version_notes_empty),
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                )
-            } else {
+        // Only when there are notes. The release list shows an empty notes section because it *fetched*
+        // and found none, which is worth saying; here a blank field means the index never carried any, and
+        // on a repository whose package API publishes only names and codes that is every row -- three
+        // accordions that open onto one line of apology.
+        val notes = version.whatsNew.trim()
+        if (notes.isNotBlank()) {
+            FdroidVersionNestedCard(
+                title = stringResource(R.string.github_fdroid_detail_label_release_notes),
+                expanded = notesExpanded,
+                onExpandedChange = onNotesExpandedChange,
+            ) {
                 AppMarkdownContent(
                     markdown = notes,
                     titleColor = MiuixTheme.colorScheme.onBackground,
@@ -631,59 +638,68 @@ private fun FdroidVersionCard(
             }
         }
 
-        FdroidVersionNestedCard(
-            title = stringResource(R.string.github_fdroid_detail_label_apk),
-            expanded = apkExpanded,
-            onExpandedChange = onApkExpandedChange,
-        ) {
-            val asset =
-                remember(row.id, actions.repoUrl) {
-                    fdroidVersionAssetFile(
-                        repoUrl = actions.repoUrl,
-                        apkName = version.apkName,
-                        apkPath = version.apkPath,
-                        apkSha256 = version.apkSha256,
-                        apkSizeBytes = version.apkSizeBytes,
-                        addedAtMillis = version.addedAtMillis,
-                        signerSha256 = version.signerSha256,
+        val asset =
+            remember(row.id, actions.repoUrl) {
+                fdroidVersionAssetFile(
+                    repoUrl = actions.repoUrl,
+                    apkName = version.apkName,
+                    apkPath = version.apkPath,
+                    apkSha256 = version.apkSha256,
+                    apkSizeBytes = version.apkSizeBytes,
+                    addedAtMillis = version.addedAtMillis,
+                    signerSha256 = version.signerSha256,
+                )
+            }
+        // Dropped entirely when the repository publishes no files for anything: the page already said so
+        // once, and an APK section that only repeats it is a heading over a paragraph the reader has read.
+        // Kept when *some* builds have a file, because then its absence is about this build.
+        if (asset != null || actions.anyFilePublished) {
+            FdroidVersionNestedCard(
+                title = stringResource(R.string.github_fdroid_detail_label_apk),
+                expanded = apkExpanded,
+                onExpandedChange = onApkExpandedChange,
+            ) {
+                if (asset == null) {
+                    // Not "refresh and it will appear". f-droid.org's `/api/v1/packages` answers with a
+                    // version name and a code and nothing else -- no file, no size, no hash -- so for a track
+                    // whose repository is read that way, no refresh will ever fill this in. Saying otherwise
+                    // sends the reader to press a button that cannot work.
+                    Text(
+                        text = stringResource(R.string.github_fdroid_version_apk_not_published),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    )
+                } else {
+                    // The tracked card's own asset row, so a file reads the same on all three F-Droid
+                    // surfaces: ABI and extension pills, size, age, the trust check, and icon actions.
+                    GitHubTrackedItemAssetRow(
+                        asset = asset,
+                        expectedPackageName = actions.packageName,
+                        alwaysLatestReleaseDownload = false,
+                        targetAccent = accent,
+                        summaryContainerColor =
+                            GitHubStatusPalette
+                                .tonedSurface(accent, isDark = isDark)
+                                .copy(alpha = if (isDark) 0.30f else 0.18f),
+                        summaryBorderColor = accent.copy(alpha = if (isDark) 0.30f else 0.20f),
+                        supportedAbis = supportedAbis,
+                        relativeTimeNowMillis = nowMillis,
+                        // Verifying an *old* APK's signer matters at least as much as verifying the newest
+                        // one, so this follows the same settings the tracked card follows.
+                        showApkTrustCheck = actions.lookupConfig.decisionAssistEnabled &&
+                            actions.lookupConfig.apkTrustCheckEnabled,
+                        managedInstallEnabled = actions.lookupConfig.appManagedShareInstallEnabled,
+                        manifestInfo = null,
+                        managedInstallRunning = false,
+                        installActionColor = MiuixTheme.colorScheme.primary,
+                        context = context,
+                        onOpenApkInfo = {
+                            actions.packagePageUrl.takeIf(String::isNotBlank)?.let(actions.onOpenLink)
+                        },
+                        onInstallApk = { actions.onOpenLink(asset.downloadUrl) },
+                        onOpenApkInDownloader = { actions.onOpenLink(asset.downloadUrl) },
+                        onShareApkLink = actions.onShareAsset,
                     )
                 }
-            if (asset == null) {
-                Text(
-                    text = stringResource(R.string.github_fdroid_version_apk_unavailable),
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                )
-            } else {
-                // The tracked card's own asset row, so a file reads the same on all three F-Droid
-                // surfaces: ABI and extension pills, size, age, the trust check, and icon actions.
-                GitHubTrackedItemAssetRow(
-                    asset = asset,
-                    expectedPackageName = actions.packageName,
-                    alwaysLatestReleaseDownload = false,
-                    targetAccent = accent,
-                    summaryContainerColor =
-                        GitHubStatusPalette
-                            .tonedSurface(accent, isDark = isDark)
-                            .copy(alpha = if (isDark) 0.30f else 0.18f),
-                    summaryBorderColor = accent.copy(alpha = if (isDark) 0.30f else 0.20f),
-                    supportedAbis = supportedAbis,
-                    relativeTimeNowMillis = nowMillis,
-                    // Verifying an *old* APK's signer matters at least as much as verifying the newest
-                    // one, so this follows the same settings the tracked card follows.
-                    showApkTrustCheck = actions.lookupConfig.decisionAssistEnabled &&
-                        actions.lookupConfig.apkTrustCheckEnabled,
-                    managedInstallEnabled = actions.lookupConfig.appManagedShareInstallEnabled,
-                    manifestInfo = null,
-                    managedInstallRunning = false,
-                    installActionColor = MiuixTheme.colorScheme.primary,
-                    context = context,
-                    onOpenApkInfo = {
-                        actions.packagePageUrl.takeIf(String::isNotBlank)?.let(actions.onOpenLink)
-                    },
-                    onInstallApk = { actions.onOpenLink(asset.downloadUrl) },
-                    onOpenApkInDownloader = { actions.onOpenLink(asset.downloadUrl) },
-                    onShareApkLink = actions.onShareAsset,
-                )
             }
         }
     }
@@ -965,6 +981,63 @@ private fun FdroidVersionSnapshot.sdkLabel(): String? {
         else -> null
     }
 }
+
+/** One badge, resolved: the pre-release one's label depends on which channel the build is in. */
+private class FdroidVersionBadge(
+    val labelRes: Int,
+    private val tint: FdroidBadgeTint,
+) {
+    @Composable
+    fun color(): Color =
+        when (tint) {
+            FdroidBadgeTint.Installed -> GitHubStatusPalette.Active
+            FdroidBadgeTint.Recommended -> AppStatusColors.Fresh
+            FdroidBadgeTint.PreRelease -> FdroidPreReleaseColor
+            FdroidBadgeTint.Incompatible -> AppStatusColors.Failed
+        }
+}
+
+private enum class FdroidBadgeTint { Installed, Recommended, PreRelease, Incompatible }
+
+/**
+ * A build's badges, most decision-relevant first.
+ *
+ * Ordered rather than merely collected, because the title row has space for exactly one: what is already
+ * on your device outranks what the track would install, which outranks the channel, which outranks a
+ * build you could not install anyway.
+ */
+private fun FdroidVersionRow.badges(): List<FdroidVersionBadge> =
+    buildList {
+        if (installed) {
+            add(
+                FdroidVersionBadge(
+                    labelRes = R.string.github_fdroid_version_badge_installed,
+                    tint = FdroidBadgeTint.Installed,
+                ),
+            )
+        }
+        if (recommended) {
+            add(
+                FdroidVersionBadge(
+                    labelRes = R.string.github_fdroid_version_badge_recommended,
+                    tint = FdroidBadgeTint.Recommended,
+                ),
+            )
+        }
+        channel.preReleaseLabelRes()?.let { labelRes ->
+            add(FdroidVersionBadge(labelRes = labelRes, tint = FdroidBadgeTint.PreRelease))
+        }
+        if (!compatible) {
+            add(
+                FdroidVersionBadge(
+                    labelRes = R.string.github_fdroid_version_badge_incompatible,
+                    tint = FdroidBadgeTint.Incompatible,
+                ),
+            )
+        }
+    }
+
+private fun FdroidVersionRow.primaryBadge(): FdroidVersionBadge? = badges().firstOrNull()
 
 /** Null for a stable build; the channel's own name for anything else. */
 private fun GitHubReleaseChannel.preReleaseLabelRes(): Int? =

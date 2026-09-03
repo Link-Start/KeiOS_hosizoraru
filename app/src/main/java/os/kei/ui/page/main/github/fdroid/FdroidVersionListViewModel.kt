@@ -57,6 +57,14 @@ internal data class FdroidVersionListUiState(
      * matters, because "this repository has eight versions" and "we only kept eight" look identical.
      */
     val liveHistoryLoaded: Boolean = false,
+    /**
+     * True when at least one build in the history says where its APK is.
+     *
+     * False is the normal state for a track whose repository is read through `/api/v1/packages`, which
+     * answers with a version name and a code and nothing else. That is a fact about the *repository*
+     * rather than about any one build, so the page says it once instead of on every card.
+     */
+    val anyFilePublished: Boolean = false,
     /** The reader's lookup settings, so an APK row judges trust the way the tracked card does. */
     val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
 )
@@ -308,7 +316,13 @@ internal class FdroidVersionListViewModel(
                 (!state.compatibleOnly || row.compatible) && row.version.matchesQuery(state.query)
             }
         defaultExpandedIds = fdroidVersionAnchorIds(visible)
-        _uiState.update { current -> current.copy(rows = visible, totalCount = allRows.size) }
+        _uiState.update { current ->
+            current.copy(
+                rows = visible,
+                totalCount = allRows.size,
+                anyFilePublished = allRows.any { row -> row.downloadUrl.isNotBlank() },
+            )
+        }
     }
 }
 

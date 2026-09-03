@@ -1722,6 +1722,8 @@
     <string name="github_fdroid_version_channel_preview">预览版</string>
     <string name="github_fdroid_version_notes_empty">该版本没有发行说明</string>
     <string name="github_fdroid_version_apk_unavailable">该版本没有 APK 记录，刷新后可能补全</string>
+    <string name="github_fdroid_version_apk_not_published">该仓库的 package API 只提供版本号，没有此版本的文件信息</string>
+    <string name="github_fdroid_version_files_not_published">该仓库的 package API 只提供版本号，没有 APK 文件信息，因此此页面无法提供下载</string>
     <string name="github_fdroid_version_filter_compatible">仅显示兼容此设备的版本</string>
     <string name="github_fdroid_version_copy_download">复制下载链接</string>
     <string name="github_fdroid_version_sdk_min_format">min %1$d</string>

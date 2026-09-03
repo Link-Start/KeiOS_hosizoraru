@@ -1737,6 +1737,8 @@
     <string name="github_fdroid_version_channel_preview">Preview</string>
     <string name="github_fdroid_version_notes_empty">This version has no release notes</string>
     <string name="github_fdroid_version_apk_unavailable">No APK recorded for this version; a refresh may fill it in</string>
+    <string name="github_fdroid_version_apk_not_published">The package API for this repository lists version numbers only, with no file details for this version</string>
+    <string name="github_fdroid_version_files_not_published">The package API for this repository lists version numbers only, so no APK details or downloads are available here</string>
     <string name="github_fdroid_version_filter_compatible">Show only versions this device can install</string>
     <string name="github_fdroid_version_copy_download">Copy download link</string>
     <string name="github_fdroid_version_sdk_min_format">min %1$d</string>

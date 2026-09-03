@@ -1735,6 +1735,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_fdroid_version_channel_preview">プレビュー</string>
     <string name="github_fdroid_version_notes_empty">このバージョンにはリリースノートがありません</string>
     <string name="github_fdroid_version_apk_unavailable">このバージョンの APK 情報がありません。更新すると補完される場合があります</string>
+    <string name="github_fdroid_version_apk_not_published">このリポジトリの package API はバージョン番号のみを提供し、このバージョンのファイル情報はありません</string>
+    <string name="github_fdroid_version_files_not_published">このリポジトリの package API はバージョン番号のみを提供するため、APK の詳細やダウンロードはこのページでは利用できません</string>
     <string name="github_fdroid_version_filter_compatible">この端末に対応するバージョンのみ表示</string>
     <string name="github_fdroid_version_copy_download">ダウンロードリンクをコピー</string>
     <string name="github_fdroid_version_sdk_min_format">min %1$d</string>

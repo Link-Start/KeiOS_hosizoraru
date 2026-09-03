@@ -64,6 +64,19 @@ object KeiOsTestTags {
     const val GitHubReleaseTagFilterButton = "github_release_tag_filter_button"
 
     /**
+     * The F-Droid build-history page, and the handles a journey needs on it.
+     *
+     * [FdroidVersionListMenuItem] doubles as the finder for an F-Droid track, the same way
+     * [GitHubFdroidDetailMenuItem] does — an overflow is the only place either appears.
+     */
+    const val FdroidVersionListMenuItem = "fdroid_version_list_menu_item"
+    const val FdroidVersionPageRoot = "fdroid_version_page_root"
+    const val FdroidVersionCardFirst = "fdroid_version_card_first"
+    const val FdroidVersionFilterField = "fdroid_version_filter_field"
+    const val FdroidVersionCompatibleFilterButton = "fdroid_version_compatible_filter_button"
+    const val FdroidVersionRefreshButton = "fdroid_version_refresh_button"
+
+    /**
      * The first tracked card itself, so a journey can open one.
      *
      * A collapsed card composes its header and nothing else, so the asset panel, the asset rows and the

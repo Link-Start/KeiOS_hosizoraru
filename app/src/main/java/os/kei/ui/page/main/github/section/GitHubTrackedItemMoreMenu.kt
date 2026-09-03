@@ -33,6 +33,7 @@ import os.kei.ui.page.main.os.appLucidePinIcon
 import os.kei.ui.page.main.os.appLucidePinOffIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
+import os.kei.ui.page.main.os.appLucideVersionIcon
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -73,15 +74,21 @@ internal fun GitHubTrackedItemMoreActions(
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
     onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
     onOpenReleaseList: (GitHubTrackedApp) -> Unit,
+    onOpenFdroidVersionList: (GitHubTrackedApp) -> Unit,
 ) {
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
     val showActionsAction = item.isGitHubRepositoryTrack()
     val showFdroidDetailAction = item.isFdroidRepositoryTrack()
     // Only a GitHub repository has a paged release feed behind it. The Git platforms reach releases
-    // through their own strategies and are not wired to the list page yet; a direct APK or an F-Droid
-    // index has no release history at all.
+    // through their own strategies and are not wired to the list page yet, and a direct APK is one file
+    // with no history behind it at all.
     val showReleaseListAction = item.isGitHubRepositoryTrack()
+    // An F-Droid index does have a history — every build the repository ever published — it just is not
+    // a *release* feed, so it gets its own page rather than the release list. Offered beside the detail
+    // sheet rather than instead of it: the sheet describes this track's configuration and the one build
+    // it selected, and the page is the history that build came out of.
+    val showFdroidVersionListAction = item.isFdroidRepositoryTrack()
     val gitRepositoryReleaseNotesSupported =
         item.isGitRepositoryTrack() &&
             buildGitRepositoryTrackIdentity(item.repoUrl)?.platform in releaseNotesSupportedGitPlatforms
@@ -127,6 +134,7 @@ internal fun GitHubTrackedItemMoreActions(
     val actionsIcon = appLucideBranchIcon()
     val detailIcon = appLucideInfoIcon()
     val releaseNotesIcon = appLucideNotesIcon()
+    val versionHistoryIcon = appLucideVersionIcon()
     val ignoreIcon = appLucidePauseIcon()
     val pinIcon = appLucidePinIcon()
     val pinOffIcon = appLucidePinOffIcon()
@@ -195,6 +203,22 @@ internal fun GitHubTrackedItemMoreActions(
                                         onClick = {
                                             menuExpanded = false
                                             onOpenFdroidDetail(item)
+                                        },
+                                    ),
+                                )
+                            }
+                            if (showFdroidVersionListAction) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "fdroid_version_list",
+                                        testTag = KeiOsTestTags.FdroidVersionListMenuItem,
+                                        text = stringResource(
+                                            R.string.github_fdroid_version_page_title,
+                                        ),
+                                        leadingIcon = versionHistoryIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenFdroidVersionList(item)
                                         },
                                     ),
                                 )

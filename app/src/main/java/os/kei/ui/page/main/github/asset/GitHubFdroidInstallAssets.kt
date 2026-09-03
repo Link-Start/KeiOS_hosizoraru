@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.github.asset
 
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
-import os.kei.feature.github.data.local.fdroid.FdroidVersionMetadataSummary
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -26,12 +25,18 @@ internal fun GitHubTrackedApp.fdroidAssetPanelData(
     if (sidecar.sourceConfigSignature != fdroidRepositoryCheckSourceSignature()) return null
     val selectedVersion = sidecar.selectedVersion ?: return null
     val repoUrl = sidecar.repo.repoUrl.trim().ifBlank { this.repoUrl.trim() }
-    val downloadUrl = resolveFdroidApkDownloadUrl(repoUrl, selectedVersion.apkPath)
-        .ifBlank { resolveFdroidApkDownloadUrl(repoUrl, selectedVersion.apkName) }
-    if (downloadUrl.isBlank()) return null
+    val asset = fdroidVersionAssetFile(
+        repoUrl = repoUrl,
+        apkName = selectedVersion.apkName,
+        apkPath = selectedVersion.apkPath,
+        apkSha256 = selectedVersion.apkSha256,
+        apkSizeBytes = selectedVersion.apkSizeBytes,
+        addedAtMillis = selectedVersion.addedAtMillis,
+        signerSha256 = selectedVersion.signerSha256
+    ) ?: return null
 
     val identity = buildFdroidRepositoryTrackIdentity(repoUrl, packageName)
-    val assetName = selectedVersion.assetName(downloadUrl)
+    val assetName = asset.name
     val targetTag = selectedVersion.versionName.trim()
         .ifBlank { selectedVersion.versionCode.takeIf { it > 0L }?.toString().orEmpty() }
         .ifBlank { assetDisplayName(assetName) }
@@ -50,21 +55,7 @@ internal fun GitHubTrackedApp.fdroidAssetPanelData(
             htmlUrl = htmlUrl,
             releaseUpdatedAtMillis = selectedVersion.addedAtMillis?.takeIf { it > 0L },
             releaseNotesBody = selectedVersion.whatsNew.trim(),
-            assets =
-                listOf(
-                    GitHubReleaseAssetFile(
-                        name = assetName,
-                        downloadUrl = downloadUrl,
-                        sizeBytes = selectedVersion.apkSizeBytes,
-                        downloadCount = 0,
-                        contentType = "application/vnd.android.package-archive",
-                        updatedAtMillis = selectedVersion.addedAtMillis?.takeIf { it > 0L },
-                        digest = selectedVersion.apkSha256.toSha256Digest(),
-                        signerSha256 = selectedVersion.signerSha256
-                            .map { it.trim() }
-                            .filter { it.isNotBlank() }
-                    )
-                ),
+            assets = listOf(asset),
             showingAllAssets = false,
             fetchSource = GITHUB_FDROID_ASSET_FETCH_SOURCE,
             sourceConfigSignature = sidecar.sourceConfigSignature,
@@ -72,6 +63,43 @@ internal fun GitHubTrackedApp.fdroidAssetPanelData(
     return GitHubFdroidAssetPanelData(
         bundle = bundle,
         targetRawTag = targetTag,
+    )
+}
+
+/**
+ * One F-Droid build turned into the app's own asset shape, or null when there is nowhere to get it.
+ *
+ * Both F-Droid surfaces go through here: the tracked card's asset panel, which offers the one build the
+ * track selected, and the version history, which offers any build a reader opens. They have to agree,
+ * because the trust check reads [GitHubReleaseAssetFile.digest] and [GitHubReleaseAssetFile.signerSha256]
+ * and a build that resolved its hash differently on one surface would verify differently there.
+ *
+ * Null rather than a blank URL is the point: the package API lists builds without saying where their
+ * APKs are, and an asset row with no href is a download button that does nothing.
+ */
+internal fun fdroidVersionAssetFile(
+    repoUrl: String,
+    apkName: String,
+    apkPath: String,
+    apkSha256: String,
+    apkSizeBytes: Long,
+    addedAtMillis: Long?,
+    signerSha256: List<String>,
+): GitHubReleaseAssetFile? {
+    val downloadUrl = resolveFdroidApkDownloadUrl(repoUrl, apkPath)
+        .ifBlank { resolveFdroidApkDownloadUrl(repoUrl, apkName) }
+    if (downloadUrl.isBlank()) return null
+    return GitHubReleaseAssetFile(
+        name = fdroidAssetName(apkName = apkName, apkPath = apkPath, downloadUrl = downloadUrl),
+        downloadUrl = downloadUrl,
+        sizeBytes = apkSizeBytes,
+        downloadCount = 0,
+        contentType = "application/vnd.android.package-archive",
+        updatedAtMillis = addedAtMillis?.takeIf { it > 0L },
+        digest = apkSha256.toSha256Digest(),
+        signerSha256 = signerSha256
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
     )
 }
 
@@ -92,7 +120,11 @@ internal fun resolveFdroidApkDownloadUrl(
     }.getOrDefault("")
 }
 
-private fun FdroidVersionMetadataSummary.assetName(downloadUrl: String): String {
+private fun fdroidAssetName(
+    apkName: String,
+    apkPath: String,
+    downloadUrl: String,
+): String {
     return apkName.trim()
         .ifBlank { apkPath.trim().substringAfterLast('/') }
         .ifBlank { fdroidAssetNameFromUrl(downloadUrl) }

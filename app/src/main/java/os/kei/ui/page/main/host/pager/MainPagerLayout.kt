@@ -159,6 +159,10 @@ internal fun MainPagerLayout(
         remember(navigator) {
             { trackId: String -> navigator.pushSingleTop(KeiosRoute.GitHubReleaseList(trackId)) }
         }
+    val onOpenFdroidVersionList =
+        remember(navigator) {
+            { trackId: String -> navigator.pushSingleTop(KeiosRoute.FdroidVersionList(trackId)) }
+        }
     val onOpenGitHubActionsNotificationHistory =
         remember(navigator) {
             { navigator.pushSingleTop(KeiosRoute.GitHubActionsNotificationHistory) }
@@ -620,6 +624,7 @@ internal fun MainPagerLayout(
                                     requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,
                                     onOpenActionsNotificationHistory = onOpenGitHubActionsNotificationHistory,
                                     onOpenReleaseList = onOpenGitHubReleaseList,
+                                    onOpenFdroidVersionList = onOpenFdroidVersionList,
                                 )
                             }
                         } else {

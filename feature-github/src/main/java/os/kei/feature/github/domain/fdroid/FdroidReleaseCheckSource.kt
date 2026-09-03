@@ -31,7 +31,6 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.fdroidRepositoryCheckSourceSignature
-import java.util.Locale
 
 fun interface FdroidReleaseCheckEvaluator {
     suspend fun evaluate(
@@ -304,19 +303,8 @@ class FdroidReleaseCheckSource(
         )
     }
 
-    private fun FdroidVersionSnapshot.releaseChannel(): GitHubReleaseChannel {
-        val text = (releaseChannels + versionName)
-            .joinToString(" ")
-            .lowercase(Locale.ROOT)
-        return when {
-            "dev" in text || "snapshot" in text -> GitHubReleaseChannel.DEV
-            "alpha" in text -> GitHubReleaseChannel.ALPHA
-            "beta" in text -> GitHubReleaseChannel.BETA
-            Regex("""\brc\b|release candidate""").containsMatchIn(text) -> GitHubReleaseChannel.RC
-            "preview" in text -> GitHubReleaseChannel.PREVIEW
-            else -> GitHubReleaseChannel.STABLE
-        }
-    }
+    private fun FdroidVersionSnapshot.releaseChannel(): GitHubReleaseChannel =
+        fdroidReleaseChannelOf(releaseChannels = releaseChannels, versionName = versionName)
 
     private fun FdroidVersionSnapshot.trustFailureDetail(
         trustPolicy: FdroidTrustPolicy,

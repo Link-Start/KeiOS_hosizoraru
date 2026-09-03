@@ -26,6 +26,12 @@ sealed interface KeiosRoute : NavKey {
         val trackId: String,
     ) : KeiosRoute
 
+    /** A tracked F-Droid package's build history. Same shape, other source. */
+    @Serializable
+    data class FdroidVersionList(
+        val trackId: String,
+    ) : KeiosRoute
+
     @Serializable
     data object About : KeiosRoute
 

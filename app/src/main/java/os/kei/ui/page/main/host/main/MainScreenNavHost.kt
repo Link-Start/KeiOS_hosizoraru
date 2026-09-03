@@ -25,6 +25,7 @@ import os.kei.ui.page.main.ba.BaCalendarPoolPage
 import os.kei.ui.page.main.ba.BaCalendarPoolTab
 import os.kei.ui.page.main.ba.toInitialServerSelection
 import os.kei.ui.page.main.github.history.GitHubActionsNotificationHistoryPage
+import os.kei.ui.page.main.github.fdroid.FdroidVersionListPage
 import os.kei.ui.page.main.github.release.GitHubReleaseListPage
 import os.kei.ui.page.main.host.pager.MainPagerLayout
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
@@ -303,6 +304,17 @@ internal fun MainScreenNavHost(
                             exportBackdropToContent = true,
                         ) {
                             GitHubReleaseListPage(
+                                trackId = route.trackId,
+                                onBack = onRouteBack,
+                            )
+                        }
+                    }
+                    entry<KeiosRoute.FdroidVersionList> { route ->
+                        MainScreenRouteBackgroundHost(
+                            prefsState = prefsState,
+                            exportBackdropToContent = true,
+                        ) {
+                            FdroidVersionListPage(
                                 trackId = route.trackId,
                                 onBack = onRouteBack,
                             )

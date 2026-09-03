@@ -78,6 +78,7 @@ internal data class GitHubTrackedItemsActions(
     val onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
     val onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
     val onOpenReleaseList: (GitHubTrackedApp) -> Unit,
+    val onOpenFdroidVersionList: (GitHubTrackedApp) -> Unit,
     val onTrackedCardExpandedChange: (String, Boolean) -> Unit,
     val onToggleTrackedPinned: (GitHubTrackedApp) -> Unit,
     val onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,

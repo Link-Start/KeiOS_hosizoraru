@@ -13,7 +13,7 @@ import org.junit.Test
  * private now, so the other half of the old contract (tagging the list rather than the visible box)
  * is enforced by the compiler and does not need a test.
  *
- * A ninth host arriving without either half is the failure this guards: it would compile, and the
+ * A new host arriving without either half is the failure this guards: it would compile, and the
  * pile on it would silently be one card deep again.
  */
 class AppEdgeStackHostSourceTest {
@@ -73,6 +73,7 @@ private val STACKING_HOSTS =
     listOf(
         "ba/BaCalendarPoolStackedLayout.kt",
         "ba/BaPageContent.kt",
+        "github/fdroid/FdroidVersionListPage.kt",
         "github/history/GitHubActionsNotificationHistoryPage.kt",
         "github/release/GitHubReleaseListPage.kt",
         "github/section/GitHubMainContentSection.kt",

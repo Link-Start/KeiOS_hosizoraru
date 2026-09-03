@@ -170,6 +170,10 @@
     <string name="debug_component_lab_liquid_action_menu_quality_auto">自動</string>
     <string name="debug_component_lab_liquid_action_menu_quality_high">高品質</string>
     <string name="debug_component_lab_liquid_action_menu_quality_lossless">ロスレス</string>
+    <string name="debug_component_lab_liquid_action_menu_playback_options">再生オプション</string>
+    <string name="debug_component_lab_liquid_action_menu_playback_options_summary">複数選択できます。サブメニューは開いたままです</string>
+    <string name="debug_component_lab_liquid_action_menu_show_lyrics">歌詞を表示</string>
+    <string name="debug_component_lab_liquid_action_menu_normalize_volume">音量を均一化</string>
     <string name="debug_component_lab_liquid_action_menu_info">パッシブ情報</string>
     <string name="debug_component_lab_liquid_action_menu_info_summary">操作や無効状態を付けずに案内を読み上げます</string>
     <string name="debug_component_lab_liquid_action_menu_disabled">クラウド同期は現在利用不可</string>

@@ -16,7 +16,7 @@
     <string name="feedback_issue_logs_title">ローカルログ</string>
     <string name="feedback_issue_logs_summary">KeiOS AppLogger のファイルログだけを読み取ります。ZIP をエクスポートし、GitHub に手動で添付してください。</string>
     <string name="feedback_issue_logs_last_export">最近のエクスポート</string>
-    <string name="feedback_issue_draft_title">Issue 内容</string>
+    <string name="feedback_issue_draft_title">Issue の内容</string>
     <string name="feedback_issue_draft_summary">送信前にタイトルと本文を編集できます。ログ概要は基本的な秘匿処理済みです。</string>
     <string name="feedback_issue_title_placeholder">Issue タイトル</string>
     <string name="feedback_issue_body_placeholder">Issue 本文 Markdown</string>

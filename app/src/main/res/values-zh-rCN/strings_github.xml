@@ -392,6 +392,7 @@
     <string name="github_share_import_error_no_release">该仓库暂无可用 release</string>
     <string name="github_share_import_error_missing_release_tag">分享链接缺少 release tag</string>
     <string name="github_share_import_error_no_stable_release">该仓库暂无稳定版 release</string>
+    <string name="github_share_import_error_privilege_mode_disabled">特权模式已关闭，KeiOS 无法接管安装</string>
     <string name="github_share_import_error_shizuku_unavailable">Shizuku 当前未启动，无法由 KeiOS 接管安装</string>
     <string name="github_share_import_error_root_unavailable">当前未获得 root 权限，无法由 KeiOS 接管安装</string>
     <string name="github_share_import_error_shizuku_permission_missing">KeiOS 尚未获得 Shizuku 授权，无法接管安装</string>
@@ -1001,6 +1002,7 @@
     <string name="github_track_sheet_cd_confirm_add">确认新增</string>
     <string name="github_track_sheet_cd_confirm_save">确认保存</string>
     <string name="github_track_sheet_section_repo_app">仓库与 App</string>
+    <string name="github_track_sheet_summary_repo_app">选择更新来源，填写目标地址，并按需关联本机 App。</string>
     <string name="github_track_sheet_section_repository">仓库来源</string>
     <string name="github_track_sheet_section_package_app">包名与本机 App</string>
     <string name="github_track_sheet_source_mode_github">GitHub 项目</string>
@@ -1053,6 +1055,7 @@
     <string name="github_track_badge_external_build">外部构建</string>
     <string name="github_track_badge_waiting_release">等待 Release</string>
     <string name="github_track_sheet_section_check_option">检查选项</string>
+    <string name="github_track_sheet_summary_check_option_overview">%1$s · %2$s</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid 选项</string>
     <string name="github_track_sheet_summary_fdroid_probe">保存后刷新会读取 package API 或仓库 index，并按刷新间隔和远端校验信息复用缓存，记录包信息、版本、信任摘要和反特性摘要。</string>
     <string name="github_track_sheet_label_fdroid_version_selection">版本选择</string>
@@ -1136,6 +1139,7 @@
     <string name="github_track_sheet_label_app_list">App 列表</string>
     <string name="github_track_sheet_app_result_count_format">显示 %1$d / %2$d 个</string>
     <string name="github_track_sheet_app_filter_scope_label">App 类型</string>
+    <string name="github_track_sheet_app_filter_summary">%1$s · %2$s</string>
     <string name="github_track_sheet_app_filter_user_apps">用户</string>
     <string name="github_track_sheet_app_filter_system_apps">系统</string>
     <string name="github_track_sheet_app_filter_tracked_apps">已追踪</string>
@@ -1264,6 +1268,7 @@
     <string name="github_share_import_notify_content_asset_ready">%1$s · %3$d APK · %2$s</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s</string>
+    <string name="github_share_import_notify_target_only">%1$s</string>
     <string name="github_share_import_notify_content_installing">%1$s · 准备中</string>
     <string name="github_share_import_notify_content_install_ready">%1$s · 待确认</string>
     <string name="github_share_import_notify_content_install_committing">%1$s · 提交中</string>

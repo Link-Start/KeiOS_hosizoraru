@@ -48,7 +48,7 @@
     <string name="settings_group_performance_header">性能</string>
     <string name="settings_group_performance_title">パフォーマンス先読み</string>
     <string name="settings_group_performance_summary">メインページ保持、ウォームデータ、生徒情報メディアの先読み戦略です。</string>
-    <string name="settings_group_home_effects_header">Home</string>
+    <string name="settings_group_home_effects_header">ホーム</string>
     <string name="settings_group_home_effects_title">Home 効果</string>
     <string name="settings_group_home_effects_summary">Home ハイライト、動的背景、移動中の表示戦略を管理します。</string>
     <string name="settings_group_animation_header">アニメーション</string>
@@ -147,7 +147,7 @@
     <string name="settings_non_home_background_preview_scope">現在の Home 以外の背景パラメータをプレビューします。実際のページでは内容密度とガラスレイヤーが追加されます。</string>
     <string name="settings_non_home_background_preview_sample_title">ページ内容サンプル</string>
     <string name="settings_non_home_background_preview_sample_body">画像、不透明度、アンカー、読みやすさオーバーレイが文字の判読性を保つか確認できます。</string>
-    <string name="settings_non_home_background_preview_sample_primary">主要内容</string>
+    <string name="settings_non_home_background_preview_sample_primary">メインコンテンツ</string>
     <string name="settings_non_home_background_preview_sample_secondary">補足情報</string>
     <string name="settings_non_home_background_opacity_title">背景不透明度</string>
     <string name="settings_non_home_background_opacity_summary">現在の不透明度: %1$d%%。プリセットで素早く切り替えできます。</string>
@@ -403,7 +403,7 @@
     <string name="settings_cache_storage_cache_config_disk">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s</string>
     <string name="settings_cache_storage_ba_playback">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · 走査 %4$d 件 · ヒット %5$d 件/%6$d 区間/%7$s</string>
     <string name="settings_cache_storage_debug_ui_dump">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · ディレクトリ %4$s</string>
-    <string name="settings_cache_entry_github_title">Home / GitHub</string>
+    <string name="settings_cache_entry_github_title">ホーム / GitHub</string>
     <string name="settings_cache_entry_github_summary">バージョン確認結果と GitHub 追跡設定。</string>
     <string name="settings_cache_entry_github_detail">追跡 %1$d 件 · 確認キャッシュ %2$d 件 · アセットキャッシュ %3$d 件 · F-Droid Index %4$d 件 / %5$d ソース · %6$s</string>
     <string name="settings_cache_refresh_record_present">更新記録あり</string>

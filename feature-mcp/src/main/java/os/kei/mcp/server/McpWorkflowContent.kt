@@ -74,7 +74,7 @@ internal class McpWorkflowContent(
             description = localText(
                 locale,
                 "KeiOS MCP 工作流蓝图",
-                "KeiOS MCP workflow blueprints",
+                "KeiOS MCP ワークフローブループリント",
                 "KeiOS MCP workflow blueprints"
             ),
             mimeType = MIME_MARKDOWN
@@ -91,7 +91,7 @@ internal class McpWorkflowContent(
             description = localText(
                 locale,
                 "KeiOS MCP 单个工作流蓝图",
-                "KeiOS MCP workflow detail",
+                "KeiOS MCP ワークフロー詳細",
                 "KeiOS MCP workflow detail"
             ),
             mimeType = MIME_MARKDOWN
@@ -112,38 +112,38 @@ internal class McpWorkflowContent(
             description = localText(
                 locale,
                 "为 Claw 生成 KeiOS MCP 定时任务或组合技能计划。",
-                "Generate a KeiOS MCP scheduled workflow or composed skill plan for Claw.",
+                "Claw 向けの KeiOS MCP 定期ワークフローまたは複合スキル計画を生成します。",
                 "Generate a KeiOS MCP scheduled workflow or composed skill plan for Claw."
             ),
             arguments = listOf(
                 PromptArgument(
                     name = "goal",
-                    description = localText(locale, "目标", "Goal", "Goal"),
+                    description = localText(locale, "目标", "目標", "Goal"),
                     required = true,
-                    title = localText(locale, "目标", "Goal", "Goal")
+                    title = localText(locale, "目标", "目標", "Goal")
                 ),
                 PromptArgument(
                     name = "cadence",
                     description = localText(
                         locale,
                         "执行频率，例如每天 09:00 或每 3 小时。",
-                        "Cadence, such as daily at 09:00 or every 3 hours.",
+                        "実行頻度。例：毎日 09:00、または 3 時間ごと。",
                         "Cadence, such as daily at 09:00 or every 3 hours."
                     ),
                     required = false,
-                    title = localText(locale, "频率", "Cadence", "Cadence")
+                    title = localText(locale, "频率", "実行頻度", "Cadence")
                 ),
                 PromptArgument(
                     name = "workflow",
-                    description = localText(locale, "蓝图 id", "Blueprint id", "Blueprint id"),
+                    description = localText(locale, "蓝图 id", "ブループリント ID", "Blueprint id"),
                     required = false,
-                    title = localText(locale, "蓝图", "Blueprint", "Blueprint")
+                    title = localText(locale, "蓝图", "ブループリント", "Blueprint")
                 ),
                 PromptArgument(
                     name = "delivery",
-                    description = localText(locale, "输出方式", "Delivery", "Delivery"),
+                    description = localText(locale, "输出方式", "配信方法", "Delivery"),
                     required = false,
-                    title = localText(locale, "输出", "Delivery", "Delivery")
+                    title = localText(locale, "输出", "出力", "Delivery")
                 )
             )
         ) { request ->
@@ -155,7 +155,7 @@ internal class McpWorkflowContent(
                 description = localText(
                     locale,
                     "KeiOS MCP 工作流计划",
-                    "KeiOS MCP workflow plan",
+                    "KeiOS MCP ワークフロー計画",
                     "KeiOS MCP workflow plan"
                 ),
                 messages = listOf(
@@ -184,13 +184,13 @@ internal class McpWorkflowContent(
 
     private fun buildWorkflowSkillTextUncached(locale: Locale): String {
         return buildString {
-            appendLine("# KeiOS MCP Workflows")
+            appendLine(localText(locale, "# KeiOS MCP 工作流", "# KeiOS MCP ワークフロー", "# KeiOS MCP Workflows"))
             appendLine()
             appendLine(
                 localText(
                     locale,
                     "这些蓝图用于 Claw 侧创建定时任务或组合技能。KeiOS MCP 提供工具、资源与 Prompt，任务调度由客户端保存和触发。",
-                    "These blueprints help Claw create scheduled tasks or composed skills. KeiOS MCP provides tools, resources, and prompts; the client stores and triggers schedules.",
+                    "これらのブループリントは、Claw で定期タスクや複合スキルを作成するために使います。KeiOS MCP はツール、リソース、プロンプトを提供し、クライアントがスケジュールを保存して実行します。",
                     "These blueprints help Claw create scheduled tasks or composed skills. KeiOS MCP provides tools, resources, and prompts; the client stores and triggers schedules."
                 )
             )
@@ -209,12 +209,12 @@ internal class McpWorkflowContent(
                 appendLine()
                 appendLine(blueprint.summary(locale))
                 appendLine()
-                appendLine(localText(locale, "步骤：", "Steps:", "Steps:"))
+                appendLine(localText(locale, "步骤：", "手順：", "Steps:"))
                 blueprint.steps(locale).forEachIndexed { index, step ->
                     appendLine("${index + 1}. $step")
                 }
                 appendLine()
-                appendLine(localText(locale, "输出：", "Output:", "Output:"))
+                appendLine(localText(locale, "输出：", "出力：", "Output:"))
                 blueprint.output(locale).forEach { item ->
                     appendLine("- $item")
                 }
@@ -283,7 +283,7 @@ internal class McpWorkflowContent(
 
     private fun buildBlueprintMarkdownUncached(workflow: String, locale: Locale): String {
         val blueprint = findBlueprint(workflow) ?: return buildString {
-            appendLine("# Unknown Workflow")
+            appendLine(localText(locale, "# 未知工作流", "# 不明なワークフロー", "# Unknown Workflow"))
             appendLine()
             appendLine("workflow=$workflow")
             appendLine("available=${blueprints.joinToString(",") { it.id }}")
@@ -297,12 +297,12 @@ internal class McpWorkflowContent(
             appendLine()
             appendLine(blueprint.summary(locale))
             appendLine()
-            appendLine("## Steps")
+            appendLine(localText(locale, "## 步骤", "## 手順", "## Steps"))
             blueprint.steps(locale).forEachIndexed { index, step ->
                 appendLine("${index + 1}. $step")
             }
             appendLine()
-            appendLine("## Output")
+            appendLine(localText(locale, "## 输出", "## 出力", "## Output"))
             blueprint.output(locale).forEach { output ->
                 appendLine("- $output")
             }
@@ -321,7 +321,7 @@ internal class McpWorkflowContent(
                 localText(
                     locale,
                     "你正在为 KeiOS MCP 创建 Claw 定时任务或组合技能。",
-                    "Create a Claw scheduled task or composed skill for KeiOS MCP.",
+                    "KeiOS MCP 向けの Claw 定期タスクまたは複合スキルを作成します。",
                     "Create a Claw scheduled task or composed skill for KeiOS MCP."
                 )
             )
@@ -330,13 +330,49 @@ internal class McpWorkflowContent(
             appendLine("workflow=${workflow.ifBlank { "auto" }}")
             appendLine("delivery=${delivery.ifBlank { "markdown_summary" }}")
             appendLine()
-            appendLine("Read $WORKFLOW_RESOURCE_URI first.")
+            appendLine(
+                localText(
+                    locale,
+                    "先读取 $WORKFLOW_RESOURCE_URI。",
+                    "最初に $WORKFLOW_RESOURCE_URI を読み取ってください。",
+                    "Read $WORKFLOW_RESOURCE_URI first."
+                )
+            )
             if (workflow.isNotBlank()) {
-                appendLine("Then read ${WORKFLOW_TEMPLATE_URI.replace("{workflow}", workflow)}.")
+                val detailUri = WORKFLOW_TEMPLATE_URI.replace("{workflow}", workflow)
+                appendLine(
+                    localText(
+                        locale,
+                        "然后读取 $detailUri。",
+                        "次に $detailUri を読み取ってください。",
+                        "Then read $detailUri."
+                    )
+                )
             }
-            appendLine("Call tools in the listed order, keep writes behind explicit apply=true, and keep network refreshes bounded by limit/filter arguments.")
-            appendLine("For scheduled tasks, store the schedule in the client and call KeiOS MCP only at execution time.")
-            appendLine("Return a dry-run plan, required tools, cadence, failure handling, and final user-facing output.")
+            appendLine(
+                localText(
+                    locale,
+                    "按列出的顺序调用工具；写入操作必须显式设置 apply=true；网络刷新需用 limit/filter 参数限制范围。",
+                    "記載順にツールを呼び出し、書き込みには明示的な apply=true を必須とし、ネットワーク更新は limit/filter 引数で範囲を制限してください。",
+                    "Call tools in the listed order, keep writes behind explicit apply=true, and keep network refreshes bounded by limit/filter arguments."
+                )
+            )
+            appendLine(
+                localText(
+                    locale,
+                    "定时任务的计划由客户端保存，仅在执行时调用 KeiOS MCP。",
+                    "定期タスクのスケジュールはクライアントに保存し、実行時にのみ KeiOS MCP を呼び出してください。",
+                    "For scheduled tasks, store the schedule in the client and call KeiOS MCP only at execution time."
+                )
+            )
+            appendLine(
+                localText(
+                    locale,
+                    "返回预演计划、所需工具、执行频率、失败处理方式和最终用户可见输出。",
+                    "ドライラン計画、必要なツール、実行頻度、失敗時の処理、最終的なユーザー向け出力を返してください。",
+                    "Return a dry-run plan, required tools, cadence, failure handling, and final user-facing output."
+                )
+            )
         }.trim()
     }
 
@@ -355,13 +391,13 @@ internal class McpWorkflowContent(
                 id = "github-update-watch",
                 titleEn = "GitHub update watch",
                 titleZh = "GitHub 更新巡检",
-                titleJa = "GitHub update watch",
+                titleJa = "GitHub 更新ウォッチ",
                 cadenceHintEn = "Every 3 to 6 hours, or follow the app refresh interval.",
                 cadenceHintZh = "每 3 到 6 小时，或跟随 App 刷新间隔。",
-                cadenceHintJa = "Every 3 to 6 hours, or follow the app refresh interval.",
+                cadenceHintJa = "3〜6 時間ごと、またはアプリの更新間隔に合わせます。",
                 summaryEn = "Audit tracked GitHub and subscription projects, then report update, failure, and pre-release states.",
                 summaryZh = "巡检 GitHub 与订阅项目追踪项，输出更新、失败与预发行状态。",
-                summaryJa = "Audit tracked GitHub and subscription projects, then report update, failure, and pre-release states.",
+                summaryJa = "追跡中の GitHub と購読プロジェクトを確認し、更新、失敗、プレリリースの状態を報告します。",
                 tools = listOf(
                     "keios.github.config.snapshot",
                     "keios.github.tracks.summary",
@@ -378,25 +414,25 @@ internal class McpWorkflowContent(
                     "输出有变化的 App、检查失败项与 direct_apk 远端健康提示。"
                 ),
                 stepsJa = listOf(
-                    "Read config and cache summary.",
-                    "Run cache summary with filterMode=update_available, then network check with onlyUpdates=true when fresh data is needed.",
-                    "Report changed apps, failed checks, and direct_apk remote health hints."
+                    "設定とキャッシュ概要を読み取ります。",
+                    "新しいデータが必要な場合は、filterMode=update_available でキャッシュ概要を取得し、onlyUpdates=true でネットワーク確認を実行します。",
+                    "変更されたアプリ、確認失敗、direct_apk のリモート状態に関する注意を報告します。"
                 ),
                 outputEn = listOf("updated apps", "failed checks", "next action suggestion"),
                 outputZh = listOf("可更新 App", "检查失败项", "下一步处理建议"),
-                outputJa = listOf("updated apps", "failed checks", "next action suggestion")
+                outputJa = listOf("更新可能なアプリ", "確認失敗", "次の対応案")
             ),
             WorkflowBlueprint(
                 id = "github-actions-watch",
                 titleEn = "GitHub Actions watch",
                 titleZh = "GitHub Actions 巡检",
-                titleJa = "GitHub Actions watch",
+                titleJa = "GitHub Actions 更新ウォッチ",
                 cadenceHintEn = "15 minutes to 3 hours, matching each track actionsUpdateIntervalMode.",
                 cadenceHintZh = "15 分钟到 3 小时，优先匹配每个追踪项的 actionsUpdateIntervalMode。",
-                cadenceHintJa = "15 minutes to 3 hours, matching each track actionsUpdateIntervalMode.",
+                cadenceHintJa = "15 分〜3 時間ごと。各追跡項目の actionsUpdateIntervalMode に合わせます。",
                 summaryEn = "Refresh recommended Actions runs for enabled tracks and report newer Android artifacts.",
                 summaryZh = "刷新已开启 Actions 检查的追踪项，报告新的 Android artifact。",
-                summaryJa = "Refresh recommended Actions runs for enabled tracks and report newer Android artifacts.",
+                summaryJa = "Actions の確認が有効な追跡項目を更新し、新しい Android artifact を報告します。",
                 tools = listOf(
                     "keios.github.tracks.list",
                     "keios.github.actions.recommended"
@@ -412,13 +448,13 @@ internal class McpWorkflowContent(
                     "根据每行 actionsIntervalMode 与 actionsIntervalMinutes 规划客户端下次执行时间。"
                 ),
                 stepsJa = listOf(
-                    "List tracks with filterMode=actions_check_enabled.",
-                    "Call recommended runs with refresh=true only for the intended cadence window.",
-                    "Use actionsIntervalMode and actionsIntervalMinutes from each row to decide the next client schedule."
+                    "filterMode=actions_check_enabled で追跡項目を一覧表示します。",
+                    "予定した実行間隔の範囲内でのみ、refresh=true を指定して推奨 run を取得します。",
+                    "actionsIntervalMode と actionsIntervalMinutes から、クライアントの次回実行時刻を決めます。"
                 ),
                 outputEn = listOf("newer runs", "artifact counts", "next schedule hint"),
                 outputZh = listOf("新的 run", "artifact 数量", "下次执行建议"),
-                outputJa = listOf("newer runs", "artifact counts", "next schedule hint")
+                outputJa = listOf("新しい run", "artifact 数", "次回実行の提案")
             ),
             WorkflowBlueprint(
                 id = "ba-daily-brief",
@@ -460,13 +496,13 @@ internal class McpWorkflowContent(
                 id = "os-card-backup",
                 titleEn = "OS card backup",
                 titleZh = "OS 卡片备份",
-                titleJa = "OS card backup",
+                titleJa = "OS カードのバックアップ",
                 cadenceHintEn = "Weekly or before major app changes.",
                 cadenceHintZh = "每周一次，或在大改 App 前执行。",
-                cadenceHintJa = "Weekly or before major app changes.",
+                cadenceHintJa = "毎週、またはアプリの大きな変更前に実行します。",
                 summaryEn = "Export Activity and shell cards, then keep the JSON as a client-side backup artifact.",
                 summaryZh = "导出 Activity 与 Shell 卡片 JSON，并由客户端保存为备份产物。",
-                summaryJa = "Export Activity and shell cards, then keep the JSON as a client-side backup artifact.",
+                summaryJa = "Activity と Shell カードをエクスポートし、JSON をクライアント側のバックアップとして保存します。",
                 tools = listOf(
                     "keios.os.cards.snapshot",
                     "keios.os.cards.export"
@@ -482,25 +518,25 @@ internal class McpWorkflowContent(
                     "把返回 JSON 保存在客户端工作流输出里。"
                 ),
                 stepsJa = listOf(
-                    "Read snapshot to capture visible and expanded counts.",
-                    "Export target=all.",
-                    "Store the returned JSON in the client workflow output."
+                    "スナップショットを読み取り、表示中と展開後の件数を記録します。",
+                    "target=all でエクスポートします。",
+                    "返された JSON をクライアントのワークフロー出力に保存します。"
                 ),
                 outputEn = listOf("backup JSON", "card counts", "restore note"),
                 outputZh = listOf("备份 JSON", "卡片数量", "恢复说明"),
-                outputJa = listOf("backup JSON", "card counts", "restore note")
+                outputJa = listOf("バックアップ JSON", "カード数", "復元メモ")
             ),
             WorkflowBlueprint(
                 id = "webdav-sync-diagnostics",
                 titleEn = "WebDAV sync diagnostics",
                 titleZh = "WebDAV 同步诊断",
-                titleJa = "WebDAV sync diagnostics",
+                titleJa = "WebDAV 同期診断",
                 cadenceHintEn = "Daily, or after a failed or review-required sync.",
                 cadenceHintZh = "每天一次，或在同步失败、需要处理时执行。",
-                cadenceHintJa = "Daily, or after a failed or review-required sync.",
-                summaryEn = "Inspect credential-safe WebDAV state and recent sync history without triggering a transfer.",
-                summaryZh = "读取不含凭据的 WebDAV 状态与近期同步历史，诊断过程不会触发传输。",
-                summaryJa = "Inspect credential-safe WebDAV state and recent sync history without triggering a transfer.",
+                cadenceHintJa = "毎日、または同期の失敗や確認待ちが発生した後に実行します。",
+                summaryEn = "Inspect credential-safe WebDAV state and recent sync history through a read-only diagnostic flow.",
+                summaryZh = "通过只读诊断流程检查已脱敏的 WebDAV 状态与近期同步历史。",
+                summaryJa = "読み取り専用の診断フローで、認証情報を除いた WebDAV 状態と最近の同期履歴を確認します。",
                 tools = listOf(
                     "keios.webdav.status",
                     "keios.webdav.history"
@@ -516,13 +552,13 @@ internal class McpWorkflowContent(
                     "对最新异常 id 使用 mode=detail，输出运行限制与受影响同步项。"
                 ),
                 stepsJa = listOf(
-                    "Read status and check configuration, pending review items, and the latest auto-sync summary.",
-                    "Read history with mode=summary and issuesOnly=true.",
-                    "Read mode=detail for the newest issue id, then report runtime restrictions and affected items."
+                    "状態を読み取り、設定、確認待ち項目、最新の自動同期概要を確認します。",
+                    "mode=summary と issuesOnly=true を指定して履歴を読み取ります。",
+                    "最新の問題 ID を mode=detail で読み取り、実行時の制約と影響を受ける項目を報告します。"
                 ),
                 outputEn = listOf("sync health", "affected items", "credential-safe next action"),
                 outputZh = listOf("同步健康度", "受影响同步项", "不涉及凭据的下一步建议"),
-                outputJa = listOf("sync health", "affected items", "credential-safe next action")
+                outputJa = listOf("同期状態", "影響を受ける項目", "認証情報を扱わない次の対応")
             )
         )
 

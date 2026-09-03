@@ -525,7 +525,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_topbar_cd_check">確認</string>
     <string name="github_topbar_droid_sources">Droid ソース</string>
     <string name="github_topbar_droid_sources_count">%1$d 件有効</string>
-    <string name="github_topbar_debug_tools">Debug</string>
+    <string name="github_topbar_debug_tools">デバッグ</string>
     <string name="github_topbar_debug_tools_summary">更新と通知のテスト</string>
     <string name="github_topbar_refresh_app_list">アプリ一覧を更新</string>
     <string name="github_topbar_refresh_app_list_summary">ユーザーアプリとシステムアプリを再スキャン</string>
@@ -545,8 +545,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_droid_sources_summary_scope">個別ソース、カスタムリポジトリ、F-Droid Archive は引き続き利用できます。ここでの切り替えは「よく使うソース」の範囲だけに影響します。</string>
     <string name="github_droid_sources_repo_summary_format">リポジトリ URL: %1$s</string>
     <string name="github_overview_value_count">%1$d 件</string>
-    <string name="github_overview_pill_stable_pair">Stable %1$d/%2$d</string>
-    <string name="github_overview_pill_prerelease_pair">Pre %1$d/%2$d</string>
+    <string name="github_overview_pill_stable_pair">安定版 %1$d/%2$d</string>
+    <string name="github_overview_pill_prerelease_pair">プレ版 %1$d/%2$d</string>
     <string name="github_overview_pill_failed">失敗 %1$d</string>
     <string name="github_overview_strategy_atom">Atom</string>
     <string name="github_overview_strategy_api">API</string>
@@ -606,8 +606,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_item_label_remote_stable_release">リモート Stable リリース</string>
     <string name="github_item_label_prerelease_release">Pre-release リリース</string>
     <string name="github_item_label_remote_prerelease_release">リモート Pre-release リリース</string>
-    <string name="github_release_meta_prefix_stable">Stable</string>
-    <string name="github_release_meta_prefix_prerelease">Pre-release</string>
+    <string name="github_release_meta_prefix_stable">安定版</string>
+    <string name="github_release_meta_prefix_prerelease">プレリリース</string>
     <string name="github_item_label_updated_at">更新日時</string>
     <string name="github_item_label_health_score">健全性スコア</string>
     <string name="github_item_label_hint">ヒント</string>
@@ -632,9 +632,9 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_asset_count_loading">…</string>
     <string name="github_asset_count_error">!</string>
     <string name="github_asset_count_pending">·</string>
-    <string name="github_asset_target_prerelease">Pre-release</string>
-    <string name="github_asset_target_stable">Stable</string>
-    <string name="github_asset_target_latest">Latest</string>
+    <string name="github_asset_target_prerelease">プレリリース</string>
+    <string name="github_asset_target_stable">安定版</string>
+    <string name="github_asset_target_latest">最新</string>
     <string name="github_asset_target_install">インストール</string>
     <string name="github_asset_target_fdroid">F-Droid APK</string>
     <string name="github_asset_fetch_source_api">API</string>
@@ -722,7 +722,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_strategy_metric_failed">失敗</string>
     <string name="github_strategy_metric_release_snapshot">Release</string>
     <string name="github_strategy_metric_release_assets">Assets</string>
-    <string name="github_strategy_metric_release_notes">Notes</string>
+    <string name="github_strategy_metric_release_notes">リリースノート</string>
     <string name="github_strategy_metric_apk_manifest">Manifest</string>
     <string name="github_strategy_metric_package_scan">パッケージ</string>
     <string name="github_strategy_metric_repo_scan">リポジトリ逆引き</string>
@@ -785,6 +785,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_flow_mode_notification">通知優先</string>
     <string name="github_check_sheet_label_app_managed_share_install">KeiOS でインストール</string>
     <string name="github_check_sheet_summary_app_managed_share_install">有効にすると、単一 APK の共有インポートを KeiOS が Shizuku 経由でダウンロードしてインストールします。</string>
+    <string name="github_check_sheet_label_foreground_download_boost">フォアグラウンドダウンロードを高速化</string>
+    <string name="github_check_sheet_summary_foreground_download_boost">手動インストールや共有インポートでは、より積極的な分割接続を使います。バックグラウンド更新は安定性重視の方式を維持します。</string>
     <string name="github_check_sheet_label_share_to_installer">インストーラーへ共有</string>
     <string name="github_check_sheet_summary_share_managed_by_app">KeiOS がインストールを担当するため、外部インストーラーの選択は一時的に固定されます。</string>
     <string name="github_check_sheet_summary_share_available">ダウンロードしながらインストールに対応するインストーラーへ共有操作を直接送れます。</string>
@@ -817,7 +819,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_check_sheet_summary_debug_actions_update_notification">KeiOS の最新推奨 Actions Run を読み取り、「新しいビルド」としてライブ通知 / アイランドを送信します。</string>
     <string name="github_check_sheet_action_debug_actions_update_notification">通知をテスト</string>
     <string name="github_check_sheet_action_debug_actions_update_notification_loading">読み取り中</string>
-    <string name="github_debug_sheet_title">Debug</string>
+    <string name="github_debug_sheet_title">デバッグ</string>
     <string name="github_debug_sheet_desc">更新、履歴、ライブ通知、アイランド経路を手動で再現します。各ボタンは実際の更新ロジックを実行します。</string>
     <string name="github_debug_sheet_section_refresh">更新経路</string>
     <string name="github_debug_sheet_section_notification">通知経路</string>
@@ -941,7 +943,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_star_import_apk_confirm_unverified">未検証</string>
     <string name="github_star_import_empty_title">一致するリポジトリなし</string>
     <string name="github_star_import_empty_subtitle">検索語句を調整するか、フィルターを切り替えてください。</string>
-    <string name="github_star_import_candidate_meta_format">%1$s · Stars %2$s · Score %3$d</string>
+    <string name="github_star_import_candidate_meta_format">%1$s · スター %2$s · スコア %3$d</string>
     <string name="github_star_import_candidate_no_description">リポジトリ説明なし</string>
     <string name="github_star_import_candidate_tracked">追跡済み</string>
     <string name="github_star_import_candidate_selected">選択済み</string>
@@ -960,6 +962,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_cd_confirm_add">追加を確定</string>
     <string name="github_track_sheet_cd_confirm_save">保存を確定</string>
     <string name="github_track_sheet_section_repo_app">リポジトリとアプリ</string>
+    <string name="github_track_sheet_summary_repo_app">更新元と対象を設定し、必要に応じて端末内のアプリに関連付けます。</string>
     <string name="github_track_sheet_section_repository">リポジトリ元</string>
     <string name="github_track_sheet_section_package_app">パッケージとローカルアプリ</string>
     <string name="github_track_sheet_source_mode_github">GitHub プロジェクト</string>
@@ -1000,7 +1003,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_fdroid_candidate_selected">選択中</string>
     <string name="github_track_sheet_fdroid_candidate_source_package_api">Package API</string>
     <string name="github_track_sheet_fdroid_candidate_source_api">検索 API</string>
-    <string name="github_track_sheet_fdroid_candidate_source_index">Repo index</string>
+    <string name="github_track_sheet_fdroid_candidate_source_index">リポジトリインデックス</string>
     <string name="github_track_sheet_fdroid_candidate_versions_format">バージョン %1$s (%2$d) · 全 %3$d 件</string>
     <string name="github_track_sheet_fdroid_candidate_versions_name_format">バージョン %1$s · 全 %2$d 件</string>
     <string name="github_track_sheet_fdroid_candidate_antifeatures_format">Anti-Feature %1$d</string>
@@ -1046,12 +1049,13 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_badge_external_build">外部ビルド</string>
     <string name="github_track_badge_waiting_release">Release 待ち</string>
     <string name="github_track_sheet_section_check_option">確認オプション</string>
+    <string name="github_track_sheet_summary_check_option_overview">%1$s · %2$s</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid オプション</string>
     <string name="github_track_sheet_summary_fdroid_probe">保存後の更新で package API またはリポジトリ index を読み取り、更新間隔とリモート検証情報に基づいてキャッシュを再利用し、パッケージ、バージョン、信頼、Anti-Feature の要約を記録します。</string>
     <string name="github_track_sheet_label_fdroid_version_selection">バージョン選択</string>
     <string name="github_track_sheet_fdroid_version_selection_suggested">推奨バージョン優先</string>
-    <string name="github_track_sheet_fdroid_version_selection_highest_compatible">最高互換 versionCode</string>
-    <string name="github_track_sheet_fdroid_version_selection_highest">最高 versionCode</string>
+    <string name="github_track_sheet_fdroid_version_selection_highest_compatible">互換性のある最大 versionCode</string>
+    <string name="github_track_sheet_fdroid_version_selection_highest">最大 versionCode</string>
     <string name="github_track_sheet_fdroid_version_selection_regex">バージョン名 Regex</string>
     <string name="github_track_sheet_summary_fdroid_version_selection_suggested">リポジトリの推奨バージョンを優先し、ない場合は最高互換バージョンを選びます。</string>
     <string name="github_track_sheet_summary_fdroid_version_selection_highest_compatible">現在の Android バージョンと互換性がある候補から最高の versionCode を選びます。</string>
@@ -1134,6 +1138,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_label_app_list">アプリ一覧</string>
     <string name="github_track_sheet_app_result_count_format">%1$d / %2$d 件を表示</string>
     <string name="github_track_sheet_app_filter_scope_label">アプリ種別</string>
+    <string name="github_track_sheet_app_filter_summary">%1$s · %2$s</string>
     <string name="github_track_sheet_app_filter_user_apps">ユーザー</string>
     <string name="github_track_sheet_app_filter_system_apps">システム</string>
     <string name="github_track_sheet_app_filter_tracked_apps">追跡済み</string>
@@ -1315,7 +1320,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_page_install_status_abi_unknown">ABI 確認中</string>
     <string name="github_apk_info_action_install">インストール</string>
     <string name="github_apk_info_action_installing">インストール中</string>
-    <string name="github_release_notes_title">Release Notes</string>
+    <string name="github_release_notes_title">リリースノート</string>
     <string name="github_health_score_value">健全性スコア %1$d</string>
     <string name="github_health_reason_repository_archived">リポジトリはアーカイブ済み</string>
     <string name="github_health_reason_repository_disabled">リポジトリは無効です</string>
@@ -1360,7 +1365,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_health_detail_rule_release">加点は、Stable 認識、最近の Release、更新あり、Android APK 配布物、最近成功した Actions、README とライセンス、パッケージ一致、独立して活発に保守される Fork から発生します。</string>
     <string name="github_health_detail_rule_package">Fork は小さく減点されます。上流が活発で差分が広がると追加減点され、Fork 側の継続保守や上流アーカイブ後の活動は影響を相殺します。Pre-release 推奨は安定性の信頼度を下げます。</string>
     <string name="github_health_detail_rule_scope">Deep モードの traffic と security は軽量信号です。スコアは概覧の優先度と通知判断に使います。APK ファイルの信頼性はリソースカードと APK 詳細で確認します。</string>
-    <string name="github_release_notes_detail_title">Release Notes</string>
+    <string name="github_release_notes_detail_title">リリースノート</string>
     <string name="github_release_notes_detail_refreshing">release assets と release notes を更新中</string>
     <string name="github_release_notes_detail_target_latest">現在の Release</string>
     <string name="github_release_notes_detail_body_title">リリースノート</string>
@@ -1556,8 +1561,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_release_notes_detail_release">Release</string>
     <string name="github_release_notes_detail_repo">リポジトリ</string>
     <string name="github_release_notes_detail_source">ソース</string>
-    <string name="github_release_notes_marker_stable">Stable</string>
-    <string name="github_release_notes_marker_prerelease">Pre-release</string>
+    <string name="github_release_notes_marker_stable">安定版</string>
+    <string name="github_release_notes_marker_prerelease">プレリリース</string>
     <string name="github_release_notes_marker_latest">Latest</string>
     <string name="github_release_notes_source_api">API: 構造化 Release データ</string>
     <string name="github_release_notes_source_atom">Atom: Web Release 解析</string>
@@ -1644,7 +1649,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_apk_info_empty_metadata">Manifest に meta-data 宣言はありません</string>
     <string name="github_apk_info_more_count">ほか %1$d 件</string>
     <string name="github_actions_artifact_detail_expires_at">有効期限: %1$s</string>
-    <string name="github_actions_artifact_detail_commit">Commit: %1$s</string>
+    <string name="github_actions_artifact_detail_commit">コミット：%1$s</string>
     <string name="github_actions_action_copy_metadata">メタデータをコピー</string>
     <string name="github_actions_toast_artifact_metadata_copied">artifact メタデータをコピーしました</string>
     <string name="github_actions_action_with_size">%1$s · %2$s</string>
@@ -1661,7 +1666,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_fdroid_detail_section_repository">リポジトリ</string>
     <string name="github_fdroid_detail_section_tracking">追跡設定</string>
     <string name="github_fdroid_detail_section_trust">信頼要約</string>
-    <string name="github_fdroid_detail_section_anti_features">Anti-Features</string>
+    <string name="github_fdroid_detail_section_anti_features">アンチフィーチャー</string>
     <string name="github_fdroid_detail_label_package">パッケージ</string>
     <string name="github_fdroid_detail_label_version">バージョン</string>
     <string name="github_fdroid_detail_label_repo">リポジトリ</string>
@@ -1713,7 +1718,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_fdroid_detail_label_signer_sha256">署名 SHA-256</string>
     <string name="github_fdroid_detail_label_hash_status">ハッシュ</string>
     <string name="github_fdroid_detail_label_signer_status">署名</string>
-    <string name="github_fdroid_detail_antifeature_fallback">Anti-Feature</string>
+    <string name="github_fdroid_detail_antifeature_fallback">アンチフィーチャー</string>
     <string name="github_fdroid_detail_antifeatures_empty">パッケージと選択済みバージョンに Anti-Feature 記録はありません</string>
     <string name="github_fdroid_detail_toast_link_copied">リンクをコピーしました</string>
     <string name="github_fdroid_version_page_title">バージョン履歴</string>
@@ -1757,7 +1762,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_history_apps_label_installer">インストーラー</string>
     <string name="github_history_apps_label_initiating_installer">開始インストーラー</string>
     <string name="github_history_apps_label_originating_source">元ソース</string>
-    <string name="github_history_apps_label_update_owner">更新所有者</string>
+    <string name="github_history_apps_label_update_owner">更新担当</string>
     <string name="github_history_apps_label_previous_installer">以前のインストーラー</string>
     <string name="github_history_apps_label_broadcast_uid">ブロードキャスト UID</string>
     <string name="github_history_apps_label_broadcast_flags">ブロードキャストフラグ</string>

@@ -227,6 +227,7 @@ private val ACTION_MENU_STRING_SOURCES =
         "app/src/main/res/values/strings_about.xml",
         "app/src/main/res/values-zh-rCN/strings_about.xml",
         "app/src/main/res/values-en/strings_about.xml",
+        "app/src/main/res/values-ja/strings_about.xml",
     )
 private val ACTION_MENU_MULTIPLE_CHOICE_STRING_NAMES =
     listOf(

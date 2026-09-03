@@ -1,10 +1,18 @@
 package os.kei.mcp.server
 
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import os.kei.core.privilege.PrivilegedShell
 import java.util.Locale
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
+@RunWith(AndroidJUnit4::class)
+@Config(application = McpServerTestApp::class, sdk = [35])
 class McpToolCatalogLocalizationTest {
     @Test
     fun chineseToolDescriptionsCoverEveryRegisteredTool() {
@@ -44,6 +52,21 @@ class McpToolCatalogLocalizationTest {
             "MCP 実行エンドポイント、クライアント、Token 状態、直近エラーを読み取ります。",
             McpToolCatalog.descriptionFor("keios.mcp.runtime.status", Locale.JAPANESE)
         )
+    }
+
+    @Test
+    fun nonBaWorkflowBlueprintsProvideJapaneseGuidance() {
+        val content = McpWorkflowContent(testEnvironment()).buildWorkflowSkillText(Locale.JAPANESE)
+
+        listOf(
+            "# KeiOS MCP ワークフロー",
+            "GitHub 更新ウォッチ",
+            "GitHub Actions 更新ウォッチ",
+            "OS カードのバックアップ",
+            "WebDAV 同期診断",
+            "手順：",
+            "出力：",
+        ).forEach { expected -> assertContains(content, expected) }
     }
 
     @Test
@@ -91,4 +114,15 @@ class McpToolCatalogLocalizationTest {
         assertEquals(true, chinese.contains("keios.github.tracked/v4"))
         assertEquals(true, chinese.contains("订阅项目"))
     }
+
+    private fun testEnvironment(): McpToolEnvironment = McpToolEnvironment(
+        appContext = ApplicationProvider.getApplicationContext(),
+        privilegedShell = PrivilegedShell(),
+        appVersionName = "test",
+        appVersionCode = 1L,
+        appPackageName = "os.kei.test",
+        appLabel = "KeiOS",
+        stateProvider = { null },
+        toolCallLogger = { _, _, _, _, _ -> },
+    )
 }

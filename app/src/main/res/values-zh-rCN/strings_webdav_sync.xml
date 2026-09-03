@@ -76,6 +76,26 @@
     <string name="webdav_sync_upload">上传</string>
     <string name="webdav_sync_download">下载</string>
     <string name="webdav_sync_last_sync">上次同步：%1$s</string>
+    <string name="webdav_sync_history_label_power">电源</string>
+    <string name="webdav_sync_history_label_network">网络</string>
+    <string name="webdav_sync_history_label_scheduler">调度</string>
+    <string name="webdav_sync_history_diag_interactive">亮屏</string>
+    <string name="webdav_sync_history_diag_screen_off">息屏</string>
+    <string name="webdav_sync_history_diag_deep_doze">深度休眠</string>
+    <string name="webdav_sync_history_diag_light_doze">轻度休眠</string>
+    <string name="webdav_sync_history_diag_battery_saver">省电模式</string>
+    <string name="webdav_sync_history_diag_low_power_standby">低功耗待机</string>
+    <string name="webdav_sync_history_diag_low_power_standby_exempt">低功耗待机豁免</string>
+    <string name="webdav_sync_history_diag_battery_optimization_exempt">电池优化豁免</string>
+    <string name="webdav_sync_history_diag_network_present">网络可用</string>
+    <string name="webdav_sync_history_diag_no_network">无网络</string>
+    <string name="webdav_sync_history_diag_network_validated">网络已验证</string>
+    <string name="webdav_sync_history_diag_network_unvalidated">网络未验证</string>
+    <string name="webdav_sync_history_diag_network_suspended">网络已暂停</string>
+    <string name="webdav_sync_history_diag_background_data_restricted">后台流量受限</string>
+    <string name="webdav_sync_history_diag_bucket_format">待机级别 %1$s</string>
+    <string name="webdav_sync_history_diag_queued_format">排队 %1$s</string>
+    <string name="webdav_sync_history_diag_previous_stop_format">上次停止 %1$s</string>
 
     <string name="webdav_sync_item_github_tracked">GitHub 追踪</string>
     <string name="webdav_sync_item_github_tracked_desc">追踪仓库和设置</string>

@@ -64,7 +64,7 @@
     <string name="home_stat_service">サービス</string>
     <string name="home_stat_token">Token</string>
     <string name="home_stat_stable_updates">更新</string>
-    <string name="home_stat_prerelease_updates">Pre-rel</string>
+    <string name="home_stat_prerelease_updates">プレ版</string>
     <string name="home_stat_failed">失敗</string>
     <string name="home_stat_tracked">追跡</string>
     <string name="home_stat_github_sources">ソース</string>

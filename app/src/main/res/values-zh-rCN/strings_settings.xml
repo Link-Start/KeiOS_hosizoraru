@@ -263,8 +263,10 @@
     <string name="settings_app_list_access_toast_open_failed">无法打开应用列表相关设置，请手动到应用详情页检查权限</string>
     <string name="settings_privilege_status_initializing">正在检测…</string>
     <string name="settings_privileged_mode_title">特权模式</string>
+    <string name="settings_privileged_mode_disabled">关闭</string>
     <string name="settings_privileged_mode_shizuku">Shizuku</string>
     <string name="settings_privileged_mode_root">Root</string>
+    <string name="settings_privileged_mode_summary_disabled">特权模式已关闭，仅使用普通 Android API；Shizuku、Root 与特权命令保持停用。</string>
     <string name="settings_privileged_mode_summary_shizuku">通过 Shizuku 服务执行特权命令，需要先启动 Shizuku 并授权。</string>
     <string name="settings_privileged_mode_summary_root">通过 su 直接执行特权命令，需要 Magisk、KernelSU 或 APatch 等超级用户管理器。</string>
     <string name="settings_privileged_mode_scope">影响 OS 页命令、应用列表检测与 MCP 特权工具</string>

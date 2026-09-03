@@ -54,7 +54,7 @@ internal class McpSkillContent(
             description = localText(
                 locale,
                 "KeiOS MCP 快速总览",
-                "KeiOS MCP quick overview",
+                "KeiOS MCP クイック概要",
                 "KeiOS MCP quick overview"
             ),
             mimeType = MIME_TEXT
@@ -84,7 +84,7 @@ internal class McpSkillContent(
             description = localText(
                 locale,
                 "KeiOS MCP 单工具帮助",
-                "KeiOS MCP tool help",
+                "KeiOS MCP ツールヘルプ",
                 "KeiOS MCP tool help"
             ),
             mimeType = MIME_MARKDOWN
@@ -102,7 +102,7 @@ internal class McpSkillContent(
             description = localText(
                 locale,
                 "KeiOS MCP 领域指南",
-                "KeiOS MCP domain guide",
+                "KeiOS MCP ドメインガイド",
                 "KeiOS MCP domain guide"
             ),
             mimeType = MIME_MARKDOWN
@@ -117,7 +117,12 @@ internal class McpSkillContent(
         server.addResource(
             uri = CONFIG_RESOURCE_URI,
             name = "keios-mcp-config-default",
-            description = "MCP config JSON (auto mode)",
+            description = localText(
+                locale,
+                "MCP 配置 JSON（自动模式）",
+                "MCP 設定 JSON（自動モード）",
+                "MCP config JSON (auto mode)"
+            ),
             mimeType = MIME_JSON
         ) { _ ->
             callResource(
@@ -129,7 +134,12 @@ internal class McpSkillContent(
         server.addResourceTemplate(
             uriTemplate = CONFIG_TEMPLATE_URI,
             name = "keios-mcp-config-template",
-            description = "MCP config JSON by mode",
+            description = localText(
+                locale,
+                "按模式生成 MCP 配置 JSON",
+                "モード別の MCP 設定 JSON",
+                "MCP config JSON by mode"
+            ),
             mimeType = MIME_JSON
         ) { _, params ->
             val mode = normalizeMcpConfigMode(params["mode"].orEmpty())
@@ -148,15 +158,15 @@ internal class McpSkillContent(
             description = localText(
                 locale,
                 "初始化 KeiOS MCP 工具使用方式。",
-                "Initialize KeiOS MCP tool usage.",
+                "KeiOS MCP ツールの利用を初期化します。",
                 "Initialize KeiOS MCP tool usage."
             ),
             arguments = listOf(
                 PromptArgument(
                     name = "task",
-                    description = localText(locale, "当前任务", "Current task", "Current task"),
+                    description = localText(locale, "当前任务", "現在のタスク", "Current task"),
                     required = false,
-                    title = localText(locale, "任务", "Task", "Task")
+                    title = localText(locale, "任务", "タスク", "Task")
                 )
             )
         ) { request ->
@@ -165,7 +175,7 @@ internal class McpSkillContent(
                 description = localText(
                     locale,
                     "KeiOS MCP 启动 Prompt",
-                    "KeiOS MCP bootstrap prompt",
+                    "KeiOS MCP 起動プロンプト",
                     "KeiOS MCP bootstrap prompt"
                 ),
                 messages = listOf(
@@ -181,15 +191,15 @@ internal class McpSkillContent(
             description = localText(
                 locale,
                 "生成 KeiOS MCP 连接、权限与工具失败排查流程。",
-                "Generate a KeiOS MCP diagnostics flow for connection, permission, and tool failures.",
+                "KeiOS MCP の接続、権限、ツール失敗を診断するフローを生成します。",
                 "Generate a KeiOS MCP diagnostics flow for connection, permission, and tool failures."
             ),
             arguments = listOf(
                 PromptArgument(
                     name = "symptom",
-                    description = localText(locale, "现象", "Symptom", "Symptom"),
+                    description = localText(locale, "现象", "症状", "Symptom"),
                     required = false,
-                    title = localText(locale, "现象", "Symptom", "Symptom")
+                    title = localText(locale, "现象", "症状", "Symptom")
                 )
             )
         ) { request ->
@@ -198,7 +208,7 @@ internal class McpSkillContent(
                 description = localText(
                     locale,
                     "KeiOS MCP 排障计划",
-                    "KeiOS MCP diagnostics plan",
+                    "KeiOS MCP 診断計画",
                     "KeiOS MCP diagnostics plan"
                 ),
                 messages = listOf(
@@ -237,7 +247,7 @@ internal class McpSkillContent(
                 localText(
                     locale,
                     "KeiOS 本地 MCP 服务",
-                    "KeiOS local MCP server",
+                    "KeiOS ローカル MCP サーバー",
                     "KeiOS local MCP server"
                 )
             )
@@ -426,13 +436,20 @@ internal class McpSkillContent(
                 }
             }
             appendLine()
-            appendLine("See $SKILL_RESOURCE_URI for grouped flows.")
+            appendLine(
+                localText(
+                    locale,
+                    "分组流程请参阅 $SKILL_RESOURCE_URI。",
+                    "グループ別のフローは $SKILL_RESOURCE_URI を参照してください。",
+                    "See $SKILL_RESOURCE_URI for grouped flows."
+                )
+            )
         }.trim()
     }
 
     private fun buildUnknownToolHelp(tool: String, locale: Locale): String {
         return buildString {
-            appendLine(localText(locale, "# 未知工具", "# Unknown Tool", "# Unknown Tool"))
+            appendLine(localText(locale, "# 未知工具", "# 不明なツール", "# Unknown Tool"))
             appendLine("tool=$tool")
             appendLine("available=${McpToolCatalog.all.joinToString(",") { it.name }}")
         }.trim()
@@ -444,7 +461,7 @@ internal class McpSkillContent(
                 localText(
                     locale,
                     "你正在连接 KeiOS 本地 MCP 服务。",
-                    "You are connected to the local KeiOS MCP server.",
+                    "KeiOS ローカル MCP サーバーに接続しています。",
                     "You are connected to the local KeiOS MCP server."
                 )
             )
@@ -467,7 +484,7 @@ internal class McpSkillContent(
                 localText(
                     locale,
                     "请为 KeiOS MCP 生成一套排障步骤。",
-                    "Create a diagnostics flow for KeiOS MCP.",
+                    "KeiOS MCP の診断フローを作成してください。",
                     "Create a diagnostics flow for KeiOS MCP."
                 )
             )
@@ -737,7 +754,7 @@ internal class McpSkillContent(
         val tools = McpToolCatalog.forLocale(locale).filter { it.group == normalized }
         if (tools.isEmpty()) {
             return buildString {
-                appendLine(localText(locale, "# 未知领域", "# Unknown Domain", "# Unknown Domain"))
+                appendLine(localText(locale, "# 未知领域", "# 不明なドメイン", "# Unknown Domain"))
                 appendLine("domain=$domain")
                 appendLine("available=runtime,home,system,os,github,ba,dev")
             }.trim()

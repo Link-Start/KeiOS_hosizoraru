@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.boundedBy
 import os.kei.core.io.executeCancellable
 import os.kei.feature.github.data.local.fdroid.FdroidRepoCacheRecord
 import os.kei.feature.github.data.local.fdroid.FdroidRepoCacheRequestKey
@@ -61,11 +62,18 @@ class FdroidRepositoryIndexClient(
         }
     }
 
+    /**
+     * @param maxIndexBytes aborts the read once the index has streamed this far, for a caller that wants
+     *   the index only if it is cheap. f-droid.org publishes nearly sixty megabytes and a third-party
+     *   repository a few, so "read it if it is small" is a budget rather than a per-host list — see
+     *   `FdroidVersionHistoryProvider`. Unbounded by default, which is what the refresh path relies on.
+     */
     suspend fun fetchIndexV2Packages(
         repoBaseUrl: String,
         packageNames: Set<String>,
         forceRefresh: Boolean = false,
-        maxAgeMillis: Long = FDROID_INDEX_CACHE_MAX_AGE_MILLIS
+        maxAgeMillis: Long = FDROID_INDEX_CACHE_MAX_AGE_MILLIS,
+        maxIndexBytes: Long = Long.MAX_VALUE
     ): Result<FdroidRepositorySnapshot> = withContext(ioDispatcher) {
         fdroidRepositoryIndexResult {
             val normalizedRepoUrl = repoBaseUrl.trim().trimEnd('/')
@@ -81,7 +89,8 @@ class FdroidRepositoryIndexClient(
                 cacheKey = cacheKey,
                 forceRefresh = forceRefresh,
                 maxAgeMillis = maxAgeMillis,
-                failurePrefix = "F-Droid index-v2 package fetch failed"
+                failurePrefix = "F-Droid index-v2 package fetch failed",
+                maxIndexBytes = maxIndexBytes
             ) { reader ->
                 FdroidIndexV2StreamParser
                     .loadPackages(
@@ -99,6 +108,7 @@ class FdroidRepositoryIndexClient(
         forceRefresh: Boolean,
         maxAgeMillis: Long,
         failurePrefix: String,
+        maxIndexBytes: Long = Long.MAX_VALUE,
         parser: suspend (java.io.Reader) -> FdroidRepositorySnapshot
     ): FdroidRepositorySnapshot {
         val nowMillis = clock()
@@ -120,9 +130,16 @@ class FdroidRepositoryIndexClient(
             check(response.isSuccessful) {
                 "$failurePrefix (HTTP ${response.code})"
             }
-            val snapshot = response.body.charStream().buffered(FDROID_INDEX_STREAM_BUFFER_SIZE).use { reader ->
-                parser(reader)
+            // The declared length short-circuits before a byte of body is read; the streaming bound is
+            // the backstop for a server that declares none.
+            val declaredLength = response.body.contentLength()
+            check(declaredLength <= maxIndexBytes) {
+                "$failurePrefix (index is $declaredLength bytes, budget $maxIndexBytes)"
             }
+            val snapshot = response.body.charStream()
+                .buffered(FDROID_INDEX_STREAM_BUFFER_SIZE)
+                .boundedBy(maxIndexBytes)
+                .use { reader -> parser(reader) }
             cacheStore.save(
                 cacheKey,
                 FdroidRepoCacheRecord(

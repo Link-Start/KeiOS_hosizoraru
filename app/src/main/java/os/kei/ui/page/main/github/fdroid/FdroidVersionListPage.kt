@@ -603,7 +603,10 @@ private fun FdroidVersionCard(
                     FdroidVersionPill(label = label, color = accent)
                 }
 
-                version.nativeAbis.take(FdroidVersionAbiPillLimit).forEach { abi ->
+                // Every ABI, never a subset. Which architectures a build carries decides whether it
+                // runs at all and how big it is, so a truncated list is worse than a taller strip -- and
+                // the strip is a FlowRow, so the cost of the full set is a second line.
+                version.nativeAbis.forEach { abi ->
                     FdroidVersionPill(label = abi, color = MiuixTheme.colorScheme.onBackgroundVariant)
                 }
             }
@@ -1049,9 +1052,6 @@ private fun GitHubReleaseChannel.preReleaseLabelRes(): Int? =
         GitHubReleaseChannel.PREVIEW -> R.string.github_fdroid_version_channel_preview
         GitHubReleaseChannel.STABLE, GitHubReleaseChannel.UNKNOWN -> null
     }
-
-/** Enough ABI pills to tell a split build apart, before the strip stops being readable. */
-private const val FdroidVersionAbiPillLimit = 3
 
 /** Two 48dp actions, 4dp between them, and the capsule's own 8dp each side. */
 private val FdroidVersionBarWidth = 120.dp

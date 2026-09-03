@@ -3,6 +3,7 @@ package os.kei.feature.github.domain.fdroid
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClient
 import os.kei.feature.github.data.remote.fdroid.FdroidPackagePageClient
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
+import os.kei.feature.github.data.remote.fdroid.FdroidRepositoryIndexClient
 import os.kei.feature.github.data.remote.fdroid.fdroidPackagePageUrl
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
@@ -10,21 +11,32 @@ import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 /**
  * The richest history one cheap request can get for a package.
  *
- * The page first, the package API second, and the two combined when each knows something the other does
- * not.
+ * Three sources, cheapest-useful first, because no single one serves every repository.
  *
  * The reason there is a choice at all: the update check only ever needs the newest build or two, so the
- * package API suits it — but a *history* page needs what each build is, and on f-droid.org that endpoint
- * publishes a version name, a version code, and nothing further. No file, no size, no date, no ABIs. The
- * package page publishes all of it in a few tens of kilobytes, where the index that also would is 58 MB.
+ * thin package API suits it — but a *history* needs what each build **is**, and on f-droid.org that
+ * endpoint publishes a version name, a version code, and nothing further. No file, no size, no date, no
+ * ABIs.
+ *
+ * 1. **The package page**, for a repository whose page layout this app knows. 37 KB on f-droid.org, and
+ *    it carries the whole set — see `FdroidPackagePageParser`.
+ * 2. **`index-v2.json`, if it is small.** The richest source there is: hashes, signers, release notes,
+ *    anti-features, release channels, every build. Also 58 MB on f-droid.org and a few on a third-party
+ *    repository, so it is taken under a byte budget rather than from a per-host list — a repository whose
+ *    index fits is read from it, and one whose index does not spends the budget and no more. This is what
+ *    serves IzzyOnDroid and the other third-party indexes, which publish no page this parser knows but do
+ *    publish a modest index.
+ * 3. **The package API**, when neither answered. A thin history is still a history, and the page above it
+ *    says what is missing.
  *
  * Deliberately not wired into the refresh path. What the checker fetches decides which builds existing
  * tracks are notified about and what the sidecar stores, and that is a tracking change rather than a
  * page. This provider serves the version history only.
  */
 class FdroidVersionHistoryProvider(
-    private val pageClient: FdroidPackagePageClient = FdroidPackagePageClient(),
-    private val apiClient: FdroidPackageApiClient = FdroidPackageApiClient(),
+    private val pageSource: FdroidPackageDetailSource = FdroidPackagePageSource(),
+    private val indexSource: FdroidPackageDetailSource = FdroidIndexPackageSource(),
+    private val apiSource: FdroidPackageDetailSource = FdroidPackageApiSource(),
 ) : FdroidPackageSnapshotProvider {
     override suspend fun loadPackageSnapshot(
         item: GitHubTrackedApp,
@@ -34,30 +46,109 @@ class FdroidVersionHistoryProvider(
             ?: return Result.failure(IllegalArgumentException("invalid F-Droid repository URL or package"))
         val repoUrl = identity.normalizedRepoUrl
         val packageName = identity.packageName
-        val hasKnownPage = fdroidPackagePageUrl(repoUrl, packageName) != null
-        if (!hasKnownPage) {
-            return apiClient.fetchPackage(repoBaseUrl = repoUrl, packageName = packageName)
-        }
-        val page = pageClient.fetchPackagePage(repoBaseUrl = repoUrl, packageName = packageName)
-        val api = apiClient.fetchPackage(repoBaseUrl = repoUrl, packageName = packageName)
-        return when {
-            // Both answered: the page's records, and the API's suggestion when the page marked none. The
-            // suggestion drives the track's default selection mode, so losing it would move which build
-            // this page calls recommended.
-            page.isSuccess && api.isSuccess -> {
-                val pageSnapshot = page.getOrThrow()
-                Result.success(
-                    pageSnapshot.copy(
-                        suggestedVersionCode = pageSnapshot.suggestedVersionCode
-                            ?: api.getOrThrow().suggestedVersionCode,
-                    ),
-                )
-            }
+        val page = pageSource.load(repoUrl, packageName, forceRefresh)
+        if (page.isSuccess) return page.withSuggestionFrom(repoUrl, packageName)
+        val index = indexSource.load(repoUrl, packageName, forceRefresh)
+        if (index.isSuccess) return index.withSuggestionFrom(repoUrl, packageName)
+        return apiSource.load(repoUrl, packageName, forceRefresh)
+    }
 
-            page.isSuccess -> page
-            // The page moved, or the repository is not the layout this parser was written against. The
-            // thin history is still a history, and the page above it says what is missing.
-            else -> api
-        }
+    /**
+     * Fills in the repository's own recommendation when the richer source did not state one.
+     *
+     * `index-v2` has no `suggestedVersionCode` field at all and a page may not mark a build, while the
+     * thin package API always answers with one. It drives the track's default selection mode, so leaving
+     * it null would move which build this page calls recommended — and the request is cheap.
+     */
+    private suspend fun Result<FdroidPackageSnapshot>.withSuggestionFrom(
+        repoUrl: String,
+        packageName: String,
+    ): Result<FdroidPackageSnapshot> {
+        val snapshot = getOrNull() ?: return this
+        if (snapshot.suggestedVersionCode != null) return this
+        val suggested = apiSource
+            .load(repoUrl, packageName, forceRefresh = false)
+            .getOrNull()
+            ?.suggestedVersionCode
+            ?: return this
+        return Result.success(snapshot.copy(suggestedVersionCode = suggested))
     }
 }
+
+/** One way of getting a package's builds, so the order they are tried in can be tested. */
+fun interface FdroidPackageDetailSource {
+    suspend fun load(
+        repoUrl: String,
+        packageName: String,
+        forceRefresh: Boolean,
+    ): Result<FdroidPackageSnapshot>
+}
+
+/** Declines rather than guessing for a repository whose page layout is unknown. */
+class FdroidPackagePageSource(
+    private val client: FdroidPackagePageClient = FdroidPackagePageClient(),
+) : FdroidPackageDetailSource {
+    override suspend fun load(
+        repoUrl: String,
+        packageName: String,
+        forceRefresh: Boolean,
+    ): Result<FdroidPackageSnapshot> {
+        if (fdroidPackagePageUrl(repoUrl, packageName) == null) {
+            return Result.failure(IllegalStateException("no known package page for $repoUrl"))
+        }
+        return client.fetchPackagePage(repoBaseUrl = repoUrl, packageName = packageName)
+    }
+}
+
+/**
+ * The one package, out of an index small enough to be worth streaming for it.
+ *
+ * The index has its own 12-hour cache keyed by the set of packages asked for, so this does not share the
+ * refresh batch's entry — a repository tracked with several packages downloads its index once for the
+ * batch and once for this, then revalidates by ETag. Worth the duplicate: what comes back is the only
+ * source with hashes, signers and release notes in it.
+ */
+class FdroidIndexPackageSource(
+    private val client: FdroidRepositoryIndexClient = FdroidRepositoryIndexClient(),
+    private val maxIndexBytes: Long = DEFAULT_MAX_HISTORY_INDEX_BYTES,
+) : FdroidPackageDetailSource {
+    override suspend fun load(
+        repoUrl: String,
+        packageName: String,
+        forceRefresh: Boolean,
+    ): Result<FdroidPackageSnapshot> =
+        client
+            .fetchIndexV2Packages(
+                repoBaseUrl = repoUrl,
+                packageNames = setOf(packageName),
+                forceRefresh = forceRefresh,
+                maxIndexBytes = maxIndexBytes,
+            ).mapCatching { repository ->
+                val snapshot = repository.packageSnapshot(packageName)
+                    ?: error("F-Droid index-v2 did not list $packageName")
+                check(snapshot.versions.isNotEmpty()) {
+                    "F-Droid index-v2 listed no versions for $packageName"
+                }
+                snapshot
+            }
+}
+
+class FdroidPackageApiSource(
+    private val client: FdroidPackageApiClient = FdroidPackageApiClient(),
+) : FdroidPackageDetailSource {
+    override suspend fun load(
+        repoUrl: String,
+        packageName: String,
+        forceRefresh: Boolean,
+    ): Result<FdroidPackageSnapshot> =
+        client.fetchPackage(repoBaseUrl = repoUrl, packageName = packageName)
+}
+
+/**
+ * Big enough for a third-party repository's whole index, far too small for f-droid.org's.
+ *
+ * Measured rather than guessed: f-droid.org publishes ~58 MB and IzzyOnDroid ~14 MB. Sixteen takes the
+ * latter and every repository of that order, and stops well short of the former — which does not need it
+ * anyway, having a package page this app reads instead.
+ */
+private const val DEFAULT_MAX_HISTORY_INDEX_BYTES: Long = 16L * 1024L * 1024L

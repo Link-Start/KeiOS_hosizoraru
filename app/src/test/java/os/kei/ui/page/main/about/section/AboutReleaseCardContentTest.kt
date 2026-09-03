@@ -74,12 +74,12 @@ private fun releaseLocaleExpectations(): List<ReleaseLocaleExpectation> = listOf
     ReleaseLocaleExpectation(
         path = "app/src/main/res/values/strings_about.xml",
         headings = chineseReleaseHeadings,
-        outcomeFragments = listOf("直接安装旧版本", "约 37 KB", "悬浮工具栏", "约 11 分钟"),
+        outcomeFragments = listOf("直接安装旧版本", "约 37 KB", "悬浮工具栏", "约 9–17 分钟"),
     ),
     ReleaseLocaleExpectation(
         path = "app/src/main/res/values-zh-rCN/strings_about.xml",
         headings = chineseReleaseHeadings,
-        outcomeFragments = listOf("直接安装旧版本", "约 37 KB", "悬浮工具栏", "约 11 分钟"),
+        outcomeFragments = listOf("直接安装旧版本", "约 37 KB", "悬浮工具栏", "约 9–17 分钟"),
     ),
     ReleaseLocaleExpectation(
         path = "app/src/main/res/values-en/strings_about.xml",
@@ -95,7 +95,7 @@ private fun releaseLocaleExpectations(): List<ReleaseLocaleExpectation> = listOf
             "direct installation of an older build",
             "about 37 KB",
             "floating toolbar",
-            "about 11",
+            "about 9–17 minutes",
         ),
     ),
     ReleaseLocaleExpectation(
@@ -112,7 +112,7 @@ private fun releaseLocaleExpectations(): List<ReleaseLocaleExpectation> = listOf
             "旧バージョンの再インストール",
             "約 37 KB",
             "フローティングツールバー",
-            "約 11 分",
+            "約 9〜17 分",
         ),
     ),
 )

@@ -73,7 +73,8 @@ already-rejected optimisations. Harness lives in `scripts/perf/`.
 The baseline profile is the other half, and it has its own document:
 `docs/planning/baseline-profile-coverage.md`, which opens with the current state and then keeps the
 chronology, corrections included. Three things about it are worth knowing before touching a journey.
-A capture is **~35 minutes** (`ANDROID_SERIAL=<avd> ./gradlew :app:generateReleaseBaselineProfile`), so
+A complete six-journey capture is **about 9-17 minutes** on the current A17 Phone AVD
+(`ANDROID_SERIAL=<avd> ./gradlew :app:generateReleaseBaselineProfile`), so
 reproduce failures by driving a subset of journeys through one `am instrument` pass instead — a late
 journey only fails once the app carries state from earlier ones. Judge a change by the **named
 component's** rule count, never by the profile total, which is dominated by a background refresh no

@@ -344,7 +344,7 @@
     <string name="about_release_row_mcp_security">MCP とセキュリティ</string>
     <string name="about_release_value_mcp_security">MCP のツールカタログを 54 個から 51 個に整理し、リネーム対応表は接続時にクライアントへ渡します。SSE ストリームにハートビートを追加し、セッション通知は HyperOS で一度だけ描画されます。Mi Focus 通知と共有インポートのレシーバーはアプリ内利用に限定しました</string>
     <string name="about_release_row_performance">パフォーマンスと起動</string>
-    <string name="about_release_value_performance">画面外にスクロールしたガラスカードは描画を止め、長いシートは遅延生成し、ドラッグ状態の読み取りはレイアウト段階へ移動します。下位ページが覆っている間はホームの背景再描画を一時停止します。Baseline Profile は履歴タブ、コンポーネントラボ、図鑑とメディア再生、リリースおよび F-Droid ページまで到達し、6 経路の完全取得時間は 81 分から約 11 分に短縮しました。F-Droid の更新はリクエストを満たす最小のデータソースを優先し、各リポジトリのインデックスは一度ダウンロードします</string>
+    <string name="about_release_value_performance">画面外にスクロールしたガラスカードは描画を止め、長いシートは遅延生成し、ドラッグ状態の読み取りはレイアウト段階へ移動します。下位ページが覆っている間はホームの背景再描画を一時停止します。Baseline Profile は履歴タブ、コンポーネントラボ、図鑑とメディア再生、リリースおよび F-Droid ページまで到達。6 経路の完全取得は再生上限を 96 回から 16 回へ削減し、以前の 81 分に対して約 9〜17 分で完了することを確認しました。F-Droid の更新はリクエストを満たす最小のデータソースを優先し、各リポジトリのインデックスは一度ダウンロードします</string>
     <string name="about_release_row_next">アップグレードの目安</string>
     <string name="about_release_value_next">v1.14.x のすべてのユーザーに推奨します。タブレットやフォルダブルの利用者、GitHub のバージョン追跡や F-Droid ソースを使っている方が最も恩恵を受けます。MCP ツールをリネームしたため、外部から呼び出している場合は保存済みの呼び出しを新しいカタログと照合してください</string>
     <string name="about_row_kotlin">Kotlin</string>

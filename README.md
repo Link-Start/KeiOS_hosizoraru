@@ -19,8 +19,8 @@
   <a href="https://github.com/hosizoraru/KeiOS/actions/workflows/ci-benchmark-apk.yml"><img alt="Benchmark APK CI" src="https://github.com/hosizoraru/KeiOS/actions/workflows/ci-benchmark-apk.yml/badge.svg?branch=master"></a>
   <img alt="minSdk" src="https://img.shields.io/badge/minSdk-35-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="targetSdk" src="https://img.shields.io/badge/targetSdk-37-3DDC84?style=flat-square&logo=android&logoColor=white">
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.12.0--rc01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4.20--RC2-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.12.0-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
 </p>
 
 KeiOS is an Android utility console for system inspection, local MCP service control, GitHub
@@ -31,16 +31,16 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 
 ## Project Signals
 
-| Item              | Value                                                |
-|-------------------|------------------------------------------------------|
-| Stable package    | `os.kei`                                             |
-| Supported ABI     | `arm64-v8a`                                          |
-| Android baseline  | Android 15+ (`minSdk 35`)                            |
-| Target SDK        | Android 17 / API 37                                  |
-| UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
-| Runtime stack     | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
-| Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.14.0`                                            |
+| Item | Value |
+| --- | --- |
+| Stable package | `os.kei` |
+| Supported ABI | `arm64-v8a` |
+| Android baseline | Android 15+ (`minSdk 35`) |
+| Target SDK | Android 17 / API 37 |
+| UI stack | Jetpack Compose, Miuix, liquid-glass chrome |
+| Runtime stack | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
+| Languages | Simplified Chinese, English, Japanese |
+| Source release | `v1.15.0` |
 
 ## Quick Links
 
@@ -59,7 +59,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 - OS tools for system tables, Android/Java/Linux properties, built-in activity shortcuts,
   searchable activity/shell card sheets, privileged shell cards, and card import/export.
 - Local MCP server controls with config copy, runtime logs, foreground service support, Claw
-  onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 54 tools
+  onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 51 tools
   across runtime, Home, OS, GitHub discovery/tracking, BA accounts, dailies, and cache inspection.
 - GitHub tracking for Releases, Actions artifacts, generic Git sources, Direct APKs, and F-Droid
   repositories, with Atom/API strategy comparison, package-name scanning, installed-app reverse
@@ -88,21 +88,22 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.14.0 Highlights
+## v1.15.0 Highlights
 
-- BA accounts gain six Craft Chamber timers spanning Generate and Fusion, configurable durations,
-  precise completion reminders, compact summaries, and edits to running crafts that preserve their
-  original start time.
-- A configurable one-tap daily plan can update one or every account from Quick Settings tiles,
-  launcher shortcuts, or MCP. Long-pressing a tile opens the template editor, and completion can be
-  reported through notifications and Super Island.
-- Tablets and foldables gain capped content widths, pane-aware spacing, top-row navigation at regular
-  widths, and a remembered drag-to-close sidebar on ultra-wide windows; phones keep the compact
-  bottom bar.
-- Custom backgrounds now continue through secondary pages, sheets preserve inner scrolling, and
-  Student Guide adds BGM removal Undo plus native media notifications enabled by default.
-- Modal presentations suspend idle background redraws, BA office cards remove redundant inner-glass
-  work, Android 17 paths are audited, and the release gate now checks Baseline Profile freshness.
+- Tracked GitHub projects gain a dedicated release-history page with compact summaries, full notes,
+  filtered APK assets, tag/page navigation, and direct rollback installation. F-Droid sources gain a
+  matching version-history page with staged metadata, anti-feature details, checksums, and signers.
+- Large screens gain independent two-lane layouts across Settings, About, MCP, OS, BA Office, Student
+  Guide, the merged calendar-and-pool page, GitHub tracking, and history. Main-page actions move into a
+  floating toolbar, while phones retain focused single-column flows.
+- Liquid sheets compose long content lazily, offscreen glass stops drawing, drag reads move to layout,
+  and full-window blur remains correct for narrow sheets. The visual material, motion, and interaction
+  effects remain intact.
+- The six-journey Baseline Profile replay ceiling drops from 96 runs to 16; verified captures complete
+  in about 9–17 minutes and ship 61,226 baseline rules plus 24,123 startup rules.
+- The MCP catalog is consolidated to 51 tools with rename guidance and SSE heartbeats. Simplified
+  Chinese, English, and Japanese resources now share complete coverage for the release-facing UI,
+  including release history, F-Droid, WebDAV, Liquid menus, and the v1.15 release card.
 
 Read the full feature tour:
 
@@ -112,16 +113,17 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.14.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.14.0).
+- The public stable channel always resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
+- This source snapshot and its local release tag target `v1.15.0`.
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
-- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.10`,
-  Compose `1.12.0`, Android Gradle Plugin `9.3.2`, Ktor `3.5.1`.
+- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.20-RC2`,
+  Compose `1.12.0`, Android Gradle Plugin `9.4.0-rc02`, Ktor `3.5.2`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.14.0](readme/RELEASE_V1.14.0.md)
+- [Release Notes v1.15.0](readme/RELEASE_V1.15.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

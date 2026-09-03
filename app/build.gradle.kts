@@ -132,7 +132,7 @@ abstract class BuildTimestampValueSource : ValueSource<Long, ValueSourceParamete
     override fun obtain(): Long = System.currentTimeMillis()
 }
 
-val fallbackReleaseVersion = AppSemVer(major = 1, minor = 11, patch = 0)
+val releaseTargetVersion = AppSemVer(major = 1, minor = 15, patch = 0)
 val configuredReleaseVersion =
     parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.version.name", "KEIOS_VERSION_NAME"))
 val configuredVersionAnchorTag =
@@ -141,8 +141,8 @@ val discoveredVersionAnchorTag = configuredVersionAnchorTag ?: latestMergedSemVe
 val discoveredReleaseVersion = parseSemVerTagOrNull(discoveredVersionAnchorTag)
 val releaseVersion =
     configuredReleaseVersion
-        ?: discoveredReleaseVersion?.let { maxSemVer(it, fallbackReleaseVersion) }
-        ?: fallbackReleaseVersion
+        ?: discoveredReleaseVersion?.let { maxSemVer(it, releaseTargetVersion) }
+        ?: releaseTargetVersion
 val benchmarkVersion =
     parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.nextVersion.name", "KEIOS_NEXT_VERSION_NAME"))
         ?: releaseVersion.copy(patch = releaseVersion.patch + 1)

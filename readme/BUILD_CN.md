@@ -1,13 +1,15 @@
 # KeiOS 构建指南 (CN)
 
+<!-- markdownlint-disable MD013 -->
+
 [主 README](CN.md) · [文档索引](INDEX.md)
 
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.14.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.14.0)。
-- `master` 当前作为 v1.14.0 发布基线，覆盖 BA 六槽制造、可配置一键日常、大屏自适应导航、
-  自定义背景连续性和 Android 17 加固。
+- 公开稳定版通过 [最新稳定版](https://github.com/hosizoraru/KeiOS/releases/latest) 获取。
+- `master` 已准备为 v1.15.0 源码基线，覆盖 GitHub Release 与 F-Droid 版本历史、大屏双栏页面、
+  Liquid Sheet 效率、完整多语言资源和更新后的六段 Baseline Profile。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出 Debug、Benchmark 与 Release APK。
 
@@ -21,8 +23,8 @@
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。API 37 有次版本，本项目固定
   `compileSdkMinor = 0`，即针对 **37.0**（SDK 扩展级别 22）编译，而不是本地 SDK 恰好装了哪个 37.x。
-- Gradle Wrapper：`9.7.1`；Kotlin 插件：`2.4.10`；Android Gradle Plugin：`9.3.2`；
-  Compose 运行库：`1.12.0`；Ktor：`3.5.1`。
+- Gradle Wrapper：`9.7.1`；Kotlin 插件：`2.4.20-RC2`；Android Gradle Plugin：`9.4.0-rc02`；
+  Compose 运行库：`1.12.0`；Ktor：`3.5.2`。
 - Release APK 读取 `app/src/release/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
   Benchmark 构建会接入同一份 profile 目录，用于预发行性能验证。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。
@@ -32,8 +34,8 @@
 - CI 会在 Gradle 外根据当前 HEAD 已合入的最新 semver tag 和当前发布目标注入版本元数据。
 - 本地构建可在 `~/.gradle/gradle.properties` 或 `local.properties` 覆盖
   `keios.version.name`、`keios.nextVersion.name`、`keios.version.anchorTag` 与 `keios.git.*`。
-- Release 构建使用最新已合入 semver tag 与当前发布目标之间更新的版本，例如 `1.14.0`。
-- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.14.1+12.gabcdef0`。
+- Release 构建使用最新已合入 semver tag 与当前发布目标之间更新的版本，例如 `1.15.0`。
+- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.15.1+12.gabcdef0`。
 - 缺少 CI 注入 metadata 的本地构建会直接读取 git metadata，以最新已合入 tag 作为 commit 数锚点，并在发布目标更新时使用发布目标作为 release base。
 - 包名链路保持精简：Debug 安装为 `os.kei.debug`；Benchmark 与 Release 安装为 `os.kei`。
 - 当前 CI artifact 名称保持简洁：`KeiOS_<versionName>`，APK 文件名为 `KeiOS_<versionName>.apk`。
@@ -94,27 +96,28 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.14.0 发布门禁
+### v1.15.0 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
 ```bash
 ./gradlew :app:compileDebugKotlin
 ./gradlew :app:testDebugUnitTest
+./gradlew :app:verifyRoborazziDebug
 scripts/qa/baseline_profile_freshness.sh
-./gradlew :app:assembleRelease :app:assembleBenchmark
+./gradlew :app:lintVitalRelease :app:assembleRelease :app:assembleBenchmark
 git diff --check
 ```
 
 本次发布建议重点复查：
 
-- 每个 BA 账号可同时运行三个生成槽与三个物质合成槽，接收精确完成提醒，并在保持原始开始时间的前提下编辑运行中制造。
-- 一键日常模板可从快速设置磁贴、启动器快捷方式和 MCP 应用到单账号或全部账号；长按磁贴进入编辑器，完成反馈覆盖通知与超级岛。
-- 手机保持底部导航；平板和折叠屏使用内容限宽、单双栏感知间距、常规宽度顶部导航和可记忆的超宽侧边栏。
-- 自定义背景连续覆盖二级页面，Sheet 内部滚动正常，学生图鉴 BGM 删除撤销与原生媒体通知覆盖完整播放状态。
-- Android 17 前后台音频与公平内存处理通过发布 smoke；实体机验证覆盖厂商 ITGSA 广播和内存压力回调。
-- Release APK 签名、`1.14.0` 元数据、R8/minify 输出、当前 Baseline Profile 打包与签名证书完成验证。
-- GitHub Release 发布文案使用 [Release Notes v1.14.0](RELEASE_V1.14.0.md)。
+- GitHub 发行版历史可展开说明与筛选后的资源，支持页码 / 标签跳转和旧版兼容 APK 安装；F-Droid 历史逐步展示版本元数据、反特性、校验值与签名。
+- 手机使用聚焦的单栏路由，大屏在更新页面使用可独立滚动的双栏；活动日历与卡池共用一路由，并在宽度允许时左右并列。
+- 长 Liquid Sheet 通过懒加载与离屏玻璃裁剪保持顺滑，材质、动效、整窗虚化和交互反馈维持视觉一致。
+- 四套资源通过 locale key / type / placeholder 一致性检查，发行日志 Card 在简体中文、English、日本語中表达同一组用户结果。
+- 六段 Baseline Profile 旅程维持 16 次总回放上限，合并产物包含 61,226 条 baseline 规则与 24,123 条 startup 规则，并打包到 `assets/dexopt/`。
+- Release APK 的签名、`1.15.0` / `11500999` 元数据、R8/minify 输出、Baseline Profile 打包和签名证书完成验证。
+- GitHub Release 发布文案使用 [Release Notes v1.15.0](RELEASE_V1.15.0.md)。
 
 ### 截图基线
 

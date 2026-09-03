@@ -1,5 +1,7 @@
 # KeiOS Feature Overview
 
+<!-- markdownlint-disable MD013 -->
+
 [中文版本 (CN)](FEATURES_CN.md)
 
 KeiOS is built as a daily Android utility console. The app brings together system inspection, MCP
@@ -40,7 +42,7 @@ The MCP page manages a local KeiOS MCP server:
   cards for users who want a smaller starting surface.
 - Claw Skill quick setup prompt, localized SKILL.md generation, workflow blueprints, and tool-level
   help resources.
-- 54 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
+- 51 MCP tools for Home overview, OS cards, system TopInfo, GitHub tracking/share import/discovery,
   Star List import, package scans, reverse repository scans, direct subscription inspection, and
   Blue Archive account, daily-plan, Craft Chamber, and cache operations.
 - Typed catalog metadata, JSON schemas, tool annotations, structured outputs, and resource/prompt
@@ -60,6 +62,10 @@ The GitHub page tracks APK updates from GitHub projects and subscription project
 - GitHub API strategy configuration with optional token support shared by Releases and Actions.
 - Release asset reading, APK download routing, app-managed install routing, and latest-release
   download actions.
+- Dedicated release-history pages with compact and expanded cards, release notes, filtered APK
+  assets, page/tag navigation, tag-only filtering, and direct installation of an older version.
+- Dedicated F-Droid version-history pages that load compact package metadata first, add file details
+  progressively, explain anti-features, and expose checksums and signer data for trust checks.
 - GitHub Actions browser for branches, workflows, runs, and artifacts, with nightly.link public lookup and token-backed GitHub API lookup.
 - Actions recommended-run update checks, app-icon notifications, debug notification testing, and
   notification deep links into the tracked project's Actions sheet.
@@ -112,8 +118,9 @@ The BA page acts as a Blue Archive office dashboard:
 - Server-specific nickname and friend-code ID cards, plus friend code copy and office overview
   cards.
 - Server, cafe level, AP threshold, media rotation, and custom media save-location settings.
-- Server-aware calendar and pool cards with in-title server context, compact time layout,
-  notification settings, and student-guide entry points.
+- A merged calendar-and-pool page with server-aware category navigation, compact time layouts,
+  notification settings, and student-guide entry points. Wide windows show calendar and pool lanes
+  together, while phones switch categories inside one route.
 
 ## Student Guide
 
@@ -140,8 +147,12 @@ Settings collect the runtime controls in one place:
   language shortcut, and Home HDR highlight.
 - v2 liquid-glass ActionBar, title cards, search fields, floating docks, bottom bar, bottom-bar
   full-effect policy during scrolling, and scoped card press feedback.
+- Long liquid sheets compose lazily, offscreen glass skips draw work, and drag reads run in layout;
+  the existing material, animation, blur, and interaction effects stay intact.
 - Adaptive main navigation keeps a bottom bar on phones, moves to top navigation at regular tablet
   widths, and uses a remembered drag-to-close sidebar on ultra-wide windows.
+- Settings, About, MCP, OS cards and Shell, BA Office, Student Guide, the merged calendar-and-pool
+  route, GitHub tracking and history, and Play use independent two-lane layouts where width allows.
 - Icon design selector with Android Designs as the default set and Apple Designs as the refreshed
   alternate set.
 - Custom secondary-page background image and opacity controls, including cards, chrome, and modal
@@ -161,5 +172,8 @@ Settings collect the runtime controls in one place:
 - Android baseline: Android 15+ (`minSdk 35`), `targetSdk=37`.
 - UI stack: Jetpack Compose `1.12.0`, Miuix KMP, Lifecycle ViewModel Compose, custom v2 liquid-glass
   chrome, MMKV-backed preferences.
-- Build baseline: Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.10`, Android Gradle Plugin `9.3.2`,
-  generated Baseline Profiles, and Gradle project tooling.
+- Build baseline: Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.20-RC2`, Android Gradle Plugin
+  `9.4.0-rc02`, Ktor `3.5.2`, generated Baseline Profiles, and Gradle project tooling.
+- The release Baseline Profile contains 61,226 baseline rules and 24,123 startup rules. Its six
+  journeys cap replay at 16 total runs and complete in about 9–17 minutes on the current A17 Phone
+  AVD.

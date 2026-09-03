@@ -351,7 +351,7 @@
     <string name="about_release_row_mcp_security">MCP 与安全</string>
     <string name="about_release_value_mcp_security">MCP 工具目录从 54 个整合为 51 个，重命名映射会随连接下发；SSE 连接加入心跳，会话通知在 HyperOS 上保持单次绘制；小米焦点通知与分享导入的广播接收器限定为应用内使用</string>
     <string name="about_release_row_performance">性能与启动</string>
-    <string name="about_release_value_performance">滚出视野的玻璃卡片会停止绘制，长 Sheet 使用懒加载，拖拽状态读取下移到布局阶段，二级页面覆盖时首页暂停空闲重绘；Baseline Profile 覆盖历史分页、组件实验室、图鉴与媒体播放、发行版与 F-Droid 页面，完整六段采集时间从 81 分钟降到约 11 分钟。F-Droid 刷新优先读取能够满足请求的最小数据源，同一仓库索引只下载一次</string>
+    <string name="about_release_value_performance">滚出视野的玻璃卡片会停止绘制，长 Sheet 使用懒加载，拖拽状态读取下移到布局阶段，二级页面覆盖时首页暂停空闲重绘；Baseline Profile 覆盖历史分页、组件实验室、图鉴与媒体播放、发行版与 F-Droid 页面，完整六段采集的回放上限从 96 次降到 16 次，已验证运行约 9–17 分钟，显著低于此前的 81 分钟。F-Droid 刷新优先读取能够满足请求的最小数据源，同一仓库索引只下载一次</string>
     <string name="about_release_row_next">升级建议</string>
     <string name="about_release_value_next">建议所有 v1.14.x 用户升级；平板与折叠屏用户、以及使用 GitHub 版本追踪或 F-Droid 源的用户提升最明显。MCP 工具重命名后，已保存的外部调用请对照新目录更新</string>
 

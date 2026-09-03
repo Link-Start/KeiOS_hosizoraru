@@ -1,5 +1,7 @@
 # KeiOS 功能完整介绍
 
+<!-- markdownlint-disable MD013 -->
+
 [English Version](FEATURES.md)
 
 KeiOS 是一个面向日常使用的 Android 工具台。它把系统参数查看、MCP 服务管理、GitHub Releases / Actions
@@ -33,7 +35,7 @@ MCP 页面用于管理本地 KeiOS MCP Server：
 - 支持启动/停止、本机或局域网连接配置、端口/路径/Token 展示和配置复制。
 - 入口工具、工作流工具和高级工具分区展示，并支持搜索与分组卡片，降低初次接入成本。
 - 提供 Claw Skill 快速接入提示词、本地化 SKILL.md、工作流蓝图和单工具帮助资源。
-- 54 个 MCP 工具覆盖 Home 总览、OS 卡片、系统 TopInfo、GitHub 跟踪 / 分享导入 / 仓库发现、Star List
+- 51 个 MCP 工具覆盖 Home 总览、OS 卡片、系统 TopInfo、GitHub 跟踪 / 分享导入 / 仓库发现、Star List
   导入、包名扫描、仓库反扫、订阅项目检查，以及 Blue Archive 账号、日常模板、制造室与缓存操作。
 - 补齐 typed catalog、JSON schema、工具 annotations、结构化输出和资源 / prompt 注册表，适配支持新协议面的
   MCP 客户端。
@@ -49,6 +51,8 @@ GitHub 页面用于追踪 GitHub 项目与订阅项目的更新：
   目录索引的远端版本检查。
 - 支持 GitHub API 抓取方案配置，Token 可同时服务 Releases 与 Actions。
 - 支持读取 Release 资源、APK 下载路由、本 App 托管安装路由和最新发布下载。
+- 独立发行版历史页提供折叠 / 展开卡片、发行说明、筛选后的 APK、页码 / 标签跳转、纯标签过滤和旧版本直接安装。
+- 独立 F-Droid 版本历史页先加载紧凑包元数据，再逐步补充文件详情，并展示反特性说明、校验值与签名信息以完成信任检查。
 - 支持 GitHub Actions 的分支、workflow、run、artifact 浏览，可走 nightly.link 公开链路或 GitHub API Token 链路。
 - Actions 推荐 run 更新检查、应用图标通知、调试通知测试，并支持从通知深链进入对应追踪项目的 Actions sheet。
 - 分支推荐会综合默认分支、近期活跃度、成功 run 与 artifact 可用性。
@@ -83,7 +87,7 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - 可配置日常模板可为单账号或全部账号更新 AP 余量、摸头 / 邀请次数和制造计划，并可从快速设置磁贴、启动器快捷方式与 MCP 触发。
 - 支持按服务器独立的昵称 / 好友码 ID 卡、好友码复制和办公室总览卡。
 - 支持服务器、咖啡厅等级、AP 阈值、媒体旋转、自定义媒体保存位置等配置。
-- 活动日历与卡池卡片带服务器上下文和紧凑时间布局，可配置通知并跳转到对应学生图鉴。
+- 活动日历与卡池合并到同一页面，保留服务器分类、紧凑时间布局、通知设置和学生图鉴入口；宽窗口同时展示日历与卡池双栏，手机在同一路由内切换分类。
 
 ## 学生图鉴
 
@@ -103,7 +107,9 @@ BA 页面是 Blue Archive 办公室仪表盘：
 
 - 主题模式、过渡动画、预测返回、搜索默认聚焦、预加载、应用语言入口和 Home HDR 高光。
 - v2 液态玻璃 ActionBar、标题卡、搜索栏、浮动 dock、底栏、滑动时底栏完整特效策略和局部卡片按压反馈。
+- 长 Liquid Sheet 使用懒加载，离屏玻璃跳过绘制，拖拽状态在布局阶段读取；现有材质、动画、虚化和交互效果保持完整。
 - 主导航会在手机使用底栏，在常规平板宽度使用顶部导航，并在超宽窗口使用可记忆、可拖动收起的侧边栏。
+- 设置、关于、MCP、OS 卡片与 Shell、BA 办公室、学生图鉴、合并后的活动日历与卡池、GitHub 追踪与历史、Play 会在宽度允许时使用可独立滚动的双栏布局。
 - 图标设计以 Android Designs 作为默认图标，并提供 Apple Designs 焕新版图标切换。
 - 二级页面自定义背景图和透明度覆盖卡片、chrome 与弹层场景。
 - 通知权限、电池优化、OEM 自启动、应用列表访问和 Shizuku 状态。
@@ -120,5 +126,6 @@ BA 页面是 Blue Archive 办公室仪表盘：
 - Android 基线：Android 15+（`minSdk 35`），`targetSdk=37`。
 - UI 技术栈：Jetpack Compose `1.12.0`、Miuix KMP、Lifecycle ViewModel Compose、自研 v2 液态玻璃
   Chrome、MMKV 偏好存储。
-- 构建基线：Java 21、Gradle Wrapper `9.7.1`、Kotlin `2.4.10`、Android Gradle Plugin `9.3.2`、
-  已生成的 Baseline Profiles 与 Gradle 项目工具链。
+- 构建基线：Java 21、Gradle Wrapper `9.7.1`、Kotlin `2.4.20-RC2`、Android Gradle Plugin
+  `9.4.0-rc02`、Ktor `3.5.2`、已生成的 Baseline Profiles 与 Gradle 项目工具链。
+- 正式版 Baseline Profile 包含 61,226 条 baseline 规则与 24,123 条 startup 规则；六段旅程的总回放上限为 16 次，在当前 A17 Phone AVD 上约 9–17 分钟完成。

@@ -20,7 +20,7 @@
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
     <string name="about_card_release_title">Release v1.15.0</string>
-    <string name="about_card_release_subtitle">大屏双栏铺开、发行版与 F-Droid 版本历史、启动与流量优化</string>
+    <string name="about_card_release_subtitle">大屏双栏、发行版与 F-Droid 版本历史、启动与网络效率优化</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -324,18 +324,18 @@
 
     <string name="about_release_row_version">版本线</string>
     <string name="about_release_value_version">v1.15.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_github">发行版与回滚</string>
-    <string name="about_release_value_github">追踪的仓库获得独立的发行版页面：折叠时只显示版本、时间和是否最新，展开后是发行说明与经过筛选的安装包，可直接装回旧版本而不只是浏览。支持按页码或标签跳转、隐藏仅有标签的条目；平板上打开某个版本会移到第二栏，最新版与最新预发布默认就在那里，历史列表不会因为展开而塌掉</string>
-    <string name="about_release_row_ba_guide">F-Droid 版本历史</string>
-    <string name="about_release_value_ba_guide">F-Droid 源的追踪项也有了自己的版本历史页。数据改从仓库的包页面读取（约 37 KB，而不是 58 MB 的完整索引），因此每个版本都带日期、大小、ABI、minSdk 和可用的下载；没有包页面的第三方源在体积允许时读取索引，先出列表再补文件详情，不再空屏等待。反特性单独成卡并说明该构建为何被标记，刷新也改走同样的取数，第三方源首次拿到哈希与签名，信任校验才真正可用</string>
-    <string name="about_release_row_navigation">大屏双栏</string>
-    <string name="about_release_value_navigation">上一版只给出了限宽与双栏门槛，这一版把双栏真正落到每个页面：设置、关于、MCP、OS 活动卡、BA 办公室、图鉴、日历与卡池、GitHub 追踪列表与历史都会在平板和展开的折叠屏上分成两栏；OS Shell 拆成命令与输出两栏，Play 拆成专辑与队列。每栏独立滚动，追踪卡可钉在右栏，返回按钮跟随内容列，未铺满窗口的 Sheet 也会正确虚化整窗</string>
-    <string name="about_release_row_icon">图鉴与侧栏</string>
-    <string name="about_release_value_icon">学生图鉴底栏按可用宽度决定尺寸与是否显示文字，不再强行铺满；平板上可切换为侧栏，并单独记住自己的形态，不跟随主页面</string>
-    <string name="about_release_row_release_gate">MCP 与安全</string>
-    <string name="about_release_value_release_gate">MCP 工具目录合并整理为 51 个（原 54 个，重命名映射会随连接下发），SSE 连接加入心跳，会话通知在 HyperOS 上不再重复绘制；小米焦点通知与分享导入的广播接收器改为不导出</string>
+    <string name="about_release_row_releases">发行版与回滚</string>
+    <string name="about_release_value_releases">追踪的仓库获得独立的发行版页面：折叠时集中显示版本、时间和最新状态，展开后提供发行说明与经过筛选的安装包，既能阅读变化，也能直接安装旧版本。支持按页码或标签跳转、隐藏仅有标签的条目；平板上打开某个版本会移到第二栏，最新版与最新预发布默认固定在那里，历史列表保持完整高度</string>
+    <string name="about_release_row_fdroid">F-Droid 版本历史</string>
+    <string name="about_release_value_fdroid">F-Droid 源的追踪项获得独立的版本历史页。数据从仓库约 37 KB 的包页面读取，完整索引约 58 MB；每个版本都带日期、大小、ABI、minSdk 和可用下载。缺少包页面的第三方源会在体积允许时读取索引，先显示列表再补文件详情，等待阶段始终有内容。反特性单独成卡并说明该构建为何被标记；刷新使用相同的数据来源，第三方源也能提供哈希与签名，让信任校验完整生效</string>
+    <string name="about_release_row_large_screens">大屏双栏</string>
+    <string name="about_release_value_large_screens">上一版给出了限宽与双栏门槛，这一版把双栏落到各个主要页面，主页面操作也收进悬浮工具栏：设置、关于、MCP、OS 活动卡、BA 办公室、图鉴、日历与卡池、GitHub 追踪列表与历史都会在平板和展开的折叠屏上分成两栏；OS Shell 拆成命令与输出两栏，Play 拆成专辑与队列。每栏独立滚动，追踪卡可钉在右栏，返回按钮跟随内容列，窄于窗口的 Sheet 也会正确虚化整窗</string>
+    <string name="about_release_row_catalog">图鉴与侧栏</string>
+    <string name="about_release_value_catalog">学生图鉴底栏按可用宽度决定尺寸与是否显示文字；平板上可切换为侧栏，并独立记住自己的形态</string>
+    <string name="about_release_row_mcp_security">MCP 与安全</string>
+    <string name="about_release_value_mcp_security">MCP 工具目录从 54 个整合为 51 个，重命名映射会随连接下发；SSE 连接加入心跳，会话通知在 HyperOS 上保持单次绘制；小米焦点通知与分享导入的广播接收器限定为应用内使用</string>
     <string name="about_release_row_performance">性能与启动</string>
-    <string name="about_release_value_performance">滚出视野的玻璃卡片不再绘制，长 Sheet 懒加载、拖拽状态下移到布局阶段，二级页面覆盖时首页停止空闲重绘；Baseline Profile 覆盖到历史分页、组件实验室、图鉴与媒体播放、发行版与 F-Droid 页面，采集时间从 81 分钟降到约 33 分钟。F-Droid 刷新按“能答得上来的最便宜的源”取数，同源索引只下载一份</string>
+    <string name="about_release_value_performance">滚出视野的玻璃卡片会停止绘制，长 Sheet 使用懒加载，拖拽状态读取下移到布局阶段，二级页面覆盖时首页暂停空闲重绘；Baseline Profile 覆盖历史分页、组件实验室、图鉴与媒体播放、发行版与 F-Droid 页面，完整六段采集时间从 81 分钟降到约 11 分钟。F-Droid 刷新优先读取能够满足请求的最小数据源，同一仓库索引只下载一次</string>
     <string name="about_release_row_next">升级建议</string>
     <string name="about_release_value_next">建议所有 v1.14.x 用户升级；平板与折叠屏用户、以及使用 GitHub 版本追踪或 F-Droid 源的用户提升最明显。MCP 工具重命名后，已保存的外部调用请对照新目录更新</string>
 

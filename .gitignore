@@ -85,7 +85,6 @@ tmp/
 # Local tooling state
 /.claude/
 /.codex/
-/AGENTS.md
 /trace_processor
 
 # Local QA artifacts

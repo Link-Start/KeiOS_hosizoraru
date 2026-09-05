@@ -10,6 +10,17 @@
 - Keep long-task handoffs in ignored `.planning/`: objective, owning paths, decisions, verification results and their inputs, remaining gates, and next action. After compaction, resume there and refresh evidence whose inputs changed.
 - Communicate the result, supporting evidence, and remaining limitations directly. Match detail to complexity, use positive phrasing for comparisons, and keep technical failure states explicit. End with the actual outcome or required next action.
 
+## Memory freshness
+
+- Treat memory as a lead for locating relevant context. Follow current session instructions and project guidance; verify remembered technical facts against the current owning source before they determine an implementation or acceptance claim.
+- Before relying on an older memory, check its evidence date and scope (revision, dependency, artifact, or environment), then confirm that its assumptions still apply. An unknown date, a relevant change since that evidence, or a conflict with current sources requires targeted revalidation. Recent retrieval or rewritten summary text does not renew the underlying evidence.
+- Match verification to volatility: stable collaboration preferences can carry forward until the user changes them; architecture and workarounds need current source checks; versions, runtime state, and acceptance results need matching current inputs. Age prompts review rather than automatic rejection, and a recent timestamp alone does not establish validity.
+- When current evidence supersedes a memory, use the current result and record the old assumption, replacement, and source/date in the task's scoped handoff when useful. Keep historical failures and unfinished investigations tied to their original run; verify whether they remain unresolved before treating them as current blockers.
+- If a remembered claim cannot be verified, label it historical or unverified and keep it out of decisions that depend on its truth. Continue independent authorized work. Check the smallest relevant owner or reproduction; reuse still-valid checks instead of restarting a repository-wide investigation.
+- This policy governs use of memory. Editing or deleting generated memory storage requires an explicit user request and the supported memory-update workflow; ordinary project work does not authorize rewriting memory files.
+
+- For KeiOS, recheck dependency/channel claims in the version catalog and current project rules, architecture claims in the affected module, and Profile/performance claims against the relevant source revision, capture, APK, and device conditions. Old journey counts, timings, or build failures remain dated results until revalidated.
+
 ## Architecture and dependencies
 
 - Read SDK, Kotlin, Compose, and dependency versions from `gradle/libs.versions.toml` and the affected Gradle files. The project minimum is Android API 35; preserve it unless requirements change.

@@ -1,11 +1,10 @@
 ---
 name: keios-product-ux-writing
 description: >-
-  Review KeiOS product copy, localized resources, status and error surfaces,
-  notifications, MCP and export text contracts, release notes, durable comments,
-  and user-facing docs. Use for substantive wording or behavior changes across
-  these surfaces; route pure Compose layout, visual design, animation, platform,
-  performance, and accessibility implementation to their dedicated project skills.
+  Edit or review KeiOS user-visible wording, localized strings, status and error
+  claims, and notification, MCP, export, or public documentation text contracts.
+  Use when wording or the behavior it describes changes; ordinary implementation,
+  agent instructions, and internal comments without product claims use their own checks.
 license: Apache-2.0
 metadata:
   author: "scarletkc; adapted for KeiOS"
@@ -15,120 +14,76 @@ metadata:
 
 # KeiOS Product UX Writing
 
-Treat user-visible text as product behavior. Follow `AGENTS.md`, especially its
-direct-positive writing style and resource conventions. This skill covers the
-claim, wording, ownership, localization, and synchronization of the text.
+Make the affected product text accurate, useful, localized, and consistent with
+its owning behavior. Follow the user's requested scope and `AGENTS.md`.
 
-## Route the work
+## Decide what needs changing
 
-Apply this skill to substantive changes or reviews involving:
+Use this skill for visible strings, status and error wording, notification text,
+MCP descriptions/results, export text, or public documentation claims. A behavior
+change also belongs here when existing text would describe the old behavior.
+Internal agent instructions and comments with no product claim need ordinary
+editorial review. Layout and implementation use the relevant Android/Compose
+skill; load it only when that work is part of the task.
 
-- Compose titles, labels, supporting copy, status pills and cards, settings,
-  empty states, errors, recovery actions, dialogs, snackbars, and search hints;
-- notification and Super Island text, import/export results, WebDAV sync,
-  GitHub workflows, OS tools, BA helpers, and runtime summaries;
-- MCP tool names and descriptions, generated skill text, human-readable tool
-  results, structured output fields, and exported reports;
-- README, feature guides, paired language docs, release notes, validation
-  artifacts, durable titles, and code comments;
-- behavior changes whose old copy can remain in resources, notifications,
-  tests, tool contracts, or documentation.
+Start from the changed surface and its consumers. Inspect enough current code,
+resources, tests, or documentation to identify:
 
-Use `android-ux-design` and `compose-expert` for visual and Compose structure.
-Use `android-accessibility` for semantics, focus, touch targets, contrast, and
-screen-reader behavior. Apply this skill to the text those implementations
-expose.
+- the fact being shown and its owning state model or operation result;
+- the action a user can take and what it actually does;
+- the locales, notifications, tool outputs, or documents sharing that contract.
 
-## Write product copy from effective state
+Resolve routine wording from this evidence. Ask only when a missing product
+decision changes the meaning or behavior. A scoped text edit can stay scoped.
 
-- Read the current value from its owning repository, ViewModel, state model,
-  build source, or platform result. Keep Compose responsible for projection,
-  with state semantics owned outside display-only wording.
-- Give configured, active, pending, cached, stale, unavailable, degraded,
-  failed, and completed states distinct labels when they lead to different
-  user decisions.
-- Announce success at the operation's completion boundary. A tap, launched
-  intent, scheduled worker, posted notification, or started import represents
-  its own earlier stage.
-- Attach provenance, freshness, or failure detail to the exact value it
-  qualifies. Keep adjacent labels free from duplicate suffixes and ambiguous
-  status terms.
-- Give every actionable error the failed operation or input, relevant surface,
-  usable reason, and next safe action. Preserve the original exception message
-  when only the traceback is being suppressed.
-- Choose action labels that describe the action and target. Destructive or
-  irreversible actions state their consequence before confirmation.
+## Write from effective state
 
-Lead with the result or action. Keep supporting text specific and compact.
-Claims such as recommended, faster, safer, or better require current project
-evidence that supports the user's decision.
+- Keep state semantics in their owning repository, ViewModel, or runtime model;
+  Compose projects those semantics into text.
+- Distinguish configured, pending, active, cached/stale, unavailable, failed, and
+  completed states where the distinction changes the user's decision.
+- Announce success at the operation's completion boundary. A launched intent,
+  scheduled worker, posted notification, or started import supports its own
+  stage until downstream completion is observed.
+- Label actions with their verb and target. Error text identifies the failed
+  operation, a usable reason, and a recovery action when available. Preserve
+  meaningful exception detail when suppressing a traceback.
+- Attach freshness, provenance, or failure information to the value it qualifies.
+  Keep technical detail in diagnostic surfaces unless it helps a product decision.
+- Use direct, specific wording. Claims such as faster or recommended need
+  evidence; a local edit does not create a requirement to benchmark the product.
 
-## Preserve resources and accessibility text
+## Preserve the affected contract
 
-- Put new user-visible strings in the appropriate `strings_*.xml` domain file.
-  Keep default, `values-zh-rCN`, `values-en`, and `values-ja` resources aligned
-  for keys, placeholders, formatting, and meaning.
-- Preserve placeholder order and type. Review the full sentence in every
-  locale when a noun, state model, or action changes.
-- Use content descriptions for the action or state perceived through the
-  control. Decorative icons remain silent; visible labels and semantics avoid
-  redundant announcements.
-- Keep long values readable and copyable. Layout adaptation belongs to the UI
-  skills while this skill protects the payload and meaning.
+| Surface | What to preserve or synchronize |
+| --- | --- |
+| Android resources | Use the existing `strings_*.xml` domain; align affected keys, placeholders, formatting, and meaning across default, `values-zh-rCN`, `values-en`, and `values-ja` |
+| Accessibility text | Describe the perceived action/state; keep decorative icons silent and avoid repeating the visible label in announcements |
+| Notifications / Super Island | Fit the current operation and target to the compact surface; retain the existing framework, channels, and system-recognized behavior |
+| MCP tools | Keep names, descriptions, mutation boundaries, inputs, meaningful results, and affected public docs aligned with implementation |
+| Structured exports / tool results | Preserve field names, types, absence semantics, and clean payloads; keep human notices separate and exclude secrets or incidental private diagnostics |
+| Public docs / releases | Preserve each document's purpose and paired-language meaning; link to the authoritative contract instead of copying fast-changing values |
 
-## Protect notification, MCP, and export contracts
+For versions, use Gradle-owned sources for builds and verified published release
+metadata for release claims. Preserve intentionally dated release notes and
+validation records. Durable comments explain constraints or ordering that the
+code alone cannot express. Update only documents that own or consume the change.
 
-- Notification titles and bodies report the current operation, target, and
-  actionable outcome within the compact surface. Preserve the existing
-  notification framework and channel behavior required by `AGENTS.md`.
-- MCP tool descriptions state the actual capability, mutation boundary,
-  required input, and meaningful result. Tool metadata and user-facing docs
-  change together when behavior changes.
-- Structured JSON and other machine-readable output keep stable fields,
-  absence semantics, and clean payloads. Human notices use the human-format
-  path. Secrets, credentials, private paths, and incidental diagnostics stay
-  outside public tool and export contracts.
-- Human-readable status output emphasizes deviations, owners, freshness, and
-  recovery. Full inspection data belongs in its dedicated detail surface.
+## Validate and finish
 
-## Keep docs and release claims durable
+Choose checks from the changed contract:
 
-- Let each document keep one job. README introduces the product and links to
-  detailed feature, build, contribution, and release material. Planning and QA
-  documents retain their dated work scope.
-- Give changing field lists, supported values, precedence rules, and feature
-  contracts one authoritative home. Other pages carry a specific link plus
-  surface-specific nuance.
-- Resolve build and dependency versions from Gradle-owned sources. Resolve the
-  latest published release from GitHub Releases. Release notes may preserve a
-  dated version snapshot; long-lived docs should avoid additional manual copies
-  of fast-moving values.
-- Keep English and Chinese document pairs semantically aligned when both own
-  the same user workflow. Japanese coverage follows the existing resource and
-  documentation boundary of the touched feature.
-- Preserve unaffected wording and structure during focused edits. A behavior
-  change earns the smallest sufficient copy and documentation update.
+- Resource changes: compare affected locale keys and placeholder types/order;
+  read the complete sentence in each affected locale.
+- State-dependent wording: use focused behavior/semantics tests; add regression
+  coverage when it can catch an incorrect state or overstated success.
+- Tool/export changes: check required fields, absence semantics, and unwanted
+  payload leakage using the existing contract tests where available.
+- Documentation: review claims, dates, links, and affected language pairs.
+- Renamed terms or behavior: search affected consumers for the retired wording;
+  widen the search if shared ownership or remaining occurrences justify it.
 
-## Deliver the final state
-
-Titles, comments, release text, screenshots, and generated reports describe the
-result a reader can use. Place design alternatives and abandoned attempts in
-the planning record, review discussion, or commit history. Comments retain a
-non-obvious platform constraint, ordering requirement, upstream quirk, or
-security boundary that the code alone cannot explain.
-
-## Sweep copy after behavior changes
-
-Search old terms and behavior across:
-
-1. default, Chinese, English, and Japanese `strings*.xml` resources;
-2. Compose call sites, state models, ViewModels, and status projections;
-3. notifications, Super Island templates, imports, exports, sync, and errors;
-4. MCP catalog entries, tool descriptions, annotations, generated skills, and
-   structured results;
-5. tests for displayed text, semantics, state transitions, and absent claims;
-6. README, `readme/`, `docs/`, release notes, headings, anchors, and links.
-
-Assert behavior and flattened text where console wrapping can vary. For
-machine formats, test required absences alongside required fields. Finish with
-a locale-key check and a targeted search for the retired wording.
+Inspect the actual UI when wrapping, input, semantics, or layout is in scope.
+Run further builds or device checks only when the changed behavior requires them.
+Report the changed surface, meaningful validation, and any unresolved product
+choice or evidence limitation. Keep dated evidence distinct from current checks.

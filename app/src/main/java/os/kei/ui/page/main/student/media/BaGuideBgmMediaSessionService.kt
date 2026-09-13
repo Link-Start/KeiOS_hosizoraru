@@ -109,15 +109,38 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
     private class BaGuideBgmMediaSessionCallback(
         private val service: BaGuideBgmMediaSessionService,
     ) : MediaSession.Callback {
+        /**
+         * Grants each controller what Media3 thinks it should have, plus this session's own two buttons.
+         *
+         * `AcceptedResultBuilder(session)` is deprecated as of Media3 1.11 because it handed *every*
+         * controller the trusted defaults — all player commands, all session commands — whether the
+         * caller was the media notification or some other app that had merely found the session. The
+         * `(session, controller)` overload branches on `controller.isTrusted()` instead and gives an
+         * untrusted one the read-only sets. That is a real tightening and the point of the migration,
+         * not a rename: an untrusted controller can still read state and still be told about this
+         * session, but can no longer drive transport.
+         *
+         * The base is read back off a throwaway result rather than re-derived from `DEFAULT_*` here, so
+         * which set a controller belongs in stays Media3's rule to state and cannot drift from it.
+         *
+         * The two custom commands are added on top for every controller, exactly as before. They have to
+         * be available to the media-notification controller for [setMediaButtonPreferences] to render
+         * enabled buttons, and narrowing them by trust as well would be a policy change this migration
+         * has no mandate to make.
+         */
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
-        ): MediaSession.ConnectionResult =
-            MediaSession.ConnectionResult
-                .AcceptedResultBuilder(session)
+        ): MediaSession.ConnectionResult {
+            val defaults =
+                MediaSession.ConnectionResult
+                    .AcceptedResultBuilder(session, controller)
+                    .build()
+            return MediaSession.ConnectionResult
+                .AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(
                     BaGuideBgmMediaButtonPreferences.availableSessionCommands(
-                        MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS,
+                        defaults.availableSessionCommands,
                     ),
                 ).setMediaButtonPreferences(
                     BaGuideBgmMediaButtonPreferences.mediaButtonPreferences(
@@ -128,6 +151,7 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
                             ),
                     ),
                 ).build()
+        }
 
         override fun onCustomCommand(
             session: MediaSession,

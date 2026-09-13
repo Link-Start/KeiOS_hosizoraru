@@ -1,0 +1,1353 @@
+[
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.4.2",
+  "id": 284263676,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Q8YT8",
+  "tag_name": "1.4.2",
+  "name": "1.4.2",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2026-02-09T03:48:30Z",
+  "published_at": "2026-02-09T03:55:00Z",
+  "assets": [
+   {
+    "size": 15252519,
+    "updated_at": "2026-02-09T03:54:59Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.2/NekoBox-1.4.2-arm64-v8a.apk",
+    "name": "NekoBox-1.4.2-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15509280,
+    "updated_at": "2026-02-09T03:54:59Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.2/NekoBox-1.4.2-armeabi-v7a.apk",
+    "name": "NekoBox-1.4.2-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16222828,
+    "updated_at": "2026-02-09T03:54:59Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.2/NekoBox-1.4.2-x86.apk",
+    "name": "NekoBox-1.4.2-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15934699,
+    "updated_at": "2026-02-09T03:54:59Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.2/NekoBox-1.4.2-x86_64.apk",
+    "name": "NekoBox-1.4.2-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## 1.4.2 更新内容\r\n\r\n- 升级核心 sing-box 1.12.19-neko-1\r\n- 合并 PR #1109\r\n- 处理 issue #1115 #1093 #1090 #1077 \r\n- 重构优化 更新订阅时的配置覆写（保留本地的自定义json配置，其他项目遵循订阅）\r\n- 重构优化 直连订阅请求\r\n\r\n## 针对小白用户的提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界` 维护的sing-box翻墙核心，并且不受sing-box社区的支持。\r\n- 您须了解本项目较少维护，**不接受功能请求**。如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 客户端\r\n\r\n- 机场订阅用户（Clash Meta 核心）-> `Clash Meta For Android` `FlClash`\r\n- Xray 核心用户 -> `v2rayNG`\r\n- sing-box 核心用户 -> `sing-box for Android`\r\n\r\n[友情推荐其他平台的客户端](https://matsuridayo.github.io/download/#_3)\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.4.1",
+  "id": 258382705,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84PZptx",
+  "tag_name": "1.4.1",
+  "name": "1.4.1",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2025-10-30T07:22:25Z",
+  "published_at": "2025-10-30T07:27:25Z",
+  "assets": [
+   {
+    "size": 15351283,
+    "updated_at": "2025-10-30T07:27:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.1/NekoBox-1.4.1-arm64-v8a.apk",
+    "name": "NekoBox-1.4.1-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15605236,
+    "updated_at": "2025-10-30T07:27:24Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.1/NekoBox-1.4.1-armeabi-v7a.apk",
+    "name": "NekoBox-1.4.1-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16319274,
+    "updated_at": "2025-10-30T07:27:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.1/NekoBox-1.4.1-x86.apk",
+    "name": "NekoBox-1.4.1-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16036087,
+    "updated_at": "2025-10-30T07:27:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.1/NekoBox-1.4.1-x86_64.apk",
+    "name": "NekoBox-1.4.1-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## 1.4.1 更新内容\r\n\r\n- 升级核心 sing-box 1.12.12-neko-1\r\n- 修复 grpc case 缺少 break 导致序列化数据错乱\r\n- 声明 `GET_INSTALLED_APPS`（国产安卓特有权限）并在应用列表为空时提示跳转到系统设置\r\n- 进入应用列表界面时重新加载应用列表\r\n- 合并 PR #1050 #1052\r\n\r\n## 1.4.0 版本起新增 Preview 更新通道\r\n\r\n- Preview 为最新的测试版，滚动发布\r\n- 旧的 Preview 版本直接删除，不占用 pre-release 空间\r\n\r\n## 针对小白用户的提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界` 维护的sing-box翻墙核心，并且不受sing-box社区的支持。\r\n- 您须了解本项目较少维护，**不接受功能请求**。如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 客户端\r\n\r\n- 机场订阅用户 -> `Clash Meta For Android` `flclash` 等等\r\n- Xray 核心用户 -> `v2rayNG`\r\n- sing-box 核心用户 -> `sing-box for Android`\r\n\r\n[友情推荐其他平台的客户端](https://matsuridayo.github.io/download/#_3)\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/preview",
+  "id": 282086845,
+  "author": {
+   "login": "arm64v8a",
+   "avatar_url": "https://avatars.githubusercontent.com/u/48624112?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Q0E29",
+  "tag_name": "preview",
+  "name": "pre-1.4.2-20260202-1",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2025-10-07T08:53:01Z",
+  "published_at": "2026-02-02T08:35:00Z",
+  "assets": [],
+  "body": "## 更新内容 [这是 Preview 版本]\r\n\r\n当前无 Preview 版本"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.4.0",
+  "id": 248773697,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84O0_xB",
+  "tag_name": "1.4.0",
+  "name": "1.4.0",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2025-09-20T07:32:56Z",
+  "published_at": "2025-09-20T07:38:17Z",
+  "assets": [
+   {
+    "size": 15323627,
+    "updated_at": "2025-09-20T07:38:16Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.0/NekoBox-1.4.0-arm64-v8a.apk",
+    "name": "NekoBox-1.4.0-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15578286,
+    "updated_at": "2025-09-20T07:38:16Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.0/NekoBox-1.4.0-armeabi-v7a.apk",
+    "name": "NekoBox-1.4.0-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16291430,
+    "updated_at": "2025-09-20T07:38:17Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.0/NekoBox-1.4.0-x86.apk",
+    "name": "NekoBox-1.4.0-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16006986,
+    "updated_at": "2025-09-20T07:38:16Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.0/NekoBox-1.4.0-x86_64.apk",
+    "name": "NekoBox-1.4.0-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## 1.4.0 更新内容\r\n\r\n- 升级核心 sing-box 1.12.8-neko-1 (2)\r\n- 添加「检查更新」功能\r\n- 当导入代理遇到 http(s) 链接时提示导入订阅\r\n- 合并了一些 PR #943 #993 #1002\r\n- fix: Configuration editor keyboard does not display when IME is visible\r\n- 修复 `local` dns transport 失效\r\n- 「导入订阅」当没有连接代理时，尝试通过 ECH 和 H3 方式获取 (3)\r\n- 「导入订阅」当没有指定订阅名称时，尝试通过 `content-disposition` 获取\r\n- 「路由规则」添加自定义配置功能 (4)\r\n- 「全局设置」添加自定义配置功能 (4, 5)\r\n- 添加「恢复默认设置」，入口在 `工具 -> 备份`\r\n- 修改默认设置：默认打开 `fakedns`，默认使用 `gVisor` tun stack (6)\r\n- 优化日志查看界面\r\n- 优化 APP 启动与重启\r\n- 优化 TCP Ping 与 URL Test 测试过程，添加最小化按钮\r\n- 删除内置「屏蔽跟踪器」规则\r\n- 删除 Cloudflare Warp 配置生成器（已经无法生成配置）\r\n- 升级 Go 1.25\r\n\r\n注意事项:\r\n\r\n1. 从此版本开始，数据库格式已更新。如果您升级后再降级，数据将会丢失，请注意备份。\r\n2. 部分自动生成的配置未更新，仍使用旧版配置。基本不会影响使用。\r\n3. 仅当订阅链接为 https 时，才能通过 ECH 和 H3 方式获取。\r\n4. 自定义配置支持 Map 合并和 List 操作，格式： https://matsuridayo.github.io/nb4a-configuration/#json\r\n5. URL 测试时不应用全局自定义配置。\r\n6. 老用户建议升级后运行「恢复默认设置」，节点和订阅不会消失。\r\n\r\n## 1.4.0 版本起新增 Preview 更新通道\r\n\r\n- Preview 为最新的测试版，滚动发布\r\n- 旧的 Preview 版本直接删除，不占用 pre-release 空间\r\n\r\n## 针对小白用户的提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界` 维护的sing-box翻墙核心，并且不受sing-box社区的支持。\r\n- 您须了解本项目较少维护，**不接受功能请求**。如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 客户端\r\n\r\n- 机场订阅用户 -> `Clash Meta For Android` `flclash` 等等\r\n- Xray 核心用户 -> `v2rayNG`\r\n- sing-box 核心用户 -> `sing-box for Android`\r\n\r\n[友情推荐其他平台的客户端](https://matsuridayo.github.io/download/#_3)\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.9",
+  "id": 212687705,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84MrVtZ",
+  "tag_name": "1.3.9",
+  "name": "1.3.9",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2025-04-16T03:25:17Z",
+  "published_at": "2025-04-16T04:08:52Z",
+  "assets": [
+   {
+    "size": 15288987,
+    "updated_at": "2025-04-16T04:08:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.9/NekoBox-1.3.9-arm64-v8a.apk",
+    "name": "NekoBox-1.3.9-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15452378,
+    "updated_at": "2025-04-16T04:08:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.9/NekoBox-1.3.9-armeabi-v7a.apk",
+    "name": "NekoBox-1.3.9-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16189055,
+    "updated_at": "2025-04-16T04:08:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.9/NekoBox-1.3.9-x86.apk",
+    "name": "NekoBox-1.3.9-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15922414,
+    "updated_at": "2025-04-16T04:08:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.9/NekoBox-1.3.9-x86_64.apk",
+    "name": "NekoBox-1.3.9-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "# NekoBox For Android 正式版更新 1.3.9\r\n\r\n## 自 1.3.8 的更改\r\n\r\n- 更新 ClashMeta 配置解析器，修复一些bug，修复一些机场面板配置导入问题，删除一些错误和过时的写法\r\n- 删除高级插件功能\r\n- 修复一些配置导入解析问题 #936\r\n- Use systemExempt foreground service type for VPNService（修复部分系统崩溃）\r\n- Update translate #903 #926\r\n\r\n### 更新 core 版本 1.11.7-neko-5\r\n\r\n1. 修复 sniff\r\n2. 修复 wireguard reserved\r\n3. 同步上游的一些更新\r\n\r\n## 弃用功能\r\n\r\n由于无法维护，高级插件功能已被移除。\r\n\r\n## 针对小白用户的提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界`维护的sing-box翻墙核心，并且不受sing-box社区的支持。\r\n- 您须了解本项目较少维护，不接受功能请求。如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 客户端\r\n\r\n- 机场订阅用户 -> `Clash Meta For Android` `flclash` 等等\r\n- Xray 核心用户 -> `v2rayNG`\r\n- sing-box 核心用户 -> `sing-box for Android`\r\n\r\n[其他平台的客户端](https://matsuridayo.github.io/download/#_3)"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.8",
+  "id": 203341356,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84MHr4s",
+  "tag_name": "1.3.8",
+  "name": "1.3.8",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2025-03-03T12:30:21Z",
+  "published_at": "2025-03-03T12:38:41Z",
+  "assets": [
+   {
+    "size": 15066459,
+    "updated_at": "2025-03-03T12:38:40Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.8/NekoBox-1.3.8-arm64-v8a.apk",
+    "name": "NekoBox-1.3.8-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15225353,
+    "updated_at": "2025-03-03T12:38:40Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.8/NekoBox-1.3.8-armeabi-v7a.apk",
+    "name": "NekoBox-1.3.8-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15963516,
+    "updated_at": "2025-03-03T12:38:40Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.8/NekoBox-1.3.8-x86.apk",
+    "name": "NekoBox-1.3.8-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15696692,
+    "updated_at": "2025-03-03T12:38:40Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.8/NekoBox-1.3.8-x86_64.apk",
+    "name": "NekoBox-1.3.8-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "# NekoBox For Android 正式版更新 1.3.8\r\n\r\n## 本次更改\r\n\r\n- 将连接测试选项移至上层菜单\r\n- 修复 clashapi 没有统计数据的问题\r\n- 修复 Android 15 边缘显示的问题\r\n- 修复 geoip:private\r\n\r\n## 自 1.3.4 的更改\r\n\r\n- 添加设置选项：当网络发生变化时重置出站连接\r\n- 添加设置选项：当设备从睡眠状态唤醒时重置出站连接\r\n- Go 升级到 1.24.0\r\n- 升级到 sing-box 1.11.4 并额外适配 AnyTLS 协议（感谢 husi 的代码）\r\n- 更新 sing-box 配置写法： block -> reject\r\n- 更新 sing-box 配置写法： dns-out -> hijack-dns\r\n- 修复 GeoIP GeoSite 到 rule_set 规则转换\r\n- URLTest 无需停止 VPN\r\n- 更改 APK 命名\r\n- Up-to-date and accurate translation into Persian #891\r\n- 将多路复用(Multiplex)选项位置从全局更改为每个配置\r\n- 适配 Android SDK 35，在 Android 13+ 设备上可以在系统设置中选择语言\r\n- 订阅新增解析 sing-box 格式的配置，可以解析出 outbound 类型的节点\r\n- 更改默认直连 DNS\r\n- 修复“域名规则默认使用 domain_suffix” (#848)\r\n- 修复 #877\r\n\r\n## 弃用功能\r\n\r\n以下功能已经无法维护，未来可能会被移除。\r\n\r\n- 高级插件\r\n- 启用 seletor (免重载切换节点)\r\n\r\n## 其他须知\r\n\r\n- NekoBox for PC 电脑版可能要放弃维护\r\n- sing-box 1.8~1.12 版本更改了很多配置，部分旧版写法即将在 1.12 版本被删除。NekoBox 目前尚未完全改用新版的写法。\r\n- 如果你的路由规则包含“应用规则”，升级后需要重新选择包含的应用。\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.4",
+  "id": 190813447,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84LX5UH",
+  "tag_name": "1.3.4",
+  "name": "1.3.4",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2024-12-15T09:55:00Z",
+  "published_at": "2024-12-15T10:02:25Z",
+  "assets": [
+   {
+    "size": 15306349,
+    "updated_at": "2024-12-15T10:00:13Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.4/NB4A-1.3.4-arm64-v8a.apk",
+    "name": "NB4A-1.3.4-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15413321,
+    "updated_at": "2024-12-15T10:00:13Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.4/NB4A-1.3.4-armeabi-v7a.apk",
+    "name": "NB4A-1.3.4-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16074982,
+    "updated_at": "2024-12-15T10:00:13Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.4/NB4A-1.3.4-x86.apk",
+    "name": "NB4A-1.3.4-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15884747,
+    "updated_at": "2024-12-15T10:00:13Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.4/NB4A-1.3.4-x86_64.apk",
+    "name": "NB4A-1.3.4-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## 更新内容\r\n\r\n- fix: Re-add the server domain for bypass (修复 1.3.3 hy2 端口跳跃无法使用的问题)\r\n- Add workaround for `bulkBarrierPreWrite: unaligned arguments` panic (修复更新订阅时概率崩溃的问题)\r\n- 使用新的方法 （outbound \"any\"） 绕过节点域名的 DNS 查询\r\n- 自定义配置添加数组 prepend & append 写法\r\n- 域名规则默认使用 `domain_suffix`\r\n- 修复 ECH 设置报错\r\n- 1.3.4 version code 现已改正\r\n\r\n## 重要提示\r\n\r\n**Google Play 上的版本是冒充的，请勿下载。**\r\n\r\n**The version on Google Play is a fake, please do not download it.**\r\n\r\n## 针对小白用户的提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。机场用户建议使用其他软件。白嫖用户建议去死。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界`维护的sing-box翻墙核心。(暂时不会适配新版 sing-box)\r\n- 您须了解本项目较少维护，如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 端图形界面\r\n\r\n- 机场订阅用户 -> `Clash Meta For Android` `flclash` 等\r\n- Xray 核心用户 -> `v2rayNG` 等\r\n- sing-box 核心用户 -> `sing-box for Android` 等\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.3",
+  "id": 190418725,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84LWY8l",
+  "tag_name": "1.3.3",
+  "name": "1.3.3",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2024-12-12T12:10:12Z",
+  "published_at": "2024-12-12T12:24:32Z",
+  "assets": [
+   {
+    "size": 15305721,
+    "updated_at": "2024-12-12T12:24:31Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.3/NB4A-1.3.3-arm64-v8a.apk",
+    "name": "NB4A-1.3.3-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15412698,
+    "updated_at": "2024-12-12T12:24:31Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.3/NB4A-1.3.3-armeabi-v7a.apk",
+    "name": "NB4A-1.3.3-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16074361,
+    "updated_at": "2024-12-12T12:24:31Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.3/NB4A-1.3.3-x86.apk",
+    "name": "NB4A-1.3.3-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15884113,
+    "updated_at": "2024-12-12T12:24:31Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.3/NB4A-1.3.3-x86_64.apk",
+    "name": "NB4A-1.3.3-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## 更新内容\r\n\r\n- Add workaround for `bulkBarrierPreWrite: unaligned arguments` panic\r\n- 使用新的方法 （outbound \"any\"） 绕过节点域名的 DNS 查询\r\n- 自定义配置添加数组 prepend & append 写法\r\n- 域名规则默认使用 `domain_suffix`\r\n- 修复 ECH 设置报错\r\n\r\n## 重要提示\r\n\r\n**Google Play 上的版本是冒充的，请勿下载。**\r\n\r\n**The version on Google Play is a fake, please do not download it.**\r\n\r\n## 针对小白用户的提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。机场用户建议使用其他软件。白嫖用户建议去死。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界`维护的sing-box翻墙核心。\r\n- 您须了解本项目较少维护，如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 端图形界面\r\n\r\n- 机场订阅用户 -> `Clash Meta For Android` `flclash` 等等\r\n- Xray 核心用户 -> `v2rayNG`\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.2",
+  "id": 179026118,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Kq7jG",
+  "tag_name": "1.3.2",
+  "name": "1.3.2",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2024-10-09T04:53:01Z",
+  "published_at": "2024-10-09T05:03:35Z",
+  "assets": [
+   {
+    "size": 16305142,
+    "updated_at": "2024-10-09T05:03:34Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.2/NB4A-1.3.2-arm64-v8a.apk",
+    "name": "NB4A-1.3.2-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16410239,
+    "updated_at": "2024-10-09T05:03:35Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.2/NB4A-1.3.2-armeabi-v7a.apk",
+    "name": "NB4A-1.3.2-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 17070942,
+    "updated_at": "2024-10-09T05:03:34Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.2/NB4A-1.3.2-x86.apk",
+    "name": "NB4A-1.3.2-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16883277,
+    "updated_at": "2024-10-09T05:03:34Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.2/NB4A-1.3.2-x86_64.apk",
+    "name": "NB4A-1.3.2-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## 更新内容\r\n\r\n- 升级 sing-box 1.9.7-neko1\r\n- 添加 httpupgrade 选项\r\n- Url Test 数字使用 RTT 作为标准（类似某软件的统一延迟）\r\n- Url Test 时使用直连 DNS 而不是系统 DNS\r\n- 更改默认直连 DNS\r\n- 节点服务器的 DNS 域名策略 auto 行为改为 prefer_ipv4\r\n\r\n## 重要提示\r\n\r\n**Google Play 上的版本是冒充的，请勿下载。**\r\n\r\n**The version on Google Play is a fake, please do not download it.**\r\n\r\n## end user 提示\r\n\r\n- 本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。机场用户建议使用其他软件。白嫖用户建议去死。\r\n- 您须了解本项目使用并且在GPLv3许可下再发行 `世界`维护的sing-box翻墙核心。\r\n- 您须了解本项目较少维护，如有BUG请通过issue反馈，非重大BUG则可能不会修复。\r\n\r\n## 本软件不一定满足你的需求，推荐其他 Android 端图形界面\r\n\r\n- 机场订阅用户 -> `Clash Meta For Android` `flclash` 等等\r\n- Xray 核心用户 -> `v2rayNG`\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.1",
+  "id": 143480488,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84IjVao",
+  "tag_name": "1.3.1",
+  "name": "1.3.1",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2024-02-24T13:49:04Z",
+  "published_at": "2024-02-24T13:55:52Z",
+  "assets": [
+   {
+    "size": 15467254,
+    "updated_at": "2024-02-24T13:55:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.1/NB4A-1.3.1-arm64-v8a.apk",
+    "name": "NB4A-1.3.1-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15546367,
+    "updated_at": "2024-02-24T13:55:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.1/NB4A-1.3.1-armeabi-v7a.apk",
+    "name": "NB4A-1.3.1-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16176145,
+    "updated_at": "2024-02-24T13:55:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.1/NB4A-1.3.1-x86.apk",
+    "name": "NB4A-1.3.1-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16020376,
+    "updated_at": "2024-02-24T13:55:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.1/NB4A-1.3.1-x86_64.apk",
+    "name": "NB4A-1.3.1-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "新功能\r\n\r\n支持 mieru 协议\r\n\r\n变更\r\n\r\n使用 ruleSet 代替 geoip & geosite\r\n更新 sing-box 1.8.0\r\n\r\n修复\r\n\r\n从旧版本升级上来时闪退\r\n\r\n已知问题\r\nFakedns 与 链式代理 无法工作"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.0",
+  "id": 130403800,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Hxc3Y",
+  "tag_name": "1.3.0",
+  "name": "1.3.0",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-11-18T08:38:14Z",
+  "published_at": "2023-11-20T15:16:42Z",
+  "assets": [
+   {
+    "size": 14927514,
+    "updated_at": "2023-11-20T15:16:41Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.0/NB4A-1.3.0-arm64-v8a.apk",
+    "name": "NB4A-1.3.0-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15131679,
+    "updated_at": "2023-11-20T15:16:41Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.0/NB4A-1.3.0-armeabi-v7a.apk",
+    "name": "NB4A-1.3.0-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15733068,
+    "updated_at": "2023-11-20T15:16:41Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.0/NB4A-1.3.0-x86.apk",
+    "name": "NB4A-1.3.0-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15459653,
+    "updated_at": "2023-11-20T15:16:41Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.3.0/NB4A-1.3.0-x86_64.apk",
+    "name": "NB4A-1.3.0-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "新功能\r\n\r\n- 支持在设置里忽略所有连接的 TLS 证书验证(#425)\r\n- 更新订阅时候允许不安全的连接\r\n- 在主界面更新当前组订阅\r\n\r\n变更\r\n\r\n- 移除第一次使用 App 时的 VpnService 弹窗\r\n- 更新 sing-box 1.6.4\r\n\r\n修复\r\n\r\n- 自定义多路复用 JSON 无法合并到出站设置中(#420)"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.9",
+  "id": 127278339,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Hlh0D",
+  "tag_name": "1.2.9",
+  "name": "1.2.9",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-10-31T01:13:30Z",
+  "published_at": "2023-10-31T01:23:51Z",
+  "assets": [
+   {
+    "size": 14835575,
+    "updated_at": "2023-10-31T01:23:50Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.9/NB4A-1.2.9-arm64-v8a.apk",
+    "name": "NB4A-1.2.9-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15034413,
+    "updated_at": "2023-10-31T01:23:49Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.9/NB4A-1.2.9-armeabi-v7a.apk",
+    "name": "NB4A-1.2.9-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15637773,
+    "updated_at": "2023-10-31T01:23:51Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.9/NB4A-1.2.9-x86.apk",
+    "name": "NB4A-1.2.9-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15362456,
+    "updated_at": "2023-10-31T01:23:50Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.9/NB4A-1.2.9-x86_64.apk",
+    "name": "NB4A-1.2.9-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "- https://github.com/MatsuriDayo/NekoBoxForAndroid/commit/990df9f93e8848f136b82527b5e6c3d2d6a11314 更新 sing-box 1.6.rc3\r\n- https://github.com/MatsuriDayo/NekoBoxForAndroid/commit/6230dcf3bc0d92c5f48ad331c62e3738d279abd1 优化中文翻译\r\n- https://github.com/MatsuriDayo/NekoBoxForAndroid/commit/7c4a965e40cb27778f2897b5acb410e33e3ce793 修复手动添加socks服务器不可以填写密码(#376)\r\n- https://github.com/MatsuriDayo/NekoBoxForAndroid/commit/51889ed28e56d0376fe966a441a169ca72d5c698 添加 ECH 支持(#373) \r\n- https://github.com/MatsuriDayo/NekoBoxForAndroid/commit/5dc09caf225fe2c8a19b9fa1952de12e5eb48823 删除更新提醒\r\n- https://github.com/MatsuriDayo/NekoBoxForAndroid/commit/b77d1fc82e9c0b8c14c545e350d22efabf130d97 第一次使用 VPN 时弹窗提醒([Google Play 政策要求](https://support.google.com/googleplay/android-developer/answer/12564964)需有提示)"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.8",
+  "id": 127033735,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HkmGH",
+  "tag_name": "1.2.8",
+  "name": "1.2.8",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-10-28T03:41:44Z",
+  "published_at": "2023-10-28T03:54:06Z",
+  "assets": [
+   {
+    "size": 14831279,
+    "updated_at": "2023-10-28T03:54:05Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.8/NB4A-1.2.8-arm64-v8a.apk",
+    "name": "NB4A-1.2.8-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15029557,
+    "updated_at": "2023-10-28T03:54:04Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.8/NB4A-1.2.8-armeabi-v7a.apk",
+    "name": "NB4A-1.2.8-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15633121,
+    "updated_at": "2023-10-28T03:54:05Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.8/NB4A-1.2.8-x86.apk",
+    "name": "NB4A-1.2.8-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15357114,
+    "updated_at": "2023-10-28T03:54:04Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.8/NB4A-1.2.8-x86_64.apk",
+    "name": "NB4A-1.2.8-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "新功能\r\n\r\n- 重新移植的 Hysteria 端口跳跃 (@xchacha20-poly1305 @arm64v8a @Misaka-blog)\r\n- Hysteria2 分享链接参数 `mport` 与 Clash 配置 `ports` (@Misaka-blog)\r\n\r\n变更\r\n\r\n- Update analysis.txt (#385) (@cancanneednews)\r\n- 新的 Naive 插件 (@xchacha20-poly1305 @Misaka-blog)\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.7",
+  "id": 125114577,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HdRjR",
+  "tag_name": "1.2.7",
+  "name": "1.2.7",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-10-15T04:16:22Z",
+  "published_at": "2023-10-15T04:22:44Z",
+  "assets": [
+   {
+    "size": 14814885,
+    "updated_at": "2023-10-15T04:22:44Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.7/NB4A-1.2.7-arm64-v8a.apk",
+    "name": "NB4A-1.2.7-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15006875,
+    "updated_at": "2023-10-15T04:22:42Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.7/NB4A-1.2.7-armeabi-v7a.apk",
+    "name": "NB4A-1.2.7-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15608708,
+    "updated_at": "2023-10-15T04:22:43Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.7/NB4A-1.2.7-x86.apk",
+    "name": "NB4A-1.2.7-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15338788,
+    "updated_at": "2023-10-15T04:22:42Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.7/NB4A-1.2.7-x86_64.apk",
+    "name": "NB4A-1.2.7-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 更新 sing-box 1.6.0-beta1\r\n* 更新请求订阅的默认 User-Agent, 包含版本信息 例如：`NekoBox/Android/1.2.7 (Prefer ClashMeta Format)`\r\n* 主界面节点类型区分 `Hysteria1` / `Hysteria2`\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.6",
+  "id": 123795069,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HYPZ9",
+  "tag_name": "1.2.6",
+  "name": "1.2.6",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-10-05T04:16:25Z",
+  "published_at": "2023-10-05T04:34:19Z",
+  "assets": [
+   {
+    "size": 14841929,
+    "updated_at": "2023-10-05T04:34:19Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.6/NB4A-1.2.6-arm64-v8a.apk",
+    "name": "NB4A-1.2.6-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15033632,
+    "updated_at": "2023-10-05T04:34:16Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.6/NB4A-1.2.6-armeabi-v7a.apk",
+    "name": "NB4A-1.2.6-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15634125,
+    "updated_at": "2023-10-05T04:34:19Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.6/NB4A-1.2.6-x86.apk",
+    "name": "NB4A-1.2.6-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15361680,
+    "updated_at": "2023-10-05T04:34:16Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.6/NB4A-1.2.6-x86_64.apk",
+    "name": "NB4A-1.2.6-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 更新 sing-box 1.6.0-alpah2\r\n  包含 [ECH](https://sing-box.sagernet.org/zh/configuration/shared/tls/#ech) (目前只能通过自定义 JSON 开启) [ECH科普](https://blog.cloudflare.com/announcing-encrypted-client-hello/)\r\n* Hysteria2 订阅支持 (读取 Clash Meta 配置)\r\n* 移除 透明代理 选项\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.5",
+  "id": 122538665,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HTcqp",
+  "tag_name": "1.2.5",
+  "name": "1.2.5",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-09-26T02:24:37Z",
+  "published_at": "2023-09-26T02:37:09Z",
+  "assets": [
+   {
+    "size": 14165214,
+    "updated_at": "2023-09-26T02:37:09Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.5/NB4A-1.2.5-arm64-v8a.apk",
+    "name": "NB4A-1.2.5-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14303503,
+    "updated_at": "2023-09-26T02:37:07Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.5/NB4A-1.2.5-armeabi-v7a.apk",
+    "name": "NB4A-1.2.5-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14849080,
+    "updated_at": "2023-09-26T02:37:09Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.5/NB4A-1.2.5-x86.apk",
+    "name": "NB4A-1.2.5-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14613052,
+    "updated_at": "2023-09-26T02:37:07Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.5/NB4A-1.2.5-x86_64.apk",
+    "name": "NB4A-1.2.5-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 支持读取 clash meta Hysteria2 配置\r\n* 核心版本 1.5.0-rc5\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.4",
+  "id": 120891889,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HNKnx",
+  "tag_name": "1.2.4",
+  "name": "1.2.4",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-09-13T02:34:44Z",
+  "published_at": "2023-09-13T02:46:20Z",
+  "assets": [
+   {
+    "size": 14149566,
+    "updated_at": "2023-09-13T02:46:19Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.4/NB4A-1.2.4-arm64-v8a.apk",
+    "name": "NB4A-1.2.4-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14289739,
+    "updated_at": "2023-09-13T02:46:18Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.4/NB4A-1.2.4-armeabi-v7a.apk",
+    "name": "NB4A-1.2.4-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14834036,
+    "updated_at": "2023-09-13T02:46:19Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.4/NB4A-1.2.4-x86.apk",
+    "name": "NB4A-1.2.4-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14597785,
+    "updated_at": "2023-09-13T02:46:18Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.4/NB4A-1.2.4-x86_64.apk",
+    "name": "NB4A-1.2.4-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "## Hysteria2 支持\r\n\r\n* 使用sing-box的实现，暂时没有的功能：端口跳跃、QUIC 参数\r\n* 速度填0就是使用BBR，非0则使用Brutal\r\n* 支持 hy2:// 链接格式\r\n\r\n## 其他\r\n\r\n* 核心版本 1.5.0-b8\r\n* 移除 Tuic v4 v5 plugin 支持，仅保留 sing-box 实现的 TUIC v5\r\n* Add geo assets provider for Iran enhancement @Chocolate4U\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.3",
+  "id": 118897172,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HFjoU",
+  "tag_name": "1.2.3",
+  "name": "1.2.3",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-08-28T08:58:06Z",
+  "published_at": "2023-08-28T09:09:40Z",
+  "assets": [
+   {
+    "size": 14065450,
+    "updated_at": "2023-08-28T09:09:39Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.3/NB4A-1.2.3-arm64-v8a.apk",
+    "name": "NB4A-1.2.3-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14198838,
+    "updated_at": "2023-08-28T09:09:33Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.3/NB4A-1.2.3-armeabi-v7a.apk",
+    "name": "NB4A-1.2.3-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14736677,
+    "updated_at": "2023-08-28T09:09:37Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.3/NB4A-1.2.3-x86.apk",
+    "name": "NB4A-1.2.3-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14500780,
+    "updated_at": "2023-08-28T09:09:38Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.3/NB4A-1.2.3-x86_64.apk",
+    "name": "NB4A-1.2.3-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 更新 sing-box 1.4 rc3\r\n* 更新配置，对新装用户有效\r\n    1. 直连 DNS => `local`\r\n    2. Show \"IP rule for Iran\" route setting by default (for new install)\r\n* 一些修复\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.2",
+  "id": 117611140,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84HApqE",
+  "tag_name": "1.2.2",
+  "name": "1.2.2",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-08-17T11:57:23Z",
+  "published_at": "2023-08-17T12:11:24Z",
+  "assets": [
+   {
+    "size": 14062076,
+    "updated_at": "2023-08-17T12:11:24Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.2/NB4A-1.2.2-arm64-v8a.apk",
+    "name": "NB4A-1.2.2-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14195663,
+    "updated_at": "2023-08-17T12:11:23Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.2/NB4A-1.2.2-armeabi-v7a.apk",
+    "name": "NB4A-1.2.2-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14733058,
+    "updated_at": "2023-08-17T12:11:24Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.2/NB4A-1.2.2-x86.apk",
+    "name": "NB4A-1.2.2-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14497245,
+    "updated_at": "2023-08-17T12:11:23Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.2/NB4A-1.2.2-x86_64.apk",
+    "name": "NB4A-1.2.2-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 更新 sing-box 1.4 beta5 支持无需插件的 TUIC，原插件可以卸载。\r\n* 支持无需插件的 Hysteria 端口跳跃（此版本起服务器地址和端口分开，端口可填 `114-514,1919` 这种格式，旧配置自动升级，但不可再写旧的格式） \r\n* 支持 TUIC [分享链接](https://github.com/daeuniverse/dae/discussions/182)\r\n* 使用 Go 1.21 编译\r\n\r\nhttps://github.com/MatsuriDayo/sing-box-extra/wiki/Core-changelog#140-b2-20230809\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.1",
+  "id": 117426231,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84G_8g3",
+  "tag_name": "1.2.1",
+  "name": "1.2.1",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-08-16T09:36:45Z",
+  "published_at": "2023-08-16T09:50:08Z",
+  "assets": [
+   {
+    "size": 14062112,
+    "updated_at": "2023-08-16T09:50:08Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.1/NB4A-1.2.1-arm64-v8a.apk",
+    "name": "NB4A-1.2.1-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14195562,
+    "updated_at": "2023-08-16T09:50:07Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.1/NB4A-1.2.1-armeabi-v7a.apk",
+    "name": "NB4A-1.2.1-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14733536,
+    "updated_at": "2023-08-16T09:50:08Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.1/NB4A-1.2.1-x86.apk",
+    "name": "NB4A-1.2.1-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14497005,
+    "updated_at": "2023-08-16T09:50:07Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.1/NB4A-1.2.1-x86_64.apk",
+    "name": "NB4A-1.2.1-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 更新 sing-box 1.4 beta5 支持无需插件的 TUIC，原插件可以卸载。\r\n* 支持无需插件的 Hysteria 端口跳跃（此版本起服务器地址和端口分开，端口可填 `114-514,1919` 这种格式，旧配置自动升级，但不可再写旧的格式） **混淆/obfs 有BUG，有需要的请暂时留在 1.1.8 版本。**\r\n* 支持 TUIC [分享链接](https://github.com/daeuniverse/dae/discussions/182)\r\n* 使用 Go 1.21 编译\r\n\r\nhttps://github.com/MatsuriDayo/sing-box-extra/wiki/Core-changelog#140-b2-20230809\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.2.0",
+  "id": 115874042,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84G6Bj6",
+  "tag_name": "1.2.0",
+  "name": "1.2.0",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-08-10T07:09:05Z",
+  "published_at": "2023-08-10T07:22:04Z",
+  "assets": [
+   {
+    "size": 14016359,
+    "updated_at": "2023-08-10T07:22:03Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.0/NB4A-1.2.0-arm64-v8a.apk",
+    "name": "NB4A-1.2.0-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14150189,
+    "updated_at": "2023-08-10T07:22:02Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.0/NB4A-1.2.0-armeabi-v7a.apk",
+    "name": "NB4A-1.2.0-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14687527,
+    "updated_at": "2023-08-10T07:22:03Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.0/NB4A-1.2.0-x86.apk",
+    "name": "NB4A-1.2.0-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14452137,
+    "updated_at": "2023-08-10T07:22:02Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.2.0/NB4A-1.2.0-x86_64.apk",
+    "name": "NB4A-1.2.0-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 更新 sing-box 1.4 beta2 支持无需插件的TUIC\r\n* 支持无需插件的 Hysteria 端口跳跃（此版本起服务器地址和端口分开，端口可填 `114-514,1919` 这种格式，旧配置自动升级，但不可再写旧的格式）\r\n* 使用 Go 1.21 编译\r\n\r\nhttps://github.com/MatsuriDayo/sing-box-extra/wiki/Core-changelog#140-b2-20230809\r\n\r\n2023/8/10 15:25 (UTC+8) 重发测试，修复了若干问题\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.8",
+  "id": 113599598,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GxWRu",
+  "tag_name": "1.1.8",
+  "name": "1.1.8",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-07-26T02:41:48Z",
+  "published_at": "2023-07-26T02:55:11Z",
+  "assets": [
+   {
+    "size": 14064456,
+    "updated_at": "2023-07-26T02:55:11Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.8/NB4A-1.1.8-arm64-v8a.apk",
+    "name": "NB4A-1.1.8-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14230987,
+    "updated_at": "2023-07-26T02:55:10Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.8/NB4A-1.1.8-armeabi-v7a.apk",
+    "name": "NB4A-1.1.8-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14845204,
+    "updated_at": "2023-07-26T02:55:11Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.8/NB4A-1.1.8-x86.apk",
+    "name": "NB4A-1.1.8-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14524832,
+    "updated_at": "2023-07-26T02:55:10Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.8/NB4A-1.1.8-x86_64.apk",
+    "name": "NB4A-1.1.8-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* Core 更新： https://github.com/MatsuriDayo/sing-box-extra/wiki/Core-changelog#134-2-20230726\r\n* 输入订阅链接的输入框改为支持多行显示\r\n* 在其他界面时（如分组、路由、设置等界面），返回按键的功能改为回到配置页面\r\n* URL Test 添加插件启动等待时间，减少因插件启动慢造成的连接重置错误（如果你的手机太慢仍可能无法测试）\r\n* ALPN 等列表支持用英文逗号分割（原来的换行可以继续使用）\r\n* Wireguard reserved 支持 `123,45,67` 这种格式 （原来的base64可以继续使用）\r\n* 修复 #238 #244 #251 #248\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.7",
+  "id": 112757325,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GuIpN",
+  "tag_name": "1.1.7",
+  "name": "1.1.7",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-07-19T04:43:27Z",
+  "published_at": "2023-07-19T05:09:26Z",
+  "assets": [
+   {
+    "size": 14083348,
+    "updated_at": "2023-07-19T05:09:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.7/NB4A-1.1.7-arm64-v8a.apk",
+    "name": "NB4A-1.1.7-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14250711,
+    "updated_at": "2023-07-19T05:09:24Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.7/NB4A-1.1.7-armeabi-v7a.apk",
+    "name": "NB4A-1.1.7-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14863453,
+    "updated_at": "2023-07-19T05:09:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.7/NB4A-1.1.7-x86.apk",
+    "name": "NB4A-1.1.7-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14546197,
+    "updated_at": "2023-07-19T05:09:24Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.7/NB4A-1.1.7-x86_64.apk",
+    "name": "NB4A-1.1.7-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* 输入订阅链接的输入框改为支持多行显示\r\n* 在其他界面时（如分组、路由、设置等界面），返回按键的功能改为回到配置页面\r\n* URL Test 添加插件启动等待时间，减少因插件启动慢造成的连接重置错误（如果你的手机太慢仍可能无法测试）\r\n* ALPN 等列表支持用英文逗号分割（原来的换行可以继续使用）\r\n* Wireguard reserved 支持 `123,45,67` 这种格式 （原来的base64可以继续使用）\r\n* 修复 #238\r\n\r\n更新 core: 1.3.1-b3\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.6",
+  "id": 111622674,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GpzoS",
+  "tag_name": "1.1.6",
+  "name": "1.1.6",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-07-10T12:04:27Z",
+  "published_at": "2023-07-10T12:13:13Z",
+  "assets": [
+   {
+    "size": 14048310,
+    "updated_at": "2023-07-10T12:13:13Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.6/NB4A-1.1.6-arm64-v8a.apk",
+    "name": "NB4A-1.1.6-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14216062,
+    "updated_at": "2023-07-10T12:13:11Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.6/NB4A-1.1.6-armeabi-v7a.apk",
+    "name": "NB4A-1.1.6-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14830318,
+    "updated_at": "2023-07-10T12:13:13Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.6/NB4A-1.1.6-x86.apk",
+    "name": "NB4A-1.1.6-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14510973,
+    "updated_at": "2023-07-10T12:13:11Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.6/NB4A-1.1.6-x86_64.apk",
+    "name": "NB4A-1.1.6-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* Core 更新到 1.3.1-b1 (20230707)\r\n* 修复 URL Test 概率闪退\r\n* 修复 #216 #226\r\n* 重构 DNS 设置\r\n    1. 移除 `使用系统DNS` 选项，需要使用系统DNS的用户请直接填写DNS地址 `local`\r\n    2. 移除 `解析服务器地址`，改为 `域名策略（服务器地址）`\r\n    3. 移除 `DNS查询类型`，改为 `域名策略（远程）` `域名策略（直连）`\r\n    4. 详细用法请看 https://matsuridayo.github.io/nb4a-route/#nb4a-116\r\n\r\n_2023/07/10 20:20 (UTC+8) 修复了插件无法使用的问题，在此之前安装了 1.1.6 版本或测试版的用户需要重新下载。_"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.5",
+  "id": 110815200,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Gmufg",
+  "tag_name": "1.1.5",
+  "name": "1.1.5",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-07-03T05:21:20Z",
+  "published_at": "2023-07-03T05:34:44Z",
+  "assets": [
+   {
+    "size": 14072405,
+    "updated_at": "2023-07-03T05:34:43Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.5/NB4A-1.1.5-arm64-v8a.apk",
+    "name": "NB4A-1.1.5-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14240282,
+    "updated_at": "2023-07-03T05:34:41Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.5/NB4A-1.1.5-armeabi-v7a.apk",
+    "name": "NB4A-1.1.5-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14854038,
+    "updated_at": "2023-07-03T05:34:43Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.5/NB4A-1.1.5-x86.apk",
+    "name": "NB4A-1.1.5-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14532800,
+    "updated_at": "2023-07-03T05:34:41Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.5/NB4A-1.1.5-x86_64.apk",
+    "name": "NB4A-1.1.5-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* TUIC 支持更多用法（IP+SNI，域名+DisableSNI，IP+DisableSNI等）\r\n* 由于容易造成崩溃，「扫描中国应用」改为「自动选择需要代理的应用」（[包名列表](https://github.com/2dust/androidpackagenamelist)）\r\n* [更新](https://github.com/MatsuriDayo/sing-box-extra/wiki/Core-changelog#130-2-20230702) sing-box 1.3.0\r\n* 优化 系统DNS (local) 实现，现在 Android<10 也可用\r\n* mux 添加 padding 选项\r\n* 修复 #202 #209 #215 等\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.4",
+  "id": 109036671,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84Gf8R_",
+  "tag_name": "1.1.4",
+  "name": "1.1.4",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-06-19T04:16:43Z",
+  "published_at": "2023-06-19T04:27:26Z",
+  "assets": [
+   {
+    "size": 14103831,
+    "updated_at": "2023-06-19T04:27:26Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.4/NB4A-1.1.4-arm64-v8a.apk",
+    "name": "NB4A-1.1.4-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14274077,
+    "updated_at": "2023-06-19T04:27:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.4/NB4A-1.1.4-armeabi-v7a.apk",
+    "name": "NB4A-1.1.4-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14884762,
+    "updated_at": "2023-06-19T04:27:26Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.4/NB4A-1.1.4-x86.apk",
+    "name": "NB4A-1.1.4-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14566045,
+    "updated_at": "2023-06-19T04:27:25Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.4/NB4A-1.1.4-x86_64.apk",
+    "name": "NB4A-1.1.4-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* [更新](https://github.com/MatsuriDayo/sing-box-extra/wiki/Core-changelog#13-rc1-1-20230618) Core，同时修复 #182 等问题\r\n* `TUIC v5` 协议支持，同时支持识别 `clash meta TUIC` 配置\r\n* 增加 `根据 IPv6 策略解析服务器地址` 选项\r\n* 流量统计不再丢失前1秒的数据\r\n* 修复横屏扫描二维码\r\n* 修复 #192\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.3",
+  "id": 108094630,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GcWSm",
+  "tag_name": "1.1.3",
+  "name": "1.1.3",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-06-10T05:56:23Z",
+  "published_at": "2023-06-10T06:09:29Z",
+  "assets": [
+   {
+    "size": 15541168,
+    "updated_at": "2023-06-10T06:09:29Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.3/NB4A-1.1.3-arm64-v8a.apk",
+    "name": "NB4A-1.1.3-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15719027,
+    "updated_at": "2023-06-10T06:09:28Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.3/NB4A-1.1.3-armeabi-v7a.apk",
+    "name": "NB4A-1.1.3-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16333620,
+    "updated_at": "2023-06-10T06:09:29Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.3/NB4A-1.1.3-x86.apk",
+    "name": "NB4A-1.1.3-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16002640,
+    "updated_at": "2023-06-10T06:09:28Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.3/NB4A-1.1.3-x86_64.apk",
+    "name": "NB4A-1.1.3-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "* TUIC v5 协议支持\r\n* 修复横屏扫描二维码"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.2",
+  "id": 107000548,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GYLLk",
+  "tag_name": "1.1.2",
+  "name": "1.1.2",
+  "draft": false,
+  "prerelease": false,
+  "created_at": "2023-06-04T07:49:36Z",
+  "published_at": "2023-06-04T08:02:40Z",
+  "assets": [
+   {
+    "size": 15504682,
+    "updated_at": "2023-06-04T08:02:40Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.2/NB4A-1.1.2-arm64-v8a.apk",
+    "name": "NB4A-1.1.2-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15683275,
+    "updated_at": "2023-06-04T08:02:38Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.2/NB4A-1.1.2-armeabi-v7a.apk",
+    "name": "NB4A-1.1.2-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 16296733,
+    "updated_at": "2023-06-04T08:02:40Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.2/NB4A-1.1.2-x86.apk",
+    "name": "NB4A-1.1.2-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 15964719,
+    "updated_at": "2023-06-04T08:02:38Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.2/NB4A-1.1.2-x86_64.apk",
+    "name": "NB4A-1.1.2-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "主要更新内容： \r\n* sing-box 1.3-beta12\r\n* 修复切换运行模式导致 crash （切换时停止服务，而不是重启）\r\n* VMess VLESS 链接导入时，若 SNI 为空，则使用 host 填充 SNI\r\n* 支持侧加载 CA 证书，使用方法见文档\r\n* 支持 sniff_override_destination\r\n* 主界面状态栏改为透明\r\n* 修复 bug\r\n\r\n仅 sing-box 服务器可用：\r\n* 可选 mux 协议 (h2mux/smux/yamux)\r\n* naive & socks & shadowsocks UDP over TCP\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.1",
+  "id": 104360725,
+  "author": {
+   "login": "github-actions[bot]",
+   "avatar_url": "https://avatars.githubusercontent.com/in/15368?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GOGsV",
+  "tag_name": "1.1.1",
+  "name": "1.1.1",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-05-26T07:49:29Z",
+  "published_at": "2023-05-26T08:01:24Z",
+  "assets": [
+   {
+    "size": 14046533,
+    "updated_at": "2023-05-26T08:01:22Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.1/NB4A-1.1.1-arm64-v8a.apk",
+    "name": "NB4A-1.1.1-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14225173,
+    "updated_at": "2023-05-26T08:01:23Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.1/NB4A-1.1.1-armeabi-v7a.apk",
+    "name": "NB4A-1.1.1-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14837062,
+    "updated_at": "2023-05-26T08:01:23Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.1/NB4A-1.1.1-x86.apk",
+    "name": "NB4A-1.1.1-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14506633,
+    "updated_at": "2023-05-26T08:01:22Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.1/NB4A-1.1.1-x86_64.apk",
+    "name": "NB4A-1.1.1-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "Beta version for sing-box 1.3\r\n\r\n主要更新内容： \r\n* sing-box 1.3-beta12\r\n* 修复切换运行模式导致 crash （切换时停止服务，而不是重启）\r\n* 修复 bug\r\n\r\n仅 sing-box 服务器可用：\r\n* 可选 mux 协议 (h2mux/smux/yamux)\r\n* naive & socks & shadowsocks UDP over TCP\r\n"
+ },
+ {
+  "html_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.1.0",
+  "id": 103714090,
+  "author": {
+   "login": "arm64v8a",
+   "avatar_url": "https://avatars.githubusercontent.com/u/48624112?v=4"
+  },
+  "node_id": "RE_kwDOJFTFp84GLo0q",
+  "tag_name": "1.1.0",
+  "name": "Beta Version for sing-box 1.3",
+  "draft": false,
+  "prerelease": true,
+  "created_at": "2023-05-21T03:52:49Z",
+  "published_at": "2023-05-21T04:10:01Z",
+  "assets": [
+   {
+    "size": 14046151,
+    "updated_at": "2023-05-21T04:09:54Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.0/NB4A-1.0.5-arm64-v8a.apk",
+    "name": "NB4A-1.0.5-arm64-v8a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14224778,
+    "updated_at": "2023-05-21T04:09:52Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.0/NB4A-1.0.5-armeabi-v7a.apk",
+    "name": "NB4A-1.0.5-armeabi-v7a.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14836694,
+    "updated_at": "2023-05-21T04:09:50Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.0/NB4A-1.0.5-x86.apk",
+    "name": "NB4A-1.0.5-x86.apk",
+    "content_type": "application/vnd.android.package-archive"
+   },
+   {
+    "size": 14506257,
+    "updated_at": "2023-05-21T04:09:47Z",
+    "browser_download_url": "https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.1.0/NB4A-1.0.5-x86_64.apk",
+    "name": "NB4A-1.0.5-x86_64.apk",
+    "content_type": "application/vnd.android.package-archive"
+   }
+  ],
+  "body": "更新内容： \r\n1. sing-box 1.3-beta12\r\n2. mux 协议选择\r\n3. 修复 bug"
+ }
+]

@@ -31,6 +31,19 @@ data class GitHubReleaseVersionSignals(
     val channel: GitHubReleaseChannel = GitHubReleaseChannel.UNKNOWN,
     val authorName: String = "",
     val authorAvatarUrl: String = "",
+    /**
+     * Whether this release carries anything a user could install.
+     *
+     * `null` means unknown, which is the honest answer for every source that cannot see a release's
+     * assets — the Atom feed carries release metadata and nothing else. Only `false` is a claim, and
+     * only the GitHub API is in a position to make it.
+     *
+     * It exists because a release with no artifact cannot be an update: there is nothing to move to.
+     * `MatsuriDayo/NekoBoxForAndroid` keeps a rolling `preview` tag whose body reads "current no
+     * preview version" and whose asset list is empty; without this the track offers an update whose
+     * download does not exist, and offers it forever, because the tag never changes.
+     */
+    val hasDownloadableAsset: Boolean? = null,
 ) {
     val candidates: List<String>
         get() = versionCandidates.map { candidate -> candidate.value }
@@ -49,6 +62,8 @@ data class GitHubAtomReleaseEntry(
     val versionCandidates: List<GitHubVersionCandidate> = emptyList(),
     val channel: GitHubReleaseChannel = GitHubReleaseChannel.UNKNOWN,
     val isLikelyPreRelease: Boolean,
+    /** @see GitHubReleaseVersionSignals.hasDownloadableAsset */
+    val hasDownloadableAsset: Boolean? = null,
 ) {
     val displayVersion: String
         get() = title.ifBlank { tag }

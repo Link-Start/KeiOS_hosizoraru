@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
@@ -345,6 +346,11 @@ class GitHubApiTokenReleaseStrategy(
         val authorAvatarUrl = author?.optString("avatar_url").orEmpty().trim()
         val publishedAtMillis = release.optString("published_at").parseIsoInstantOrNull()
             ?: release.optString("created_at").parseIsoInstantOrNull()
+        // Counted rather than classified. "No assets at all" is a fact about the release; "no asset
+        // that looks installable" is a guess about packaging, and guessing wrong here hides a real
+        // update. GitHub's source tarballs are not assets, so an empty list means the maintainer
+        // attached nothing.
+        val assetCount = (release["assets"] as? JsonArray)?.size ?: 0
         val versionCandidates = GitHubVersionUtils.buildVersionCandidates(
             GitHubVersionCandidateSource.Tag to rawTag,
             GitHubVersionCandidateSource.Title to name,
@@ -368,7 +374,8 @@ class GitHubApiTokenReleaseStrategy(
             authorAvatarUrl = authorAvatarUrl,
             versionCandidates = versionCandidates,
             channel = channel,
-            isLikelyPreRelease = prereleaseFlag
+            isLikelyPreRelease = prereleaseFlag,
+            hasDownloadableAsset = assetCount > 0
         )
     }
 
@@ -456,7 +463,8 @@ class GitHubApiTokenReleaseStrategy(
             source = GitHubReleaseSignalSource.GitHubApi,
             channel = channel,
             authorName = authorName,
-            authorAvatarUrl = authorAvatarUrl
+            authorAvatarUrl = authorAvatarUrl,
+            hasDownloadableAsset = hasDownloadableAsset
         )
     }
 

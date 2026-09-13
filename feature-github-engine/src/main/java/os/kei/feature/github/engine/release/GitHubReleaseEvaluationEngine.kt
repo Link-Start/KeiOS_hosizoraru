@@ -113,14 +113,25 @@ object GitHubReleaseEvaluationEngine {
             ?.versionCodeLong
             ?.takeIf { localVersionCode >= 0L }
             ?.compareTo(localVersionCode)
+        // An update you cannot install is not an update. `false` here is a positive statement from a
+        // source that can see the release's assets and found none attached — not merely the absence
+        // of evidence, which is `null` and changes nothing. Without this the comparison falls back to
+        // the release *name*, and a rolling tag whose name keeps moving while its asset list stays
+        // empty reports an update on every refresh, forever.
+        val stableIsInstallable = latestStable?.hasDownloadableAsset != false
+        val preReleaseIsInstallable = latestPre?.hasDownloadableAsset != false
         val rawHasPreReleaseUpdate = inspectPreRelease &&
             latestPreIsRelevant &&
+            preReleaseIsInstallable &&
             (
                 precisePreCmp?.let { it > 0 }
                     ?: (latestPreCmp?.let { it < 0 } == true)
             )
-        val rawStableHasUpdate = preciseStableCmp?.let { it > 0 }
-            ?: (stableCmp?.let { it < 0 } == true)
+        val rawStableHasUpdate = stableIsInstallable &&
+            (
+                preciseStableCmp?.let { it > 0 }
+                    ?: (stableCmp?.let { it < 0 } == true)
+            )
         val suppressAllReleaseUpdates = policy.ignoreMode.suppressesAllReleaseUpdates()
         val stableReleaseIgnoreKey = buildGitHubReleaseIgnoreKey(
             release = latestStable,

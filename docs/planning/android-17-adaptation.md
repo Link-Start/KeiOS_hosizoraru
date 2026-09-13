@@ -123,12 +123,50 @@ the two that were already handled stay handled, and `android:recreateOnConfigCha
 
 ### MessageQueue
 
-No `mMessages` reflection anywhere, so the `DeliQueue` change has nothing to break. **One note for later:**
-the guide asks for **Robolectric 4.17+** with `@LooperMode(PAUSED)` when targeting 37, and this project is on
-**4.16.1**. It is not breaking today because every Robolectric test pins `@Config(sdk = [35])` (157 of them) or
-`[36]` (one), so the new queue is never the one under test. Espresso is already 3.7.0, which satisfies the
-guide. Bumping Robolectric is a dependency change with 2919 tests behind it — worth doing deliberately, not as
-a footnote to this audit.
+No `mMessages` reflection anywhere, so the `DeliQueue` change has nothing to break. The note this section
+used to carry — that the guide asks for **Robolectric 4.17+** with `@LooperMode(PAUSED)` when targeting 37
+while this project sat on **4.16.1** — is settled: **4.17 landed on 2026-09-14**, verified across all 3227
+unit tests in one pass. Espresso was already 3.7.0, which satisfies the guide.
+
+Two things had to move with it, and both are environment rather than test logic.
+
+- Five test `Application` subclasses were declared `private`, which compiles to a package-private JVM class.
+  4.17 instantiates the application through `android.app.AppComponentFactory`, which cannot reach one, so
+  each failed in `installAndCreateApplication` with `IllegalAccessException`. They are `internal` now — a
+  public JVM class, and the same visibility the other eighteen `…TestApp` classes already had in practice.
+- A test at `sdk = 36` or above boots `ApplicationSharedMemory`, and Robolectric's `FileDescriptorInterceptor`
+  reaches `jdk.internal.access.SharedSecrets` to service it. `java.base` does not export that package, so the
+  test dies during `setUpApplicationState` before any assertion runs. The root build now passes
+  `--add-exports=java.base/jdk.internal.access=ALL-UNNAMED` to every module's unit tests.
+
+That second one is the one that matters for this audit: it is the cost of a test *leaving* `@Config(sdk = [35])`,
+and it is now paid up front for every module rather than discovered by whoever writes the first API 37 test.
+
+### The pins cannot move yet, and the blocker is not this app
+
+4.17 supporting SDK 37 is not the same as the suite being able to use it. Flipping all 164 files from
+`sdk = [35]` to `[37]` and running every module gives **241 failures in `:app` alone**, and 412 across the
+tree collapse to one cause:
+
+```
+java.lang.NoSuchMethodException: android.hardware.input.InputManager.getInstance()
+  at androidx.test.espresso.Espresso.onIdle
+  at androidx.compose.ui.test.RobolectricIdlingStrategy.runUntilIdle
+```
+
+Every Compose UI test goes through that idle path, so every Compose UI test dies before its first
+assertion. The reflection is **Robolectric's own**, not Espresso's and not ours: of every jar on the unit
+test runtime classpath, only `shadows-framework` carries the literal string
+`android.hardware.input.InputManager`, and `ShadowInputManager` is the one class in it that pairs that
+string with `getInstance`. The platform moved that static to `InputManagerGlobal` before 37 —
+`ShadowInputManagerGlobal` exists alongside it — but the old reflector still runs and 37 no longer answers.
+
+So the pins stay at 35 for now, and this is a wait, not a decision: it needs a Robolectric release that
+routes `ShadowInputManager` through `InputManagerGlobal` at 37. The handful of non-Espresso failures in
+that run (four in the GitHub share-import notification helpers) are worth re-reading when it unblocks;
+they are real assertion failures rather than environment errors, and they are invisible while the 412 stand.
+
+The experiment was reverted. Nothing in the tree is pinned at 37.
 
 ### Background audio hardening — tested, passes
 

@@ -56,6 +56,26 @@ val consumedReleaseLikeBuildTypes =
  */
 private val diagnosticTestBuildType = "releaseDiagnostic"
 
+/**
+ * Robolectric 4.17 needs one JDK module opened to run a test at `sdk = 36` or above.
+ *
+ * From API 36 the platform boots `ApplicationSharedMemory`, and Robolectric services its
+ * `FileDescriptor` work through `AndroidInterceptors$FileDescriptorInterceptor`, which reaches
+ * `jdk.internal.access.SharedSecrets`. `java.base` does not export that package, so the test fails
+ * during `setUpApplicationState` with "Failed to interact with raw FileDescriptor internals" long
+ * before any assertion runs — an environment error, not a test result.
+ *
+ * 4.16.1 never reached that path, so this arrives with the 4.17 bump rather than with any test.
+ * Applied to every module's unit tests instead of only the one test that needs it today
+ * (`NotificationActionRoutingTest`), because the trigger is the SDK level a test asks for, and the
+ * API 37 adaptation work expects more tests to stop pinning `sdk = [35]`.
+ */
+subprojects {
+    tasks.withType<Test>().configureEach {
+        jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+    }
+}
+
 subprojects {
     plugins.withId("com.android.library") {
         extensions.configure<LibraryExtension>("android") {

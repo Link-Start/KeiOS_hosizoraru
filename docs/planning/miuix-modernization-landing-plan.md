@@ -274,8 +274,9 @@ on `:ui-liquid-glass:debugRuntimeClasspath`:
 ```
 
 A final stdlib under an RC compiler of the same version is the supported direction and the build
-raises no version-skew warning, so nothing is owed here. It does mean the RC pin now buys nothing but
-the compiler itself; moving `kotlin` to `2.4.20` would make the two agree, and that is its own change.
+raises no version-skew warning, so nothing was owed here. It did mean the RC pin bought nothing but the
+compiler itself, and the catalog-wide bump that followed the same day closed it: `kotlin` is `2.4.20`,
+so the compiler and the stdlib now agree without depending on Gradle's ordering to get there.
 
 Compose did **not** move: `org.jetbrains.compose.*` stays at `1.12.0` in both module files, so
 `BuildConfig.COMPOSE_VERSION` and the About page are untouched.

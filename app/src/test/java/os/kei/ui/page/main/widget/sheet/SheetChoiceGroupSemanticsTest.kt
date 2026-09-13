@@ -147,4 +147,4 @@ private const val GITHUB_FDROID_DISCOVERY_SOURCE =
 private const val OS_GOOGLE_SUGGESTION_SHEET_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/os/components/OsGoogleSystemServiceSuggestionSheet.kt"
 
-private class SheetChoiceGroupSemanticsTestApp : Application()
+internal class SheetChoiceGroupSemanticsTestApp : Application()

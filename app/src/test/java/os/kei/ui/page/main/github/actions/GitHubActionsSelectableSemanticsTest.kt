@@ -112,7 +112,7 @@ class GitHubActionsSelectableSemanticsTest {
     }
 }
 
-private class GitHubActionsSelectableSemanticsTestApp : Application()
+internal class GitHubActionsSelectableSemanticsTestApp : Application()
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

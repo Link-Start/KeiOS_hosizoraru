@@ -90,4 +90,4 @@ class AppSurfaceCardToggleSemanticsTest {
     }
 }
 
-private class AppSurfaceCardToggleSemanticsTestApp : Application()
+internal class AppSurfaceCardToggleSemanticsTestApp : Application()

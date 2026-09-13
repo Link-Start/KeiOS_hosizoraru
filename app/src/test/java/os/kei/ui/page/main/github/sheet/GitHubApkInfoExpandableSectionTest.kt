@@ -180,7 +180,7 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private class GitHubApkInfoExpandableSectionTestApp : Application()
+internal class GitHubApkInfoExpandableSectionTestApp : Application()
 
 private const val GITHUB_APK_INFO_SECTIONS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubApkInfoSections.kt"

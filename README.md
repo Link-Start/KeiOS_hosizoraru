@@ -116,8 +116,8 @@ Read the full feature tour:
 - The public stable channel always resolves through [Latest Stable Release](https://github.com/hosizoraru/KeiOS/releases/latest).
 - This source snapshot and its local release tag target `v1.15.0`.
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
-- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.20-RC2`,
-  Compose `1.12.0`, Android Gradle Plugin `9.4.0-rc02`, Ktor `3.5.2`.
+- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.7.1`, Kotlin `2.4.20`,
+  Compose `1.12.0`, Android Gradle Plugin `9.4.0`, Ktor `3.5.2`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation

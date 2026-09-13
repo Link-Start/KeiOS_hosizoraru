@@ -417,4 +417,4 @@ private fun assertBoundsContainedBy(
     }
 }
 
-private class GitHubStarImportCandidateCardTestApp : Application()
+internal class GitHubStarImportCandidateCardTestApp : Application()

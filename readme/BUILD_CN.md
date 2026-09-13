@@ -115,6 +115,32 @@ scripts/qa/test_report.sh
 `--slowest 10` 排出最慢的测试类，`--all` 展示全部原因，`--module app` 只看一个模块。退出码：
 0 全绿，1 有失败。
 
+### 验证用 AVD
+
+```bash
+scripts/dev/avd_phone.sh     # Android 17 手机（KeiOS_API37_Validation）
+scripts/dev/avd_tablet.sh    # Android 17 平板（KeiOS_Pad_API37_Validation）
+```
+
+两者都会在 AVD 未启动时先拉起，构建 `:app:assembleDebug` 与 `:app:assembleBenchmarkRelease`，装上去，
+然后把设备上的包读回来，拿 sha256 与刚构建的 APK 比对。关键在这次回读：它是去**验证**模拟器上跑的
+是不是当前这棵树，而不是声称如此。版本号答不了这个问题——它带的是 git 描述，同一棵树的两次构建版本号
+完全相同。
+
+`--no-build` 跳过 Gradle 只做校验，是问这个问题最省的方式；带构建时 APK 每次都会重新打包，所以安装
+不会被跳过。`--launch` 装完拉起 Debug 应用，`--only debug|bench` 只处理其一，`--headless` 无窗口启动，
+`--wipe` 冷启动并清空该 AVD，`--reinstall` 用于签名不一致时先卸载（连数据一起）。两者都包装
+`scripts/dev/avd_up.sh`，选项和退出码都在那里：0 校验通过，1 不一致，2 参数错误，3 缺少前置，
+4 启动超时。
+
+脚本只会操作名字以 `KeiOS` 开头的 AVD，`--avd` 和 `AVD_PHONE` / `AVD_TABLET` 覆盖同样受这条约束。
+本机的 AVD 列表是多个项目共用的，两个项目同时驱动一台模拟器，结果就是彼此的包都装到了对方那里。
+
+**BenchRelease 会覆盖 release 应用。** `benchmarkRelease` 是 `initWith(release)`，而 release 没有声明
+`applicationIdSuffix`，所以它的包名就是 `os.kei`——不像 `debug`（`.debug`）和 `releaseDiagnostic`
+（`.diag`）。在验证用 AVD 上这正是本意；在随身手机上不是，因此非模拟器目标默认拒绝，必须显式传
+`--allow-physical`。
+
 ### v1.15.0 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：

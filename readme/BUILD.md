@@ -129,6 +129,35 @@ listing them one by one — a systemic breakage arrives as hundreds of lines wit
 each. `--slowest 10` ranks the slowest classes, `--all` shows every cause, `--module app` narrows
 it. Exit codes: 0 green, 1 failures.
 
+### Validation AVDs
+
+```bash
+scripts/dev/avd_phone.sh     # Android 17 Phone  (KeiOS_API37_Validation)
+scripts/dev/avd_tablet.sh    # Android 17 Tablet (KeiOS_Pad_API37_Validation)
+```
+
+Each boots its AVD if it is not already up, builds `:app:assembleDebug` and
+`:app:assembleBenchmarkRelease`, installs both, and then reads the packages back off the device and
+compares their sha256 against the APKs it just built. The point is the read-back: it answers "is
+what is running on that emulator what is in this tree" rather than asserting it. A version name
+cannot answer that — it carries a git description, so two builds of the same tree share one.
+
+`--no-build` skips Gradle and just verifies, which is the cheap way to ask the question; with a
+build the APK is repackaged every time, so the install never gets skipped. `--launch` starts the
+debug app, `--only debug|bench` narrows it, `--headless` boots with no window, `--wipe` cold boots
+and erases that AVD, `--reinstall` replaces a package signed with a different key and its data.
+Both wrap `scripts/dev/avd_up.sh`, which carries the options and the exit codes: 0 verified,
+1 mismatch, 2 bad usage, 3 missing prerequisite, 4 boot timeout.
+
+Only AVDs named `KeiOS*` are touched, `--avd` and the `AVD_PHONE` / `AVD_TABLET` overrides
+included. This machine's AVD list is shared with other projects, and driving one emulator from two
+of them leaves each with the other's packages on it.
+
+**BenchRelease installs over the release app.** `benchmarkRelease` does `initWith(release)` and
+release declares no `applicationIdSuffix`, so it is `os.kei` — unlike `debug` (`.debug`) and
+`releaseDiagnostic` (`.diag`). On a validation AVD that is the intent; on a phone you carry it is
+not, so a non-emulator target is refused unless `--allow-physical` is passed.
+
 ### v1.15.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:

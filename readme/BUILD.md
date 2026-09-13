@@ -75,7 +75,7 @@ Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-on
 org.gradle.java.home=/path/to/your/jdk
 
 # Optional: pin another Miuix version locally
-miuix.version=0.9.4-7cc339c2-SNAPSHOT
+miuix.version=0.9.4-5157b503-SNAPSHOT
 ```
 
 Miuix iterates fast. When something Miuix-shaped misbehaves, check whether the pin is current

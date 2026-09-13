@@ -65,6 +65,7 @@
 | 2026-08-16 | Upgrade | `0.9.3-c6d7d6dd-SNAPSHOT` → `0.9.4-4a6b750b-SNAPSHOT`. See [Snapshot upgrade: 0.9.4](#snapshot-upgrade-094). |
 | 2026-08-24 | Upgrade and adoption | `0.9.4-4a6b750b-SNAPSHOT` → `0.9.4-4f86de92-SNAPSHOT`; adopted MIUIX floating-toolbar ownership for the phone main navigation. See [Snapshot follow-up: 4f86de92](#snapshot-follow-up-4f86de92). |
 | 2026-08-31 | Upgrade | `0.9.4-4f86de92-SNAPSHOT` → `0.9.4-7cc339c2-SNAPSHOT`; no library source moved, so nothing to adapt. See [Snapshot follow-up: 7cc339c2](#snapshot-follow-up-7cc339c2). |
+| 2026-09-14 | Upgrade | `0.9.4-7cc339c2-SNAPSHOT` → `0.9.4-5157b503-SNAPSHOT`; two library commits, neither in a component KeiOS uses. See [Snapshot follow-up: 5157b503](#snapshot-follow-up-5157b503). |
 
 <a id="snapshot-upgrade-094"></a>
 
@@ -223,3 +224,71 @@ up-to-date is exactly that and nothing more.
   through the sweep — the only `AndroidRuntime` lines are `uiautomator`'s own, from the dumps that drove it.
 - The one user-visible change, confirmed in the shipped artifact: `BuildConfig.COMPOSE_VERSION` is
   `"1.12.0"`, and no `1.12.0-rc01` string survives anywhere in the release dex.
+<a id="snapshot-follow-up-5157b503"></a>
+
+## Snapshot follow-up: 0.9.4-5157b503-SNAPSHOT
+
+**Nothing to adapt.** Nine upstream commits between `7cc339c2` (2026-08-29) and `5157b503`
+(2026-09-11), of which exactly two touch library source — and both land in components KeiOS does
+not compose. A grep for `TabRow`, `TabRowWithContour`, `NavigationBarItem`, `FloatingNavigationBarItem`
+and `NavigationBarDefaults` across every module returns nothing, against 226 files that import
+`miuix.kmp.basic` for something else. The app's own bottom chrome is KeiOS glass, not
+`miuix.kmp.basic.NavigationBar`.
+
+| commit | subject | what it is |
+| --- | --- | --- |
+| `86cce57f` | library: prevent TabRow horizontal nested scrolling | `TabRow` and `TabRowWithContour` now swallow leftover horizontal scroll and fling (`onPostScroll`/`onPostFling` returning the available x) and carry `overScrollHorizontal`, so dragging a full tab row no longer pages the `HorizontalPager` under it. |
+| `e2cca731` | library: Add colors parameter to NavigationBarItem & FloatNavigationBarItem (#414) | New `NavigationBarItemColors` value class and `NavigationBarDefaults.navigationBarItemColors(…)`; both item composables gained a `colors` parameter defaulting to it. Source-compatible, ABI-breaking. |
+
+One behaviour nuance in `e2cca731` worth recording in case KeiOS ever adopts these items: the
+pressed/unselected tints moved from **replacing** the base colour's alpha
+(`color.copy(alpha = UnselectedAlpha)`) to **multiplying** it
+(`color.copy(alpha = color.alpha * UnselectedAlpha)`). For the default opaque
+`onSurfaceContainer` the two are the same value; they diverge only for a translucent colour passed in.
+
+Verified against the published artifacts and not only the compare, the same way as last time. The
+sources jars for all six modules KeiOS consumes were unpacked and compared file by file:
+
+| module | .kt files | old vs new |
+| --- | --- | --- |
+| `miuix-ui` | 86 | `NavigationBar.kt` and `TabRow.kt` differ; the other 84 identical |
+| `miuix-icons` | 156 | identical |
+| `miuix-nav` | 29 | identical |
+| `miuix-blur` | 24 | identical |
+| `miuix-preference` | 19 | identical |
+| `miuix-squircle` | 7 | identical |
+
+So the artifact agrees with the compare exactly — no third file moved quietly.
+
+### What actually reaches KeiOS
+
+One transitive version moved in the Gradle module metadata, and it is not a Miuix one:
+`org.jetbrains.kotlin:kotlin-stdlib` **2.4.10 → 2.4.20**, from upstream's Renovate bump of the Kotlin
+monorepo (`91301e89`). That is enough to change what resolves here, because KeiOS pins the Kotlin
+plugin at `2.4.20-RC2` and Gradle orders a release above its own release candidate. Checked both ways
+on `:ui-liquid-glass:debugRuntimeClasspath`:
+
+```
+-Pmiuix.version=0.9.4-7cc339c2-SNAPSHOT  ->  kotlin-stdlib 2.4.20-RC2
+-Pmiuix.version=0.9.4-5157b503-SNAPSHOT  ->  kotlin-stdlib 2.4.20
+```
+
+A final stdlib under an RC compiler of the same version is the supported direction and the build
+raises no version-skew warning, so nothing is owed here. It does mean the RC pin now buys nothing but
+the compiler itself; moving `kotlin` to `2.4.20` would make the two agree, and that is its own change.
+
+Compose did **not** move: `org.jetbrains.compose.*` stays at `1.12.0` in both module files, so
+`BuildConfig.COMPOSE_VERSION` and the About page are untouched.
+
+### Verification
+
+- `:ui-liquid-glass:compileDebugKotlin` and `:app:compileDebugKotlin` pass. Both recompiled — the
+  `NavigationBarItem` signature change is an ABI change — and neither module's own ABI moved, so
+  every downstream `bundleLibCompileToJarDebug` stayed `UP-TO-DATE`. No new warnings.
+- `:app:testDebugUnitTest` 1741 tests and `:ui-liquid-glass:testDebugUnitTest` 450 tests —
+  2191 total, 0 failures and 0 errors. `:app:verifyRoborazziDebug` passed, so no screenshot moved.
+- `:app:assembleRelease`: R8, Lint Vital, resource optimization and ART Profile compilation all passed,
+  which is the check that would catch a `NoSuchMethod` from the `NavigationBarItem` signature change if
+  anything here did reference it.
+- Not run, and not owed: no device pass. Nothing KeiOS draws changed, and Roborazzi already holds the
+  pixels.

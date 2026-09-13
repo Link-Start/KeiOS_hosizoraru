@@ -65,7 +65,7 @@ Gradle 配置也支持环境变量兜底：
 org.gradle.java.home=/path/to/your/jdk
 
 # 可选：本地覆盖 Miuix 版本
-miuix.version=0.9.4-7cc339c2-SNAPSHOT
+miuix.version=0.9.4-5157b503-SNAPSHOT
 ```
 
 Miuix 迭代很快。遇到疑似 Miuix 的问题时，先确认当前 pin 是不是最新快照再动手改，很多问题上游

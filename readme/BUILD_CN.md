@@ -78,6 +78,17 @@ scripts/deps/miuix_snapshot_check.sh
 脚本会输出生效的 pin 及其来源文件、最新已发布快照，以及两者之间的库侧提交。`--diff PullToRefresh`
 打印单个组件的 patch，`--update` 直接把 pin 移到最新。退出码：0 为最新，1 为落后。
 
+其余依赖有一个同类脚本，它直接读 catalog，而不是靠写死的清单：
+
+```bash
+scripts/deps/catalog_freshness.sh
+```
+
+它按本项目一贯的升级规则判断——取最新的 RC 或正式版，新版本线的 rc 压过旧的正式版，同一条线上
+正式版压过 rc——并且拒绝把两种情况误报成可升级：pin 已经比仓库发布的更新，以及 pin 根本不是一个
+可排序的正式版本号。`--all` 列出全部判定，`--update` 移动落后的 pin 并指出还在引用旧版本号的文档，
+`--self-test` 不联网地自检比较器。退出码：0 为最新，1 为落后。
+
 JDK 兜底示例路径：
 
 - macOS Android Studio JBR：`/Applications/Android Studio.app/Contents/jbr/Contents/Home`

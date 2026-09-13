@@ -89,6 +89,19 @@ It reports the effective pin and which file supplies it, the newest published sn
 library commits in between. `--diff PullToRefresh` prints the patch for one component, `--update`
 moves the pin. Exit codes: 0 up to date, 1 behind.
 
+Every other pin has a sibling script, which reads the catalog itself rather than a hardcoded list:
+
+```bash
+scripts/deps/catalog_freshness.sh
+```
+
+It applies the rule this project bumps by — newest release candidate or stable, so a newer line's
+rc beats an older final but a final beats its own rc — and refuses to call two things upgrades that
+are not: a pin already ahead of what the repository publishes, and a pin that is not a plain
+release at all. `--all` lists everything it considered, `--update` moves the behind pins and then
+names any doc still quoting an old version, and `--self-test` checks the comparator without
+touching the network. Exit codes: 0 current, 1 behind.
+
 JDK fallback examples:
 
 - macOS Android Studio JBR: `/Applications/Android Studio.app/Contents/jbr/Contents/Home`

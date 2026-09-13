@@ -214,7 +214,29 @@ object VersioningEngine {
         val preReleaseIsNewerByTime = preReleaseUpdatedAtMillis != null &&
             stableUpdatedAtMillis != null &&
             preReleaseUpdatedAtMillis > stableUpdatedAtMillis
+        // A pre-release *of* a version that has since shipped is spent, whatever its numbers say.
+        //
+        // `pre-1.4.2-20260202-1` parses as 1.4.2 with a build stamp appended, so it compares as newer
+        // than `1.4.2` even though semver puts a pre-release before the release it precedes. Once
+        // 1.4.2 itself is out — a week later, in the case this was written for — the preview is
+        // behind the stable the user already has, and offering it is offering a downgrade.
+        //
+        // Narrow on purpose. It needs the pre-release's numbers to *begin with* the stable's whole
+        // number, which is what makes it a pre-release of that exact version: `2.0.0-beta` against a
+        // later `1.9.9` shares no such prefix and stays relevant, and so does `1.4.7-prerelease3`
+        // against `1.4.4`. And it needs the pre-release to be no newer in time, so a rolling nightly
+        // that keeps building past its stable is untouched — that case is the branch below.
+        val preReleaseSupersededByStable = preRelease != null && stable != null &&
+            preRelease.parts.channel.isPreRelease &&
+            stable.parts.numbers.isNotEmpty() &&
+            preRelease.parts.numbers.size > stable.parts.numbers.size &&
+            preRelease.parts.numbers.take(stable.parts.numbers.size) == stable.parts.numbers &&
+            preReleaseUpdatedAtMillis != null &&
+            stableUpdatedAtMillis != null &&
+            preReleaseUpdatedAtMillis <= stableUpdatedAtMillis
         return when {
+            preReleaseSupersededByStable -> false
+
             comparison != null && comparison.order != VersionOrder.Same ->
                 comparison.order == VersionOrder.Newer ||
                     (preReleaseIsRollingSibling && preReleaseIsNewerByTime)

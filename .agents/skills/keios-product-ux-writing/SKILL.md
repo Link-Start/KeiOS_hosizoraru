@@ -1,10 +1,8 @@
 ---
 name: keios-product-ux-writing
 description: >-
-  Edit or review KeiOS user-visible wording, localized strings, status and error
-  claims, and notification, MCP, export, or public documentation text contracts.
-  Use when wording or the behavior it describes changes; ordinary implementation,
-  agent instructions, and internal comments without product claims use their own checks.
+  Edit or review KeiOS product copy and localization, including text made stale by
+  behavior changes. Excludes internal agent instructions and code-only edits.
 license: Apache-2.0
 metadata:
   author: "scarletkc; adapted for KeiOS"
@@ -15,16 +13,13 @@ metadata:
 # KeiOS Product UX Writing
 
 Make the affected product text accurate, useful, localized, and consistent with
-its owning behavior. Follow the user's requested scope and `AGENTS.md`.
+its owning behavior. Follow [AGENTS.md](../../../AGENTS.md).
 
 ## Decide what needs changing
 
-Use this skill for visible strings, status and error wording, notification text,
-MCP descriptions/results, export text, or public documentation claims. A behavior
-change also belongs here when existing text would describe the old behavior.
-Internal agent instructions and comments with no product claim need ordinary
-editorial review. Layout and implementation use the relevant Android/Compose
-skill; load it only when that work is part of the task.
+Product text includes UI strings, notification text, MCP descriptions/results,
+exports, and public documentation claims. Follow the affected contract below;
+a copy change does not require an unrelated layout or architecture audit.
 
 Start from the changed surface and its consumers. Inspect enough current code,
 resources, tests, or documentation to identify:
@@ -33,8 +28,8 @@ resources, tests, or documentation to identify:
 - the action a user can take and what it actually does;
 - the locales, notifications, tool outputs, or documents sharing that contract.
 
-Resolve routine wording from this evidence. Ask only when a missing product
-decision changes the meaning or behavior. A scoped text edit can stay scoped.
+Resolve wording from this evidence; ask only when a missing product decision
+changes the meaning or behavior.
 
 ## Write from effective state
 
@@ -54,6 +49,11 @@ decision changes the meaning or behavior. A scoped text edit can stay scoped.
   evidence; a local edit does not create a requirement to benchmark the product.
 
 ## Preserve the affected contract
+
+Resource paths below are relative to the owning module’s `src/main/res/`.
+For MCP text, inspect `feature-mcp/src/main/java/os/kei/mcp/server/` and its
+`src/main/assets/mcp/` templates; the shipped `SKILL.md` there is product
+onboarding content, not a repository development skill.
 
 | Surface | What to preserve or synchronize |
 | --- | --- |

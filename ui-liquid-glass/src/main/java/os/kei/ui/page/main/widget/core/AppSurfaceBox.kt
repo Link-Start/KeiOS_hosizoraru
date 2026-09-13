@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.widget.core
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -14,8 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -75,26 +72,6 @@ fun AppSurfaceBox(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val clickable = onClick != null || onLongClick != null
-    val useLiquidClick = onClick != null && onLongClick == null
-    val clickModifier =
-        if (clickable && !useLiquidClick) {
-            Modifier.combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                role = role,
-                onClick = { onClick?.invoke() },
-                onLongClick = onLongClick,
-            )
-        } else {
-            Modifier
-        }
-    val stateModifier =
-        stateDescription?.let { description ->
-            Modifier.semantics {
-                this.stateDescription = description
-            }
-        } ?: Modifier
     val inheritedBackdrop = backdrop ?: LocalLiquidParentBackdrop.current
     val activeBackdrop = activeGlassBackdrop(inheritedBackdrop)
     val exportedContentBackdrop =
@@ -122,11 +99,12 @@ fun AppSurfaceBox(
     ) {
         LiquidSurface(
             backdrop = activeBackdrop,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(clickModifier)
-                    .then(stateModifier),
+            // Sizing only. Every gesture and every semantics property this card owns is handed to
+            // LiquidSurface as a parameter instead, so it is built below the surface modifier and
+            // inside the layer the edge-stack transform rides in. Wrapping the surface in a
+            // `combinedClickable` here is what put the two out of step -- see LiquidSurface's
+            // `onLongClick`.
+            modifier = Modifier.fillMaxWidth(),
             shape = shape,
             enabled = enabled,
             isInteractive = isInteractive,
@@ -149,7 +127,9 @@ fun AppSurfaceBox(
             role = role,
             selected = selected,
             toggleableState = toggleableState,
-            onClick = if (useLiquidClick) onClick else null,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            stateDescription = stateDescription,
         ) {
             if (exportedContentBackdrop != null) {
                 CompositionLocalProvider(

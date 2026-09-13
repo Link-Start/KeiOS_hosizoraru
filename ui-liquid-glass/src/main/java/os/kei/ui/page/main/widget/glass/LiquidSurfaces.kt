@@ -6,6 +6,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import os.kei.ui.page.main.widget.isAppInDarkTheme
@@ -37,6 +38,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
@@ -126,6 +128,23 @@ fun LiquidSurface(
     clipContent: Boolean = true,
     contentAlignment: Alignment = Alignment.TopStart,
     onClick: (() -> Unit)? = null,
+    /**
+     * Long press, handled here rather than by the caller, and that placement is the whole point.
+     *
+     * A caller that wraps this surface in its own `combinedClickable` puts the gesture OUTSIDE the
+     * layer [drawBackdrop] builds from `layerBlock` — and on a stacking page that layer is where the
+     * pile's `translationY` lives. Compose maps a pointer through a layer on the way in, so the
+     * surface's pixels and its content's touch targets travel with the pile while a caller-owned
+     * clickable stays at the card's untransformed layout position. The two then disagree by the whole
+     * pile overshoot: a press on a receded plate reaches whichever card is in front of it, and a plate
+     * more than its own height past the stack line has no reachable gesture at all.
+     *
+     * So every gesture this surface answers for is built here, below `surfaceModifier`, where the
+     * transform has already been applied.
+     */
+    onLongClick: (() -> Unit)? = null,
+    /** Semantics, for the same reason [onLongClick] is: bounds have to travel with the pixels. */
+    stateDescription: String? = null,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val isDark = isAppInDarkTheme()
@@ -141,22 +160,36 @@ fun LiquidSurface(
         }
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     val clickableModifier =
-        if (onClick != null) {
-            Modifier.clickable(
-                interactionSource = resolvedInteractionSource,
-                indication = if (isInteractive) null else LocalIndication.current,
-                enabled = enabled,
-                role = role,
-                onClick = onClick,
-            )
-        } else {
-            Modifier
+        when {
+            // `combinedClickable` only when there is a long press to answer: it is the heavier gesture
+            // detector, and every card that needs only a tap keeps the lighter one it already had.
+            onLongClick != null ->
+                Modifier.combinedClickable(
+                    interactionSource = resolvedInteractionSource,
+                    indication = if (isInteractive) null else LocalIndication.current,
+                    enabled = enabled,
+                    role = role,
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick,
+                )
+
+            onClick != null ->
+                Modifier.clickable(
+                    interactionSource = resolvedInteractionSource,
+                    indication = if (isInteractive) null else LocalIndication.current,
+                    enabled = enabled,
+                    role = role,
+                    onClick = onClick,
+                )
+
+            else -> Modifier
         }
     val stateSemanticsModifier =
-        if (selected != null || toggleableState != null) {
+        if (selected != null || toggleableState != null || stateDescription != null) {
             Modifier.semantics {
                 selected?.let { this.selected = it }
                 toggleableState?.let { this.toggleableState = it }
+                stateDescription?.let { this.stateDescription = it }
             }
         } else {
             Modifier
@@ -353,6 +386,14 @@ fun LiquidSurface(
             content = content,
         )
     } else {
+        // The unclipped path keeps the gesture on the outer box, which is NOT inside the pile's
+        // transform — the surface and the content each carry their own layer here, and there is no
+        // single one to put the click below. It is safe only because nothing combines the two: both
+        // `clipContent = false` callers are gesture-free (`GuideProfileUi` passes no click at all, and
+        // the tracked-item shell puts its long press on the card header, inside the content). A caller
+        // that adds a click here on a stacking page would reopen the drift this file's `onLongClick`
+        // KDoc describes, and fixing it would mean restructuring the three-box layout rather than
+        // reordering a chain.
         Box(
             modifier =
                 modifier

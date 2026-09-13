@@ -66,7 +66,7 @@ fun AppSurfaceCard(
         // Every card in the app, not just the ones in sheets: a card scrolled fully out of its clip
         // is still drawn by Compose, and for a glass surface that means an offscreen layer recorded,
         // rasterized and uploaded for pixels that never reach the screen. See [cullWhenFullyClipped].
-        modifier = edgeStack.modifier.then(modifier).cullWhenFullyClipped(),
+        modifier = edgeStack.modifier.then(modifier).cullWhenFullyClipped(edgeStack),
         edgeStack = edgeStack,
         backdrop = backdrop,
         surfaceColor = containerColor,

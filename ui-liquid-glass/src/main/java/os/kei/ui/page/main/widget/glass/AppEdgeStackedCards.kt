@@ -414,6 +414,18 @@ internal fun GraphicsLayerScope.applyAppEdgeStackTransform(card: AppEdgeStackCar
     // Only when it is actually retiring: a plain `alpha` promotes the layer to an offscreen buffer,
     // which on a surface that also draws a blurred backdrop is the expensive kind, and it bounds the
     // backdrop shadow's spread to the element rect.
+    //
+    // A retired card keeps its touch target, and that is left alone deliberately. Compose hit testing
+    // consults clip and bounds, never alpha, so a plate at `fade == 0` is invisible and still pinned at
+    // the stack line until the lazy layout disposes it — a further keep-alive headroom of scroll. The
+    // strip where that actually reaches a finger is the retired plate's top edge minus the top edge of
+    // the deepest plate still visible, and the pile tiles that band with its own plates: a depth step
+    // costs about a third of the pile, so the card just short of retirement sits within a few dp of the
+    // retired one and takes the touch itself. Measured against the real constants that leaves 2.7-7.1dp
+    // exposed across every card height the pile is used at, and on a page with a pinned hub over the
+    // stack line (the OS page) the hub owns the band outright — confirmed on the API 37 AVD, where a
+    // tap there reaches the hub. Buying those few dp back would mean not placing a retired card, which
+    // is placement-path work on every stacking card to remove a strip thinner than a finger.
     if (card.fade < 1f) presentationFade(card.fade)
 }
 

@@ -25,21 +25,39 @@ import androidx.compose.ui.graphics.drawscope.ContentDrawScope
  * `boundsInWindow` returns the *clipped* rectangle, so a fully clipped element reports a zero-area
  * rect. That is the signal, and it is read from layout rather than guessed from a scroll offset, so
  * it stays correct under nesting, translation and IME insets alike.
+ *
+ * ## A card in the edge-stack pile is the one element whose layout rect does not say where it is
+ *
+ * The pile pins a card by translating it inside its glass layer, which sits *below* this node — so
+ * `boundsInWindow` here reports the card's layout rect, which keeps scrolling up while the card is
+ * drawn holding still at the stack line. Read as a visibility signal, that says "gone" for a plate the
+ * reader is still looking at: a card is clipped away at `overshoot > stackLine + height`, whereas the
+ * pile's own retirement only reaches `fade == 0` at `overshoot == extent`, and for every card under
+ * about 400dp the first comes first. Measured against the real constants, 7-18dp of plate edge was
+ * being cut at full opacity — the top edge of the receding plate, which is the one part of it the pile
+ * exists to show.
+ *
+ * So a stacking card is culled on the pile's own verdict instead: it contributes nothing once it has
+ * retired, and until then it is on screen whatever its layout rect says. Passing the slot is what
+ * makes the two cases distinguishable — without it this node cannot tell a clipped card from a pinned
+ * one, and there is no signal it could read that would.
  */
-fun Modifier.cullWhenFullyClipped(): Modifier = this then CullWhenFullyClippedElement
+fun Modifier.cullWhenFullyClipped(edgeStack: AppEdgeStackSlot = AppEdgeStackSlot.Inert): Modifier =
+    this then CullWhenFullyClippedElement(edgeStack.card)
 
-private object CullWhenFullyClippedElement : ModifierNodeElement<CullWhenFullyClippedNode>() {
-    override fun create(): CullWhenFullyClippedNode = CullWhenFullyClippedNode()
+private data class CullWhenFullyClippedElement(
+    private val card: AppEdgeStackCard?,
+) : ModifierNodeElement<CullWhenFullyClippedNode>() {
+    override fun create(): CullWhenFullyClippedNode = CullWhenFullyClippedNode(card)
 
-    override fun update(node: CullWhenFullyClippedNode) = Unit
-
-    override fun hashCode(): Int = "cullWhenFullyClipped".hashCode()
-
-    override fun equals(other: Any?): Boolean = other === this
+    override fun update(node: CullWhenFullyClippedNode) {
+        node.card = card
+    }
 }
 
-private class CullWhenFullyClippedNode :
-    Modifier.Node(),
+private class CullWhenFullyClippedNode(
+    var card: AppEdgeStackCard?,
+) : Modifier.Node(),
     DrawModifierNode,
     GlobalPositionAwareModifierNode {
     private var visible = true
@@ -54,6 +72,12 @@ private class CullWhenFullyClippedNode :
     }
 
     override fun ContentDrawScope.draw() {
+        val stacking = card
+        // Snapshot reads, so a card that retires or rejoins the pile invalidates this draw on its own.
+        if (stacking != null && stacking.stacked) {
+            if (stacking.fade > 0f) drawContent()
+            return
+        }
         if (visible) drawContent()
     }
 }

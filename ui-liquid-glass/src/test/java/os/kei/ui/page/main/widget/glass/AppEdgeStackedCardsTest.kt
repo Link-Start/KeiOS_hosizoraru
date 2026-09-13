@@ -377,6 +377,48 @@ class AppEdgeStackedCardsTest {
     }
 
     @Test
+    fun `a pinned card is still opaque when its layout rect leaves the clip`() {
+        // Why `cullWhenFullyClipped` has to ask the pile instead of reading `boundsInWindow`.
+        //
+        // That modifier skips the draw of an element whose *clipped layout rect* is empty, and it sits
+        // above the layer the pile's transform rides in — so for a pinned card it reads a rect that has
+        // scrolled away while the plate is held at the stack line. The rect clears at
+        // `stackLine + height`; the pile only retires at `extent`. This pins the disagreement: at the
+        // moment the rect clears, the plate is at FULL opacity, so culling on it cut visible glass.
+        //
+        // Density-3 pixels, so the numbers line up with the real constants — the step band is
+        // 192..504px, the rise 78px, and the keep-alive headroom 1590px.
+        val line = 300f
+        val headroom = 1_590f
+
+        fun atClipExit(cardHeight: Float): AppEdgeStackTransform =
+            computeAppEdgeStackTransform(
+                // Overshoot == stackLine + height is exactly where the layout rect clears the top edge.
+                itemTopInContainer = line - (line + cardHeight),
+                itemHeightPx = cardHeight,
+                stackLinePx = line,
+                riseTotalPx = 78f,
+                stepPx = cardHeight.coerceIn(192f, 504f),
+                keepAliveHeadroomPx = headroom,
+            )
+
+        // 48dp, 70dp, 110dp, 200dp — the whole range of rows and collapsed cards the pile is used on.
+        listOf(144f, 210f, 330f, 600f).forEach { cardHeight ->
+            assertEquals(
+                1f,
+                atClipExit(cardHeight).fade,
+                "a ${cardHeight}px card is fully opaque when its layout rect clears, so culling on " +
+                    "that rect removes a plate the reader is looking at",
+            )
+        }
+
+        // Not universal, and the contrast is the point: a card tall enough that `stackLine + height`
+        // outruns the level budget retires before its rect clears, and for those two the old signal
+        // agreed with the pile. That band is narrow and it is not where the pile is used.
+        assertEquals(0f, atClipExit(1_300f).fade)
+    }
+
+    @Test
     fun `the scrim is heavier in dark mode than in light`() {
         val card = AppEdgeStackCard().apply { apply(transformAt(stackLine - 4000f)) }
 

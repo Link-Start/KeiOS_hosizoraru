@@ -2,7 +2,7 @@
 
 ## Working agreement
 
-- Complete the user's requested outcome within the authorized scope. Resolve routine implementation choices from the current code and project conventions; ask only when missing information materially changes the outcome or an action needs new authorization.
+- Complete the requested outcome through the relevant verification below. Run applicable local checks, fix failures caused by the change, and inspect the result when UI/device work is in scope; continue beyond the first implementation until those checks pass or a concrete blocker remains. Resolve routine choices from current code and conventions. Ask only for a material missing decision or new authorization.
 - Session instructions govern the task. Use this guide for project constraints and skills for applicable procedures. When instructions conflict, follow the higher-priority instruction and explain any material limitation. A generic skill example does not authorize an architecture migration, dependency upgrade, commit, or publication.
 - Start with the relevant worktree status and diff summary; preserve unrelated changes. Keep implementation and any requested commits grouped by dependency and review boundary.
 - Use the smallest relevant skill set available in the current session. Read supporting references only for the active task. Resolve a stale skill path through current discovery before reporting it unavailable.
@@ -10,16 +10,11 @@
 - Keep long-task handoffs in ignored `.planning/`: objective, owning paths, decisions, verification results and their inputs, remaining gates, and next action. After compaction, resume there and refresh evidence whose inputs changed.
 - Communicate the result, supporting evidence, and remaining limitations directly. Match detail to complexity, use positive phrasing for comparisons, and keep technical failure states explicit. End with the actual outcome or required next action.
 
-## Memory freshness
+## Current evidence
 
-- Treat memory as a lead for locating relevant context. Follow current session instructions and project guidance; verify remembered technical facts against the current owning source before they determine an implementation or acceptance claim.
-- Before relying on an older memory, check its evidence date and scope (revision, dependency, artifact, or environment), then confirm that its assumptions still apply. An unknown date, a relevant change since that evidence, or a conflict with current sources requires targeted revalidation. Recent retrieval or rewritten summary text does not renew the underlying evidence.
-- Match verification to volatility: stable collaboration preferences can carry forward until the user changes them; architecture and workarounds need current source checks; versions, runtime state, and acceptance results need matching current inputs. Age prompts review rather than automatic rejection, and a recent timestamp alone does not establish validity.
-- When current evidence supersedes a memory, use the current result and record the old assumption, replacement, and source/date in the task's scoped handoff when useful. Keep historical failures and unfinished investigations tied to their original run; verify whether they remain unresolved before treating them as current blockers.
-- If a remembered claim cannot be verified, label it historical or unverified and keep it out of decisions that depend on its truth. Continue independent authorized work. Check the smallest relevant owner or reproduction; reuse still-valid checks instead of restarting a repository-wide investigation.
-- This policy governs use of memory. Editing or deleting generated memory storage requires an explicit user request and the supported memory-update workflow; ordinary project work does not authorize rewriting memory files.
-
-- For KeiOS, recheck dependency/channel claims in the version catalog and current project rules, architecture claims in the affected module, and Profile/performance claims against the relevant source revision, capture, APK, and device conditions. Old journey counts, timings, or build failures remain dated results until revalidated.
+- Use memory to locate context; verify technical claims against the affected source before they determine implementation or acceptance. Check dependency/channel claims in the version catalog, architecture in the owning module, and Profile/performance claims against the source revision, capture, APK, and device conditions.
+- Stable collaboration preferences can carry forward. Unknown evidence dates, changed inputs, or conflicting current sources require targeted revalidation; retrieving an old note does not refresh its evidence. Label unresolved claims historical or unverified and continue independent work.
+- Keep superseded results and useful replacement evidence in the scoped `.planning/` handoff. Generated memory storage is updated only through the supported workflow on explicit user request.
 
 ## Architecture and dependencies
 
@@ -37,12 +32,12 @@
 - Android visual design and UX: `android-ux-design`; Compose implementation and review: `compose-expert`. Preserve Miuix and existing custom surfaces when applying general Material examples.
 - Use focused platform, accessibility, navigation, coroutine, and ViewModel skills for the specific behavior being changed.
 - Use a focused performance skill for a known issue. Use `auditing-compose-performance` for a requested broad audit or a broad symptom that needs measurement and diagnosis.
-- Use `generating-baseline-profiles` for profile generation and `testing-compose-in-release-mode` for performance measurements. Profile collection, packaging verification, and performance comparison have distinct acceptance criteria.
+- For Profile collection, packaging diagnosis, or regeneration, use [keios-baseline-profile](.agents/skills/keios-baseline-profile/SKILL.md). Use `testing-compose-in-release-mode` for performance measurements. A freshness check alone can use the release gate below without loading a collection workflow.
 - Skill checklists apply to the selected task and supported environment. A text edit does not require an app-wide UX audit; a profile-only refresh does not require a new performance study. Preserve project release gates when shipping is in scope.
 
 ## Verification by change
 
-Choose checks that can falsify the changed behavior. Inspect `readme/BUILD.md`, the affected module's Gradle configuration, and existing nearby tests for current commands.
+Choose checks that can falsify the changed behavior. For build/test commands, consult [readme/BUILD.md](readme/BUILD.md), the affected Gradle configuration, and nearby tests. Instruction-only edits use file, link, and skill validation.
 
 | Change | Relevant evidence |
 | --- | --- |
@@ -56,17 +51,14 @@ Choose checks that can falsify the changed behavior. Inspect `readme/BUILD.md`, 
 - Run the required checks once for the final relevant inputs. Expand or repeat them for changes, failures, or unresolved concerns. Reuse still-valid results and state what they cover.
 - Add tests for observable behavior and meaningful regressions. Avoid tests that merely mirror implementation text or instruction wording. Review screenshot differences before updating goldens.
 - For adaptive UI changes, cover the affected phone/tablet window classes and input modes; use the task's device matrix rather than exercising unrelated screens.
-- For Baseline Profiles, inspect `scripts/qa/baseline_profile_freshness.sh`, `baselineprofile/`, and `docs/planning/baseline-profile-coverage.md`. Use the explicit `:app:generateReleaseBaselineProfile` task and bind the intended AVD with `ANDROID_SERIAL`. Use one SDK ADB installation/server.
-- Plan bounded, deterministic profile journeys around useful hot paths. State the journey set and runtime budget before expensive capture. Passing instrumentation tests alone does not establish collection; verify fresh per-journey/merged outputs, generated `baseline-prof.txt`/`startup-prof.txt`, the true Gradle exit, and `assets/dexopt/baseline.prof`/`baseline.profm` in the release APK.
-- A controlled AVD can establish profile collection and packaging. Claims about user-perceived performance need suitable release/benchmark device measurements. Run the freshness gate for release work and account separately for uncommitted runtime changes, which the script's committed-ref comparison does not cover.
+- For release work, run `scripts/qa/baseline_profile_freshness.sh` and account separately for uncommitted runtime changes: the script compares committed refs. Regeneration follows the Profile skill. A controlled AVD can establish collection and packaging; user-perceived performance requires suitable release/benchmark measurements.
 - Report source/tests, build/artifact, installation, and observed UI/business behavior at their proven levels. A missing device limits device claims; continue source and other independent verification that the task permits.
 
-## Reasoning and execution
+## Execution and instruction maintenance
 
-- Keep the configured model and reasoning effort unless the user requests a change. `low` is a useful starting point for scoped edits, routine maintenance, and running an established check.
-- Consider `medium` for unfamiliar cross-module behavior and `high` for architecture tradeoffs, concurrency, or a failed diagnosis with competing explanations. Reserve higher effort for a concrete unresolved problem; more reasoning cannot supply missing logs, source, or device evidence.
-- `medium` is also a practical choice for everyday feature implementation, review, and coordinated code/test/copy changes when several project conventions must be reconciled. Preserve a user's established `medium` choice; a model migration alone is no reason to lower it.
-- Choose `xhigh` when the user wants deep analysis or the task needs sustained reasoning across interacting constraints: a cross-module state/ownership migration, subtle cancellation or ordering defects, a release/R8 compatibility problem with conflicting evidence, or a design review with several credible alternatives. It can be selected directly; trying lower levels first is optional. Identify the concrete uncertainty, compare the viable explanations or designs, and produce a decision, invariants, and a bounded verification plan.
-- Effort follows the current phase and user preference. Simple edits and established command execution still suit Light/low; analysis or difficult review may justify `xhigh`. Keep the user's chosen setting and make any recommendation explicit rather than changing it automatically. File count, task duration, or routine test failures alone do not justify higher effort. After resolving the hard question, carry out the agreed plan without expanding scope or repeatedly reopening settled decisions.
-- These are project heuristics, not automatic setting changes or measured model benchmarks. Compare similar tasks by correctness, rework, elapsed time, and usage before changing a default.
-- Use subagents when explicitly requested or when an applicable instruction authorizes a concrete independent task. Keep shared worktree mutations, Gradle/ADB state, and device interaction under one owner.
+- Keep the configured model and reasoning effort unless the user requests a change. Make recommendations explicit and tie them to a concrete unresolved problem; these instructions support contributors using different models.
+- Use subagents when explicitly requested or when an applicable instruction authorizes a concrete independent task. Keep shared worktree mutations, Gradle/ADB state, and device interaction under one owner; preserve other tasks' active sessions.
+- Keep this file for repository-wide constraints and verification gates. Put specialized workflows in `.agents/skills/`; descriptions identify the actual task, and supporting references load only when needed. Preserve non-obvious correctness constraints while removing duplicate advice and obsolete workarounds.
+- When revising instructions, check representative requests for correct routing and completion boundaries. Format validation proves structure, not improved agent behavior; claim efficiency or quality gains only after comparable task runs.
+
+Instruction design reference: [OpenAI: Rethinking skills and prompts for GPT-6 Astra](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra) (2026-09-11). Project constraints above remain authoritative within session instructions.

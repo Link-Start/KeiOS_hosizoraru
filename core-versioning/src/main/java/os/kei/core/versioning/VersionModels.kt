@@ -49,3 +49,19 @@ data class ReleaseRankingEvidence(
     val publishedAtMillis: Long? = null,
     val stableKey: String = "",
 )
+
+/**
+ * A release list where the highest version number is not the current release.
+ *
+ * [outranking] is the tag that wins on version and should not: an old high number left behind by a
+ * project that restarted its numbering. [newest] is the most recently published release, which is
+ * what the project is actually shipping.
+ *
+ * Produced by [ReleaseCandidateRanker.suspectVersioningReset]. A caller with an authoritative
+ * "current release" endpoint should confirm against it before acting; one without should act on it,
+ * because the alternative is a track that reports an ancient release forever.
+ */
+data class VersioningResetSuspicion(
+    val outranking: ReleaseRankingEvidence,
+    val newest: ReleaseRankingEvidence,
+)

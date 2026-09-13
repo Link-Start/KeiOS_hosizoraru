@@ -101,6 +101,16 @@ class AppEdgeStackState internal constructor() {
      * the state rather than being passed down so an unconverted host needs no change at all.
      */
     internal var keepAliveHeadroomPx by mutableFloatStateOf(0f)
+
+    /**
+     * Chrome that floats over the bottom of the list, in pixels. Zero unless the host declares it.
+     *
+     * Subtracted from the container to get the window a card has to fit in to be pinnable — see
+     * `computeAppEdgeStackTransform`'s `readableHeightPx`. A page with a floating pager bar has a
+     * strip at the bottom where a control is visible but not tappable, and a card that only "fits"
+     * by parking its last row under that bar is exactly the case the bound exists to exclude.
+     */
+    internal var bottomInsetPx by mutableFloatStateOf(0f)
 }
 
 val LocalAppEdgeStackCards = compositionLocalOf<AppEdgeStackState?> { null }
@@ -159,11 +169,25 @@ fun AppEdgeStackKeepAlive(
     state: AppEdgeStackState,
     modifier: Modifier = Modifier,
     headroom: Dp = AppEdgeStackKeepAliveHeadroom,
+    /**
+     * Chrome the page floats over the bottom of this list — a pager bar, a dock — plus whatever
+     * inset lifts it off the window edge.
+     *
+     * Only the pinnable-height bound reads it, so a host that leaves it at zero behaves exactly as
+     * before. A host that *has* floating bottom chrome should pass the same number its list reserves
+     * as bottom content padding: a card whose last row can only be reached by parking it under the
+     * bar is not reachable, and the bound is there to keep such a card out of the pile.
+     */
+    bottomInset: Dp = 0.dp,
     content: @Composable () -> Unit,
 ) {
     val headroomPx = with(LocalDensity.current) { headroom.toPx() }
     if (state.keepAliveHeadroomPx != headroomPx) {
         state.keepAliveHeadroomPx = headroomPx
+    }
+    val bottomInsetPx = with(LocalDensity.current) { bottomInset.toPx() }
+    if (state.bottomInsetPx != bottomInsetPx) {
+        state.bottomInsetPx = bottomInsetPx
     }
     Box(
         modifier =
@@ -321,16 +345,29 @@ private fun Modifier.appEdgeStackProbe(
         layout(placeable.width, placeable.height) {
             val container = state.containerCoordinates
             val self = coordinates
+            val attached =
+                container != null && self != null && container.isAttached && self.isAttached
             val itemTop =
-                if (container != null && self != null && container.isAttached && self.isAttached) {
+                if (attached) {
                     container.localPositionOf(self).y
                 } else {
                     Float.NaN
                 }
-            if (itemTop.isNaN() || itemTop >= state.stackLinePx) {
-                card.rest()
-            } else {
-                card.apply(
+            // How much of the card the reader can actually get to: the container, less the line the
+            // pile pins at, less whatever floats over the bottom. Read from the same attached
+            // coordinates as the position, and unbounded while there are none — which is exactly the
+            // behaviour every host had before the bound existed.
+            val containerHeight = if (attached) container.size.height.toFloat() else 0f
+            val readableHeightPx =
+                if (containerHeight > 0f) {
+                    (containerHeight - state.stackLinePx - state.bottomInsetPx).coerceAtLeast(1f)
+                } else {
+                    Float.POSITIVE_INFINITY
+                }
+            val transform =
+                if (itemTop.isNaN()) {
+                    AppEdgeStackTransform.Identity
+                } else {
                     computeAppEdgeStackTransform(
                         itemTopInContainer = itemTop,
                         itemHeightPx = placeable.height.toFloat(),
@@ -338,8 +375,13 @@ private fun Modifier.appEdgeStackProbe(
                         riseTotalPx = riseTotalPx,
                         stepPx = placeable.height.toFloat().coerceIn(stepFloorPx, stepCeilingPx),
                         keepAliveHeadroomPx = state.keepAliveHeadroomPx,
-                    ),
-                )
+                        readableHeightPx = readableHeightPx,
+                    )
+                }
+            if (transform === AppEdgeStackTransform.Identity) {
+                card.rest()
+            } else {
+                card.apply(transform)
             }
             placeable.placeRelative(0, 0)
         }
@@ -507,9 +549,31 @@ fun computeAppEdgeStackTransform(
     stepPx: Float,
     minScale: Float = APP_EDGE_STACK_MIN_SCALE,
     keepAliveHeadroomPx: Float = 0f,
+    readableHeightPx: Float = Float.POSITIVE_INFINITY,
 ): AppEdgeStackTransform {
     val overshoot = stackLinePx - itemTopInContainer
     if (overshoot <= 0f || itemHeightPx <= 0f) return AppEdgeStackTransform.Identity
+    // A card only joins the pile if the pile can show all of it. This is issues #19 and #29, and it is
+    // arithmetic rather than taste.
+    //
+    // Pinning hands the card's travel straight back — `translationY = overshoot - rise * eased` — so a
+    // pinned card's *drawn* top is `stackLine - rise * eased`, a function of depth alone and not of
+    // scroll. Scrolling further therefore does not move the card down by one pixel; it only deepens it
+    // and brings the next list item, which is still scrolling at 1:1 and draws (and hit-tests) above,
+    // climbing over it from the bottom. So the deepest part of the card the reader can ever get to is
+    // whatever fitted below the stack line at the moment it pinned — everything past that is out of
+    // reach for the rest of the card's life, and no amount of scrolling recovers it.
+    //
+    // For a collapsed row that bound is far below the row's own height and nothing is lost, which is
+    // why the pile is right on card-dense pages. For an open release card carrying a file list it fell
+    // straight through the download and share buttons: reported as #19 against the tracked-app card,
+    // fixed there by keeping expanded cards out of the pile, and reported again as #29 against the
+    // release page, which had opted back in with `edgeStackWhileExpanded`.
+    //
+    // Bounding by the card's own height fixes the class rather than the two call sites, and it can only
+    // ever withhold the effect in precisely the case where the effect hides content: at
+    // `itemHeightPx <= readableHeightPx` every page behaves exactly as it did.
+    if (itemHeightPx > readableHeightPx) return AppEdgeStackTransform.Identity
     // A pinned card is still disposed on its LAYOUT position, not the position it is drawn at, so the
     // pile cannot outlast however far above the viewport the container keeps items alive. Clamping the
     // extent to a margin inside that is what makes `fade == 0` before disposal provable rather than

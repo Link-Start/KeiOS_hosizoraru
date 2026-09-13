@@ -20,9 +20,12 @@ class FdroidVersionLaneWiringSourceTest {
 
         // "Loading", "empty", "no match", "the refresh failed" all describe the history rather than one
         // of its halves, so exactly one lane may say them.
+        // Delimited by the branch that consumes the lanes rather than by whatever local happens to be
+        // declared next: the padding locals moved out to the page scope when the pile learned about
+        // floating bottom chrome, and a landmark that moves takes the whole rest of the file with it.
         val reading =
             source.substringAfter("val readingLane: LazyListScope.() -> Unit = {")
-                .substringBefore("val listInnerPadding")
+                .substringBefore("if (columnCount >= 2) {")
         assertTrue("fdroidVersionCards(rows = lanes.second" in reading)
         assertTrue("fdroidVersionListBody(" !in reading, "The notices belong to the browsing lane")
 

@@ -12,9 +12,12 @@ class GitHubReleaseLaneWiringSourceTest {
 
         // "Loading", "empty", "past the end" describe the list, so exactly one lane may say them: the
         // reading lane renders cards and nothing else.
+        // Delimited by the branch that consumes the lanes rather than by whatever local happens to be
+        // declared next: the padding locals moved out to the page scope when the pile learned about
+        // floating bottom chrome, and a landmark that moves takes the whole rest of the file with it.
         val reading =
             source.substringAfter("val readingLane: LazyListScope.() -> Unit = {")
-                .substringBefore("val listInnerPadding")
+                .substringBefore("if (columnCount >= 2) {")
         assertTrue("releaseCards(" in reading)
         assertTrue("rows = lanes.second," in reading)
         assertTrue("releaseListBody(" !in reading, "The notices belong to the browsing lane")

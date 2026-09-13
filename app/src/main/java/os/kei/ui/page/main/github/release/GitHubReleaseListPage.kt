@@ -220,6 +220,16 @@ internal fun GitHubReleaseListPage(
         val listTopPadding = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap
         val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val pagerBarBottomInset = if (navigationBarBottom != 0.dp) 8.dp + navigationBarBottom else 36.dp
+        // What the pager bar actually occupies, rather than a constant that happened to cover it. The bar
+        // floats `pagerBarBottomInset` above the window edge and is `floatingBottomBarOuterHeight` tall,
+        // and the content padding already carries the navigation-bar inset — so the list owes the
+        // remainder. The old flat 62 + 24 was 12dp short whenever the window reported no navigation bar,
+        // which parked the last card's bottom row under the bar with no scroll range left to clear it.
+        val listBottomExtra =
+            AppChromeTokens.floatingBottomBarOuterHeight + 16.dp +
+                (pagerBarBottomInset - navigationBarBottom)
+        val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
+        val listTopExtra = appEdgeStackKeepAliveTopPadding(listTopPadding)
         val edgeStackState = rememberAppEdgeStackState(stackLine = listTopPadding)
         Box(modifier = Modifier.fillMaxSize()) {
             AppEdgeStackKeepAlive(
@@ -227,6 +237,10 @@ internal fun GitHubReleaseListPage(
                 // The top bar and the pager bar sample this. Without recording the list into it, both
                 // render as flat white plates — glass with nothing behind it is just a fill.
                 modifier = Modifier.fillMaxSize().layerBackdrop(pageBackdrop),
+                // The pager bar floats over the list, so the strip it covers is visible but not
+                // reachable. Handing it to the pile is what stops a card being called pinnable on the
+                // strength of a file row that can only ever sit under the bar.
+                bottomInset = innerPadding.calculateBottomPadding() + listBottomExtra,
             ) {
                 CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
                     val onToggleRelease: (String, Boolean) -> Unit = { id, open ->
@@ -295,9 +309,6 @@ internal fun GitHubReleaseListPage(
                             packageName = uiState.packageName,
                         )
                     }
-                    val listInnerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())
-                    val listTopExtra = appEdgeStackKeepAliveTopPadding(listTopPadding)
-                    val listBottomExtra = AppChromeTokens.floatingBottomBarOuterHeight + 24.dp
                     if (columnCount >= 2) {
                         AppPageTwoColumnLists(
                             innerPadding = listInnerPadding,

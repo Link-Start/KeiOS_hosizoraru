@@ -40,6 +40,30 @@ class AppEdgeStackHostSourceTest {
     }
 
     /**
+     * The two pages whose chrome floats over their own list must tell the pile how much it covers.
+     *
+     * `AppEdgeStackKeepAlive`'s `bottomInset` is what stops a card being judged pinnable on the
+     * strength of a row that can only ever sit under the pager bar — visible, and not tappable. That
+     * distinction is the whole of issue #29: the download and share buttons live in the *last* rows of
+     * an expanded card, so a bound that counts the covered strip as reachable lets exactly the card
+     * that matters back into the pile.
+     *
+     * Only these two are held to it. The other hosts float chrome too, but their piled cards are
+     * collapsed headers a fraction of the window tall, so the inset cannot change the verdict for them
+     * and leaving it unset keeps their behaviour bit-identical.
+     */
+    @Test
+    fun pagesWithFloatingBottomChromeDeclareItToThePile() {
+        BOTTOM_CHROME_HOSTS.forEach { host ->
+            val source = sourceFile(host)
+            assertTrue(
+                "bottomInset = " in source,
+                "$host floats a bar over its list, so the pile must be told what it covers",
+            )
+        }
+    }
+
+    /**
      * Guards the *set*, so a new host cannot be added to the app without being added here.
      *
      * Keyed on `rememberAppEdgeStackState(`, not on the provider. Providing the local is not the
@@ -82,6 +106,12 @@ private val STACKING_HOSTS =
         "student/catalog/component/BaGuideCatalogV2ListContent.kt",
         "student/catalog/component/BaGuideMemoryLobbyTabContent.kt",
         "student/catalog/component/BaGuideStudentBgmTabContent.kt",
+    )
+
+private val BOTTOM_CHROME_HOSTS =
+    listOf(
+        "github/fdroid/FdroidVersionListPage.kt",
+        "github/release/GitHubReleaseListPage.kt",
     )
 
 private fun repositoryRoot(): File {

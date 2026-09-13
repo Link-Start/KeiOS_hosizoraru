@@ -40,6 +40,7 @@ class AppEdgeStackedCardsTest {
         itemTop: Float,
         itemHeightPx: Float = height,
         stepPx: Float = step,
+        readableHeightPx: Float = Float.POSITIVE_INFINITY,
     ): AppEdgeStackTransform =
         computeAppEdgeStackTransform(
             itemTopInContainer = itemTop,
@@ -47,6 +48,7 @@ class AppEdgeStackedCardsTest {
             stackLinePx = stackLine,
             riseTotalPx = riseTotal,
             stepPx = stepPx,
+            readableHeightPx = readableHeightPx,
         )
 
     @Test
@@ -292,6 +294,86 @@ class AppEdgeStackedCardsTest {
             "but not by the runaway factor the unbounded rate produced: " +
                 "${shortRow.dim} vs ${tallCard.dim}",
         )
+    }
+
+    @Test
+    fun `a card taller than the window below the stack line never joins the pile`() {
+        // Issues #19 and #29. Pinning hands the card's travel back, so a pinned card's drawn top is a
+        // function of depth alone -- scrolling further does not move it down by a pixel. Whatever did not
+        // fit below the stack line when it pinned is therefore unreachable for the rest of the card's
+        // life, which on the release page was the file rows carrying the download and share buttons.
+        val window = 600f
+
+        assertEquals(
+            AppEdgeStackTransform.Identity,
+            transformAt(stackLine - 120f, itemHeightPx = window + 1f, readableHeightPx = window),
+        )
+        // And not just at the line: no scroll position rescues it.
+        assertEquals(
+            AppEdgeStackTransform.Identity,
+            transformAt(stackLine - 4_000f, itemHeightPx = window + 1f, readableHeightPx = window),
+        )
+    }
+
+    @Test
+    fun `a card that fits the window still piles, so the effect is withheld only where it would hide something`() {
+        val window = 600f
+        val transform = transformAt(stackLine - 120f, itemHeightPx = window, readableHeightPx = window)
+
+        assertTrue(transform.dim > 0f, "a card that fits is still a pile member")
+        assertTrue(transform.scale < 1f)
+        assertEquals(
+            transformAt(stackLine - 120f, itemHeightPx = window),
+            transform,
+            "and it is transformed identically to how it was before the bound existed",
+        )
+    }
+
+    @Test
+    fun `every pixel of a pinnable card is reachable, which is the property the bound buys`() {
+        // The bound restated as the thing a reader cares about, rather than as an inequality. A card is
+        // allowed into the pile only if its last pixel is inside the container at the moment it pins --
+        // drawn y of card-local offset d is (stackLine - rise * eased) + d * scale, and at the pin moment
+        // eased is 0 and scale is 1.
+        val container = 1_000f
+        val window = container - stackLine
+        val itemTop = stackLine - 1f
+
+        fun deepestDrawnY(transform: AppEdgeStackTransform, cardHeight: Float): Float =
+            itemTop + transform.translationY + cardHeight * transform.scale
+
+        for (cardHeight in listOf(64f, 200f, window - 1f, window)) {
+            val atPin = transformAt(itemTop, itemHeightPx = cardHeight, readableHeightPx = window)
+            assertTrue(
+                deepestDrawnY(atPin, cardHeight) <= container,
+                "a ${cardHeight}px card pinned at the line draws down to " +
+                    "${deepestDrawnY(atPin, cardHeight)}, past the container at $container",
+            )
+        }
+
+        // And the bound is load-bearing rather than decorative: the first card over the window would
+        // have drawn past the container's bottom edge had it been allowed to pin, and that overhang is
+        // what no amount of scrolling brings back.
+        val overTall = window + 200f
+        val unbounded = transformAt(itemTop, itemHeightPx = overTall)
+        assertTrue(
+            deepestDrawnY(unbounded, overTall) > container,
+            "fixture must exercise the bound: ${deepestDrawnY(unbounded, overTall)} vs $container",
+        )
+        assertEquals(
+            AppEdgeStackTransform.Identity,
+            transformAt(itemTop, itemHeightPx = overTall, readableHeightPx = window),
+        )
+    }
+
+    @Test
+    fun `the bound is unset by default, so a host that declares no window behaves exactly as before`() {
+        // Every host predates the bound and most never need it. The probe also passes infinity while the
+        // container is unattached, which is the first frame of every page.
+        val tall = transformAt(stackLine - 120f, itemHeightPx = 4_000f)
+
+        assertTrue(tall.dim > 0f)
+        assertEquals(tall, transformAt(stackLine - 120f, itemHeightPx = 4_000f, readableHeightPx = Float.POSITIVE_INFINITY))
     }
 
     @Test

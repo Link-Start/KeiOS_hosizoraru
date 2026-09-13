@@ -41,6 +41,15 @@ fun AppLiquidAccordionCard(
      * content the reader just opened. A list whose cards are *browsed* open — the release list, where
      * latest and the newest pre-release open themselves — wants the opposite, or the pile stops working
      * for the ten cards on the page.
+     *
+     * Passing `true` used to mean "hide what was just opened", and that turned out to understate it:
+     * a pinned card's drawn top does not move with the scroll, so anything below the fold when it
+     * pinned was out of reach for good. On the release page that band contained the download and share
+     * buttons — issue #29, and the same failure as #19, which `shouldApplyEdgeStackToExpandableCard`
+     * had been written to prevent. The bound now lives in the geometry instead: a card taller than the
+     * window below the stack line does not pin, whatever this flag says (see
+     * `computeAppEdgeStackTransform`). So this reads as "pile me too, if I fit" rather than as an
+     * override, and a card that outgrows the window simply stops piling until it is closed again.
      */
     edgeStackWhileExpanded: Boolean = false,
     headerContentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,

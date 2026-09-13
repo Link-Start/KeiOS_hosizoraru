@@ -18,19 +18,20 @@ object GitHubReleaseCandidateRanker {
     }
 
     fun latest(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        var latest: RankedReleaseEntry? = null
-        entries.forEach { entry ->
-            val candidate = RankedReleaseEntry(entry, entry.toRankingEvidence())
-            val currentLatest = latest
-            if (
-                currentLatest == null ||
-                ReleaseCandidateRanker.compare(currentLatest.evidence, candidate.evidence) < 0
-            ) {
-                latest = candidate
-            }
-        }
-        return latest?.entry
+        val ranked = entries.map { entry -> RankedReleaseEntry(entry, entry.toRankingEvidence()) }
+        val chosen = ReleaseCandidateRanker.pickLatest(ranked.map { it.evidence }) ?: return null
+        // pickLatest returns one of the values it was given, so identity finds its entry back.
+        return ranked.firstOrNull { it.evidence === chosen }?.entry
     }
+
+    /**
+     * Whether this list's highest version number looks like one a restarted project left behind.
+     *
+     * Callers that can ask the forge which release is current should do so only when this is true;
+     * see [ReleaseCandidateRanker.suspectVersioningReset] for why the two steps are separate.
+     */
+    fun suspectsVersioningReset(entries: List<GitHubAtomReleaseEntry>): Boolean =
+        ReleaseCandidateRanker.suspectVersioningReset(entries.map { it.toRankingEvidence() }) != null
 
     fun newestFirst(entries: List<GitHubAtomReleaseEntry>): List<GitHubAtomReleaseEntry> {
         return entries

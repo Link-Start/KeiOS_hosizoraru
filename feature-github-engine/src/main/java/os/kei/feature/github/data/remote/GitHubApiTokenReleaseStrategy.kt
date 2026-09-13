@@ -65,16 +65,34 @@ class GitHubApiTokenReleaseStrategy(
                 authMode = authMode
             )
         }
-        val fallbackStableEntry = pickLatestStableEntry(entries.filter { !it.isLikelyPreRelease })
+        val stableEntries = entries.filter { !it.isLikelyPreRelease }
+        val fallbackStableEntry = pickLatestStableEntry(stableEntries)
+        // `releases/latest` is not "the newest by date" -- it honours the maintainer's own *Set as
+        // the latest release* flag, which makes it the one authority on a repository that restarted
+        // its numbering, where the highest tag is an old one left behind. It is also a second request
+        // per repository, so it is spent only when the list itself looks wrong: a normal history
+        // never reaches here and pays nothing.
+        val suspectsReset = fallbackStableEntry != null &&
+            GitHubReleaseCandidateRanker.suspectsVersioningReset(stableEntries)
         val latestStableTrace =
-            fallbackStableEntry?.let { stableEntry ->
-                GitHubStrategyLoadTrace(
-                    result = Result.success(stableEntry.toReleaseSignal()),
-                    fromCache = entriesTrace.fromCache,
-                    elapsedMs = 0L,
-                    authMode = authMode,
-                )
-            } ?: fetchLatestStableSignalTrace(owner, repo)
+            when {
+                fallbackStableEntry == null -> fetchLatestStableSignalTrace(owner, repo)
+                suspectsReset ->
+                    fetchLatestStableSignalTrace(owner, repo).takeIf { it.result.isSuccess }
+                        ?: GitHubStrategyLoadTrace(
+                            result = Result.success(fallbackStableEntry.toReleaseSignal()),
+                            fromCache = entriesTrace.fromCache,
+                            elapsedMs = 0L,
+                            authMode = authMode,
+                        )
+                else ->
+                    GitHubStrategyLoadTrace(
+                        result = Result.success(fallbackStableEntry.toReleaseSignal()),
+                        fromCache = entriesTrace.fromCache,
+                        elapsedMs = 0L,
+                        authMode = authMode,
+                    )
+            }
         val result = runCatching {
             val latestPreEntry = pickLatestPreReleaseEntry(
                 entries.filter { entry ->

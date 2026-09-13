@@ -118,7 +118,16 @@ JDK fallback examples:
 
 # unit tests
 ./gradlew :app:testDebugUnitTest
+
+# what the last test run actually produced, across every module
+scripts/qa/test_report.sh
 ```
+
+`test_report.sh` reads the XML Gradle already wrote, so it is free to re-run and needs no rebuild.
+It prints per-module totals and, when something failed, groups the failures by cause instead of
+listing them one by one — a systemic breakage arrives as hundreds of lines with one cause buried in
+each. `--slowest 10` ranks the slowest classes, `--all` shows every cause, `--module app` narrows
+it. Exit codes: 0 green, 1 failures.
 
 ### v1.15.0 Release Gate
 

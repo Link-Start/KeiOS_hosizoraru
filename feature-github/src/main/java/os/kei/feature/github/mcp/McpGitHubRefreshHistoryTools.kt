@@ -116,7 +116,8 @@ internal class McpGitHubRefreshHistoryTools(
         appendLine("totalDirectApkItemCount=${summary.totalDirectApkItemCount}")
         appendLine("totalFdroidItemCount=${summary.totalFdroidItemCount}")
         appendLine("totalOtherItemCount=${summary.totalOtherItemCount}")
-        appendLine("maxObservedConcurrency=${summary.maxObservedConcurrency}")
+        appendLine("maxRequestedConcurrency=${summary.maxRequestedConcurrency}")
+        appendLine("maxPeakConcurrentCalls=${summary.maxPeakConcurrentCalls}")
         appendLine("averageElapsedMs=${summary.averageElapsedMs}")
         appendLine("p95ElapsedMs=${summary.p95ElapsedMs}")
         appendLine("latestStartedAtMillis=${summary.latestStartedAtMillis}")
@@ -129,7 +130,7 @@ internal class McpGitHubRefreshHistoryTools(
                 outcome == GitHubRefreshHistoryOutcome.Completed && failedCount > 0 -> "partial_failed"
                 else -> outcome.name.lowercase(Locale.ROOT)
             }
-        return "$prefix=id:$id | sessionId:$sessionId | source:${source.name} | scope:${scope.name} | outcome:$status | target:$targetCount | completed:$completedCount | updates:$updatableCount | preUpdates:$preReleaseUpdateCount | failed:$failedCount | elapsedMs:$elapsedMs | p50ItemMs:$p50ItemMs | p95ItemMs:$p95ItemMs | maxItemMs:$maxItemMs | maxConcurrency:$maxConcurrency | directApkConcurrency:$directApkConcurrency | fdroidConcurrency:$fdroidConcurrency | repositoryItems:$repositoryItemCount | directApkItems:$directApkItemCount | fdroidItems:$fdroidItemCount | otherItems:$otherItemCount | startedAtMillis:$startedAtMillis | finishedAtMillis:$finishedAtMillis | note:${note.toMcpValue()}"
+        return "$prefix=id:$id | sessionId:$sessionId | source:${source.name} | scope:${scope.name} | outcome:$status | target:$targetCount | completed:$completedCount | updates:$updatableCount | preUpdates:$preReleaseUpdateCount | failed:$failedCount | elapsedMs:$elapsedMs | p50ItemMs:$p50ItemMs | p95ItemMs:$p95ItemMs | maxItemMs:$maxItemMs | maxConcurrency:$maxConcurrency | peakConcurrentCalls:$peakConcurrentCalls | network:${networkKind.ifBlank { "unknown" }}${if (networkMetered) "/metered" else ""} | directApkConcurrency:$directApkConcurrency | fdroidConcurrency:$fdroidConcurrency | repositoryItems:$repositoryItemCount | directApkItems:$directApkItemCount | fdroidItems:$fdroidItemCount | otherItems:$otherItemCount | startedAtMillis:$startedAtMillis | finishedAtMillis:$finishedAtMillis | note:${note.toMcpValue()}"
     }
 
     private fun GitHubRefreshHistorySlowItem.toMcpLine(prefix: String): String {

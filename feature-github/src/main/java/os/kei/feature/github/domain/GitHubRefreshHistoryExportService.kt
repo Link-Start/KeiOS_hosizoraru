@@ -56,7 +56,15 @@ data class GitHubRefreshHistorySummary(
     val totalDirectApkItemCount: Int,
     val totalFdroidItemCount: Int,
     val totalOtherItemCount: Int,
-    val maxObservedConcurrency: Int,
+    /**
+     * The largest concurrency any of these refreshes was *configured* with.
+     *
+     * It was called observed and is not: it is a setting read back. [maxPeakConcurrentCalls] is what
+     * the device actually managed, and the two differing is the whole reason this distinction now
+     * has two names.
+     */
+    val maxRequestedConcurrency: Int,
+    val maxPeakConcurrentCalls: Int,
     val averageElapsedMs: Long,
     val p95ElapsedMs: Long,
     val latestStartedAtMillis: Long,
@@ -115,7 +123,9 @@ object GitHubRefreshHistoryExportService {
             totalDirectApkItemCount = records.sumOf { it.directApkItemCount.coerceAtLeast(0) },
             totalFdroidItemCount = records.sumOf { it.fdroidItemCount.coerceAtLeast(0) },
             totalOtherItemCount = records.sumOf { it.otherItemCount.coerceAtLeast(0) },
-            maxObservedConcurrency = records.maxOfOrNull { it.maxConcurrency.coerceAtLeast(0) } ?: 0,
+            maxRequestedConcurrency = records.maxOfOrNull { it.maxConcurrency.coerceAtLeast(0) } ?: 0,
+            maxPeakConcurrentCalls =
+                records.maxOfOrNull { it.peakConcurrentCalls.coerceAtLeast(0) } ?: 0,
             averageElapsedMs =
                 if (elapsed.isEmpty()) 0L else elapsed.sum() / elapsed.size,
             p95ElapsedMs = elapsed.percentile95OrZero(),
@@ -244,7 +254,8 @@ private fun GitHubRefreshHistorySummary.toJson() =
         put("totalDirectApkItemCount", totalDirectApkItemCount)
         put("totalFdroidItemCount", totalFdroidItemCount)
         put("totalOtherItemCount", totalOtherItemCount)
-        put("maxObservedConcurrency", maxObservedConcurrency)
+        put("maxRequestedConcurrency", maxRequestedConcurrency)
+        put("maxPeakConcurrentCalls", maxPeakConcurrentCalls)
         put("averageElapsedMs", averageElapsedMs)
         put("p95ElapsedMs", p95ElapsedMs)
         put("latestStartedAtMillis", latestStartedAtMillis)
@@ -277,6 +288,9 @@ private fun GitHubRefreshHistoryRecord.toJson() =
         put("p95ItemMs", p95ItemMs)
         put("maxItemMs", maxItemMs)
         put("maxConcurrency", maxConcurrency)
+        put("peakConcurrentCalls", peakConcurrentCalls)
+        if (networkKind.isNotBlank()) put("networkKind", networkKind)
+        put("networkMetered", networkMetered)
         put("directApkConcurrency", directApkConcurrency)
         put("fdroidConcurrency", fdroidConcurrency)
         put("repositoryItemCount", repositoryItemCount)
@@ -324,6 +338,18 @@ private fun GitHubRefreshHistorySlowItem.toJson() =
         put("preciseApkRequested", preciseApkRequested)
         put("comparisonElapsedMs", comparisonElapsedMs)
         put("unclassifiedElapsedMs", unclassifiedElapsedMs)
+        if (!network.isEmpty) {
+            put("networkCallCount", network.callCount)
+            put("networkQueuedMs", network.queuedMs)
+            put("networkDnsMs", network.dnsMs)
+            put("networkConnectMs", network.connectMs)
+            put("networkWaitingMs", network.waitingMs)
+            put("networkBodyMs", network.bodyMs)
+            put("networkBytes", network.bytes)
+            put("networkReusedConnectionCalls", network.reusedConnectionCalls)
+            put("networkDominantPhase", network.dominantPhase)
+            if (network.protocol.isNotBlank()) put("networkProtocol", network.protocol)
+        }
         put("fallbackStrategyId", fallbackStrategyId)
     }
 

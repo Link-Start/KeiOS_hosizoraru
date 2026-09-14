@@ -14,9 +14,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.io.NetworkCallGauge
+import os.kei.core.io.NetworkTimingScope
+import os.kei.core.io.NetworkTimingSummary
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
@@ -63,6 +67,18 @@ data class GitHubTrackedRefreshBatchPerformance(
     val p95ItemMs: Long = 0L,
     val maxItemMs: Long = 0L,
     val maxConcurrency: Int = 0,
+    /**
+     * How many HTTP calls were ever really in the air at once during this batch.
+     *
+     * [maxConcurrency] is a setting; this is what happened. They were silently different for months
+     * — a request used to hold the thread that started it, so a batch that asked for sixteen got ten
+     * and nothing counted the difference. A figure from somebody's actual phone is the only place
+     * that gap shows up, and an emulator cannot fake it.
+     */
+    val peakConcurrentCalls: Int = 0,
+    /** Wifi, cellular, ethernet or none, as the device reported it when the batch finished. */
+    val networkKind: String = "",
+    val networkMetered: Boolean = false,
     val directApkConcurrency: Int = 0,
     val fdroidConcurrency: Int = 0,
     val repositoryItemCount: Int = 0,
@@ -117,6 +133,8 @@ data class GitHubTrackedRefreshSlowItem(
     val comparisonElapsedMs: Long = 0L,
     val unclassifiedElapsedMs: Long = 0L,
     val fallbackStrategyId: String = "",
+    /** @see GitHubReleaseCheckDiagnostics.network */
+    val network: NetworkTimingSummary = NetworkTimingSummary(),
 )
 
 object GitHubTrackedRefreshBatchRunner {
@@ -136,6 +154,7 @@ object GitHubTrackedRefreshBatchRunner {
     ): GitHubTrackedRefreshBatchResult {
         val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(items)
         return run(
+            networkState = GitHubRefreshNetworkKind.of(context),
             trackedItems = items,
             refreshTimestampMs = refreshTimestampMs,
             maxConcurrency = maxConcurrency,
@@ -155,6 +174,7 @@ object GitHubTrackedRefreshBatchRunner {
 
     suspend fun run(
         trackedItems: List<GitHubTrackedApp>,
+        networkState: GitHubRefreshNetworkState = GitHubRefreshNetworkState(),
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(trackedItems.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
@@ -180,6 +200,8 @@ object GitHubTrackedRefreshBatchRunner {
         }
 
         val batchStartNs = System.nanoTime()
+        // Only scoped calls are counted, so a download running alongside cannot inflate the reading.
+        NetworkCallGauge.resetPeak()
         val concurrency = trackedItems.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
         val batchDeadlineNs = batchDeadlineNs(
             batchStartNs = batchStartNs,
@@ -237,7 +259,10 @@ object GitHubTrackedRefreshBatchRunner {
                                 val workItem = workItems[index]
                                 val item = workItem.item
                                 val itemStartNs = System.nanoTime()
-                                val check =
+                                // Every call this item makes lands here, however deep in the
+                                // strategy it was issued.
+                                val itemNetwork = NetworkTimingScope()
+                                val check = withContext(itemNetwork) {
                                     evaluateWithRetry(
                                         item = item,
                                         timeoutMs = itemTimeoutMs(item),
@@ -267,10 +292,15 @@ object GitHubTrackedRefreshBatchRunner {
                                             failedCheck(error)
                                         }
                                     }
+                                }
                                 val itemElapsedMs = elapsedMsSince(itemStartNs)
                                 val result = GitHubTrackedRefreshItemResult(
                                     item = item,
-                                    check = check,
+                                    check = check.copy(
+                                        diagnostics = check.diagnostics.copy(
+                                            network = itemNetwork.summary(),
+                                        ),
+                                    ),
                                     elapsedMs = itemElapsedMs
                                 )
                                 if (check.isTransientNetworkFailure()) {
@@ -367,6 +397,8 @@ object GitHubTrackedRefreshBatchRunner {
                 batchStartNs = batchStartNs,
                 itemResults = checks,
                 maxConcurrency = concurrency,
+                peakConcurrentCalls = NetworkCallGauge.peakConcurrentCalls(),
+                networkState = networkState,
                 directApkConcurrency = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency),
                 fdroidConcurrency = GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency),
             )
@@ -377,6 +409,8 @@ object GitHubTrackedRefreshBatchRunner {
         batchStartNs: Long,
         itemResults: List<GitHubTrackedRefreshItemResult>,
         maxConcurrency: Int,
+        peakConcurrentCalls: Int,
+        networkState: GitHubRefreshNetworkState,
         directApkConcurrency: Int,
         fdroidConcurrency: Int,
     ): GitHubTrackedRefreshBatchPerformance {
@@ -388,6 +422,9 @@ object GitHubTrackedRefreshBatchRunner {
             p95ItemMs = percentile(sorted, 95),
             maxItemMs = sorted.lastOrNull() ?: 0L,
             maxConcurrency = maxConcurrency,
+            peakConcurrentCalls = peakConcurrentCalls,
+            networkKind = networkState.kind,
+            networkMetered = networkState.metered,
             directApkConcurrency = directApkConcurrency,
             fdroidConcurrency = fdroidConcurrency,
             repositoryItemCount = itemResults.count { result -> result.item.isGitBackedRepositoryTrack() },
@@ -630,6 +667,7 @@ object GitHubTrackedRefreshBatchRunner {
                 check = check,
             ),
             fallbackStrategyId = check.diagnostics.fallbackStrategyId,
+            network = check.diagnostics.network,
         )
 
     private fun computeUnclassifiedElapsedMs(

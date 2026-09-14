@@ -1,5 +1,6 @@
 package os.kei.feature.github.model
 
+import os.kei.core.io.NetworkTimingSummary
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
@@ -49,6 +50,8 @@ data class GitHubRefreshHistorySlowItem(
     val comparisonElapsedMs: Long = 0L,
     val unclassifiedElapsedMs: Long = 0L,
     val fallbackStrategyId: String = "",
+    /** @see GitHubReleaseCheckDiagnostics.network */
+    val network: NetworkTimingSummary = NetworkTimingSummary(),
 )
 
 data class GitHubRefreshHistoryRecord(
@@ -71,6 +74,11 @@ data class GitHubRefreshHistoryRecord(
     val p95ItemMs: Long = 0L,
     val maxItemMs: Long = 0L,
     val maxConcurrency: Int = 0,
+    /** @see GitHubTrackedRefreshBatchPerformance.peakConcurrentCalls */
+    val peakConcurrentCalls: Int = 0,
+    /** What the device was connected through when this refresh ran. */
+    val networkKind: String = "",
+    val networkMetered: Boolean = false,
     val directApkConcurrency: Int = 0,
     val fdroidConcurrency: Int = 0,
     val repositoryItemCount: Int = 0,
@@ -135,4 +143,5 @@ fun GitHubTrackedRefreshSlowItem.toGitHubRefreshHistorySlowItem(): GitHubRefresh
         comparisonElapsedMs = comparisonElapsedMs,
         unclassifiedElapsedMs = unclassifiedElapsedMs,
         fallbackStrategyId = fallbackStrategyId,
+        network = network,
     )

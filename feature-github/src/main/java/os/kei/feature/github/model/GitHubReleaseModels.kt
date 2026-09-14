@@ -1,5 +1,7 @@
 package os.kei.feature.github.model
 
+import os.kei.core.io.NetworkTimingSummary
+
 enum class GitHubDirectApkRemoteHealth {
     Unknown,
     Available,
@@ -16,6 +18,16 @@ data class GitHubReleaseCheckDiagnostics(
     val preciseApkRequested: Boolean = false,
     val comparisonElapsedMs: Long = 0L,
     val fallbackStrategyId: String = "",
+    /**
+     * What the network actually did, when this check ran inside a measured scope.
+     *
+     * The stage timings above say *which* stage was slow. This says why that stage was slow, which
+     * is a different question and the only one with an action attached: time queued behind our own
+     * concurrency budget, a DNS lookup, a handshake, a server taking its time, and a body coming
+     * down a slow radio call for four different responses. On an emulator over wifi all but one of
+     * them round to zero, which is why the numbers that matter can only come from a real device.
+     */
+    val network: NetworkTimingSummary = NetworkTimingSummary(),
 ) {
     val hasStageData: Boolean
         get() =
@@ -27,6 +39,7 @@ data class GitHubReleaseCheckDiagnostics(
                 snapshotFromCache ||
                 profileFromCache ||
                 preciseApkRequested ||
+                !network.isEmpty ||
                 fallbackStrategyId.isNotBlank()
 }
 

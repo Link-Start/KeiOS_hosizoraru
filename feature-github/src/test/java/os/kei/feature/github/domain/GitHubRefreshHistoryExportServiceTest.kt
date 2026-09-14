@@ -53,7 +53,8 @@ class GitHubRefreshHistoryExportServiceTest {
         assertEquals("updatable", root.optObject("filters")?.optString("outcome"))
         assertEquals(2, root.optObject("summary")?.optInt("storedCount"))
         assertEquals(1, root.optObject("summary")?.optInt("matchedCount"))
-        assertEquals(3, root.optObject("summary")?.optInt("maxObservedConcurrency"))
+        assertEquals(3, root.optObject("summary")?.optInt("maxRequestedConcurrency"))
+        assertEquals(0, root.optObject("summary")?.optInt("maxPeakConcurrentCalls"))
         assertEquals("newer", root.optArray("records")?.optObject(0)?.optString("id"))
         assertEquals(3, root.optArray("records")?.optObject(0)?.optInt("maxConcurrency"))
         assertEquals(
@@ -191,7 +192,10 @@ class GitHubRefreshHistoryExportServiceTest {
         assertEquals(2, summary.totalDirectApkItemCount)
         assertEquals(2, summary.totalFdroidItemCount)
         assertEquals(0, summary.totalOtherItemCount)
-        assertEquals(3, summary.maxObservedConcurrency)
+        // The configured number and the one the device managed are now separate: they were
+        // silently different for months and the old name claimed to be the latter.
+        assertEquals(3, summary.maxRequestedConcurrency)
+        assertEquals(0, summary.maxPeakConcurrentCalls, "these records predate the instrument")
         assertEquals(200L, summary.averageElapsedMs)
         assertTrue(summary.latestFinishedAtMillis > 0L)
     }

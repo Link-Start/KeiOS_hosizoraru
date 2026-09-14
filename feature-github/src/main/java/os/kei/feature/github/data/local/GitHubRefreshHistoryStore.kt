@@ -9,6 +9,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
+import os.kei.core.io.NetworkTimingSummary
 import os.kei.core.json.encodeCompact
 import os.kei.core.json.optArray
 import os.kei.core.json.optBoolean
@@ -121,6 +122,9 @@ object GitHubRefreshHistoryStore {
             put("p95ItemMs", record.p95ItemMs)
             put("maxItemMs", record.maxItemMs)
             put("maxConcurrency", record.maxConcurrency)
+            put("peakConcurrentCalls", record.peakConcurrentCalls)
+            if (record.networkKind.isNotBlank()) put("networkKind", record.networkKind)
+            if (record.networkMetered) put("networkMetered", true)
             put("directApkConcurrency", record.directApkConcurrency)
             put("fdroidConcurrency", record.fdroidConcurrency)
             put("repositoryItemCount", record.repositoryItemCount)
@@ -185,6 +189,9 @@ object GitHubRefreshHistoryStore {
                 p95ItemMs = obj.optLong("p95ItemMs", 0L).coerceAtLeast(0L),
                 maxItemMs = obj.optLong("maxItemMs", 0L).coerceAtLeast(0L),
                 maxConcurrency = obj.optInt("maxConcurrency", 0).coerceAtLeast(0),
+                peakConcurrentCalls = obj.optInt("peakConcurrentCalls", 0).coerceAtLeast(0),
+                networkKind = obj.optString("networkKind").trim(),
+                networkMetered = obj.optBoolean("networkMetered", false),
                 directApkConcurrency = obj.optInt("directApkConcurrency", 0).coerceAtLeast(0),
                 fdroidConcurrency = obj.optInt("fdroidConcurrency", 0).coerceAtLeast(0),
                 repositoryItemCount = obj.optInt("repositoryItemCount", 0).coerceAtLeast(0),
@@ -239,6 +246,7 @@ object GitHubRefreshHistoryStore {
             p95ItemMs = p95ItemMs.coerceAtLeast(0L),
             maxItemMs = maxItemMs.coerceAtLeast(0L),
             maxConcurrency = maxConcurrency.coerceAtLeast(0),
+            peakConcurrentCalls = peakConcurrentCalls.coerceAtLeast(0),
             directApkConcurrency = directApkConcurrency.coerceAtLeast(0),
             fdroidConcurrency = fdroidConcurrency.coerceAtLeast(0),
             repositoryItemCount = repositoryItemCount.coerceAtLeast(0),
@@ -275,6 +283,7 @@ object GitHubRefreshHistoryStore {
                             comparisonElapsedMs = slowItem.comparisonElapsedMs.coerceAtLeast(0L),
                             unclassifiedElapsedMs = slowItem.unclassifiedElapsedMs.coerceAtLeast(0L),
                             fallbackStrategyId = slowItem.fallbackStrategyId.trim(),
+                            network = slowItem.network,
                         )
                     },
             failureSummaries =
@@ -386,6 +395,9 @@ object GitHubRefreshHistoryStore {
             put("comparisonElapsedMs", slowItem.comparisonElapsedMs)
             put("unclassifiedElapsedMs", slowItem.unclassifiedElapsedMs)
             put("fallbackStrategyId", slowItem.fallbackStrategyId)
+            // Written only when something was measured, so a record from a build without the
+            // instrument, or an item served entirely from cache, stays the size it always was.
+            networkTimingToJson(slowItem.network)?.let { put("network", it) }
         }
     }
 
@@ -411,6 +423,7 @@ object GitHubRefreshHistoryStore {
             comparisonElapsedMs = obj.optLong("comparisonElapsedMs", 0L).coerceAtLeast(0L),
             unclassifiedElapsedMs = obj.optLong("unclassifiedElapsedMs", 0L).coerceAtLeast(0L),
             fallbackStrategyId = obj.optString("fallbackStrategyId").trim(),
+            network = networkTimingFromJson(obj.optObject("network")),
         )
 
     private fun encodeFailureSummary(failure: GitHubRefreshHistoryFailureSummary): JsonObject {
@@ -526,4 +539,43 @@ object GitHubRefreshHistoryStore {
             .joinToString(" ") { it.trim() }
             .trim()
             .take(maxLength)
+}
+
+/**
+ * The network profile, stored beside a slow item.
+ *
+ * Short keys because this rides along with every slow item of every retained refresh, and omitted
+ * entirely when nothing was measured — an item answered from cache made no calls and should not
+ * leave a row of zeroes that reads like a measurement.
+ */
+internal fun networkTimingToJson(summary: NetworkTimingSummary): JsonObject? {
+    if (summary.isEmpty) return null
+    return buildJsonObject {
+        put("calls", summary.callCount)
+        if (summary.queuedMs > 0L) put("queued", summary.queuedMs)
+        if (summary.dnsMs > 0L) put("dns", summary.dnsMs)
+        if (summary.connectMs > 0L) put("connect", summary.connectMs)
+        if (summary.waitingMs > 0L) put("waiting", summary.waitingMs)
+        if (summary.bodyMs > 0L) put("body", summary.bodyMs)
+        if (summary.bytes > 0L) put("bytes", summary.bytes)
+        if (summary.reusedConnectionCalls > 0) put("reused", summary.reusedConnectionCalls)
+        if (summary.failedCalls > 0) put("failed", summary.failedCalls)
+        if (summary.protocol.isNotBlank()) put("protocol", summary.protocol)
+    }
+}
+
+internal fun networkTimingFromJson(obj: JsonObject?): NetworkTimingSummary {
+    if (obj == null) return NetworkTimingSummary()
+    return NetworkTimingSummary(
+        callCount = obj.optInt("calls", 0).coerceAtLeast(0),
+        queuedMs = obj.optLong("queued", 0L).coerceAtLeast(0L),
+        dnsMs = obj.optLong("dns", 0L).coerceAtLeast(0L),
+        connectMs = obj.optLong("connect", 0L).coerceAtLeast(0L),
+        waitingMs = obj.optLong("waiting", 0L).coerceAtLeast(0L),
+        bodyMs = obj.optLong("body", 0L).coerceAtLeast(0L),
+        bytes = obj.optLong("bytes", 0L).coerceAtLeast(0L),
+        reusedConnectionCalls = obj.optInt("reused", 0).coerceAtLeast(0),
+        failedCalls = obj.optInt("failed", 0).coerceAtLeast(0),
+        protocol = obj.optString("protocol").trim(),
+    )
 }

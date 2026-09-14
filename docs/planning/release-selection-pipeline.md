@@ -121,6 +121,46 @@ What stays unknowable: assets. No amount of rule work adds an asset list to a sy
 the "an update you cannot install is not an update" rule cannot fire in Atom mode. The NekoBox case
 is closed here by the clock tolerance instead, via the version relationship.
 
+## What makes a refresh of forty repositories slow
+
+Measured with a harness that drives the real strategies over `MockWebServer` with a fixed 120ms
+server, forty repositories, at the concurrency the batch scheduler actually picks. Device numbers
+cannot show this — six tracked items never approach the limits below.
+
+| | before | after |
+|---|---|---|
+| API mode | 803ms | **402ms** |
+| Atom mode | 1973ms | **522ms** |
+
+Three things were in the way, and only one of them was a number anybody had chosen.
+
+**A request used to own the thread that started it.** `executeCancellable` wrapped OkHttp's blocking
+`execute()` inside `suspendCancellableCoroutine`, which reads as suspending and is not: the caller's
+thread sat in a socket read for the whole round trip. The refresh runs on a ten-thread dispatcher, so
+ten was the most requests that could ever be in the air — asking for 16, 24 or 32 produced ten in
+flight and the same wall clock every time. `enqueue` costs no thread while a request is in the air.
+`OkHttpCallConcurrencyTest` pins it by holding every request until more have arrived than the caller
+has threads, which the blocking version cannot do.
+
+**The budget that replaces it is per host, and everything here is one host.** OkHttp's default is
+five concurrent calls per host, which would have been *worse* than the accidental ten.
+`SharedHttpClient.MAX_CONCURRENT_CALLS_PER_HOST` states it instead. Both GitHub hosts speak HTTP/2,
+so these are streams on one connection rather than sockets to open. It changes no request counts, so
+an hourly rate limit sees exactly what it saw before.
+
+**Atom mode asked its two questions in sequence.** The feed and the `releases/latest` lookup need
+nothing from each other, so every repository cost two round trips where API mode costs one. They now
+go out together. That is most of Atom's 3.8x.
+
+The batch tiers count *items*, not requests: an API-mode repository is one call and an Atom-mode one
+is two. Anything the tiers ask for beyond the per-host budget queues inside OkHttp rather than piling
+onto the radio, which is why the top tier stops there, and why the scheduler tests assert
+relationships rather than the numbers.
+
+Two things that are already cheap and were checked rather than assumed: the precise-APK path is
+behind a persistent asset cache plus single-flight de-duplication (3-7ms per item on a warm device),
+and installed-app lookups are cached with a TTL rather than re-scanning packages per item.
+
 ## Fixtures
 
 `scripts/qa/capture_release_fixture.sh <owner/repo>` fetches and projects to exactly the fields

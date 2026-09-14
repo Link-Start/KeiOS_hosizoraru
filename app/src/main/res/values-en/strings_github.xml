@@ -1844,6 +1844,7 @@
     <string name="github_item_selection_reset">This project restarted its numbering, so releases are ranked by date</string>
     <string name="github_item_selection_reset_over">This project restarted its numbering, so releases are ranked by date, not by the higher-numbered %1$s</string>
     <string name="github_item_selection_freshness">The version numbers cannot be compared, so releases are ranked by update time</string>
+    <string name="github_item_selection_feed_only">The latest-release marker could not be read; this is the newest release in the feed</string>
     <string name="github_item_selection_tie">Neither version nor update time separates these, so list order stands</string>
     <string name="github_item_label_prerelease_retired">Pre-release</string>
     <string name="github_item_prerelease_retired_reason">This line has not moved in over two weeks, so it is not shown</string>

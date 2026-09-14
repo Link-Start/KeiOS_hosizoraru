@@ -106,6 +106,16 @@ enum class GitHubReleaseDecisionBasis {
     /** The maintainer's own *Set as the latest release* flag settled it. */
     ForgeLatest,
 
+    /**
+     * Nobody confirmed it: this is the newest release in the feed, and the feed is all there was.
+     *
+     * Only reachable from a source that infers the stable lane from text rather than being told —
+     * in practice the Atom feed with its `releases/latest` lookup unanswered. Worth saying because
+     * it is both the weakest answer the pipeline gives and the most recoverable: the next refresh
+     * usually settles it.
+     */
+    FeedOnly,
+
 
     /** The highest number was one a restarted project left behind, so the ranking was overridden. */
     VersioningReset,
@@ -162,6 +172,10 @@ data class GitHubReleaseDecisionNote(
             // statement rather than a reading of the list, and it is the stronger thing to tell.
             val basis = when {
                 selection.stableCameFromForgeLatest -> GitHubReleaseDecisionBasis.ForgeLatest
+                // Ahead of every ranking rule, because it qualifies all of them: a reading of the
+                // list is a different kind of answer from a confirmed one, whichever rule read it.
+                selection.stable?.source?.laneIsInferred == true ->
+                    GitHubReleaseDecisionBasis.FeedOnly
                 selection.stableRule == ReleaseSelectionRule.VersioningReset ->
                     GitHubReleaseDecisionBasis.VersioningReset
                 selection.stableRule == ReleaseSelectionRule.Freshness ->

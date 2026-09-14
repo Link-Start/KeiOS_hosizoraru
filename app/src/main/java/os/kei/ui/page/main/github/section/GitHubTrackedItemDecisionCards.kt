@@ -35,6 +35,8 @@ internal fun githubSelectionBasisText(note: GitHubReleaseDecisionNote): String? 
             null -> stringResource(R.string.github_item_selection_reset)
             else -> stringResource(R.string.github_item_selection_reset_over, over)
         }
+        GitHubReleaseDecisionBasis.FeedOnly ->
+            stringResource(R.string.github_item_selection_feed_only)
         GitHubReleaseDecisionBasis.UpdateTime ->
             stringResource(R.string.github_item_selection_freshness)
         GitHubReleaseDecisionBasis.ListOrder ->

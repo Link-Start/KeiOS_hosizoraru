@@ -7,6 +7,7 @@ import os.kei.core.versioning.VersionChannel
 import os.kei.core.versioning.VersionConfidence
 import os.kei.core.versioning.VersioningEngine
 import os.kei.feature.github.model.GitHubReleaseChannel
+import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubVersionCandidate
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 
@@ -195,12 +196,15 @@ object GitHubVersionUtils {
         stableFreshnessMillis: Long? = null,
         preReleaseChannel: GitHubReleaseChannel? = null,
         stableChannel: GitHubReleaseChannel? = null,
+        /** @see GitHubReleaseSignalSource.clockToleranceMillis */
+        clockToleranceMillis: Long = 0L,
     ): Boolean {
         return VersioningEngine.isRelevantPreRelease(
             preReleaseCandidates = preReleaseCandidates.toCoreCandidates(preReleaseChannel),
             stableCandidates = stableCandidates.toCoreCandidates(stableChannel),
             preReleaseFreshnessMillis = preReleaseFreshnessMillis,
             stableFreshnessMillis = stableFreshnessMillis,
+            clockToleranceMillis = clockToleranceMillis,
         )
     }
 

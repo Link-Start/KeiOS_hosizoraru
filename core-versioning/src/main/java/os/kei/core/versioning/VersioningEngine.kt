@@ -203,6 +203,16 @@ object VersioningEngine {
         stableCandidates: List<VersionCandidate>,
         preReleaseFreshnessMillis: Long? = null,
         stableFreshnessMillis: Long? = null,
+        /**
+         * How far apart the two clocks must be before the gap is evidence of anything.
+         *
+         * Zero for a source reporting real event times. A source reporting *edit* times needs a
+         * window, because publishing a release edits the pre-release it supersedes, and the two then
+         * land seconds apart in whichever order the writes committed. Inside the window the version
+         * numbers decide and the clock says nothing, which is the honest reading of a clock that
+         * cannot tell those two events apart.
+         */
+        clockToleranceMillis: Long = 0L,
     ): Boolean {
         val preRelease = selectReleaseRankingCandidate(preReleaseCandidates)
         val stable = selectReleaseRankingCandidate(stableCandidates)
@@ -218,9 +228,10 @@ object VersioningEngine {
         val preReleaseIsRollingSibling = preRelease != null && stable != null &&
             preRelease.parts.numbers == stable.parts.numbers &&
             preRelease.isRollingDevelopmentCandidate()
+        val tolerance = clockToleranceMillis.coerceAtLeast(0L)
         val preReleaseIsNewerByTime = preReleaseFreshnessMillis != null &&
             stableFreshnessMillis != null &&
-            preReleaseFreshnessMillis > stableFreshnessMillis
+            preReleaseFreshnessMillis - stableFreshnessMillis > tolerance
         // A pre-release *of* a version that has since shipped is spent, whatever its numbers say.
         //
         // `pre-1.4.2-20260202-1` parses as 1.4.2 with a build stamp appended, so it compares as newer
@@ -240,7 +251,7 @@ object VersioningEngine {
             preRelease.parts.numbers.take(stable.parts.numbers.size) == stable.parts.numbers &&
             preReleaseFreshnessMillis != null &&
             stableFreshnessMillis != null &&
-            preReleaseFreshnessMillis <= stableFreshnessMillis
+            preReleaseFreshnessMillis - stableFreshnessMillis <= tolerance
         return when {
             preReleaseSupersededByStable -> false
 

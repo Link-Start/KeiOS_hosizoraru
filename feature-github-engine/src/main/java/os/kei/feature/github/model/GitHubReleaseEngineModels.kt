@@ -1,11 +1,40 @@
 package os.kei.feature.github.model
 
-enum class GitHubReleaseSignalSource {
-    LatestRedirect,
-    AtomEntry,
-    AtomFallback,
-    GitHubApi,
+enum class GitHubReleaseSignalSource(
+    /**
+     * How far apart two timestamps from this source must be before the gap means anything.
+     *
+     * The API reports `published_at` and each asset's `updated_at`: real event times, exact enough
+     * that a one-second difference is a real ordering. `releases.atom` reports `<updated>`, which is
+     * when the release was last *touched* — so publishing a stable bumps the preview it supersedes,
+     * and the two land seconds apart in whichever order the edits happened to commit.
+     *
+     * Measured on `MatsuriDayo/NekoBoxForAndroid`: its `preview` reads 29 seconds *newer* than the
+     * `1.4.2` that replaced it, while the API puts it a week older. A rule reading that gap as
+     * evidence gets the opposite answer depending only on which source the reader chose. Inside the
+     * tolerance the gap is treated as no information at all, and the version numbers decide.
+     *
+     * A day, because that is the shape of the causality: shipping a stable is what edits the preview
+     * it supersedes, and a preview line that is genuinely still building is touched days later, not
+     * minutes.
+     */
+    val clockToleranceMillis: Long,
+    /**
+     * Whether this source had to work out which releases are pre-releases, rather than being told.
+     *
+     * The API states it per release. `releases/latest` states it for one release by definition — it
+     * skips pre-releases, so whatever it points at is a stable one. The feed states it nowhere, so
+     * [AtomEntry] and [AtomFallback] carry a reading of the tag, title and body, and nothing more.
+     */
+    val laneIsInferred: Boolean,
+) {
+    LatestRedirect(EDIT_CLOCK_TOLERANCE_MILLIS, laneIsInferred = false),
+    AtomEntry(EDIT_CLOCK_TOLERANCE_MILLIS, laneIsInferred = true),
+    AtomFallback(EDIT_CLOCK_TOLERANCE_MILLIS, laneIsInferred = true),
+    GitHubApi(0L, laneIsInferred = false),
 }
+
+private const val EDIT_CLOCK_TOLERANCE_MILLIS = 24L * 60L * 60L * 1000L
 
 enum class GitHubVersionCandidateSource(val priority: Int) {
     Tag(0),

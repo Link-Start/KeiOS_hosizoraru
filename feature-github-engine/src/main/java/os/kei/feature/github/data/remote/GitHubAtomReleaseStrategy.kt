@@ -1,5 +1,7 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
@@ -98,12 +100,30 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         noRedirectRequestClient: OkHttpClient = githubNoRedirectClient
     ): GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot> {
         val startedAt = System.currentTimeMillis()
-        val feedTrace = fetchAtomFeedTrace(
-            owner = owner,
-            repo = repo,
-            atomFeedUrl = atomFeedUrl,
-            requestClient = requestClient
-        )
+        // Both requests at once. They answer different questions -- what this repository has
+        // published, and which release it calls current -- and neither needs the other's answer, so
+        // running them in sequence spent two round trips on one repository's worth of information.
+        // That is Atom mode's whole latency disadvantage: it always makes two requests where the API
+        // usually makes one.
+        val (feedTrace, latestTrace) = coroutineScope {
+            val feed = async {
+                fetchAtomFeedTrace(
+                    owner = owner,
+                    repo = repo,
+                    atomFeedUrl = atomFeedUrl,
+                    requestClient = requestClient
+                )
+            }
+            val latest = async {
+                fetchLatestStableLookupTrace(
+                    owner = owner,
+                    repo = repo,
+                    latestReleaseUrl = latestReleaseUrl,
+                    noRedirectRequestClient = noRedirectRequestClient
+                )
+            }
+            feed.await() to latest.await()
+        }
         val feed = feedTrace.result.getOrElse { error ->
             return GitHubStrategyLoadTrace(
                 result = Result.failure(error),
@@ -111,12 +131,6 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
                 elapsedMs = System.currentTimeMillis() - startedAt
             )
         }
-        val latestTrace = fetchLatestStableLookupTrace(
-            owner = owner,
-            repo = repo,
-            latestReleaseUrl = latestReleaseUrl,
-            noRedirectRequestClient = noRedirectRequestClient
-        )
         // The confirmation is a second request and it is allowed to fail. It used to take the whole
         // snapshot down with it, so a repository whose feed loaded perfectly reported a failed check
         // because an optional request timed out.

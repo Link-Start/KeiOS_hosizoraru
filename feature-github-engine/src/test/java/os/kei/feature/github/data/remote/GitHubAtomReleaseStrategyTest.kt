@@ -1,8 +1,10 @@
 package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.runBlocking
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Test
 import os.kei.core.io.BoundedContentTextReadTooLargeException
@@ -20,11 +22,18 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `atom lookup rejects oversized chunked feed`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setChunkedBody("x".repeat(9 * 1024 * 1024), 64 * 1024),
-            )
+            // Routed rather than enqueued: the lookup goes out alongside the feed, so a single
+            // queued response would land on whichever request happened to arrive first.
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse =
+                    if (request.path.orEmpty().endsWith("releases.atom")) {
+                        MockResponse()
+                            .setResponseCode(200)
+                            .setChunkedBody("x".repeat(9 * 1024 * 1024), 64 * 1024)
+                    } else {
+                        MockResponse().setResponseCode(404)
+                    }
+            }
 
             val error = GitHubAtomReleaseStrategy.loadSnapshotTrace(
                 owner = "demo",
@@ -40,14 +49,11 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `atom snapshot keeps stable redirect and prerelease entry`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(sampleAtomFeedXml())
+            server.routeAtom(
+                feed = sampleAtomFeedXml(),
+                latest = MockResponse()
+                    .setResponseCode(302,
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(302)
                     .addHeader("Location", "https://github.com/demo/app/releases/tag/v1.1.0")
             )
 
@@ -69,11 +75,8 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `atom snapshot keeps forward prerelease when it outruns stable`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
+            server.routeAtom(
+                feed = """
                             <?xml version="1.0" encoding="utf-8"?>
                             <feed xmlns="http://www.w3.org/2005/Atom">
                               <title>demo/app releases</title>
@@ -95,12 +98,10 @@ class GitHubAtomReleaseStrategyTest {
                                 <author><name>demo</name></author>
                               </entry>
                             </feed>
-                        """.trimIndent()
-                    )
+                        """.trimIndent(),
+                latest = MockResponse()
+                    .setResponseCode(302,
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(302)
                     .addHeader("Location", "https://github.com/demo/app/releases/tag/v1.4.4-release")
             )
 
@@ -121,11 +122,8 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `atom latest redirect matches exact stable tag instead of newer alpha entry`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
+            server.routeAtom(
+                feed = """
                             <?xml version="1.0" encoding="utf-8"?>
                             <feed xmlns="http://www.w3.org/2005/Atom">
                               <title>demo/app releases</title>
@@ -155,12 +153,10 @@ class GitHubAtomReleaseStrategyTest {
                                 <author><name>demo</name></author>
                               </entry>
                             </feed>
-                        """.trimIndent()
-                    )
+                        """.trimIndent(),
+                latest = MockResponse()
+                    .setResponseCode(302,
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(302)
                     .addHeader("Location", "https://github.com/demo/app/releases/tag/Version.1.3.Fix2_C359")
             )
 
@@ -181,11 +177,8 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `atom keeps rc prerelease visible when stable redirect points to same base final release`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
+            server.routeAtom(
+                feed = """
                             <?xml version="1.0" encoding="utf-8"?>
                             <feed xmlns="http://www.w3.org/2005/Atom">
                               <title>demo/app releases</title>
@@ -207,12 +200,10 @@ class GitHubAtomReleaseStrategyTest {
                                 <author><name>demo</name></author>
                               </entry>
                             </feed>
-                        """.trimIndent()
-                    )
+                        """.trimIndent(),
+                latest = MockResponse()
+                    .setResponseCode(302,
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(302)
                     .addHeader("Location", "https://github.com/demo/app/releases/tag/3.8.0")
             )
 
@@ -234,11 +225,8 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `atom snapshot keeps prerelease only repos explicit instead of faking stable channel`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(
-                        """
+            server.routeAtom(
+                feed = """
                             <?xml version="1.0" encoding="utf-8"?>
                             <feed xmlns="http://www.w3.org/2005/Atom">
                               <title>demo/app releases</title>
@@ -260,12 +248,10 @@ class GitHubAtomReleaseStrategyTest {
                                 <author><name>demo</name></author>
                               </entry>
                             </feed>
-                        """.trimIndent()
-                    )
+                        """.trimIndent(),
+                latest = MockResponse()
+                    .setResponseCode(404,
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(404)
             )
 
             val trace = GitHubAtomReleaseStrategy.loadSnapshotTrace(
@@ -287,14 +273,11 @@ class GitHubAtomReleaseStrategyTest {
     @Test
     fun `second atom snapshot hits both caches`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(200)
-                    .setBody(sampleAtomFeedXml())
+            server.routeAtom(
+                feed = sampleAtomFeedXml(),
+                latest = MockResponse()
+                    .setResponseCode(302,
             )
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(302)
                     .addHeader("Location", "https://github.com/demo/app/releases/tag/v1.1.0")
             )
 
@@ -350,5 +333,23 @@ class GitHubAtomReleaseStrategyTest {
               </entry>
             </feed>
         """.trimIndent()
+    }
+}
+
+/**
+ * Serve by path rather than by arrival order.
+ *
+ * The feed and the `releases/latest` lookup are issued together now, so `enqueue` — which hands out
+ * responses first-come — would give one request the other's answer, at random. Routing on the path
+ * says what these tests actually mean.
+ */
+private fun MockWebServer.routeAtom(feed: String, latest: MockResponse) {
+    dispatcher = object : Dispatcher() {
+        override fun dispatch(request: RecordedRequest): MockResponse =
+            if (request.path.orEmpty().endsWith("releases.atom")) {
+                MockResponse().setResponseCode(200).setBody(feed)
+            } else {
+                latest
+            }
     }
 }

@@ -1,8 +1,10 @@
 package os.kei.feature.github.data.remote
 
 import kotlinx.coroutines.runBlocking
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Test
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
@@ -25,15 +27,22 @@ class GitHubMithkaReleaseCorpusTest {
     @Test
     fun `atom identifies master flood as rolling prereleases`() = runBlocking {
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(200).setBody(MithkaReleaseCorpus.atomXml))
-            server.enqueue(
-                MockResponse()
-                    .setResponseCode(302)
-                    .addHeader(
-                        "Location",
-                        "https://github.com/iebb/mithka/releases/tag/${MithkaReleaseCorpus.stableTag}",
-                    ),
-            )
+            // Routed by path, not queued by arrival: the feed and the latest-release lookup go out
+            // together now, so a queue would hand one of them the other's response at random.
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse =
+                    if (request.path.orEmpty().endsWith("releases.atom")) {
+                        MockResponse().setResponseCode(200).setBody(MithkaReleaseCorpus.atomXml)
+                    } else {
+                        MockResponse()
+                            .setResponseCode(302)
+                            .addHeader(
+                                "Location",
+                                "https://github.com/iebb/mithka/releases/tag/" +
+                                    MithkaReleaseCorpus.stableTag,
+                            )
+                    }
+            }
 
             val snapshot = GitHubAtomReleaseStrategy.loadSnapshotTrace(
                 owner = MithkaReleaseCorpus.owner,

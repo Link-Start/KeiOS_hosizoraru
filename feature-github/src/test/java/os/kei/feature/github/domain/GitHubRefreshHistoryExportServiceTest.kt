@@ -1,6 +1,8 @@
 package os.kei.feature.github.domain
 
 import org.junit.Test
+import os.kei.core.io.NetworkPhase
+import os.kei.core.io.NetworkTimingSummary
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import os.kei.core.json.optArray
@@ -73,6 +75,16 @@ class GitHubRefreshHistoryExportServiceTest {
                 ?.optObject(0)
                 ?.optLong("snapshotElapsedMs"),
         )
+        // This is the shape somebody pastes into a bug report, so the phase split is part of the
+        // contract rather than an implementation detail: a stage duration alone cannot say whether
+        // the phone was queued behind our own budget, shaking hands, or waiting on GitHub.
+        val slowItemJson = root.optArray("records")?.optObject(0)?.optArray("slowItems")?.optObject(0)
+        assertEquals(2, slowItemJson?.optInt("networkCallCount"))
+        assertEquals(18L, slowItemJson?.optLong("networkWaitingMs"))
+        assertEquals(21_504L, slowItemJson?.optLong("networkBytes"))
+        assertEquals(1, slowItemJson?.optInt("networkReusedConnectionCalls"))
+        assertEquals(NetworkPhase.WAITING, slowItemJson?.optString("networkDominantPhase"))
+        assertEquals("h2", slowItemJson?.optString("networkProtocol"))
         assertEquals(
             3L,
             root.optArray("records")
@@ -252,6 +264,16 @@ class GitHubRefreshHistoryExportServiceTest {
                         strategyId = "atom_feed",
                         localVersionElapsedMs = 3L,
                         snapshotElapsedMs = 30L,
+                        network = NetworkTimingSummary(
+                            callCount = 2,
+                            queuedMs = 4L,
+                            connectMs = 6L,
+                            waitingMs = 18L,
+                            bodyMs = 2L,
+                            bytes = 21_504L,
+                            reusedConnectionCalls = 1,
+                            protocol = "h2",
+                        ),
                         profileElapsedMs = 10L,
                         profileFromCache = true,
                         comparisonElapsedMs = 2L,

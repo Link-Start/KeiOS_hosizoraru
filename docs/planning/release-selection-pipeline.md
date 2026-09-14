@@ -161,6 +161,47 @@ Two things that are already cheap and were checked rather than assumed: the prec
 behind a persistent asset cache plus single-flight de-duplication (3-7ms per item on a warm device),
 and installed-app lookups are cached with a TTL rather than re-scanning packages per item.
 
+## Telling a slow refresh apart from a slow network
+
+The three fixes above were found with a harness against a 120ms `MockWebServer`. That is the right
+instrument for a concurrency ceiling and the wrong one for everything else: an emulator resolves
+names instantly, hands out TLS sessions for free, has no radio to wake, and never meters anything.
+A green benchmark there says nothing about somebody's phone on a shaped cellular link.
+
+So the refresh history now records what the network actually did, per tracked item:
+
+| phase | what it means | what to do about it |
+|---|---|---|
+| `queued` | waiting for a slot in our own per-host budget | a concurrency setting — ours |
+| `dns` | name resolution | usually the network's, occasionally a connection-reuse problem |
+| `connect` | TCP plus TLS | the pool is not being reused; check the keep-alive and the burst shape |
+| `waiting` | request sent, nothing back yet | GitHub's own time, or a rate limit. Not ours |
+| `body` | first byte to last | bandwidth, and the only phase that scales with how much we asked for |
+
+Measured on the phone AVD, the same repository on two consecutive refreshes:
+`Connecting 8s · 1 requests · 56.99 KB · 0/1 reused` on a cold start, then
+`Server wait 994ms · 2 requests · 21.25 KB · 1/2 reused` a minute later. Before this, both read
+`Release Ns` and were indistinguishable.
+
+Three pieces make that possible:
+
+- **`NetworkTimingScope`** (core-io), carried in the coroutine context. `executeCancellable` tags the
+  request with it and an OkHttp `EventListener` splits the call. The scope is installed per tracked
+  item by the batch runner, so a call made eight layers down in a strategy still lands on the right
+  row. A call made outside a scope records nothing.
+- **`NetworkCallGauge`**, which counts calls that were *actually* in the air. The batch already
+  recorded the concurrency it asked for; those two were silently different for months and that is
+  precisely the bug the harness found. The history shows them side by side —
+  `Concurrency 16 (actual 14)` — and the export calls them `maxRequestedConcurrency` and
+  `maxPeakConcurrentCalls` rather than the old `maxObservedConcurrency`, which was neither.
+- **The connection kind and whether it was metered**, on the record. Nine seconds on wifi and nine
+  seconds on a metered cellular link are not the same finding.
+
+Nothing is written when nothing was measured: an item answered from cache made no calls, and a row
+of zeroes reads like a measurement. The whole thing rides in the existing history export, so a user
+reporting "refreshing is slow on my phone" can send a file that says which project, which phase, on
+what connection, and how much of the requested concurrency the device managed.
+
 ## Fixtures
 
 `scripts/qa/capture_release_fixture.sh <owner/repo>` fetches and projects to exactly the fields

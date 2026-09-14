@@ -54,6 +54,16 @@ data class GitHubReleaseSelection(
     val windowWasFull: Boolean = false,
     /** True when the forge's own *latest release* flag, not this ranking, chose [stable]. */
     val stableCameFromForgeLatest: Boolean = false,
+    /**
+     * True when the forge was asked and named the release the ranking had already picked.
+     *
+     * Distinct from [stableCameFromForgeLatest], which is provenance: the flag is what the snapshot
+     * was built from either way. This says whether asking changed the answer, and only Atom mode
+     * makes the difference routine — it consults `releases/latest` on every refresh because that is
+     * how it learns which entry is stable at all, so without this every Atom card would carry a
+     * sentence explaining a decision that surprised nobody.
+     */
+    val stableForgeLatestConfirmedRanking: Boolean = false,
 ) {
     val hasStableRelease: Boolean
         get() = stable != null
@@ -168,10 +178,8 @@ data class GitHubReleaseDecisionNote(
             if (selection == null) {
                 return GitHubReleaseDecisionNote(preReleaseRejection = preReleaseRejection)
             }
-            // The forge's flag outranks the ranking that sent us to ask for it: it is a maintainer's
-            // statement rather than a reading of the list, and it is the stronger thing to tell.
-            val basis = when {
-                selection.stableCameFromForgeLatest -> GitHubReleaseDecisionBasis.ForgeLatest
+            // What the ranking on its own would have to account for.
+            val rankedBasis = when {
                 // Ahead of every ranking rule, because it qualifies all of them: a reading of the
                 // list is a different kind of answer from a confirmed one, whichever rule read it.
                 selection.stable?.source?.laneIsInferred == true ->
@@ -182,6 +190,21 @@ data class GitHubReleaseDecisionNote(
                     GitHubReleaseDecisionBasis.UpdateTime
                 selection.stableRule == ReleaseSelectionRule.Indistinguishable ->
                     GitHubReleaseDecisionBasis.ListOrder
+                else -> GitHubReleaseDecisionBasis.Ranked
+            }
+            // The forge's flag outranks the ranking that sent us to ask for it: it is a maintainer's
+            // statement rather than a reading of the list, and it is the stronger thing to tell.
+            //
+            // But only where the card owes an explanation at all. Atom mode asks `releases/latest`
+            // on every refresh of every repository — it is how that mode learns which entry is
+            // stable — so a flag that merely agreed with an unremarkable ranking would put a
+            // sentence on every Atom card, which is the burial this note exists to avoid.
+            val basis = when {
+                !selection.stableCameFromForgeLatest -> rankedBasis
+                !selection.stableForgeLatestConfirmedRanking ->
+                    GitHubReleaseDecisionBasis.ForgeLatest
+                rankedBasis != GitHubReleaseDecisionBasis.Ranked ->
+                    GitHubReleaseDecisionBasis.ForgeLatest
                 else -> GitHubReleaseDecisionBasis.Ranked
             }
             // The evaluator's verdict first: it ran last, and it is the one that removed a row the

@@ -150,6 +150,9 @@ data class GitHubReleaseSelectionPlan internal constructor(
             consideredCount = consideredCount,
             windowWasFull = windowWasFull,
             stableCameFromForgeLatest = authoritativeStable != null,
+            stableForgeLatestConfirmedRanking = authoritativeStable != null &&
+                rankedStable != null &&
+                authoritativeStable.rawTag == rankedStable.rawTag,
         )
     }
 }

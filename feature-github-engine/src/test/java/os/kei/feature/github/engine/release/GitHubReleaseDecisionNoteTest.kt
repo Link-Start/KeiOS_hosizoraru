@@ -68,6 +68,32 @@ class GitHubReleaseDecisionNoteTest {
     }
 
     /**
+     * Atom mode asks `releases/latest` on every refresh of every repository — it is how that mode
+     * learns which entry is stable at all. So the flag agreeing with an unremarkable ranking is
+     * that mode's ordinary Tuesday, and putting "the repository marks this as its latest release"
+     * on every Atom card would bury the two cards that need a sentence under the hundreds that do
+     * not. The confirmation is still in the record; it is simply not news.
+     */
+    @Test
+    fun `a forge flag that merely agrees with an ordinary ranking is not news`() {
+        val plan = GitHubReleaseSelector
+            .plan(entriesFrom("nekobox-releases.json", "MatsuriDayo", "NekoBoxForAndroid"))
+        val selection = plan.resolve(
+            authoritativeStable = requireNotNull(plan.stable.entry).let { entry ->
+                GitHubReleaseSelector.plan(listOf(entry)).resolve().stable
+            },
+        )
+
+        assertTrue(selection.stableCameFromForgeLatest, "the flag was still what built the snapshot")
+        assertTrue(selection.stableForgeLatestConfirmedRanking)
+
+        val note = GitHubReleaseDecisionNote.from(selection)
+
+        assertEquals(GitHubReleaseDecisionBasis.Ranked, note.stableBasis)
+        assertTrue(note.isEmpty, "nothing to say means nothing cached and nothing drawn")
+    }
+
+    /**
      * The evaluator's verdict wins over the selector's, because it ran last and because it is the
      * one that takes away a row the reader could otherwise see.
      */

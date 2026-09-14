@@ -13,7 +13,24 @@
   "prerelease": false,
   "created_at": "2026-05-08T10:24:28Z",
   "published_at": "2026-05-08T10:56:13Z",
-  "body": "- General: Updated 3 icons\r\n- General: Bug fixes\r\n"
+  "body": "- General: Updated 3 icons\r\n- General: Bug fixes\r\n",
+  "assets": [
+   {
+    "updated_at": "2026-05-08T10:42:01Z"
+   },
+   {
+    "updated_at": "2026-05-08T10:42:01Z"
+   },
+   {
+    "updated_at": "2026-05-08T10:42:03Z"
+   },
+   {
+    "updated_at": "2026-05-08T10:42:02Z"
+   },
+   {
+    "updated_at": "2026-05-08T10:42:02Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.6.1",
@@ -29,7 +46,24 @@
   "prerelease": false,
   "created_at": "2026-03-24T17:21:33Z",
   "published_at": "2026-03-24T18:02:54Z",
-  "body": "- General: Fixed issue when selecting auto backup location\r\n"
+  "body": "- General: Fixed issue when selecting auto backup location\r\n",
+  "assets": [
+   {
+    "updated_at": "2026-03-24T17:40:05Z"
+   },
+   {
+    "updated_at": "2026-03-24T17:40:05Z"
+   },
+   {
+    "updated_at": "2026-03-24T17:40:06Z"
+   },
+   {
+    "updated_at": "2026-03-24T17:40:06Z"
+   },
+   {
+    "updated_at": "2026-03-24T17:40:06Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.6.0",
@@ -45,7 +79,24 @@
   "prerelease": false,
   "created_at": "2026-03-21T17:23:40Z",
   "published_at": "2026-03-21T17:52:35Z",
-  "body": "- New feature: Added \"Halves\" and \"Thirds\" code grouping options\r\n- General: 8 new icons\r\n- General: Updates for 40 existing icons, many obsolete icons removed\r\n- General: Translation updates\r\n"
+  "body": "- New feature: Added \"Halves\" and \"Thirds\" code grouping options\r\n- General: 8 new icons\r\n- General: Updates for 40 existing icons, many obsolete icons removed\r\n- General: Translation updates\r\n",
+  "assets": [
+   {
+    "updated_at": "2026-03-21T17:42:01Z"
+   },
+   {
+    "updated_at": "2026-03-21T17:42:02Z"
+   },
+   {
+    "updated_at": "2026-03-21T17:42:02Z"
+   },
+   {
+    "updated_at": "2026-03-21T17:42:02Z"
+   },
+   {
+    "updated_at": "2026-03-21T17:42:02Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.5.0",
@@ -61,7 +112,24 @@
   "prerelease": false,
   "created_at": "2026-02-28T13:20:48Z",
   "published_at": "2026-02-28T14:21:07Z",
-  "body": "- General: 14 new icons\r\n- General: Translation updates\r\n- General: Bug fixes\r\n\r\n<hr>\r\n\r\n⚠️ This release drops support for Android 5.0 and 5.1"
+  "body": "- General: 14 new icons\r\n- General: Translation updates\r\n- General: Bug fixes\r\n\r\n<hr>\r\n\r\n⚠️ This release drops support for Android 5.0 and 5.1",
+  "assets": [
+   {
+    "updated_at": "2026-02-28T13:37:46Z"
+   },
+   {
+    "updated_at": "2026-02-28T13:37:46Z"
+   },
+   {
+    "updated_at": "2026-02-28T13:37:47Z"
+   },
+   {
+    "updated_at": "2026-02-28T13:37:46Z"
+   },
+   {
+    "updated_at": "2026-02-28T13:37:46Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.4.0",
@@ -77,7 +145,24 @@
   "prerelease": false,
   "created_at": "2025-08-17T11:36:51Z",
   "published_at": "2025-08-17T12:07:29Z",
-  "body": "- New feature: Show uncategorised entries\r\n- New feature: Import from Proton Authenticator\r\n- New feature: Ability to lock custom sorting\r\n- General: 38 new and updated icons\r\n- General: Improved unlock speed\r\n- General: Translation updates\r\n\r\n<hr>\r\n\r\n⚠️ This release drops support for 32-bit x86 CPUs"
+  "body": "- New feature: Show uncategorised entries\r\n- New feature: Import from Proton Authenticator\r\n- New feature: Ability to lock custom sorting\r\n- General: 38 new and updated icons\r\n- General: Improved unlock speed\r\n- General: Translation updates\r\n\r\n<hr>\r\n\r\n⚠️ This release drops support for 32-bit x86 CPUs",
+  "assets": [
+   {
+    "updated_at": "2025-08-17T11:55:30Z"
+   },
+   {
+    "updated_at": "2025-08-17T11:55:30Z"
+   },
+   {
+    "updated_at": "2025-08-17T11:55:31Z"
+   },
+   {
+    "updated_at": "2025-08-17T11:55:31Z"
+   },
+   {
+    "updated_at": "2025-08-17T11:55:31Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.3.0",
@@ -93,7 +178,24 @@
   "prerelease": false,
   "created_at": "2025-06-14T13:27:17Z",
   "published_at": "2025-06-14T13:54:42Z",
-  "body": "- General: Added support for predictive back animations\r\n- General: Last category is remembered when there is no default\r\n- General: 2 new icons + 16 updated icons\r\n- General: UI improvements\r\n- Wear OS: Progress now spins counter clockwise"
+  "body": "- General: Added support for predictive back animations\r\n- General: Last category is remembered when there is no default\r\n- General: 2 new icons + 16 updated icons\r\n- General: UI improvements\r\n- Wear OS: Progress now spins counter clockwise",
+  "assets": [
+   {
+    "updated_at": "2025-06-14T13:45:55Z"
+   },
+   {
+    "updated_at": "2025-06-14T13:45:55Z"
+   },
+   {
+    "updated_at": "2025-06-14T13:45:56Z"
+   },
+   {
+    "updated_at": "2025-06-14T13:45:56Z"
+   },
+   {
+    "updated_at": "2025-06-14T13:45:56Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.2.5",
@@ -109,7 +211,24 @@
   "prerelease": false,
   "created_at": "2025-05-28T17:33:10Z",
   "published_at": "2025-05-28T17:58:14Z",
-  "body": "- General: Fixed inverted code colour on some devices\r\n- General: 3 new icons\r\n- General: Translation updates"
+  "body": "- General: Fixed inverted code colour on some devices\r\n- General: 3 new icons\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2025-05-28T17:51:38Z"
+   },
+   {
+    "updated_at": "2025-05-28T17:51:38Z"
+   },
+   {
+    "updated_at": "2025-05-28T17:51:39Z"
+   },
+   {
+    "updated_at": "2025-05-28T17:51:39Z"
+   },
+   {
+    "updated_at": "2025-05-28T17:51:38Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.2.4",
@@ -125,7 +244,24 @@
   "prerelease": false,
   "created_at": "2025-04-12T09:27:25Z",
   "published_at": "2025-04-12T09:54:01Z",
-  "body": "- General: Fixed crash on Android 6.0\r\n- General: 2 new icons"
+  "body": "- General: Fixed crash on Android 6.0\r\n- General: 2 new icons",
+  "assets": [
+   {
+    "updated_at": "2025-04-12T09:45:42Z"
+   },
+   {
+    "updated_at": "2025-04-12T09:45:42Z"
+   },
+   {
+    "updated_at": "2025-04-12T09:46:35Z"
+   },
+   {
+    "updated_at": "2025-04-12T09:45:43Z"
+   },
+   {
+    "updated_at": "2025-04-12T09:45:43Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.2.3",
@@ -141,7 +277,24 @@
   "prerelease": false,
   "created_at": "2025-03-31T17:06:21Z",
   "published_at": "2025-03-31T17:31:15Z",
-  "body": "- General: Fixed bug with app closing on first launch\r\n- General: 3 new icons\r\n- General: Translation updates"
+  "body": "- General: Fixed bug with app closing on first launch\r\n- General: 3 new icons\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2025-03-31T17:24:33Z"
+   },
+   {
+    "updated_at": "2025-03-31T17:24:33Z"
+   },
+   {
+    "updated_at": "2025-03-31T17:24:34Z"
+   },
+   {
+    "updated_at": "2025-03-31T17:24:34Z"
+   },
+   {
+    "updated_at": "2025-03-31T17:24:34Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.2.2",
@@ -157,7 +310,24 @@
   "prerelease": false,
   "created_at": "2025-03-07T18:57:51Z",
   "published_at": "2025-03-07T19:21:04Z",
-  "body": "- General: Bug fixes\r\n- General: Translation updates"
+  "body": "- General: Bug fixes\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2025-03-07T19:16:21Z"
+   },
+   {
+    "updated_at": "2025-03-07T19:16:21Z"
+   },
+   {
+    "updated_at": "2025-03-07T19:16:22Z"
+   },
+   {
+    "updated_at": "2025-03-07T19:16:22Z"
+   },
+   {
+    "updated_at": "2025-03-07T19:16:22Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.2.1",
@@ -173,7 +343,24 @@
   "prerelease": false,
   "created_at": "2025-03-03T12:14:41Z",
   "published_at": "2025-03-03T12:57:33Z",
-  "body": "- General: QR code scanning changes\r\n- General: Bug fixes\r\n- General: 5 new icons\r\n- General: Translation updates"
+  "body": "- General: QR code scanning changes\r\n- General: Bug fixes\r\n- General: 5 new icons\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2025-03-03T12:34:45Z"
+   },
+   {
+    "updated_at": "2025-03-03T12:34:45Z"
+   },
+   {
+    "updated_at": "2025-03-03T12:34:46Z"
+   },
+   {
+    "updated_at": "2025-03-03T12:34:46Z"
+   },
+   {
+    "updated_at": "2025-03-03T12:34:46Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.2.0",
@@ -189,7 +376,24 @@
   "prerelease": false,
   "created_at": "2025-02-12T11:55:15Z",
   "published_at": "2025-02-12T12:40:49Z",
-  "body": "- New feature: Import from KeePass (KDBX 4. databases)\r\n- New feature: Import HTML backups directly\r\n- Wear OS: Fixed issue when swiping back from code\r\n- Wear OS: General performance and usability improvements\r\n- General: 6 new icons\r\n- General: Updated Material You theme\r\n- General: Translation updates"
+  "body": "- New feature: Import from KeePass (KDBX 4. databases)\r\n- New feature: Import HTML backups directly\r\n- Wear OS: Fixed issue when swiping back from code\r\n- Wear OS: General performance and usability improvements\r\n- General: 6 new icons\r\n- General: Updated Material You theme\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2025-02-12T12:14:08Z"
+   },
+   {
+    "updated_at": "2025-02-12T12:14:07Z"
+   },
+   {
+    "updated_at": "2025-02-12T12:14:09Z"
+   },
+   {
+    "updated_at": "2025-02-12T12:14:08Z"
+   },
+   {
+    "updated_at": "2025-02-12T12:14:08Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.1.0",
@@ -205,7 +409,30 @@
   "prerelease": false,
   "created_at": "2024-12-01T10:23:40Z",
   "published_at": "2024-12-01T11:15:39Z",
-  "body": "- General: Improvements to QR code scanning\r\n- General: 9 new icons\r\n- Fixed: Fixed crash on Android 5.1\r\n- Localization: Translation updates"
+  "body": "- General: Improvements to QR code scanning\r\n- General: 9 new icons\r\n- Fixed: Fixed crash on Android 5.1\r\n- Localization: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   },
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   },
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   },
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   },
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   },
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   },
+   {
+    "updated_at": "2024-12-01T10:39:18Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.0.2",
@@ -221,7 +448,30 @@
   "prerelease": false,
   "created_at": "2024-10-18T17:52:50Z",
   "published_at": "2024-10-18T18:15:02Z",
-  "body": "- General: Added adaptive app icon\r\n- General: 1 new icon\r\n- General: Translation updates"
+  "body": "- General: Added adaptive app icon\r\n- General: 1 new icon\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   },
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   },
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   },
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   },
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   },
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   },
+   {
+    "updated_at": "2024-10-18T18:08:33Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/v1.0.1",
@@ -237,7 +487,30 @@
   "prerelease": false,
   "created_at": "2024-10-13T07:39:20Z",
   "published_at": "2024-10-13T07:55:14Z",
-  "body": "App renamed and republished to Google Play #1162\r\n\r\n- General: 3 new icons\r\n- General: Translation updates"
+  "body": "App renamed and republished to Google Play #1162\r\n\r\n- General: 3 new icons\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   },
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   },
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   },
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   },
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   },
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   },
+   {
+    "updated_at": "2024-10-13T07:55:17Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.25.2",
@@ -253,7 +526,30 @@
   "prerelease": false,
   "created_at": "2024-06-25T17:07:21Z",
   "published_at": "2024-06-25T17:09:47Z",
-  "body": "- **General**: Reverted to old QR code scanning\r\n- **General**: 3 new icons\r\n- **General**: Translation updates\r\n"
+  "body": "- **General**: Reverted to old QR code scanning\r\n- **General**: 3 new icons\r\n- **General**: Translation updates\r\n",
+  "assets": [
+   {
+    "updated_at": "2024-06-25T17:09:22Z"
+   },
+   {
+    "updated_at": "2024-06-25T17:09:15Z"
+   },
+   {
+    "updated_at": "2024-06-25T17:08:54Z"
+   },
+   {
+    "updated_at": "2024-06-25T17:08:47Z"
+   },
+   {
+    "updated_at": "2024-06-25T17:09:37Z"
+   },
+   {
+    "updated_at": "2024-06-25T17:09:07Z"
+   },
+   {
+    "updated_at": "2024-06-25T17:08:40Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.25.1",
@@ -269,7 +565,30 @@
   "prerelease": false,
   "created_at": "2024-06-12T17:24:58Z",
   "published_at": "2024-06-12T17:38:55Z",
-  "body": "- **General**: Bug fixes\r\n- **General**: Translation updates"
+  "body": "- **General**: Bug fixes\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2024-06-12T17:38:34Z"
+   },
+   {
+    "updated_at": "2024-06-12T17:38:41Z"
+   },
+   {
+    "updated_at": "2024-06-12T17:38:09Z"
+   },
+   {
+    "updated_at": "2024-06-12T17:38:01Z"
+   },
+   {
+    "updated_at": "2024-06-12T17:38:49Z"
+   },
+   {
+    "updated_at": "2024-06-12T17:38:24Z"
+   },
+   {
+    "updated_at": "2024-06-12T17:37:54Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.25.0",
@@ -285,7 +604,30 @@
   "prerelease": false,
   "created_at": "2024-05-26T14:34:20Z",
   "published_at": "2024-05-26T14:38:20Z",
-  "body": "- **New feature**: Import from Ente Auth\r\n- **General**: 12 new icons\r\n- **General**: Improvements to QR code scanning\r\n- **General**: Translation updates"
+  "body": "- **New feature**: Import from Ente Auth\r\n- **General**: 12 new icons\r\n- **General**: Improvements to QR code scanning\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2024-05-26T14:38:09Z"
+   },
+   {
+    "updated_at": "2024-05-26T14:38:02Z"
+   },
+   {
+    "updated_at": "2024-05-26T14:37:45Z"
+   },
+   {
+    "updated_at": "2024-05-26T14:37:39Z"
+   },
+   {
+    "updated_at": "2024-05-26T14:38:17Z"
+   },
+   {
+    "updated_at": "2024-05-26T14:37:55Z"
+   },
+   {
+    "updated_at": "2024-05-26T14:37:34Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.24.1",
@@ -301,7 +643,30 @@
   "prerelease": false,
   "created_at": "2024-03-01T17:38:47Z",
   "published_at": "2024-03-01T17:41:15Z",
-  "body": "- **General**: Fixed issue with clipped text when using larger fonts\r\n- **General**: Improvements to 2FAS import\r\n- **General**: 16 new icons and improvements to existing icons\r\n- **General**: Translation updates"
+  "body": "- **General**: Fixed issue with clipped text when using larger fonts\r\n- **General**: Improvements to 2FAS import\r\n- **General**: 16 new icons and improvements to existing icons\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2024-03-01T17:40:42Z"
+   },
+   {
+    "updated_at": "2024-03-01T17:40:51Z"
+   },
+   {
+    "updated_at": "2024-03-01T17:40:37Z"
+   },
+   {
+    "updated_at": "2024-03-01T17:40:26Z"
+   },
+   {
+    "updated_at": "2024-03-01T17:41:02Z"
+   },
+   {
+    "updated_at": "2024-03-01T17:40:37Z"
+   },
+   {
+    "updated_at": "2024-03-01T17:40:17Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.24.0",
@@ -317,7 +682,30 @@
   "prerelease": false,
   "created_at": "2023-12-29T09:36:52Z",
   "published_at": "2023-12-28T19:11:00Z",
-  "body": "- **New feature**: Skip to next code\r\n- **New feature**: Use system font\r\n- **New feature**: Disable code grouping\r\n- **New feature**: Tapping Wear OS tile now opens app\r\n- **General**: Code is copied only when code is revealed\r\n- **General**: 59 new icons and improvements to existing icons\r\n- **General**: Translation updates\r\n- **General**: Bug fixes\r\n"
+  "body": "- **New feature**: Skip to next code\r\n- **New feature**: Use system font\r\n- **New feature**: Disable code grouping\r\n- **New feature**: Tapping Wear OS tile now opens app\r\n- **General**: Code is copied only when code is revealed\r\n- **General**: 59 new icons and improvements to existing icons\r\n- **General**: Translation updates\r\n- **General**: Bug fixes\r\n",
+  "assets": [
+   {
+    "updated_at": "2023-12-28T19:10:35Z"
+   },
+   {
+    "updated_at": "2023-12-28T19:10:24Z"
+   },
+   {
+    "updated_at": "2023-12-28T19:10:05Z"
+   },
+   {
+    "updated_at": "2023-12-28T19:09:58Z"
+   },
+   {
+    "updated_at": "2023-12-28T19:10:45Z"
+   },
+   {
+    "updated_at": "2023-12-28T19:10:13Z"
+   },
+   {
+    "updated_at": "2023-12-29T09:39:48Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.24.0-beta",
@@ -333,7 +721,24 @@
   "prerelease": true,
   "created_at": "2023-12-15T18:20:45Z",
   "published_at": "2023-12-15T18:39:19Z",
-  "body": "- **New feature**: Skip to next code\r\n- **New feature**: Use system font\r\n- **General**: Code is copied only when code is revealed\r\n- **General**: 58 new icons and improvements to existing icons\r\n- **General**: Translation updates\r\n- **General**: Bug fixes"
+  "body": "- **New feature**: Skip to next code\r\n- **New feature**: Use system font\r\n- **General**: Code is copied only when code is revealed\r\n- **General**: 58 new icons and improvements to existing icons\r\n- **General**: Translation updates\r\n- **General**: Bug fixes",
+  "assets": [
+   {
+    "updated_at": "2023-12-15T18:33:48Z"
+   },
+   {
+    "updated_at": "2023-12-15T18:33:42Z"
+   },
+   {
+    "updated_at": "2023-12-15T18:33:35Z"
+   },
+   {
+    "updated_at": "2023-12-15T18:33:13Z"
+   },
+   {
+    "updated_at": "2023-12-15T18:33:26Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.23.0",
@@ -349,7 +754,30 @@
   "prerelease": false,
   "created_at": "2023-10-15T08:07:29Z",
   "published_at": "2023-10-15T08:10:53Z",
-  "body": "- **New feature**: Copy count is viewable when sorting by times copied\r\n- **New feature**: System theme (black) option\r\n- **General**: Title bar is now fixed when transparent status bar is disabled\r\n- **General**: 58 new icons and improvements to existing icons\r\n- **General**: Translation updates"
+  "body": "- **New feature**: Copy count is viewable when sorting by times copied\r\n- **New feature**: System theme (black) option\r\n- **General**: Title bar is now fixed when transparent status bar is disabled\r\n- **General**: 58 new icons and improvements to existing icons\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2023-10-15T08:09:26Z"
+   },
+   {
+    "updated_at": "2023-10-15T08:09:18Z"
+   },
+   {
+    "updated_at": "2023-10-15T08:10:49Z"
+   },
+   {
+    "updated_at": "2023-10-15T08:09:55Z"
+   },
+   {
+    "updated_at": "2023-10-15T08:10:13Z"
+   },
+   {
+    "updated_at": "2023-10-15T08:09:46Z"
+   },
+   {
+    "updated_at": "2023-10-16T16:39:57Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.22.0",
@@ -365,7 +793,30 @@
   "prerelease": false,
   "created_at": "2023-09-06T09:38:22Z",
   "published_at": "2023-09-06T09:41:00Z",
-  "body": "- **New feature**: Import Bitwarden password-protected exports\r\n- **General**: 43 new icons\r\n- **General**: Bug fixes\r\n- **General**: Translation updates"
+  "body": "- **New feature**: Import Bitwarden password-protected exports\r\n- **General**: 43 new icons\r\n- **General**: Bug fixes\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2023-09-06T09:40:05Z"
+   },
+   {
+    "updated_at": "2023-09-06T09:40:13Z"
+   },
+   {
+    "updated_at": "2023-09-06T09:40:35Z"
+   },
+   {
+    "updated_at": "2023-09-06T09:40:44Z"
+   },
+   {
+    "updated_at": "2023-09-06T09:40:58Z"
+   },
+   {
+    "updated_at": "2023-09-06T09:40:24Z"
+   },
+   {
+    "updated_at": "2023-09-06T09:39:58Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.22.0-beta",
@@ -381,7 +832,24 @@
   "prerelease": true,
   "created_at": "2023-08-27T13:24:29Z",
   "published_at": "2023-08-25T13:55:28Z",
-  "body": "- **New feature**: Import Bitwarden password-protected exports\r\n- **General**: 42 new icons\r\n- **General**: Bug fixes\r\n- **General**: Translation updates"
+  "body": "- **New feature**: Import Bitwarden password-protected exports\r\n- **General**: 42 new icons\r\n- **General**: Bug fixes\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2023-08-27T13:32:59Z"
+   },
+   {
+    "updated_at": "2023-08-27T13:33:06Z"
+   },
+   {
+    "updated_at": "2023-08-27T13:33:24Z"
+   },
+   {
+    "updated_at": "2023-08-27T13:33:35Z"
+   },
+   {
+    "updated_at": "2023-08-27T13:33:18Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.21.0",
@@ -397,7 +865,30 @@
   "prerelease": false,
   "created_at": "2023-07-14T09:43:33Z",
   "published_at": "2023-07-14T09:46:18Z",
-  "body": "- **New feature**: Change tap to reveal duration\r\n- **General**: 7 new icons\r\n- **General**: Translation updates\r\n"
+  "body": "- **New feature**: Change tap to reveal duration\r\n- **General**: 7 new icons\r\n- **General**: Translation updates\r\n",
+  "assets": [
+   {
+    "updated_at": "2023-07-14T09:45:25Z"
+   },
+   {
+    "updated_at": "2023-07-14T09:45:33Z"
+   },
+   {
+    "updated_at": "2023-07-14T09:45:57Z"
+   },
+   {
+    "updated_at": "2023-07-14T09:46:05Z"
+   },
+   {
+    "updated_at": "2023-07-14T09:46:16Z"
+   },
+   {
+    "updated_at": "2023-07-14T09:45:48Z"
+   },
+   {
+    "updated_at": "2023-07-14T09:45:17Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.20.1",
@@ -413,7 +904,30 @@
   "prerelease": false,
   "created_at": "2023-05-24T16:52:39Z",
   "published_at": "2023-05-24T16:56:11Z",
-  "body": "- **New feature**: Allow screenshots\r\n- **General**: Hide usernames on Wear OS\r\n- **General**: Bug fixes\r\n- **General**: 7 new icons\r\n- **General**: Translation updates\r\n"
+  "body": "- **New feature**: Allow screenshots\r\n- **General**: Hide usernames on Wear OS\r\n- **General**: Bug fixes\r\n- **General**: 7 new icons\r\n- **General**: Translation updates\r\n",
+  "assets": [
+   {
+    "updated_at": "2023-05-24T16:55:01Z"
+   },
+   {
+    "updated_at": "2023-05-24T16:55:14Z"
+   },
+   {
+    "updated_at": "2023-05-24T16:55:29Z"
+   },
+   {
+    "updated_at": "2023-05-24T16:55:44Z"
+   },
+   {
+    "updated_at": "2023-05-24T16:54:07Z"
+   },
+   {
+    "updated_at": "2023-05-24T16:54:28Z"
+   },
+   {
+    "updated_at": "2023-05-24T16:54:46Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.20.0",
@@ -429,7 +943,30 @@
   "prerelease": false,
   "created_at": "2023-05-17T11:07:34Z",
   "published_at": "2023-05-17T11:10:44Z",
-  "body": "- **New feature**: Icon packs\r\n- **New feature**: Black theme option\r\n- **New feature**: Edit item details\r\n- **New feature**: Quick add to categories\r\n- **New feature**: Hide usernames\r\n- **General**: 3 new icons\r\n- **General**: Translation updates"
+  "body": "- **New feature**: Icon packs\r\n- **New feature**: Black theme option\r\n- **New feature**: Edit item details\r\n- **New feature**: Quick add to categories\r\n- **New feature**: Hide usernames\r\n- **General**: 3 new icons\r\n- **General**: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2023-05-17T11:09:59Z"
+   },
+   {
+    "updated_at": "2023-05-17T11:10:13Z"
+   },
+   {
+    "updated_at": "2023-05-17T11:10:27Z"
+   },
+   {
+    "updated_at": "2023-05-17T11:10:42Z"
+   },
+   {
+    "updated_at": "2023-05-17T11:09:25Z"
+   },
+   {
+    "updated_at": "2023-05-19T16:10:43Z"
+   },
+   {
+    "updated_at": "2023-05-17T11:09:45Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.20.0-beta",
@@ -445,7 +982,24 @@
   "prerelease": true,
   "created_at": "2023-05-09T18:16:35Z",
   "published_at": "2023-05-09T18:28:42Z",
-  "body": "**Beta release, may contain bugs. This can be installed alongside a regular release.**\r\n\r\n- **New feature**: Icon packs\r\n- **New feature**: Black theme option\r\n- **New feature**: Edit item details\r\n- **New feature**: Quick add to categories\r\n- **New feature**: Hide usernames\r\n- **General**: 3 new icons\r\n- **General**: Translation updates\r\n\r\nDownload icon packs:\r\n[https://github.com/jamie-mh/AuthenticatorProIcons/releases](https://github.com/jamie-mh/AuthenticatorProIcons/releases)"
+  "body": "**Beta release, may contain bugs. This can be installed alongside a regular release.**\r\n\r\n- **New feature**: Icon packs\r\n- **New feature**: Black theme option\r\n- **New feature**: Edit item details\r\n- **New feature**: Quick add to categories\r\n- **New feature**: Hide usernames\r\n- **General**: 3 new icons\r\n- **General**: Translation updates\r\n\r\nDownload icon packs:\r\n[https://github.com/jamie-mh/AuthenticatorProIcons/releases](https://github.com/jamie-mh/AuthenticatorProIcons/releases)",
+  "assets": [
+   {
+    "updated_at": "2023-05-09T18:25:06Z"
+   },
+   {
+    "updated_at": "2023-05-09T18:25:19Z"
+   },
+   {
+    "updated_at": "2023-05-09T18:25:32Z"
+   },
+   {
+    "updated_at": "2023-05-09T18:25:45Z"
+   },
+   {
+    "updated_at": "2023-05-09T18:24:54Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.19.0",
@@ -461,7 +1015,27 @@
   "prerelease": false,
   "created_at": "2023-05-05T10:02:14Z",
   "published_at": "2023-05-05T10:04:48Z",
-  "body": "- **Visual**: Material You design with dynamic colour\r\n- **New feature**: Wear OS tile (replaces favourite system)\r\n- **New feature**: Import from FreeOTP\r\n- **New feature**: Import from LastPass Authenticator\r\n- **General**: Stronger backup encryption\r\n- **General**: 3 new icons\r\n- **General**: Translation updates\r\n"
+  "body": "- **Visual**: Material You design with dynamic colour\r\n- **New feature**: Wear OS tile (replaces favourite system)\r\n- **New feature**: Import from FreeOTP\r\n- **New feature**: Import from LastPass Authenticator\r\n- **General**: Stronger backup encryption\r\n- **General**: 3 new icons\r\n- **General**: Translation updates\r\n",
+  "assets": [
+   {
+    "updated_at": "2023-05-05T10:04:01Z"
+   },
+   {
+    "updated_at": "2023-05-05T10:04:15Z"
+   },
+   {
+    "updated_at": "2023-05-05T10:04:28Z"
+   },
+   {
+    "updated_at": "2023-05-05T10:04:41Z"
+   },
+   {
+    "updated_at": "2023-05-05T10:03:29Z"
+   },
+   {
+    "updated_at": "2023-05-05T10:03:48Z"
+   }
+  ]
  },
  {
   "html_url": "https://github.com/stratumauth/app/releases/tag/1.19.0-beta",
@@ -477,6 +1051,23 @@
   "prerelease": true,
   "created_at": "2023-04-30T14:49:17Z",
   "published_at": "2023-04-30T15:03:25Z",
-  "body": "**Beta release, may contain bugs. This can be installed alongside a regular release.**\r\n\r\n- Visual: Material You design with dynamic colour\r\n- New feature: Import from FreeOTP\r\n- New feature: Import from LastPass Authenticator\r\n- General: Stronger backup encryption\r\n- General: 3 new icons\r\n- General: Translation updates"
+  "body": "**Beta release, may contain bugs. This can be installed alongside a regular release.**\r\n\r\n- Visual: Material You design with dynamic colour\r\n- New feature: Import from FreeOTP\r\n- New feature: Import from LastPass Authenticator\r\n- General: Stronger backup encryption\r\n- General: 3 new icons\r\n- General: Translation updates",
+  "assets": [
+   {
+    "updated_at": "2023-05-01T18:13:51Z"
+   },
+   {
+    "updated_at": "2023-05-01T18:14:05Z"
+   },
+   {
+    "updated_at": "2023-05-01T18:14:19Z"
+   },
+   {
+    "updated_at": "2023-05-01T18:14:34Z"
+   },
+   {
+    "updated_at": "2023-05-01T18:13:36Z"
+   }
+  ]
  }
 ]

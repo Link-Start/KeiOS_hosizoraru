@@ -9,10 +9,8 @@ import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
 import os.kei.feature.github.model.GitHubAtomFeed
-import os.kei.feature.github.model.GitHubAtomReleaseEntry
-import os.kei.feature.github.model.GitHubReleaseSignalSource
-import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
+import os.kei.feature.github.model.toReleaseVersionSignals
 
 /**
  * `stratumauth/app`, from the real `releases?per_page=30` response.
@@ -25,6 +23,12 @@ import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
  * decides this is the candidate set the parser builds, and these tags carry a trap: the old release
  * titles read `1.25.2 + Wear OS 2.15.4`, so a second, higher version number is in the text of every
  * one of them.
+ *
+ * Captured before the parser read asset lists, so every release here claimed to have nothing
+ * attached and the installability rule was silently suppressed across the whole corpus. The asset
+ * timestamps have since been backfilled from the same repository -- the projection
+ * `scripts/qa/capture_release_fixture.sh` would have written at capture time, which is now the one
+ * place the field list is recorded.
  */
 class GitHubVersioningResetCorpusTest {
     private val strategy = GitHubApiTokenReleaseStrategy()
@@ -43,6 +47,11 @@ class GitHubVersioningResetCorpusTest {
         assertEquals(30, entries.size)
         assertEquals("v1.6.2", entries.first().tag, "entries arrive newest-published first")
         assertTrue(entries.any { it.tag == "1.25.2" }, "the old high tag must be in range")
+        assertTrue(
+            entries.all { it.hasDownloadableAsset == true },
+            "every release here ships APKs -- a fixture missing its asset lists would claim the " +
+                "opposite and silently switch off the installability rule for the whole corpus",
+        )
     }
 
     @Test
@@ -91,9 +100,9 @@ class GitHubVersioningResetCorpusTest {
             snapshot = GitHubRepositoryReleaseSnapshot(
                 strategyId = "test",
                 feed = GitHubAtomFeed(entries = entries),
-                latestStable = stable.toSignals(),
+                latestStable = stable.toReleaseVersionSignals(),
                 hasStableRelease = true,
-                latestPreRelease = pre.toSignals(),
+                latestPreRelease = pre.toReleaseVersionSignals(),
             ),
             // The path the report came from: the reader had pre-release tracking switched on.
             policy = GitHubReleaseEvaluationPolicy(preferPreRelease = true),
@@ -127,17 +136,3 @@ private const val NOW_MILLIS = 1778237773000L
 
 /** 2024-06-25T17:09:47Z, the moment `1.25.2` shipped and the old numbering ended. */
 private const val REBRAND_CUTOFF_MILLIS = 1719335387000L
-
-/** The strategy's own mapping is private; this mirrors it for the fields the engine reads. */
-private fun GitHubAtomReleaseEntry.toSignals(): GitHubReleaseVersionSignals =
-    GitHubReleaseVersionSignals(
-        displayVersion = displayVersion,
-        rawTag = tag,
-        rawName = title,
-        link = link,
-        updatedAtMillis = updatedAtMillis,
-        versionCandidates = versionCandidates,
-        source = GitHubReleaseSignalSource.GitHubApi,
-        channel = channel,
-        hasDownloadableAsset = hasDownloadableAsset,
-    )

@@ -1,6 +1,7 @@
 package os.kei.feature.github.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
+import os.kei.core.io.NetworkTimingSummary
 import os.kei.feature.github.domain.GitHubRefreshHistoryExportService
 import os.kei.feature.github.domain.GitHubRefreshHistoryQuery
 import os.kei.feature.github.domain.GitHubRefreshHistoryQueryDefaults
@@ -138,7 +139,22 @@ internal class McpGitHubRefreshHistoryTools(
             listOf(owner, repo)
                 .filter { it.isNotBlank() }
                 .joinToString("/")
-        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | strategy:${strategyId.toMcpValue()} | localVersionElapsedMs:$localVersionElapsedMs | snapshotElapsedMs:$snapshotElapsedMs | snapshotFromCache:$snapshotFromCache | profileElapsedMs:$profileElapsedMs | profileFromCache:$profileFromCache | preciseApkElapsedMs:$preciseApkElapsedMs | preciseApkRequested:$preciseApkRequested | comparisonElapsedMs:$comparisonElapsedMs | unclassifiedElapsedMs:$unclassifiedElapsedMs | fallbackStrategy:${fallbackStrategyId.toMcpValue()} | status:${status.toMcpValue()} | message:${message.toMcpValue()}"
+        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | strategy:${strategyId.toMcpValue()} | localVersionElapsedMs:$localVersionElapsedMs | snapshotElapsedMs:$snapshotElapsedMs | snapshotFromCache:$snapshotFromCache | profileElapsedMs:$profileElapsedMs | profileFromCache:$profileFromCache | preciseApkElapsedMs:$preciseApkElapsedMs | preciseApkRequested:$preciseApkRequested | comparisonElapsedMs:$comparisonElapsedMs | unclassifiedElapsedMs:$unclassifiedElapsedMs | fallbackStrategy:${fallbackStrategyId.toMcpValue()} | status:${status.toMcpValue()} | message:${message.toMcpValue()}${network.toMcpSuffix()}"
+    }
+
+    /**
+     * The phase breakdown for one slow item, which is the line somebody actually asks about.
+     *
+     * The record line has carried the network profile since it was measured, but a record says
+     * "this refresh was slow" and a reader who has got as far as asking wants "this repository was
+     * slow, connecting". Blank rather than a row of zeros when nothing was measured: a refresh
+     * served entirely from cache made no calls, and printing zeroes for it reads as a fast network
+     * rather than as no network.
+     */
+    private fun NetworkTimingSummary.toMcpSuffix(): String {
+        if (isEmpty) return ""
+        return " | networkCalls:$callCount | networkQueuedMs:$queuedMs | networkDnsMs:$dnsMs | networkConnectMs:$connectMs | networkWaitingMs:$waitingMs | networkBodyMs:$bodyMs | networkBytes:$bytes | networkReusedCalls:$reusedConnectionCalls | networkFailedCalls:$failedCalls | networkDominantPhase:${dominantPhase.toMcpValue()}" +
+            if (protocol.isNotBlank()) " | networkProtocol:${protocol.toMcpValue()}" else ""
     }
 
     private fun GitHubRefreshHistoryFailureSummary.toMcpLine(prefix: String): String {

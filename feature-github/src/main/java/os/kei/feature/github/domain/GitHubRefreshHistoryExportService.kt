@@ -347,6 +347,10 @@ private fun GitHubRefreshHistorySlowItem.toJson() =
             put("networkBodyMs", network.bodyMs)
             put("networkBytes", network.bytes)
             put("networkReusedConnectionCalls", network.reusedConnectionCalls)
+            // Measured and stored since the instrument was built, but never exported, which left
+            // the one field that says "these phase timings are of calls that died" out of the file
+            // a user sends us.
+            put("networkFailedCalls", network.failedCalls)
             put("networkDominantPhase", network.dominantPhase)
             if (network.protocol.isNotBlank()) put("networkProtocol", network.protocol)
         }

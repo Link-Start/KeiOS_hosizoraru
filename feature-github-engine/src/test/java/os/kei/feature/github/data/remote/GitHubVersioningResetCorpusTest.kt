@@ -1,9 +1,18 @@
 package os.kei.feature.github.data.remote
 
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.Test
 import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
+import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
+import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
+import os.kei.feature.github.model.GitHubAtomFeed
+import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubReleaseSignalSource
+import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 
 /**
  * `stratumauth/app`, from the real `releases?per_page=30` response.
@@ -52,6 +61,52 @@ class GitHubVersioningResetCorpusTest {
     }
 
     /**
+     * The same repository's other lane, reported after the stable one was fixed. Its newest
+     * pre-release is `1.24.0-beta` from December 2023 and the rebrand produced none since, so a 2023
+     * beta outranks the 2026 stable and is offered as an update to it.
+     *
+     * The reset rule cannot reach this: it needs a run of newer releases ranking lower, and in this
+     * lane there are no newer releases at all. What settles it is that the project has shipped for
+     * two and a half years without touching the line.
+     */
+    @Test
+    fun `the abandoned preview line is neither an update nor a row`() {
+        val stable = requireNotNull(
+            GitHubReleaseCandidateRanker.latest(entries.filter { !it.isLikelyPreRelease }),
+        )
+        val pre = requireNotNull(
+            GitHubReleaseCandidateRanker.latest(entries.filter { it.isLikelyPreRelease }),
+        )
+        assertEquals("1.24.0-beta", pre.tag, "the newest pre-release predates the rebrand")
+        assertTrue(
+            GitHubVersionUtils.isAbandonedPreRelease(
+                preReleaseFreshnessMillis = pre.effectiveFreshnessMillis,
+                nowMillis = NOW_MILLIS,
+            ),
+        )
+
+        val result = GitHubReleaseEvaluationEngine.evaluate(
+            localVersion = "1.6.2",
+            localVersionCode = 16L,
+            snapshot = GitHubRepositoryReleaseSnapshot(
+                strategyId = "test",
+                feed = GitHubAtomFeed(entries = entries),
+                latestStable = stable.toSignals(),
+                hasStableRelease = true,
+                latestPreRelease = pre.toSignals(),
+            ),
+            // The path the report came from: the reader had pre-release tracking switched on.
+            policy = GitHubReleaseEvaluationPolicy(preferPreRelease = true),
+            nowMillis = NOW_MILLIS,
+        )
+
+        assertFalse(result.hasPreReleaseUpdate, "a 2023 beta is not an update to a 2026 release")
+        assertFalse(result.recommendsPreRelease)
+        assertNull(result.preRelease, "and a closed line does not keep a row on the card")
+        assertEquals("", result.preReleaseInfo)
+    }
+
+    /**
      * The half that keeps the rule honest: the same corpus with everything published after the high
      * tag removed is an ordinary history, and must rank by version exactly as before.
      */
@@ -67,5 +122,22 @@ class GitHubVersioningResetCorpusTest {
     }
 }
 
+/** The day `v1.6.2` shipped, so the corpus reads the same whenever this test is run. */
+private const val NOW_MILLIS = 1778237773000L
+
 /** 2024-06-25T17:09:47Z, the moment `1.25.2` shipped and the old numbering ended. */
 private const val REBRAND_CUTOFF_MILLIS = 1719335387000L
+
+/** The strategy's own mapping is private; this mirrors it for the fields the engine reads. */
+private fun GitHubAtomReleaseEntry.toSignals(): GitHubReleaseVersionSignals =
+    GitHubReleaseVersionSignals(
+        displayVersion = displayVersion,
+        rawTag = tag,
+        rawName = title,
+        link = link,
+        updatedAtMillis = updatedAtMillis,
+        versionCandidates = versionCandidates,
+        source = GitHubReleaseSignalSource.GitHubApi,
+        channel = channel,
+        hasDownloadableAsset = hasDownloadableAsset,
+    )

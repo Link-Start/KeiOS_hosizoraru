@@ -242,7 +242,13 @@ class GitHubReleaseCheckServiceTest {
         assertTrue(result.hasUpdate == true)
         assertFalse(result.hasPreReleaseUpdate)
         assertFalse(result.recommendsPreRelease)
-        assertEquals("5.4.0-beta05", result.preReleaseInfo)
+        // Changed deliberately. This used to assert the beta stayed on the card as history, and the
+        // staleness rule retires it: `v5.4.0-beta05` is eighteen days behind `v5.4.3`, past the
+        // fortnight in which a superseded preview still has readers. It is still not an update --
+        // that half of the contract is asserted above and is what the test is named for -- it just
+        // no longer takes a row. A preview inside the fortnight keeps one; see
+        // `PreReleaseRelevanceTest`.
+        assertEquals("", result.preReleaseInfo)
     }
 
     @Test

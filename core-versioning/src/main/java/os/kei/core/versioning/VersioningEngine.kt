@@ -250,6 +250,34 @@ object VersioningEngine {
         }
     }
 
+    /**
+     * Whether a preview line has gone quiet long enough to stop showing it.
+     *
+     * A policy about time rather than about versions, which is why it takes the clock instead of
+     * reading it: a rule that calls `System.currentTimeMillis()` cannot be pinned by a test, and
+     * every other decision in this file is.
+     *
+     * [preReleaseFreshnessMillis] must be the *later* of the release's publish time and its newest
+     * asset's update time. Release date alone is the wrong clock: a pre-release used to host CI
+     * builds is published once and then only its artifacts move, so by `published_at` such a line
+     * reads as years dead while it is still producing builds newer than the stable.
+     *
+     * Separate from [isRelevantPreRelease], which asks whether a pre-release is *ahead* of the
+     * stable. This asks whether anyone is still feeding it. Both have to be false for a preview to
+     * earn a row.
+     */
+    fun isAbandonedPreRelease(
+        preReleaseFreshnessMillis: Long?,
+        nowMillis: Long,
+    ): Boolean =
+        preReleaseFreshnessMillis != null &&
+            nowMillis - preReleaseFreshnessMillis > ABANDONED_PRE_RELEASE_GAP_MILLIS
+
+    /** @see isRelevantPreRelease */
+    private const val ABANDONED_PRE_RELEASE_GAP_DAYS = 14L
+    private const val ABANDONED_PRE_RELEASE_GAP_MILLIS =
+        ABANDONED_PRE_RELEASE_GAP_DAYS * 24L * 60L * 60L * 1000L
+
     fun classifyChannel(text: String): VersionChannel? {
         var bestChannel: VersionChannel? = null
         var bestScore = Int.MIN_VALUE

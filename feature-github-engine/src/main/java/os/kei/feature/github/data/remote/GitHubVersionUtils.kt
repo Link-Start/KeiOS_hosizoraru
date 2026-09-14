@@ -181,6 +181,17 @@ object GitHubVersionUtils {
         )
     }
 
+    fun isAbandonedPreRelease(
+        /** Pass [GitHubReleaseVersionSignals.effectiveFreshnessMillis], not the publish date. */
+        preReleaseFreshnessMillis: Long?,
+        nowMillis: Long,
+    ): Boolean {
+        return VersioningEngine.isAbandonedPreRelease(
+            preReleaseFreshnessMillis = preReleaseFreshnessMillis,
+            nowMillis = nowMillis,
+        )
+    }
+
     fun classifyVersionChannel(text: String): GitHubReleaseChannel? {
         return VersioningEngine.classifyChannel(text)?.toGitHubChannel()
     }

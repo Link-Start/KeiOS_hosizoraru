@@ -115,6 +115,22 @@ object GitHubReleaseEvaluationEngine {
             ?.versionCodeLong
             ?.takeIf { localVersionCode >= 0L }
             ?.compareTo(localVersionCode)
+        // A preview line nobody has fed for a fortnight stops being offered, and stops taking a row.
+        //
+        // The clock is the *asset* clock: a pre-release used to host CI builds is published once and
+        // then only its artifacts move, so judging by `published_at` would retire a line that is
+        // still producing builds newer than the stable. `effectiveFreshnessMillis` is the later of
+        // the two.
+        //
+        // Only when a stable exists to fall back on. A repository whose newest release *is* its
+        // pre-release has not abandoned anything — it simply has not shipped — and hiding it would
+        // leave the card with nothing to say.
+        val preReleaseAbandoned = latestStable != null &&
+            latestPre != null &&
+            GitHubVersionUtils.isAbandonedPreRelease(
+                preReleaseFreshnessMillis = latestPre.effectiveFreshnessMillis,
+                nowMillis = nowMillis,
+            )
         // An update you cannot install is not an update. `false` here is a positive statement from a
         // source that can see the release's assets and found none attached — not merely the absence
         // of evidence, which is `null` and changes nothing. Without this the comparison falls back to
@@ -125,6 +141,8 @@ object GitHubReleaseEvaluationEngine {
         val rawHasPreReleaseUpdate = inspectPreRelease &&
             latestPreIsRelevant &&
             preReleaseIsInstallable &&
+            // Offering an update for a row that is not shown would be incoherent.
+            !preReleaseAbandoned &&
             (
                 precisePreCmp?.let { it > 0 }
                     ?: (latestPreCmp?.let { it < 0 } == true)
@@ -170,8 +188,14 @@ object GitHubReleaseEvaluationEngine {
             stableUpdateIgnored ||
             preReleaseUpdateIgnored
 
+        // Hidden only when the project has closed its preview line, not merely when the newest
+        // preview is behind the stable. That second case is ordinary and this project's corpus pins
+        // it: a `5.4.0-beta05` beside a `5.4.3` is the last preview of the current line and reads as
+        // useful history. A 2023 beta beside a 2026 stable is a dead row, and leaving it there is
+        // what makes it look like a choice the reader has.
+        val surfacedPreRelease = latestPre?.takeUnless { preReleaseAbandoned }
         val preReleaseInfo = when {
-            inspectPreRelease && latestPre != null -> latestPre.displayVersion
+            inspectPreRelease && surfacedPreRelease != null -> surfacedPreRelease.displayVersion
             inspectPreRelease && isLocalPreReleaseInstalled && matchedEntry != null ->
                 matchedEntry.displayVersion
             else -> ""
@@ -199,7 +223,7 @@ object GitHubReleaseEvaluationEngine {
         return GitHubReleaseEvaluationResult(
             matchedRelease = matchedEntry,
             stableRelease = latestStable,
-            preRelease = latestPre,
+            preRelease = surfacedPreRelease,
             hasStableRelease = snapshot.hasStableRelease,
             hasUpdate = hasUpdate,
             hasPreReleaseUpdate = hasPreReleaseUpdate,

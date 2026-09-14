@@ -1,6 +1,7 @@
 package os.kei.core.io
 
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -15,11 +16,24 @@ suspend fun <T> OkHttpClient.executeCancellable(
     request: Request,
     block: (Response) -> T,
 ): T {
-    return newCall(request).executeCancellable(block)
+    return newCall(request.withTimingScope()).executeCancellable(block)
 }
 
 suspend fun OkHttpClient.executeCancellable(request: Request): Response {
-    return newCall(request).executeCancellable()
+    return newCall(request.withTimingScope()).executeCancellable()
+}
+
+/**
+ * Hand the request whichever [NetworkTimingScope] the caller is running inside, if any.
+ *
+ * The tag is how the event listener finds its way back: the callbacks arrive on OkHttp's own
+ * threads, so a thread-local would be looking at the wrong thread and passing a recorder down
+ * through eight layers of strategy code to reach the one line that makes the call would be its own
+ * kind of damage. A caller outside any scope is untouched and untimed.
+ */
+private suspend fun Request.withTimingScope(): Request {
+    val scope = coroutineContext[NetworkTimingScope] ?: return this
+    return newBuilder().tag(NetworkTimingScope::class.java, scope).build()
 }
 
 /**

@@ -68,6 +68,9 @@ object SharedHttpClient {
         OkHttpClient.Builder()
             .dispatcher(dispatcher)
             .connectionPool(connectionPool)
+            // Times only the calls a caller opted into by running inside a NetworkTimingScope.
+            // Everything else pays one null check per event.
+            .eventListenerFactory(NetworkTimingEventListener.FACTORY)
             .connectTimeout(10.seconds)
             .readTimeout(15.seconds)
             .writeTimeout(10.seconds)

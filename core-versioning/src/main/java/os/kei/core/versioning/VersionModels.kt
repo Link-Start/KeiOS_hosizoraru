@@ -48,7 +48,25 @@ data class ReleaseRankingEvidence(
     val versionCandidates: List<VersionCandidate>,
     val publishedAtMillis: Long? = null,
     val stableKey: String = "",
-)
+    /**
+     * When this release's attached artifacts last moved, if the source can see them.
+     *
+     * Separate from [publishedAtMillis] because a rolling tag is published once and then only its
+     * contents change. Nothing reads this directly — [freshnessMillis] is the field the rules use.
+     */
+    val assetsUpdatedAtMillis: Long? = null,
+) {
+    /**
+     * The one clock every time-sensitive rule reads: when this release last moved, by any measure.
+     *
+     * There was briefly more than one. The staleness rule was taught to read the asset clock while
+     * ranking and relevance still read the publish date, which meant a rolling CI tag was retired
+     * by one rule and ordered by another on different evidence. Two clocks in one pipeline is a
+     * report waiting to happen, so there is exactly one and it lives here.
+     */
+    val freshnessMillis: Long?
+        get() = listOfNotNull(publishedAtMillis, assetsUpdatedAtMillis).maxOrNull()
+}
 
 /**
  * A release list where the highest version number is not the current release.

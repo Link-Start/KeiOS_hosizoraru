@@ -124,6 +124,30 @@ class ReleaseCandidateRankerTest {
         assertNull(ReleaseCandidateRanker.suspectVersioningReset(releases))
     }
 
+    /**
+     * The clock split this closed. A rolling tag is published once and then only its artifacts move,
+     * so ranking it by `published_at` sorts it behind every tag cut since — including ones whose
+     * contents are years older. The staleness rule already read the asset clock while ranking still
+     * read the publish date, which meant one release could be retired and ordered on different
+     * evidence. [ReleaseRankingEvidence.freshnessMillis] is now the only clock either reads.
+     */
+    @Test
+    fun `a rolling tag is ranked by when its artifacts moved, not when its tag was cut`() {
+        val rolling = ReleaseRankingEvidence(
+            versionCandidates = tagCandidate("nightly"),
+            publishedAtMillis = Instant.parse("2024-01-01T00:00:00Z").toEpochMilli(),
+            assetsUpdatedAtMillis = Instant.parse("2026-09-01T00:00:00Z").toEpochMilli(),
+            stableKey = "nightly",
+        )
+        val cutSince = ReleaseRankingEvidence(
+            versionCandidates = tagCandidate("canary"),
+            publishedAtMillis = Instant.parse("2025-06-01T00:00:00Z").toEpochMilli(),
+            stableKey = "canary",
+        )
+
+        assertEquals("nightly", ReleaseCandidateRanker.pickLatest(listOf(cutSince, rolling)).tagOf())
+    }
+
     @Test
     fun `an empty list has no latest`() {
         assertNull(ReleaseCandidateRanker.pickLatest(emptyList()))

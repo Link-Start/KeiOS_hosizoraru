@@ -92,8 +92,8 @@ object GitHubReleaseEvaluationEngine {
             else -> GitHubVersionUtils.isRelevantPreRelease(
                 preReleaseCandidates = latestPre.versionCandidates,
                 stableCandidates = latestStable.versionCandidates,
-                preReleaseUpdatedAtMillis = latestPre.updatedAtMillis,
-                stableUpdatedAtMillis = latestStable.updatedAtMillis,
+                preReleaseFreshnessMillis = latestPre.effectiveFreshnessMillis,
+                stableFreshnessMillis = latestStable.effectiveFreshnessMillis,
                 preReleaseChannel = latestPre.channel,
                 stableChannel = latestStable.channel,
             )

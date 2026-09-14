@@ -165,19 +165,20 @@ object GitHubVersionUtils {
         )
     }
 
+    /** Both clocks are `effectiveFreshnessMillis`, never `updatedAtMillis`. */
     fun isRelevantPreRelease(
         preReleaseCandidates: List<GitHubVersionCandidate>,
         stableCandidates: List<GitHubVersionCandidate>,
-        preReleaseUpdatedAtMillis: Long? = null,
-        stableUpdatedAtMillis: Long? = null,
+        preReleaseFreshnessMillis: Long? = null,
+        stableFreshnessMillis: Long? = null,
         preReleaseChannel: GitHubReleaseChannel? = null,
         stableChannel: GitHubReleaseChannel? = null,
     ): Boolean {
         return VersioningEngine.isRelevantPreRelease(
             preReleaseCandidates = preReleaseCandidates.toCoreCandidates(preReleaseChannel),
             stableCandidates = stableCandidates.toCoreCandidates(stableChannel),
-            preReleaseUpdatedAtMillis = preReleaseUpdatedAtMillis,
-            stableUpdatedAtMillis = stableUpdatedAtMillis,
+            preReleaseFreshnessMillis = preReleaseFreshnessMillis,
+            stableFreshnessMillis = stableFreshnessMillis,
         )
     }
 

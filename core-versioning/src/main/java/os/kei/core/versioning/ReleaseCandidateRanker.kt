@@ -18,8 +18,8 @@ object ReleaseCandidateRanker {
         }
 
         val publishedComparison = compareValues(
-            left.publishedAtMillis ?: Long.MIN_VALUE,
-            right.publishedAtMillis ?: Long.MIN_VALUE,
+            left.freshnessMillis ?: Long.MIN_VALUE,
+            right.freshnessMillis ?: Long.MIN_VALUE,
         )
         if (publishedComparison != 0) return publishedComparison
 
@@ -33,8 +33,8 @@ object ReleaseCandidateRanker {
     /**
      * The newest release in [candidates], by version, unless the project has restarted its numbering.
      *
-     * [compare] ranks by version and only consults the publish date when the versions cannot be
-     * ordered. That is the right default and it has one failure mode: a project that renames or
+     * [compare] ranks by version and only consults [ReleaseRankingEvidence.freshnessMillis] when the
+     * versions cannot be ordered. That is the right default and it has one failure mode: a project that renames or
      * rewrites itself and starts again from a lower number. Its old high tags then outrank everything
      * it has shipped since, permanently — the highest number is a release from years ago, and no
      * future release can ever beat it, so the track silently stops reporting updates rather than
@@ -70,7 +70,7 @@ object ReleaseCandidateRanker {
         val byVersion = candidates.reduceOrNull { best, next ->
             if (compare(best, next) < 0) next else best
         } ?: return null
-        val newest = candidates.maxByOrNull { it.publishedAtMillis ?: Long.MIN_VALUE } ?: return null
+        val newest = candidates.maxByOrNull { it.freshnessMillis ?: Long.MIN_VALUE } ?: return null
         if (newest === byVersion) return null
         if (!isVersioningReset(byVersion = byVersion, newest = newest, candidates = candidates)) return null
         return VersioningResetSuspicion(outranking = byVersion, newest = newest)
@@ -82,7 +82,8 @@ object ReleaseCandidateRanker {
      * Deliberately hard to trigger, because a false positive hands the user an *older* build while
      * claiming it is newer — worse than the bug it fixes. Three things have to hold at once:
      *
-     *  - **A long silence.** The version winner predates the newest release by [RESET_MIN_GAP_DAYS].
+     *  - **A long silence.** The version winner predates the newest release by [RESET_MIN_GAP_DAYS],
+     *    measured on [ReleaseRankingEvidence.freshnessMillis].
      *    A backport lands weeks after the release it backports from, not months.
      *  - **A sustained run.** At least [RESET_MIN_RUN] releases have been published since, so one
      *    stray maintenance tag cannot decide this. `stratumauth/app` has fifteen.
@@ -99,12 +100,12 @@ object ReleaseCandidateRanker {
         newest: ReleaseRankingEvidence,
         candidates: List<ReleaseRankingEvidence>,
     ): Boolean {
-        val winnerPublishedAt = byVersion.publishedAtMillis ?: return false
-        val newestPublishedAt = newest.publishedAtMillis ?: return false
+        val winnerPublishedAt = byVersion.freshnessMillis ?: return false
+        val newestPublishedAt = newest.freshnessMillis ?: return false
         if (newestPublishedAt - winnerPublishedAt < RESET_MIN_GAP_MILLIS) return false
 
         val publishedSince = candidates.filter { candidate ->
-            (candidate.publishedAtMillis ?: Long.MIN_VALUE) > winnerPublishedAt
+            (candidate.freshnessMillis ?: Long.MIN_VALUE) > winnerPublishedAt
         }
         var confidentlyLower = 0
         publishedSince.forEach { candidate ->

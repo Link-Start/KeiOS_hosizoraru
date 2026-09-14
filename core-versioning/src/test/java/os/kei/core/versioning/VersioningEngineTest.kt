@@ -339,8 +339,8 @@ class VersioningEngineTest {
                     0 to "v0.3.0-master.26071104.7880c18",
                 ),
                 stableCandidates = candidates(0 to "v0.3.0"),
-                preReleaseUpdatedAtMillis = 200L,
-                stableUpdatedAtMillis = 100L,
+                preReleaseFreshnessMillis = 200L,
+                stableFreshnessMillis = 100L,
             ),
         )
     }
@@ -367,8 +367,8 @@ class VersioningEngineTest {
             VersioningEngine.isRelevantPreRelease(
                 preReleaseCandidates = preRelease,
                 stableCandidates = stable,
-                preReleaseUpdatedAtMillis = 200L,
-                stableUpdatedAtMillis = 100L,
+                preReleaseFreshnessMillis = 200L,
+                stableFreshnessMillis = 100L,
             ),
         )
     }

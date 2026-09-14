@@ -59,6 +59,7 @@ private fun GitHubAtomReleaseEntry.toRankingEvidence(): ReleaseRankingEvidence {
             )
         },
         publishedAtMillis = updatedAtMillis,
+        assetsUpdatedAtMillis = assetsUpdatedAtMillis,
         stableKey = link.trim()
             .ifBlank { entryId.trim() }
             .ifBlank { tag.trim() },

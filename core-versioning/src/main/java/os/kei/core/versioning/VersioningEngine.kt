@@ -191,11 +191,18 @@ object VersioningEngine {
         }
     }
 
+    /**
+     * Whether a pre-release is still worth putting in front of the reader beside [stableCandidates].
+     *
+     * Both clocks are *freshness*, not publish dates — [ReleaseRankingEvidence.freshnessMillis] —
+     * so a rolling tag is judged by when its artifacts last moved rather than by when its tag was
+     * first cut. Passing publish dates here reintroduces the split this pipeline used to have.
+     */
     fun isRelevantPreRelease(
         preReleaseCandidates: List<VersionCandidate>,
         stableCandidates: List<VersionCandidate>,
-        preReleaseUpdatedAtMillis: Long? = null,
-        stableUpdatedAtMillis: Long? = null,
+        preReleaseFreshnessMillis: Long? = null,
+        stableFreshnessMillis: Long? = null,
     ): Boolean {
         val preRelease = selectReleaseRankingCandidate(preReleaseCandidates)
         val stable = selectReleaseRankingCandidate(stableCandidates)
@@ -211,9 +218,9 @@ object VersioningEngine {
         val preReleaseIsRollingSibling = preRelease != null && stable != null &&
             preRelease.parts.numbers == stable.parts.numbers &&
             preRelease.isRollingDevelopmentCandidate()
-        val preReleaseIsNewerByTime = preReleaseUpdatedAtMillis != null &&
-            stableUpdatedAtMillis != null &&
-            preReleaseUpdatedAtMillis > stableUpdatedAtMillis
+        val preReleaseIsNewerByTime = preReleaseFreshnessMillis != null &&
+            stableFreshnessMillis != null &&
+            preReleaseFreshnessMillis > stableFreshnessMillis
         // A pre-release *of* a version that has since shipped is spent, whatever its numbers say.
         //
         // `pre-1.4.2-20260202-1` parses as 1.4.2 with a build stamp appended, so it compares as newer
@@ -231,9 +238,9 @@ object VersioningEngine {
             stable.parts.numbers.isNotEmpty() &&
             preRelease.parts.numbers.size > stable.parts.numbers.size &&
             preRelease.parts.numbers.take(stable.parts.numbers.size) == stable.parts.numbers &&
-            preReleaseUpdatedAtMillis != null &&
-            stableUpdatedAtMillis != null &&
-            preReleaseUpdatedAtMillis <= stableUpdatedAtMillis
+            preReleaseFreshnessMillis != null &&
+            stableFreshnessMillis != null &&
+            preReleaseFreshnessMillis <= stableFreshnessMillis
         return when {
             preReleaseSupersededByStable -> false
 
@@ -241,12 +248,12 @@ object VersioningEngine {
                 comparison.order == VersionOrder.Newer ||
                     (preReleaseIsRollingSibling && preReleaseIsNewerByTime)
 
-            preReleaseUpdatedAtMillis != null && stableUpdatedAtMillis != null ->
+            preReleaseFreshnessMillis != null && stableFreshnessMillis != null ->
                 preReleaseIsNewerByTime
 
             else ->
-                (preReleaseUpdatedAtMillis ?: Long.MIN_VALUE) >
-                    (stableUpdatedAtMillis ?: Long.MIN_VALUE)
+                (preReleaseFreshnessMillis ?: Long.MIN_VALUE) >
+                    (stableFreshnessMillis ?: Long.MIN_VALUE)
         }
     }
 

@@ -166,6 +166,6 @@ private fun relevance(
 ): Boolean = VersioningEngine.isRelevantPreRelease(
     preReleaseCandidates = candidates(preRelease.first),
     stableCandidates = candidates(stable.first),
-    preReleaseUpdatedAtMillis = preRelease.second,
-    stableUpdatedAtMillis = stable.second,
+    preReleaseFreshnessMillis = preRelease.second,
+    stableFreshnessMillis = stable.second,
 )

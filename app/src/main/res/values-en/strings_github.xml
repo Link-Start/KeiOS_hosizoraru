@@ -1837,4 +1837,14 @@
     <string name="github_release_compare">Compare</string>
     <string name="github_release_assets_show_all">Show all files</string>
     <string name="github_release_assets_show_relevant">Show relevant files</string>
+    <!-- Why a release was chosen, shown only when the ranking alone would surprise the reader. -->
+    <string name="github_item_label_selection_basis">Chosen because</string>
+    <string name="github_item_selection_forge_latest">The repository marks this as its latest release</string>
+    <string name="github_item_selection_forge_latest_over">The repository marks this as its latest release, not the higher-numbered %1$s</string>
+    <string name="github_item_selection_reset">This project restarted its numbering, so releases are ranked by date</string>
+    <string name="github_item_selection_reset_over">This project restarted its numbering, so releases are ranked by date, not by the higher-numbered %1$s</string>
+    <string name="github_item_selection_freshness">The version numbers cannot be compared, so releases are ranked by update time</string>
+    <string name="github_item_selection_tie">Neither version nor update time separates these, so list order stands</string>
+    <string name="github_item_label_prerelease_retired">Pre-release</string>
+    <string name="github_item_prerelease_retired_reason">This line has not moved in over two weeks, so it is not shown</string>
 </resources>

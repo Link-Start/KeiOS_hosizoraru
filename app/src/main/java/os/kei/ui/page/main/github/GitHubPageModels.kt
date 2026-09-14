@@ -9,6 +9,7 @@ import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubReleaseDecisionNote
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -54,7 +55,9 @@ internal data class VersionCheckUi(
     val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
     val directApkRemoteHealthMessage: String = "",
     val directApkRemoteCheckedAtMillis: Long = -1L,
-    val checkedAtMillis: Long = -1L
+    val checkedAtMillis: Long = -1L,
+    /** Why this check chose the release it shows, for the cases where that is worth saying. */
+    val decisionNote: GitHubReleaseDecisionNote = GitHubReleaseDecisionNote()
 )
 
 internal fun GitHubTrackedApp.isRepositoryArchived(state: VersionCheckUi?): Boolean {

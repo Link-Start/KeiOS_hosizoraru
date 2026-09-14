@@ -1838,4 +1838,14 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_release_compare">前バージョンと比較</string>
     <string name="github_release_assets_show_all">すべてのファイルを表示</string>
     <string name="github_release_assets_show_relevant">関連ファイルのみ表示</string>
+    <!-- Why a release was chosen, shown only when the ranking alone would surprise the reader. -->
+    <string name="github_item_label_selection_basis">選択の根拠</string>
+    <string name="github_item_selection_forge_latest">リポジトリが最新と指定したリリースを採用</string>
+    <string name="github_item_selection_forge_latest_over">リポジトリが最新と指定したリリースを採用（番号がより大きい %1$s ではなく）</string>
+    <string name="github_item_selection_reset">このプロジェクトは採番をやり直したため、公開日時で並べ替え</string>
+    <string name="github_item_selection_reset_over">このプロジェクトは採番をやり直したため、公開日時で並べ替え（番号がより大きい %1$s ではなく）</string>
+    <string name="github_item_selection_freshness">バージョン番号を比較できないため、更新日時で並べ替え</string>
+    <string name="github_item_selection_tie">バージョン番号でも更新日時でも区別できないため、一覧の順序に従います</string>
+    <string name="github_item_label_prerelease_retired">Pre-release</string>
+    <string name="github_item_prerelease_retired_reason">この系列は 2 週間以上更新がないため表示されません</string>
 </resources>

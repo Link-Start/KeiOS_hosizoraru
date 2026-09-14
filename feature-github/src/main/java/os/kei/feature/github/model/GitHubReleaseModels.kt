@@ -83,4 +83,8 @@ data class GitHubTrackedReleaseCheck(
     val releaseSelection: GitHubReleaseSelection? = null,
     /** The rule that removed the pre-release from this card, when one did. */
     val preReleaseRejection: GitHubReleaseRejection? = null,
-)
+) {
+    /** The part of the working out that belongs on the card, if any of it does. */
+    val decisionNote: GitHubReleaseDecisionNote
+        get() = GitHubReleaseDecisionNote.from(releaseSelection, preReleaseRejection)
+}

@@ -7,10 +7,11 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
-import os.kei.core.prefs.KeiMmkv
 import os.kei.core.json.KeiJson
 import os.kei.core.json.encodeCompact
 import os.kei.core.json.hasNonNull
+import os.kei.core.json.jsonObjectOrNull
+import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optArray
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
@@ -20,14 +21,15 @@ import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.json.parseJsonElementOrNull
 import os.kei.core.json.parseJsonObjectOrNull
-import os.kei.core.json.jsonObjectOrNull
-import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.github.model.FdroidRepositoryPresets
+import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubProfileDepth
+import os.kei.feature.github.model.GitHubReleaseDecisionNote
 import os.kei.feature.github.model.GitHubReleaseNotesMode
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubShareImportFlowMode
@@ -35,14 +37,13 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
-import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isFdroidRepositoryTrack
-import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
+import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.requiredCapabilities
 import os.kei.feature.github.model.resolvedRefreshTimestamp
 import os.kei.feature.github.model.withSourceModeConstraints
@@ -580,7 +581,10 @@ object GitHubTrackStore {
                                             item.optLong("checkedAtMillis", -1L)
                                         } else {
                                             ts
-                                        }
+                                        },
+                                    decisionNote = releaseDecisionNoteFromJson(
+                                        item.optObject("decision")
+                                    )
                                 )
                             )
                         }
@@ -778,6 +782,7 @@ object GitHubTrackStore {
                         put("directApkRemoteHealthMessage", state.directApkRemoteHealthMessage)
                         put("directApkRemoteCheckedAtMillis", state.directApkRemoteCheckedAtMillis)
                         put("checkedAtMillis", state.checkedAtMillis)
+                        releaseDecisionNoteToJson(state.decisionNote)?.let { put("decision", it) }
                     }
                 )
             }

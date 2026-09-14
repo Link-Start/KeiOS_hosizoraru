@@ -94,3 +94,96 @@ data class GitHubReleaseSelection(
         }
     }
 }
+
+/**
+ * What actually decided which release the card shows, in the terms the card needs.
+ *
+ * Deliberately not [ReleaseSelectionRule]. That enum is the ranker's own vocabulary and belongs to
+ * `core-versioning`; this one is the vocabulary of a sentence shown to a reader, and keeping them
+ * apart means the ranker can grow a branch without the UI inheriting a case it has no wording for.
+ */
+enum class GitHubReleaseDecisionBasis {
+    /** The version numbers settled it. The ordinary case, and the one with nothing to say. */
+    Ranked,
+
+    /** The maintainer's own *Set as the latest release* flag settled it. */
+    ForgeLatest,
+
+    /** The highest number was one a restarted project left behind, so the ranking was overridden. */
+    VersioningReset,
+
+    /** The versions could not be ordered, so the clock decided. */
+    UpdateTime,
+
+    /** Neither version nor clock separated them, so the list's own order stands. */
+    ListOrder,
+}
+
+/**
+ * The part of a [GitHubReleaseSelection] that belongs on the card rather than in a diagnostic.
+ *
+ * The full selection is the working out: every candidate, every rejection, the page window, the
+ * clock. Almost none of that changes what a reader would do. Three things do, and they are the
+ * three this pipeline has had reports about:
+ *
+ *  - the release shown is not the one with the highest number, because the project restarted its
+ *    numbering and the forge's own flag settled it;
+ *  - the versions could not be compared at all, so the choice rests on when they moved;
+ *  - a pre-release the reader was tracking is deliberately not there.
+ *
+ * Small enough to persist beside the cached check, so the explanation survives a cold start rather
+ * than appearing only in the minutes after a live refresh.
+ */
+data class GitHubReleaseDecisionNote(
+    val stableBasis: GitHubReleaseDecisionBasis = GitHubReleaseDecisionBasis.Ranked,
+    /** The release the chosen one was chosen over, named only when it would surprise the reader. */
+    val stableRunnerUpTag: String = "",
+    val preReleaseRejection: GitHubReleaseRejection? = null,
+) {
+    /**
+     * Whether the stable choice needs explaining.
+     *
+     * An ordinary history ranked by version explains itself, and saying so on every card would bury
+     * the cases that do not.
+     */
+    val explainsStableChoice: Boolean
+        get() = stableBasis != GitHubReleaseDecisionBasis.Ranked
+
+    val isEmpty: Boolean
+        get() = !explainsStableChoice && preReleaseRejection == null
+
+    companion object {
+        fun from(
+            selection: GitHubReleaseSelection?,
+            preReleaseRejection: GitHubReleaseRejection? = null,
+        ): GitHubReleaseDecisionNote {
+            if (selection == null) {
+                return GitHubReleaseDecisionNote(preReleaseRejection = preReleaseRejection)
+            }
+            // The forge's flag outranks the ranking that sent us to ask for it: it is a maintainer's
+            // statement rather than a reading of the list, and it is the stronger thing to tell.
+            val basis = when {
+                selection.stableCameFromForgeLatest -> GitHubReleaseDecisionBasis.ForgeLatest
+                selection.stableRule == ReleaseSelectionRule.VersioningReset ->
+                    GitHubReleaseDecisionBasis.VersioningReset
+                selection.stableRule == ReleaseSelectionRule.Freshness ->
+                    GitHubReleaseDecisionBasis.UpdateTime
+                selection.stableRule == ReleaseSelectionRule.Indistinguishable ->
+                    GitHubReleaseDecisionBasis.ListOrder
+                else -> GitHubReleaseDecisionBasis.Ranked
+            }
+            // The evaluator's verdict first: it ran last, and it is the one that removed a row the
+            // reader could otherwise see. The selector's own duplicate-version rejection stands in
+            // when the evaluator had nothing to say, because from the card it looks identical.
+            val rejection = preReleaseRejection
+                ?: selection.rejected
+                    .firstOrNull { it.reason == GitHubReleaseRejection.SameVersionAsStable }
+                    ?.reason
+            return GitHubReleaseDecisionNote(
+                stableBasis = basis,
+                stableRunnerUpTag = selection.stableRunnerUpTag,
+                preReleaseRejection = rejection,
+            )
+        }
+    }
+}

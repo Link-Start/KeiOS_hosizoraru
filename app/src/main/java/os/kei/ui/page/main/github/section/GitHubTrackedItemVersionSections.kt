@@ -155,6 +155,7 @@ private fun GitHubTrackedItemStableVersionSection(
             releaseName = state.latestStableName.ifBlank { state.latestTag },
             rawTag = state.latestStableRawTag,
         )
+    val selectionBasis = githubSelectionBasisText(state.decisionNote)
     val stableExpanded = expansionState.trackedStableVersionExpanded[item.id] == true
     GitHubReleaseVersionCard(
         label =
@@ -183,7 +184,7 @@ private fun GitHubTrackedItemStableVersionSection(
         },
     )
     AnimatedVisibility(
-        visible = stableExpanded && stableReleaseMeta.isNotBlank(),
+        visible = stableExpanded && (stableReleaseMeta.isNotBlank() || selectionBasis != null),
         enter = appExpandIn(),
         exit = appExpandOut(),
     ) {
@@ -191,27 +192,34 @@ private fun GitHubTrackedItemStableVersionSection(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
         ) {
-            GitHubLinkedInfoCard(
-                label =
-                    stringResource(
-                        if (item.isDirectApkTrack()) {
-                            R.string.github_item_label_remote_stable_release
-                        } else {
-                            R.string.github_item_label_stable_release
-                        },
-                    ),
-                value = stableReleaseMeta,
-                valueColor = MiuixTheme.colorScheme.primary,
-                valueMaxLines = 2,
-                onClick = {
-                    actions.onOpenExternalUrl(
-                        state.githubStableReleaseLinkUrl(
-                            item.owner,
-                            item.repo,
+            if (stableReleaseMeta.isNotBlank()) {
+                GitHubLinkedInfoCard(
+                    label =
+                        stringResource(
+                            if (item.isDirectApkTrack()) {
+                                R.string.github_item_label_remote_stable_release
+                            } else {
+                                R.string.github_item_label_stable_release
+                            },
                         ),
-                    )
-                },
-            )
+                    value = stableReleaseMeta,
+                    valueColor = MiuixTheme.colorScheme.primary,
+                    valueMaxLines = 2,
+                    onClick = {
+                        actions.onOpenExternalUrl(
+                            state.githubStableReleaseLinkUrl(
+                                item.owner,
+                                item.repo,
+                            ),
+                        )
+                    },
+                )
+            }
+            // Behind the same disclosure as the release it qualifies: a reader who has not opened
+            // the version card is not asking how it was picked.
+            selectionBasis?.let { basis ->
+                GitHubSelectionBasisCard(item = item, text = basis, actions = actions)
+            }
         }
     }
 }
@@ -232,7 +240,21 @@ private fun GitHubTrackedItemPreReleaseVersionSection(
                     state.latestPreRawTag.isNotBlank() ||
                     state.preReleaseInfo.isNotBlank()
             )
-    if (!showPreRelease) return
+    if (!showPreRelease) {
+        githubRetiredPreReleaseText(
+            item = item,
+            itemLookupConfig = itemLookupConfig,
+            note = state.decisionNote,
+        )?.let { reason ->
+            GitHubRetiredPreReleaseCard(
+                item = item,
+                state = state,
+                text = reason,
+                actions = actions,
+            )
+        }
+        return
+    }
     val preReleaseCardTextColor = gitHubPreReleaseCardTextColor()
     val preReleaseMeta =
         formatReleaseMetaValue(

@@ -43,7 +43,8 @@ internal fun VersionCheckUi.toCacheEntry(): GitHubCheckCacheEntry = GitHubCheckC
     directApkRemoteHealth = directApkRemoteHealth,
     directApkRemoteHealthMessage = directApkRemoteHealthMessage,
     directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis,
-    checkedAtMillis = checkedAtMillis
+    checkedAtMillis = checkedAtMillis,
+    decisionNote = decisionNote
 )
 
 internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
@@ -85,7 +86,8 @@ internal fun GitHubCheckCacheEntry.toUi(): VersionCheckUi = VersionCheckUi(
     directApkRemoteHealth = directApkRemoteHealth,
     directApkRemoteHealthMessage = directApkRemoteHealthMessage,
     directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis,
-    checkedAtMillis = checkedAtMillis
+    checkedAtMillis = checkedAtMillis,
+    decisionNote = decisionNote
 )
 
 internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
@@ -126,5 +128,6 @@ internal fun GitHubTrackedReleaseCheck.toUi(): VersionCheckUi = VersionCheckUi(
     repositoryProfile = repositoryProfile,
     directApkRemoteHealth = directApkRemoteHealth,
     directApkRemoteHealthMessage = directApkRemoteHealthMessage,
-    directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis
+    directApkRemoteCheckedAtMillis = directApkRemoteCheckedAtMillis,
+    decisionNote = decisionNote
 )

@@ -483,5 +483,12 @@ data class GitHubCheckCacheEntry(
     val directApkRemoteHealth: GitHubDirectApkRemoteHealth = GitHubDirectApkRemoteHealth.Unknown,
     val directApkRemoteHealthMessage: String = "",
     val directApkRemoteCheckedAtMillis: Long = -1L,
-    val checkedAtMillis: Long = -1L
+    val checkedAtMillis: Long = -1L,
+    /**
+     * Why this check chose the release it did, when that needs saying.
+     *
+     * Cached with the answer rather than recomputed, because the explanation is only reachable from
+     * the release list the answer came from -- and that list is gone by the time the card is read.
+     */
+    val decisionNote: GitHubReleaseDecisionNote = GitHubReleaseDecisionNote()
 )

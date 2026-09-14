@@ -20,6 +20,7 @@ import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
 import os.kei.feature.github.model.GitHubRefreshFailureDiagnostics
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubPreciseApkOutcome
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
@@ -183,6 +184,8 @@ object GitHubReleaseCheckService {
                 checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
                 preciseStableApkVersion = preciseVersions.stable,
                 precisePreReleaseApkVersion = preciseVersions.preRelease,
+                preciseStableOutcome = preciseVersions.stableOutcome,
+                precisePreReleaseOutcome = preciseVersions.preReleaseOutcome,
                 sourceConfigSignature = sourceConfigSignature
             ).copy(
                 diagnostics = gitSnapshotResult.diagnostics.copy(
@@ -335,6 +338,8 @@ object GitHubReleaseCheckService {
             checkAllTrackedPreReleases = lookupConfig.checkAllTrackedPreReleases,
             preciseStableApkVersion = preciseVersions.stable,
             precisePreReleaseApkVersion = preciseVersions.preRelease,
+            preciseStableOutcome = preciseVersions.stableOutcome,
+            precisePreReleaseOutcome = preciseVersions.preReleaseOutcome,
             sourceConfigSignature = sourceConfigSignature,
             repositoryProfile = profile
         ).copy(
@@ -361,6 +366,8 @@ object GitHubReleaseCheckService {
         checkAllTrackedPreReleases: Boolean = false,
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
+        preciseStableOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
+        precisePreReleaseOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
         sourceConfigSignature: String = "",
         repositoryProfile: GitHubRepositoryProfileSnapshot? = snapshot.repositoryProfile,
         /**
@@ -386,6 +393,8 @@ object GitHubReleaseCheckService {
             ),
             preciseStableApkVersion = preciseStableApkVersion,
             precisePreReleaseApkVersion = precisePreReleaseApkVersion,
+            preciseStableOutcome = preciseStableOutcome,
+            precisePreReleaseOutcome = precisePreReleaseOutcome,
         )
         val waitingForFirstRelease =
             item.externalBuildUntilRelease &&
@@ -495,11 +504,20 @@ object GitHubReleaseCheckService {
                 }
             }
         }
-        if (targets.isEmpty()) return PreciseApkVersionPair(requested = true)
+        if (targets.isEmpty()) {
+            return PreciseApkVersionPair(
+                requested = true,
+                stableOutcome = GitHubPreciseApkOutcome.NoTarget,
+                preReleaseOutcome = GitHubPreciseApkOutcome.NoTarget
+            )
+        }
         val results = GitHubExecution.mapOrderedBounded(
             items = targets,
             maxConcurrency = 2
         ) { target ->
+            // Kept as a Result rather than flattened to null. A version we could not read and a
+            // version that does not exist both leave the comparison resting on release names, but
+            // only one of them is a failure, and the reader is owed the difference.
             target.channel to resolver.resolve(
                 GitHubPreciseApkVersionRequest(
                     owner = item.owner,
@@ -508,12 +526,25 @@ object GitHubReleaseCheckService {
                     packageName = item.packageName,
                     lookupConfig = lookupConfig
                 )
-            ).getOrNull()
+            )
         }
+        fun outcomeFor(channel: PreciseApkVersionChannel): Pair<GitHubRemoteApkVersionInfo?, GitHubPreciseApkOutcome> {
+            val entry = results.firstOrNull { it.first == channel }
+                ?: return null to GitHubPreciseApkOutcome.NoTarget
+            val info = entry.second.getOrNull()?.takeIf { it.versionCodeLong != null }
+            return info to when (info) {
+                null -> GitHubPreciseApkOutcome.Unresolved
+                else -> GitHubPreciseApkOutcome.Resolved
+            }
+        }
+        val (stable, stableOutcome) = outcomeFor(PreciseApkVersionChannel.Stable)
+        val (preRelease, preReleaseOutcome) = outcomeFor(PreciseApkVersionChannel.PreRelease)
         return PreciseApkVersionPair(
-            stable = results.firstOrNull { it.first == PreciseApkVersionChannel.Stable }?.second,
-            preRelease = results.firstOrNull { it.first == PreciseApkVersionChannel.PreRelease }?.second,
-            requested = true
+            stable = stable,
+            preRelease = preRelease,
+            requested = true,
+            stableOutcome = stableOutcome,
+            preReleaseOutcome = preReleaseOutcome
         )
     }
 
@@ -941,7 +972,9 @@ object GitHubReleaseCheckService {
     private data class PreciseApkVersionPair(
         val stable: GitHubRemoteApkVersionInfo? = null,
         val preRelease: GitHubRemoteApkVersionInfo? = null,
-        val requested: Boolean = false
+        val requested: Boolean = false,
+        val stableOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
+        val preReleaseOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled
     )
 
     private enum class PreciseApkVersionChannel {

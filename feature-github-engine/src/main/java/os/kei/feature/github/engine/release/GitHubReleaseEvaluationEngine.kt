@@ -1,7 +1,10 @@
 package os.kei.feature.github.engine.release
 
+import os.kei.core.versioning.VersionComparison
+import os.kei.core.versioning.VersionConfidence
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubPreciseApkOutcome
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
@@ -33,6 +36,19 @@ data class GitHubReleaseEvaluationResult(
     val showPreReleaseInfo: Boolean = false,
     val releaseHint: String = "",
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
+    /**
+     * What the local build was actually measured against, and how well it lined up.
+     *
+     * Kept because every one of the three reports this pipeline has had was diagnosed by
+     * reconstructing exactly this by hand from a captured fixture. `null` means no comparison could
+     * be made at all, which is a different thing from a comparison nobody should lean on --
+     * [VersionComparison.confidence] is what separates them.
+     */
+    val stableComparison: VersionComparison? = null,
+    val preReleaseComparison: VersionComparison? = null,
+    /** Whether an APK was read to settle [stableComparison], and if not, why not. */
+    val preciseStableOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
+    val precisePreReleaseOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
 )
 
 object GitHubReleaseEvaluationEngine {
@@ -43,6 +59,14 @@ object GitHubReleaseEvaluationEngine {
         policy: GitHubReleaseEvaluationPolicy = GitHubReleaseEvaluationPolicy(),
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
+        /**
+         * Why [preciseStableApkVersion] is or is not there.
+         *
+         * Defaults to [GitHubPreciseApkOutcome.Disabled] because that is what a caller passing
+         * neither is saying: the reader was never promised more than a name comparison.
+         */
+        preciseStableOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
+        precisePreReleaseOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
         /** Injected so the staleness rule below can be pinned by a test rather than drift with the day. */
         nowMillis: Long = System.currentTimeMillis(),
     ): GitHubReleaseEvaluationResult {
@@ -78,14 +102,15 @@ object GitHubReleaseEvaluationEngine {
             policy.preferPreRelease ||
             isLocalPreReleaseInstalled
 
-        val stableCmp = latestStable?.let {
-            GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
+        val stableComparison = latestStable?.let {
+            GitHubVersionUtils.compareLocalVersionNameAndCodeToCandidatesDetailed(
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 candidates = it.versionCandidates,
                 remoteChannel = it.channel,
             )
         }
+        val stableCmp = stableComparison?.order?.legacyValue
         val latestPreIsRelevant = when {
             latestPre == null -> false
             latestStable == null -> true
@@ -98,14 +123,15 @@ object GitHubReleaseEvaluationEngine {
                 stableChannel = latestStable.channel,
             )
         }
-        val latestPreCmp = latestPre?.let {
-            GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
+        val preReleaseComparison = latestPre?.let {
+            GitHubVersionUtils.compareLocalVersionNameAndCodeToCandidatesDetailed(
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 candidates = it.versionCandidates,
                 remoteChannel = it.channel,
             )
         }
+        val latestPreCmp = preReleaseComparison?.order?.legacyValue
 
         val preciseStableCmp = preciseStableApkVersion
             ?.versionCodeLong
@@ -208,6 +234,19 @@ object GitHubReleaseEvaluationEngine {
         }
 
         val stableCompared = stableCmp != null || preciseStableCmp != null
+        // "I compared, and the answer is not one to lean on" -- a state this pipeline could produce
+        // but never report. `ComparisonUncertain` was reachable only when nothing compared at all, so
+        // a coin flip and a confident match arrived at the card looking identical.
+        //
+        // Narrow on purpose, and it never hides an update: it only relabels the *reassuring* answer.
+        // `Low` confidence means the two version strings share no leading number whatever -- a local
+        // `20240115` against a release `1.4.2`. Reaching `!hasUpdate` from there is arithmetic, not
+        // knowledge. An exact match somewhere in the feed, or an APK that was actually opened, both
+        // corroborate it and take it back to plain up-to-date.
+        val stableAnswerIsWeak = latestStable != null &&
+            !preciseStableOutcome.settlesComparison &&
+            matchedEntry == null &&
+            stableComparison?.confidence == VersionConfidence.Low
         val status = when {
             recommendsPreRelease -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
             stableHasUpdate -> GitHubTrackedReleaseStatus.UpdateAvailable
@@ -215,6 +254,8 @@ object GitHubReleaseEvaluationEngine {
             showIgnoredStatus -> GitHubTrackedReleaseStatus.Ignored
             inspectPreRelease && isLocalPreReleaseInstalled ->
                 GitHubTrackedReleaseStatus.PreReleaseTracked
+            stableCompared && !hasUpdate && stableAnswerIsWeak ->
+                GitHubTrackedReleaseStatus.ComparisonUncertain
             stableCompared && !hasUpdate -> GitHubTrackedReleaseStatus.UpToDate
             matchedEntry != null -> GitHubTrackedReleaseStatus.MatchedRelease
             else -> GitHubTrackedReleaseStatus.ComparisonUncertain
@@ -233,6 +274,10 @@ object GitHubReleaseEvaluationEngine {
             showPreReleaseInfo = showPreReleaseInfo,
             releaseHint = releaseHint,
             status = status,
+            stableComparison = stableComparison,
+            preReleaseComparison = preReleaseComparison,
+            preciseStableOutcome = preciseStableOutcome,
+            precisePreReleaseOutcome = precisePreReleaseOutcome,
         )
     }
 }

@@ -90,3 +90,32 @@ data class GitHubApkSignatureInfo(
     val notAfterMillis: Long = -1L,
     val sha256: String = ""
 )
+
+/**
+ * What happened when the pipeline tried to read a version out of a release's APK.
+ *
+ * The precise path used to end in `getOrNull()`, which collapsed four different situations into one
+ * `null`: the setting is off, there was no release to inspect, the download or parse failed, and the
+ * APK simply carried no version. Every one of them then fell back to comparing release *names*, and
+ * nothing downstream could tell whether that fallback was the plan or the wreckage.
+ *
+ * Only [Resolved] settles a comparison. The rest are the reasons it did not, kept apart so the
+ * status the reader sees, and the diagnostics behind it, can say which one applied.
+ */
+enum class GitHubPreciseApkOutcome {
+    /** Not in play: the check is switched off, or this source has no APK reader. Names are all we promised. */
+    Disabled,
+
+    /** Switched on, but this channel had no release to look inside. */
+    NoTarget,
+
+    /** An APK was read and it carried a version code. */
+    Resolved,
+
+    /** Asked for and not obtained: the fetch failed, the parse failed, or the APK had no version. */
+    Unresolved,
+    ;
+
+    val settlesComparison: Boolean
+        get() = this == Resolved
+}

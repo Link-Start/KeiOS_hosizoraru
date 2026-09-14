@@ -2,6 +2,7 @@ package os.kei.feature.github.data.remote
 
 import java.net.URI
 import os.kei.core.versioning.VersionCandidate
+import os.kei.core.versioning.VersionComparison
 import os.kei.core.versioning.VersionChannel
 import os.kei.core.versioning.VersionConfidence
 import os.kei.core.versioning.VersioningEngine
@@ -104,6 +105,27 @@ object GitHubVersionUtils {
             localVersionCode = localVersionCode,
             remoteCandidates = candidates.toCoreCandidates(remoteChannel),
         )?.order?.legacyValue
+    }
+
+    /**
+     * The same comparison as [compareVersionNameAndCodeToStructuredCandidates], kept whole.
+     *
+     * The `Int?` form throws away everything but the sign: how much of the two version strings
+     * actually lined up, which rule decided it, and what the two sides were reduced to. The engine
+     * needs all of that to say how far a reader should trust the answer, so it reads this and takes
+     * the sign from [VersionComparison.order] itself.
+     */
+    fun compareLocalVersionNameAndCodeToCandidatesDetailed(
+        localVersion: String,
+        localVersionCode: Long,
+        candidates: List<GitHubVersionCandidate>,
+        remoteChannel: GitHubReleaseChannel? = null,
+    ): VersionComparison? {
+        return VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            remoteCandidates = candidates.toCoreCandidates(remoteChannel),
+        )
     }
 
     fun remoteCandidateMatchesLocalVersionNameAndCode(

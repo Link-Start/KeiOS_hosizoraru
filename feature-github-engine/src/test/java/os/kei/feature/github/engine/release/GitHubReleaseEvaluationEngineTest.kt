@@ -1,9 +1,11 @@
 package os.kei.feature.github.engine.release
 
 import org.junit.Test
+import os.kei.core.versioning.VersionConfidence
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubPreciseApkOutcome
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
@@ -132,6 +134,72 @@ class GitHubReleaseEvaluationEngineTest {
             result.releaseHint,
         )
         assertFalse(result.showPreReleaseInfo)
+    }
+
+    /**
+     * The third state the pipeline could produce and never report.
+     *
+     * A local `20240115` against a release `1.4.2` shares no leading number with it, so the
+     * comparison is arithmetic on two unrelated scales. It lands on "nothing newer" and used to say
+     * so in the same words it uses for a version it actually recognised.
+     */
+    @Test
+    fun `a comparison with nothing in common is reported as uncertain, not as up to date`() {
+        val result = GitHubReleaseEvaluationEngine.evaluate(
+            localVersion = "20240115",
+            localVersionCode = -1L,
+            snapshot = snapshot(
+                stable = signal("1.4.2"),
+                entries = listOf(entry("1.4.2"), entry("1.4.1")),
+            ),
+        )
+
+        assertFalse(result.hasUpdate)
+        assertEquals(VersionConfidence.Low, result.stableComparison?.confidence)
+        assertEquals(GitHubTrackedReleaseStatus.ComparisonUncertain, result.status)
+    }
+
+    /** An APK that was actually opened settles it, and the reassuring answer is earned again. */
+    @Test
+    fun `an apk read off the release takes the same comparison back to up to date`() {
+        val result = GitHubReleaseEvaluationEngine.evaluate(
+            localVersion = "20240115",
+            localVersionCode = 142L,
+            snapshot = snapshot(
+                stable = signal("1.4.2"),
+                entries = listOf(entry("1.4.2"), entry("1.4.1")),
+            ),
+            preciseStableApkVersion = GitHubRemoteApkVersionInfo(
+                releaseTag = "1.4.2",
+                versionName = "1.4.2",
+                versionCode = "142",
+            ),
+            preciseStableOutcome = GitHubPreciseApkOutcome.Resolved,
+        )
+
+        assertFalse(result.hasUpdate)
+        assertEquals(GitHubTrackedReleaseStatus.UpToDate, result.status)
+    }
+
+    /**
+     * The failure this separates out. The precise check ran, could not read the APK, and the answer
+     * fell back to release names -- which is exactly the situation the status above is for, so the
+     * fallback must not inherit the confidence of the check that did not happen.
+     */
+    @Test
+    fun `a precise check that failed does not stand in for one that succeeded`() {
+        val result = GitHubReleaseEvaluationEngine.evaluate(
+            localVersion = "20240115",
+            localVersionCode = -1L,
+            snapshot = snapshot(
+                stable = signal("1.4.2"),
+                entries = listOf(entry("1.4.2"), entry("1.4.1")),
+            ),
+            preciseStableOutcome = GitHubPreciseApkOutcome.Unresolved,
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.ComparisonUncertain, result.status)
+        assertEquals(GitHubPreciseApkOutcome.Unresolved, result.preciseStableOutcome)
     }
 
     private fun snapshot(

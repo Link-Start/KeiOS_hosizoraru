@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Reset HWUI stats, drive one fixed journey, print the aggregate percentiles.
 #
-#   LABEL=<name> JOURNEY=<journey> ./hwui_journey.sh <name> <journey>
+#   D=<serial> PKG=<app id> ./hwui_journey.sh <name> <journey>
+#
+# Defaults to os.kei.diag, like idle_dwell.sh: the diagnostic variant is release with R8, built
+# to be measured, and measuring os.kei instead drives the user's real install and its real data.
 #   journeys: home_scroll | section_switch | route_push
 #
 # Requires Developer options -> Profile HWUI rendering -> "In adb shell dumpsys
@@ -14,7 +17,7 @@
 # Journeys are deliberately identical across builds so two runs can be diffed.
 set -uo pipefail
 D=${D:-5eea1f50}
-PKG=os.kei
+PKG=${PKG:-os.kei.diag}
 LABEL="$1"
 JOURNEY="$2"
 

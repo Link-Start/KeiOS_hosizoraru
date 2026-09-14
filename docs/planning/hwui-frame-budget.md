@@ -340,3 +340,42 @@ What is left on this page is the glass material and the content: full-width phot
 long list, each panel its own offscreen layer. Every remaining reduction goes through fewer or smaller
 glass surfaces, or smaller images. Sheets and every two-lane page render **0 frames at rest**, so
 there is nothing idle to reclaim there either.
+
+## Re-measured 2026-09-15
+
+Reproduced on `5eea1f50`, `releaseDiagnostic`, months and a large amount of change later,
+because someone reasonably asked whether a round of Compose recomposition work would help. The
+shape is unchanged, which is the point of recording it again:
+
+| stage | p50 | share |
+|---|---|---|
+| input | 0.00 | 0.0% |
+| animation | 0.19 | 1.3% |
+| measure+layout | 0.07 | 0.4% |
+| record draw | 0.22 | 1.4% |
+| sync | 0.43 | 2.4% |
+| RT issue->swap | 6.11 | 31.9% |
+| swap->completed | 10.31 | 59.4% |
+| total | 17.90 | |
+
+118 frames, home idle, 16.64ms vsync interval. **Compose totals 0.48ms, 3.1%.** Every
+recomposition optimisation available in this app competes for half a millisecond, most of which
+is animation and draw recording and cannot be removed at all.
+
+Two supporting readings from the same session. The Compose compiler report
+(`-PcomposeCompilerReports=true`) puts **restartable-but-not-skippable at 0** across 1322
+composables — the unstable-parameter class of problem does not exist here, because the 212
+unstable classes are Activities, Services, Receivers and network DTOs and none of them reach a
+composable's parameter list. And the deferred-read discipline is already universal: zero
+non-lambda `graphicsLayer(` sites, 205 `rememberUpdatedState`, `Animatable` and `withFrameNanos`
+outnumbering `animate*AsState` three to one.
+
+One figure does differ from the table above, and it is not claimed as an improvement because the
+two were not derived the same way: `idle_dwell.sh` now reports `Number Frame deadline missed: 0`
+on three consecutive home runs (366-368 frames per 3s, p50 18-19ms), where the earlier section
+reports home over deadline 100% of the time. 66% of those frames still exceed the vsync interval.
+Anyone comparing should re-derive both numbers the same way before reading anything into it.
+
+`hwui_journey.sh` hardcoded `PKG=os.kei` — the user's real install, with their real tracked
+repositories, which it force-stops and relaunches. It now defaults to `os.kei.diag` like its
+sibling and honours `PKG` from the environment.

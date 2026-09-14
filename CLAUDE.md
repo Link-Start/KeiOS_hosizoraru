@@ -66,6 +66,14 @@ claude plugin marketplace update aldefy-compose-skill
 
 ## Performance work
 
+**Anything frame-time shaped goes through the `keios-frame-performance` skill first.** One
+number is why: everything Compose does — input, animation, measure, layout, recording draw —
+is **0.48ms of a 17.9ms frame**, and RenderThread plus GPU is 91%. General Compose advice
+about recomposition is correct about Compose and cannot move this app, and following it here
+has already cost two rounds that measured no change. The skill carries the measurement
+procedure, the levers already rejected, and the constraint that visual quality is not
+tradeable.
+
 Frame-time investigations are written up in `docs/planning/` — start with
 `hwui-frame-budget.md`, which also records the measurement noise floor and several
 already-rejected optimisations. Harness lives in `scripts/perf/`.

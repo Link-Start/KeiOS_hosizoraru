@@ -1,5 +1,10 @@
 package os.kei.core.io
 
+import java.io.IOException
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -7,14 +12,7 @@ import kotlin.coroutines.CoroutineContext
 import okhttp3.Call
 import okhttp3.Connection
 import okhttp3.EventListener
-import okhttp3.Handshake
-import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.Response
-import java.io.IOException
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.Proxy
 
 /**
  * Where one HTTP call's wall clock went.
@@ -59,6 +57,12 @@ data class NetworkTimingSummary(
     val failedCalls: Int = 0,
     val protocol: String = "",
 ) {
+    /**
+     * The phases summed across every call in the scope.
+     *
+     * Not the scope's wall clock: an item that ran two calls at once spent both their waits in the
+     * same seconds. Treat it as a breakdown of effort, not of elapsed time.
+     */
     val totalMs: Long
         get() = queuedMs + dnsMs + connectMs + waitingMs + bodyMs
 
@@ -94,6 +98,33 @@ object NetworkPhase {
 }
 
 /**
+ * How many instrumented calls were in the air at once, for one measurement.
+ *
+ * The reason this exists: the refresh path asked for sixteen concurrent repositories and got ten for
+ * months, because a request held its caller's thread and nobody was counting. A number a batch
+ * *requested* is a setting; this is what happened.
+ *
+ * An instance per measurement rather than a process-wide singleton, because refreshes overlap — a
+ * background tick, a card the user tapped, a package-install broadcast — and a shared counter would
+ * have each of them resetting and reading the others' work, then showing the result as a fact.
+ */
+class NetworkCallGauge {
+    private val inFlight = AtomicInteger(0)
+    private val peak = AtomicInteger(0)
+
+    internal fun enter() {
+        val now = inFlight.incrementAndGet()
+        peak.updateAndGet { current -> maxOf(current, now) }
+    }
+
+    internal fun exit() {
+        inFlight.decrementAndGet()
+    }
+
+    fun peakConcurrentCalls(): Int = peak.get()
+}
+
+/**
  * Collects the calls made inside one coroutine scope.
  *
  * Carried in the coroutine context rather than passed down, because the calls are made eight layers
@@ -101,7 +132,13 @@ object NetworkPhase {
  * of damage. [OkHttpClient.executeCancellable] picks it up and tags the request with it, so a call
  * made outside any scope records nothing and costs nothing.
  */
-class NetworkTimingScope : AbstractCoroutineContextElement(Key) {
+class NetworkTimingScope(
+    /**
+     * Shared by every scope in one batch, so the peak belongs to that batch and nobody else.
+     * Null when the caller wants per-call phases without a concurrency reading.
+     */
+    val gauge: NetworkCallGauge? = null,
+) : AbstractCoroutineContextElement(Key) {
     private val calls = AtomicInteger(0)
     private val queued = AtomicLong(0)
     private val dns = AtomicLong(0)
@@ -111,6 +148,7 @@ class NetworkTimingScope : AbstractCoroutineContextElement(Key) {
     private val byteCount = AtomicLong(0)
     private val reused = AtomicInteger(0)
     private val failed = AtomicInteger(0)
+
     @Volatile
     private var protocol: String = ""
 
@@ -144,63 +182,43 @@ class NetworkTimingScope : AbstractCoroutineContextElement(Key) {
 }
 
 /**
- * Process-wide gauge of how many instrumented calls are running at once.
- *
- * The reason this exists: the refresh path asked for sixteen concurrent repositories and got ten for
- * months, because a request held its caller's thread and nobody was counting. A number the batch
- * *requested* is a setting; this is what actually happened, and it is the one figure a report from a
- * real phone can carry that an emulator run cannot fake.
- *
- * Only scoped calls are counted, so a background download cannot inflate a refresh's reading.
- */
-object NetworkCallGauge {
-    private val inFlight = AtomicInteger(0)
-    private val peak = AtomicInteger(0)
-
-    internal fun enter() {
-        val now = inFlight.incrementAndGet()
-        peak.updateAndGet { current -> maxOf(current, now) }
-    }
-
-    internal fun exit() {
-        inFlight.decrementAndGet()
-    }
-
-    /** Start a fresh measurement. Returns the peak seen since the previous reset. */
-    fun resetPeak(): Int {
-        val previous = peak.get()
-        peak.set(inFlight.get())
-        return previous
-    }
-
-    fun peakConcurrentCalls(): Int = peak.get()
-}
-
-/**
  * Times every call that was issued inside a [NetworkTimingScope], and nothing else.
  *
- * OkHttp builds one of these per call, so the fields need no synchronisation between calls; the
- * callbacks themselves arrive on whichever thread the call is running on, and each field is written
- * once by that thread before [callEnd] reads them.
+ * OkHttp builds one of these per call. The accumulators are written on the call's own threads and
+ * read once in [finish], which is reached from `callEnd` or `callFailed` — both delivered by the
+ * call itself, after it is done. `canceled` is deliberately not one of them: OkHttp delivers it
+ * inline on whichever thread called `cancel()` and still follows it with `callFailed`, so treating
+ * it as terminal both raced the accumulators and closed the same call twice, which left the gauge's
+ * in-flight count permanently below zero.
  */
 internal class NetworkTimingEventListener(call: Call) : EventListener() {
     private val scope: NetworkTimingScope? =
         call.request().tag(NetworkTimingScope::class.java)
 
+    private val finished = AtomicBoolean(false)
+
     private var callStartNs = 0L
     private var firstWorkNs = 0L
     private var dnsStartNs = 0L
+    private var dnsEnded = false
     private var dnsMs = 0L
-    private var connectStartNs = 0L
+
+    /**
+     * The first of possibly several attempts. `fastFallback` races an IPv6 plan and an IPv4 plan for
+     * one call, so connect callbacks interleave and summing them would double count. "How long until
+     * this call had a connection" is one well-defined interval whatever the plans did.
+     */
+    private var connectFirstStartNs = 0L
+    private var connectionAcquiredNs = 0L
     private var connectMs = 0L
+
     private var requestSentNs = 0L
     private var waitingMs = 0L
     private var responseHeadersNs = 0L
+    private var bodyEnded = false
     private var bodyMs = 0L
     private var bytes = 0L
-    private var reused = true
     private var protocol = ""
-    private var entered = false
 
     private fun markFirstWork(atNs: Long) {
         if (firstWorkNs == 0L) firstWorkNs = atNs
@@ -209,8 +227,7 @@ internal class NetworkTimingEventListener(call: Call) : EventListener() {
     override fun callStart(call: Call) {
         if (scope == null) return
         callStartNs = System.nanoTime()
-        NetworkCallGauge.enter()
-        entered = true
+        scope.gauge?.enter()
     }
 
     override fun dnsStart(call: Call, domainName: String) {
@@ -222,45 +239,24 @@ internal class NetworkTimingEventListener(call: Call) : EventListener() {
     override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
         if (scope == null || dnsStartNs == 0L) return
         dnsMs += elapsedMs(dnsStartNs)
+        dnsEnded = true
     }
 
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
         if (scope == null) return
-        connectStartNs = System.nanoTime()
-        markFirstWork(connectStartNs)
-        // A call that had to open a socket did not reuse one, whatever the pool says afterwards.
-        reused = false
-    }
-
-    override fun connectEnd(
-        call: Call,
-        inetSocketAddress: InetSocketAddress,
-        proxy: Proxy,
-        protocol: Protocol?,
-    ) {
-        if (scope == null || connectStartNs == 0L) return
-        connectMs += elapsedMs(connectStartNs)
-        protocol?.let { this.protocol = it.toString() }
-    }
-
-    override fun connectFailed(
-        call: Call,
-        inetSocketAddress: InetSocketAddress,
-        proxy: Proxy,
-        protocol: Protocol?,
-        ioe: IOException,
-    ) {
-        if (scope == null || connectStartNs == 0L) return
-        connectMs += elapsedMs(connectStartNs)
-    }
-
-    override fun secureConnectEnd(call: Call, handshake: Handshake?) {
-        // Folded into connectMs by connectEnd; TLS is part of the cost of not having a connection.
+        val now = System.nanoTime()
+        if (connectFirstStartNs == 0L) connectFirstStartNs = now
+        markFirstWork(now)
     }
 
     override fun connectionAcquired(call: Call, connection: Connection) {
         if (scope == null) return
-        markFirstWork(System.nanoTime())
+        val now = System.nanoTime()
+        markFirstWork(now)
+        if (connectionAcquiredNs == 0L) connectionAcquiredNs = now
+        if (connectFirstStartNs != 0L && connectMs == 0L) {
+            connectMs = elapsedMs(connectFirstStartNs, now)
+        }
         if (protocol.isBlank()) protocol = connection.protocol().toString()
     }
 
@@ -289,6 +285,7 @@ internal class NetworkTimingEventListener(call: Call) : EventListener() {
         if (scope == null) return
         bytes += byteCount
         if (responseHeadersNs != 0L) bodyMs += elapsedMs(responseHeadersNs)
+        bodyEnded = true
     }
 
     override fun callEnd(call: Call) {
@@ -299,16 +296,26 @@ internal class NetworkTimingEventListener(call: Call) : EventListener() {
         finish(failed = true)
     }
 
-    override fun canceled(call: Call) {
-        finish(failed = true)
-    }
-
+    /**
+     * Close out whichever phase the call was standing in when it ended.
+     *
+     * Every phase but the first is committed in the callback that ends it, so a call killed mid-phase
+     * used to report zero for the one phase it was actually stuck in — and the cause pill would then
+     * name whichever phase had managed to finish. That is exactly backwards: the calls worth
+     * diagnosing are the ones that did not complete.
+     */
     private fun finish(failed: Boolean) {
         val target = scope ?: return
-        if (!entered) return
-        entered = false
-        NetworkCallGauge.exit()
-        val started = firstWorkNs.takeIf { it != 0L } ?: System.nanoTime()
+        if (!finished.compareAndSet(false, true)) return
+        target.gauge?.exit()
+        val now = System.nanoTime()
+        if (dnsStartNs != 0L && !dnsEnded) dnsMs += elapsedMs(dnsStartNs, now)
+        if (connectFirstStartNs != 0L && connectionAcquiredNs == 0L) {
+            connectMs += elapsedMs(connectFirstStartNs, now)
+        }
+        if (requestSentNs != 0L && responseHeadersNs == 0L) waitingMs += elapsedMs(requestSentNs, now)
+        if (responseHeadersNs != 0L && !bodyEnded) bodyMs += elapsedMs(responseHeadersNs, now)
+        val started = firstWorkNs.takeIf { it != 0L } ?: now
         target.record(
             NetworkCallTiming(
                 queuedMs = if (callStartNs == 0L) 0L else elapsedMs(callStartNs, started),
@@ -317,7 +324,10 @@ internal class NetworkTimingEventListener(call: Call) : EventListener() {
                 waitingMs = waitingMs,
                 bodyMs = bodyMs,
                 bytes = bytes,
-                connectionReused = reused,
+                // Reuse means this call got a connection without opening one. A call that died before
+                // any connect attempt reused nothing, and counting it as reuse hid the pill precisely
+                // when connections were the problem.
+                connectionReused = connectionAcquiredNs != 0L && connectFirstStartNs == 0L,
                 protocol = protocol,
                 failed = failed,
             ),

@@ -1850,19 +1850,23 @@
     <string name="github_item_prerelease_retired_reason">This line has not moved in over two weeks, so it is not shown</string>
     <!-- What a slow refresh was actually made of, for the history page's diagnostics. -->
     <string name="github_history_refresh_label_network">Network</string>
-    <string name="github_history_refresh_network_value">%1$s · peak %2$d in flight</string>
-    <string name="github_history_refresh_network_value_metered">%1$s (metered) · peak %2$d in flight</string>
+    <string name="github_history_refresh_network_value">%1$s · up to %2$d requests at once</string>
+    <string name="github_history_refresh_network_value_metered">%1$s (metered) · up to %2$d requests at once</string>
+    <string name="github_history_refresh_network_value_kind_only">%1$s</string>
+    <string name="github_history_refresh_network_value_kind_only_metered">%1$s (metered)</string>
     <string name="github_history_refresh_network_wifi">Wi-Fi</string>
     <string name="github_history_refresh_network_cellular">Cellular</string>
     <string name="github_history_refresh_network_ethernet">Ethernet</string>
     <string name="github_history_refresh_network_none">No connection</string>
     <string name="github_history_refresh_network_other">Other network</string>
-    <string name="github_history_refresh_schedule_value_measured">Concurrency %1$d (actual %2$d) · APK %3$d · F-Droid %4$d</string>
     <string name="github_history_refresh_cause_queued">Queued %1$s</string>
     <string name="github_history_refresh_cause_dns">DNS %1$s</string>
     <string name="github_history_refresh_cause_connect">Connecting %1$s</string>
     <string name="github_history_refresh_cause_waiting">Server wait %1$s</string>
     <string name="github_history_refresh_cause_body">Download %1$s</string>
-    <string name="github_history_refresh_network_calls">%1$d requests · %2$s</string>
+    <plurals name="github_history_refresh_network_calls">
+        <item quantity="one">%1$d request · %2$s</item>
+        <item quantity="other">%1$d requests · %2$s</item>
+    </plurals>
     <string name="github_history_refresh_network_reused">%1$d/%2$d reused</string>
 </resources>

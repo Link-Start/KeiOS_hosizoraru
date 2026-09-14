@@ -113,6 +113,9 @@ class GitHubBackgroundRefreshService(
                             runCatching {
                                 GitHubTrackedRefreshBatchRunner.run(
                                     trackedItems = trackedUpdateTargetItems,
+                                    // The path that runs while the phone is asleep on cellular is
+                                    // exactly the one whose connection kind is worth recording.
+                                    networkState = GitHubRefreshNetworkKind.of(context),
                                     refreshTimestampMs = nowMs,
                                     maxConcurrency = GitHubTrackedRefreshBatchScheduler
                                         .backgroundRefreshConcurrency(trackedUpdateTargetItems.size),
@@ -281,6 +284,7 @@ class GitHubBackgroundRefreshService(
                 runCatching {
                     GitHubTrackedRefreshBatchRunner.run(
                         trackedItems = tracked,
+                        networkState = GitHubRefreshNetworkKind.of(context),
                         refreshTimestampMs = nowMs,
                         batchTimeoutMs = GITHUB_SHORTCUT_BATCH_TIMEOUT_MS,
                         onProgress = { progress ->

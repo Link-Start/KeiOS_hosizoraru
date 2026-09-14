@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -283,26 +284,13 @@ internal fun GitHubRefreshHistoryRecordCard(
                 AppInfoRow(
                     label = stringResource(R.string.github_history_refresh_label_schedule),
                     value =
-                        // The configured number beside the one the device managed. They were
-                        // silently different for months, and only a real device can tell you so.
-                        if (record.peakConcurrentCalls > 0) {
-                            stringResource(
-                                R.string.github_history_refresh_schedule_value_measured,
-                                record.maxConcurrency,
-                                record.peakConcurrentCalls,
-                                record.directApkConcurrency,
-                                record.fdroidConcurrency,
-                            )
-                        } else {
-                            stringResource(
-                                R.string.github_history_refresh_schedule_value,
-                                record.maxConcurrency,
-                                record.directApkConcurrency,
-                                record.fdroidConcurrency,
-                            )
-                        },
-                    stacked = true,
-                    valueMaxLines = 2,
+                        stringResource(
+                            R.string.github_history_refresh_schedule_value,
+                            record.maxConcurrency,
+                            record.directApkConcurrency,
+                            record.fdroidConcurrency,
+                        ),
+                    valueMaxLines = 1,
                     valueOverflow = TextOverflow.Ellipsis,
                 )
             }
@@ -769,8 +757,9 @@ private fun rememberSlowRefreshDiagnosticPillLabels(
             add(
                 SlowRefreshDiagnosticPill(
                     label =
-                        stringResource(
-                            R.string.github_history_refresh_network_calls,
+                        pluralStringResource(
+                            R.plurals.github_history_refresh_network_calls,
+                            slowItem.network.callCount,
                             slowItem.network.callCount,
                             formatBytes(slowItem.network.bytes),
                         ),
@@ -969,6 +958,20 @@ private fun rememberRefreshNetworkLabel(record: GitHubRefreshHistoryRecord): Str
         GitHubRefreshNetworkKind.NONE -> stringResource(R.string.github_history_refresh_network_none)
         GitHubRefreshNetworkKind.OTHER -> stringResource(R.string.github_history_refresh_network_other)
         else -> return null
+    }
+    // The peak is a count of HTTP calls, and the schedule row above counts repositories. They are
+    // different units, so this says which it is rather than inviting the two to be read as one
+    // quantity. With nothing measured the kind still stands on its own; a peak of zero would read
+    // like a finding.
+    if (record.peakConcurrentCalls <= 0) {
+        return stringResource(
+            if (record.networkMetered) {
+                R.string.github_history_refresh_network_value_kind_only_metered
+            } else {
+                R.string.github_history_refresh_network_value_kind_only
+            },
+            kind,
+        )
     }
     return stringResource(
         if (record.networkMetered) {

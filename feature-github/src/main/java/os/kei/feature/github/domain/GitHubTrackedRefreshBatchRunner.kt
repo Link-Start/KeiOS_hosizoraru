@@ -200,8 +200,10 @@ object GitHubTrackedRefreshBatchRunner {
         }
 
         val batchStartNs = System.nanoTime()
-        // Only scoped calls are counted, so a download running alongside cannot inflate the reading.
-        NetworkCallGauge.resetPeak()
+        // This batch's own gauge. Refreshes overlap — a background tick, a card the user tapped, a
+        // package-install broadcast — and a shared counter would have them resetting and reading each
+        // other's work, then showing the result as a measured fact.
+        val callGauge = NetworkCallGauge()
         val concurrency = trackedItems.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
         val batchDeadlineNs = batchDeadlineNs(
             batchStartNs = batchStartNs,
@@ -261,7 +263,7 @@ object GitHubTrackedRefreshBatchRunner {
                                 val itemStartNs = System.nanoTime()
                                 // Every call this item makes lands here, however deep in the
                                 // strategy it was issued.
-                                val itemNetwork = NetworkTimingScope()
+                                val itemNetwork = NetworkTimingScope(callGauge)
                                 val check = withContext(itemNetwork) {
                                     evaluateWithRetry(
                                         item = item,
@@ -397,7 +399,7 @@ object GitHubTrackedRefreshBatchRunner {
                 batchStartNs = batchStartNs,
                 itemResults = checks,
                 maxConcurrency = concurrency,
-                peakConcurrentCalls = NetworkCallGauge.peakConcurrentCalls(),
+                peakConcurrentCalls = callGauge.peakConcurrentCalls(),
                 networkState = networkState,
                 directApkConcurrency = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency),
                 fdroidConcurrency = GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency),

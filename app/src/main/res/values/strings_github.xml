@@ -1850,19 +1850,22 @@
     <string name="github_item_prerelease_retired_reason">这条线已超过两周没有更新，暂不显示</string>
     <!-- What a slow refresh was actually made of, for the history page's diagnostics. -->
     <string name="github_history_refresh_label_network">网络</string>
-    <string name="github_history_refresh_network_value">%1$s · 并发峰值 %2$d</string>
-    <string name="github_history_refresh_network_value_metered">%1$s（计费流量）· 并发峰值 %2$d</string>
+    <string name="github_history_refresh_network_value">%1$s · 同时最多 %2$d 个请求</string>
+    <string name="github_history_refresh_network_value_metered">%1$s（计费流量）· 同时最多 %2$d 个请求</string>
+    <string name="github_history_refresh_network_value_kind_only">%1$s</string>
+    <string name="github_history_refresh_network_value_kind_only_metered">%1$s（计费流量）</string>
     <string name="github_history_refresh_network_wifi">Wi-Fi</string>
     <string name="github_history_refresh_network_cellular">移动网络</string>
     <string name="github_history_refresh_network_ethernet">以太网</string>
     <string name="github_history_refresh_network_none">无连接</string>
     <string name="github_history_refresh_network_other">其他网络</string>
-    <string name="github_history_refresh_schedule_value_measured">并发 %1$d（实测 %2$d）· APK %3$d · F-Droid %4$d</string>
     <string name="github_history_refresh_cause_queued">排队 %1$s</string>
     <string name="github_history_refresh_cause_dns">DNS %1$s</string>
     <string name="github_history_refresh_cause_connect">建立连接 %1$s</string>
     <string name="github_history_refresh_cause_waiting">等待服务器 %1$s</string>
     <string name="github_history_refresh_cause_body">下载 %1$s</string>
-    <string name="github_history_refresh_network_calls">%1$d 次请求 · %2$s</string>
+    <plurals name="github_history_refresh_network_calls">
+        <item quantity="other">%1$d 次请求 · %2$s</item>
+    </plurals>
     <string name="github_history_refresh_network_reused">复用连接 %1$d/%2$d</string>
 </resources>

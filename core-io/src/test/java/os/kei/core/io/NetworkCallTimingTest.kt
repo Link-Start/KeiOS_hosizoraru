@@ -1,5 +1,6 @@
 package os.kei.core.io
 
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -10,6 +11,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.Test
 
 /**
@@ -86,8 +88,8 @@ class NetworkCallTimingTest {
             repeat(calls) {
                 server.enqueue(MockResponse().setBody("x").setHeadersDelay(120, TimeUnit.MILLISECONDS))
             }
-            NetworkCallGauge.resetPeak()
-            val scope = NetworkTimingScope()
+            val gauge = NetworkCallGauge()
+            val scope = NetworkTimingScope(gauge)
 
             withContext(scope) {
                 (1..calls).map { index ->
@@ -101,10 +103,206 @@ class NetworkCallTimingTest {
 
             assertEquals(calls, scope.summary().callCount)
             assertTrue(
-                NetworkCallGauge.peakConcurrentCalls() > 1,
+                gauge.peakConcurrentCalls() > 1,
                 "eight overlapping calls should not read as one at a time",
             )
         }
+    }
+
+    /**
+     * A call killed while it was waiting must be charged for the waiting.
+     *
+     * Every phase but the first used to be committed only in the callback that ends it, so the calls
+     * worth diagnosing — the ones that stalled — reported zero for the phase they stalled in, and the
+     * cause pill then named whichever phase had managed to finish.
+     */
+    @Test
+    fun `a call that dies mid-phase is charged for the phase it died in`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+            val client = SharedHttpClient.base.newBuilder()
+                .readTimeout(400, TimeUnit.MILLISECONDS)
+                .callTimeout(2, TimeUnit.SECONDS)
+                .build()
+            val scope = NetworkTimingScope()
+
+            withContext(scope) {
+                runCatching {
+                    client.executeCancellable(
+                        Request.Builder().url(server.url("/never-answers")).get().build(),
+                    ) { response -> response.body.string() }
+                }
+            }
+
+            val summary = scope.summary()
+            assertEquals(1, summary.callCount)
+            assertEquals(1, summary.failedCalls)
+            assertTrue(
+                summary.waitingMs >= 250L,
+                "the request was sent and nothing came back; that is waiting: ${'$'}{summary.waitingMs}",
+            )
+            assertEquals(NetworkPhase.WAITING, summary.dominantPhase)
+        }
+    }
+
+    /**
+     * Cancellation used to close the call twice. OkHttp delivers `canceled` inline on the cancelling
+     * thread and still follows it with `callFailed`, so both passed a plain-boolean guard: the scope
+     * counted one call as two and the gauge's in-flight counter went permanently negative.
+     */
+    @Test
+    fun `a cancelled call is recorded exactly once`() = runBlocking {
+        MockWebServer().use { server ->
+            repeat(4) { server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE)) }
+            val client = SharedHttpClient.base.newBuilder()
+                .callTimeout(300, TimeUnit.MILLISECONDS)
+                .build()
+            val gauge = NetworkCallGauge()
+            val scope = NetworkTimingScope(gauge)
+
+            withContext(scope) {
+                (1..4).map { index ->
+                    async {
+                        runCatching {
+                            client.executeCancellable(
+                                Request.Builder().url(server.url("/cancelled/${'$'}index")).get().build(),
+                            ) { response -> response.body.string() }
+                        }
+                    }
+                }.awaitAll()
+            }
+
+            assertEquals(4, scope.summary().callCount, "four calls, not eight")
+            assertTrue(
+                gauge.peakConcurrentCalls() in 1..4,
+                "a double exit would let the peak drift: ${'$'}{gauge.peakConcurrentCalls()}",
+            )
+        }
+    }
+
+    /**
+     * Reuse has to mean reuse. The flag used to default to true and be cleared only when a socket
+     * was opened, so a call that died before it ever tried to connect was counted as pool reuse —
+     * and the reuse pill was hidden exactly when connections were the problem.
+     */
+    @Test
+    fun `only a call that got a connection without opening one counts as reuse`() = runBlocking {
+        MockWebServer().use { server ->
+            repeat(2) { server.enqueue(MockResponse().setBody("ok")) }
+            val scope = NetworkTimingScope()
+
+            withContext(scope) {
+                repeat(2) { index ->
+                    SharedHttpClient.base.executeCancellable(
+                        Request.Builder().url(server.url("/pooled/$index")).get().build(),
+                    ) { response -> response.body.string() }
+                }
+            }
+
+            val summary = scope.summary()
+            assertEquals(2, summary.callCount)
+            assertEquals(
+                1,
+                summary.reusedConnectionCalls,
+                "the first call opened the connection and the second took it from the pool",
+            )
+        }
+    }
+
+    @Test
+    fun `a call that could not connect is not counted as reuse`() = runBlocking {
+        val deadUrl = MockWebServer().let { server ->
+            server.start()
+            val url = server.url("/gone")
+            server.shutdown()
+            url
+        }
+        val scope = NetworkTimingScope()
+
+        withContext(scope) {
+            runCatching {
+                SharedHttpClient.base.newBuilder()
+                    .callTimeout(2, TimeUnit.SECONDS)
+                    .build()
+                    .executeCancellable(
+                        Request.Builder().url(deadUrl).get().build(),
+                    ) { response -> response.body.string() }
+            }
+        }
+
+        val summary = scope.summary()
+        assertEquals(1, summary.callCount)
+        assertEquals(1, summary.failedCalls)
+        assertEquals(0, summary.reusedConnectionCalls)
+    }
+
+    /** Two measurements running at once must not read each other's numbers. */
+    @Test
+    fun `overlapping measurements keep their own peaks`() = runBlocking {
+        MockWebServer().use { server ->
+            repeat(6) {
+                server.enqueue(MockResponse().setBody("x").setHeadersDelay(150, TimeUnit.MILLISECONDS))
+            }
+            val busy = NetworkCallGauge()
+            val quiet = NetworkCallGauge()
+
+            withContext(NetworkTimingScope(busy)) {
+                (1..5).map { index ->
+                    async {
+                        SharedHttpClient.base.executeCancellable(
+                            Request.Builder().url(server.url("/busy/${'$'}index")).get().build(),
+                        ) { response -> response.body.string() }
+                    }
+                }.awaitAll()
+            }
+            withContext(NetworkTimingScope(quiet)) {
+                SharedHttpClient.base.executeCancellable(
+                    Request.Builder().url(server.url("/quiet")).get().build(),
+                ) { response -> response.body.string() }
+            }
+
+            assertTrue(busy.peakConcurrentCalls() > 1, "five at once: ${'$'}{busy.peakConcurrentCalls()}")
+            assertEquals(1, quiet.peakConcurrentCalls(), "the quiet batch made one call and saw one")
+        }
+    }
+
+    /**
+     * Two terminal callbacks for one call must produce one record.
+     *
+     * OkHttp delivers `canceled` inline on whichever thread called `cancel()` and still follows it
+     * with `callFailed`. Treating both as terminal counted one call as two and, worse, left the
+     * gauge's in-flight count one below zero for the rest of the process — so every later peak read
+     * low, silently and forever. Driven directly rather than through a race, because a race is not
+     * something to assert on.
+     */
+    @Test
+    fun `a call closed twice is recorded once`() {
+        val gauge = NetworkCallGauge()
+        val scope = NetworkTimingScope(gauge)
+        val request = Request.Builder()
+            .url("https://example.test/closed-twice")
+            .get()
+            .tag(NetworkTimingScope::class.java, scope)
+            .build()
+        val call = SharedHttpClient.base.newCall(request)
+        val listener = NetworkTimingEventListener(call)
+
+        listener.callStart(call)
+        listener.callFailed(call, IOException("cancelled"))
+        listener.callFailed(call, IOException("and again"))
+        listener.callEnd(call)
+
+        assertEquals(1, scope.summary().callCount, "one call, however many times it is closed")
+        assertEquals(1, gauge.peakConcurrentCalls())
+
+        // The counter must still read correctly afterwards; a double exit used to poison it.
+        val second = SharedHttpClient.base.newCall(request)
+        NetworkTimingEventListener(second).apply {
+            callStart(second)
+            callEnd(second)
+        }
+        assertEquals(1, gauge.peakConcurrentCalls(), "a leaked exit would let this read 0 or 2")
+        assertEquals(2, scope.summary().callCount)
     }
 
     @Test

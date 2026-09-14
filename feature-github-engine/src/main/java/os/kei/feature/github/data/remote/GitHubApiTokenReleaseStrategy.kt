@@ -350,7 +350,15 @@ class GitHubApiTokenReleaseStrategy(
         // that looks installable" is a guess about packaging, and guessing wrong here hides a real
         // update. GitHub's source tarballs are not assets, so an empty list means the maintainer
         // attached nothing.
-        val assetCount = (release["assets"] as? JsonArray)?.size ?: 0
+        val assets = release["assets"] as? JsonArray
+        val assetCount = assets?.size ?: 0
+        // The newest asset, not the release. A rolling CI tag keeps its publish date and replaces
+        // what is inside it, so this is the only field that moves when such a line is still alive.
+        val assetsUpdatedAtMillis = assets
+            ?.mapNotNull { asset ->
+                (asset as? JsonObject)?.optString("updated_at")?.parseIsoInstantOrNull()
+            }
+            ?.maxOrNull()
         val versionCandidates = GitHubVersionUtils.buildVersionCandidates(
             GitHubVersionCandidateSource.Tag to rawTag,
             GitHubVersionCandidateSource.Title to name,
@@ -375,7 +383,8 @@ class GitHubApiTokenReleaseStrategy(
             versionCandidates = versionCandidates,
             channel = channel,
             isLikelyPreRelease = prereleaseFlag,
-            hasDownloadableAsset = assetCount > 0
+            hasDownloadableAsset = assetCount > 0,
+            assetsUpdatedAtMillis = assetsUpdatedAtMillis
         )
     }
 
@@ -464,7 +473,8 @@ class GitHubApiTokenReleaseStrategy(
             channel = channel,
             authorName = authorName,
             authorAvatarUrl = authorAvatarUrl,
-            hasDownloadableAsset = hasDownloadableAsset
+            hasDownloadableAsset = hasDownloadableAsset,
+            assetsUpdatedAtMillis = assetsUpdatedAtMillis
         )
     }
 

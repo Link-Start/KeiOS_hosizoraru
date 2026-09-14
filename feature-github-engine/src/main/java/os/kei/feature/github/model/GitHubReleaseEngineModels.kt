@@ -44,9 +44,27 @@ data class GitHubReleaseVersionSignals(
      * download does not exist, and offers it forever, because the tag never changes.
      */
     val hasDownloadableAsset: Boolean? = null,
+    /**
+     * When this release's assets last moved, if anything is attached and the source can see it.
+     *
+     * A rolling tag used to host CI builds is published once and never again, while the artifacts
+     * inside it are replaced on every run. Its `published_at` can be years old while what it holds
+     * is newer than the latest stable, so the release date alone is the wrong measure of whether
+     * that line is still alive — see [GitHubReleaseVersionSignals.effectiveFreshnessMillis].
+     */
+    val assetsUpdatedAtMillis: Long? = null,
 ) {
     val candidates: List<String>
         get() = versionCandidates.map { candidate -> candidate.value }
+
+    /**
+     * The most recent moment this release changed in any way the reader would care about.
+     *
+     * The later of when it was published and when its assets last moved, so a rolling CI tag is
+     * measured by what it holds rather than by when its tag was first cut.
+     */
+    val effectiveFreshnessMillis: Long?
+        get() = listOfNotNull(updatedAtMillis, assetsUpdatedAtMillis).maxOrNull()
 }
 
 data class GitHubAtomReleaseEntry(
@@ -64,12 +82,18 @@ data class GitHubAtomReleaseEntry(
     val isLikelyPreRelease: Boolean,
     /** @see GitHubReleaseVersionSignals.hasDownloadableAsset */
     val hasDownloadableAsset: Boolean? = null,
+    /** @see GitHubReleaseVersionSignals.assetsUpdatedAtMillis */
+    val assetsUpdatedAtMillis: Long? = null,
 ) {
     val displayVersion: String
         get() = title.ifBlank { tag }
 
     val candidates: List<String>
         get() = versionCandidates.map { candidate -> candidate.value }
+
+    /** @see GitHubReleaseVersionSignals.effectiveFreshnessMillis */
+    val effectiveFreshnessMillis: Long?
+        get() = listOfNotNull(updatedAtMillis, assetsUpdatedAtMillis).maxOrNull()
 }
 
 data class GitHubAtomFeed(

@@ -19,7 +19,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import os.kei.R
+import os.kei.core.io.NetworkPhase
+import os.kei.core.io.NetworkTimingSummary
+import os.kei.feature.github.domain.GitHubRefreshNetworkKind
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
@@ -27,10 +33,11 @@ import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.ui.page.main.github.sheet.trackedSourceModeLabel
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
-import os.kei.ui.page.main.github.sheet.trackedSourceModeLabel
+import os.kei.ui.page.main.settings.support.formatBytes
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -44,9 +51,6 @@ import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -279,12 +283,33 @@ internal fun GitHubRefreshHistoryRecordCard(
                 AppInfoRow(
                     label = stringResource(R.string.github_history_refresh_label_schedule),
                     value =
-                        stringResource(
-                            R.string.github_history_refresh_schedule_value,
-                            record.maxConcurrency,
-                            record.directApkConcurrency,
-                            record.fdroidConcurrency,
-                        ),
+                        // The configured number beside the one the device managed. They were
+                        // silently different for months, and only a real device can tell you so.
+                        if (record.peakConcurrentCalls > 0) {
+                            stringResource(
+                                R.string.github_history_refresh_schedule_value_measured,
+                                record.maxConcurrency,
+                                record.peakConcurrentCalls,
+                                record.directApkConcurrency,
+                                record.fdroidConcurrency,
+                            )
+                        } else {
+                            stringResource(
+                                R.string.github_history_refresh_schedule_value,
+                                record.maxConcurrency,
+                                record.directApkConcurrency,
+                                record.fdroidConcurrency,
+                            )
+                        },
+                    stacked = true,
+                    valueMaxLines = 2,
+                    valueOverflow = TextOverflow.Ellipsis,
+                )
+            }
+            rememberRefreshNetworkLabel(record)?.let { networkLabel ->
+                AppInfoRow(
+                    label = stringResource(R.string.github_history_refresh_label_network),
+                    value = networkLabel,
                     valueMaxLines = 1,
                     valueOverflow = TextOverflow.Ellipsis,
                 )
@@ -737,6 +762,36 @@ private fun rememberSlowRefreshDiagnosticPillLabels(
                 ),
             )
         }
+        // The cause, then the volume. These sit after the stage pills because a stage says where the
+        // time went and these say why it went there.
+        rememberNetworkCausePill(slowItem.network)?.let { add(it) }
+        if (slowItem.network.callCount > 0) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            R.string.github_history_refresh_network_calls,
+                            slowItem.network.callCount,
+                            formatBytes(slowItem.network.bytes),
+                        ),
+                    color = network,
+                ),
+            )
+            // Only worth saying when a handshake was paid for: all-reused is the pool working.
+            if (slowItem.network.reusedConnectionCalls < slowItem.network.callCount) {
+                add(
+                    SlowRefreshDiagnosticPill(
+                        label =
+                            stringResource(
+                                R.string.github_history_refresh_network_reused,
+                                slowItem.network.reusedConnectionCalls,
+                                slowItem.network.callCount,
+                            ),
+                        color = cached,
+                    ),
+                )
+            }
+        }
         if (slowItem.unclassifiedElapsedMs >= SLOW_REFRESH_UNCLASSIFIED_VISIBLE_MS) {
             add(
                 SlowRefreshDiagnosticPill(
@@ -896,3 +951,66 @@ private fun GitHubRefreshHistoryRecord.hasSchedulerDiagnostics(): Boolean {
 }
 
 private const val SLOW_REFRESH_UNCLASSIFIED_VISIBLE_MS = 500L
+
+/**
+ * What the device was connected through, and how much of the pipeline it actually managed to run.
+ *
+ * Null when the record predates the instrument or nothing was measured — a row of zeroes reads like
+ * a finding, and "we did not look" is not one.
+ */
+@Composable
+private fun rememberRefreshNetworkLabel(record: GitHubRefreshHistoryRecord): String? {
+    val kind = when (record.networkKind) {
+        GitHubRefreshNetworkKind.WIFI -> stringResource(R.string.github_history_refresh_network_wifi)
+        GitHubRefreshNetworkKind.CELLULAR ->
+            stringResource(R.string.github_history_refresh_network_cellular)
+        GitHubRefreshNetworkKind.ETHERNET ->
+            stringResource(R.string.github_history_refresh_network_ethernet)
+        GitHubRefreshNetworkKind.NONE -> stringResource(R.string.github_history_refresh_network_none)
+        GitHubRefreshNetworkKind.OTHER -> stringResource(R.string.github_history_refresh_network_other)
+        else -> return null
+    }
+    return stringResource(
+        if (record.networkMetered) {
+            R.string.github_history_refresh_network_value_metered
+        } else {
+            R.string.github_history_refresh_network_value
+        },
+        kind,
+        record.peakConcurrentCalls,
+    )
+}
+
+/**
+ * The phase that took most of one item's network time, named rather than left as a duration.
+ *
+ * "Release 2s" is the same pill whether those two seconds were spent queued behind our own
+ * concurrency budget, resolving a name, shaking hands, waiting on GitHub, or pulling bytes down a
+ * slow radio — and those call for four different responses. On wifi in an emulator all but one round
+ * to zero, so this pill is the one thing here that can only be learned from somebody's actual phone.
+ */
+@Composable
+private fun rememberNetworkCausePill(
+    summary: NetworkTimingSummary,
+): SlowRefreshDiagnosticPill? {
+    if (summary.isEmpty || summary.totalMs <= 0L) return null
+    val (template, color) = when (summary.dominantPhase) {
+        NetworkPhase.QUEUED -> R.string.github_history_refresh_cause_queued to Color(0xFFA855F7)
+        NetworkPhase.DNS -> R.string.github_history_refresh_cause_dns to Color(0xFF0EA5E9)
+        NetworkPhase.CONNECT -> R.string.github_history_refresh_cause_connect to Color(0xFF0EA5E9)
+        NetworkPhase.WAITING -> R.string.github_history_refresh_cause_waiting to Color(0xFFF97316)
+        NetworkPhase.BODY -> R.string.github_history_refresh_cause_body to Color(0xFF14B8A6)
+        else -> return null
+    }
+    val phaseMs = when (summary.dominantPhase) {
+        NetworkPhase.QUEUED -> summary.queuedMs
+        NetworkPhase.DNS -> summary.dnsMs
+        NetworkPhase.CONNECT -> summary.connectMs
+        NetworkPhase.WAITING -> summary.waitingMs
+        else -> summary.bodyMs
+    }
+    return SlowRefreshDiagnosticPill(
+        label = stringResource(template, rememberDurationLabel(phaseMs)),
+        color = color,
+    )
+}

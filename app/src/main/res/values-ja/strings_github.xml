@@ -1849,4 +1849,21 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_item_selection_tie">バージョン番号でも更新日時でも区別できないため、一覧の順序に従います</string>
     <string name="github_item_label_prerelease_retired">Pre-release</string>
     <string name="github_item_prerelease_retired_reason">この系列は 2 週間以上更新がないため表示されません</string>
+    <!-- What a slow refresh was actually made of, for the history page's diagnostics. -->
+    <string name="github_history_refresh_label_network">ネットワーク</string>
+    <string name="github_history_refresh_network_value">%1$s · 同時実行ピーク %2$d</string>
+    <string name="github_history_refresh_network_value_metered">%1$s（従量制）· 同時実行ピーク %2$d</string>
+    <string name="github_history_refresh_network_wifi">Wi-Fi</string>
+    <string name="github_history_refresh_network_cellular">モバイル通信</string>
+    <string name="github_history_refresh_network_ethernet">イーサネット</string>
+    <string name="github_history_refresh_network_none">接続なし</string>
+    <string name="github_history_refresh_network_other">その他の回線</string>
+    <string name="github_history_refresh_schedule_value_measured">同時実行 %1$d（実測 %2$d）· APK %3$d · F-Droid %4$d</string>
+    <string name="github_history_refresh_cause_queued">順番待ち %1$s</string>
+    <string name="github_history_refresh_cause_dns">DNS %1$s</string>
+    <string name="github_history_refresh_cause_connect">接続確立 %1$s</string>
+    <string name="github_history_refresh_cause_waiting">サーバー待ち %1$s</string>
+    <string name="github_history_refresh_cause_body">ダウンロード %1$s</string>
+    <string name="github_history_refresh_network_calls">%1$d 件のリクエスト · %2$s</string>
+    <string name="github_history_refresh_network_reused">接続再利用 %1$d/%2$d</string>
 </resources>

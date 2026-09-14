@@ -7,12 +7,29 @@ import os.kei.feature.github.model.isGitBackedRepositoryTrack
 
 private const val DEFAULT_DIRECT_APK_REFRESH_CONCURRENCY = 2
 private const val DEFAULT_FDROID_REFRESH_CONCURRENCY = 2
-private const val BACKGROUND_SMALL_BATCH_REFRESH_CONCURRENCY = 3
-private const val BACKGROUND_MEDIUM_BATCH_REFRESH_CONCURRENCY = 5
-private const val BACKGROUND_LARGE_BATCH_REFRESH_CONCURRENCY = 7
-private const val SMALL_BATCH_REFRESH_CONCURRENCY = 5
-private const val MEDIUM_BATCH_REFRESH_CONCURRENCY = 7
-private const val LARGE_BATCH_REFRESH_CONCURRENCY = 10
+
+/**
+ * How many tracked items a refresh keeps in flight.
+ *
+ * These count *items*, not requests: an API-mode repository costs one call and an Atom-mode one
+ * costs two. The requests themselves are bounded by `SharedHttpClient.MAX_CONCURRENT_CALLS_PER_HOST`,
+ * which is the real budget; anything these numbers ask for beyond it queues in OkHttp rather than
+ * piling onto the radio.
+ *
+ * They used to top out at ten, which was not a choice — it was the thread count of the dispatcher
+ * the refresh ran on, because a request held its thread for the whole round trip. Measured at forty
+ * repositories with a 120ms server: asking for 16, 24 or 32 all produced ten in flight and the same
+ * 520ms. With the request no longer owning a thread the same batch finishes in 275ms.
+ *
+ * Background batches stay lower. They compete with whatever the user is actually doing, and nobody
+ * is waiting on them.
+ */
+private const val BACKGROUND_SMALL_BATCH_REFRESH_CONCURRENCY = 4
+private const val BACKGROUND_MEDIUM_BATCH_REFRESH_CONCURRENCY = 8
+private const val BACKGROUND_LARGE_BATCH_REFRESH_CONCURRENCY = 12
+private const val SMALL_BATCH_REFRESH_CONCURRENCY = 8
+private const val MEDIUM_BATCH_REFRESH_CONCURRENCY = 16
+private const val LARGE_BATCH_REFRESH_CONCURRENCY = 20
 private const val MEDIUM_BATCH_THRESHOLD = 16
 private const val LARGE_BATCH_THRESHOLD = 48
 

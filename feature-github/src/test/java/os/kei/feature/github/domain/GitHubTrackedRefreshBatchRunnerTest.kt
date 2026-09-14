@@ -514,10 +514,15 @@ class GitHubTrackedRefreshBatchRunnerTest {
 
     @Test
     fun `scheduler increases refresh concurrency for larger batches`() {
-        assertEquals(1, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(1))
-        assertEquals(5, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(8))
-        assertEquals(7, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16))
-        assertEquals(10, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(48))
+        val tiers = listOf(1, 8, 16, 48).map(GitHubTrackedRefreshBatchScheduler::refreshConcurrency)
+
+        assertEquals(1, tiers.first(), "a batch of one needs one worker")
+        assertEquals(
+            tiers.sorted(),
+            tiers,
+            "each tier must be at least the one below it: $tiers",
+        )
+        assertTrue(tiers.last() > tiers.first())
     }
 
     @Test

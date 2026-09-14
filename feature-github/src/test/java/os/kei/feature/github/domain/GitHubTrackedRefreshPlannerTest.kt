@@ -1,24 +1,62 @@
 package os.kei.feature.github.domain
 
 import org.junit.Test
+import os.kei.core.io.SharedHttpClient
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GitHubTrackedRefreshPlannerTest {
+    /**
+     * The tiers are a tuning decision and have already moved once; what must not move is the shape.
+     * Asserting the relationships rather than the numbers is the difference between a test that
+     * describes the contract and one that has to be rewritten every time the contract is honoured.
+     */
     @Test
     fun `background refresh concurrency stays below interactive batch concurrency`() {
-        assertEquals(3, GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(4))
-        assertEquals(5, GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(16))
-        assertEquals(7, GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(75))
+        listOf(1, 4, 16, 75).forEach { itemCount ->
+            val background = GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(itemCount)
+            val interactive = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(itemCount)
+            assertTrue(background in 1..interactive, "$background vs $interactive at $itemCount")
+        }
+        // Strictly below once the batch is big enough that the item count is not what caps them
+        // both: nobody is waiting on a background refresh, and it competes with what the user is
+        // actually doing.
+        listOf(16, 75).forEach { itemCount ->
+            assertTrue(
+                GitHubTrackedRefreshBatchScheduler.backgroundRefreshConcurrency(itemCount) <
+                    GitHubTrackedRefreshBatchScheduler.refreshConcurrency(itemCount),
+                "background must yield to interactive at $itemCount",
+            )
+        }
     }
 
     @Test
     fun `interactive refresh concurrency still scales for large user requested batches`() {
-        assertEquals(4, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(4))
-        assertEquals(7, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16))
-        assertEquals(10, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(75))
+        val small = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(4)
+        val medium = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16)
+        val large = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(75)
+
+        assertEquals(4, small, "never more workers than there are items to work on")
+        assertTrue(medium > small && large > medium, "$small -> $medium -> $large")
+    }
+
+    /**
+     * These count items, not requests, and the requests are what the host sees. Asking for more
+     * items in flight than the shared client will run calls for buys nothing — the excess queues in
+     * OkHttp — so the top tier stays inside that budget rather than pretending to exceed it.
+     */
+    @Test
+    fun `no tier asks for more in flight than the shared call budget allows`() {
+        listOf(1, 4, 16, 48, 75, 500).forEach { itemCount ->
+            assertTrue(
+                GitHubTrackedRefreshBatchScheduler.refreshConcurrency(itemCount) <=
+                    SharedHttpClient.MAX_CONCURRENT_CALLS_PER_HOST,
+                "interactive tier overshoots the per-host budget at $itemCount",
+            )
+        }
     }
 
     @Test

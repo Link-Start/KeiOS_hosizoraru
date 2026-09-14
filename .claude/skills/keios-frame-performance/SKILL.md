@@ -35,6 +35,40 @@ halves recomposition and reports a smoother app is reporting noise.
 This is not a one-off reading. It reproduces the table in `docs/planning/hwui-frame-budget.md`,
 first measured months earlier, on a tree that has changed substantially since.
 
+## 1b. Switching into a page: the cost is first entry, and only first entry
+
+Home idle is one scene. The complaint is usually the other one — tapping from Home into another
+tab. Measured 2026-09-15, one isolated switch per capture, counter reset immediately before the
+tap:
+
+| home -> tab | total p50 | p90 | p99 |
+|---|---|---|---|
+| github | 27.43 | 58.37 | **281.79** |
+| mcp | **34.94** | **125.02** | 133.03 |
+| os | 24.60 | 67.32 | 119.06 |
+| ba | 19.06 | 48.34 | 105.57 |
+
+A 281ms frame is a quarter of a second of frozen animation, and all of it was
+`RT issue->swap` (278.95). But visit the same tab a second time in the same process:
+
+| home -> github | p50 | p90 | p99 | RT p99 |
+|---|---|---|---|---|
+| first entry | 27.43 | 58.37 | 281.79 | 278.95 |
+| second visit | **10.62** | **29.42** | **33.45** | **10.47** |
+
+`MainPageActivationState.hasActivated` keeps a page composed once it has been reached, so a page
+composes and rasterises its glass exactly once per process. **Every tab is rough the first time
+the user opens it after a cold start, and clean forever after.** That is the shape of the
+complaint, and it is the same on all four tabs, so it is not one bad page.
+
+What it is made of, per `docs/planning/hwui-frame-budget.md`: ~19ms of extra UI-thread work
+composing the page's tree, plus the first rasterisation of its glass layers on RenderThread —
+and the second number is the larger one. **Composition and rasterisation are different events.**
+A layer is rasterised when it is first drawn, which is when the animation brings the page on
+screen; composing it earlier does not draw it earlier. Anything aimed at this has to make the
+first rasterisation cheaper, not earlier — see §4, where moving the composition is now recorded
+as measured and rejected.
+
 ## 2. The two axes generic advice targets are already clean
 
 Check before spending time re-deriving this; re-measure if the tree has moved a lot.
@@ -111,6 +145,14 @@ spend itself re-discovering them.
   other. See the BA first-entry note in `docs/planning/`.
 - **Two route-transition fixes**, both rejected — one traded 7% of RenderThread for a visibly
   worse slide. `docs/planning/route-transition-frame-cost.md` has the numbers.
+- **Activating the destination page at tap time instead of on the first animation frame**
+  (2026-09-15). `hasActivated` was made to return true for the page `onPageSelected` had just
+  selected, so the tap's own recomposition composed the destination rather than the first frame of
+  the switch. It worked as designed — `home -> github` first entry moved `record draw` p99 from
+  17.60 to 57.15 and `RT issue->swap` p99 from 278.95 to 33.05 — and changed nothing a user would
+  feel: across four passes per tab, the worst frame neither moved to the tap nor shrank, `os` came
+  out marginally worse, and every delta was inside the noise floor. Reverted. The reason it cannot
+  work is in §1b: it moves composition, and the cost is rasterisation.
 - **Reduced-resolution backdrop capture.** Recording at 0.5x is possible today
   (`recordLayer` takes an explicit size), but `LayerBackdrop.drawBackdrop` has no scale term
   and computes its translation in full-resolution layout coordinates, so the result is broken
@@ -149,3 +191,16 @@ blur is slightly weaker" is not an optimisation, it is a downgrade with a benchm
    frames in a three-second dwell, which is the target shape).
 3. Only claim an improvement against a settled before/after in the same panel regime, using the
    percentiles rather than the jank counter.
+
+## 8. Measuring one page switch
+
+`hwui_journey.sh section_switch` taps through every tab in one run, so its last 120 frames are
+whichever switch happened to be last. To attribute a cost to one switch, isolate it: force-stop,
+launch, settle, reset the counter, one tap, capture.
+
+Aggregate percentiles over a ~40-frame window are close to "the worst frame", and swing
+accordingly — the first pass after an install is reliably the worst in *both* builds, so discard
+it or pool at least four. When the claim is about *where* the cost falls rather than how big it
+is, read the per-frame totals instead: the index of the worst frame in the window says whether
+work moved, and `frames > 33ms` says whether the user would notice. `frame_stages.py`'s `load()`
+is importable for exactly this.

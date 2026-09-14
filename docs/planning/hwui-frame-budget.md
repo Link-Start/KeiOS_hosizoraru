@@ -139,7 +139,7 @@ composes exactly once per process — which is why only entry #1 pays. First ent
 extra UI-thread work (composing BA's tree) and ~26ms of extra RenderThread (first rasterization of
 its glass layers) over a repeat.
 
-### The candidate worth trying
+### The candidate that looked worth trying, and was not
 
 `MainPageActivationState` marks a page activated from two `LaunchedEffect`s: when it becomes the
 settled page, and when it is the scroll target *while `isScrollInProgress` is true*. A tab tap
@@ -156,6 +156,46 @@ the click path and made the other half worse. Nothing is rendered early here; on
 composition versus the start of the animation changes. It does need care: `activationState` is
 built after the coordinator in `MainPagerLayout`, so the target index has to be threaded out of
 `MainPagerTabJumpControllerState` first.
+
+**Implemented and reverted, 2026-09-15.** The threading turned out not to be needed —
+`onPageSelected` already assigns `selectedPageIndex` synchronously at tap time and the coordinator
+already exposes it. One correction to the plan above: marking the page from a third `LaunchedEffect`
+cannot work, because an effect runs after the composition of the frame that handled the tap, which
+is the frame the cost has to leave. It has to be *derived* — `hasActivated` returning true for the
+requested page — so the tap's own recomposition composes the destination.
+
+Done that way it demonstrably moved the composition. On `home -> github`, first entry, the UI-thread
+stages changed exactly as intended:
+
+| stage p99 | before | after |
+|---|---|---|
+| animation | 17.56 | 41.65 |
+| record draw | 17.60 | 57.15 |
+| RT issue->swap | 278.95 | 33.05 |
+
+And it bought nothing. Four first-entry passes per tab on each build, medians:
+
+| tab | worst frame ms | its frame index | frames > 33ms |
+|---|---|---|---|
+| github | 65.4 -> 61.6 | 5 -> 4 | 13 -> 12 |
+| mcp | 71.4 -> 63.5 | 5 -> 17 | 13 -> 12 |
+| os | 77.8 -> **79.6** | 7 -> 7 | 12 -> **13** |
+| ba | 91.4 -> 91.8 | 26 -> 16 | 12 -> 12 |
+
+The worst frame did not move to the tap and did not shrink; `os` came out marginally worse; every
+delta sits inside the ~7ms noise floor recorded in the next section. Reverted rather than shipped on
+faith.
+
+**Why it could never have worked, which is the part worth keeping.** The plan costed first entry as
+"~19ms of extra UI-thread work plus ~26ms of extra RenderThread", and proposed to move the first
+number. But composition and rasterisation are not the same event: a glass layer is rasterised when
+it is first *drawn*, and the page is first drawn when the animation brings it on screen. Composing
+it earlier does not draw it earlier, so the RenderThread cost stays exactly where it was — and it is
+the larger of the two. Drawing it earlier is the layer pre-warm, which is already rejected two
+paragraphs up.
+
+Anything aimed at first entry has to make the first rasterisation *cheaper*, not earlier. Moving
+UI-thread work around it is rearranging the smaller half.
 
 ## The switch metric has a noise floor of ~7ms
 

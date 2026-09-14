@@ -235,6 +235,9 @@ class GitHubReleaseAlgorithmBenchmarkTest {
         localVersionCode = localVersionCode,
         snapshot = snapshot,
         policy = GitHubReleaseEvaluationPolicy(checkAllTrackedPreReleases = true),
+        // A frozen capture is judged at the moment it was taken, or the staleness rule turns this
+        // accuracy benchmark into a clock that fails on its own after a fortnight.
+        nowMillis = BENCHMARK_CAPTURED_AT_MILLIS,
     )
 
     private fun rollingEntries(
@@ -405,3 +408,6 @@ class GitHubReleaseAlgorithmBenchmarkTest {
         var benchmarkSink: Int = 0
     }
 }
+
+/** 2026-07-11, the day iebb/mithka was captured; see MithkaReleaseCorpus. */
+private const val BENCHMARK_CAPTURED_AT_MILLIS = 1_783_555_200_000L

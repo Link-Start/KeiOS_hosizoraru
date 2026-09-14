@@ -131,5 +131,12 @@ class GitHubMithkaReleaseCorpusTest {
         localVersionCode = localVersionCode,
         snapshot = snapshot,
         policy = policy,
+        // Both corpora are frozen captures, so the staleness rule is judged at the moment they were
+        // taken. Left to the wall clock, a July capture starts failing in September for no reason
+        // but the calendar.
+        nowMillis = MITHKA_CAPTURED_AT_MILLIS,
     )
 }
+
+/** 2026-07-11, the day iebb/mithka was captured; see MithkaReleaseCorpus. */
+private const val MITHKA_CAPTURED_AT_MILLIS = 1_783_555_200_000L

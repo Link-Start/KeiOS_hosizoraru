@@ -118,6 +118,9 @@ class GitHubEmptyPreviewReleaseCorpusTest {
                 latestPreRelease = latestPre.toSignals(),
             ),
             policy = GitHubReleaseEvaluationPolicy(preferPreRelease = preferPreRelease),
+            // The day the stable `1.4.2` shipped, so the preview is four days stale and inside the
+            // fortnight -- this test is about the empty asset list, not about the clock.
+            nowMillis = 1770609300000L,
         )
 }
 

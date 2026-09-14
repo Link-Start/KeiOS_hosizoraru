@@ -43,6 +43,8 @@ object GitHubReleaseEvaluationEngine {
         policy: GitHubReleaseEvaluationPolicy = GitHubReleaseEvaluationPolicy(),
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
+        /** Injected so the staleness rule below can be pinned by a test rather than drift with the day. */
+        nowMillis: Long = System.currentTimeMillis(),
     ): GitHubReleaseEvaluationResult {
         val matchedEntry = snapshot.feed.entries.firstOrNull { entry ->
             GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(

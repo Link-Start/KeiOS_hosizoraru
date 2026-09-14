@@ -362,11 +362,20 @@ object GitHubReleaseCheckService {
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
         sourceConfigSignature: String = "",
-        repositoryProfile: GitHubRepositoryProfileSnapshot? = snapshot.repositoryProfile
+        repositoryProfile: GitHubRepositoryProfileSnapshot? = snapshot.repositoryProfile,
+        /**
+         * Injected only so a frozen corpus can be judged at the moment it was captured.
+         *
+         * The staleness rule for pre-releases reads a clock, which makes every recorded fixture
+         * depend on the day the test runs -- a corpus captured in July starts failing in September
+         * for no reason but the calendar. Tests pin this; nothing else passes it.
+         */
+        nowMillis: Long = System.currentTimeMillis()
     ): GitHubTrackedReleaseCheck {
         val evaluation = GitHubReleaseEvaluationEngine.evaluate(
             localVersion = localVersion,
             localVersionCode = localVersionCode,
+            nowMillis = nowMillis,
             snapshot = snapshot,
             policy = GitHubReleaseEvaluationPolicy(
                 preferPreRelease = item.preferPreRelease,

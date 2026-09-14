@@ -204,6 +204,9 @@ class GitHubReleaseCheckServiceTest {
             item = item,
             localVersion = "Version.26.4.Canary_C378",
             localVersionCode = 378L,
+            // Judged when the corpus was captured. The pre-release is four days newer than the
+            // stable here -- a live line -- and only the calendar since would make it look stale.
+            nowMillis = 1_744_200_000_000L,
             snapshot = snapshot,
             checkAllTrackedPreReleases = true
         )
@@ -229,7 +232,10 @@ class GitHubReleaseCheckServiceTest {
             item = item,
             localVersion = "5.4.0",
             localVersionCode = 50400L,
-            snapshot = snapshot
+            snapshot = snapshot,
+            // The day `v5.4.3` shipped, so the eighteen-day gap is what decides this and not the
+            // calendar since the corpus was captured.
+            nowMillis = 1_744_426_950_000L
         )
 
         assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, result.status)

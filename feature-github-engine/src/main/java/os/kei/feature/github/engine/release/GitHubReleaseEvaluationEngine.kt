@@ -130,6 +130,13 @@ object GitHubReleaseEvaluationEngine {
                 stableFreshnessMillis = latestStable.effectiveFreshnessMillis,
                 preReleaseChannel = latestPre.channel,
                 stableChannel = latestStable.channel,
+                // The coarser of the two sources, because a comparison is only as precise as its
+                // blunter side. Both are the same source in practice; taking the maximum means a
+                // mixed snapshot cannot read a coarse clock as if it were an exact one.
+                clockToleranceMillis = maxOf(
+                    latestPre.source.clockToleranceMillis,
+                    latestStable.source.clockToleranceMillis,
+                ),
             )
         }
         val preReleaseComparison = latestPre?.let {
@@ -171,6 +178,21 @@ object GitHubReleaseEvaluationEngine {
         // of evidence, which is `null` and changes nothing. Without this the comparison falls back to
         // the release *name*, and a rolling tag whose name keeps moving while its asset list stays
         // empty reports an update on every refresh, forever.
+        // Two guesses stacked is not an update.
+        //
+        // A source that had to read out of prose which of a repository's releases are stable can be
+        // wrong about the whole lane, and a `Low` confidence comparison means the version it picked
+        // shares no leading number with what the reader is running. Either alone is ordinary -- a
+        // major bump is `Low`, and the feed is usually right. Together they are how `iebb/mithka`
+        // offers `play-version-code-1789096599` to somebody on 1.4.6: a tag its CI writes for its own
+        // bookkeeping, read as version 1,789,096,599, which nothing the project ever ships can beat.
+        //
+        // This only reaches a release the forge did not confirm. `releases/latest` skips pre-releases
+        // by definition, so anything it points at is stated, not inferred, and is untouched here.
+        val stableClaimIsUnsupported = latestStable != null &&
+            latestStable.source.laneIsInferred &&
+            !preciseStableOutcome.settlesComparison &&
+            stableComparison?.confidence == VersionConfidence.Low
         val stableIsInstallable = latestStable?.hasDownloadableAsset != false
         val preReleaseIsInstallable = latestPre?.hasDownloadableAsset != false
         val rawHasPreReleaseUpdate = inspectPreRelease &&
@@ -183,6 +205,7 @@ object GitHubReleaseEvaluationEngine {
                     ?: (latestPreCmp?.let { it < 0 } == true)
             )
         val rawStableHasUpdate = stableIsInstallable &&
+            !stableClaimIsUnsupported &&
             (
                 preciseStableCmp?.let { it > 0 }
                     ?: (stableCmp?.let { it < 0 } == true)
@@ -258,10 +281,12 @@ object GitHubReleaseEvaluationEngine {
         // `20240115` against a release `1.4.2`. Reaching `!hasUpdate` from there is arithmetic, not
         // knowledge. An exact match somewhere in the feed, or an APK that was actually opened, both
         // corroborate it and take it back to plain up-to-date.
-        val stableAnswerIsWeak = latestStable != null &&
-            !preciseStableOutcome.settlesComparison &&
-            matchedEntry == null &&
-            stableComparison?.confidence == VersionConfidence.Low
+        val stableAnswerIsWeak = (
+            latestStable != null &&
+                !preciseStableOutcome.settlesComparison &&
+                matchedEntry == null &&
+                stableComparison?.confidence == VersionConfidence.Low
+            ) || stableClaimIsUnsupported
         val status = when {
             recommendsPreRelease -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
             stableHasUpdate -> GitHubTrackedReleaseStatus.UpdateAvailable

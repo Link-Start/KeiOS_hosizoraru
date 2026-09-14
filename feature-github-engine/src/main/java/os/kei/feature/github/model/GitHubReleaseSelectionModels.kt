@@ -10,9 +10,6 @@ import os.kei.core.versioning.ReleaseSelectionRule
  * this list by hand from a captured API response, which is work nobody should have to repeat.
  */
 enum class GitHubReleaseRejection {
-    /** Marked `prerelease` by the maintainer, and the reader is looking at the stable line. */
-    MarkedPreRelease,
-
     /** A pre-release whose tag, title and link carry no version anyone could compare. */
     NoComparableVersion,
 
@@ -108,6 +105,7 @@ enum class GitHubReleaseDecisionBasis {
 
     /** The maintainer's own *Set as the latest release* flag settled it. */
     ForgeLatest,
+
 
     /** The highest number was one a restarted project left behind, so the ranking was overridden. */
     VersioningReset,

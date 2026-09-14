@@ -72,7 +72,11 @@ class GitHubApiTokenReleaseStrategy(
         // Every rule that turns this list into "the stable" and "the pre-release" lives in the
         // selector, including the one deciding whether the second request below is worth making.
         // This method's remaining job is to make it, or not, and to hand back the answer.
-        val plan = GitHubReleaseSelector.plan(entries, windowWasFull = window.windowWasFull)
+        val plan = GitHubReleaseSelector.plan(
+            entries = entries,
+            windowWasFull = window.windowWasFull,
+            source = GitHubReleaseSignalSource.GitHubApi,
+        )
         val latestStableTrace = when {
             plan.shouldConsultForgeLatest -> fetchLatestStableSignalTrace(owner, repo)
             else -> null
@@ -130,7 +134,9 @@ class GitHubApiTokenReleaseStrategy(
             )
         }
 
-        val result = fetch(buildApiUrl(owner, repo, limit)).map { body ->
+        // mapCatching, not map: a body this parser cannot read is a failed load, not an exception
+        // thrown past the Result, the retry loop and the diagnostics that exist to describe it.
+        val result = fetch(buildApiUrl(owner, repo, limit)).mapCatching { body ->
             parseReleaseWindow(
                 json = body,
                 owner = owner,

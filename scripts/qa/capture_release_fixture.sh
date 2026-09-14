@@ -2,7 +2,7 @@
 # Capture a repository's GitHub releases response as a test fixture, trimmed to what the parser
 # actually reads.
 #
-#   scripts/qa/capture_release_fixture.sh <owner/repo> [--limit <n>] [--name <slug>] [--stdout]
+#   scripts/qa/capture_release_fixture.sh <owner/repo> [--atom] [--limit <n>] [--name <slug>] [--stdout]
 #
 # Every release-check report so far has been diagnosed the same way: fetch the real response, cut it
 # down to the fields `GitHubApiTokenReleaseStrategy.parseReleaseEntry` looks at, and drive that
@@ -21,8 +21,14 @@
 # them -- an empty list is the claim "nothing to install here", and flattening them to a number
 # would lose the shape the parser is given.
 #
-# Needs `gh` authenticated (`gh auth status`) and `jq`. Guest access works for public repositories
-# but is rate limited; the token is used when there is one.
+# `--atom` captures the other source instead: `github.com/<owner>/<repo>/releases.atom`, verbatim and
+# anonymously, the way Atom mode itself reads it. No projection, because the feed is already only what
+# a syndication reader gets -- and because the interesting thing about it is exactly what is missing.
+# It is also fixed at ten entries with no page parameter, so the capture is the whole window by
+# definition. Needs no `gh` and no token, which is the point of that mode.
+#
+# Needs `gh` authenticated (`gh auth status`) and `jq` for the API capture. Guest access works for
+# public repositories but is rate limited; the token is used when there is one.
 #
 # Exit codes: 0 captured, 2 bad usage, 3 missing tool or auth, 4 request failed.
 set -euo pipefail
@@ -34,18 +40,21 @@ FIXTURE_DIR="feature-github-engine/src/test/resources"
 LIMIT=30
 NAME=""
 TO_STDOUT=0
+AS_ATOM=0
 SLUG=""
 
 usage() {
   cat <<'EOF'
 Usage: scripts/qa/capture_release_fixture.sh <owner/repo> [options]
 
+  --atom        capture releases.atom instead (anonymous, no token, always ten entries)
   --limit <n>   releases to request, 1-100 (default: 30, matching the app's own page size)
   --name <slug> fixture basename; default is the repository name lowercased
   --stdout      write to stdout instead of the test resources directory
   -h, --help    show this help
 
-Writes feature-github-engine/src/test/resources/<slug>-releases.json.
+Writes feature-github-engine/src/test/resources/<slug>-releases.json, or with --atom,
+.../resources/github/<slug>-releases.atom.
 
 Exit codes: 0 captured, 2 bad usage, 3 missing tool or auth, 4 request failed.
 EOF
@@ -54,6 +63,7 @@ EOF
 while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
+    --atom) AS_ATOM=1; shift ;;
     --limit) LIMIT="${2:-}"; shift 2 ;;
     --name) NAME="${2:-}"; shift 2 ;;
     --stdout) TO_STDOUT=1; shift ;;
@@ -72,10 +82,14 @@ if [ "$LIMIT" -lt 1 ] || [ "$LIMIT" -gt 100 ]; then
   exit 2
 fi
 
-for tool in gh jq; do
-  command -v "$tool" >/dev/null 2>&1 || { echo "$tool is required but not installed" >&2; exit 3; }
-done
-gh auth status >/dev/null 2>&1 || echo "warning: gh is not authenticated; guest rate limits apply" >&2
+if [ "$AS_ATOM" -eq 0 ]; then
+  for tool in gh jq; do
+    command -v "$tool" >/dev/null 2>&1 || { echo "$tool is required but not installed" >&2; exit 3; }
+  done
+  gh auth status >/dev/null 2>&1 || echo "warning: gh is not authenticated; guest rate limits apply" >&2
+else
+  command -v curl >/dev/null 2>&1 || { echo "curl is required but not installed" >&2; exit 3; }
+fi
 
 OWNER="${SLUG%%/*}"
 REPO="${SLUG##*/}"
@@ -85,6 +99,30 @@ fi
 
 RAW="$(mktemp)"
 trap 'rm -f "$RAW"' EXIT
+
+if [ "$AS_ATOM" -eq 1 ]; then
+  ATOM_URL="https://github.com/$OWNER/$REPO/releases.atom"
+  # The same request Atom mode makes: no token, no Authorization header, the app's own user agent.
+  if ! curl -sfL -A "KeiOS-App/1.0 (Android)" "$ATOM_URL" -o "$RAW"; then
+    echo "request failed for $ATOM_URL" >&2
+    exit 4
+  fi
+  ATOM_ENTRIES="$(grep -c '<entry>' "$RAW" || true)"
+  if [ "$TO_STDOUT" -eq 1 ]; then
+    cat "$RAW"
+  else
+    ATOM_DIR="$FIXTURE_DIR/github"
+    mkdir -p "$ATOM_DIR"
+    ATOM_OUT="$ATOM_DIR/$NAME-releases.atom"
+    cp "$RAW" "$ATOM_OUT"
+    echo "wrote $ATOM_OUT" >&2
+  fi
+  {
+    echo "  $SLUG: $ATOM_ENTRIES entries, $(wc -c < "$RAW" | tr -d ' ') bytes"
+    echo "  the feed carries no prerelease flag and no asset list -- that absence is the fixture"
+  } >&2
+  exit 0
+fi
 
 if ! gh api "repos/$OWNER/$REPO/releases?per_page=$LIMIT" > "$RAW" 2>/dev/null; then
   echo "request failed for $SLUG -- check the name, and \`gh auth status\`" >&2

@@ -6,6 +6,7 @@ import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubRejectedRelease
 import os.kei.feature.github.model.GitHubReleaseRejection
 import os.kei.feature.github.model.GitHubReleaseSelection
+import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import os.kei.feature.github.model.toReleaseVersionSignals
@@ -33,14 +34,21 @@ object GitHubReleaseSelector {
     fun plan(
         entries: List<GitHubAtomReleaseEntry>,
         windowWasFull: Boolean = false,
+        /**
+         * Which source these entries came from, stamped onto the signals this produces.
+         *
+         * Not cosmetic: the source carries how precise its clock is and whether it was *told* which
+         * releases are pre-releases or had to read it out of prose. Rules downstream ask both.
+         */
+        source: GitHubReleaseSignalSource = GitHubReleaseSignalSource.GitHubApi,
     ): GitHubReleaseSelectionPlan {
         val rejected = mutableListOf<GitHubRejectedRelease>()
         val stableCandidates = entries.filter { entry -> !entry.isLikelyPreRelease }
         val preReleaseCandidates = entries.filter { entry ->
-            if (!entry.isLikelyPreRelease) {
-                rejected += GitHubRejectedRelease(entry.tag, GitHubReleaseRejection.MarkedPreRelease)
-                return@filter false
-            }
+            // A stable release not appearing in the pre-release lane is the lane working, not a
+            // rejection. Recording one per entry buried the handful that say something -- ten rows of
+            // noise around the one line a reader needed.
+            if (!entry.isLikelyPreRelease) return@filter false
             // A pre-release whose tag, title and link hold nothing comparable cannot be ranked
             // against anything, and offering it means offering a move the reader cannot evaluate.
             val comparable = GitHubVersionUtils.hasMeaningfulPreReleaseVersionCandidates(
@@ -60,6 +68,7 @@ object GitHubReleaseSelector {
         return GitHubReleaseSelectionPlan(
             stable = stable,
             preRelease = preRelease,
+            source = source,
             rejected = rejected.toList(),
             consideredCount = entries.size,
             windowWasFull = windowWasFull,
@@ -75,6 +84,7 @@ object GitHubReleaseSelector {
 data class GitHubReleaseSelectionPlan internal constructor(
     val stable: GitHubRankedRelease,
     val preRelease: GitHubRankedRelease,
+    val source: GitHubReleaseSignalSource,
     val rejected: List<GitHubRejectedRelease>,
     val consideredCount: Int,
     val windowWasFull: Boolean,
@@ -102,7 +112,7 @@ data class GitHubReleaseSelectionPlan internal constructor(
     fun resolve(
         authoritativeStable: GitHubReleaseVersionSignals? = null,
     ): GitHubReleaseSelection {
-        val rankedStable = stable.entry?.toReleaseVersionSignals()
+        val rankedStable = stable.entry?.toReleaseVersionSignals(source)
         val chosenStable = authoritativeStable ?: rankedStable
         val rejected = rejected.toMutableList()
         stable.runnerUpTag.takeIf { it.isNotBlank() }?.let { tag ->
@@ -113,7 +123,7 @@ data class GitHubReleaseSelectionPlan internal constructor(
         }
         // A pre-release that is the stable under another tag is not a choice the reader has.
         val chosenPreRelease = preRelease.entry
-            ?.toReleaseVersionSignals()
+            ?.toReleaseVersionSignals(source)
             ?.takeUnless { candidate ->
                 val duplicate = chosenStable != null && GitHubVersionUtils.referToSameReleaseVersion(
                     candidate.versionCandidates,

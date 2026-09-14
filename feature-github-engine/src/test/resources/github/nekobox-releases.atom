@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:https://github.com/MatsuriDayo/NekoBoxForAndroid/releases</id>
+  <link type="text/html" rel="alternate" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases.atom"/>
+  <title>Release notes from NekoBoxForAndroid</title>
+  <updated>2026-02-09T03:48:30Z</updated>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.4.2</id>
+    <updated>2026-02-09T03:56:02Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.4.2"/>
+    <title>1.4.2</title>
+    <content type="html">&lt;h2&gt;1.4.2 更新内容&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;升级核心 sing-box 1.12.19-neko-1&lt;/li&gt;
+&lt;li&gt;合并 PR &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3815963346&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1109&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/1109/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/1109&quot;&gt;#1109&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;处理 issue &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3879201003&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1115&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/issues/1115/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1115&quot;&gt;#1115&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3728487279&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1093&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/issues/1093/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1093&quot;&gt;#1093&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3713571768&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1090&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/issues/1090/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1090&quot;&gt;#1090&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3610386763&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1077&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/issues/1077/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1077&quot;&gt;#1077&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;重构优化 更新订阅时的配置覆写（保留本地的自定义json配置，其他项目遵循订阅）&lt;/li&gt;
+&lt;li&gt;重构优化 直连订阅请求&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;针对小白用户的提示&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。&lt;/li&gt;
+&lt;li&gt;您须了解本项目使用并且在GPLv3许可下再发行 &lt;code&gt;世界&lt;/code&gt; 维护的sing-box翻墙核心，并且不受sing-box社区的支持。&lt;/li&gt;
+&lt;li&gt;您须了解本项目较少维护，&lt;strong&gt;不接受功能请求&lt;/strong&gt;。如有BUG请通过issue反馈，非重大BUG则可能不会修复。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;本软件不一定满足你的需求，推荐其他 Android 客户端&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;机场订阅用户（Clash Meta 核心）-&amp;gt; &lt;code&gt;Clash Meta For Android&lt;/code&gt; &lt;code&gt;FlClash&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Xray 核心用户 -&amp;gt; &lt;code&gt;v2rayNG&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;sing-box 核心用户 -&amp;gt; &lt;code&gt;sing-box for Android&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a href=&quot;https://matsuridayo.github.io/download/#_3&quot; rel=&quot;nofollow&quot;&gt;友情推荐其他平台的客户端&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.4.1</id>
+    <updated>2025-10-30T07:29:11Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.4.1"/>
+    <title>1.4.1</title>
+    <content type="html">&lt;h2&gt;1.4.1 更新内容&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;升级核心 sing-box 1.12.12-neko-1&lt;/li&gt;
+&lt;li&gt;修复 grpc case 缺少 break 导致序列化数据错乱&lt;/li&gt;
+&lt;li&gt;声明 &lt;code&gt;GET_INSTALLED_APPS&lt;/code&gt;（国产安卓特有权限）并在应用列表为空时提示跳转到系统设置&lt;/li&gt;
+&lt;li&gt;进入应用列表界面时重新加载应用列表&lt;/li&gt;
+&lt;li&gt;合并 PR &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3530845593&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1050&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/1050/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/1050&quot;&gt;#1050&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3533722793&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1052&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/1052/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/1052&quot;&gt;#1052&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;1.4.0 版本起新增 Preview 更新通道&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Preview 为最新的测试版，滚动发布&lt;/li&gt;
+&lt;li&gt;旧的 Preview 版本直接删除，不占用 pre-release 空间&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;针对小白用户的提示&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。&lt;/li&gt;
+&lt;li&gt;您须了解本项目使用并且在GPLv3许可下再发行 &lt;code&gt;世界&lt;/code&gt; 维护的sing-box翻墙核心，并且不受sing-box社区的支持。&lt;/li&gt;
+&lt;li&gt;您须了解本项目较少维护，&lt;strong&gt;不接受功能请求&lt;/strong&gt;。如有BUG请通过issue反馈，非重大BUG则可能不会修复。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;本软件不一定满足你的需求，推荐其他 Android 客户端&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;机场订阅用户 -&amp;gt; &lt;code&gt;Clash Meta For Android&lt;/code&gt; &lt;code&gt;flclash&lt;/code&gt; 等等&lt;/li&gt;
+&lt;li&gt;Xray 核心用户 -&amp;gt; &lt;code&gt;v2rayNG&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;sing-box 核心用户 -&amp;gt; &lt;code&gt;sing-box for Android&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a href=&quot;https://matsuridayo.github.io/download/#_3&quot; rel=&quot;nofollow&quot;&gt;友情推荐其他平台的客户端&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/preview</id>
+    <updated>2026-02-09T03:56:31Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/preview"/>
+    <title>pre-1.4.2-20260202-1</title>
+    <content type="html">&lt;h2&gt;更新内容 [这是 Preview 版本]&lt;/h2&gt;
+&lt;p&gt;当前无 Preview 版本&lt;/p&gt;</content>
+    <author>
+      <name>arm64v8a</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/48624112?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.4.0</id>
+    <updated>2025-09-20T07:38:38Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.4.0"/>
+    <title>1.4.0</title>
+    <content type="html">&lt;h2&gt;1.4.0 更新内容&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;升级核心 sing-box 1.12.8-neko-1 (2)&lt;/li&gt;
+&lt;li&gt;添加「检查更新」功能&lt;/li&gt;
+&lt;li&gt;当导入代理遇到 http(s) 链接时提示导入订阅&lt;/li&gt;
+&lt;li&gt;合并了一些 PR &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3020820051&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/943&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/943/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/943&quot;&gt;#943&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3260134438&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/993&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/993/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/993&quot;&gt;#993&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;3327344339&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/1002&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/1002/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/1002&quot;&gt;#1002&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;fix: Configuration editor keyboard does not display when IME is visible&lt;/li&gt;
+&lt;li&gt;修复 &lt;code&gt;local&lt;/code&gt; dns transport 失效&lt;/li&gt;
+&lt;li&gt;「导入订阅」当没有连接代理时，尝试通过 ECH 和 H3 方式获取 (3)&lt;/li&gt;
+&lt;li&gt;「导入订阅」当没有指定订阅名称时，尝试通过 &lt;code&gt;content-disposition&lt;/code&gt; 获取&lt;/li&gt;
+&lt;li&gt;「路由规则」添加自定义配置功能 (4)&lt;/li&gt;
+&lt;li&gt;「全局设置」添加自定义配置功能 (4, 5)&lt;/li&gt;
+&lt;li&gt;添加「恢复默认设置」，入口在 &lt;code&gt;工具 -&amp;gt; 备份&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;修改默认设置：默认打开 &lt;code&gt;fakedns&lt;/code&gt;，默认使用 &lt;code&gt;gVisor&lt;/code&gt; tun stack (6)&lt;/li&gt;
+&lt;li&gt;优化日志查看界面&lt;/li&gt;
+&lt;li&gt;优化 APP 启动与重启&lt;/li&gt;
+&lt;li&gt;优化 TCP Ping 与 URL Test 测试过程，添加最小化按钮&lt;/li&gt;
+&lt;li&gt;删除内置「屏蔽跟踪器」规则&lt;/li&gt;
+&lt;li&gt;删除 Cloudflare Warp 配置生成器（已经无法生成配置）&lt;/li&gt;
+&lt;li&gt;升级 Go 1.25&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;注意事项:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;从此版本开始，数据库格式已更新。如果您升级后再降级，数据将会丢失，请注意备份。&lt;/li&gt;
+&lt;li&gt;部分自动生成的配置未更新，仍使用旧版配置。基本不会影响使用。&lt;/li&gt;
+&lt;li&gt;仅当订阅链接为 https 时，才能通过 ECH 和 H3 方式获取。&lt;/li&gt;
+&lt;li&gt;自定义配置支持 Map 合并和 List 操作，格式： &lt;a href=&quot;https://matsuridayo.github.io/nb4a-configuration/#json&quot; rel=&quot;nofollow&quot;&gt;https://matsuridayo.github.io/nb4a-configuration/#json&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;URL 测试时不应用全局自定义配置。&lt;/li&gt;
+&lt;li&gt;老用户建议升级后运行「恢复默认设置」，节点和订阅不会消失。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;1.4.0 版本起新增 Preview 更新通道&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Preview 为最新的测试版，滚动发布&lt;/li&gt;
+&lt;li&gt;旧的 Preview 版本直接删除，不占用 pre-release 空间&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;针对小白用户的提示&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。&lt;/li&gt;
+&lt;li&gt;您须了解本项目使用并且在GPLv3许可下再发行 &lt;code&gt;世界&lt;/code&gt; 维护的sing-box翻墙核心，并且不受sing-box社区的支持。&lt;/li&gt;
+&lt;li&gt;您须了解本项目较少维护，&lt;strong&gt;不接受功能请求&lt;/strong&gt;。如有BUG请通过issue反馈，非重大BUG则可能不会修复。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;本软件不一定满足你的需求，推荐其他 Android 客户端&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;机场订阅用户 -&amp;gt; &lt;code&gt;Clash Meta For Android&lt;/code&gt; &lt;code&gt;flclash&lt;/code&gt; 等等&lt;/li&gt;
+&lt;li&gt;Xray 核心用户 -&amp;gt; &lt;code&gt;v2rayNG&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;sing-box 核心用户 -&amp;gt; &lt;code&gt;sing-box for Android&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a href=&quot;https://matsuridayo.github.io/download/#_3&quot; rel=&quot;nofollow&quot;&gt;友情推荐其他平台的客户端&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.3.9</id>
+    <updated>2025-09-07T14:02:22Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.9"/>
+    <title>1.3.9</title>
+    <content type="html">&lt;h1&gt;NekoBox For Android 正式版更新 1.3.9&lt;/h1&gt;
+&lt;h2&gt;自 1.3.8 的更改&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;更新 ClashMeta 配置解析器，修复一些bug，修复一些机场面板配置导入问题，删除一些错误和过时的写法&lt;/li&gt;
+&lt;li&gt;删除高级插件功能&lt;/li&gt;
+&lt;li&gt;修复一些配置导入解析问题 &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2991314943&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/936&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/936/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/936&quot;&gt;#936&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Use systemExempt foreground service type for VPNService（修复部分系统崩溃）&lt;/li&gt;
+&lt;li&gt;Update translate &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2889140121&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/903&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/903/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/903&quot;&gt;#903&lt;/a&gt; &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2973993815&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/926&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/926/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/926&quot;&gt;#926&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;更新 core 版本 1.11.7-neko-5&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;修复 sniff&lt;/li&gt;
+&lt;li&gt;修复 wireguard reserved&lt;/li&gt;
+&lt;li&gt;同步上游的一些更新&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;弃用功能&lt;/h2&gt;
+&lt;p&gt;由于无法维护，高级插件功能已被移除。&lt;/p&gt;
+&lt;h2&gt;针对小白用户的提示&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。如果不会用，建议换成其他软件(下方有推荐)。&lt;/li&gt;
+&lt;li&gt;您须了解本项目使用并且在GPLv3许可下再发行 &lt;code&gt;世界&lt;/code&gt;维护的sing-box翻墙核心，并且不受sing-box社区的支持。&lt;/li&gt;
+&lt;li&gt;您须了解本项目较少维护，不接受功能请求。如有BUG请通过issue反馈，非重大BUG则可能不会修复。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;本软件不一定满足你的需求，推荐其他 Android 客户端&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;机场订阅用户 -&amp;gt; &lt;code&gt;Clash Meta For Android&lt;/code&gt; &lt;code&gt;flclash&lt;/code&gt; 等等&lt;/li&gt;
+&lt;li&gt;Xray 核心用户 -&amp;gt; &lt;code&gt;v2rayNG&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;sing-box 核心用户 -&amp;gt; &lt;code&gt;sing-box for Android&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a href=&quot;https://matsuridayo.github.io/download/#_3&quot; rel=&quot;nofollow&quot;&gt;其他平台的客户端&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.3.8</id>
+    <updated>2025-03-03T13:04:20Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.8"/>
+    <title>1.3.8</title>
+    <content type="html">&lt;h1&gt;NekoBox For Android 正式版更新 1.3.8&lt;/h1&gt;
+&lt;h2&gt;本次更改&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;将连接测试选项移至上层菜单&lt;/li&gt;
+&lt;li&gt;修复 clashapi 没有统计数据的问题&lt;/li&gt;
+&lt;li&gt;修复 Android 15 边缘显示的问题&lt;/li&gt;
+&lt;li&gt;修复 geoip:private&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;自 1.3.4 的更改&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;添加设置选项：当网络发生变化时重置出站连接&lt;/li&gt;
+&lt;li&gt;添加设置选项：当设备从睡眠状态唤醒时重置出站连接&lt;/li&gt;
+&lt;li&gt;Go 升级到 1.24.0&lt;/li&gt;
+&lt;li&gt;升级到 sing-box 1.11.4 并额外适配 AnyTLS 协议（感谢 husi 的代码）&lt;/li&gt;
+&lt;li&gt;更新 sing-box 配置写法： block -&amp;gt; reject&lt;/li&gt;
+&lt;li&gt;更新 sing-box 配置写法： dns-out -&amp;gt; hijack-dns&lt;/li&gt;
+&lt;li&gt;修复 GeoIP GeoSite 到 rule_set 规则转换&lt;/li&gt;
+&lt;li&gt;URLTest 无需停止 VPN&lt;/li&gt;
+&lt;li&gt;更改 APK 命名&lt;/li&gt;
+&lt;li&gt;Up-to-date and accurate translation into Persian &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2875802188&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/891&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/891/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/891&quot;&gt;#891&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;将多路复用(Multiplex)选项位置从全局更改为每个配置&lt;/li&gt;
+&lt;li&gt;适配 Android SDK 35，在 Android 13+ 设备上可以在系统设置中选择语言&lt;/li&gt;
+&lt;li&gt;订阅新增解析 sing-box 格式的配置，可以解析出 outbound 类型的节点&lt;/li&gt;
+&lt;li&gt;更改默认直连 DNS&lt;/li&gt;
+&lt;li&gt;修复“域名规则默认使用 domain_suffix” (&lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2772852073&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/848&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/848/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/848&quot;&gt;#848&lt;/a&gt;)&lt;/li&gt;
+&lt;li&gt;修复 &lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2856589796&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/877&quot; data-hovercard-type=&quot;issue&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/issues/877/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/877&quot;&gt;#877&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;弃用功能&lt;/h2&gt;
+&lt;p&gt;以下功能已经无法维护，未来可能会被移除。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;高级插件&lt;/li&gt;
+&lt;li&gt;启用 seletor (免重载切换节点)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;其他须知&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;NekoBox for PC 电脑版可能要放弃维护&lt;/li&gt;
+&lt;li&gt;sing-box 1.8~1.12 版本更改了很多配置，部分旧版写法即将在 1.12 版本被删除。NekoBox 目前尚未完全改用新版的写法。&lt;/li&gt;
+&lt;li&gt;如果你的路由规则包含“应用规则”，升级后需要重新选择包含的应用。&lt;/li&gt;
+&lt;/ul&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.3.7</id>
+    <updated>2025-03-01T12:06:29Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.7"/>
+    <title>1.3.7</title>
+    <content type="html">&lt;p&gt;1.3.7&lt;/p&gt;</content>
+    <author>
+      <name>arm64v8a</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/48624112?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.3.6</id>
+    <updated>2025-02-26T05:24:47Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.6"/>
+    <title>1.3.6</title>
+    <content type="html">&lt;p&gt;1.3.6&lt;/p&gt;</content>
+    <author>
+      <name>arm64v8a</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/48624112?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.3.5</id>
+    <updated>2025-02-09T16:28:15Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.5"/>
+    <title>1.3.5</title>
+    <content type="html">&lt;p&gt;fix: donate info (&lt;a class=&quot;issue-link js-issue-link&quot; data-error-text=&quot;Failed to load title&quot; data-id=&quot;2829676757&quot; data-permission-text=&quot;Title is private&quot; data-url=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/issues/873&quot; data-hovercard-type=&quot;pull_request&quot; data-hovercard-url=&quot;/MatsuriDayo/NekoBoxForAndroid/pull/873/hovercard&quot; href=&quot;https://github.com/MatsuriDayo/NekoBoxForAndroid/pull/873&quot;&gt;#873&lt;/a&gt;)&lt;/p&gt;</content>
+    <author>
+      <name>SodaWithoutSparkles</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/u/64138578?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/609535399/1.3.4</id>
+    <updated>2024-12-15T10:02:25Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/tag/1.3.4"/>
+    <title>1.3.4</title>
+    <content type="html">&lt;h2&gt;更新内容&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;fix: Re-add the server domain for bypass (修复 1.3.3 hy2 端口跳跃无法使用的问题)&lt;/li&gt;
+&lt;li&gt;Add workaround for &lt;code&gt;bulkBarrierPreWrite: unaligned arguments&lt;/code&gt; panic (修复更新订阅时概率崩溃的问题)&lt;/li&gt;
+&lt;li&gt;使用新的方法 （outbound &quot;any&quot;） 绕过节点域名的 DNS 查询&lt;/li&gt;
+&lt;li&gt;自定义配置添加数组 prepend &amp;amp; append 写法&lt;/li&gt;
+&lt;li&gt;域名规则默认使用 &lt;code&gt;domain_suffix&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;修复 ECH 设置报错&lt;/li&gt;
+&lt;li&gt;1.3.4 version code 现已改正&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;重要提示&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Google Play 上的版本是冒充的，请勿下载。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The version on Google Play is a fake, please do not download it.&lt;/strong&gt;&lt;/p&gt;
+&lt;h2&gt;针对小白用户的提示&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;本软件为 Android 端节点调试工具，适合有一定基础和学习能力的用户使用。机场用户建议使用其他软件。白嫖用户建议去死。&lt;/li&gt;
+&lt;li&gt;您须了解本项目使用并且在GPLv3许可下再发行 &lt;code&gt;世界&lt;/code&gt;维护的sing-box翻墙核心。(暂时不会适配新版 sing-box)&lt;/li&gt;
+&lt;li&gt;您须了解本项目较少维护，如有BUG请通过issue反馈，非重大BUG则可能不会修复。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;本软件不一定满足你的需求，推荐其他 Android 端图形界面&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;机场订阅用户 -&amp;gt; &lt;code&gt;Clash Meta For Android&lt;/code&gt; &lt;code&gt;flclash&lt;/code&gt; 等&lt;/li&gt;
+&lt;li&gt;Xray 核心用户 -&amp;gt; &lt;code&gt;v2rayNG&lt;/code&gt; 等&lt;/li&gt;
+&lt;li&gt;sing-box 核心用户 -&amp;gt; &lt;code&gt;sing-box for Android&lt;/code&gt; 等&lt;/li&gt;
+&lt;/ul&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+</feed>

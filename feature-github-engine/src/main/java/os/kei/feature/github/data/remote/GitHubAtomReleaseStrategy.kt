@@ -8,7 +8,7 @@ import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
 import os.kei.core.io.stringLimitedBlocking
-import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
+import os.kei.feature.github.engine.release.GitHubReleaseSelector
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseChannel
@@ -17,6 +17,7 @@ import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubVersionCandidateSource
+import os.kei.feature.github.model.toReleaseVersionSignals
 import java.net.URLDecoder
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -27,9 +28,27 @@ private data class CachedValue<T>(
     val timestamp: Long
 )
 
-private data class GitHubAtomLatestStableLookup(
-    val effectiveLatest: GitHubReleaseVersionSignals,
-    val hasStableRelease: Boolean
+/**
+ * What `github.com/<owner>/<repo>/releases/latest` was able to tell us.
+ *
+ * Three answers, because the old code had two and the missing one was doing real damage: anything
+ * that was not a redirect to a tag — a 404, a rate limit, a 5xx, an unreachable host, an HTML 200 —
+ * was recorded as *this repository has no stable release*, which is a claim, not an absence of one.
+ *
+ * Only [NoStableRelease] is GitHub stating something. `/releases/latest` excludes pre-releases, so
+ * its 404 means there is no non-pre-release release to point at. Everything else is [Unknown], and
+ * an unknown falls back to the feed rather than overriding it.
+ */
+internal enum class GitHubAtomLatestOutcome {
+    Resolved,
+    NoStableRelease,
+    Unknown,
+}
+
+internal data class GitHubAtomLatestLookup(
+    val outcome: GitHubAtomLatestOutcome,
+    val tag: String = "",
+    val link: String = "",
 )
 
 object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
@@ -38,9 +57,19 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
     private const val CACHE_TTL_MS = 90_000L
     private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
     private const val MAX_ATOM_RESPONSE_BYTES = 8L * 1024L * 1024L
+    private const val HTTP_NOT_FOUND = 404
+
+    /**
+     * What `releases.atom` returns, always, with no way to ask for more.
+     *
+     * A third of what API mode reads, and not a setting. For a repository that publishes CI builds as
+     * releases the whole window can be rolling builds -- `iebb/mithka` currently has ten entries and
+     * no stable release among them -- which is why the redirect above is not a nicety here.
+     */
+    private const val ATOM_FEED_PAGE_SIZE = 10
 
     private val feedCache = ConcurrentHashMap<String, CachedValue<Result<GitHubAtomFeed>>>()
-    private val stableCache = ConcurrentHashMap<String, CachedValue<Result<GitHubAtomLatestStableLookup>>>()
+    private val stableCache = ConcurrentHashMap<String, CachedValue<Result<GitHubAtomLatestLookup>>>()
 
     private val githubClient: OkHttpClient by lazy {
         SharedHttpClient.base.newBuilder()
@@ -82,57 +111,106 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
                 elapsedMs = System.currentTimeMillis() - startedAt
             )
         }
-        val latestStableTrace = fetchLatestStableSignalTrace(
+        val latestTrace = fetchLatestStableLookupTrace(
             owner = owner,
             repo = repo,
-            feed = feed,
             latestReleaseUrl = latestReleaseUrl,
             noRedirectRequestClient = noRedirectRequestClient
         )
-        val latestStableLookup = latestStableTrace.result.getOrElse { error ->
-            return GitHubStrategyLoadTrace(
-                result = Result.failure(error),
-                fromCache = feedTrace.fromCache && latestStableTrace.fromCache,
-                elapsedMs = System.currentTimeMillis() - startedAt
+        // The confirmation is a second request and it is allowed to fail. It used to take the whole
+        // snapshot down with it, so a repository whose feed loaded perfectly reported a failed check
+        // because an optional request timed out.
+        val lookup = latestTrace.result.getOrElse {
+            GitHubAtomLatestLookup(outcome = GitHubAtomLatestOutcome.Unknown)
+        }
+
+        val result = runCatching {
+            val entries = feed.entries.withLatestKnowledge(lookup.outcome)
+            val plan = GitHubReleaseSelector.plan(
+                entries = entries,
+                windowWasFull = entries.size >= ATOM_FEED_PAGE_SIZE,
+                source = GitHubReleaseSignalSource.AtomFallback
+            )
+            val selection = plan.resolve(
+                authoritativeStable = lookup
+                    .takeIf { it.outcome == GitHubAtomLatestOutcome.Resolved }
+                    ?.toAuthoritativeSignal(feed)
+            )
+            val latestStable = selection.stable
+                ?: selection.preRelease
+                ?: error("no release entries")
+
+            GitHubRepositoryReleaseSnapshot(
+                strategyId = id,
+                feed = feed.copy(entries = entries),
+                latestStable = latestStable,
+                hasStableRelease = selection.hasStableRelease,
+                latestPreRelease = selection.preRelease,
+                selection = selection
             )
         }
-        val latestStable = latestStableLookup.effectiveLatest
-        val hasStableRelease = latestStableLookup.hasStableRelease
-        val latestPreEntry = pickLatestPreReleaseEntry(
-            feed.entries.filter { entry ->
-                val isEligiblePreCandidate = if (hasStableRelease) entry.isLikelyPreRelease else true
-                isEligiblePreCandidate &&
-                    GitHubVersionUtils.hasMeaningfulPreReleaseVersionCandidates(
-                        entry.versionCandidates,
-                        GitHubVersionCandidateSource.Link.priority
-                    )
-            }
-        )
-        val latestPre = latestPreEntry
-            ?.toReleaseSignal(GitHubReleaseSignalSource.AtomEntry)
-            ?.takeUnless { preReleaseSignal ->
-                hasStableRelease &&
-                    GitHubVersionUtils.referToSameReleaseVersion(
-                        preReleaseSignal.versionCandidates,
-                        latestStable.versionCandidates,
-                        leftChannel = preReleaseSignal.channel,
-                        rightChannel = latestStable.channel,
-                    )
-            }
 
         return GitHubStrategyLoadTrace(
-            result = Result.success(
-                GitHubRepositoryReleaseSnapshot(
-                    strategyId = id,
-                    feed = feed,
-                    latestStable = latestStable,
-                    hasStableRelease = hasStableRelease,
-                    latestPreRelease = latestPre
-                )
-            ),
-            fromCache = feedTrace.fromCache && latestStableTrace.fromCache,
+            result = result,
+            fromCache = feedTrace.fromCache && latestTrace.fromCache,
             elapsedMs = System.currentTimeMillis() - startedAt
         )
+    }
+
+    /**
+     * Fold what `/releases/latest` said back into the entries it describes.
+     *
+     * The feed carries no `prerelease` flag, so every entry's lane is a guess made from its tag,
+     * title and body. [GitHubAtomLatestOutcome.NoStableRelease] is GitHub contradicting that guess
+     * for the whole repository: it has no non-pre-release release, so an entry the text made look
+     * stable is one this parser misread.
+     *
+     * Only the lane is corrected, not the channel. The channel is what the release's own text claims
+     * to be, and that is still true — a release can call itself `1.2.0` and be published as a
+     * pre-release. What changes is which row it belongs in.
+     */
+    private fun List<GitHubAtomReleaseEntry>.withLatestKnowledge(
+        outcome: GitHubAtomLatestOutcome
+    ): List<GitHubAtomReleaseEntry> {
+        if (outcome != GitHubAtomLatestOutcome.NoStableRelease) return this
+        return map { entry ->
+            if (entry.isLikelyPreRelease) entry else entry.copy(isLikelyPreRelease = true)
+        }
+    }
+
+    /** The redirect's tag, matched back to the entry that describes it where the feed has one. */
+    private fun GitHubAtomLatestLookup.toAuthoritativeSignal(
+        feed: GitHubAtomFeed
+    ): GitHubReleaseVersionSignals {
+        val matchedEntry = feed.entries.firstOrNull { entry ->
+            entry.tag.equals(tag, ignoreCase = true) ||
+                GitHubVersionUtils.referToSameReleaseVersion(
+                    GitHubVersionUtils.buildVersionCandidates(
+                        GitHubVersionCandidateSource.Tag to tag
+                    ),
+                    entry.versionCandidates,
+                    leftChannel = GitHubReleaseChannel.STABLE,
+                    rightChannel = entry.channel,
+                )
+        }
+        return matchedEntry
+            ?.toReleaseVersionSignals(GitHubReleaseSignalSource.LatestRedirect)
+            ?.copy(link = link)
+            ?: GitHubReleaseVersionSignals(
+                displayVersion = tag,
+                rawTag = tag,
+                rawName = tag,
+                link = link,
+                // The release is older than the ten entries the feed carries, so its own timestamp is
+                // not available at any price. The feed's is the closest bound there is.
+                updatedAtMillis = feed.updatedAtMillis,
+                versionCandidates = GitHubVersionUtils.buildVersionCandidates(
+                    GitHubVersionCandidateSource.Tag to tag
+                ),
+                source = GitHubReleaseSignalSource.LatestRedirect,
+                channel = GitHubAtomHeuristics.detectReleaseChannel(tag, tag, ""),
+                authorName = ""
+            )
     }
 
     suspend fun fetchAtomFeed(owner: String, repo: String): Result<GitHubAtomFeed> {
@@ -156,7 +234,9 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             )
         }
 
-        val result = fetch(atomFeedUrl, requestClient).map { body ->
+        // mapCatching, not map: a feed this parser cannot read is a failed load, not an exception
+        // thrown past the Result, the retry loop and the diagnostics that exist to describe it.
+        val result = fetch(atomFeedUrl, requestClient).mapCatching { body ->
             parseAtomFeed(xml = body, feedUrl = atomFeedUrl)
         }
         if (result.isSuccess) {
@@ -175,13 +255,12 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         return fetchAtomFeed(owner, repo).map { it.entries.take(limit) }
     }
 
-    private suspend fun fetchLatestStableSignalTrace(
+    private suspend fun fetchLatestStableLookupTrace(
         owner: String,
         repo: String,
-        feed: GitHubAtomFeed,
         latestReleaseUrl: String = buildLatestReleaseUrl(owner, repo),
         noRedirectRequestClient: OkHttpClient = githubNoRedirectClient
-    ): GitHubStrategyLoadTrace<GitHubAtomLatestStableLookup> {
+    ): GitHubStrategyLoadTrace<GitHubAtomLatestLookup> {
         val startedAt = System.currentTimeMillis()
         val key = "$owner/$repo|$latestReleaseUrl"
         val now = System.currentTimeMillis()
@@ -204,66 +283,37 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
                 val location = response.header("Location").orEmpty()
                 val finalUrl = when {
                     location.isNotBlank() -> location
-                    response.request.url.toString().contains("/releases/tag/") -> response.request.url.toString()
+                    response.request.url.toString().contains("/releases/tag/") ->
+                        response.request.url.toString()
+
                     else -> ""
                 }
-
-                if (finalUrl.contains("/releases/tag/")) {
-                    val rawTag = URLDecoder.decode(
-                        finalUrl.substringAfterLast("/releases/tag/").trim('/'),
-                        Charsets.UTF_8.name()
-                    )
-                    val matchedEntry = feed.entries.firstOrNull { entry ->
-                        entry.tag.equals(rawTag, ignoreCase = true) ||
-                            GitHubVersionUtils.referToSameReleaseVersion(
-                                GitHubVersionUtils.buildVersionCandidates(
-                                    GitHubVersionCandidateSource.Tag to rawTag
-                                ),
-                                entry.versionCandidates,
-                                leftChannel = GitHubReleaseChannel.STABLE,
-                                rightChannel = entry.channel,
-                            )
-                    }
-                    GitHubAtomLatestStableLookup(
-                        effectiveLatest = matchedEntry?.toReleaseSignal(
-                            source = GitHubReleaseSignalSource.LatestRedirect,
-                            linkOverride = finalUrl
-                        ) ?: GitHubReleaseVersionSignals(
-                            displayVersion = rawTag,
-                            rawTag = rawTag,
-                            rawName = rawTag,
-                            link = finalUrl,
-                            updatedAtMillis = feed.updatedAtMillis,
-                            versionCandidates = GitHubVersionUtils.buildVersionCandidates(
-                                GitHubVersionCandidateSource.Tag to rawTag
-                            ),
-                            source = GitHubReleaseSignalSource.LatestRedirect,
-                            channel = GitHubAtomHeuristics.detectReleaseChannel(rawTag, rawTag, ""),
-                            authorName = ""
+                when {
+                    finalUrl.contains("/releases/tag/") -> GitHubAtomLatestLookup(
+                        outcome = GitHubAtomLatestOutcome.Resolved,
+                        tag = URLDecoder.decode(
+                            finalUrl.substringAfterLast("/releases/tag/").trim('/'),
+                            Charsets.UTF_8.name()
                         ),
-                        hasStableRelease = true
+                        link = finalUrl
                     )
-                } else {
-                    val fallbackStableEntry = pickLatestStableEntry(feed.entries.filter { !it.isLikelyPreRelease })
-                    val fallbackAnyEntry = pickLatestPreReleaseEntry(
-                        feed.entries.filter { entry ->
-                            GitHubVersionUtils.hasMeaningfulPreReleaseVersionCandidates(
-                                entry.versionCandidates,
-                                GitHubVersionCandidateSource.Link.priority
-                            )
-                        }
-                    )
-                    GitHubAtomLatestStableLookup(
-                        effectiveLatest = fallbackStableEntry?.toReleaseSignal(GitHubReleaseSignalSource.AtomFallback)
-                            ?: fallbackAnyEntry?.toReleaseSignal(GitHubReleaseSignalSource.AtomFallback)
-                            ?: error("no release entries"),
-                        hasStableRelease = false
-                    )
+
+                    // The one answer that is a statement. `/releases/latest` skips pre-releases, so a
+                    // 404 is GitHub saying there is no non-pre-release release to point at.
+                    response.code == HTTP_NOT_FOUND ->
+                        GitHubAtomLatestLookup(outcome = GitHubAtomLatestOutcome.NoStableRelease)
+
+                    // Rate limited, a 5xx, a redirect somewhere else, an interstitial. None of these
+                    // is evidence about the repository, and reading them as one is what produced a
+                    // card saying "may only have pre-releases" above the stable release it had found.
+                    else -> GitHubAtomLatestLookup(outcome = GitHubAtomLatestOutcome.Unknown)
                 }
             }
         }
 
-        if (result.isSuccess) {
+        // An Unknown is not worth remembering for ninety seconds: the next refresh is the user asking
+        // again, and the reason it failed is usually gone by then.
+        if (result.getOrNull()?.outcome?.let { it != GitHubAtomLatestOutcome.Unknown } == true) {
             stableCache[key] = CachedValue(result, now)
         } else {
             stableCache.remove(key)
@@ -449,14 +499,6 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         )
     }
 
-    private fun pickLatestStableEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return GitHubReleaseCandidateRanker.latest(entries)
-    }
-
-    private fun pickLatestPreReleaseEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return GitHubReleaseCandidateRanker.latest(entries)
-    }
-
     private fun extractTag(
         link: String,
         title: String,
@@ -471,24 +513,6 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             entryId.isNotBlank() -> entryId.substringAfterLast('/').trim()
             else -> title.trim()
         }
-    }
-
-    private fun GitHubAtomReleaseEntry.toReleaseSignal(
-        source: GitHubReleaseSignalSource,
-        linkOverride: String? = null
-    ): GitHubReleaseVersionSignals {
-        return GitHubReleaseVersionSignals(
-            displayVersion = displayVersion,
-            rawTag = tag,
-            rawName = title,
-            link = linkOverride ?: link,
-            updatedAtMillis = updatedAtMillis,
-            versionCandidates = versionCandidates,
-            source = source,
-            channel = channel,
-            authorName = authorName,
-            authorAvatarUrl = authorAvatarUrl
-        )
     }
 
     private fun String.parseIsoInstantOrNull(): Long? {

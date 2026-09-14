@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:https://github.com/iebb/mithka/releases</id>
+  <link type="text/html" rel="alternate" href="https://github.com/iebb/mithka/releases"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/iebb/mithka/releases.atom"/>
+  <title>Release notes from mithka</title>
+  <updated>2026-09-11T03:16:39Z</updated>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v1.4.6-nightly.20260911.9fa1413</id>
+    <updated>2026-09-11T03:38:56Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/v1.4.6-nightly.20260911.9fa1413"/>
+    <title>v1.4.6 Nightly 2026-09-11 (9fa1413)</title>
+    <content type="html">&lt;h2&gt;Changes&lt;/h2&gt;
+&lt;h3&gt;English&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Added a video compatibility option for Android, enabled by default to improve playback compatibility.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;中文&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;新增安卓视频兼容性选项，默认启用以提升播放兼容性。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Full changelog:&lt;/strong&gt; &lt;a href=&quot;https://github.com/iebb/mithka/compare/v1.4.5-nightly.20260910.3cbe5e2...v1.4.6-nightly.20260911.9fa1413&quot;&gt;v1.4.5-nightly.20260910.3cbe5e2...v1.4.6-nightly.20260911.9fa1413&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/play-version-code-1789096599</id>
+    <updated>2026-09-11T03:38:32Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/play-version-code-1789096599"/>
+    <title>play-version-code-1789096599</title>
+    <content type="html">&lt;p&gt;Google Play version code 1789096599&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v1.4.5-nightly.20260910.3cbe5e2</id>
+    <updated>2026-09-10T03:44:17Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/v1.4.5-nightly.20260910.3cbe5e2"/>
+    <title>v1.4.5 Nightly 2026-09-10 (3cbe5e2)</title>
+    <content type="html">&lt;h2&gt;Changes&lt;/h2&gt;
+&lt;h3&gt;English&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Improved unread message scrolling so you can jump to unread items more reliably in chats.&lt;/li&gt;
+&lt;li&gt;Fixed Android media handling for smoother image and video playback in chat.&lt;/li&gt;
+&lt;li&gt;Resolved download ownership issues so downloaded files are attributed correctly and open more reliably.&lt;/li&gt;
+&lt;li&gt;Refined chat media previews, transcripts, and moments viewing for a smoother experience when browsing shared content.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;中文&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;改进了未读消息滚动，让你可以更可靠地在聊天中跳转到未读内容。&lt;/li&gt;
+&lt;li&gt;修复了 Android 上的媒体处理问题，使聊天中的图片和视频播放更顺畅。&lt;/li&gt;
+&lt;li&gt;解决了下载文件归属问题，确保已下载文件能正确归属并更稳定地打开。&lt;/li&gt;
+&lt;li&gt;优化了聊天媒体预览、转录内容和动态查看体验，让浏览共享内容时更顺畅。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Full changelog:&lt;/strong&gt; &lt;a href=&quot;https://github.com/iebb/mithka/compare/v1.4.4-nightly.20260909.38227de...v1.4.5-nightly.20260910.3cbe5e2&quot;&gt;v1.4.4-nightly.20260909.38227de...v1.4.5-nightly.20260910.3cbe5e2&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/play-version-code-1789010470</id>
+    <updated>2026-09-10T03:42:12Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/play-version-code-1789010470"/>
+    <title>play-version-code-1789010470</title>
+    <content type="html">&lt;p&gt;Google Play version code 1789010470&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v1.4.4-nightly.20260909.38227de</id>
+    <updated>2026-09-09T03:44:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/v1.4.4-nightly.20260909.38227de"/>
+    <title>v1.4.4 Nightly 2026-09-09 (38227de)</title>
+    <content type="html">&lt;h2&gt;Changes&lt;/h2&gt;
+&lt;h3&gt;English&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;You can hide the Contacts tab from the main navigation in Settings.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;中文&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;您现在可以在设置中隐藏主导航中的“联系人”标签页。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Full changelog:&lt;/strong&gt; &lt;a href=&quot;https://github.com/iebb/mithka/compare/v1.4.3-nightly.20260908.2819215...v1.4.4-nightly.20260909.38227de&quot;&gt;v1.4.3-nightly.20260908.2819215...v1.4.4-nightly.20260909.38227de&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/play-version-code-1788924231</id>
+    <updated>2026-09-09T03:45:25Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/play-version-code-1788924231"/>
+    <title>play-version-code-1788924231</title>
+    <content type="html">&lt;p&gt;Google Play version code 1788924231&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v1.4.3-nightly.20260908.2819215</id>
+    <updated>2026-09-08T03:42:23Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/v1.4.3-nightly.20260908.2819215"/>
+    <title>v1.4.3 Nightly 2026-09-08 (2819215)</title>
+    <content type="html">&lt;h2&gt;Changes&lt;/h2&gt;
+&lt;h3&gt;English&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Improved topic navigation and pane layout for clearer conversation browsing.&lt;/li&gt;
+&lt;li&gt;Fixed unread message positioning in topic chats so new content stays easier to find.&lt;/li&gt;
+&lt;li&gt;Refined chat and tab interactions for smoother switching between conversations and app sections.&lt;/li&gt;
+&lt;li&gt;Added fuller image and video viewing with fullscreen support and media gestures.&lt;/li&gt;
+&lt;li&gt;Updated chat and media screens for more reliable viewing and a cleaner full-screen experience.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;中文&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;优化了主题导航和面板布局，使会话浏览更加清晰。&lt;/li&gt;
+&lt;li&gt;修复了主题聊天中的未读消息定位问题，使新内容更容易找到。&lt;/li&gt;
+&lt;li&gt;优化了聊天和标签页交互，提升了在会话和应用分区之间切换的流畅度。&lt;/li&gt;
+&lt;li&gt;增强了图片和视频查看体验，增加了全屏支持和媒体手势操作。&lt;/li&gt;
+&lt;li&gt;更新了聊天和媒体界面，提升了查看稳定性，并提供更清晰的全屏体验。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Full changelog:&lt;/strong&gt; &lt;a href=&quot;https://github.com/iebb/mithka/compare/v1.4.2-nightly.20260907.7c6b624...v1.4.3-nightly.20260908.2819215&quot;&gt;v1.4.2-nightly.20260907.7c6b624...v1.4.3-nightly.20260908.2819215&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/play-version-code-1788837547</id>
+    <updated>2026-09-08T03:40:47Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/play-version-code-1788837547"/>
+    <title>play-version-code-1788837547</title>
+    <content type="html">&lt;p&gt;Google Play version code 1788837547&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v1.4.2-nightly.20260907.7c6b624</id>
+    <updated>2026-09-07T03:30:21Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/v1.4.2-nightly.20260907.7c6b624"/>
+    <title>v1.4.2 Nightly 2026-09-07 (7c6b624)</title>
+    <content type="html">&lt;h2&gt;Changes&lt;/h2&gt;
+&lt;h3&gt;English&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;App lock now tries biometric authentication before showing the passcode screen.&lt;/li&gt;
+&lt;li&gt;Linux AppImages are now available with verified in-app updates restricted to Mithka’s own runtime.&lt;/li&gt;
+&lt;li&gt;Unread indicators for mentions and reactions now update correctly.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;中文&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;应用锁现在会先尝试生物识别认证，再显示密码界面。&lt;/li&gt;
+&lt;li&gt;现已提供 Linux AppImage，并支持经过验证的应用内更新，且更新仅限于 Mithka 自身运行时。&lt;/li&gt;
+&lt;li&gt;提及和回应的未读指示器现在可以正确更新。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;Full changelog:&lt;/strong&gt; &lt;a href=&quot;https://github.com/iebb/mithka/compare/v1.4.1-nightly.20260906.a243cae...v1.4.2-nightly.20260907.7c6b624&quot;&gt;v1.4.1-nightly.20260906.a243cae...v1.4.2-nightly.20260907.7c6b624&lt;/a&gt;&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/play-version-code-1788750563</id>
+    <updated>2026-09-07T03:30:34Z</updated>
+    <link rel="alternate" type="text/html" href="https://github.com/iebb/mithka/releases/tag/play-version-code-1788750563"/>
+    <title>play-version-code-1788750563</title>
+    <content type="html">&lt;p&gt;Google Play version code 1788750563&lt;/p&gt;</content>
+    <author>
+      <name>github-actions[bot]</name>
+    </author>
+    <media:thumbnail height="30" width="30" url="https://avatars.githubusercontent.com/in/15368?s=60&amp;v=4"/>
+  </entry>
+</feed>

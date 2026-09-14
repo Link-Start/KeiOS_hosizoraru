@@ -262,6 +262,39 @@ class GitHubTrackModelsTest {
         )
     }
 
+    /**
+     * A rolling tag is re-pointed by CI, and the name it carries moves with every build. Keying on
+     * the name means "ignore this pre-release" lasts until the next CI run — which for a tag whose
+     * whole purpose is continuous builds is until tomorrow.
+     */
+    @Test
+    fun `a rolling tag keeps one ignore key across the builds published under it`() {
+        val today = buildGitHubReleaseIgnoreKey(
+            rawTag = "preview",
+            rawName = "pre-1.4.2-20260202-1",
+            displayVersion = "pre-1.4.2-20260202-1",
+            preciseApkVersion = GitHubRemoteApkVersionInfo(
+                packageName = "moe.matsuri.lite",
+                versionName = "1.4.2",
+                versionCode = "231",
+            ),
+        )
+        val tomorrow = buildGitHubReleaseIgnoreKey(
+            rawTag = "preview",
+            rawName = "pre-1.4.3-20260203-1",
+            displayVersion = "pre-1.4.3-20260203-1",
+            preciseApkVersion = GitHubRemoteApkVersionInfo(
+                packageName = "moe.matsuri.lite",
+                versionName = "1.4.3",
+                versionCode = "232",
+            ),
+        )
+
+        assertEquals("release|preview", today)
+        assertEquals(today, tomorrow)
+        assertTrue(githubReleaseIgnoreKeyMatches(storedKey = today, releaseKey = tomorrow))
+    }
+
     @Test
     fun `release ignore key falls back to release tag`() {
         val key = buildGitHubReleaseIgnoreKey(rawTag = "v1.0.0")

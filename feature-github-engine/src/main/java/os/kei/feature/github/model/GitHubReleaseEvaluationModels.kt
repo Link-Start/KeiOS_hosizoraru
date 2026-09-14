@@ -133,6 +133,18 @@ fun buildGitHubReleaseIgnoreKey(
     )
 }
 
+/**
+ * A stable name for "this release", so that ignoring it stays ignored.
+ *
+ * The one shape this has to get right is the rolling tag: a fixed tag — `preview`, `nightly`,
+ * `continuous` — re-pointed by CI, whose *name* carries the build stamp and therefore changes on
+ * every run. Keying on anything that moves with the build means the user dismisses the same row
+ * daily and it comes back daily, which is what a rolling tag's whole point guarantees.
+ *
+ * So a tag carrying no version at all is taken at face value: it is the identity, because it is the
+ * only part of that release that holds still. It is checked ahead of the APK identity for the same
+ * reason — a rolling tag's APK version moves with every build too.
+ */
 fun buildGitHubReleaseIgnoreKey(
     displayVersion: String = "",
     rawTag: String = "",
@@ -140,6 +152,14 @@ fun buildGitHubReleaseIgnoreKey(
     link: String = "",
     preciseApkVersion: GitHubRemoteApkVersionInfo? = null,
 ): String {
+    val rollingTag = rawTag.trim().takeIf { tag ->
+        tag.isNotBlank() &&
+            !VersioningEngine.hasComparableCandidates(
+                candidates = listOf(VersionCandidate(tag, sourcePriority = 0)),
+            )
+    }
+    if (rollingTag != null) return "release|${rollingTag.normalizedReleaseIgnoreKey()}"
+
     val apkKey = preciseApkVersion
         ?.takeIf { it.hasVersion() }
         ?.let { info ->

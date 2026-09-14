@@ -5,6 +5,7 @@ import os.kei.core.versioning.VersionConfidence
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubPreciseApkOutcome
+import os.kei.feature.github.model.GitHubReleaseRejection
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
@@ -49,6 +50,14 @@ data class GitHubReleaseEvaluationResult(
     /** Whether an APK was read to settle [stableComparison], and if not, why not. */
     val preciseStableOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
     val precisePreReleaseOutcome: GitHubPreciseApkOutcome = GitHubPreciseApkOutcome.Disabled,
+    /**
+     * Why the repository's newest pre-release is not in [preRelease], when it is not.
+     *
+     * The source's own selection records why a release lost to another one; these are the two rules
+     * that only run here, because both need the reader's own build and the clock to answer. Together
+     * the two lists account for every release the repository published and the card does not show.
+     */
+    val preReleaseRejection: GitHubReleaseRejection? = null,
 )
 
 object GitHubReleaseEvaluationEngine {
@@ -220,6 +229,12 @@ object GitHubReleaseEvaluationEngine {
         // useful history. A 2023 beta beside a 2026 stable is a dead row, and leaving it there is
         // what makes it look like a choice the reader has.
         val surfacedPreRelease = latestPre?.takeUnless { preReleaseAbandoned }
+        val preReleaseRejection = when {
+            latestPre == null -> null
+            preReleaseAbandoned -> GitHubReleaseRejection.AbandonedLine
+            !latestPreIsRelevant -> GitHubReleaseRejection.SupersededByStable
+            else -> null
+        }
         val preReleaseInfo = when {
             inspectPreRelease && surfacedPreRelease != null -> surfacedPreRelease.displayVersion
             inspectPreRelease && isLocalPreReleaseInstalled && matchedEntry != null ->
@@ -278,6 +293,7 @@ object GitHubReleaseEvaluationEngine {
             preReleaseComparison = preReleaseComparison,
             preciseStableOutcome = preciseStableOutcome,
             precisePreReleaseOutcome = precisePreReleaseOutcome,
+            preReleaseRejection = preReleaseRejection,
         )
     }
 }

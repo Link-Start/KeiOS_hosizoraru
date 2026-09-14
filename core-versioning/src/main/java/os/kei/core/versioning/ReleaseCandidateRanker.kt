@@ -4,7 +4,20 @@ object ReleaseCandidateRanker {
     fun compare(
         left: ReleaseRankingEvidence,
         right: ReleaseRankingEvidence,
-    ): Int {
+    ): Int = decide(left, right).order
+
+    /**
+     * [compare], keeping the branch that produced the answer instead of only its sign.
+     *
+     * The three branches read very differently to anyone looking at a wrong result — a version
+     * comparison, a fall-through to the clock, and a version comparison too weak to rank but good
+     * enough to break a dead heat are three separate bugs — and until now the caller could not tell
+     * which had run.
+     */
+    private fun decide(
+        left: ReleaseRankingEvidence,
+        right: ReleaseRankingEvidence,
+    ): RankingDecision {
         val versionComparison = VersioningEngine.compareRemoteCandidateSets(
             leftCandidates = left.versionCandidates,
             rightCandidates = right.versionCandidates,
@@ -14,21 +27,25 @@ object ReleaseCandidateRanker {
             versionComparison.order != VersionOrder.Same &&
             versionComparison.confidence != VersionConfidence.Low
         ) {
-            return versionComparison.order.legacyValue
+            return RankingDecision(versionComparison.order.legacyValue, ReleaseSelectionRule.Version)
         }
 
         val publishedComparison = compareValues(
             left.freshnessMillis ?: Long.MIN_VALUE,
             right.freshnessMillis ?: Long.MIN_VALUE,
         )
-        if (publishedComparison != 0) return publishedComparison
-
-        if (versionComparison != null && versionComparison.order != VersionOrder.Same) {
-            return versionComparison.order.legacyValue
+        if (publishedComparison != 0) {
+            return RankingDecision(publishedComparison, ReleaseSelectionRule.Freshness)
         }
 
-        return 0
+        if (versionComparison != null && versionComparison.order != VersionOrder.Same) {
+            return RankingDecision(versionComparison.order.legacyValue, ReleaseSelectionRule.Version)
+        }
+
+        return RankingDecision(0, ReleaseSelectionRule.Indistinguishable)
     }
+
+    private data class RankingDecision(val order: Int, val rule: ReleaseSelectionRule)
 
     /**
      * The newest release in [candidates], by version, unless the project has restarted its numbering.
@@ -51,10 +68,42 @@ object ReleaseCandidateRanker {
      * [compare], where a non-transitive rule would corrupt every sort that uses it.
      */
     fun pickLatest(candidates: List<ReleaseRankingEvidence>): ReleaseRankingEvidence? =
-        when (val suspicion = suspectVersioningReset(candidates)) {
-            null -> candidates.reduceOrNull { best, next -> if (compare(best, next) < 0) next else best }
-            else -> suspicion.newest
+        select(candidates).chosen
+
+    /**
+     * [pickLatest], with the reasoning attached: which rule decided, and what it decided against.
+     *
+     * The rule is read off the comparison between the winner and the best of the rest, because that
+     * is the comparison a reader disputing the answer would make. It costs one extra pass over a
+     * list that is at most a page of releases.
+     */
+    fun select(candidates: List<ReleaseRankingEvidence>): ReleaseSelection {
+        if (candidates.isEmpty()) {
+            return ReleaseSelection(chosen = null, rule = ReleaseSelectionRule.OnlyCandidate)
         }
+        if (candidates.size == 1) {
+            return ReleaseSelection(
+                chosen = candidates.first(),
+                rule = ReleaseSelectionRule.OnlyCandidate,
+            )
+        }
+        suspectVersioningReset(candidates)?.let { suspicion ->
+            return ReleaseSelection(
+                chosen = suspicion.newest,
+                rule = ReleaseSelectionRule.VersioningReset,
+                runnerUp = suspicion.outranking,
+            )
+        }
+        val chosen = candidates.reduce { best, next -> if (compare(best, next) < 0) next else best }
+        val runnerUp = candidates
+            .filter { candidate -> candidate !== chosen }
+            .reduceOrNull { best, next -> if (compare(best, next) < 0) next else best }
+        return ReleaseSelection(
+            chosen = chosen,
+            rule = runnerUp?.let { decide(chosen, it).rule } ?: ReleaseSelectionRule.OnlyCandidate,
+            runnerUp = runnerUp,
+        )
+    }
 
     /**
      * What [pickLatest] would override, and why — `null` when the list reads normally.

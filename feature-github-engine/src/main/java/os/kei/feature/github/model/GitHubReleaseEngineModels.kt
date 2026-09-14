@@ -96,6 +96,19 @@ data class GitHubAtomReleaseEntry(
         get() = listOfNotNull(updatedAtMillis, assetsUpdatedAtMillis).maxOrNull()
 }
 
+/**
+ * One page of a repository's releases, plus whether there was more behind it.
+ *
+ * The page limit used to be applied silently: thirty releases in, thirty releases considered, and
+ * no way for anything downstream to know it was looking at a slice. `iebb/mithka` publishes 119
+ * releases, so the window covers about three months of its history — a fine basis for "what is the
+ * newest", and a poor one for any claim about the shape of the list.
+ */
+data class GitHubReleaseWindow(
+    val entries: List<GitHubAtomReleaseEntry> = emptyList(),
+    val windowWasFull: Boolean = false,
+)
+
 data class GitHubAtomFeed(
     val title: String = "",
     val feedUrl: String = "",
@@ -117,4 +130,37 @@ data class GitHubRepositoryReleaseSnapshot(
     val upstreamArchived: Boolean = false,
     val upstreamPushedAtMillis: Long = -1L,
     val repositoryProfile: GitHubRepositoryProfileSnapshot? = null,
+    /**
+     * How [latestStable] and [latestPreRelease] were arrived at, when the source kept a record.
+     *
+     * `null` for sources that do not select — the Atom strategy and the plain git forges reduce
+     * their feeds their own way, and claiming a selection they did not make would be worse than
+     * admitting there is none.
+     */
+    val selection: GitHubReleaseSelection? = null,
 )
+
+/**
+ * The same release, as the fields the comparison rules read.
+ *
+ * A feed entry and a release signal are the same release told twice, and the conversion between
+ * them used to be a private helper inside the API strategy plus a hand-written copy in a test. Two
+ * spellings of one mapping is how a field added to the model silently stops reaching the rules.
+ */
+fun GitHubAtomReleaseEntry.toReleaseVersionSignals(
+    source: GitHubReleaseSignalSource = GitHubReleaseSignalSource.GitHubApi,
+): GitHubReleaseVersionSignals =
+    GitHubReleaseVersionSignals(
+        displayVersion = displayVersion,
+        rawTag = tag,
+        rawName = title,
+        link = link,
+        updatedAtMillis = updatedAtMillis,
+        versionCandidates = versionCandidates,
+        source = source,
+        channel = channel,
+        authorName = authorName,
+        authorAvatarUrl = authorAvatarUrl,
+        hasDownloadableAsset = hasDownloadableAsset,
+        assetsUpdatedAtMillis = assetsUpdatedAtMillis,
+    )

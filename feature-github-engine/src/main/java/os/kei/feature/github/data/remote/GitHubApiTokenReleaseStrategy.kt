@@ -18,7 +18,7 @@ import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.json.parseJsonObjectOrNull
-import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
+import os.kei.feature.github.engine.release.GitHubReleaseSelector
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -27,9 +27,11 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubReleaseWindow
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubVersionCandidateSource
+import os.kei.feature.github.model.toReleaseVersionSignals
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.seconds
@@ -58,7 +60,7 @@ class GitHubApiTokenReleaseStrategy(
     suspend fun loadSnapshotTrace(owner: String, repo: String): GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot> {
         val startedAt = System.currentTimeMillis()
         val entriesTrace = fetchReleaseEntriesTrace(owner, repo)
-        val entries = entriesTrace.result.getOrElse { error ->
+        val window = entriesTrace.result.getOrElse { error ->
             return GitHubStrategyLoadTrace(
                 result = Result.failure(error),
                 fromCache = entriesTrace.fromCache,
@@ -66,60 +68,22 @@ class GitHubApiTokenReleaseStrategy(
                 authMode = authMode
             )
         }
-        val stableEntries = entries.filter { !it.isLikelyPreRelease }
-        val fallbackStableEntry = pickLatestStableEntry(stableEntries)
-        // `releases/latest` is not "the newest by date" -- it honours the maintainer's own *Set as
-        // the latest release* flag, which makes it the one authority on a repository that restarted
-        // its numbering, where the highest tag is an old one left behind. It is also a second request
-        // per repository, so it is spent only when the list itself looks wrong: a normal history
-        // never reaches here and pays nothing.
-        val suspectsReset = fallbackStableEntry != null &&
-            GitHubReleaseCandidateRanker.suspectsVersioningReset(stableEntries)
-        val latestStableTrace =
-            when {
-                fallbackStableEntry == null -> fetchLatestStableSignalTrace(owner, repo)
-                suspectsReset ->
-                    fetchLatestStableSignalTrace(owner, repo).takeIf { it.result.isSuccess }
-                        ?: GitHubStrategyLoadTrace(
-                            result = Result.success(fallbackStableEntry.toReleaseSignal()),
-                            fromCache = entriesTrace.fromCache,
-                            elapsedMs = 0L,
-                            authMode = authMode,
-                        )
-                else ->
-                    GitHubStrategyLoadTrace(
-                        result = Result.success(fallbackStableEntry.toReleaseSignal()),
-                        fromCache = entriesTrace.fromCache,
-                        elapsedMs = 0L,
-                        authMode = authMode,
-                    )
-            }
+        val entries = window.entries
+        // Every rule that turns this list into "the stable" and "the pre-release" lives in the
+        // selector, including the one deciding whether the second request below is worth making.
+        // This method's remaining job is to make it, or not, and to hand back the answer.
+        val plan = GitHubReleaseSelector.plan(entries, windowWasFull = window.windowWasFull)
+        val latestStableTrace = when {
+            plan.shouldConsultForgeLatest -> fetchLatestStableSignalTrace(owner, repo)
+            else -> null
+        }
         val result = runCatching {
-            val latestPreEntry = pickLatestPreReleaseEntry(
-                entries.filter { entry ->
-                    entry.isLikelyPreRelease &&
-                        GitHubVersionUtils.hasMeaningfulPreReleaseVersionCandidates(
-                            entry.versionCandidates,
-                            GitHubVersionCandidateSource.Link.priority
-                    )
-                }
+            val selection = plan.resolve(
+                authoritativeStable = latestStableTrace?.result?.getOrNull(),
             )
-            val latestStableSignal = latestStableTrace.result.getOrElse {
-                fallbackStableEntry?.toReleaseSignal()
-                    ?: latestPreEntry?.toReleaseSignal()
-                    ?: error("no release entries")
-            }
-            val hasStableRelease = latestStableTrace.result.isSuccess || fallbackStableEntry != null
-            val latestPreSignal = latestPreEntry
-                ?.toReleaseSignal()
-                ?.takeUnless { preReleaseSignal ->
-                    hasStableRelease && GitHubVersionUtils.referToSameReleaseVersion(
-                        preReleaseSignal.versionCandidates,
-                        latestStableSignal.versionCandidates,
-                        leftChannel = preReleaseSignal.channel,
-                        rightChannel = latestStableSignal.channel,
-                    )
-                }
+            val latestStableSignal = selection.stable
+                ?: selection.preRelease
+                ?: error("no release entries")
             val updatedAt = entries.maxOfOrNull { it.updatedAtMillis ?: Long.MIN_VALUE }
                 ?.takeIf { it > Long.MIN_VALUE }
 
@@ -132,27 +96,28 @@ class GitHubApiTokenReleaseStrategy(
                     entries = entries
                 ),
                 latestStable = latestStableSignal,
-                hasStableRelease = hasStableRelease,
-                latestPreRelease = latestPreSignal
+                hasStableRelease = selection.hasStableRelease,
+                latestPreRelease = selection.preRelease,
+                selection = selection
             )
         }
         return GitHubStrategyLoadTrace(
             result = result,
-            fromCache = entriesTrace.fromCache && latestStableTrace.fromCache,
+            fromCache = entriesTrace.fromCache && latestStableTrace?.fromCache != false,
             elapsedMs = System.currentTimeMillis() - startedAt,
             authMode = authMode
         )
     }
 
     suspend fun fetchReleaseEntries(owner: String, repo: String, limit: Int = 30): Result<List<GitHubAtomReleaseEntry>> {
-        return fetchReleaseEntriesTrace(owner, repo, limit).result
+        return fetchReleaseEntriesTrace(owner, repo, limit).result.map { it.entries }
     }
 
     internal suspend fun fetchReleaseEntriesTrace(
         owner: String,
         repo: String,
         limit: Int = 30
-    ): GitHubStrategyLoadTrace<List<GitHubAtomReleaseEntry>> {
+    ): GitHubStrategyLoadTrace<GitHubReleaseWindow> {
         val startedAt = System.currentTimeMillis()
         val key = cacheKey(owner, repo)
         val now = System.currentTimeMillis()
@@ -165,12 +130,13 @@ class GitHubApiTokenReleaseStrategy(
             )
         }
 
-        val result = fetch(buildApiUrl(owner, repo)).map { body ->
-            parseReleaseEntries(
+        val result = fetch(buildApiUrl(owner, repo, limit)).map { body ->
+            parseReleaseWindow(
                 json = body,
                 owner = owner,
-                repo = repo
-            ).take(limit)
+                repo = repo,
+                limit = limit
+            )
         }
         if (result.isSuccess) {
             releaseCache[key] = GitHubApiCachedValue(result, now)
@@ -213,7 +179,7 @@ class GitHubApiTokenReleaseStrategy(
                 repo = repo
             ) ?: error("latest release missing")
             check(!entry.isLikelyPreRelease) { "latest release is not stable" }
-            entry.toReleaseSignal()
+            entry.toReleaseVersionSignals()
         }
         if (result.isSuccess) {
             stableCache[key] = GitHubApiCachedValue(result, now)
@@ -301,8 +267,36 @@ class GitHubApiTokenReleaseStrategy(
         }
     }
 
-    private fun buildApiUrl(owner: String, repo: String): String {
-        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=30"
+    /**
+     * One page of releases, as far as the parser got.
+     *
+     * [GitHubReleaseWindow.windowWasFull] is counted from what GitHub returned, not from what
+     * survived parsing: drafts and unversioned pre-releases are dropped on the way through, so an
+     * entry count of 27 out of a 30-release page still means the history was cut off.
+     */
+    internal fun parseReleaseWindow(
+        json: String,
+        owner: String,
+        repo: String,
+        limit: Int = DEFAULT_RELEASE_PAGE_SIZE
+    ): GitHubReleaseWindow {
+        val array = json.parseJsonArrayOrNull()
+            ?: throw IllegalArgumentException("release entries payload is not a JSON array")
+        return GitHubReleaseWindow(
+            entries = parseReleaseEntries(json = json, owner = owner, repo = repo).take(limit),
+            windowWasFull = array.size >= limit
+        )
+    }
+
+    private fun buildApiUrl(
+        owner: String,
+        repo: String,
+        limit: Int = DEFAULT_RELEASE_PAGE_SIZE
+    ): String {
+        // Asked for exactly as many as will be read. The page size used to be pinned at 30 while the
+        // caller's limit was applied afterwards, so a caller asking for more silently got 30.
+        val perPage = limit.coerceIn(1, MAX_RELEASE_PAGE_SIZE)
+        return "${apiBaseUrl.trimEnd('/')}/repos/$owner/$repo/releases?per_page=$perPage"
     }
 
     private fun buildLatestApiUrl(owner: String, repo: String): String {
@@ -453,31 +447,6 @@ class GitHubApiTokenReleaseStrategy(
         )
     }
 
-    private fun pickLatestStableEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return GitHubReleaseCandidateRanker.latest(entries)
-    }
-
-    private fun pickLatestPreReleaseEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return GitHubReleaseCandidateRanker.latest(entries)
-    }
-
-    private fun GitHubAtomReleaseEntry.toReleaseSignal(): GitHubReleaseVersionSignals {
-        return GitHubReleaseVersionSignals(
-            displayVersion = displayVersion,
-            rawTag = tag,
-            rawName = title,
-            link = link,
-            updatedAtMillis = updatedAtMillis,
-            versionCandidates = versionCandidates,
-            source = GitHubReleaseSignalSource.GitHubApi,
-            channel = channel,
-            authorName = authorName,
-            authorAvatarUrl = authorAvatarUrl,
-            hasDownloadableAsset = hasDownloadableAsset,
-            assetsUpdatedAtMillis = assetsUpdatedAtMillis
-        )
-    }
-
     private fun String.parseIsoInstantOrNull(): Long? {
         return runCatching {
             if (isBlank()) null else Instant.parse(this).toEpochMilli()
@@ -490,9 +459,12 @@ class GitHubApiTokenReleaseStrategy(
         private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
         private const val MAX_RELEASE_API_RESPONSE_BYTES = 12L * 1024L * 1024L
         private const val DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com"
+        private const val DEFAULT_RELEASE_PAGE_SIZE = 30
+        /** GitHub's own ceiling for `per_page`. */
+        private const val MAX_RELEASE_PAGE_SIZE = 100
 
         private val releaseCache =
-            ConcurrentHashMap<String, GitHubApiCachedValue<Result<List<GitHubAtomReleaseEntry>>>>()
+            ConcurrentHashMap<String, GitHubApiCachedValue<Result<GitHubReleaseWindow>>>()
         private val stableCache =
             ConcurrentHashMap<String, GitHubApiCachedValue<Result<GitHubReleaseVersionSignals>>>()
         private val credentialCache =

@@ -83,3 +83,39 @@ data class VersioningResetSuspicion(
     val outranking: ReleaseRankingEvidence,
     val newest: ReleaseRankingEvidence,
 )
+
+/**
+ * Which rule actually separated the chosen release from its closest rival.
+ *
+ * Recorded rather than inferred. Every report this ranker has had was diagnosed by working out, by
+ * hand and from a captured response, which of these four branches ran — so it now says.
+ */
+enum class ReleaseSelectionRule {
+    /** Nothing to choose between: the list was empty, or held one release. */
+    OnlyCandidate,
+
+    /** The version numbers were comparable and settled it. */
+    Version,
+
+    /** The versions could not be ordered, so the clock did. */
+    Freshness,
+
+    /** The version winner was an old high number a restarted project left behind. */
+    VersioningReset,
+
+    /** Neither version nor clock could separate the two. */
+    Indistinguishable,
+}
+
+/**
+ * The chosen release and the evidence for choosing it.
+ *
+ * [runnerUp] is what the decision was made *against* — the best of the rest under the same rules.
+ * It is the field that makes a wrong answer legible: "picked A over B by version" is a sentence
+ * somebody can check, where "picked A" is not.
+ */
+data class ReleaseSelection(
+    val chosen: ReleaseRankingEvidence?,
+    val rule: ReleaseSelectionRule,
+    val runnerUp: ReleaseRankingEvidence? = null,
+)

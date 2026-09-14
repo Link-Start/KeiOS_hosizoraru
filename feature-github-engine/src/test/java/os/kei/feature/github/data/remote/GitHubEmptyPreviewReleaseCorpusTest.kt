@@ -10,10 +10,8 @@ import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
-import os.kei.feature.github.model.GitHubAtomReleaseEntry
-import os.kei.feature.github.model.GitHubReleaseSignalSource
-import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubVersionCandidateSource
+import os.kei.feature.github.model.toReleaseVersionSignals
 
 /**
  * `MatsuriDayo/NekoBoxForAndroid`, from the real `releases?per_page=30` response.
@@ -113,9 +111,9 @@ class GitHubEmptyPreviewReleaseCorpusTest {
             snapshot = GitHubRepositoryReleaseSnapshot(
                 strategyId = "test",
                 feed = GitHubAtomFeed(entries = entries),
-                latestStable = latestStable.toSignals(),
+                latestStable = latestStable.toReleaseVersionSignals(),
                 hasStableRelease = true,
-                latestPreRelease = latestPre.toSignals(),
+                latestPreRelease = latestPre.toReleaseVersionSignals(),
             ),
             policy = GitHubReleaseEvaluationPolicy(preferPreRelease = preferPreRelease),
             // The day the stable `1.4.2` shipped, so the preview is four days stale and inside the
@@ -128,16 +126,3 @@ class GitHubEmptyPreviewReleaseCorpusTest {
 private const val LOCAL_VERSION = "1.4.2"
 private const val LOCAL_VERSION_CODE = 230L
 
-/** The strategy's own mapping is private; this mirrors it for the fields the engine reads. */
-private fun GitHubAtomReleaseEntry.toSignals(): GitHubReleaseVersionSignals =
-    GitHubReleaseVersionSignals(
-        displayVersion = displayVersion,
-        rawTag = tag,
-        rawName = title,
-        link = link,
-        updatedAtMillis = updatedAtMillis,
-        versionCandidates = versionCandidates,
-        source = GitHubReleaseSignalSource.GitHubApi,
-        channel = channel,
-        hasDownloadableAsset = hasDownloadableAsset,
-    )

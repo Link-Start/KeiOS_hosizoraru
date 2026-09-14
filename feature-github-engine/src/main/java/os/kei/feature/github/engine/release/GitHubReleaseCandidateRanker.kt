@@ -17,11 +17,20 @@ object GitHubReleaseCandidateRanker {
         )
     }
 
-    fun latest(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
+    fun latest(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? = select(entries).entry
+
+    /** [latest], keeping which rule chose it and which release it was chosen over. */
+    fun select(entries: List<GitHubAtomReleaseEntry>): GitHubRankedRelease {
         val ranked = entries.map { entry -> RankedReleaseEntry(entry, entry.toRankingEvidence()) }
-        val chosen = ReleaseCandidateRanker.pickLatest(ranked.map { it.evidence }) ?: return null
-        // pickLatest returns one of the values it was given, so identity finds its entry back.
-        return ranked.firstOrNull { it.evidence === chosen }?.entry
+        val selection = ReleaseCandidateRanker.select(ranked.map { it.evidence })
+        // The ranker returns the very values it was given, so identity finds each entry back.
+        fun entryOf(evidence: ReleaseRankingEvidence?): GitHubAtomReleaseEntry? =
+            evidence?.let { match -> ranked.firstOrNull { it.evidence === match }?.entry }
+        return GitHubRankedRelease(
+            entry = entryOf(selection.chosen),
+            rule = selection.rule,
+            runnerUpTag = entryOf(selection.runnerUp)?.tag.orEmpty(),
+        )
     }
 
     /**

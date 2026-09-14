@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 import os.kei.R
 import os.kei.core.io.NetworkPhase
 import os.kei.core.io.NetworkTimingSummary
@@ -991,6 +992,13 @@ private fun rememberRefreshNetworkLabel(record: GitHubRefreshHistoryRecord): Str
  * concurrency budget, resolving a name, shaking hands, waiting on GitHub, or pulling bytes down a
  * slow radio — and those call for four different responses. On wifi in an emulator all but one round
  * to zero, so this pill is the one thing here that can only be learned from somebody's actual phone.
+ *
+ * A share, not a duration, because [NetworkTimingSummary] adds its phases up across every call the
+ * item made and those calls overlap: Atom mode asks the feed and `releases/latest` at the same time,
+ * and a retry runs the whole thing again. Two overlapping three-second waits are six seconds of
+ * waiting inside a three-second stage, so a duration here would sit next to "Release 3s" reading
+ * "Server wait 6s" and look like a broken clock. The phase is the answer this pill owes the reader;
+ * how long the item took is already on the row beside it.
  */
 @Composable
 private fun rememberNetworkCausePill(
@@ -1012,8 +1020,11 @@ private fun rememberNetworkCausePill(
         NetworkPhase.WAITING -> summary.waitingMs
         else -> summary.bodyMs
     }
+    // Floored at one: the phase that won the scope is never reported as none of it, however little
+    // the winning margin was.
+    val share = (phaseMs * 100.0 / summary.totalMs).roundToInt().coerceIn(1, 100)
     return SlowRefreshDiagnosticPill(
-        label = stringResource(template, rememberDurationLabel(phaseMs)),
+        label = stringResource(template, "$share%"),
         color = color,
     )
 }

@@ -82,8 +82,14 @@ tmp/
 *.bak
 *.orig
 
-# Local tooling state
-/.claude/
+# Local tooling state.
+#
+# `/.claude/*` rather than `/.claude/`: git never descends into an excluded *directory*, so a
+# later negation inside one can never take effect. Excluding the contents keeps the directory
+# readable, which lets skills back in — those are project content, and a skill only this machine
+# can see is not a skill.
+/.claude/*
+!/.claude/skills/
 /.codex/
 /trace_processor
 

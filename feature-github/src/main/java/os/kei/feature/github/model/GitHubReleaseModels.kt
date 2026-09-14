@@ -71,4 +71,16 @@ data class GitHubTrackedReleaseCheck(
     val message: String = status.defaultMessage,
     val diagnostics: GitHubReleaseCheckDiagnostics = GitHubReleaseCheckDiagnostics(),
     val failureDiagnostics: GitHubRefreshFailureDiagnostics = GitHubRefreshFailureDiagnostics(),
+    /**
+     * How the source picked [stableRelease] and [preRelease] out of everything it published.
+     *
+     * Not persisted and not shown: this is the working out, carried so that a surface which wants to
+     * explain an answer -- or a test asserting one end to end -- reads it off the check instead of
+     * re-deriving it from a captured response. `null` for sources that keep no record.
+     *
+     * @see GitHubReleaseSelection.summary
+     */
+    val releaseSelection: GitHubReleaseSelection? = null,
+    /** The rule that removed the pre-release from this card, when one did. */
+    val preReleaseRejection: GitHubReleaseRejection? = null,
 )

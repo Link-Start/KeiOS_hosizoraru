@@ -424,6 +424,8 @@ object GitHubReleaseCheckService {
             upstreamArchived = snapshot.upstreamArchived,
             upstreamPushedAtMillis = snapshot.upstreamPushedAtMillis,
             repositoryProfile = repositoryProfile,
+            releaseSelection = snapshot.selection,
+            preReleaseRejection = evaluation.preReleaseRejection,
             sourceConfigSignature = sourceConfigSignature,
             status = if (waitingForFirstRelease) {
                 GitHubTrackedReleaseStatus.UpToDate

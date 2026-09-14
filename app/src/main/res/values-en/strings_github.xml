@@ -1841,8 +1841,8 @@
     <string name="github_item_label_selection_basis">Chosen because</string>
     <string name="github_item_selection_forge_latest">The repository marks this as its latest release</string>
     <string name="github_item_selection_forge_latest_over">The repository marks this as its latest release, not the higher-numbered %1$s</string>
-    <string name="github_item_selection_reset">This project restarted its numbering, so releases are ranked by date</string>
-    <string name="github_item_selection_reset_over">This project restarted its numbering, so releases are ranked by date, not by the higher-numbered %1$s</string>
+    <string name="github_item_selection_reset">This project restarted its numbering, so releases are ranked by update time</string>
+    <string name="github_item_selection_reset_over">This project restarted its numbering, so releases are ranked by update time, not by the higher-numbered %1$s</string>
     <string name="github_item_selection_freshness">The version numbers cannot be compared, so releases are ranked by update time</string>
     <string name="github_item_selection_feed_only">The latest-release marker could not be read; this is the newest release in the feed</string>
     <string name="github_item_selection_tie">Neither version nor update time separates these, so list order stands</string>
@@ -1868,5 +1868,5 @@
         <item quantity="one">%1$d request · %2$s</item>
         <item quantity="other">%1$d requests · %2$s</item>
     </plurals>
-    <string name="github_history_refresh_network_reused">%1$d/%2$d reused</string>
+    <string name="github_history_refresh_network_reused">%1$d/%2$d connections reused</string>
 </resources>

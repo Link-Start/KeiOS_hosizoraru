@@ -1841,10 +1841,10 @@
     <string name="github_item_label_selection_basis">选取依据</string>
     <string name="github_item_selection_forge_latest">采用仓库标记的最新发行版</string>
     <string name="github_item_selection_forge_latest_over">采用仓库标记的最新发行版，而非编号更高的 %1$s</string>
-    <string name="github_item_selection_reset">该项目重启过版本号，改按发布时间选取</string>
-    <string name="github_item_selection_reset_over">该项目重启过版本号，改按发布时间选取，而非编号更高的 %1$s</string>
+    <string name="github_item_selection_reset">该项目重启过版本号，改按更新时间选取</string>
+    <string name="github_item_selection_reset_over">该项目重启过版本号，改按更新时间选取，而非编号更高的 %1$s</string>
     <string name="github_item_selection_freshness">版本号无法比较，改按更新时间选取</string>
-    <string name="github_item_selection_feed_only">仓库的「最新发行版」标记这次没读到，这是订阅源里最新的一个</string>
+    <string name="github_item_selection_feed_only">仓库的「最新发行版」标记这次没读到，这是 Atom 源里最新的一个</string>
     <string name="github_item_selection_tie">版本号与更新时间都无法区分，按列表顺序选取</string>
     <string name="github_item_label_prerelease_retired">预发行</string>
     <string name="github_item_prerelease_retired_reason">这条线已超过两周没有更新，暂不显示</string>

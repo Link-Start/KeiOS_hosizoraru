@@ -1842,8 +1842,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_item_label_selection_basis">選択の根拠</string>
     <string name="github_item_selection_forge_latest">リポジトリが最新と指定したリリースを採用</string>
     <string name="github_item_selection_forge_latest_over">リポジトリが最新と指定したリリースを採用（番号がより大きい %1$s ではなく）</string>
-    <string name="github_item_selection_reset">このプロジェクトは採番をやり直したため、公開日時で並べ替え</string>
-    <string name="github_item_selection_reset_over">このプロジェクトは採番をやり直したため、公開日時で並べ替え（番号がより大きい %1$s ではなく）</string>
+    <string name="github_item_selection_reset">このプロジェクトは採番をやり直したため、更新日時で並べ替え</string>
+    <string name="github_item_selection_reset_over">このプロジェクトは採番をやり直したため、更新日時で並べ替え（番号がより大きい %1$s ではなく）</string>
     <string name="github_item_selection_freshness">バージョン番号を比較できないため、更新日時で並べ替え</string>
     <string name="github_item_selection_feed_only">リポジトリの「最新リリース」表示を読み取れなかったため、フィード内で最も新しいリリースを表示しています</string>
     <string name="github_item_selection_tie">バージョン番号でも更新日時でも区別できないため、一覧の順序に従います</string>

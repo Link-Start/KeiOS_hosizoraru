@@ -233,18 +233,52 @@ class BaselineProfileTestTagContractTest {
     }
 
     @Test
-    fun liquidSheetGesturesHaveOneBoundedInjectionRetry() {
+    fun injectedGesturesHaveOneBoundedInjectionRetry() {
         val generator = sourceFile(GENERATOR_SOURCE)
 
         assertEquals(
-            3,
+            4,
             "swipeWithInjectionRetry("
                 .toRegex(RegexOption.LITERAL)
                 .findAll(generator)
                 .count(),
-            "The helper declaration plus Sheet drag and content swipe calls must stay wired",
+            "The helper declaration plus Sheet drag, Sheet content and main-pager swipes must stay wired",
         )
         assertTrue("GESTURE_INJECTION_ATTEMPTS = 2" in generator)
+    }
+
+    /**
+     * The one page switch a tab tap cannot stand in for.
+     *
+     * A tap animates the pager on a timed curve; a finger runs `draggable`'s drag detection and then
+     * `settleAfterDrag`'s velocity spring, and `animateLoadedPagerSettlePosition` has a single call
+     * site that no tap reaches -- confirmed by capturing the journey with and without the swipe.
+     * Both directions are pinned because a one-way swipe would leave the journey on the wrong page
+     * for everything after it, and the *settled* tag is pinned because a drag a child consumes still
+     * leaves the destination's page root composed next door -- the difference between a real switch
+     * and a silent no-op is only visible there.
+     */
+    @Test
+    fun theMainPagerIsAlsoSwitchedByHand() {
+        val generator = generatorSourceWithoutComments()
+
+        assertTrue("fun MacrobenchmarkScope.swipeMainPagerTo(" in generator)
+        assertEquals(
+            3,
+            "swipeMainPagerTo("
+                .toRegex(RegexOption.LITERAL)
+                .findAll(generator)
+                .count(),
+            "The declaration plus both directions: a one-way swipe ends the journey on the wrong page",
+        )
+        assertEquals(
+            3,
+            "waitForTestTag(settledTag, timeoutMs = 15_000)"
+                .toRegex(RegexOption.LITERAL)
+                .findAll(generator)
+                .count(),
+            "Tab, sidebar and hand switches must all be proven by the settled tag, never a page root",
+        )
     }
 
     @Test

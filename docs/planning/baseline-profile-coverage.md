@@ -10,7 +10,7 @@ The default generator contains six user journeys with a maximum of 16 replays.
 | Journey | Max/stable replays | What it warms |
 | --- | ---: | --- |
 | startupAndFirstScroll | 5/2 | cold startup, Home first frame, first two list flings, startup dex layout |
-| mainPagesAndNavigation | 3/2 | Home, OS, MCP, GitHub and BA destination switches plus first scrolls |
+| mainPagesAndNavigation | 3/2 | Home, OS, MCP, GitHub and BA destination switches, first scrolls, and one hand swipe both ways |
 | commonRoutesAndChrome | 2/2 | Settings, About, WebDAV, Shell, MCP Skill, shared menu presentation |
 | gitHubTrackingCore | 2/2 | tracked-card expansion, Actions, add-track, and strategy-Sheet drag/content motion |
 | baOfficeAndCatalogCore | 2/2 | office cards, calendar/pool, daily sheet, catalog, selected guide tabs, playback |
@@ -39,6 +39,69 @@ navigation and adaptive layout.
 
 BaselineProfileTestTagContractTest pins the six-journey and 16-replay limits. Increasing either
 requires an explicit update to the test and this plan.
+
+## The switch a tab tap cannot stand in for
+
+Every page switch in the profile used to be a tab tap, and a tap and a swipe do not run the same code.
+A tap animates the pager on a timed curve through `animateLoadedPagerPosition`. A finger runs
+`draggable`'s drag detection, then `startUserScroll`, `dragBy` once per frame, and `settleAfterDrag`'s
+velocity spring -- `animateLoadedPagerSettlePosition`, which has one call site that no tap reaches.
+
+So `mainPagesAndNavigation` now ends by swiping Home -> OS and back, inside its existing cold start and
+replay budget. Measured rather than assumed, by capturing that journey twice on the same AVD:
+
+| in the journey's own baseline-prof.txt | tab taps only | with the swipe |
+| --- | ---: | ---: |
+| `MainLoadedPagerState;->startUserScroll` | 0 | 1 |
+| `MainLoadedPagerState;->dragBy` | 0 | 1 |
+| `MainLoadedPagerState;->settleAfterDrag` | 0 | 1 |
+| `animateLoadedPagerSettlePosition` | 0 | 1 |
+
+What this does **not** claim is new rules in the shipped profile. The merged profile already carried that
+path before this change -- from `baOfficeAndCatalogCore`, whose per-journey file shows it and whose
+subject is office cards and the catalogue. That is accidental coverage: it survives only as long as some
+BA gesture keeps clipping the pager, and nothing would report its loss. The change moves the switch users
+actually perform into the journey named for page switching, and `theMainPagerIsAlsoSwitchedByHand` pins
+both directions plus the settled-tag proof.
+
+The arrival is asserted, not optional, for the reason the guide rail is: a horizontal drag a child
+consumes leaves the pager where it was, and the destination's page root stays composed as a pager
+neighbour either way. Only the *settled* tag separates a real switch from a silent no-op.
+
+## Re-captured 2026-09-15
+
+On `KeiOS_API37_Validation`, 13m04s wall for `:app:generateReleaseBaselineProfile`, all six journeys
+passing. Slower than the 9m22s of 2026-09-02 because the app has grown, not because a journey stalled.
+
+| Journey | Device time |
+| --- | ---: |
+| gitHubTrackingCore | 67.3s |
+| commonRoutesAndChrome | 68.7s |
+| startupAndFirstScroll | 79.3s |
+| baOfficeAndCatalogCore | 98.1s |
+| mainPagesAndNavigation | 109.8s |
+| adaptiveLargeScreenCore | 160.0s |
+
+Baseline rules 61,226 -> 59,967 (828 added, 2,087 removed); startup rules 24,123 -> 24,145. The total
+went **down**, which is the metric this plan already says not to judge a capture by. Named components:
+
+| named component | before | after |
+| --- | ---: | ---: |
+| `ui/page/main/host` | 1538 | 1538 |
+| `MainLoadedPager` | 229 | 229 |
+| `ui/page/main/home` | 651 | 650 |
+| `kyant/backdrop` | 1520 | 1563 |
+| `yukonga/miuix` | 1972 | 1988 |
+| `compose/foundation/lazy` | 1361 | 1369 |
+| `media3` | 5160 | 5196 |
+| `ui/page/main/student` | 5517 | 5744 |
+| `ui/page/main/github` | 3153 | **2969** |
+
+Every named path holds or grows except GitHub, and that one is the term this plan already names. What
+left is `GitHubRefreshBatchActions$refreshTrackedBatchInternal`, `GitHubPageRefreshNotificationBridge`,
+`saveTrackedItems`, `persistCheckCacheNow`, `LatestReleaseCandidate` and `VersionCheckUi` (45 -> 23):
+a background refresh no journey drives, which fired during the 2026-09-04 capture and did not fire
+during this one. No UI path lost rules.
 
 ## Selection rule
 

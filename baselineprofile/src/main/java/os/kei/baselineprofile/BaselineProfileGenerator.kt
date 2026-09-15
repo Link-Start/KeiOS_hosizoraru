@@ -93,6 +93,17 @@ class BaselineProfileGenerator {
                 pageTag = HOME_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_HOME,
             )
+
+            swipeMainPagerTo(
+                forward = true,
+                pageTag = OS_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_OS,
+            )
+            swipeMainPagerTo(
+                forward = false,
+                pageTag = HOME_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_HOME,
+            )
         }
     }
 
@@ -452,6 +463,48 @@ private fun MacrobenchmarkScope.navigateToMainPage(
     settledTag: String,
 ) {
     clickBottomBarTab(tabTag)
+    waitForTestTag(pageTag, timeoutMs = 15_000)
+    waitForTestTag(settledTag, timeoutMs = 15_000)
+}
+
+/**
+ * Changes page the way a finger does, and proves the page actually changed.
+ *
+ * Every other switch in this journey is a tab tap, and a tap and a swipe do not share their code: a
+ * tap runs `animateLoadedPagerPosition` on a timed curve, while a finger runs `draggable`'s drag
+ * detection, `startUserScroll` and `dragBy` once per frame, then `settleAfterDrag`'s velocity
+ * spring -- `animateLoadedPagerSettlePosition`, whose one call site no tap reaches.
+ *
+ * Measured rather than assumed, by capturing this journey twice on the same AVD: without this step
+ * its own baseline-prof.txt carries none of `startUserScroll`, `dragBy`, `settleAfterDrag` or
+ * `animateLoadedPagerSettlePosition`; with it, all four. What this does *not* claim is new rules in
+ * the shipped artifact -- the merged profile already carried that path, incidentally, from some
+ * other journey. The point is that the journey named for page switching owns the switch users
+ * actually perform, instead of inheriting it from a journey about something else.
+ *
+ * The arrival is asserted rather than optional on purpose. A horizontal drag a child consumes
+ * leaves the pager exactly where it was, and the settled tag is the only thing that separates that
+ * from a real page change -- the destination's page root stays composed as a pager neighbour either
+ * way. An optional wait here would pass while compiling none of the gesture path.
+ */
+private fun MacrobenchmarkScope.swipeMainPagerTo(
+    forward: Boolean,
+    pageTag: String,
+    settledTag: String,
+) {
+    // Both ends stay well inside the display. A horizontal swipe anchored on either edge is the
+    // system's back gesture, which never reaches the pager at all.
+    val nearX = (device.displayWidth * PAGER_SWIPE_NEAR_X).toInt()
+    val farX = (device.displayWidth * PAGER_SWIPE_FAR_X).toInt()
+    val centerY = (device.displayHeight * PAGER_SWIPE_Y).toInt()
+    swipeWithInjectionRetry(
+        startX = if (forward) farX else nearX,
+        startY = centerY,
+        endX = if (forward) nearX else farX,
+        endY = centerY,
+        steps = FLING_STEPS,
+        failureMessage = "Unable to swipe the main pager ${if (forward) "forward" else "back"}",
+    )
     waitForTestTag(pageTag, timeoutMs = 15_000)
     waitForTestTag(settledTag, timeoutMs = 15_000)
 }
@@ -918,6 +971,9 @@ private const val SCROLL_SAFE_BOTTOM_FRACTION = 0.82f
 private const val DEFAULT_SCROLL_X = 0.50f
 private const val WIDE_PRIMARY_LANE_X = 0.32f
 private const val WIDE_SECONDARY_LANE_X = 0.74f
+private const val PAGER_SWIPE_NEAR_X = 0.22f
+private const val PAGER_SWIPE_FAR_X = 0.78f
+private const val PAGER_SWIPE_Y = 0.55f
 private const val LIQUID_SHEET_DRAG_DISTANCE_FRACTION = 0.14f
 private const val LIQUID_SHEET_CONTENT_UPPER_FRACTION = 0.34f
 private const val LIQUID_SHEET_CONTENT_LOWER_FRACTION = 0.82f

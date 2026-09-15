@@ -230,9 +230,13 @@ so the only lever is the element's layout bounds, and the material is computed f
 document works through what a viewport-band surface would have to clear (lens 24dp, shadow 24dp, blur
 4dp, corner 16dp) and what it would buy (~36%).
 
-Two levers already measured and rejected there: making the stacked-card content-recession layer
+Three levers already measured and rejected there: making the stacked-card content-recession layer
 conditional (**a regression on hardware** -- that permanent `graphicsLayer` is a display-list cache),
-and disabling `exportBackdropToContent` (no effect on BA).
+disabling `exportBackdropToContent` (no effect on BA), and **clipping the surface's draw to its
+visible band** (worse, 41.5 -> 48.8ms, and `atrace` shows the layer still recorded at full height --
+HWUI applies a parent clip when the finished layer is composited, not when it is rendered). The last
+one also rules out doing it in app code at all: a band that follows the scroll can only be positioned
+from placement, one frame behind the draw, and the margin needed to hide that eats the win.
 
 ## 4c. The A17 AVD cannot measure RenderThread changes
 

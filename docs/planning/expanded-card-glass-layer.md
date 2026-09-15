@@ -77,6 +77,38 @@ Two things would have to be proven before it ships:
 The alternative is to ask upstream for a viewport/region parameter on `drawBackdrop`, which is the
 same request as the one in `backdrop-reduced-resolution.md` and would solve both.
 
+## Tried: a draw-time clip to the visible band. It does not reach the layer.
+
+The cheap version of the fix above, and the one worth eliminating first: a `DrawModifierNode` in
+front of the surface that reads its own clipped `boundsInWindow` and wraps `drawContent()` in a
+`clipRect` of that band plus a margin. No restructuring, no layout change, and appearance-neutral by
+construction -- it only removes what the scroll container already clips away.
+
+It does not work, and the trace says exactly why. With the clip active at a 48dp margin, cutting away
+roughly 43% of a 3996px card:
+
+| phone, one rich record expanded, 2003px visible | frame p50 |
+| --- | ---: |
+| clip off | 41.5 / 40.6 / 41.7 |
+| clip on, 48dp margin | 48.8 / 47.5 / 56.5 |
+
+**Worse**, and `atrace` shows the card's layer still recorded at its full `1128 x 4098`, with
+`flush layers` at 16.5ms/frame. HWUI records and rasterises a `GraphicsLayer` at the node's own size;
+a parent's draw clip is applied when the finished layer is *composited*, not when it is rendered. So
+the clip buys nothing and costs one clip op per card per frame.
+
+**This also rules out the app-level restructure**, for a reason worth stating before someone tries it.
+Shrinking the surface's real layout bounds does work in principle -- that is the library's own advice
+-- but the band has to follow the scroll, and its position can only come from placement, which is one
+frame behind the draw. At a fling of ~300px/frame the band's own edge would enter the visible region
+and put a highlight line across the card. Sizing the margin to absorb that means ~430px on each side,
+which takes a 3996px card to ~3516px: a 12% reduction, worth about 7% of the frame by the measured
+exponent, in exchange for a restructure of the most load-bearing file in the UI layer.
+
+**So the fix belongs upstream.** `drawBackdrop` needs to be told the region worth rendering, from
+inside the node where the scroll position is current. That is the same request as the one in
+`backdrop-reduced-resolution.md`, and one parameter would answer both.
+
 ## Measured and rejected -- do not retry
 
 - **Conditional stacked-card content layer.** `LiquidSurface` gives every card on a stacking page a

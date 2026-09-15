@@ -92,9 +92,8 @@ which looks like the answer and is not: creating those pipelines costs **5.8ms o
 switch** and 3.57ms of its worst frame. Shader compilation is a red herring. `flush layers`, the
 layer rasterisation, is the cost.
 
-So the open problem is narrow and stated exactly: **make a page's first glass rasterisation
-cheaper.** Not earlier — earlier is the rejected pre-warm (§4). Not by having less glass — that is
-the line in §6.
+The open problem is **not** the glass, which §10 establishes by measuring a build with it turned
+off. Read that before assuming the material is in the way.
 
 ## 2. The two axes generic advice targets are already clean
 
@@ -274,58 +273,63 @@ shaders` is a running count of compiled shader programs, so its first and last v
 capture tell you how many were compiled during it; `drawLayersInternal for <name>` is
 SurfaceFlinger compositing an extra copy of the screen, which is how mirroring shows up.
 
-## 10. First entry is GPU-side, and what is still unknown
+## 10. First entry is GPU-side, and it is not the glass
 
 Narrowed 2026-09-15 by placing every frame of one switch in time. First entry into github,
 against a second visit to the same tab, `total | record draw | RT | GPU` per frame:
 
 ```
-first entry, 67-125ms after the tap
-     67   51.2 |  14.2 |   5.1 |  20.3
-     75   59.5 |   0.5 |   4.2 |  32.4
-     83   46.6 |   1.1 |   3.0 |  41.0
-     91   44.1 |   0.2 |   2.1 |  41.3
-    100   45.3 |   0.2 |   3.3 |  41.2
-    108   40.1 |   0.5 |   5.3 |  32.3
+first entry, 67-125ms after the tap        second visit, same phase
+     67   51.2 |  14.2 |   5.1 |  20.3          33   25.9 | 0.3 | 2.4 | 20.9
+     83   46.6 |   1.1 |   3.0 |  41.0          42   24.4 | 0.2 | 1.6 | 22.0
+    100   45.3 |   0.2 |   3.3 |  41.2          50   27.5 | 0.4 | 6.9 | 19.1
     116   37.3 |   0.5 |   7.2 |  28.1
-
-second visit, same phase
-     33   25.9 |   0.3 |   2.4 |  20.9
-     42   24.4 |   0.2 |   1.6 |  22.0
-     50   27.5 |   0.4 |   6.9 |  19.1
 ```
 
 **The extra cost is GPU fill: a ~60ms window at 41ms/frame against a 12ms idle baseline and a
-22ms second-visit peak.** It is not composition — one 14.2ms `record draw` spike at the start
-(the page's tree composing, the ~19ms this document costed years ago) and 0.2-1.1ms for every
-frame after it. It is not RenderThread CPU: 2-7ms throughout, and an `atrace` puts the *average*
-`renderFrame` slightly **higher** on the second visit (2.88ms) than the first (1.95ms).
+22ms second-visit peak.** Not composition — one 14.2ms `record draw` spike as the page's tree
+composes, then 0.2-1.1ms per frame. Not RenderThread CPU: 2-7ms throughout, and an `atrace` puts
+the *average* `renderFrame` slightly **higher** on the second visit (2.88ms) than the first
+(1.95ms).
 
-Ruled out, with numbers:
+And the GPU is genuinely **busy**, not stalled. `/sys/class/kgsl/kgsl-3d0/gpubusy` (a ~1s window
+counter that resets on read, so it gives one sample per second and nothing finer) over the second
+containing the switch: 73.4% on first entry against 59.3% on a second visit, three passes each.
+Fourteen points of a second is ~130ms of extra busy time, which matches the frame timeline's seven
+frames at ~19ms extra almost exactly. It is real work, done once.
 
-| | first entry | second visit |
-|---|---|---|
-| shader programs compiled | 29 (cache 73 -> 102) | **0** |
-| `CreateGraphicsPipeline` CPU | 4.5ms over 30 calls | 0 |
-| `flush layers` max | 16.14ms | 10.27ms |
-| `renderFrame` max | 20.10ms | 14.03ms |
+### It is not the glass
 
-So shader work is real and exclusive to first entry, and its **CPU** cost is 4.5ms of a switch —
-not the story. What is consistent with the evidence, and not yet proven, is that the cost is the
-**first draw** using each of those 29 new pipelines rather than their creation: 23 of the 30
-creations cluster into one 50ms window, and the slowest `renderFrame` of the whole switch sits
-inside that cluster. First-use-of-a-new-pipeline being expensive on the GPU is ordinary Adreno
-behaviour. Separating that from render-target allocation for the page's offscreen glass layers
-needs a GPU-side profiler; `atrace gfx` does not decompose `swap->completed`.
+The obvious conclusion from all of the above is "make the first glass rasterisation cheaper", and
+it is wrong. Upper bound, measured the way `backdrop-reduced-resolution.md` bounded the capture
+question — a throwaway build with `fullBackdropEffectsEnabled` forced to `false` on the github
+page, visibly flat, never shipped:
 
-Every fix that follows from this is a variant of "draw with those pipelines earlier, somewhere
-harmless" — which is the pre-warm family, and §4 records one member of it failing (warming one
-half made the other worse). A new attempt needs a reason to think it differs from that one, not
-just a different place to put the warm.
+| github first entry | p50 | p90 | p99 | GPU p90 | frames > 33ms |
+|---|---|---|---|---|---|
+| glass on (shipped) | 15.39 | 46.43 | 59.53 | 27.68 | **11** |
+| glass off (bound) | 17.82 | 43.06 | 52.04 | 25.09 | **11** |
 
-What has been ruled out for first entry, so a next round does not re-tread: composition ordering
-(§4, implemented and reverted), shader/pipeline *creation* cost (4.5ms), reduced-resolution
-backdrop capture (upper bound measured at zero, `docs/planning/backdrop-reduced-resolution.md`),
-and hosting a page's sheet backdrop layer when no sheet is open — all four pages already gate that,
-github/ba/mcp through `distinctLayers` and os through `backdropProducerActive` at
-`OsPage.kt:509`, so there is no unsampled layer being recorded.
+Removing **all** of a page's backdrop glass buys ~3ms at p90, makes p50 slightly worse, and
+removes **not one** janky frame. So the first-entry cost is the page drawing its *content* for the
+first time, and the §6 constraint is not in the way of fixing it — there is nothing to trade.
+
+### What is ruled out for first entry
+
+Composition ordering (§4, implemented and reverted). Shader and pipeline *creation* (29 programs
+compiled on first entry against zero on a second visit, 4.5ms of CPU for the lot). Reduced-
+resolution backdrop capture (upper bound zero). Hosting a sheet backdrop layer nothing samples —
+all four pages already gate it, github/ba/mcp through `distinctLayers` and os through
+`backdropProducerActive` at `OsPage.kt:509`. Glass entirely, per the table above.
+
+### Where a next round should look
+
+Content, not chrome, and GPU-side: first-use costs that a second visit gets for free. Glyph atlas
+uploads for text at sizes the process has not drawn yet, image decode and upload, vector icon
+rasterisation, render-target allocation for the page's own layers. None of these is visual, so a
+fix would not cost material quality.
+
+Two notes on tooling before starting. Perfetto on this device exposes **no** `gpu.renderstages`
+and no `gpu.counters` — only `android.gpu.memory` — so `swap->completed` cannot be decomposed
+there; `adb shell perfetto --query` confirms it. And `gpubusy` is the only readable KGSL counter:
+`gpuclk`, `max_gpuclk` and the devfreq nodes are all permission-denied without root.

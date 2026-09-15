@@ -12,21 +12,21 @@ rounds of work that measured no change.
 ## 1. Where the frame time actually goes
 
 Measured on the physical phone `5eea1f50` (1220x2656, 120Hz LTPO, HyperOS), `releaseDiagnostic`
-build, home idle, 118 frames, **2026-09-15**:
+build, home idle, 119 frames, no screen mirroring (see §3), **2026-09-15**:
 
 | stage | p50 | share |
 |---|---|---|
 | input | 0.00 | 0.0% |
-| animation | 0.19 | 1.3% |
-| measure+layout | 0.07 | 0.4% |
-| record draw | 0.22 | 1.4% |
-| sync | 0.43 | 2.4% |
-| **RT issue->swap** | **6.11** | **31.9%** |
-| **swap->completed (GPU)** | **10.31** | **59.4%** |
-| total | 17.90 | |
+| animation | 0.19 | 1.1% |
+| measure+layout | 0.05 | 0.3% |
+| record draw | 0.17 | 1.1% |
+| sync | 0.49 | 2.6% |
+| **RT issue->swap** | **6.72** | **33.1%** |
+| **swap->completed (GPU)** | **11.66** | **59.0%** |
+| total | 20.06 | |
 
-**Everything Compose does is 0.48ms of a 17.9ms frame — 3.1%.** Input, animation, measure,
-layout and recording draw commands, added together. RenderThread plus GPU is 91%.
+**Everything Compose does is 0.41ms of a 20.1ms frame — 2.0%.** Input, animation, measure,
+layout and recording draw commands, added together. RenderThread plus GPU is 92%.
 
 So the ceiling on *every* recomposition optimisation in this app is half a millisecond, and
 most of that half is animation and draw recording, which cannot go to zero. A change that
@@ -35,71 +35,66 @@ halves recomposition and reports a smoother app is reporting noise.
 This is not a one-off reading. It reproduces the table in `docs/planning/hwui-frame-budget.md`,
 first measured months earlier, on a tree that has changed substantially since.
 
-## 1b. Switching into a page: the cost is first entry, and only first entry
+## 1b. Switching into a page: first entry, and only first entry
 
 Home idle is one scene. The complaint is usually the other one — tapping from Home into another
-tab. Measured 2026-09-15, one isolated switch per capture, counter reset immediately before the
-tap:
+tab. Measured with no screen mirroring, one isolated switch per capture, counter reset immediately
+before the tap, medians of three passes:
 
-| home -> tab | total p50 | p90 | p99 |
+| home -> tab, first entry | p50 | p90 | p99 |
 |---|---|---|---|
-| github | 27.43 | 58.37 | **281.79** |
-| mcp | **34.94** | **125.02** | 133.03 |
-| os | 24.60 | 67.32 | 119.06 |
-| ba | 19.06 | 48.34 | 105.57 |
+| github | 15.39 | 46.43 | 59.53 |
+| mcp | 19.15 | 49.56 | 62.43 |
+| os | 19.40 | 57.62 | 65.28 |
+| ba | 16.24 | 51.81 | 63.20 |
 
-A 281ms frame is a quarter of a second of frozen animation, and all of it was
-`RT issue->swap` (278.95). But visit the same tab a second time in the same process:
+Uniform across all four tabs, so it is not one bad page. Now the same tab a second time in the
+same process — and read the last column, which is the one a person feels:
 
-| home -> github | p50 | p90 | p99 | RT p99 |
+| home -> github | p50 | p90 | p99 | frames over 33ms |
 |---|---|---|---|---|
-| first entry | 27.43 | 58.37 | 281.79 | 278.95 |
-| second visit | **10.62** | **29.42** | **33.45** | **10.47** |
+| first entry | 15.39 | 46.43 | 59.53 | **11** |
+| second visit | 13.19 | 29.07 | 36.38 | **2** |
 
-`MainPageActivationState.hasActivated` keeps a page composed once it has been reached, so a page
-composes and rasterises its glass exactly once per process. **Every tab is rough the first time
-the user opens it after a cold start, and clean forever after.** That is the shape of the
-complaint, and it is the same on all four tabs, so it is not one bad page.
+Eleven janky frames against two, with the p90 ranges completely disjoint across runs
+([41.6, 46.4, 48.2] against [24.4, 28.0, 30.2, 31.5]). `MainPageActivationState.hasActivated`
+keeps a page composed once it has been reached, so a page composes and rasterises its glass
+exactly once per process: **every tab is rough the first time it is opened after a cold start and
+clean forever after.**
 
-What it is made of, per `docs/planning/hwui-frame-budget.md`: ~19ms of extra UI-thread work
-composing the page's tree, plus the first rasterisation of its glass layers on RenderThread —
-and the second number is the larger one. **Composition and rasterisation are different events.**
-A layer is rasterised when it is first drawn, which is when the animation brings the page on
-screen; composing it earlier does not draw it earlier. Anything aimed at this has to make the
-first rasterisation cheaper, not earlier — see §4, where moving the composition is now recorded
-as measured and rejected.
-
-**Roughly 40% of it is once per process, not per page.** Same page, same tree, same glass —
-`home -> mcp` measured as the first switch of the process, against `home -> mcp` measured after
-`github` had been entered once:
+The cost is **per page**, not shared between them. Entering `github` first and then measuring
+`mcp`'s own first entry, six passes each, moves p50 not at all and the tail by about the noise
+floor:
 
 | mcp first entry | p50 | p90 | p99 |
 |---|---|---|---|
-| as the first switch | 22.97 | 60.66 | 71.40 |
-| after another page was entered | **14.03** | **35.56** | **54.01** |
+| as the first switch | 19.30 | 51.62 | 62.81 |
+| after github was entered | 19.92 | 43.61 | 51.12 |
 
-The two sets do not overlap (p50 21.2-28.3 against 12.8-16.1), so this is well clear of the
-noise floor. Whatever the shared part is, the *second* page to be opened gets it for free — which
-also means any fix aimed at it pays once for all four tabs.
+What it is made of: ~19ms of extra UI-thread work composing the page's tree, plus the first
+rasterisation of its glass layers on RenderThread — and the second is the larger.
+**Composition and rasterisation are different events.** A layer is rasterised when it is first
+*drawn*, which is when the animation brings the page on screen; composing it earlier does not draw
+it earlier. That is why moving the composition to the tap achieved nothing (§4).
 
-An `atrace` of one first switch says where the app-side time goes and, usefully, what it is
+An `atrace` of one first switch says where the RenderThread time goes and, usefully, what it is
 **not**:
 
-| RenderThread | total over the switch | max |
+| RenderThread slice | total over the switch | max |
 |---|---|---|
 | `Drawing 0 0 1220 2656` (full-screen) | 295.2ms | 28.97 |
 | `renderFrame` | 233.7ms | 26.36 |
 | **`flush layers`** | **160.2ms** | **21.98** |
 | `CreateGraphicsPipeline` | **5.8ms** | 0.40 |
 
-The HWUI shader cache does grow from 73 to 102 programs across that one switch — 29 new shaders —
-so shader work is genuinely happening, but creating those pipelines costs **5.8ms of the whole
-switch** and 3.57ms of the worst frame. Shader compilation is not the story; `flush layers`, the
-layer rasterisation, is.
+The HWUI shader cache grows from 73 to 102 programs across that single switch — 29 new shaders —
+which looks like the answer and is not: creating those pipelines costs **5.8ms of the entire
+switch** and 3.57ms of its worst frame. Shader compilation is a red herring. `flush layers`, the
+layer rasterisation, is the cost.
 
-One number to distrust: the 281.79ms p99 above came from the first pass after an install, and the
-first pass after an install was the worst pass in *both* builds of an unrelated A/B. Treat ~60-77ms
-as first entry's real p99 and discard the pass that follows an install.
+So the open problem is narrow and stated exactly: **make a page's first glass rasterisation
+cheaper.** Not earlier — earlier is the rejected pre-warm (§4). Not by having less glass — that is
+the line in §6.
 
 ## 2. The two axes generic advice targets are already clean
 
@@ -143,12 +138,21 @@ repositories, and driving it starts real refreshes. A debug build is not compara
 
 Requires Developer options -> Profile HWUI rendering -> "In adb shell dumpsys gfxinfo".
 
-**Check for screen mirroring first, every time.** scrcpy and the HyperOS screen recorder each
-add a virtual display, and the device then composites an extra full copy of the screen per
-mirror, per frame — measured at 38.2ms + 35.4ms of RenderEngine work over a 2.13-second trace,
-122 extra full-screen compositions. That contends for the GPU with the app, and the app's GPU
-stage is exactly "command submission to GPU completion", so it absorbs the contention silently.
-A/B comparisons survive it (both sides pay), absolute figures do not.
+**Check for screen mirroring first, every time.** scrcpy holds two virtual displays (its own and
+a `screen-mirror-ScreenRecorder`), and the device then composites an extra full copy of the screen
+for each, every frame — 38.2ms + 35.4ms of RenderEngine work over a 2.13-second trace, 122 extra
+full-screen compositions.
+
+The direction of the error is **not** the one you would guess, so do not try to reason it away:
+with mirroring on, home idle measured *faster* — 17.90ms against 20.06ms clean, GPU 10.31 against
+11.66. The extra load keeps the GPU governor on a higher clock, so the app's own work finishes
+sooner in wall-clock terms. The clean figure is the one that matches this document's historical
+20.71ms.
+
+It distorts the tail worse than the median, and unevenly: with mirroring on, first entries
+produced 281ms and 125ms p99 outliers that do not exist clean, and an apparent "40% of first entry
+is shared between pages" effect that evaporated when re-measured without it. A/B comparisons
+survive mirroring because both sides pay it. Absolute figures and tail claims do not.
 
 ```bash
 adb -s <serial> shell dumpsys SurfaceFlinger --display-id   # any "Virtual display" is a mirror
@@ -272,12 +276,13 @@ SurfaceFlinger compositing an extra copy of the screen, which is how mirroring s
 
 ## 10. What is not yet known about first entry
 
-The shared once-per-process 40% in §1b is measured but **not identified**. It is not shader
-pipeline creation (5.8ms). Candidates not yet separated: texture and buffer-pool growth, Skia
-program setup beyond pipeline creation, or a first-draw cost in the glass effect chains that is
-per-*chain-shape* rather than per-surface — which would mean the pages share chain shapes and only
-the first page to use each one pays.
+The remaining cost is a page's first glass rasterisation — `flush layers` — and it is per page,
+so it cannot be paid once somewhere harmless. Ruled out so far: shader and pipeline compilation
+(5.8ms of a whole switch), composition ordering (§4), and reduced-resolution backdrop capture
+(upper bound measured at zero, `docs/planning/backdrop-reduced-resolution.md`).
 
-Identifying it is the next useful step, because a shared cost can be paid once somewhere harmless,
-whereas a per-page cost cannot. Note that "somewhere harmless" is narrow: rendering glass early,
-off the click path, is already recorded as tried and rejected in §4.
+Not yet separated, and where a next round should start: how much of the first rasterisation is
+glass that is **not visible during the switch** — below the fold, or off-screen while the page
+slides in. Culling that is the only remaining lever that does not render early (the rejected
+pre-warm) and does not remove material (§6). `docs/planning/hwui-frame-budget.md` notes that the
+BA list "has little keep-alive headroom to cull", which is evidence about one page, not four.

@@ -69,6 +69,38 @@ screen; composing it earlier does not draw it earlier. Anything aimed at this ha
 first rasterisation cheaper, not earlier — see §4, where moving the composition is now recorded
 as measured and rejected.
 
+**Roughly 40% of it is once per process, not per page.** Same page, same tree, same glass —
+`home -> mcp` measured as the first switch of the process, against `home -> mcp` measured after
+`github` had been entered once:
+
+| mcp first entry | p50 | p90 | p99 |
+|---|---|---|---|
+| as the first switch | 22.97 | 60.66 | 71.40 |
+| after another page was entered | **14.03** | **35.56** | **54.01** |
+
+The two sets do not overlap (p50 21.2-28.3 against 12.8-16.1), so this is well clear of the
+noise floor. Whatever the shared part is, the *second* page to be opened gets it for free — which
+also means any fix aimed at it pays once for all four tabs.
+
+An `atrace` of one first switch says where the app-side time goes and, usefully, what it is
+**not**:
+
+| RenderThread | total over the switch | max |
+|---|---|---|
+| `Drawing 0 0 1220 2656` (full-screen) | 295.2ms | 28.97 |
+| `renderFrame` | 233.7ms | 26.36 |
+| **`flush layers`** | **160.2ms** | **21.98** |
+| `CreateGraphicsPipeline` | **5.8ms** | 0.40 |
+
+The HWUI shader cache does grow from 73 to 102 programs across that one switch — 29 new shaders —
+so shader work is genuinely happening, but creating those pipelines costs **5.8ms of the whole
+switch** and 3.57ms of the worst frame. Shader compilation is not the story; `flush layers`, the
+layer rasterisation, is.
+
+One number to distrust: the 281.79ms p99 above came from the first pass after an install, and the
+first pass after an install was the worst pass in *both* builds of an unrelated A/B. Treat ~60-77ms
+as first entry's real p99 and discard the pass that follows an install.
+
 ## 2. The two axes generic advice targets are already clean
 
 Check before spending time re-deriving this; re-measure if the tree has moved a lot.
@@ -110,6 +142,18 @@ application id. Never `os.kei`: that is the user's real install with their real 
 repositories, and driving it starts real refreshes. A debug build is not comparable to release.
 
 Requires Developer options -> Profile HWUI rendering -> "In adb shell dumpsys gfxinfo".
+
+**Check for screen mirroring first, every time.** scrcpy and the HyperOS screen recorder each
+add a virtual display, and the device then composites an extra full copy of the screen per
+mirror, per frame — measured at 38.2ms + 35.4ms of RenderEngine work over a 2.13-second trace,
+122 extra full-screen compositions. That contends for the GPU with the app, and the app's GPU
+stage is exactly "command submission to GPU completion", so it absorbs the contention silently.
+A/B comparisons survive it (both sides pay), absolute figures do not.
+
+```bash
+adb -s <serial> shell dumpsys SurfaceFlinger --display-id   # any "Virtual display" is a mirror
+pgrep -lf scrcpy                                            # and check the host
+```
 
 ```bash
 # frames a scene draws when nobody touches it, plus deadline misses
@@ -204,3 +248,36 @@ it or pool at least four. When the claim is about *where* the cost falls rather 
 is, read the per-frame totals instead: the index of the worst frame in the window says whether
 work moved, and `frames > 33ms` says whether the user would notice. `frame_stages.py`'s `load()`
 is importable for exactly this.
+
+## 9. When framestats is not enough: atrace
+
+`dumpsys gfxinfo` says which *stage* is slow. It cannot say which *work* inside RenderThread is
+slow, and that is usually the question. `atrace` can, with no build change:
+
+```bash
+adb -s <serial> shell "atrace --async_start -b 32000 gfx view sched"
+#   ... drive the interaction ...
+adb -s <serial> shell "atrace --async_stop" > trace.txt
+```
+
+The output is ftrace text; the useful lines are `tracing_mark_write: B|<pid>|<name>` / `E`. Pair
+them per thread into a stack, and aggregate by name — total, max and count per slice. Filter to
+the RenderThread comm to separate app work from SurfaceFlinger's.
+
+Slices worth knowing: `flush layers` is the layer capture and rasterisation; `Drawing x y w h`
+is a full-screen draw; `CreateGraphicsPipeline` is Vulkan pipeline creation; `HWUI RAM cache: N
+shaders` is a running count of compiled shader programs, so its first and last values across a
+capture tell you how many were compiled during it; `drawLayersInternal for <name>` is
+SurfaceFlinger compositing an extra copy of the screen, which is how mirroring shows up.
+
+## 10. What is not yet known about first entry
+
+The shared once-per-process 40% in §1b is measured but **not identified**. It is not shader
+pipeline creation (5.8ms). Candidates not yet separated: texture and buffer-pool growth, Skia
+program setup beyond pipeline creation, or a first-draw cost in the glass effect chains that is
+per-*chain-shape* rather than per-surface — which would mean the pages share chain shapes and only
+the first page to use each one pays.
+
+Identifying it is the next useful step, because a shared cost can be paid once somewhere harmless,
+whereas a per-page cost cannot. Note that "somewhere harmless" is narrow: rendering glass early,
+off the click path, is already recorded as tried and rejected in §4.

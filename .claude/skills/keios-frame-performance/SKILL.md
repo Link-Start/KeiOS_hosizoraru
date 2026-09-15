@@ -322,14 +322,54 @@ resolution backdrop capture (upper bound zero). Hosting a sheet backdrop layer n
 all four pages already gate it, github/ba/mcp through `distinctLayers` and os through
 `backdropProducerActive` at `OsPage.kt:509`. Glass entirely, per the table above.
 
+### Answered: it is the Home full-effect setting, and it is a deliberate trade
+
+The switch animation is what makes first entry expensive, not the destination page's first draw.
+Forced instant (a throwaway build, `transitionAnimationsEnabled` pinned false): **worst GPU
+44.38ms -> 12.14ms** and frames over 33ms 11 -> 5, with only 18 frames drawn instead of 54. During
+the slide, *both* pages draw every frame, and Home is the expensive one.
+
+Home does not always pay it. `HomePage.kt` gates both its drift and its glass on the user's
+full-effect preference:
+
+```kotlin
+val dynamicBackgroundEnabled =
+    homeDynamicActive && (homeDynamicFullEffectEnabled || !runtime.isPagerScrollInProgress)
+val fullBackdropEffectsEnabled =
+    runtime.isPageActive && (homeDynamicFullEffectEnabled || !runtime.isPagerScrollInProgress)
+```
+
+With the setting **off** — the default — Home already pauses both during a slide. With it **on**,
+Home keeps its animated background and its whole glass stack running through every tab switch.
+Measured on github first entry, three passes each:
+
+| home -> github, first entry | p50 | p90 | p99 | worst GPU | frames > 33ms |
+|---|---|---|---|---|---|
+| full effect on (what this device had) | 15.39 | 46.43 | 59.53 | 44.38 | **11** |
+| drift pauses, glass keeps running | 15.08 | 34.15 | 59.14 | 26.73 | **7** |
+| both pause = **full effect off, the default** | 15.79 | 29.89 | 66.75 | 22.55 | **4** |
+
+So a default user sees 4 janky frames entering a page and a full-effect user sees 11. **The seven
+frames are the price of the setting**, not a defect, and every measurement in this document above
+was taken with the setting on.
+
+There is no free fix here. Making full-effect users pause during the slide is exactly removing what
+the setting sells them, and it is not a freeze either: `dynamicBackground = false` also moves
+`renderScale` from `DYNAMIC_BACKGROUND_RENDER_SCALE` (0.25) to `1f`, so the background changes
+texture as well as stopping. That is a visible change, which is why the gate is a preference and
+not a blanket optimisation. §6 applies.
+
 ### Where a next round should look
 
-Content, not chrome, and GPU-side: first-use costs that a second visit gets for free. Glyph atlas
-uploads for text at sizes the process has not drawn yet, image decode and upload, vector icon
-rasterisation, render-target allocation for the page's own layers. None of these is visual, so a
-fix would not cost material quality.
+The remaining 4 janky frames on the default path are the destination page drawing its content for
+the first time — content, not chrome, and GPU-side: glyph atlas uploads for text at sizes the
+process has not drawn yet, image decode and upload, vector icon rasterisation, render-target
+allocation. None of those is visual, so a fix there would cost no material quality. Note that the
+pages share typography, and entering one page first buys the next only about the noise floor
+(§1b), which argues against glyphs being the dominant term.
 
 Two notes on tooling before starting. Perfetto on this device exposes **no** `gpu.renderstages`
 and no `gpu.counters` — only `android.gpu.memory` — so `swap->completed` cannot be decomposed
-there; `adb shell perfetto --query` confirms it. And `gpubusy` is the only readable KGSL counter:
-`gpuclk`, `max_gpuclk` and the devfreq nodes are all permission-denied without root.
+there; `adb shell perfetto --query` confirms it. `gpubusy` is the only readable KGSL counter
+(`gpuclk`, `max_gpuclk` and the devfreq nodes are permission-denied without root), it is a ~1s
+window that resets on read, so it gives one sample per second and nothing finer.

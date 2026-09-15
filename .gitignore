@@ -119,3 +119,7 @@ tmp/
 /scripts/qa/refactor_regression_gate.sh
 /docs/miuix-blur-adoption-plan.md
 docs/小米超级岛模板库20260129.pdf
+
+# Python bytecode from the perf harness
+__pycache__/
+*.pyc

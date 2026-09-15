@@ -64,6 +64,12 @@ runs:
       with:
         cmdline-tools-version: ${{ inputs.cmdline-tools-version }}
         accept-android-sdk-licenses: true
+        # Upstream defaults this to "tools platform-tools", and Google has now removed the legacy
+        # `tools` package from the SDK repository -- it is in no channel of repository2-3.xml any
+        # more. `sdkmanager tools` therefore exits 1 with "Failed to find package 'tools'" and
+        # fails every job here before Gradle is ever invoked, on a tree that has not changed.
+        # Nothing in this build wants it: the next step installs the build-tools and platform.
+        packages: platform-tools
 
     - name: Install Android SDK components
       shell: bash

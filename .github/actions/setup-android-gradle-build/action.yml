@@ -1,23 +1,19 @@
 name: Setup Android Gradle build
-description: Prepare JDK, Gradle, Android SDK, and GitHub Packages credentials for Android CI jobs.
+description: Prepare JDK, Gradle, and GitHub Packages credentials, and confirm the runner's Android SDK.
 
 inputs:
   android-build-tools-version:
-    description: Android build-tools version to install.
+    description: Android build-tools version the build and the apksigner check need.
     required: false
     default: "37.0.0"
   android-platform-version:
-    description: Primary Android SDK platform package to install.
+    description: Android SDK platform package the build compiles against.
     required: false
     default: "android-37.0"
   android-platform-fallback-version:
     description: Fallback Android SDK platform package to install when the primary package is unavailable.
     required: false
     default: "android-37"
-  cmdline-tools-version:
-    description: Android command-line tools version.
-    required: false
-    default: "12266719"
   java-version:
     description: JDK version to install.
     required: false
@@ -40,9 +36,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Validate Gradle Wrapper
-      uses: gradle/actions/wrapper-validation@v6
-
     - name: Setup JDK
       uses: actions/setup-java@v5
       with:
@@ -52,26 +45,16 @@ runs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v6
       with:
-        cache-provider: enhanced
+        # Wrapper validation was its own `gradle/actions/wrapper-validation` step and another
+        # action to download; setup-gradle does the same check itself, before any Gradle runs.
+        validate-wrappers: true
         cache-read-only: ${{ inputs.cache-read-only }}
         cache-cleanup: on-success
         build-scan-publish: ${{ inputs.build-scan-publish }}
         build-scan-terms-of-use-url: https://gradle.com/terms-of-service
         build-scan-terms-of-use-agree: yes
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v4
-      with:
-        cmdline-tools-version: ${{ inputs.cmdline-tools-version }}
-        accept-android-sdk-licenses: true
-        # Upstream defaults this to "tools platform-tools", and Google has now removed the legacy
-        # `tools` package from the SDK repository -- it is in no channel of repository2-3.xml any
-        # more. `sdkmanager tools` therefore exits 1 with "Failed to find package 'tools'" and
-        # fails every job here before Gradle is ever invoked, on a tree that has not changed.
-        # Nothing in this build wants it: the next step installs the build-tools and platform.
-        packages: platform-tools
-
-    - name: Install Android SDK components
+    - name: Confirm Android SDK components
       shell: bash
       env:
         ANDROID_BUILD_TOOLS_VERSION: ${{ inputs.android-build-tools-version }}
@@ -79,14 +62,64 @@ runs:
         ANDROID_PLATFORM_FALLBACK_VERSION: ${{ inputs.android-platform-fallback-version }}
       run: |
         set -euo pipefail
-        SDKMANAGER="$(command -v sdkmanager)"
-        echo "Using sdkmanager: ${SDKMANAGER}"
 
-        "${SDKMANAGER}" --channel=3 "build-tools;${ANDROID_BUILD_TOOLS_VERSION}"
-        if "${SDKMANAGER}" --channel=3 "platforms;${ANDROID_PLATFORM_VERSION}"; then
+        # GitHub's ubuntu image ships the whole Android SDK: ANDROID_HOME is exported for every
+        # step, the licences are pre-accepted, and it currently carries both things this build
+        # names -- build-tools 37.0.0 and platforms;android-37.0. So there is nothing to install
+        # and no `android-actions/setup-android` in front of this. That action cost ~8s a job and
+        # was also the single point of failure that took CI down when Google deleted the legacy
+        # `tools` package out from under its default package list.
+        #
+        # This step exists for the day an image rotation drops something. It installs only what
+        # is actually absent, so the normal path is a pair of directory tests, and a miss reports
+        # itself here by name instead of surfacing as an AGP "Failed to install" deep in a build.
+        SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+        if [[ -z "${SDK_ROOT}" ]]; then
+          echo "::error::Neither ANDROID_HOME nor ANDROID_SDK_ROOT is set; this runner has no Android SDK."
+          exit 1
+        fi
+
+        sdkmanager_path() {
+          local bundled="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          if [[ -x "${bundled}" ]]; then
+            echo "${bundled}"
+          else
+            command -v sdkmanager
+          fi
+        }
+
+        install_package() {
+          local package="$1"
+          local sdkmanager
+          sdkmanager="$(sdkmanager_path)"
+          echo "Installing ${package} with ${sdkmanager}"
+          # Licences are accepted in the image, but answer anyway for the case where they are not.
+          # `printf` rather than `yes`, whose SIGPIPE death would trip `set -o pipefail`.
+          printf 'y\n%.0s' $(seq 1 10) | "${sdkmanager}" --channel=3 "${package}"
+        }
+
+        require_dir() {
+          local label="$1" path="$2" package="$3"
+          if [[ -d "${path}" ]]; then
+            echo "present: ${label}"
+            return 0
+          fi
+          echo "missing: ${label}"
+          install_package "${package}"
+        }
+
+        require_dir "build-tools ${ANDROID_BUILD_TOOLS_VERSION}" \
+          "${SDK_ROOT}/build-tools/${ANDROID_BUILD_TOOLS_VERSION}" \
+          "build-tools;${ANDROID_BUILD_TOOLS_VERSION}"
+
+        if [[ -d "${SDK_ROOT}/platforms/${ANDROID_PLATFORM_VERSION}" ]]; then
+          echo "present: platform ${ANDROID_PLATFORM_VERSION}"
+        elif [[ -d "${SDK_ROOT}/platforms/${ANDROID_PLATFORM_FALLBACK_VERSION}" ]]; then
+          echo "present: platform ${ANDROID_PLATFORM_FALLBACK_VERSION} (fallback)"
+        elif install_package "platforms;${ANDROID_PLATFORM_VERSION}"; then
           echo "Installed SDK platform: ${ANDROID_PLATFORM_VERSION}"
         else
-          "${SDKMANAGER}" --channel=3 "platforms;${ANDROID_PLATFORM_FALLBACK_VERSION}"
+          install_package "platforms;${ANDROID_PLATFORM_FALLBACK_VERSION}"
           echo "Installed SDK platform: ${ANDROID_PLATFORM_FALLBACK_VERSION}"
         fi
 

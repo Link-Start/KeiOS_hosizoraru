@@ -5,33 +5,20 @@ on:
   push:
     branches:
       - master
-    paths:
-      - ".github/actions/prepare-android-apk-artifact/**"
-      - ".github/actions/setup-android-gradle-build/**"
-      - ".github/workflows/ci-debug-apk.yml"
-      - "app/**"
-      - "core-concurrency/**"
-      - "core-io/**"
-      - "core-json/**"
-      - "core-log/**"
-      - "core-prefs/**"
-      - "core-system/**"
-      - "feature-ba/**"
-      - "feature-github/**"
-      - "feature-home/**"
-      - "feature-mcp/**"
-      - "feature-os/**"
-      - "feature-webdav/**"
-      - "ui-liquid-glass/**"
-      - "ui-pip/**"
-      - "baselineprofile/**"
-      - "build.gradle.kts"
-      - "gradle.properties"
-      - "gradle/**"
-      - "gradlew"
-      - "gradlew.bat"
-      - "scripts/ci/**"
-      - "settings.gradle.kts"
+    # Exclusions, not inclusions. The hand-written module allowlist this replaces had gone stale:
+    # core-download, core-notification, core-versioning, feature-keepalive and feature-github-engine
+    # were all missing from it, so a commit touching only one of them built and tested nothing.
+    # A missing entry here costs a run nobody needed; a missing entry there cost the run that was.
+    paths-ignore:
+      - "**/*.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "docs/**"
+      - "readme/**"
+      - "scripts/dev/**"
+      - "scripts/perf/**"
+      - "scripts/qa/**"
   pull_request:
     types:
       - opened
@@ -40,33 +27,17 @@ on:
       - ready_for_review
     branches:
       - master
-    paths:
-      - ".github/actions/prepare-android-apk-artifact/**"
-      - ".github/actions/setup-android-gradle-build/**"
-      - ".github/workflows/ci-debug-apk.yml"
-      - "app/**"
-      - "core-concurrency/**"
-      - "core-io/**"
-      - "core-json/**"
-      - "core-log/**"
-      - "core-prefs/**"
-      - "core-system/**"
-      - "feature-ba/**"
-      - "feature-github/**"
-      - "feature-home/**"
-      - "feature-mcp/**"
-      - "feature-os/**"
-      - "feature-webdav/**"
-      - "ui-liquid-glass/**"
-      - "ui-pip/**"
-      - "baselineprofile/**"
-      - "build.gradle.kts"
-      - "gradle.properties"
-      - "gradle/**"
-      - "gradlew"
-      - "gradlew.bat"
-      - "scripts/ci/**"
-      - "settings.gradle.kts"
+    # Same exclusion list as the push trigger above, for the same reason.
+    paths-ignore:
+      - "**/*.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - "docs/**"
+      - "readme/**"
+      - "scripts/dev/**"
+      - "scripts/perf/**"
+      - "scripts/qa/**"
   workflow_dispatch:
     inputs:
       commit:
@@ -108,7 +79,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          # Full history, because the version metadata counts commits back to the release tag --
+          # but blobless, so the clone carries commits and trees only and no step reads a file
+          # out of history.
           fetch-depth: 0
+          filter: blob:none
           ref: ${{ github.event.inputs.commit || github.sha }}
           persist-credentials: false
 
@@ -205,7 +180,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          # Full history for the version metadata, blobless -- see the job above.
           fetch-depth: 0
+          filter: blob:none
           ref: ${{ github.event.inputs.commit || github.sha }}
           persist-credentials: false
 

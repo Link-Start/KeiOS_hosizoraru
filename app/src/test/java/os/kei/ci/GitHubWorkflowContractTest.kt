@@ -16,7 +16,14 @@ class GitHubWorkflowContractTest {
         // Unit tests run as a parallel job inside the debug APK workflow
         assertContains(workflow, "./gradlew :app:testDebugUnitTest --stacktrace")
         assertContains(workflow, "./gradlew :core-log:compileDebugKotlin :core-io:compileDebugKotlin --stacktrace")
-        assertContains(workflow, "cache-read-only: \"true\"")
+        // Deliberate, and pinned here so it survives the next round of speed work: writing the
+        // Gradle cache from the unit test job filled the Actions cache, and a stored
+        // `testDebugUnitTest` entry would let a later run report a pass it never executed.
+        assertContains(
+            workflow,
+            "cache-read-only: \"true\"",
+            message = "the unit test job is cache-read-only on purpose; see the comment at its call site",
+        )
         assertSetupActionUsesCurrentActions(setupAction)
     }
 

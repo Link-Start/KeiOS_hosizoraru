@@ -92,6 +92,8 @@ jobs:
           android-build-tools-version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
           github-actor: ${{ env.GITHUB_ACTOR }}
           github-token: ${{ env.GITHUB_TOKEN }}
+          # Read-only on purpose: only the debug APK job writes the Gradle cache, which is what
+          # keeps the Actions cache from filling up. See the unit test job in ci-debug-apk.yml.
           cache-read-only: "true"
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 

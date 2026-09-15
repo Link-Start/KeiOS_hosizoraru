@@ -192,6 +192,12 @@ jobs:
           android-build-tools-version: ${{ env.ANDROID_BUILD_TOOLS_VERSION }}
           github-actor: ${{ env.GITHUB_ACTOR }}
           github-token: ${{ env.GITHUB_TOKEN }}
+          # Read-only on purpose, and not a speed oversight to be optimised away. Writing the
+          # Gradle cache from here filled the Actions cache until GitHub warned about it on every
+          # run, back when nothing pruned it. And the suite is meant to actually execute: with no
+          # write, this job never stores a `testDebugUnitTest` entry, so no later run can take a
+          # cache hit on it and report a pass it never ran. `cache-cleanup: on-success` bounds the
+          # space now, but that second reason stands on its own and is the one that matters.
           cache-read-only: "true"
           build-scan-publish: ${{ github.event.inputs.publish-build-scan || 'false' }}
 

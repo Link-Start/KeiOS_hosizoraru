@@ -206,6 +206,45 @@ spend itself re-discovering them.
   rather than soft. Needs library support. Full analysis:
   `docs/planning/backdrop-reduced-resolution.md`.
 
+## 4b. Expanding a card: the layer is rasterised at its full height
+
+The second complaint after page switching, and it has its own document:
+`docs/planning/expanded-card-glass-layer.md`. The short version, measured on the phone against the
+user's own data:
+
+**A card's glass layer is recorded at the card's full height, and an expanded card can be taller than
+the screen.** One expanded history record measured `1128 x 3996` on a 2656px display -- 1.5 screens,
+of which at most 2003px is ever visible.
+
+| scene | recorded layer height | visible | frame p50 |
+| --- | ---: | ---: | ---: |
+| all collapsed | 2124 | ~2000 | 14.0 |
+| sparse record expanded | 2029 | 1946 | 13.6 |
+| rich record expanded | **3996** | 2003 | **36.7** |
+
+Rows two and three share a visible area and differ 2.7x. **Visible area does not predict the cost;
+recorded height does**, at about `h^1.47`. `flush layers` goes 5.87 -> 15.45ms/frame.
+
+`drawBackdrop` has no clip/region/size parameter -- checked against the library's own documentation --
+so the only lever is the element's layout bounds, and the material is computed from those bounds. The
+document works through what a viewport-band surface would have to clear (lens 24dp, shadow 24dp, blur
+4dp, corner 16dp) and what it would buy (~36%).
+
+Two levers already measured and rejected there: making the stacked-card content-recession layer
+conditional (**a regression on hardware** -- that permanent `graphicsLayer` is a display-list cache),
+and disabling `exportBackdropToContent` (no effect on BA).
+
+## 4c. The A17 AVD cannot measure RenderThread changes
+
+One unchanged build, one scene, one script, one session: 84.6 / 135.9 / 151.6 / 152.0 / 200.9 /
+202.1 / 205.4 / 117.0 / 117.4 / 117.7ms. A +-40% band against effects worth ~20%. Two rounds of work
+were spent on an emulator "19% win" that was drift.
+
+Measure frame-time changes on the phone. When a comparison is unavoidable on any device, put **both
+code paths in one build** behind a system property read once per process and interleave the runs, so
+drift hits both sides equally -- the recipe is in the document above. Non-interleaved emulator A/Bs
+are not evidence.
+
 ## 5. Where a real win would have to come from
 
 The remaining cost is the full-screen Liquid Glass blur re-running whenever the background

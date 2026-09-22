@@ -11,6 +11,8 @@ import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
+import os.kei.ui.page.main.github.install.GitHubApkInfoSheetBinding
+import os.kei.ui.page.main.github.install.GitHubManagedInstallConfirmSheetBinding
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.query.DownloaderOption
@@ -243,18 +245,18 @@ internal fun GitHubPageSheetHost(
     )
 
     GitHubApkInfoSheetBinding(
-        state = state,
-        actions = actions,
+        controller = actions.apkInstallController,
         backdrop = backdrops.sheet,
         sheetState = apkInfoSheetState,
         onRequestSheetState = onRequestApkInfoSheetState,
         onSearchQueryChange = onApkInfoSearchQueryChange,
         onClearSheetState = onClearApkInfoSheetState,
+        onDownload = actions::openApkInDownloader,
+        onShare = actions::shareApkLink,
     )
 
     GitHubManagedInstallConfirmSheetBinding(
-        state = state,
-        actions = actions,
+        controller = actions.apkInstallController,
         backdrop = backdrops.sheet,
         sheetState = managedInstallConfirmSheetState,
         onRequestSheetState = onRequestManagedInstallConfirmSheetState,

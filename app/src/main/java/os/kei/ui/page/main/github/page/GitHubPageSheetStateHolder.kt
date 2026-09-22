@@ -31,7 +31,5 @@ internal class GitHubPageSheetStateHolder {
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
     var fdroidDetailRequest by mutableStateOf<GitHubFdroidDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
-    var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
-    var managedInstallConfirmRequest by mutableStateOf<GitHubManagedInstallConfirmRequest?>(null)
     var pendingDeleteItem by mutableStateOf<GitHubTrackedApp?>(null)
 }

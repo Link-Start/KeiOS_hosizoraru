@@ -65,6 +65,9 @@ internal class GitHubPageActions(
             openLinkFailureMessage = openLinkFailureMessage,
         )
     private val assetActions = GitHubAssetActions(env)
+
+    /** The page's ⓘ and 📦 flow, which its APK info and install confirm sheets render. */
+    val apkInstallController get() = assetActions.installController
     private val refreshActions = GitHubRefreshActions(env, assetActions)
     private val actionsActions = GitHubActionsActions(env, assetActions)
     private val configActions = GitHubConfigActions(env, refreshActions, assetActions)
@@ -317,10 +320,6 @@ internal class GitHubPageActions(
 
     fun dismissActionsArtifactDetail() {
         env.state.actionsArtifactDetailRequest = null
-    }
-
-    fun dismissApkInfoDetail() {
-        env.state.apkInfoDetailRequest = null
     }
 
     suspend fun reloadApps(forceRefresh: Boolean = false) = refreshActions.reloadApps(forceRefresh = forceRefresh)
@@ -587,11 +586,6 @@ internal class GitHubPageActions(
     fun confirmManagedInstall() = assetActions.confirmManagedInstall()
 
     fun dismissManagedInstallConfirm() = assetActions.dismissManagedInstallConfirm()
-
-    fun refreshApkInfo(
-        item: GitHubTrackedApp,
-        asset: GitHubReleaseAssetFile,
-    ) = assetActions.openApkInfo(item, asset, forceRefresh = true)
 
     fun clearApkAssetUiState(itemId: String) = assetActions.clearApkAssetUiState(itemId)
 

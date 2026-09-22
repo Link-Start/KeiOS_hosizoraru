@@ -1,25 +1,27 @@
 @file:Suppress("FunctionName")
 
-package os.kei.ui.page.main.github.page
+package os.kei.ui.page.main.github.install
 
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.github.page.githubApkInfoKey
+import os.kei.ui.page.main.github.page.githubManagedInstallKey
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheet
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
 
 @Composable
 internal fun GitHubManagedInstallConfirmSheetBinding(
-    state: GitHubPageState,
-    actions: GitHubPageActions,
+    controller: GitHubApkInstallController,
     backdrop: Backdrop,
     sheetState: GitHubManagedInstallConfirmSheetUiState,
     onRequestSheetState: (GitHubManagedInstallConfirmSheetInput) -> Unit,
     onClearSheetState: () -> Unit,
 ) {
+    val state = controller.state
     val request = state.managedInstallConfirmRequest
     val asset = request?.asset
     val infoKey = asset?.githubApkInfoKey().orEmpty()
@@ -29,9 +31,7 @@ internal fun GitHubManagedInstallConfirmSheetBinding(
             .orEmpty()
     val supportedAbis = remember { Build.SUPPORTED_ABIS?.toList().orEmpty() }
     val running =
-        request?.let { request ->
-            state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] == true
-        } == true
+        request?.let { request -> controller.managedInstallRunning(request.item, request.asset) } == true
     val visibleSheetState =
         if (sheetState.requestKey == requestKey) {
             sheetState
@@ -71,7 +71,7 @@ internal fun GitHubManagedInstallConfirmSheetBinding(
         error = state.apkInfoErrors[infoKey].orEmpty(),
         running = running,
         backdrop = backdrop,
-        onConfirm = actions::confirmManagedInstall,
-        onDismissRequest = actions::dismissManagedInstallConfirm,
+        onConfirm = controller::confirmManagedInstall,
+        onDismissRequest = controller::dismissManagedInstallConfirm,
     )
 }

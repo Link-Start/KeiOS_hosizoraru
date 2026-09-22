@@ -24,6 +24,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
+import os.kei.ui.page.main.github.install.GitHubApkInstallState
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
 
 @Stable
@@ -37,6 +38,9 @@ internal class GitHubPageState(
     private val trackEditorState = GitHubTrackEditorPageStateHolder()
     private val strategyState = GitHubStrategyPageStateHolder()
     private val overviewState = GitHubOverviewPageStateHolder()
+
+    /** Shared with the history pages' asset rows, which run the same APK info and install flow. */
+    val apkInstall = GitHubApkInstallState()
 
     var trackedSearch by mutableStateOf("")
     var trackedFilterMode by mutableStateOf(pageUiState.trackedFilterMode)
@@ -156,8 +160,8 @@ internal class GitHubPageState(
     var decisionAssistDetailRequest by sheetState::decisionAssistDetailRequest
     var fdroidDetailRequest by sheetState::fdroidDetailRequest
     var actionsArtifactDetailRequest by sheetState::actionsArtifactDetailRequest
-    var apkInfoDetailRequest by sheetState::apkInfoDetailRequest
-    var managedInstallConfirmRequest by sheetState::managedInstallConfirmRequest
+    var apkInfoDetailRequest by apkInstall::apkInfoDetailRequest
+    var managedInstallConfirmRequest by apkInstall::managedInstallConfirmRequest
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(pageUiState.sortMode)
     var sortDirection by mutableStateOf(pageUiState.sortDirection)
@@ -230,11 +234,11 @@ internal class GitHubPageState(
     val apkAssetBundleLoadedAtMs get() = assetState.apkAssetBundleLoadedAtMs
     val releaseNotesTargetsLoadedAtMs get() = assetState.releaseNotesTargetsLoadedAtMs
     val releaseNotesBundleLoadedAtMs get() = assetState.releaseNotesBundleLoadedAtMs
-    val apkInfoLoading get() = assetState.apkInfoLoading
-    val apkInfoErrors get() = assetState.apkInfoErrors
-    val apkInfoResults get() = assetState.apkInfoResults
-    val apkInfoInstalledResults get() = assetState.apkInfoInstalledResults
-    val managedInstallLoading = mutableStateMapOf<String, Boolean>()
+    val apkInfoLoading get() = apkInstall.apkInfoLoading
+    val apkInfoErrors get() = apkInstall.apkInfoErrors
+    val apkInfoResults get() = apkInstall.apkInfoResults
+    val apkInfoInstalledResults get() = apkInstall.apkInfoInstalledResults
+    val managedInstallLoading get() = apkInstall.managedInstallLoading
     val itemRefreshLoading = mutableStateMapOf<String, Boolean>()
     val actionsStatusRefreshingRunIds get() = actionsState.actionsStatusRefreshingRunIds
     val actionsRecommendedRunSnapshots get() = actionsState.actionsRecommendedRunSnapshots
@@ -315,10 +319,7 @@ internal class GitHubPageState(
         apkAssetBundleLoadedAtMs.clear()
         releaseNotesTargetsLoadedAtMs.clear()
         releaseNotesBundleLoadedAtMs.clear()
-        apkInfoLoading.clear()
-        apkInfoErrors.clear()
-        apkInfoResults.clear()
-        apkInfoInstalledResults.clear()
+        apkInstall.clearApkInfo()
     }
 
     fun clearAssetRuntimeState(itemId: String) {

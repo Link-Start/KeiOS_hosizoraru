@@ -1,25 +1,29 @@
 @file:Suppress("FunctionName")
 
-package os.kei.ui.page.main.github.page
+package os.kei.ui.page.main.github.install
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.kyant.backdrop.Backdrop
-import os.kei.feature.github.data.remote.isVerifiedManagedInstallAsset
+import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 
 @Composable
 internal fun GitHubApkInfoSheetBinding(
-    state: GitHubPageState,
-    actions: GitHubPageActions,
+    controller: GitHubApkInstallController,
     backdrop: Backdrop,
     sheetState: GitHubApkInfoSheetUiState,
     onRequestSheetState: (GitHubApkInfoSheetInput) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onClearSheetState: () -> Unit,
+    onDownload: (GitHubTrackedApp, GitHubReleaseAssetFile) -> Unit,
+    onShare: (GitHubReleaseAssetFile) -> Unit,
 ) {
+    val state = controller.state
     val request = state.apkInfoDetailRequest
     val asset = request?.asset
     val key = asset?.githubApkInfoKey().orEmpty()
@@ -42,10 +46,6 @@ internal fun GitHubApkInfoSheetBinding(
             )
         }
     }
-    val managedInstallRunning =
-        request?.let { request ->
-            state.managedInstallLoading[request.item.githubManagedInstallKey(request.asset)] == true
-        } == true
     GitHubApkInfoSheet(
         asset = asset,
         info = info,
@@ -55,25 +55,22 @@ internal fun GitHubApkInfoSheetBinding(
         sheetState = visibleSheetState,
         backdrop = backdrop,
         managedInstallEnabled =
-            state.lookupConfig.appManagedShareInstallEnabled &&
-                asset?.isVerifiedManagedInstallAsset(
-                    expectedPackageName = request.item.packageName,
-                    inspectedPackageName = info?.packageName.orEmpty(),
-                ) == true,
-        managedInstallRunning = managedInstallRunning,
+            request?.let { controller.managedInstallAvailable(it.item, it.asset) } == true,
+        managedInstallRunning =
+            request?.let { controller.managedInstallRunning(it.item, it.asset) } == true,
         onSearchQueryChange = onSearchQueryChange,
         onRefresh = {
-            request?.let { actions.refreshApkInfo(it.item, it.asset) }
+            request?.let { controller.openApkInfo(it.item, it.asset, forceRefresh = true) }
         },
         onInstall = {
-            request?.let { actions.installApkWithKeiOs(it.item, it.asset) }
+            request?.let { controller.installOrFallback(it.item, it.asset) }
         },
         onDownload = {
-            request?.let { actions.openApkInDownloader(it.item, it.asset) }
+            request?.let { onDownload(it.item, it.asset) }
         },
-        onShare = { asset?.let(actions::shareApkLink) },
+        onShare = { asset?.let(onShare) },
         onDismissRequest = {
-            actions.dismissApkInfoDetail()
+            controller.dismissApkInfo()
             onClearSheetState()
         },
     )

@@ -1,7 +1,6 @@
-package os.kei.ui.page.main.github.page.action
+package os.kei.ui.page.main.github.install
 
 import android.content.Context
-import android.content.pm.PackageManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -23,12 +22,11 @@ import os.kei.feature.github.install.GitHubApkInstallStage
 import os.kei.feature.github.install.GitHubManagedApkInstaller
 import os.kei.feature.github.install.GitHubModeRoutedApkInstaller
 import os.kei.feature.github.install.managedInstallDownloadSpeedProfile
-import os.kei.feature.github.model.GitHubInstalledPackageInfo
-import os.kei.feature.github.model.InstalledAppItem
-import os.kei.feature.github.model.GitHubLookupStrategyOption
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.feature.github.notification.GitHubPageManagedInstallCancelRegistry
+import os.kei.ui.page.main.github.asset.GitHubAssetHandoff
 import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.githubApkInfoKey
@@ -37,15 +35,27 @@ import java.util.concurrent.atomic.AtomicInteger
 
 private const val GITHUB_PAGE_MANAGED_INSTALL_TAG = "GitHubPageInstall"
 
-internal class GitHubPageManagedInstallRunner(
-    private val env: GitHubPageActionEnvironment,
+/**
+ * One confirmed install, from inspecting the file to the notification that says how it ended.
+ *
+ * Nothing here knows which page confirmed it. What differs between the tracked card and a history page —
+ * what a finished install changes on screen — goes through [GitHubApkInstallHost.onInstalled].
+ */
+internal class GitHubManagedInstallRunner(
     private val apkInfoRepository: GitHubApkInfoRepository,
     private val managedApkInstaller: GitHubManagedApkInstaller = GitHubModeRoutedApkInstaller()
 ) {
-    suspend fun install(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile): Boolean {
-        val appContext = env.context.applicationContext
+    suspend fun install(
+        context: Context,
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig,
+        state: GitHubApkInstallState,
+        host: GitHubApkInstallHost
+    ): Boolean {
+        val appContext = context.applicationContext
         val installKey = item.githubManagedInstallKey(asset)
-        if (env.state.managedInstallLoading[installKey] == true) return true
+        if (state.managedInstallLoading[installKey] == true) return true
         val installJob = checkNotNull(currentCoroutineContext()[Job]) {
             "GitHub page install requires a coroutine Job"
         }
@@ -56,18 +66,18 @@ internal class GitHubPageManagedInstallRunner(
                 managedApkInstaller.cancel(appContext, sessionId)
             }
         }
-        env.state.managedInstallLoading[installKey] = true
-        env.toast(R.string.github_toast_page_install_started, assetDisplayName(asset.name))
+        state.managedInstallLoading[installKey] = true
+        host.toast(appContext.getString(R.string.github_toast_page_install_started, assetDisplayName(asset.name)))
         return try {
             try {
-                val request = buildRequest(appContext, item, asset)
+                val request = buildRequest(appContext, item, asset, lookupConfig)
                 val result = managedApkInstaller.install(appContext, request) { progress ->
                     if (progress.sessionId > 0) {
                         activeSessionId.set(progress.sessionId)
                     }
                     notifyProgress(appContext, request, progress)
                 }
-                applyResult(appContext, item, asset, request, result)
+                applyResult(appContext, item, asset, request, result, state, host)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
@@ -93,21 +103,21 @@ internal class GitHubPageManagedInstallRunner(
                     packageName = item.packageName,
                     targetDisplayName = item.appLabel.ifBlank { item.repo }
                 )
-                env.toast(R.string.github_toast_page_install_failed, reason)
+                host.toast(appContext.getString(R.string.github_toast_page_install_failed, reason))
                 false
             }
         } finally {
             GitHubPageManagedInstallCancelRegistry.clear(cancellationToken)
-            env.state.managedInstallLoading.remove(installKey)
+            state.managedInstallLoading.remove(installKey)
         }
     }
 
     private suspend fun buildRequest(
         context: Context,
         item: GitHubTrackedApp,
-        asset: GitHubReleaseAssetFile
+        asset: GitHubReleaseAssetFile,
+        lookupConfig: GitHubLookupConfig
     ): GitHubApkInstallRequest = coroutineScope {
-        val lookupConfig = env.state.lookupConfig
         val targetDisplayName = item.appLabel
             .ifBlank { item.packageName }
             .ifBlank { item.repo }
@@ -129,7 +139,7 @@ internal class GitHubPageManagedInstallRunner(
             ).getOrNull()
         }
         val urlDeferred = async(AppDispatchers.githubNetwork) {
-            resolvePreferredAssetUrl(asset)
+            GitHubAssetHandoff.assetUrl(lookupConfig, asset)
         }
         val manifestInfo = manifestDeferred.await()
         if (asset.isPotentialNestedApkArchive()) {
@@ -161,17 +171,6 @@ internal class GitHubPageManagedInstallRunner(
             resolvedDownloadUrl = resolvedDownloadUrl,
             downloadSpeedProfile = lookupConfig.managedInstallDownloadSpeedProfile(),
             requestId = GitHubApkInstallRequestIds.newId(context.packageName)
-        )
-    }
-
-    private suspend fun resolvePreferredAssetUrl(asset: GitHubReleaseAssetFile): String {
-        val token = env.state.lookupConfig.apiToken.trim()
-        val preferApiAsset =
-            env.state.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
-        return env.repository.resolvePreferredDownloadUrl(
-            asset = asset,
-            useApiAssetUrl = preferApiAsset,
-            apiToken = token
         )
     }
 
@@ -238,12 +237,14 @@ internal class GitHubPageManagedInstallRunner(
         }
     }
 
-    private suspend fun applyResult(
+    private fun applyResult(
         context: Context,
         item: GitHubTrackedApp,
         asset: GitHubReleaseAssetFile,
         request: GitHubApkInstallRequest,
-        result: GitHubApkInstallResult
+        result: GitHubApkInstallResult,
+        state: GitHubApkInstallState,
+        host: GitHubApkInstallHost
     ): Boolean {
         return when (result) {
             is GitHubApkInstallResult.Succeeded -> {
@@ -254,11 +255,11 @@ internal class GitHubPageManagedInstallRunner(
                     .ifBlank { result.appLabel }
                     .ifBlank { request.scannedAppLabel }
                     .ifBlank { request.targetDisplayName }
-                env.state.apkInfoInstalledResults[asset.githubApkInfoKey()] = installedInfo
+                state.apkInfoInstalledResults[asset.githubApkInfoKey()] = installedInfo
                 if (installedInfo != null &&
                     packageName.equals(item.packageName.trim(), ignoreCase = true)
                 ) {
-                    applyInstalledPackageToTrackedState(item, installedInfo, appLabel)
+                    host.onInstalled(item, installedInfo, appLabel)
                 }
                 GitHubShareImportNotificationHelper.notifyPageInstallCompleted(
                     context = context,
@@ -272,16 +273,18 @@ internal class GitHubPageManagedInstallRunner(
                         .ifBlank { request.scannedVersionName },
                     targetDisplayName = request.targetDisplayName
                 )
-                env.toast(
-                    R.string.github_toast_page_install_completed,
-                    appLabel.ifBlank { packageName }
+                host.toast(
+                    context.getString(
+                        R.string.github_toast_page_install_completed,
+                        appLabel.ifBlank { packageName }
+                    )
                 )
                 true
             }
 
             is GitHubApkInstallResult.Cancelled -> {
                 GitHubShareImportNotificationHelper.notifyPageInstallCancelled(context)
-                env.toast(R.string.github_page_install_notify_content_cancelled)
+                host.toast(context.getString(R.string.github_page_install_notify_content_cancelled))
                 false
             }
 
@@ -299,63 +302,12 @@ internal class GitHubPageManagedInstallRunner(
                     packageName = result.packageName.ifBlank { request.scannedPackageName },
                     targetDisplayName = request.targetDisplayName
                 )
-                env.toast(R.string.github_toast_page_install_failed, reason)
+                host.toast(context.getString(R.string.github_toast_page_install_failed, reason))
                 false
             }
 
             is GitHubApkInstallResult.Staged -> false
         }
-    }
-
-    private fun applyInstalledPackageToTrackedState(
-        item: GitHubTrackedApp,
-        installedInfo: GitHubInstalledPackageInfo,
-        appLabel: String
-    ) {
-        val packageName = installedInfo.packageName.trim()
-        if (packageName.isBlank()) return
-        val previous = env.state.checkStates[item.id]
-        if (previous != null) {
-            env.state.checkStates[item.id] = previous.copy(
-                loading = false,
-                localVersion = installedInfo.versionName,
-                localVersionCode = installedInfo.versionCode,
-                message = previous.message.takeIf { it.isNotBlank() }
-                    ?: env.string(R.string.github_status_up_to_date)
-            )
-        }
-        val installedItem = InstalledAppItem(
-            label = appLabel.ifBlank { installedInfo.appLabel }.ifBlank { packageName },
-            packageName = packageName
-        )
-        env.state.appList = env.state.appList
-            .filterNot { it.packageName.equals(packageName, ignoreCase = true) } + installedItem
-        env.state.appListLoaded = true
-        env.state.requestTrackCardFocus(item.id)
-    }
-
-    private fun loadInstalledPackageInfo(
-        context: Context,
-        packageName: String
-    ): GitHubInstalledPackageInfo? {
-        val normalizedPackageName = packageName.trim()
-        if (normalizedPackageName.isBlank()) return null
-        val packageInfo = runCatching {
-            context.packageManager.getPackageInfo(
-                normalizedPackageName,
-                PackageManager.PackageInfoFlags.of(0)
-            )
-        }.getOrNull() ?: return null
-        val applicationInfo = packageInfo.applicationInfo
-        return GitHubInstalledPackageInfo(
-            packageName = normalizedPackageName,
-            appLabel = applicationInfo?.loadLabel(context.packageManager)?.toString().orEmpty(),
-            versionName = packageInfo.versionName?.trim().orEmpty(),
-            versionCode = packageInfo.longVersionCode,
-            minSdk = applicationInfo?.minSdkVersion ?: -1,
-            targetSdk = applicationInfo?.targetSdkVersion ?: -1,
-            apkSizeBytes = applicationInfo.installedApkSizeBytes()
-        )
     }
 
     private fun managedInstallFailureMessage(

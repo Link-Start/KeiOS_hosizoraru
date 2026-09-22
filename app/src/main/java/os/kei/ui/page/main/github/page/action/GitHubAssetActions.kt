@@ -7,8 +7,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
-import os.kei.ui.page.main.github.page.GitHubApkInfoDetailRequest
-import os.kei.ui.page.main.github.page.githubApkInfoKey
+import os.kei.ui.page.main.github.install.GitHubApkInstallController
 
 internal class GitHubAssetActions(
     private val env: GitHubPageActionEnvironment,
@@ -20,14 +19,16 @@ internal class GitHubAssetActions(
     private val cacheActions = GitHubAssetCacheActions(env)
     private val transferActions = GitHubAssetTransferActions(env)
     private val releaseNotesActions = GitHubReleaseNotesActions(env, apkInfoRepository)
-    private val managedInstallRunner = GitHubPageManagedInstallRunner(env, apkInfoRepository)
-    private val managedInstallConfirmActions =
-        GitHubManagedInstallConfirmActions(env, managedInstallRunner)
-    private val apkInfoActions =
-        GitHubApkInfoActions(
-            env = env,
+
+    /** The same ⓘ and 📦 flow the history pages run, over this page's state and tracked cards. */
+    val installController =
+        GitHubApkInstallController(
+            context = context,
+            scope = scope,
+            state = state.apkInstall,
+            lookupConfig = { state.lookupConfig },
+            host = GitHubPageApkInstallHost(env, transferActions),
             apkInfoRepository = apkInfoRepository,
-            managedInstallConfirmActions = managedInstallConfirmActions,
         )
     private val assetPanelActions =
         GitHubAssetPanelActions(
@@ -36,7 +37,7 @@ internal class GitHubAssetActions(
         )
 
     fun dispose() {
-        managedInstallConfirmActions.dispose()
+        installController.dispose()
     }
 
     fun openExternalUrl(
@@ -66,47 +67,22 @@ internal class GitHubAssetActions(
     fun installApkWithKeiOs(
         item: GitHubTrackedApp,
         asset: GitHubReleaseAssetFile,
-    ) {
-        managedInstallConfirmActions.installOrFallback(
-            item = item,
-            asset = asset,
-            onOpenConfirm = ::openManagedInstallConfirm,
-            onFallbackDownload = transferActions::openApkInDownloader,
-        )
-    }
+    ) = installController.installOrFallback(item, asset)
 
-    fun confirmManagedInstall() {
-        managedInstallConfirmActions.confirmManagedInstall()
-    }
+    fun confirmManagedInstall() = installController.confirmManagedInstall()
 
-    fun dismissManagedInstallConfirm() {
-        managedInstallConfirmActions.dismissManagedInstallConfirm()
-    }
+    fun dismissManagedInstallConfirm() = installController.dismissManagedInstallConfirm()
 
     fun openApkInfo(
         item: GitHubTrackedApp,
         asset: GitHubReleaseAssetFile,
         forceRefresh: Boolean = false,
-    ) {
-        state.apkInfoDetailRequest =
-            GitHubApkInfoDetailRequest(
-                item = item,
-                asset = asset,
-            )
-        apkInfoActions.loadApkInfo(asset = asset, forceRefresh = forceRefresh)
-    }
+    ) = installController.openApkInfo(item, asset, forceRefresh)
 
     fun openManagedInstallConfirm(
         item: GitHubTrackedApp,
         asset: GitHubReleaseAssetFile,
-    ) {
-        managedInstallConfirmActions.openConfirm(
-            item = item,
-            asset = asset,
-            manifestInfo = state.apkInfoResults[asset.githubApkInfoKey()],
-            onLoadApkInfo = { apkInfoActions.loadApkInfo(asset = it, forceRefresh = false) },
-        )
-    }
+    ) = installController.openManagedInstallConfirm(item, asset)
 
     fun clearApkAssetUiState(itemId: String) {
         cacheActions.clearApkAssetUiState(itemId)

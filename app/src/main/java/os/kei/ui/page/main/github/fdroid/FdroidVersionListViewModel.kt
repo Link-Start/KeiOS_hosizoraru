@@ -20,6 +20,7 @@ import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.domain.fdroid.FdroidVersionHistoryProvider
 import os.kei.feature.github.domain.fdroid.needsRicherSource
 import os.kei.feature.github.model.FdroidTrackedAppConfig
+import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
@@ -27,6 +28,7 @@ import os.kei.feature.github.model.fdroidRepositoryCheckSourceSignature
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.ui.page.main.github.asset.fdroidVersionAssetFile
+import os.kei.ui.page.main.github.install.GitHubApkInstallState
 
 internal data class FdroidVersionListUiState(
     val loading: Boolean = true,
@@ -75,6 +77,8 @@ internal data class FdroidVersionListUiState(
     val loadingFileDetails: Boolean = false,
     /** The reader's lookup settings, so an APK row judges trust the way the tracked card does. */
     val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
+    /** The track itself, which an APK row's info and install actions are about. */
+    val trackedItem: GitHubTrackedApp? = null,
 )
 
 /**
@@ -108,6 +112,12 @@ internal class FdroidVersionListViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(FdroidVersionListUiState())
     val uiState: StateFlow<FdroidVersionListUiState> = _uiState.asStateFlow()
+
+    /**
+     * What the APK rows have inspected, and which sheet is open. Held here rather than in the page's
+     * composition, so a rotation keeps both.
+     */
+    val apkInstallState = GitHubApkInstallState()
 
     private var track: GitHubTrackedApp? = null
     private var fdroidConfig: FdroidTrackedAppConfig = FdroidTrackedAppConfig()
@@ -170,6 +180,20 @@ internal class FdroidVersionListViewModel(
         publishRows()
     }
 
+    /**
+     * Moves the "Installed" mark after a managed install from this page, which is the whole point of
+     * installing from a history: rolling back to an older build has to show as done.
+     */
+    fun markInstalled(installedInfo: GitHubInstalledPackageInfo) {
+        installedVersion = installedInfo.versionName.trim()
+        installedVersionCode = installedInfo.versionCode
+        allRows =
+            allRows.map { row ->
+                row.copy(installed = row.version.matchesInstalled(installedVersionCode, installedVersion))
+            }
+        publishRows()
+    }
+
     private fun bind(item: GitHubTrackedApp) {
         track = item
         fdroidConfig = item.fdroidConfig
@@ -190,6 +214,7 @@ internal class FdroidVersionListViewModel(
                     .ifBlank { identity?.packagePageUrl.orEmpty() }
                     .ifBlank { item.repoUrl },
                 lookupConfig = GitHubTrackStore.loadLookupConfig().forTrackedItem(item),
+                trackedItem = item,
             )
         }
     }

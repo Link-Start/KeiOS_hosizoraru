@@ -71,8 +71,9 @@ import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.ui.page.main.github.GitHubStatusPalette
-import os.kei.ui.page.main.github.asset.GitHubAssetHandoffActions
-import os.kei.ui.page.main.github.asset.rememberGitHubAssetHandoffActions
+import os.kei.ui.page.main.github.install.GitHubApkInstallSheetHost
+import os.kei.ui.page.main.github.install.GitHubAssetRowActions
+import os.kei.ui.page.main.github.install.rememberGitHubAssetRowActions
 import os.kei.ui.page.main.github.asset.fdroidVersionAssetFile
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
@@ -151,8 +152,15 @@ internal fun FdroidVersionListPage(
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val uriHandler = LocalUriHandler.current
-    // The APK row's share and download, reading the same settings the tracked card reads.
-    val assetHandoff = rememberGitHubAssetHandoffActions(uiState.lookupConfig)
+    // The APK row's four actions, reaching the same share, download, info and install the tracked card
+    // does.
+    val assetActions =
+        rememberGitHubAssetRowActions(
+            item = uiState.trackedItem,
+            lookupConfig = uiState.lookupConfig,
+            installState = viewModel.apkInstallState,
+            onInstalled = viewModel::markInstalled,
+        )
 
     val openVersions = remember { mutableStateMapOf<String, Unit>() }
     val openNotes = remember { mutableStateMapOf<String, Unit>() }
@@ -273,6 +281,7 @@ internal fun FdroidVersionListPage(
                             uiState.lookupConfig,
                             clipboardLabel,
                             copiedToast,
+                            assetActions,
                         ) {
                             FdroidVersionCardActions(
                                 openVersions = openVersions,
@@ -294,7 +303,7 @@ internal fun FdroidVersionListPage(
                                     copyTextToClipboard(context, clipboardLabel, url)
                                     context.showToast(copiedToast)
                                 },
-                                assetHandoff = assetHandoff,
+                                assetActions = assetActions,
                                 packagePageUrl = uiState.packagePageUrl,
                                 packageName = uiState.packageName,
                                 repoUrl = uiState.repositoryUrl,
@@ -349,6 +358,14 @@ internal fun FdroidVersionListPage(
                 onToggleCompatibleOnly = viewModel::toggleCompatibleOnly,
             )
         }
+        // Over this page, not back on the GitHub page: going back through builds is what it is for, and
+        // installing an older one is normal on F-Droid.
+        GitHubApkInstallSheetHost(
+            controller = assetActions.install,
+            backdrop = pageBackdrop,
+            onDownload = assetActions::download,
+            onShare = assetActions::share,
+        )
     }
 }
 
@@ -371,7 +388,7 @@ private class FdroidVersionCardActions(
     val onToggleVersion: (String, Boolean) -> Unit,
     val onOpenLink: (String) -> Unit,
     val onCopyDownloadUrl: (String) -> Unit,
-    val assetHandoff: GitHubAssetHandoffActions,
+    val assetActions: GitHubAssetRowActions,
     val packagePageUrl: String,
     val packageName: String,
     val repoUrl: String,
@@ -717,16 +734,14 @@ private fun FdroidVersionCard(
                         showApkTrustCheck = actions.lookupConfig.decisionAssistEnabled &&
                             actions.lookupConfig.apkTrustCheckEnabled,
                         managedInstallEnabled = actions.lookupConfig.appManagedShareInstallEnabled,
-                        manifestInfo = null,
-                        managedInstallRunning = false,
+                        manifestInfo = actions.assetActions.manifestInfo(asset),
+                        managedInstallRunning = actions.assetActions.installRunning(asset),
                         installActionColor = MiuixTheme.colorScheme.primary,
                         context = context,
-                        onOpenApkInfo = {
-                            actions.packagePageUrl.takeIf(String::isNotBlank)?.let(actions.onOpenLink)
-                        },
-                        onInstallApk = { actions.onOpenLink(asset.downloadUrl) },
-                        onOpenApkInDownloader = { actions.assetHandoff.download(asset) },
-                        onShareApkLink = actions.assetHandoff::share,
+                        onOpenApkInfo = { actions.assetActions.openInfo(asset) },
+                        onInstallApk = { actions.assetActions.installApk(asset) },
+                        onOpenApkInDownloader = { actions.assetActions.download(asset) },
+                        onShareApkLink = actions.assetActions::share,
                     )
                 }
             }

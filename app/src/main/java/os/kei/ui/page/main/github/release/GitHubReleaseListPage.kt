@@ -64,8 +64,9 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.github.section.GitHubInlineLiquidSurface
 import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
 import os.kei.ui.page.main.github.GitHubStatusPalette
-import os.kei.ui.page.main.github.asset.GitHubAssetHandoffActions
-import os.kei.ui.page.main.github.asset.rememberGitHubAssetHandoffActions
+import os.kei.ui.page.main.github.install.GitHubApkInstallSheetHost
+import os.kei.ui.page.main.github.install.GitHubAssetRowActions
+import os.kei.ui.page.main.github.install.rememberGitHubAssetRowActions
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
@@ -137,8 +138,14 @@ internal fun GitHubReleaseListPage(
             factory = viewModelFactory { initializer { GitHubReleaseListViewModel(trackId = trackId) } },
         )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    // The row's share and download, reading the same settings the tracked card reads.
-    val assetHandoff = rememberGitHubAssetHandoffActions(uiState.lookupConfig)
+    // A file row's four actions, reaching the same share, download, info and install the tracked card does.
+    val assetActions =
+        rememberGitHubAssetRowActions(
+            item = uiState.trackedItem,
+            lookupConfig = uiState.lookupConfig,
+            installState = viewModel.apkInstallState,
+            onInstalled = viewModel::markInstalled,
+        )
     val listState = rememberLazyListState()
     val secondaryListState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -281,7 +288,7 @@ internal fun GitHubReleaseListPage(
                             onToggleRelease = onToggleRelease,
                             onOpenLink = { url -> uriHandler.openUri(url) },
                             packageName = uiState.packageName,
-                            assetHandoff = assetHandoff,
+                            assetActions = assetActions,
                         )
                     }
                     val readingLane: LazyListScope.() -> Unit = {
@@ -292,7 +299,7 @@ internal fun GitHubReleaseListPage(
                             closedAssets = closedAssets,
                             onToggleRelease = onToggleRelease,
                             onOpenLink = { url -> uriHandler.openUri(url) },
-                            assetHandoff = assetHandoff,
+                            assetActions = assetActions,
                             onToggleAllAssets = viewModel::toggleAllAssets,
                             compareUrlOf = viewModel::compareUrl,
                             lookupConfig = uiState.lookupConfig,
@@ -341,6 +348,14 @@ internal fun GitHubReleaseListPage(
                 onToggleTagFilter = viewModel::toggleHideTagOnly,
             )
         }
+        // Over this page, not back on the GitHub page: picking an old build to inspect or roll back to
+        // is what this page is for.
+        GitHubApkInstallSheetHost(
+            controller = assetActions.install,
+            backdrop = pageBackdrop,
+            onDownload = assetActions::download,
+            onShare = assetActions::share,
+        )
     }
 }
 
@@ -352,7 +367,7 @@ private fun LazyListScope.releaseListBody(
     closedAssets: MutableMap<String, Unit>,
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
-    assetHandoff: GitHubAssetHandoffActions,
+    assetActions: GitHubAssetRowActions,
     onToggleAllAssets: (String) -> Unit,
     compareUrlOf: (GitHubReleaseRow) -> String?,
     lookupConfig: GitHubLookupConfig,
@@ -397,7 +412,7 @@ private fun LazyListScope.releaseListBody(
                 closedAssets = closedAssets,
                 onToggleRelease = onToggleRelease,
                 onOpenLink = onOpenLink,
-                assetHandoff = assetHandoff,
+                assetActions = assetActions,
                 onToggleAllAssets = onToggleAllAssets,
                 compareUrlOf = compareUrlOf,
                 lookupConfig = lookupConfig,
@@ -412,7 +427,7 @@ private fun LazyListScope.releaseListBody(
             closedAssets = closedAssets,
             onToggleRelease = onToggleRelease,
             onOpenLink = onOpenLink,
-            assetHandoff = assetHandoff,
+            assetActions = assetActions,
             onToggleAllAssets = onToggleAllAssets,
             compareUrlOf = compareUrlOf,
             lookupConfig = lookupConfig,
@@ -428,7 +443,7 @@ private fun LazyListScope.releaseCards(
     closedAssets: MutableMap<String, Unit>,
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
-    assetHandoff: GitHubAssetHandoffActions,
+    assetActions: GitHubAssetRowActions,
     onToggleAllAssets: (String) -> Unit,
     compareUrlOf: (GitHubReleaseRow) -> String?,
     lookupConfig: GitHubLookupConfig,
@@ -454,7 +469,7 @@ private fun LazyListScope.releaseCards(
                 if (open) closedAssets.remove(row.entry.id) else closedAssets[row.entry.id] = Unit
             },
             onOpenLink = onOpenLink,
-            assetHandoff = assetHandoff,
+            assetActions = assetActions,
             onToggleAllAssets = onToggleAllAssets,
             compareUrl = compareUrlOf(row),
             lookupConfig = lookupConfig,
@@ -476,7 +491,7 @@ private fun GitHubReleaseCard(
     assetsExpanded: Boolean,
     onAssetsExpandedChange: (Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
-    assetHandoff: GitHubAssetHandoffActions,
+    assetActions: GitHubAssetRowActions,
     onToggleAllAssets: (String) -> Unit,
     compareUrl: String?,
     lookupConfig: GitHubLookupConfig,
@@ -679,14 +694,14 @@ private fun GitHubReleaseCard(
                         showApkTrustCheck = lookupConfig.decisionAssistEnabled &&
                             lookupConfig.apkTrustCheckEnabled,
                         managedInstallEnabled = lookupConfig.appManagedShareInstallEnabled,
-                        manifestInfo = null,
-                        managedInstallRunning = false,
+                        manifestInfo = assetActions.manifestInfo(asset),
+                        managedInstallRunning = assetActions.installRunning(asset),
                         installActionColor = MiuixTheme.colorScheme.primary,
                         context = context,
-                        onOpenApkInfo = { onOpenLink(entry.htmlUrl) },
-                        onInstallApk = { onOpenLink(asset.downloadUrl) },
-                        onOpenApkInDownloader = { assetHandoff.download(asset) },
-                        onShareApkLink = assetHandoff::share,
+                        onOpenApkInfo = { assetActions.openInfo(asset) },
+                        onInstallApk = { assetActions.installApk(asset) },
+                        onOpenApkInDownloader = { assetActions.download(asset) },
+                        onShareApkLink = assetActions::share,
                     )
                 }
             }

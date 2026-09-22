@@ -13,6 +13,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseListEntry
 import os.kei.feature.github.domain.GitHubReleaseAssetService
@@ -21,6 +22,7 @@ import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.forTrackedItem
+import os.kei.ui.page.main.github.install.GitHubApkInstallState
 
 /** One release in the list, plus whatever its expanded card has managed to load. */
 internal data class GitHubReleaseRow(
@@ -60,6 +62,8 @@ internal data class GitHubReleaseListUiState(
     val tagQuery: String = "",
     /** The user's lookup settings, so asset rows judge trust the way the tracked card does. */
     val lookupConfig: GitHubLookupConfig = GitHubLookupConfig(),
+    /** The track itself, which an asset row's info and install actions are about. */
+    val trackedItem: GitHubTrackedApp? = null,
 )
 
 /**
@@ -85,6 +89,12 @@ internal class GitHubReleaseListViewModel(
     private val _uiState = MutableStateFlow(GitHubReleaseListUiState())
     val uiState: StateFlow<GitHubReleaseListUiState> = _uiState.asStateFlow()
 
+    /**
+     * What the asset rows have inspected, and which sheet is open. Held here rather than in the page's
+     * composition, so a rotation keeps both.
+     */
+    val apkInstallState = GitHubApkInstallState()
+
     private var owner: String = ""
     private var repo: String = ""
     private var lookupConfig: GitHubLookupConfig = GitHubLookupConfig()
@@ -104,6 +114,21 @@ internal class GitHubReleaseListViewModel(
     }
 
     fun retry() = loadPage(_uiState.value.page)
+
+    /**
+     * Moves the "Installed" mark after a managed install from this page. Rolling back is what the list
+     * is for, and a rollback that still marks the newer release as the one you run did not happen as far
+     * as the page can tell.
+     */
+    fun markInstalled(installedInfo: GitHubInstalledPackageInfo) {
+        installedVersion = installedInfo.versionName.trim()
+        _uiState.update { state ->
+            state.copy(
+                installedVersion = installedVersion,
+                rows = state.rows.map { row -> row.copy(installed = matchesInstalled(row.entry)) },
+            )
+        }
+    }
 
     /**
      * Hides entries the feed carries that are tags rather than releases.
@@ -297,6 +322,7 @@ internal class GitHubReleaseListViewModel(
                 hideTagOnly = hideTagOnly,
                 installedVersion = installedVersion,
                 lookupConfig = lookupConfig,
+                trackedItem = track,
                 // Only a repository has a release feed. The other modes reach a file or an index, and
                 // there is no history behind them to page through.
                 unsupported = track.sourceMode != GitHubTrackedSourceMode.GitHubRepository,

@@ -12,7 +12,6 @@ import os.kei.feature.github.model.GitHubTrackChangeHistorySource
 import os.kei.ui.page.main.github.page.GitHubPageRepository
 import os.kei.ui.page.main.github.page.GitHubPageState
 import os.kei.ui.page.main.github.page.GitHubPageViewModel
-import os.kei.ui.page.main.github.query.DownloaderOption
 
 internal class GitHubPageActionEnvironment(
     val context: Context,
@@ -23,7 +22,6 @@ internal class GitHubPageActionEnvironment(
     val repository: GitHubPageRepository,
     val privilegedShell: PrivilegedShell,
     val actionsRepository: GitHubActionsService = GitHubActionsService(),
-    val systemDmOption: DownloaderOption,
     val openLinkFailureMessage: String,
     val clock: GitHubActionClock = GitHubSystemActionClock,
 ) {

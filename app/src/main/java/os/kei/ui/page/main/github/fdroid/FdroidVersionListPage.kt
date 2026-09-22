@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.github.fdroid
 
-import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -67,12 +66,13 @@ import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.fdroid.FdroidAntiFeatureSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.github.asset.GitHubAssetHandoffActions
+import os.kei.ui.page.main.github.asset.rememberGitHubAssetHandoffActions
 import os.kei.ui.page.main.github.asset.fdroidVersionAssetFile
 import os.kei.ui.page.main.github.asset.formatAssetSize
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
@@ -151,6 +151,8 @@ internal fun FdroidVersionListPage(
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val uriHandler = LocalUriHandler.current
+    // The APK row's share and download, reading the same settings the tracked card reads.
+    val assetHandoff = rememberGitHubAssetHandoffActions(uiState.lookupConfig)
 
     val openVersions = remember { mutableStateMapOf<String, Unit>() }
     val openNotes = remember { mutableStateMapOf<String, Unit>() }
@@ -292,19 +294,7 @@ internal fun FdroidVersionListPage(
                                     copyTextToClipboard(context, clipboardLabel, url)
                                     context.showToast(copiedToast)
                                 },
-                                onShareAsset = { asset ->
-                                    // The asset row's share action, which on the release list opens a
-                                    // chooser. It has a share icon and says "share", so it has to share.
-                                    val send =
-                                        Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(Intent.EXTRA_TEXT, asset.downloadUrl)
-                                        }
-                                    context.startActivity(
-                                        Intent.createChooser(send, asset.name)
-                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                    )
-                                },
+                                assetHandoff = assetHandoff,
                                 packagePageUrl = uiState.packagePageUrl,
                                 packageName = uiState.packageName,
                                 repoUrl = uiState.repositoryUrl,
@@ -381,7 +371,7 @@ private class FdroidVersionCardActions(
     val onToggleVersion: (String, Boolean) -> Unit,
     val onOpenLink: (String) -> Unit,
     val onCopyDownloadUrl: (String) -> Unit,
-    val onShareAsset: (GitHubReleaseAssetFile) -> Unit,
+    val assetHandoff: GitHubAssetHandoffActions,
     val packagePageUrl: String,
     val packageName: String,
     val repoUrl: String,
@@ -735,8 +725,8 @@ private fun FdroidVersionCard(
                             actions.packagePageUrl.takeIf(String::isNotBlank)?.let(actions.onOpenLink)
                         },
                         onInstallApk = { actions.onOpenLink(asset.downloadUrl) },
-                        onOpenApkInDownloader = { actions.onOpenLink(asset.downloadUrl) },
-                        onShareApkLink = actions.onShareAsset,
+                        onOpenApkInDownloader = { actions.assetHandoff.download(asset) },
+                        onShareApkLink = actions.assetHandoff::share,
                     )
                 }
             }

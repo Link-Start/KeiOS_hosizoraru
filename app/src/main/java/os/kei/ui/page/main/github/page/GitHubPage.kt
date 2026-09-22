@@ -33,7 +33,6 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.github.LocalGitHubAppIconBitmaps
-import os.kei.ui.page.main.github.query.systemDownloadManagerOption
 import os.kei.ui.page.main.github.section.GitHubMainContent
 import os.kei.ui.page.main.github.section.GitHubMainContentActions
 import os.kei.ui.page.main.github.section.GitHubMainContentControls
@@ -64,7 +63,6 @@ fun GitHubPage(
 ) {
     val context = LocalContext.current
     val openLinkFailureMessage = context.resolveString(R.string.github_error_open_link)
-    val systemDmOption = remember(context) { systemDownloadManagerOption(context) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     // Two lanes on a tablet or an unfolded fold: collapsed cards on the left, the ones being read on the
@@ -158,7 +156,6 @@ fun GitHubPage(
             githubPageViewModel,
             githubPageViewModel.repository,
             privilegedShell,
-            systemDmOption,
             openLinkFailureMessage,
         ) {
             GitHubPageActions(
@@ -169,7 +166,6 @@ fun GitHubPage(
                 viewModel = githubPageViewModel,
                 repository = githubPageViewModel.repository,
                 privilegedShell = privilegedShell,
-                systemDmOption = systemDmOption,
                 openLinkFailureMessage = openLinkFailureMessage,
             )
         }

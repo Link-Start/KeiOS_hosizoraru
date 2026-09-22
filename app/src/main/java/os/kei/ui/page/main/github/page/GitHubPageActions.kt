@@ -41,7 +41,6 @@ import os.kei.ui.page.main.github.page.action.GitHubConfigActions
 import os.kei.ui.page.main.github.page.action.GitHubPageActionEnvironment
 import os.kei.ui.page.main.github.page.action.GitHubRefreshActions
 import os.kei.ui.page.main.github.page.action.GitHubTrackActions
-import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 
 internal class GitHubPageActions(
@@ -52,7 +51,6 @@ internal class GitHubPageActions(
     viewModel: GitHubPageViewModel,
     repository: GitHubPageRepository,
     privilegedShell: PrivilegedShell,
-    systemDmOption: DownloaderOption,
     openLinkFailureMessage: String,
 ) {
     private val env =
@@ -64,7 +62,6 @@ internal class GitHubPageActions(
             viewModel = viewModel,
             repository = repository,
             privilegedShell = privilegedShell,
-            systemDmOption = systemDmOption,
             openLinkFailureMessage = openLinkFailureMessage,
         )
     private val assetActions = GitHubAssetActions(env)

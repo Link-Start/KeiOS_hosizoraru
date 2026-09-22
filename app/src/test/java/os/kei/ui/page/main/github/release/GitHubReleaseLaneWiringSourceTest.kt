@@ -59,7 +59,7 @@ class GitHubReleaseLaneWiringSourceTest {
         // Recorded when the release opens, so the close that follows cannot fling it back across the page.
         val toggle =
             source.substringAfter("val onToggleRelease: (String, Boolean) -> Unit = { id, open ->")
-                .substringBefore("val onShareAsset")
+                .substringBefore("val lanes =")
         assertTrue("keptInReadingLane[id] = Unit" in toggle)
         assertTrue(
             "keptInReadingLane.remove" !in toggle,

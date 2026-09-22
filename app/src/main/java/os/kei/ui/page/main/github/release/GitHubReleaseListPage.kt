@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.release
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
@@ -65,8 +64,9 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.github.section.GitHubInlineLiquidSurface
 import os.kei.ui.page.main.github.section.GitHubTrackedItemAssetRow
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.github.asset.GitHubAssetHandoffActions
+import os.kei.ui.page.main.github.asset.rememberGitHubAssetHandoffActions
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronLeftIcon
@@ -137,7 +137,8 @@ internal fun GitHubReleaseListPage(
             factory = viewModelFactory { initializer { GitHubReleaseListViewModel(trackId = trackId) } },
         )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    // The row's share and download, reading the same settings the tracked card reads.
+    val assetHandoff = rememberGitHubAssetHandoffActions(uiState.lookupConfig)
     val listState = rememberLazyListState()
     val secondaryListState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -254,17 +255,6 @@ internal fun GitHubReleaseListPage(
                             openReleases.remove(id)
                         }
                     }
-                    val onShareAsset: (GitHubReleaseAssetFile) -> Unit = { asset ->
-                        val send =
-                            Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, asset.downloadUrl)
-                            }
-                        context.startActivity(
-                            Intent.createChooser(send, asset.name)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    }
                     val lanes =
                         remember(uiState.rows, readingIds, columnCount) {
                             if (columnCount >= 2) {
@@ -291,7 +281,7 @@ internal fun GitHubReleaseListPage(
                             onToggleRelease = onToggleRelease,
                             onOpenLink = { url -> uriHandler.openUri(url) },
                             packageName = uiState.packageName,
-                            onShare = onShareAsset,
+                            assetHandoff = assetHandoff,
                         )
                     }
                     val readingLane: LazyListScope.() -> Unit = {
@@ -302,7 +292,7 @@ internal fun GitHubReleaseListPage(
                             closedAssets = closedAssets,
                             onToggleRelease = onToggleRelease,
                             onOpenLink = { url -> uriHandler.openUri(url) },
-                            onShare = onShareAsset,
+                            assetHandoff = assetHandoff,
                             onToggleAllAssets = viewModel::toggleAllAssets,
                             compareUrlOf = viewModel::compareUrl,
                             lookupConfig = uiState.lookupConfig,
@@ -362,7 +352,7 @@ private fun LazyListScope.releaseListBody(
     closedAssets: MutableMap<String, Unit>,
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
-    onShare: (GitHubReleaseAssetFile) -> Unit,
+    assetHandoff: GitHubAssetHandoffActions,
     onToggleAllAssets: (String) -> Unit,
     compareUrlOf: (GitHubReleaseRow) -> String?,
     lookupConfig: GitHubLookupConfig,
@@ -407,7 +397,7 @@ private fun LazyListScope.releaseListBody(
                 closedAssets = closedAssets,
                 onToggleRelease = onToggleRelease,
                 onOpenLink = onOpenLink,
-                onShare = onShare,
+                assetHandoff = assetHandoff,
                 onToggleAllAssets = onToggleAllAssets,
                 compareUrlOf = compareUrlOf,
                 lookupConfig = lookupConfig,
@@ -422,7 +412,7 @@ private fun LazyListScope.releaseListBody(
             closedAssets = closedAssets,
             onToggleRelease = onToggleRelease,
             onOpenLink = onOpenLink,
-            onShare = onShare,
+            assetHandoff = assetHandoff,
             onToggleAllAssets = onToggleAllAssets,
             compareUrlOf = compareUrlOf,
             lookupConfig = lookupConfig,
@@ -438,7 +428,7 @@ private fun LazyListScope.releaseCards(
     closedAssets: MutableMap<String, Unit>,
     onToggleRelease: (String, Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
-    onShare: (GitHubReleaseAssetFile) -> Unit,
+    assetHandoff: GitHubAssetHandoffActions,
     onToggleAllAssets: (String) -> Unit,
     compareUrlOf: (GitHubReleaseRow) -> String?,
     lookupConfig: GitHubLookupConfig,
@@ -464,7 +454,7 @@ private fun LazyListScope.releaseCards(
                 if (open) closedAssets.remove(row.entry.id) else closedAssets[row.entry.id] = Unit
             },
             onOpenLink = onOpenLink,
-            onShare = onShare,
+            assetHandoff = assetHandoff,
             onToggleAllAssets = onToggleAllAssets,
             compareUrl = compareUrlOf(row),
             lookupConfig = lookupConfig,
@@ -486,7 +476,7 @@ private fun GitHubReleaseCard(
     assetsExpanded: Boolean,
     onAssetsExpandedChange: (Boolean) -> Unit,
     onOpenLink: (String) -> Unit,
-    onShare: (GitHubReleaseAssetFile) -> Unit,
+    assetHandoff: GitHubAssetHandoffActions,
     onToggleAllAssets: (String) -> Unit,
     compareUrl: String?,
     lookupConfig: GitHubLookupConfig,
@@ -695,8 +685,8 @@ private fun GitHubReleaseCard(
                         context = context,
                         onOpenApkInfo = { onOpenLink(entry.htmlUrl) },
                         onInstallApk = { onOpenLink(asset.downloadUrl) },
-                        onOpenApkInDownloader = { onOpenLink(asset.downloadUrl) },
-                        onShareApkLink = onShare,
+                        onOpenApkInDownloader = { assetHandoff.download(asset) },
+                        onShareApkLink = assetHandoff::share,
                     )
                 }
             }

@@ -108,8 +108,6 @@ internal class GitHubAssetActions(
         )
     }
 
-    suspend fun sendAssetToConfiguredChannel(asset: GitHubReleaseAssetFile): Boolean = transferActions.sendAssetToConfiguredChannel(asset)
-
     fun clearApkAssetUiState(itemId: String) {
         cacheActions.clearApkAssetUiState(itemId)
     }

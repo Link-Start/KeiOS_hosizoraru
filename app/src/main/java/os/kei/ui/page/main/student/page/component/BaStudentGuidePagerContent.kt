@@ -19,7 +19,9 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.state.BaStudentGuideContentPresentationState
+import top.yukonga.miuix.kmp.utils.PagerInterceptionMode
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
+import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 
 @Composable
 internal fun BaStudentGuidePagerContent(
@@ -64,9 +66,11 @@ internal fun BaStudentGuidePagerContent(
     onSelectedVoiceLanguageChange: (String) -> Unit,
 ) {
     // The swipe settles on the same spring the tab bar animates with (see animateTabSwitch), so a
-    // page lands the same way whichever of the two moved it. Native gestures stay: Miuix's
-    // cross-axis interceptor claims horizontal drags before page content sees them, and the gallery's
-    // audio progress slider is one of those drags.
+    // page lands the same way whichever of the two moved it. While a page's list is still coasting,
+    // the first horizontal swipe only stops it, as on iOS, and the next one pages. TapToHalt rather than
+    // Miuix's cross-axis interceptor: that one claims every horizontal drag before page content sees
+    // it, and the gallery's audio progress slider is one of those drags. TapToHalt engages only during
+    // a fling.
     HorizontalPager(
         state = pagerState,
         key = { index -> bottomTabs.getOrNull(index)?.name ?: "stale-$index" },
@@ -82,7 +86,11 @@ internal fun BaStudentGuidePagerContent(
                 .fillMaxSize()
                 .graphicsLayer { alpha = farJumpAlphaProvider() }
                 .layerBackdrop(topBarBackdrop)
-                .layerBackdrop(navBackdrop),
+                .layerBackdrop(navBackdrop)
+                .pagerGestureOverride(
+                    pagerState = pagerState,
+                    mode = PagerInterceptionMode.TapToHalt,
+                ),
     ) { pageIndex ->
         BaStudentGuidePagerPage(
             sourceUrl = sourceUrl,

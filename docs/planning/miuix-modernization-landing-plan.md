@@ -436,3 +436,46 @@ go at the next capture, and generated profiles are not edited by hand.
 - Midway through, the emulator itself aborted at 09:33 (`qemu-system-aarch64`, SIGABRT from
   `std::__throw_bad_function_call` in its gRPC callback path). That is an emulator bug with nothing of
   KeiOS in the stack. A cold boot brought it back in 12 s with DNS resolving.
+
+### Follow-up the same day: TapToHalt and the main pager spring
+
+The owner asked for both open choices to be tried, and adopted if they worked.
+
+**TapToHalt on the student guide pager: adopted.** `pagerGestureOverride(mode = TapToHalt)` stays on
+native gestures, so the gallery's audio slider keeps its drags, and acts only while a page's list is
+coasting. On the AVD the test was a fling on Voice Lines and, 150 ms later, a horizontal swipe, with
+both issued in one `adb shell`:
+
+| build | swipe during the fling |
+| --- | --- |
+| TapToHalt | 5 of 6 only stopped the list; the next swipe paged |
+| master (control) | 5 of 6 paged |
+
+The one exception each way is a swipe that arrived after the momentum had already ended.
+
+**Miuix's page-navigation spring on the main pager: adopted.** `MainLoadedPager` is not a `PagerState`,
+so it takes `PagerNavigationSpringSpec`'s stiffness and damping in page units, with a 0.0005-page
+threshold, about the half pixel Miuix settles to. It replaces an `EaseInOut` tween whose length was
+`100 * max(distance, 2) + 100` ms, the formula Miuix's example dropped. The duration plumbing went with
+it:
+
+- the `durationMillis` parameter on `MainPagerStateContract.animateToPage`;
+- the `Timed` motion, now `Navigation`;
+- the four per-page duration helpers and two orphaned constants;
+- the test that pinned the formula.
+
+About, Settings, the BA calendar and pool, the catalog, and WebDAV sync switch tabs through the same
+pager, so they now land the same way.
+
+Frames drawn per jump on the AVD (`dumpsys gfxinfo`; only jumps *from* Home are clean, because Home
+keeps drawing its background):
+
+| jump | tween | spring |
+| --- | --- | --- |
+| Home -> OS (adjacent) | 17, 21, 19 | 28, 22, 30 |
+| Home -> BA (four tabs) | 33, 34, 32 | 35, 38, 37 |
+
+The spring covers 95% of the distance sooner than the tween did (about 0.19 s against 0.24 s for an
+adjacent tab), then spends its extra frames on a tail that moves under 1% of a page. That is the cost
+of Miuix's feel, and the one knob is the threshold. Frame *time* was not measured: the AVD cannot
+measure it, and the phone is where it would have to be checked.

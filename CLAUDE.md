@@ -4,20 +4,20 @@
 
 `compose-expert@aldefy-compose-skill` is installed. It is good on Compose the framework and wrong
 about this app's UI layer, because it assumes androidx Material3 and androidx Navigation and KeiOS
-uses **neither**. Counted in the tree, not assumed:
+uses **neither**. Counted in the tree on 2026-09-23, not assumed:
 
 | | files using it |
 |---|---|
-| `MiuixTheme` | 374 |
+| `MiuixTheme` | 368 |
 | `MaterialTheme` | **0** |
 | `androidx.compose.material3` | **0** |
 | `androidx.compose.material.` (M2) | **0** |
-| `top.yukonga.miuix.kmp.nav` | 6 |
+| `top.yukonga.miuix.kmp.nav` | 6 (production) |
 | androidx Navigation / Navigation 3 | **0** |
 | `androidx.paging` | **0** |
 | `androidx.tv` | **0** |
 
-(The four files matching `androidx.navigation*` are `androidx.navigationevent`, the predictive-back
+(The three files matching `androidx.navigation*` are `androidx.navigationevent`, the predictive-back
 event library. That is not Navigation.)
 
 ### Reference only — never apply directly
@@ -68,7 +68,8 @@ claude plugin marketplace update aldefy-compose-skill
 
 **Anything frame-time shaped goes through the `keios-frame-performance` skill first.** One
 number is why: everything Compose does — input, animation, measure, layout, recording draw —
-is **0.48ms of a 17.9ms frame**, and RenderThread plus GPU is 91%. General Compose advice
+is about **0.4ms of a 20ms frame** (2026-09-15; the skill keeps the current table), and
+RenderThread plus GPU is over 90%. General Compose advice
 about recomposition is correct about Compose and cannot move this app, and following it here
 has already cost two rounds that measured no change. The skill carries the measurement
 procedure, the levers already rejected, and the constraint that visual quality is not
@@ -90,3 +91,60 @@ journey drives and by journeys that fetch over the network. And several journeys
 tracked repositories that cannot resolve, a loopback HTTP server, a package hidden and unhidden — so a
 journey that fails partway can leave device state behind; the helpers restore it, and the doc says what
 each one touches.
+
+The AVD cannot settle a frame-time question: one unchanged build swings about ±40% between runs.
+Frame-time claims are measured on the phone, or at least interleaved within one build, as the skill
+describes. A motion change can still be judged on the AVD by what it draws, for example frames per
+tab switch from `dumpsys gfxinfo`, as long as the report does not call that a timing.
+
+## Working in this repository
+
+These sessions are long, touch several subsystems, and are usually owner-in-the-loop. What the last
+ones kept relearning:
+
+- **Read the record before acting.** Most areas have a `docs/planning/<topic>.md` that opens with the
+  current state and lists what was already tried and rejected, and long tasks keep a handoff in the
+  ignored `.planning/`. On a loosely specified request, look there and in the owning code before
+  proposing a change: the obvious fix has often been measured and rejected already.
+- **Evidence over the rule.** When a task suggests a rule ("treat a leading slash as…"), check it
+  against the live source of truth first: a live repository, a published artifact, the shipped
+  bytecode. Say which way the evidence went and why, even when it contradicts the suggestion.
+- **Device.** Acceptance runs on the Android 17 AVD `KeiOS_API37_Validation`. A physical phone is
+  often attached too, so always set `ANDROID_SERIAL=emulator-5554`. An emulator started from a
+  session's background shell dies with that session; start it with `nohup … & disown`. Give DNS a
+  few seconds after boot, and cold-restart after Tailscale, VPN or proxy changes (the DNS server is
+  fixed at launch).
+- **Miuix snapshots.** Bump with `scripts/deps/miuix_snapshot_check.sh` (`--files`, `--diff`,
+  `--update`). Then verify the published sources jars against the compare, and diff
+  `:app:debugRuntimeClasspath` before and after. Record each follow-up in
+  `docs/planning/miuix-modernization-landing-plan.md`, including what was deliberately not adopted.
+- **Commits.** Commit or push only when asked. When asked, split along review boundaries, and
+  compile and test each intermediate state on its own rather than only the tip. Rebuild those states
+  from byte-identical backups and check them with `cmp`, not by hand.
+- **Reports.** A finished investigation gets a durable write-up in `docs/planning/` (what was found,
+  the decision, the evidence, what was left alone). The owner treats these as part of the work.
+
+## Tests
+
+Tests are for behaviour and for regressions that would otherwise ship. A test that reads one file's
+source and asserts that some expression, argument, call order or comment is present is a *mirror*: any
+refactor breaks it, and it cannot catch a behaviour bug. On 2026-09-23 about 240 of these were removed
+(`docs/planning/test-suite-cleanup.md`). Do not add new ones.
+
+Source scans are still the right tool for a few things:
+
+- a **repo-wide ban** with an explicit allow-list and a check that the allow-list still matches
+  (`AppThemeSourceContractTest`, `PlatformWindowSourceContractTest`, `GitHubAssetHandoffSourceTest`);
+- a **cross-file contract** the compiler cannot see, such as the baseline-profile test tags, locale
+  parity, the CI workflow, or the release version;
+- the one guard for a **documented bug** that cannot be rendered in a unit test. Say which bug in the
+  test's comment. If a Compose or ViewModel test could reproduce it, write that test instead.
+
+## Writing instructions for agents here
+
+This file, `AGENTS.md` and the skills under `.agents/skills/` and `.claude/skills/` are read by
+current models, which get to work quickly and follow instructions closely. Instructions that name
+concrete failure modes and the evidence behind them work better than general exhortations. Lines
+such as "think carefully" or "be thorough" add nothing: effort is set in the harness, not in prose.
+Keep counts and measurements dated, and point to the document that owns them rather than copying
+them, so they do not go stale here.

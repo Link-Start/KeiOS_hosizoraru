@@ -123,14 +123,11 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
                                         pagerState.animateToPage(
                                             target = index,
                                             animationsEnabled = true,
-                                            durationMillis =
-                                                catalogPagerSwitchDurationMillis(distance),
                                         )
                                     } else if (transitionAnimationsEnabled) {
                                         pagerState.animateToPageViaAdjacent(
                                             target = index,
                                             animationsEnabled = true,
-                                            durationMillis = catalogPagerSwitchDurationMillis(1),
                                         )
                                     } else {
                                         pagerState.scrollToPage(index)

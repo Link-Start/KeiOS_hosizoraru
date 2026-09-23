@@ -394,7 +394,6 @@ fun SettingsPage(
                             pagerState.animateToPage(
                                 target = safeIndex,
                                 animationsEnabled = transitionAnimationsEnabled,
-                                durationMillis = settingsPagerSwitchDurationMillis(distance),
                             )
                             if (distance > 1) {
                                 farJumpAlpha.animateTo(

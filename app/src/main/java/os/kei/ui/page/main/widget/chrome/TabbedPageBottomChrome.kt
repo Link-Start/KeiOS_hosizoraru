@@ -103,7 +103,6 @@ internal fun tabbedPageSizedTabMinWidth(
     ((availableWidth - barHorizontalPadding) / referenceTabCount.coerceAtLeast(1).toFloat())
         .coerceIn(minimum, maximum)
 internal val TabbedPageBottomChromeCompactHeightMax: Dp = 480.dp
-internal const val TabbedPageBottomChromeMotionMs = 220
 
 // ── Shared utility functions ─────────────────────────────────────────────────
 

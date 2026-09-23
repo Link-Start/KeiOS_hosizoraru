@@ -48,7 +48,6 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChromeMotionMs
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
@@ -120,7 +119,6 @@ internal fun WebDavSyncPage(
                         pagerState.animateToPage(
                             target = target,
                             animationsEnabled = transitionAnimationsEnabled,
-                            durationMillis = TabbedPageBottomChromeMotionMs,
                         )
                     }
                 }

@@ -358,7 +358,6 @@ internal fun BaCalendarPoolPage(
                             pagerState.animateToPage(
                                 target = index.coerceIn(tabs.indices),
                                 animationsEnabled = transitionAnimationsEnabled,
-                                durationMillis = BaCalendarPoolTabSwitchMs,
                             )
                         }
                     },
@@ -534,4 +533,3 @@ internal fun BaCalendarPoolPage(
 }
 
 /** One step between two adjacent tabs, so the bar's indicator and the pager land together. */
-private const val BaCalendarPoolTabSwitchMs = 260

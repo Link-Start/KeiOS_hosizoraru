@@ -1,26 +1,25 @@
 package os.kei.ui.page.main.host.pager
 
-import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import kotlin.math.abs
 import kotlin.math.sqrt
 
 internal suspend fun animateLoadedPagerPosition(
     start: Float,
     target: Float,
-    durationMillis: Int,
     onFrame: (Float) -> Unit
 ) {
     animate(
         initialValue = start,
         targetValue = target,
         animationSpec =
-            tween(
-                durationMillis = durationMillis.coerceAtLeast(1),
-                easing = EaseInOut,
+            spring(
+                dampingRatio = PagerNavigationSpringSpec.dampingRatio,
+                stiffness = PagerNavigationSpringSpec.stiffness,
+                visibilityThreshold = MainLoadedPagerNavigationVisibilityThreshold,
             ),
     ) { value, _ ->
         onFrame(value)
@@ -83,3 +82,6 @@ internal fun resolveLoadedPagerSettleInitialVelocity(
 private const val MainLoadedPagerSettleStiffness = 1_200f
 private const val MainLoadedPagerSettleVisibilityThreshold = 0.001f
 private const val MainLoadedPagerMaximumSettleVelocity = 4.5f
+
+/** Miuix's own threshold is half a pixel of travel; this is about that on a phone-width page. */
+private const val MainLoadedPagerNavigationVisibilityThreshold = 0.0005f

@@ -114,12 +114,9 @@ internal fun rememberMainPagerTabJumpController(
             coroutineScope.launch(start = CoroutineStart.LAZY) {
                 val runningJob = coroutineContext.job
                 try {
-                    val rawDistance = kotlin.math.abs(targetPageIndex - pagerState.currentPage)
-                    val durationMillis = mainPagerTabSwitchDurationMillis(rawDistance)
                     pagerState.animateToPage(
                         target = targetPageIndex,
                         animationsEnabled = transitionAnimationsEnabled,
-                        durationMillis = durationMillis,
                     )
                 } finally {
                     if (tabJumpJobHolder.job == runningJob) {
@@ -184,9 +181,6 @@ internal fun rememberMainPagerTabJumpController(
         )
     }
 }
-
-internal fun mainPagerTabSwitchDurationMillis(distance: Int): Int =
-    100 * distance.coerceAtLeast(2) + 100
 
 private class MainPagerTabJumpJobHolder {
     var job: Job? = null

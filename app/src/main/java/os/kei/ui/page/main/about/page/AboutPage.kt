@@ -263,7 +263,6 @@ fun AboutPage(
                             pagerState.animateToPage(
                                 target = target,
                                 animationsEnabled = transitionAnimationsEnabled,
-                                durationMillis = aboutPagerSwitchDurationMillis(distance),
                             )
                             if (distance > 1) {
                                 farJumpAlpha.animateTo(
@@ -514,7 +513,6 @@ fun AboutPage(
     }
 }
 
-private fun aboutPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
 
 private class AboutTabJumpJobHolder {
     var job: Job? = null

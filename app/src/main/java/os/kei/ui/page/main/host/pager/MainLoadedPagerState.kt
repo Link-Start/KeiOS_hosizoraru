@@ -128,7 +128,6 @@ internal class MainLoadedPagerState internal constructor(
     override suspend fun animateToPage(
         target: Int,
         animationsEnabled: Boolean,
-        durationMillis: Int
     ) {
         val epoch = nextNavigationEpoch()
         val coercedTarget = coercePage(target)
@@ -143,14 +142,13 @@ internal class MainLoadedPagerState internal constructor(
             animateToPageAsVisualPair(
                 visualFromPage = visualFromPage,
                 target = coercedTarget,
-                durationMillis = durationMillis,
                 epoch = epoch,
             )
         } else {
             animateToPageInternal(
                 target = coercedTarget,
                 animationsEnabled = animationsEnabled,
-                motion = MainLoadedPagerMotion.Timed(durationMillis),
+                motion = MainLoadedPagerMotion.Navigation,
                 epoch = epoch,
             )
         }
@@ -159,7 +157,6 @@ internal class MainLoadedPagerState internal constructor(
     private suspend fun animateToPageAsVisualPair(
         visualFromPage: Int,
         target: Int,
-        durationMillis: Int,
         epoch: Int,
     ) {
         visualJumpEpoch = epoch
@@ -169,7 +166,7 @@ internal class MainLoadedPagerState internal constructor(
             animateToPageInternal(
                 target = target,
                 animationsEnabled = true,
-                motion = MainLoadedPagerMotion.Timed(durationMillis),
+                motion = MainLoadedPagerMotion.Navigation,
                 epoch = epoch,
             )
         } finally {
@@ -215,7 +212,6 @@ internal class MainLoadedPagerState internal constructor(
     internal suspend fun animateToPageViaAdjacent(
         target: Int,
         animationsEnabled: Boolean,
-        durationMillis: Int
     ) {
         val epoch = nextNavigationEpoch()
         val coercedTarget = coercePage(target)
@@ -228,7 +224,7 @@ internal class MainLoadedPagerState internal constructor(
             animateToPageInternal(
                 target = coercedTarget,
                 animationsEnabled = true,
-                motion = MainLoadedPagerMotion.Timed(durationMillis),
+                motion = MainLoadedPagerMotion.Navigation,
                 epoch = epoch
             )
             return
@@ -248,7 +244,7 @@ internal class MainLoadedPagerState internal constructor(
         animateToPageInternal(
             target = coercedTarget,
             animationsEnabled = true,
-            motion = MainLoadedPagerMotion.Timed(durationMillis),
+            motion = MainLoadedPagerMotion.Navigation,
             epoch = epoch
         )
     }
@@ -286,11 +282,10 @@ internal class MainLoadedPagerState internal constructor(
                         onFrame = onFrame,
                     )
 
-                is MainLoadedPagerMotion.Timed ->
+                MainLoadedPagerMotion.Navigation ->
                     animateLoadedPagerPosition(
                         start = startPosition,
                         target = coercedTarget.toFloat(),
-                        durationMillis = motion.durationMillis,
                         onFrame = onFrame,
                     )
             }
@@ -354,7 +349,8 @@ internal class MainLoadedPagerState internal constructor(
 }
 
 private sealed interface MainLoadedPagerMotion {
-    data class Timed(val durationMillis: Int) : MainLoadedPagerMotion
+    /** A tab selection: Miuix's page-navigation spring, see [animateLoadedPagerPosition]. */
+    data object Navigation : MainLoadedPagerMotion
 
     data class GestureSettle(val initialVelocityPagesPerSecond: Float) : MainLoadedPagerMotion
 }

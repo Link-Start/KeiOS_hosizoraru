@@ -21,6 +21,5 @@ internal interface MainPagerStateContract {
     suspend fun animateToPage(
         target: Int,
         animationsEnabled: Boolean,
-        durationMillis: Int
     )
 }

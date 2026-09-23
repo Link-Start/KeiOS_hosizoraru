@@ -62,7 +62,6 @@ internal fun rememberBaGuideCatalogChromeTabs(): List<BaGuideBgmDockTab> {
     }
 }
 
-internal fun catalogPagerSwitchDurationMillis(distance: Int): Int = (100 * distance.coerceAtLeast(1) + 100).coerceIn(180, 420)
 
 internal fun Map<String, String>.catalogSearchQueryFor(tab: BaGuideCatalogTab): String =
     get(tab.catalogSearchQueryKey()).orEmpty()

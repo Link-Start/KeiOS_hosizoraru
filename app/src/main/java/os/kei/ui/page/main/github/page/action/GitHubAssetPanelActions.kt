@@ -13,6 +13,7 @@ import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.GITHUB_FDROID_ASSET_FETCH_SOURCE
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.asset.fdroidAssetPanelData
+import os.kei.ui.page.main.github.asset.linksSameFilesAs
 import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.statusActionUrl
 
@@ -263,6 +264,7 @@ internal class GitHubAssetPanelActions(
             if (
                 persistedBundle != null &&
                 persistedBundle.isFdroidBundleFor(expectedSignature, panelData.targetRawTag) &&
+                persistedBundle.linksSameFilesAs(bundle) &&
                 (!requireReleaseNotesBody || persistedBundle.releaseNotesBody.isNotBlank())
             ) {
                 loadingState[item.id] = false

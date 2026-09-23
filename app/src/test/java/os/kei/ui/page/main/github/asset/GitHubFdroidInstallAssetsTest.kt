@@ -20,8 +20,10 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * The real repositories' addresses, file names and answers below were read live on 2026-09-23. Each
@@ -171,6 +173,22 @@ class GitHubFdroidInstallAssetsTest {
             // A row with nowhere to download from would be a download button that does nothing.
             assertNull(snapshot.versions.single().assetIn(snapshot.repoUrl))
         }
+    }
+
+    @Test
+    fun `a saved bundle that links elsewhere gives way to the one derived now`() {
+        val item = fdroidItem()
+        val derived = assertNotNull(item.fdroidAssetPanelData(sidecar(item))).bundle
+        // What an earlier version saved for the same build, tag and source: the name read against the host.
+        val savedByOldRule =
+            derived.copy(
+                assets = derived.assets.map { asset ->
+                    asset.copy(downloadUrl = "https://f-droid.org/org.fdroid.fdroid_102.apk")
+                },
+            )
+
+        assertFalse(savedByOldRule.linksSameFilesAs(derived))
+        assertTrue(derived.copy(releaseNotesBody = "Saved notes").linksSameFilesAs(derived))
     }
 
     @Test

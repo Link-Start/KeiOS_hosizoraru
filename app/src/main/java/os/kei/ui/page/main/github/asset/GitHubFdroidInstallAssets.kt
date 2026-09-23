@@ -67,6 +67,17 @@ internal fun GitHubTrackedApp.fdroidAssetPanelData(
 }
 
 /**
+ * Whether a bundle saved on an earlier visit can be shown in place of [derived].
+ *
+ * The tracked card derives its bundle from the local sidecar on every visit, so a saved bundle is only
+ * an earlier derivation of the same data. If the two disagree about where a file is, the saved one came
+ * from an older rule, such as the one that read index file names against the host's root. Shown anyway,
+ * it would keep offering a dead link until it expired.
+ */
+internal fun GitHubReleaseAssetBundle.linksSameFilesAs(derived: GitHubReleaseAssetBundle): Boolean =
+    assets.map { asset -> asset.downloadUrl } == derived.assets.map { asset -> asset.downloadUrl }
+
+/**
  * One F-Droid build turned into the app's own asset shape, or null when there is nowhere to get it.
  *
  * Both F-Droid surfaces go through here: the tracked card's asset panel, which offers the one build the

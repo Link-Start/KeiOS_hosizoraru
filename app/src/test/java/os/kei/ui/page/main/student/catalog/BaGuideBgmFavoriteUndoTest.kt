@@ -1,72 +1,124 @@
 package os.kei.ui.page.main.student.catalog
 
-import java.io.File
-import kotlin.test.assertContains
-import kotlin.test.assertTrue
+import android.app.Application
+import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.test.assertEquals
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import os.kei.R
+import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
+import os.kei.ui.page.main.student.catalog.page.BaGuideFavoriteBgmMusicContent
+import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
+import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
 
 /**
- * The undo offer on BGM favourite removal.
+ * The favourites list shows the undo card while an offer is pending.
  *
- * `BaGuideBgmUndoBlock` was written with its own string resources and an Undo action and then **never
- * called** — an affordance sitting in the tree, invisible. That is the bug this guards, and a source
- * contract is the right shape for it: the composable compiling is not evidence that anything renders it.
- *
- * The plan had this item filed as "a destructive menu item that should confirm through an action sheet",
- * per Apple's pull-down-button rule. Checked, and that premise was wrong on both halves: neither removal
- * path is a menu item — both are heart toggles on a track row — and an undo affordance already existed.
- * Apple treats undo as the *alternative* to confirming a reversible destructive action, not a complement,
- * so wiring the card is the correct resolution and an action sheet would have been the wrong one.
+ * `BaGuideBgmUndoBlock` was first written with its own strings and an Undo action and then **never called**:
+ * an affordance that compiled and rendered nowhere. This renders the list itself, so it fails if the list
+ * stops placing the card, and checks the card's Undo reaches the list's undo callback. The removal, restore
+ * and expiry are in `BaGuideBgmFavoriteUndoControllerTest`.
  */
+@RunWith(AndroidJUnit4::class)
+@Config(
+    application = BaGuideBgmFavoriteUndoTestApp::class,
+    sdk = [35],
+    qualifiers = "w411dp-h891dp-xxhdpi",
+)
 class BaGuideBgmFavoriteUndoTest {
-    @Test
-    fun `the undo card has a caller`() {
-        val callers =
-            FAVOURITE_UI_SOURCES
-                .map(::sourceFile)
-                .count { source -> "BaGuideBgmUndoBlock(" in source }
+    @get:Rule
+    val composeRule = createComposeRule()
 
-        assertTrue(
-            callers >= 1,
-            "BaGuideBgmUndoBlock must be rendered by something; it spent its first life orphaned",
-        )
+    private val context: Context = ApplicationProvider.getApplicationContext()
+
+    @Test
+    fun `the favourites list shows the undo card for a pending removal`() {
+        var undoClicks = 0
+        setFavoritesList(pendingUndoFavorite = Removed, onUndo = { undoClicks += 1 })
+
+        composeRule
+            .onNodeWithText(Removed.studentTitle, substring = true, useUnmergedTree = true)
+            .fetchSemanticsNode()
+        composeRule.onNodeWithText(context.getString(R.string.ba_catalog_bgm_action_undo)).performClick()
+
+        assertEquals(1, undoClicks, "the card's Undo must reach the list's undo callback")
     }
 
     @Test
-    fun `the removal captures the item before deleting it`() {
-        val viewModel = sourceFile(VIEW_MODEL_SOURCE)
-        val capture = viewModel.indexOf("favoriteBgms.value.firstOrNull { item ->")
-        val delete = viewModel.indexOf("repository.removeBgmFavorite(normalizedAudioUrl)")
+    fun `no pending removal, no undo card`() {
+        setFavoritesList(pendingUndoFavorite = null, onUndo = {})
 
-        assertTrue(capture >= 0, "The removal must look the item up to be able to restore it")
-        assertTrue(delete >= 0, "The removal must still delete")
-        assertTrue(
-            capture < delete,
-            "The item has to be captured BEFORE the delete; afterwards there is nothing to rebuild it from",
-        )
+        composeRule
+            .onNodeWithText(context.getString(R.string.ba_catalog_bgm_action_undo))
+            .assertDoesNotExist()
     }
 
-    @Test
-    fun `the offer expires on its own`() {
-        val viewModel = sourceFile(VIEW_MODEL_SOURCE)
-
-        // Without the timeout the card would sit on the page until the tab changed.
-        assertContains(viewModel, "delay(BGM_FAVORITE_UNDO_WINDOW_MS)")
-        assertContains(viewModel, "private const val BGM_FAVORITE_UNDO_WINDOW_MS")
+    private fun setFavoritesList(
+        pendingUndoFavorite: GuideBgmFavoriteItem?,
+        onUndo: () -> Unit,
+    ) {
+        val coordinator = BaGuideBgmPlaybackCoordinator(context)
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                BaGuideFavoriteBgmMusicContent(
+                    catalog = BaGuideCatalogBundle.EMPTY,
+                    favorites = emptyList(),
+                    derivedState = BaGuideFavoriteBgmListDerivedState(),
+                    offlineCacheState = BaGuideFavoriteBgmOfflineCacheUiState(),
+                    playbackCoordinator = coordinator,
+                    playbackState = BaGuideBgmPlaybackUiState(),
+                    volumeControlVisible = false,
+                    lastAudibleVolume = 1f,
+                    accent = Color(0xFF3B82F6),
+                    bottomBarScrollConnection = object : NestedScrollConnection {},
+                    topPadding = 0.dp,
+                    bottomPadding = 0.dp,
+                    // Inactive keeps the playback backends from starting; the card does not depend on it.
+                    isPageActive = false,
+                    onSliderInteractionChanged = {},
+                    onVolumeControlVisibleChange = {},
+                    onLastAudibleVolumeChange = {},
+                    onScrollBoundsChange = { _, _ -> },
+                    onRemoveBgmFavorite = {},
+                    pendingUndoFavorite = pendingUndoFavorite,
+                    onUndoRemoveBgmFavorite = onUndo,
+                    onRequestOfflineCache = { _, _, _ -> },
+                    onToggleFavoriteCache = { _, _ -> },
+                    onRequestVisibleImages = {},
+                    onOpenGuide = {},
+                    onRequestGuideDetailTab = { _, _ -> },
+                )
+            }
+        }
+        composeRule.waitForIdle()
     }
 }
 
-private val FAVOURITE_UI_SOURCES =
-    listOf(
-        "src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideFavoriteBgmMusicContent.kt",
-        "src/main/java/os/kei/ui/page/main/student/catalog/component/BaGuideBgmFavoriteCards.kt",
+class BaGuideBgmFavoriteUndoTestApp : Application()
+
+private val Removed =
+    GuideBgmFavoriteItem(
+        audioUrl = "https://example.invalid/bgm/removed.ogg",
+        title = "Removed Track",
+        studentTitle = "Hoshino",
+        studentImageUrl = "",
+        imageUrl = "",
+        sourceUrl = "https://example.invalid/student/hoshino",
+        note = "",
+        favoritedAtMs = 2_000L,
     )
-
-private const val VIEW_MODEL_SOURCE =
-    "src/main/java/os/kei/ui/page/main/student/catalog/state/BaGuideCatalogViewModel.kt"
-
-private fun sourceFile(relativePath: String): String {
-    val file = File(relativePath)
-    assertTrue(file.isFile, "Missing source: $relativePath (cwd ${System.getProperty("user.dir")})")
-    return file.readText()
-}

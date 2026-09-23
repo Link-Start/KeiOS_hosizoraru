@@ -20,6 +20,8 @@ internal object BaGuideCatalogStore {
 
     private fun kv(): MMKV = store
 
+    private fun mmkvFavoritesStore(): BaGuideCatalogFavoritesKeyValueStore = MmkvBaGuideCatalogFavoritesKeyValueStore(kv())
+
     fun saveBundle(bundle: BaGuideCatalogBundle) {
         val store = kv()
         val raw =
@@ -277,12 +279,12 @@ internal object BaGuideCatalogStore {
         return if (store.containsKey(KEY_INCREMENTAL_REFRESH_INTERVAL_HOURS)) 8L else 0L
     }
 
-    fun loadFavorites(): Map<Long, Long> =
+    fun loadFavorites(favoritesStore: BaGuideCatalogFavoritesKeyValueStore = mmkvFavoritesStore()): Map<Long, Long> =
         synchronized(favoritesLock) {
-            loadFavoritesLocked(kv())
+            loadFavoritesLocked(favoritesStore)
         }
 
-    private fun loadFavoritesLocked(store: MMKV): Map<Long, Long> {
+    private fun loadFavoritesLocked(store: BaGuideCatalogFavoritesKeyValueStore): Map<Long, Long> {
         val raw = store.decodeString(KEY_FAVORITES_RAW, "").orEmpty()
         if (raw.isBlank()) return emptyMap()
         return runCatching {
@@ -301,15 +303,18 @@ internal object BaGuideCatalogStore {
         }.getOrDefault(emptyMap())
     }
 
-    fun saveFavorites(favorites: Map<Long, Long>) {
+    fun saveFavorites(
+        favorites: Map<Long, Long>,
+        favoritesStore: BaGuideCatalogFavoritesKeyValueStore = mmkvFavoritesStore(),
+    ) {
         synchronized(favoritesLock) {
-            saveFavoritesLocked(kv(), favorites)
+            saveFavoritesLocked(favoritesStore, favorites)
         }
         BaGuideCatalogFavoritesStoreSignals.notifyChanged()
     }
 
     private fun saveFavoritesLocked(
-        store: MMKV,
+        store: BaGuideCatalogFavoritesKeyValueStore,
         favorites: Map<Long, Long>,
     ) {
         if (favorites.isEmpty()) {
@@ -340,8 +345,9 @@ internal object BaGuideCatalogStore {
     fun toggleFavoriteSnapshot(
         contentId: Long,
         nowMs: Long = System.currentTimeMillis(),
+        favoritesStore: BaGuideCatalogFavoritesKeyValueStore = mmkvFavoritesStore(),
     ): Map<Long, Long> {
-        val store = kv()
+        val store = favoritesStore
         val updated =
             synchronized(favoritesLock) {
                 if (contentId <= 0L) return@synchronized loadFavoritesLocked(store)
@@ -358,6 +364,47 @@ internal object BaGuideCatalogStore {
             BaGuideCatalogFavoritesStoreSignals.notifyChanged()
         }
         return updated
+    }
+}
+
+/**
+ * The three calls the favourites half of [BaGuideCatalogStore] makes on its MMKV file.
+ *
+ * A seam so the write-then-notify path can run off-device: a JVM test cannot open MMKV, and the catalog
+ * ViewModel's only way of hearing about favourites written by JSON import or WebDAV sync is the signal
+ * these writes raise.
+ */
+internal interface BaGuideCatalogFavoritesKeyValueStore {
+    fun decodeString(
+        key: String,
+        defaultValue: String,
+    ): String?
+
+    fun encode(
+        key: String,
+        value: String,
+    )
+
+    fun removeValueForKey(key: String)
+}
+
+private class MmkvBaGuideCatalogFavoritesKeyValueStore(
+    private val kv: MMKV,
+) : BaGuideCatalogFavoritesKeyValueStore {
+    override fun decodeString(
+        key: String,
+        defaultValue: String,
+    ): String? = kv.decodeString(key, defaultValue)
+
+    override fun encode(
+        key: String,
+        value: String,
+    ) {
+        kv.encode(key, value)
+    }
+
+    override fun removeValueForKey(key: String) {
+        kv.removeValueForKey(key)
     }
 }
 

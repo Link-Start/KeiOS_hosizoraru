@@ -60,10 +60,10 @@ its guard in this pass. Those are listed below as the rewrite backlog.
 These still read source text, but each is the only guard for a real bug. Each should become a
 behavioural test, and the source check should go in the same change:
 
-- `BaGuideBgmFavoriteUndoTest`: the undo card has a caller, captures the item before deleting it, and
-  expires. Needs a ViewModel test: remove, restore, the item is back; advance time, the offer is gone.
-- `BaGuideCatalogFavoritesSynchronizationTest`: favorite writes notify the long-lived ViewModel.
-  Needs a store-to-ViewModel test.
+- Done: `BaGuideBgmFavoriteUndoTest` is now a Compose test of the favourites list, and the removal,
+  restore and expiry run in `BaGuideBgmFavoriteUndoControllerTest` on virtual time.
+- Done: `BaGuideCatalogFavoritesSynchronizationTest` now writes through the store's real save and
+  toggle, using a key-value seam, and checks that the follower behind `catalogFavoriteEntries` reloads.
 - `BaCalendarPoolStackedLayoutSourceTest`: in two columns the panel must not be drawn behind the top
   bar. Needs a bounds test at a wide qualifier.
 - `BaCalendarPoolBottomChromeSourceTest`: the bar must follow the scroll, not stay pinned open.

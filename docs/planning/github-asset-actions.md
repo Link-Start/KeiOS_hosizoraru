@@ -130,7 +130,8 @@ the share target. Shizuku is not active there, so a managed install stops at the
 `https://apt.izzysoft.de/tk.zwander.lockscreenwidgets_217.apk`. That answers 404; the real file is under
 `/fdroid/repo/`. `resolveFdroidApkDownloadUrl` resolves an index-v2 file name, which starts with `/`,
 as host-absolute. This predates this work and affects the tracked card and the F-Droid history alike.
-It is filed as its own task.
+Fixed on its own, with what each F-Droid source really publishes: see
+[fdroid-apk-paths.md](fdroid-apk-paths.md).
 
 **A deleted track that was not the tooling.** During the tracked-card check, Syncthing-Fork was deleted
 at 03:32:28.690 (history source "Page"). The only adb input in that window was one tap at 03:32:25.8 on

@@ -103,6 +103,20 @@ internal fun fdroidVersionAssetFile(
     )
 }
 
+/**
+ * Where a build's APK is, given the repository address and whatever the source said about the file.
+ *
+ * Each source says it differently, and all were checked against the live repositories:
+ * - `index-v2` names a file from the repository's own directory, with a leading slash:
+ *   `/tk.zwander.lockscreenwidgets_217.apk` under `https://apt.izzysoft.de/fdroid/repo`. That slash does
+ *   not mean the host's root. Read that way the name lands on `https://apt.izzysoft.de/…_217.apk`, a
+ *   404, and f-droid.org's names do the same. F-Droid's own client trims the slash and appends the name
+ *   to the repository address, and so does this.
+ * - `index-v1`'s `apkName` is the bare file name. Nothing here reads that index, but the same bare
+ *   shape arrives as the `apkName` fallback, and it is relative in the ordinary way.
+ * - The package page links every build absolutely, and an http(s) URL is used unchanged.
+ * - The package API names no file at all, so there is nothing to resolve and the answer is blank.
+ */
 internal fun resolveFdroidApkDownloadUrl(
     repoUrl: String,
     apkPath: String,
@@ -115,8 +129,11 @@ internal fun resolveFdroidApkDownloadUrl(
     }
     val base = repoUrl.trim().ifBlank { return "" }
     val baseWithSlash = if (base.endsWith('/')) base else "$base/"
+    // `//host/file.apk` names its own host, which is what it means in the page's HTML. Every other path
+    // is inside the repository, whether or not it starts with a slash.
+    val reference = if (pathUri?.rawAuthority != null) normalizedPath else normalizedPath.trimStart('/')
     return runCatching {
-        URI(baseWithSlash).resolve(normalizedPath).toString()
+        URI(baseWithSlash).resolve(reference).toString()
     }.getOrDefault("")
 }
 

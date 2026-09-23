@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -19,6 +20,9 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/** Test-only handle on the panel's bounds; see BaCalendarPoolTwoColumnLayoutTest. */
+internal const val BA_CALENDAR_POOL_SERVER_PANEL_TEST_TAG = "ba_calendar_pool_server_panel"
 
 @Composable
 internal fun BaCalendarPoolServerPanel(
@@ -35,7 +39,7 @@ internal fun BaCalendarPoolServerPanel(
 ) {
     BaLiquidPanel(
         backdrop = backdrop,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag(BA_CALENDAR_POOL_SERVER_PANEL_TEST_TAG),
         accentColor = MiuixTheme.colorScheme.primary,
         variant = GlassVariant.Content,
     ) {

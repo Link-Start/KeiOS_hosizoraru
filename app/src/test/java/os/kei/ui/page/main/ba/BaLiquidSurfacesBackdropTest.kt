@@ -4,11 +4,10 @@ import android.app.Application
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -20,10 +19,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -174,50 +175,44 @@ class BaLiquidSurfacesBackdropTest {
     }
 
     @Test
-    fun surfaceMaterialsFollowTheAppTheme() {
-        val source = baLiquidSurfacesSource()
+    fun aCardInTheEdgeStackKeepsItsGlassAndExportsItToDescendants() {
+        // 482f0cfb3 gated the backdrop on `effectsEnabled && edgeStack == null`. The calendar/pool layout
+        // always provides a stack, so every card on both pages fell to a flat fill with no glass -- and
+        // descendants were left on their own fallbacks. A stacked card must behave like an unstacked one.
+        var pageBackdrop: Backdrop? = null
+        var descendantBackdrop: Backdrop? = null
+        var descendantOverridesFallback = false
+        var descendantSeesTheStack = true
 
-        assertFalse("isSystemInDarkTheme" in source)
-        assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
-        assertEquals(1, source.occurrencesOf("AppSurfaceBox("))
-        assertTrue("activeGlassBackdrop(inheritedBackdrop)" in source)
-        // The calendar and pool cards must keep their glass while they are in the card pile. 482f0cfb3
-        // gated the backdrop on `effectsEnabled && edgeStack == null`, and since the shared layout
-        // always provides a stack, that gate meant neither page ever rendered Liquid Glass — every
-        // card fell to a flat surfaceContainer fill, and lost its press feedback with it. Recession is
-        // the pile's own job now, so the gate must stay gone.
-        assertFalse("edgeStack == null" in source, "stacking must not switch the glass off")
-        assertTrue("if (effectsEnabled) {" in source)
-        assertFalse("LiquidSurface(" in source)
-        assertFalse("rememberLayerBackdrop" in source)
-        assertFalse("LocalLiquidParentBackdrop provides" in source)
-        assertFalse(".layerBackdrop(" in source)
-        assertFalse("localBackdrop" in source)
-        assertTrue("val stackedModifier = edgeStack.modifier.then(modifier)" in source)
-        assertTrue("edgeStack = edgeStack," in source, "the slot reaches the glass layer")
-        assertEquals(
-            2,
-            source.occurrencesOf(
-                "CompositionLocalProvider(LocalAppEdgeStackCards provides null)",
-            ),
-        )
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                pageBackdrop = backdrop
+                val stack = rememberAppEdgeStackState(stackLine = 24.dp)
+                CompositionLocalProvider(LocalAppEdgeStackCards provides stack) {
+                    BaLiquidCard(backdrop = backdrop) {
+                        val observedBackdrop = LocalLiquidParentBackdrop.current
+                        val observedOverride = LocalLiquidParentBackdropOverridesFallback.current
+                        val observedStack = LocalAppEdgeStackCards.current
+                        SideEffect {
+                            descendantBackdrop = observedBackdrop
+                            descendantOverridesFallback = observedOverride
+                            descendantSeesTheStack = observedStack != null
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertNotNull(pageBackdrop)
+            assertNotNull(descendantBackdrop, "a stacked card must still export its glass")
+            assertNotSame(pageBackdrop, descendantBackdrop)
+            assertTrue(descendantOverridesFallback)
+            // A panel inside the card is part of the card, not a second member of the pile.
+            assertFalse(descendantSeesTheStack, "the card's content must not join the pile itself")
+        }
     }
 }
 
 class BaLiquidSurfacesBackdropTestApp : Application()
-
-private fun baLiquidSurfacesSource(): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, BA_LIQUID_SURFACES_SOURCE) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $BA_LIQUID_SURFACES_SOURCE from $workingDirectory"
-    }.readText()
-}
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
-private const val BA_LIQUID_SURFACES_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaLiquidSurfaces.kt"

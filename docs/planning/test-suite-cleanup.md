@@ -55,23 +55,21 @@ its guard in this pass. Those are listed below as the rewrite backlog.
 - **Two documents corrected.** A KDoc in `BaselineProfileTestTagContractTest` named a test that did
   not exist, and `dropdown-menu-inventory.md` listed a deleted test as current coverage.
 
-## Kept on purpose: the rewrite backlog
+## The rewrite backlog: cleared 2026-09-23
 
-These still read source text, but each is the only guard for a real bug. Each should become a
-behavioural test, and the source check should go in the same change:
+Each of these read source text as the only guard for a real bug. Each is now a behavioural test that
+fails when its bug is put back (mutation-checked), and the source check went in the same change:
 
 - Done: `BaGuideBgmFavoriteUndoTest` is now a Compose test of the favourites list, and the removal,
   restore and expiry run in `BaGuideBgmFavoriteUndoControllerTest` on virtual time.
 - Done: `BaGuideCatalogFavoritesSynchronizationTest` now writes through the store's real save and
   toggle, using a key-value seam, and checks that the follower behind `catalogFavoriteEntries` reloads.
-- `BaCalendarPoolStackedLayoutSourceTest`: in two columns the panel must not be drawn behind the top
-  bar. Needs a bounds test at a wide qualifier.
-- `BaCalendarPoolBottomChromeSourceTest`: the bar must follow the scroll, not stay pinned open.
+- Done: `BaCalendarPoolStackedLayoutSourceTest` is now `BaCalendarPoolTwoColumnLayoutTest`, a bounds test at w1280dp.
+- Done: `BaCalendarPoolBottomChromeSourceTest` is now `BaCalendarPoolBottomChromeScrollTest`, which swipes the real calendar list.
 - Done: `GitHubTrackAppPickerSynchronizationTest` now tracks an app through `GitHubPageState` and checks the picker drops it.
 - Done: `GitHubHistoryUnreadSynchronizationTest` now publishes the store's watermark signal and checks `GitHubHistoryUnreadBadge`, which the page ViewModel holds, follows it.
 - Done: the delete-sheet source check in `GitHubTrackDialogsTest` is now two rendering tests, one for back and one for a scrim tap, each refused mid-delete.
-- `BaLiquidSurfacesBackdropTest.surfaceMaterialsFollowTheAppTheme`: covers `482f0cfb3`, glass lost
-  in the card stack.
+- Done: `BaLiquidSurfacesBackdropTest.surfaceMaterialsFollowTheAppTheme` is now `aCardInTheEdgeStackKeepsItsGlassAndExportsItToDescendants` (`482f0cfb3`).
 - Done: `AppTopBarChromeGutterSourceTest` is now `AppTopBarChromeGutterTest`, a 1280dp landscape bounds test.
 - Done: the `ItgsaFairMemoryRateLimitTest` kill-path check is now a pure test of `shouldRunItgsaRelease(kill, ...)`.
 

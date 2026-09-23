@@ -41,7 +41,6 @@ import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailInput
 import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailUiState
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PENDING_SHARE_IMPORT_CARD_TICK_MS = 15_000L
@@ -125,8 +124,6 @@ internal class GitHubPageViewModel(
     private var onlineShareTargetsJob: Job? = null
     private var downloaderOptionsJob: Job? = null
     private var appPickerStateJob: Job? = null
-    private var historyUnreadCountJob: Job? = null
-    private var historyUnreadCountRequestSerial = 0L
     private var appPickerStateInput: GitHubTrackAppPickerInput? = null
     private val snapshotFlowManager = AppSnapshotFlowManager()
     private val sheetDerivationController =
@@ -167,8 +164,13 @@ internal class GitHubPageViewModel(
     val appPickerPreferences: StateFlow<GitHubAppPickerPreferences> =
         _appPickerPreferences.asStateFlow()
 
-    private val _historyUnreadCount = MutableStateFlow(0)
-    val historyUnreadCount: StateFlow<Int> = _historyUnreadCount.asStateFlow()
+    private val historyUnreadBadge =
+        GitHubHistoryUnreadBadge(
+            scope = viewModelScope,
+            signalVersions = repository.historyUnreadSignalVersions(),
+            loadCount = repository::loadHistoryUnreadCount,
+        )
+    val historyUnreadCount: StateFlow<Int> = historyUnreadBadge.count
 
     private val _appPickerDerivedState =
         MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
@@ -250,11 +252,6 @@ internal class GitHubPageViewModel(
     init {
         viewModelScope.launch {
             _appPickerPreferences.value = repository.loadAppPickerPreferences()
-        }
-        viewModelScope.launch {
-            repository.historyUnreadSignalVersions().collect {
-                refreshHistoryUnreadCount()
-            }
         }
     }
 
@@ -432,24 +429,7 @@ internal class GitHubPageViewModel(
         }
     }
 
-    fun refreshHistoryUnreadCount() {
-        val requestSerial = historyUnreadCountRequestSerial + 1L
-        historyUnreadCountRequestSerial = requestSerial
-        historyUnreadCountJob?.cancel()
-        historyUnreadCountJob =
-            viewModelScope.launch {
-                val nextCount =
-                    runCatching {
-                        repository.loadHistoryUnreadCount()
-                    }.getOrElse { error ->
-                        if (error is CancellationException) throw error
-                        _historyUnreadCount.value
-                    }
-                if (requestSerial == historyUnreadCountRequestSerial) {
-                    _historyUnreadCount.value = nextCount
-                }
-            }
-    }
+    fun refreshHistoryUnreadCount() = historyUnreadBadge.refresh()
 
     suspend fun beginTrackedExport(
         items: List<GitHubTrackedApp>,

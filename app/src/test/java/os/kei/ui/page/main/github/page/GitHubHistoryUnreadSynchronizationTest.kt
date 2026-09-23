@@ -1,56 +1,72 @@
 package os.kei.ui.page.main.github.page
 
-import java.io.File
-import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import os.kei.feature.github.data.local.GitHubHistoryUnreadStoreSignals
+import os.kei.feature.github.domain.GitHubHistoryUnreadService
+import kotlin.test.assertEquals
 
+/**
+ * Reading history must clear the GitHub page's badge without anything else refreshing it.
+ *
+ * The page ViewModel is long-lived and the history pages are not: they move a bucket's watermark and
+ * go away. The badge only followed if the ViewModel listened for the watermark signal, and when it did
+ * not, the dock kept showing the count from before the history was read.
+ *
+ * The watermark itself lives in MMKV, which has no JVM build, so the store's write is stood in for by
+ * the two things it does: the unread count the next load sees changes, and
+ * `GitHubHistoryUnreadStoreSignals.notifyChanged()` is published, exactly as
+ * `GitHubHistoryUnreadStore.markRead` does. The signal is read through the real service, the same flow
+ * `GitHubPageRepository.historyUnreadSignalVersions()` hands the ViewModel.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GitHubHistoryUnreadSynchronizationTest {
     @Test
-    fun historyWatermarkChangesRefreshTheLongLivedPageBadgeState() {
-        val storeSource = sourceFile(HISTORY_UNREAD_STORE_SOURCE)
-        val serviceSource = sourceFile(HISTORY_UNREAD_SERVICE_SOURCE)
-        val repositorySource = sourceFile(GITHUB_PAGE_REPOSITORY_SOURCE)
-        val viewModelSource = sourceFile(GITHUB_PAGE_VIEW_MODEL_SOURCE)
+    fun aWatermarkChangeRefreshesTheLongLivedBadgeWithoutAnExplicitRefresh() =
+        runTest {
+            var unreadInStore = 3
+            val badge =
+                GitHubHistoryUnreadBadge(
+                    scope = backgroundScope,
+                    signalVersions = GitHubHistoryUnreadService().signalVersions(),
+                    loadCount = { unreadInStore },
+                )
+            runCurrent()
+            assertEquals(3, badge.count.value, "the badge starts from the stored count")
 
-        assertTrue(
-            "GitHubHistoryUnreadStoreSignals.notifyChanged()" in storeSource,
-            "Changing an unread watermark must publish a process-local signal",
-        )
-        assertTrue(
-            "fun signalVersions(): StateFlow<Long>" in serviceSource,
-            "The unread service must expose watermark changes",
-        )
-        assertTrue(
-            "fun historyUnreadSignalVersions(): StateFlow<Long>" in repositorySource,
-            "The GitHub page repository must expose unread watermark changes",
-        )
-        assertTrue(
-            "repository.historyUnreadSignalVersions().collect" in viewModelSource,
-            "The long-lived GitHub page ViewModel must observe unread watermark changes",
-        )
-        assertTrue(
-            "refreshHistoryUnreadCount()" in viewModelSource,
-            "An unread watermark signal must refresh the badge count",
-        )
-    }
+            // A history page marks its bucket read.
+            unreadInStore = 0
+            GitHubHistoryUnreadStoreSignals.notifyChanged()
+            runCurrent()
+
+            assertEquals(0, badge.count.value, "a watermark change must reach the page badge")
+
+            // And a later change, not just the first one.
+            unreadInStore = 2
+            GitHubHistoryUnreadStoreSignals.notifyChanged()
+            runCurrent()
+
+            assertEquals(2, badge.count.value)
+        }
+
+    @Test
+    fun aFailedLoadKeepsTheCountTheBadgeAlreadyShows() =
+        runTest {
+            var failLoad = false
+            val badge =
+                GitHubHistoryUnreadBadge(
+                    scope = backgroundScope,
+                    signalVersions = GitHubHistoryUnreadService().signalVersions(),
+                    loadCount = { if (failLoad) error("history store unavailable") else 4 },
+                )
+            runCurrent()
+
+            failLoad = true
+            GitHubHistoryUnreadStoreSignals.notifyChanged()
+            runCurrent()
+
+            assertEquals(4, badge.count.value)
+        }
 }
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
-
-private const val HISTORY_UNREAD_STORE_SOURCE =
-    "feature-github/src/main/java/os/kei/feature/github/data/local/GitHubHistoryUnreadStore.kt"
-private const val HISTORY_UNREAD_SERVICE_SOURCE =
-    "feature-github/src/main/java/os/kei/feature/github/domain/GitHubHistoryUnreadService.kt"
-private const val GITHUB_PAGE_REPOSITORY_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/page/GitHubPageRepository.kt"
-private const val GITHUB_PAGE_VIEW_MODEL_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/page/GitHubPageViewModel.kt"

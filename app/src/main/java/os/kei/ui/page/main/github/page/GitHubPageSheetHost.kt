@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidRepositoryPresets
+import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
 import os.kei.ui.page.main.github.install.GitHubApkInfoSheetBinding
@@ -32,6 +33,24 @@ import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackEditSheet
 import os.kei.ui.page.main.github.sheet.GitHubTrackImportDialog
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
+
+/**
+ * The packages the add-track picker hides because they are already tracked.
+ *
+ * [trackedItems] is the page's `SnapshotStateList`, which is mutated in place and never replaced, so it
+ * must not be the cache key of a plain `remember`: that kept the first set forever and the picker went
+ * on offering apps that had just been tracked. The set is derived from the list's *contents* instead.
+ */
+@Composable
+internal fun rememberGitHubTrackedPackageNames(trackedItems: List<GitHubTrackedApp>): Set<String> {
+    val trackedPackageNames by
+        remember(trackedItems) {
+            derivedStateOf {
+                trackedItems.map { item -> item.packageName }.toSet()
+            }
+        }
+    return trackedPackageNames
+}
 
 @Composable
 internal fun GitHubPageSheetHost(
@@ -64,12 +83,7 @@ internal fun GitHubPageSheetHost(
     onClearManagedInstallConfirmSheetState: () -> Unit,
     onConfirmTrackImport: () -> Unit,
 ) {
-    val trackedPackageNames by
-        remember(state) {
-            derivedStateOf {
-                state.trackedItems.map { item -> item.packageName }.toSet()
-            }
-        }
+    val trackedPackageNames = rememberGitHubTrackedPackageNames(state.trackedItems)
     val enabledFdroidCommonRepos =
         remember(state.lookupConfig.normalizedFdroidCommonRepoIds) {
             FdroidRepositoryPresets.commonSearchReposForIds(

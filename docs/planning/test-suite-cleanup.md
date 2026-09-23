@@ -67,12 +67,9 @@ behavioural test, and the source check should go in the same change:
 - `BaCalendarPoolStackedLayoutSourceTest`: in two columns the panel must not be drawn behind the top
   bar. Needs a bounds test at a wide qualifier.
 - `BaCalendarPoolBottomChromeSourceTest`: the bar must follow the scroll, not stay pinned open.
-- `GitHubTrackAppPickerSynchronizationTest`: a `SnapshotStateList` was used as a cache key. Needs a
-  test that tracks an app and then asserts the picker excludes it.
-- `GitHubHistoryUnreadSynchronizationTest`: a history watermark change must refresh the page's
-  badge.
-- `GitHubTrackDialogsTest.productionDialogsUseSharedHostAndRetainExitSnapshots`: the delete sheet
-  must not be dismissible while a delete is in progress.
+- Done: `GitHubTrackAppPickerSynchronizationTest` now tracks an app through `GitHubPageState` and checks the picker drops it.
+- Done: `GitHubHistoryUnreadSynchronizationTest` now publishes the store's watermark signal and checks `GitHubHistoryUnreadBadge`, which the page ViewModel holds, follows it.
+- Done: the delete-sheet source check in `GitHubTrackDialogsTest` is now two rendering tests, one for back and one for a scrim tap, each refused mid-delete.
 - `BaLiquidSurfacesBackdropTest.surfaceMaterialsFollowTheAppTheme`: covers `482f0cfb3`, glass lost
   in the card stack.
 - Done: `AppTopBarChromeGutterSourceTest` is now `AppTopBarChromeGutterTest`, a 1280dp landscape bounds test.

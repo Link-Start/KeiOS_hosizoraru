@@ -4,17 +4,23 @@ package os.kei.ui.page.main.github.sheet
 
 import android.app.Application
 import android.content.Context
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -31,12 +37,9 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -209,40 +212,64 @@ class GitHubTrackDialogsTest {
     }
 
     @Test
-    fun productionDialogsUseSharedHostAndRetainExitSnapshots() {
-        val source = trackDialogsSource(GITHUB_TRACK_DIALOGS_SOURCE)
+    fun deleteSheetIgnoresBackWhileTheDeleteIsInProgress() {
+        assertDeleteSheetRefusesDismissalWhileDeleting { backDispatcher ->
+            composeRule.runOnIdle { backDispatcher.onBackPressed() }
+        }
+    }
 
-        // The two confirmations deliberately use *different* presentations now.
-        //
-        // Delete is chosen from the item's More menu, and Apple's pull-down-buttons guidance asks for an
-        // action sheet there specifically — because it "appears in a different location from the menu",
-        // so a second tap where the first one landed cannot confirm it. Import is not menu-originated, so
-        // it stays an alert, which the Action sheets page explicitly allows for confirm-or-cancel.
-        assertEquals(1, source.occurrencesOf("AppWindowDialogHost("))
-        assertEquals(1, source.occurrencesOf("LiquidActionSheet("))
-        assertTrue("role = LiquidActionRole.Destructive" in source)
-        assertTrue("role = LiquidActionRole.Cancel" in source)
-        // The sheet must not be walk-away-able mid-delete.
-        assertTrue("dismissible = !deleteInProgress" in source)
-        assertFalse("WindowDialog(" in source)
-        assertEquals(
-            2,
-            source.occurrencesOf("val exitSnapshot = rememberGitHubTrackDialogExitSnapshot("),
-        )
-        assertEquals(2, source.occurrencesOf("onDismissFinished = exitSnapshot::clear"))
-        assertTrue("show = pendingDeleteItem != null" in source)
-        assertTrue("show = preview != null" in source)
-        assertTrue("renderedDeleteItem?.let" in source)
-        assertTrue("renderedPreview?.let" in source)
-        assertFalse("return@" in source)
-        assertTrue("R.string.github_delete_dialog_title" in source)
-        assertTrue("R.string.github_delete_dialog_summary" in source)
-        assertTrue("R.string.github_import_dialog_title" in source)
-        assertTrue("R.string.github_import_dialog_summary_ready" in source)
-        assertTrue("R.string.github_import_dialog_summary_invalid" in source)
-        assertTrue("maxWidth = AppDialogDimensions.ContentRichMaxWidth" in source)
-        assertTrue("actionsEnabled = preview != null" in source)
-        assertTrue("onClick = if (canImport) onConfirmImport else onDismissRequest" in source)
+    @Test
+    fun deleteSheetIgnoresAScrimTapWhileTheDeleteIsInProgress() {
+        assertDeleteSheetRefusesDismissalWhileDeleting {
+            composeRule.onRoot().performTouchInput { click(Offset(centerX, SCRIM_TAP_Y_PX)) }
+        }
+    }
+
+    /**
+     * A delete in flight cannot be walked away from: [dismissAttempt] must not reach
+     * `onDismissRequest` while `deleteInProgress` is true, and must once it is false. The second half
+     * is what makes the first meaningful: it proves the gesture reaches the sheet and the zero is the
+     * sheet refusing.
+     */
+    private fun assertDeleteSheetRefusesDismissalWhileDeleting(
+        dismissAttempt: (OnBackPressedDispatcher) -> Unit,
+    ) {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val deleteInProgress = mutableStateOf(true)
+        var dismissCount = 0
+        lateinit var backDispatcher: OnBackPressedDispatcher
+        val title = context.getString(R.string.github_delete_dialog_title)
+        val deletingLabel = context.getString(R.string.github_delete_dialog_deleting)
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                CompositionLocalProvider(LocalTransitionAnimationsEnabled provides false) {
+                    val dispatcherOwner = checkNotNull(LocalOnBackPressedDispatcherOwner.current)
+                    SideEffect { backDispatcher = dispatcherOwner.onBackPressedDispatcher }
+                    GitHubDeleteTrackDialog(
+                        pendingDeleteItem = trackedApp(),
+                        deleteInProgress = deleteInProgress.value,
+                        onDismissRequest = { dismissCount++ },
+                        onCancel = {},
+                        onConfirmDelete = {},
+                    )
+                }
+            }
+        }
+
+        composeRule.onNode(hasText(deletingLabel)).assertIsNotEnabled()
+        dismissAttempt(backDispatcher)
+        composeRule.waitForIdle()
+
+        assertEquals(0, dismissCount, "a delete in flight must not be dismissible")
+        composeRule.onNode(hasText(title) and isHeading()).assertIsDisplayed()
+
+        composeRule.runOnIdle { deleteInProgress.value = false }
+        composeRule.waitForIdle()
+        dismissAttempt(backDispatcher)
+        composeRule.waitForIdle()
+
+        assertEquals(1, dismissCount, "once the delete has finished the same gesture dismisses")
     }
 
     private fun finishExitAnimation() {
@@ -276,17 +303,6 @@ private fun readyImportPreview(): GitHubTrackImportPreview =
         mergedCount = 3,
     )
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count(needle::equals)
-
-private fun trackDialogsSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
 private const val EXIT_OBSERVATION_MILLIS = 16L
 private const val EXIT_COMPLETION_MILLIS = 300L
-private const val GITHUB_TRACK_DIALOGS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubTrackDialogs.kt"
+private const val SCRIM_TAP_Y_PX = 48f

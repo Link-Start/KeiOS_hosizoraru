@@ -66,6 +66,7 @@
 | 2026-08-24 | Upgrade and adoption | `0.9.4-4a6b750b-SNAPSHOT` → `0.9.4-4f86de92-SNAPSHOT`; adopted MIUIX floating-toolbar ownership for the phone main navigation. See [Snapshot follow-up: 4f86de92](#snapshot-follow-up-4f86de92). |
 | 2026-08-31 | Upgrade | `0.9.4-4f86de92-SNAPSHOT` → `0.9.4-7cc339c2-SNAPSHOT`; no library source moved, so nothing to adapt. See [Snapshot follow-up: 7cc339c2](#snapshot-follow-up-7cc339c2). |
 | 2026-09-14 | Upgrade | `0.9.4-7cc339c2-SNAPSHOT` → `0.9.4-5157b503-SNAPSHOT`; two library commits, neither in a component KeiOS uses. See [Snapshot follow-up: 5157b503](#snapshot-follow-up-5157b503). |
+| 2026-09-23 | Upgrade and adoption | `0.9.4-5157b503-SNAPSHOT` → `0.9.4-39c40f99-SNAPSHOT`; the MCP page gets a real `SavedStateHandle` now that nav entries carry creation extras, and tab switches and pager snaps take Miuix's page-navigation spring. See [Snapshot follow-up: 39c40f99](#snapshot-follow-up-39c40f99). |
 
 <a id="snapshot-upgrade-094"></a>
 
@@ -293,3 +294,145 @@ Compose did **not** move: `org.jetbrains.compose.*` stays at `1.12.0` in both mo
   anything here did reference it.
 - Not run, and not owed: no device pass. Nothing KeiOS draws changed, and Roborazzi already holds the
   pixels.
+
+<a id="snapshot-follow-up-39c40f99"></a>
+
+## Snapshot follow-up: 0.9.4-39c40f99-SNAPSHOT
+
+Five upstream commits between `5157b503` (2026-09-11) and `39c40f99` (2026-09-20). Four touch library
+source. Of those, one fixes a bug KeiOS had worked around, one brings pager APIs KeiOS partly
+takes, one adds a navigation API nothing here needs yet, and one fixes a component KeiOS does not use.
+
+| commit | subject | in KeiOS |
+| --- | --- | --- |
+| `5de9d0f5` | library: add LocalNavTransitionScope to miuix-nav (#430) | available, no consumer; see below |
+| `63529058` | library: fix NavigationRail selection highlight (#434) | not used: no `NavigationRail` anywhere in the tree |
+| `26b37993` | AGP 9.4.1 (#436) | upstream's own build only |
+| `29d6deb3` | library: fix missing SavedState CreationExtras in nav entries (#438) | **adopted**: the MCP page's workaround is gone |
+| `39c40f99` | library: add pager gesture conflict resolution utilities (#437) | **partly adopted**: the page-navigation spring; the gesture interceptor is not |
+
+### SavedStateHandle in nav entries (#438): adopted
+
+Until this snapshot, a `NavDisplay` entry's `ViewModelStoreOwner` was a bare wrapper around the entry's
+store. It carried no creation extras, so `createSavedStateHandle()` inside an entry threw
+`CreationExtras must have a value by SAVED_STATE_REGISTRY_OWNER_KEY` (upstream #407). KeiOS hit this on
+2026-06-30 (`fc73a383d`). The MCP page's fix was a factory that handed `McpPageViewModel` a bare
+`SavedStateHandle()`. That handle is registered with nothing, so the cards a reader opened (onboarding,
+control, the tool groups, logs) closed again after process death.
+
+The entry owner is now built inside the entry's saveable-state scope, from lifecycle's
+`ViewModelStoreOwner(store, savedStateRegistryOwner, defaultCreationExtras, defaultFactory)`. Both
+halves were checked in the bytecode KeiOS actually ships rather than taken from the PR:
+
+- **Compose 1.12.0.** `SaveableStateHolderImpl.SaveableStateProvider` wraps each key's registry in a
+  `SaveableStateRegistryWrapper`, which is a `SavedStateRegistryOwner`, and provides it as
+  `LocalSavedStateRegistryOwner`. So each entry has its own saved-state owner, and its handles are saved
+  with the entry.
+- **lifecycle 2.11.0.** The saved-state variant of that owner sets `SAVED_STATE_REGISTRY_OWNER_KEY`,
+  `VIEW_MODEL_STORE_OWNER_KEY` and `DEFAULT_ARGS_KEY`, and calls `enableSavedStateHandles`.
+
+So `McpPage` now calls `viewModel { McpPageViewModel(createSavedStateHandle()) }`, and the factory and
+the test that pinned it are deleted. `McpPageViewModelNavEntryTest` creates the ViewModel inside a real
+`NavDisplay` entry, opens two cards, and restores the saved state. For the restore it swaps in a fresh
+parent `ViewModelStoreOwner`: the entry stores live in the parent's store, so a plain restore would hand
+back the same ViewModel. The fresh owner is what process death leaves behind. The test passes on
+`39c40f99`, and with `-Pmiuix.version=0.9.4-5157b503-SNAPSHOT` it fails with #407's exact exception.
+
+The same change gives every entry the activity's default factory and extras. So `viewModel()` of an
+`AndroidViewModel`, or of a `(SavedStateHandle)` constructor, now works inside a route without a
+hand-written factory. `applicationViewModel` was left alone. The student guide passes a real argument
+through it (`warmStartId`), and the call sites that pass only the `Application` work either way.
+Moving them to plain `viewModel()` is optional tidying, not a fix.
+
+### Pager gesture utilities (#437): the spring, not the interceptor
+
+`PagerNavigationSpringSpec` and `PagerState.springAnimateToPage` are what upstream's own tab rows and
+snap fling now share. Upstream's example replaced a tween lasting `100 * distance + 100` ms with them.
+`host/pager/PagerSwitchAnimation.animateTabSwitch` is KeiOS's copy of that same tween, with far-jump
+dim hooks added. It now springs, with the hooks kept, and `PagerSwitchAnimationTest` pins what its
+callers rely on: a jump of more than one page is bracketed by the dim hooks, an adjacent one is not, and
+the pager ends exactly on the target page. The two `HorizontalPager`s take the spring for their snap
+fling too, so a page lands the same way whether a tab or a finger moved it:
+
+- the student guide (`BaStudentGuidePagerContent`);
+- the BA account card (`BaAccountPagerCard`), whose jump when the active account changes elsewhere
+  also moved from `animateScrollToPage` to `springAnimateToPage`.
+
+`pagerGestureOverride` was not adopted. Its default Cross-Axis mode makes horizontal swipes win while a
+page's list is flinging or bouncing. It does that by claiming every horizontal drag past touch slop in
+`PointerEventPass.Initial`, which runs parent-first, before any page content sees the drag. The
+guide's gallery section has `LiquidMusicProgressSlider`, a `dragOrientation = Orientation.Horizontal`
+control, which would lose every drag to a page swipe. The same mode also opens a `PagerState.scroll`
+mutation on every touch-down, so `isScrollInProgress` goes true for taps and vertical scrolls. The guide
+reads that flag for its tab selection and its pager performance report. `TapToHalt` engages only while a
+child is flinging (the first horizontal swipe stops the list, the next pages), so it avoids the slider
+conflict. It is a behaviour change, though, and left to the owner. The Overscroll half of the same
+commit applies everywhere with no adoption: a nested-scroll event with a zero delta on an axis no
+longer cancels that axis' spring, so a horizontal move no longer stops a vertical bounce.
+
+The main pager is not a `HorizontalPager`. `MainLoadedPager` is its own `draggable`, so the
+`PagerState` utilities do not attach to it. Its motion is tuned: an `EaseInOut` tab jump, and a
+no-bounce spring (stiffness 1200) on drag release that keeps the release velocity (`5212bbc37`). It is
+unchanged. `MainMiuixPager` and `MainFoundationPager` carry the example's old tween too, but the
+coordinator only ever builds `MainLoadedPagerState`, so they are unreachable. Their removal is filed as
+its own task.
+
+### LocalNavTransitionScope (#430): available, no consumer
+
+An entry can now read the live transition, including a composition-safe `isRunning`. The one place
+KeiOS needs to know whether an entry is covered already has its answer: `rememberNavEntryAtTop`, which
+reads the entry lifecycle. `b0d18428d` verified that it closes only behind a settled, opaque page.
+`NavTransitionScope.isRunning` has a default (`gesture != null || settle != null`), and KeiOS's
+transitions are `navGraphicsTransition` blocks, not implementations, so nothing had to change.
+
+### Artifact check
+
+As before, the sources jars were fetched for both versions of every module that resolves. A scratch
+Gradle build reading the same GitHub Packages credentials did this, and the files were compared one by
+one:
+
+| module | files | old vs new |
+| --- | --- | --- |
+| `miuix-ui` | 88 | `NavigationRail.kt`, `Overscroll.kt`, `OverscrollFactory.kt` differ; `PagerGestureUtils.kt` new |
+| `miuix-nav` | 31 | `LiveNavTransitionScope.kt`, `NavDisplay.kt`, `NavEntryViewModel.kt`, `NavTransitionScope.kt` differ; `LocalNavTransitionScope.kt` new |
+| `miuix-icons` | 157 | identical |
+| `miuix-blur` | 25 | identical |
+| `miuix-preference` | 20 | identical |
+| `miuix-squircle` | 8 | identical |
+| `miuix-shader`, `miuix-core` | 5, 4 | identical |
+
+The artifact agrees with the compare exactly.
+
+### What actually reaches KeiOS
+
+Nothing outside Miuix moved. Diffing `:app:debugRuntimeClasspath` before and after changes only
+`top.yukonga.miuix.kmp` lines: zero others. Compose stays at 1.12.0, so `COMPOSE_VERSION` and the About
+page are untouched.
+
+The generated release profiles name the class upstream removed. `baseline-prof.txt` and
+`startup-prof.txt` each have nine lines for `NavEntryViewModelStoreOwner` and the `NavEntryHost` lambdas
+that took it. The miuix-nav AAR ships its own wildcard rules for `NavDisplayKt**`,
+`NavEntryViewModelKt**` and `LiveNavTransitionScope`, so the moved code stays covered. The stale lines
+go at the next capture, and generated profiles are not edited by hand.
+
+### Verification
+
+- `:app:compileDebugKotlin` passes. `:app:verifyRoborazziDebug` ran all 1,777 app tests, 0 failures, and
+  no screenshot moved. `:ui-liquid-glass:testDebugUnitTest` ran 450, 0 failures.
+- `McpPageViewModelNavEntryTest` passes here and fails on `5157b503` with #407's exception (above).
+  `PagerSwitchAnimationTest` pins the tab switch's hooks and its exact landing.
+- `:app:assembleRelease` passes: R8, Lint Vital, resource optimization and ART Profile compilation,
+  with no warnings.
+- On the Android 17 AVD `KeiOS_API37_Validation`, this build installed over existing data:
+  - **MCP page.** It opens without the #407 crash. With two cards opened, the app was sent home and
+    killed with `am kill`. Relaunched cold on a new pid from the same task, it came back on the MCP tab
+    with both cards still open. Before this change both would have closed.
+  - **Student guide.** Tapping a tab four pages away springs there and ends on the page, undimmed. An
+    adjacent tap lands on its page. A fast swipe snaps to the neighbouring page, and a slow drag released
+    at about 37% springs back. No fatal exception across the guide, the roster, the BA page and a
+    Settings round trip.
+  - **Not covered on the device:** the BA account pager. The AVD has one account, so its pager has a
+    single page and neither the swipe nor the programmatic jump can run.
+- Midway through, the emulator itself aborted at 09:33 (`qemu-system-aarch64`, SIGABRT from
+  `std::__throw_bad_function_call` in its gRPC callback path). That is an emulator bug with nothing of
+  KeiOS in the stack. A cold boot brought it back in 12 s with DNS resolving.

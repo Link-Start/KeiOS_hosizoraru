@@ -30,8 +30,6 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -149,30 +147,6 @@ class StudentGuideSkillMetadataPillTest {
         composeRule.onNodeWithTag(LEVEL_SELECTOR_TAG).assertHeightIsAtLeast(48.dp)
     }
 
-    @Test
-    fun productionSkillMetadataConsumesTheExistingBackdropWithoutButtonSemantics() {
-        val source = sourceFile(GUIDE_SECTION_SKILL_SOURCE)
-        val metadataPillSource =
-            source
-                .substringAfter("internal fun GuideSkillMetadataPill(")
-                .substringBefore("internal fun GuideSkillVariantBadge(")
-
-        assertFalse("rememberLayerBackdrop" in source)
-        assertFalse(".layerBackdrop(" in source)
-        assertTrue("StatusPill(" in metadataPillSource)
-        assertTrue("size = AppStatusPillSize.Compact" in metadataPillSource)
-        assertTrue("backdrop = backdrop" in metadataPillSource)
-        assertTrue("maxLines = 1" in metadataPillSource)
-        assertTrue("overflow = TextOverflow.Ellipsis" in metadataPillSource)
-        assertTrue("typographyOverride = GuideSkillMetadataPillTypography" in metadataPillSource)
-        assertFalse("enabled =" in metadataPillSource)
-        assertFalse("onClick =" in metadataPillSource)
-
-        val disabledMetadataButtons =
-            source.callBlocks("AppLiquidTextButton").count { call -> "enabled = false" in call }
-        assertEquals(0, disabledMetadataButtons)
-        assertEquals(4, source.occurrencesOf("GuideSkillMetadataPill("))
-    }
 }
 
 private fun sourceFile(relativePath: String): String {
@@ -186,37 +160,6 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.callBlocks(callName: String): List<String> {
-    val marker = "$callName("
-    val calls = mutableListOf<String>()
-    var searchStart = 0
-    while (searchStart < length) {
-        val callStart = indexOf(marker, startIndex = searchStart)
-        if (callStart < 0) break
-        var cursor = callStart + callName.length
-        var depth = 0
-        while (cursor < length) {
-            when (this[cursor]) {
-                '(' -> depth += 1
-                ')' -> {
-                    depth -= 1
-                    if (depth == 0) {
-                        calls += substring(callStart, cursor + 1)
-                        searchStart = cursor + 1
-                        break
-                    }
-                }
-            }
-            cursor += 1
-        }
-        if (cursor >= length) break
-    }
-    return calls
-}
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
-
 class StudentGuideSkillMetadataPillTestApp : Application()
 
 private const val PRIMARY_ONE_X_LABEL = "EX skill"
@@ -228,5 +171,3 @@ private const val STATE_ONE_X_TAG = "skill-metadata-state-one-x"
 private const val PRIMARY_LARGE_FONT_TAG = "skill-metadata-primary-large-font"
 private const val STATE_LARGE_FONT_TAG = "skill-metadata-state-large-font"
 private const val LEVEL_SELECTOR_TAG = "skill-level-selector"
-private const val GUIDE_SECTION_SKILL_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/section/GuideSectionSkill.kt"

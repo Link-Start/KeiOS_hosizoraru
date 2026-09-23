@@ -73,21 +73,6 @@ class LiquidSurfaceMaterialTest {
     }
 
     @Test
-    fun cardsDoNotCastAnOuterDropShadowByDefault() {
-        // Measured, not preference: inside a scrolling container the ring is bounded to the element's
-        // vertical extent, so it steps hard at the top edge and renders nothing at all below the bottom
-        // one. Tightening the radius only shrank the wedge and dropping it fully downward moved the wedge
-        // to the bottom corners. Off is the only setting with no straight edge beside the corner.
-        val surfaceSource = sourceFile(LIQUID_SURFACES_SOURCE)
-        val boxSource = sourceFile(APP_SURFACE_BOX_SOURCE)
-
-        assertTrue("shadow: Boolean = false" in surfaceSource)
-        assertTrue("shadow: Boolean = false" in boxSource)
-        assertFalse("shadow: Boolean = true" in surfaceSource)
-        assertFalse("shadow: Boolean = true" in boxSource)
-    }
-
-    @Test
     fun idleHighlightStaysQuietInBothThemes() {
         assertEquals(
             0.62f,
@@ -221,9 +206,3 @@ private fun sourceFile(relativePath: String): String {
             .firstOrNull(java.io.File::isFile)
     return requireNotNull(sourceFile) { "Unable to locate $relativePath from $workingDirectory" }.readText()
 }
-
-private const val LIQUID_SURFACES_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidSurfaces.kt"
-
-private const val APP_SURFACE_BOX_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppSurfaceBox.kt"

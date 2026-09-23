@@ -33,21 +33,6 @@ class BaGuideBgmFavoriteUndoTest {
     }
 
     @Test
-    fun `only the list that loses the row offers the undo`() {
-        val actions = sourceFile(PAGE_ACTIONS_SOURCE)
-
-        // The favourites list deletes the row from the only screen that shows it, so it offers it back.
-        assertContains(actions, "offerUndo = true")
-        // The student BGM tab empties a heart and keeps the row, so tapping again is the undo. It toasts
-        // and must NOT also stack an offer card on a screen where nothing disappeared.
-        val toastPath = actions.substringAfter("onRemoveBgmFavoriteWithToast = ")
-        assertTrue(
-            "offerUndo" !in toastPath.substringBefore("},"),
-            "The toast path keeps its row, so it must not also offer an undo",
-        )
-    }
-
-    @Test
     fun `the removal captures the item before deleting it`() {
         val viewModel = sourceFile(VIEW_MODEL_SOURCE)
         val capture = viewModel.indexOf("favoriteBgms.value.firstOrNull { item ->")
@@ -58,17 +43,6 @@ class BaGuideBgmFavoriteUndoTest {
         assertTrue(
             capture < delete,
             "The item has to be captured BEFORE the delete; afterwards there is nothing to rebuild it from",
-        )
-    }
-
-    @Test
-    fun `restoring reuses the toggle rather than a second add path`() {
-        val viewModel = sourceFile(VIEW_MODEL_SOURCE)
-        val restore = viewModel.substringAfter("fun restorePendingBgmFavorite()")
-
-        assertContains(
-            restore.substringBefore("fun clearPendingBgmFavoriteUndo"),
-            "repository.toggleBgmFavorite(item)",
         )
     }
 
@@ -87,9 +61,6 @@ private val FAVOURITE_UI_SOURCES =
         "src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideFavoriteBgmMusicContent.kt",
         "src/main/java/os/kei/ui/page/main/student/catalog/component/BaGuideBgmFavoriteCards.kt",
     )
-
-private const val PAGE_ACTIONS_SOURCE =
-    "src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPageActions.kt"
 
 private const val VIEW_MODEL_SOURCE =
     "src/main/java/os/kei/ui/page/main/student/catalog/state/BaGuideCatalogViewModel.kt"

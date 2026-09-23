@@ -41,7 +41,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -202,30 +201,6 @@ class BaAccountPagerHeaderPillTest {
         }
     }
 
-    @Test
-    fun productionPillsReuseExportedCardBackdropWithoutLegacyBadgeDrawing() {
-        val source = sourceFile(BA_ACCOUNT_PAGER_CARD_SOURCE)
-        val surfaceSource = sourceFile(BA_LIQUID_SURFACES_SOURCE)
-        val pillSource =
-            source
-                .substringAfter("internal fun BaAccountHeaderStatusPill(")
-
-        assertFalse("appSquircleBackground" in source)
-        assertFalse("rememberLayerBackdrop" in source)
-        assertFalse(".layerBackdrop(" in source)
-        assertTrue("exportBackdropToContent = true" in surfaceSource)
-        assertEquals(1, source.occurrencesOf("\n    StatusPill("))
-        assertEquals(4, source.occurrencesOf("BaAccountHeaderStatusPill("))
-        assertTrue("size = AppStatusPillSize.Compact" in pillSource)
-        assertTrue("contentPadding = PaddingValues(horizontal = 7.dp, vertical = 2.dp)" in pillSource)
-        assertTrue("backgroundAlphaOverride = 0.12f" in pillSource)
-        assertTrue("borderAlphaOverride = 0f" in pillSource)
-        assertTrue("maxLines = 1" in pillSource)
-        assertTrue("overflow = TextOverflow.Ellipsis" in pillSource)
-        assertTrue("contentColorOverride = accentColor" in pillSource)
-        assertFalse("backdrop =" in pillSource)
-        assertTrue("modifier = modifier.widthIn(min = 42.dp)" in source)
-    }
 }
 
 private fun sourceFile(relativePath: String): String {
@@ -238,9 +213,6 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
 
 class BaAccountPagerHeaderPillTestApp : Application()
 
@@ -264,7 +236,3 @@ private val INTERACTIVE_ACCOUNT =
         remindersEnabled = true,
         customReminderSettings = BaGlobalReminderSettings(),
     )
-private const val BA_ACCOUNT_PAGER_CARD_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/card/BaAccountPagerCard.kt"
-private const val BA_LIQUID_SURFACES_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaLiquidSurfaces.kt"

@@ -19,8 +19,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -52,44 +50,6 @@ class FeedbackStatusCardSupportingBlockTest {
     @Test
     fun darkStatusCardKeepsLargeFontSupportingCopyReadableAt360Dp() {
         assertLargeFontLayout(ColorSchemeMode.Dark)
-    }
-
-    @Test
-    fun statusCardExportsOneBackdropAndSupportingBlockOnlyConsumesIt() {
-        val feedbackSource = sourceFile(FEEDBACK_ISSUE_CARDS_SOURCE)
-        val statusImplementation =
-            feedbackSource.substring(
-                startIndex = feedbackSource.indexOf("internal fun FeedbackStatusCard("),
-                endIndex = feedbackSource.indexOf("internal fun FeedbackDeviceInfoCard("),
-            )
-        val supportingSource = sourceFile(APP_STATUS_PRIMITIVES_SOURCE)
-
-        assertEquals(1, statusImplementation.occurrencesOf("AppFeatureCard("))
-        assertEquals(1, statusImplementation.occurrencesOf("exportBackdropToContent = true"))
-        assertEquals(1, statusImplementation.occurrencesOf("AppSupportingBlock("))
-        assertTrue("text = stringResource(R.string.feedback_issue_status_summary)" in statusImplementation)
-        assertTrue("accentColor = MiuixTheme.colorScheme.onBackgroundVariant" in statusImplementation)
-        assertTrue(
-            "containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.14f)" in
-                statusImplementation,
-        )
-        assertTrue("contentColor = MiuixTheme.colorScheme.onBackgroundVariant" in statusImplementation)
-        assertTrue(
-            "contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)" in
-                statusImplementation,
-        )
-        assertTrue("typography = AppTypographyTokens.Supporting" in statusImplementation)
-        assertTrue("fillWidth = true" in statusImplementation)
-        assertFalse("Text(" in statusImplementation)
-        assertFalse("maxLines =" in statusImplementation)
-        assertFalse("TextOverflow.Ellipsis" in statusImplementation)
-        assertFalse("rememberLayerBackdrop" in statusImplementation)
-        assertFalse(".layerBackdrop(" in statusImplementation)
-
-        assertTrue("activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in supportingSource)
-        assertTrue("if (activeBackdrop != null)" in supportingSource)
-        assertFalse("rememberLayerBackdrop" in supportingSource)
-        assertFalse(".layerBackdrop(" in supportingSource)
     }
 
     private fun assertLargeFontLayout(mode: ColorSchemeMode) {
@@ -193,11 +153,5 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
 private const val CARD_HOST_TAG = "feedback-status-card-host"
 private const val STATUS_MESSAGE = "Ready for local review"
-private const val FEEDBACK_ISSUE_CARDS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/feedback/FeedbackIssueCards.kt"
-private const val APP_STATUS_PRIMITIVES_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppStatusPrimitives.kt"

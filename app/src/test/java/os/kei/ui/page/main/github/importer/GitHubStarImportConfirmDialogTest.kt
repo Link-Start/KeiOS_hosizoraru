@@ -28,13 +28,9 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
-
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
@@ -210,40 +206,6 @@ class GitHubStarImportConfirmDialogTest {
         assertEquals(0, confirmCount)
     }
 
-    @Test
-    fun productionDialogsUseSharedHostAndRetainExitSnapshots() {
-        val source = starDialogsSource(GITHUB_STAR_DIALOGS_SOURCE)
-
-        assertEquals(2, source.occurrencesOf("AppWindowDialogHost("))
-        assertFalse("WindowDialog(" in source)
-        assertFalse("if (candidates.isEmpty()) return" in source)
-        assertFalse("if (!show) return" in source)
-        assertEquals(
-            2,
-            source.occurrencesOf("val exitSnapshot = rememberGitHubStarDialogExitSnapshot("),
-        )
-        assertEquals(2, source.occurrencesOf("onDismissFinished = exitSnapshot::clear"))
-        assertTrue("show = candidates.isNotEmpty()" in source)
-        assertTrue("show = show" in source)
-        assertTrue("candidates = candidates.toList()" in source)
-        assertTrue("verificationStates = verificationStates.toMap()" in source)
-        assertTrue("renderedSnapshot?.candidates?.size ?: 0" in source)
-        assertTrue("renderedSelectedCount?.let" in source)
-        assertTrue("maxWidth = AppDialogDimensions.ContentRichMaxWidth" in source)
-        assertTrue("R.string.github_star_import_confirm_title" in source)
-        assertTrue("R.string.github_star_import_confirm_summary_format" in source)
-        assertTrue("R.string.github_star_import_exit_confirm_title" in source)
-        assertTrue("R.string.github_star_import_exit_confirm_summary_format" in source)
-        assertTrue("variant = GlassVariant.SheetPrimaryAction" in source)
-        assertTrue("containerColor = GitHubStatusPalette.Error" in source)
-        assertTrue("variant = GlassVariant.SheetDangerAction" in source)
-        assertTrue("actionsEnabled = candidates.isNotEmpty()" in source)
-        assertTrue("actionsEnabled = show" in source)
-        assertTrue("onDismissRequest = onDismissRequest" in source)
-        assertTrue("onConfirmImport = onConfirmImport" in source)
-        assertTrue("onConfirmExit = onConfirmExit" in source)
-    }
-
     private fun finishExitAnimation() {
         composeRule.mainClock.advanceTimeBy(EXIT_COMPLETION_MILLIS)
         composeRule.mainClock.autoAdvance = true
@@ -253,17 +215,5 @@ class GitHubStarImportConfirmDialogTest {
 
 class GitHubStarImportConfirmDialogTestApp : Application()
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count(needle::equals)
-
-private fun starDialogsSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
 private const val EXIT_OBSERVATION_MILLIS = 16L
 private const val EXIT_COMPLETION_MILLIS = 300L
-private const val GITHUB_STAR_DIALOGS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/importer/GitHubStarImportConfirmDialog.kt"

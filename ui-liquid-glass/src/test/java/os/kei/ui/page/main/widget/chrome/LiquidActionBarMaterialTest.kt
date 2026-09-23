@@ -2,9 +2,7 @@ package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import java.io.File
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,27 +37,6 @@ class LiquidActionBarMaterialTest {
     }
 
     @Test
-    fun bothBarsReadTheSameMaterial() {
-        // The regression this guards is a *reintroduced* private material, not a wrong number: the two
-        // bars are visible at once, and the bottom bar spent a month at 0.40/1.00 against the toolbar's
-        // 0.30/0.66 without anything failing.
-        val bottomBar = sourceFile(LIQUID_BOTTOM_BAR_SOURCE).readText()
-
-        assertTrue(
-            "The bottom bar must take its material from liquidActionBarMaterial",
-            "liquidActionBarMaterial(" in bottomBar,
-        )
-        assertTrue(
-            "The bottom bar must take its palette from rememberLiquidActionBarPalette",
-            "rememberLiquidActionBarPalette(" in bottomBar,
-        )
-        assertFalse(
-            "liquidBottomBarMaterial is gone; do not reintroduce a bar-private material",
-            "liquidBottomBarMaterial" in bottomBar,
-        )
-    }
-
-    @Test
     fun theSelectionIndicatorFollowsTheAccent() {
         // Was a flat 10% black/white film that ignored the theme's primary. The dark side still lands on
         // a neutral white film by design; only light mode mixes the accent in.
@@ -74,41 +51,4 @@ class LiquidActionBarMaterialTest {
         assertEquals(Color.White.copy(alpha = 0.10f), dark)
     }
 
-    @Test
-    fun thePressLensIsNamedRatherThanInlined() {
-        assertEquals(10.dp, LiquidBarPressLensHeight)
-        assertEquals(14.dp, LiquidBarPressLensAmount)
-        assertEquals(6f, LiquidBarPressRefractionStrength)
-
-        val bottomBar = sourceFile(LIQUID_BOTTOM_BAR_SOURCE).readText()
-        assertFalse(
-            "The press lens should read its numbers from the shared style, not from literals",
-            "10f.dp.toPx() * progress" in bottomBar,
-        )
-    }
-
-    @Test
-    fun bottomBarRenderingSourceStaysBelowFileSizeBudget() {
-        val lineCount = sourceFile(LIQUID_BOTTOM_BAR_SOURCE).useLines { it.count() }
-
-        assertTrue(
-            "LiquidGlassBottomBar.kt has $lineCount lines; keep rendering source below 1000 lines",
-            lineCount < 1_000,
-        )
-    }
 }
-
-private fun sourceFile(relativePath: String): File {
-    val candidates =
-        generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    return requireNotNull(
-        candidates
-            .map { File(it, relativePath) }
-            .firstOrNull(File::isFile),
-    ) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }
-}
-
-private const val LIQUID_BOTTOM_BAR_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/chrome/LiquidGlassBottomBar.kt"

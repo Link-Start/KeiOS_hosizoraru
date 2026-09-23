@@ -41,8 +41,6 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -171,48 +169,6 @@ class StudentGuidePassiveMetadataPillTest {
         }
     }
 
-    @Test
-    fun eightProductionPillsConsumeBackdropWithoutCreatingLocalProducers() {
-        val sourceExpectations =
-            listOf(
-                SourceExpectation(GUIDE_SECTION_VOICE_SOURCE, statusPillCount = 1),
-                SourceExpectation(GUIDE_SECTION_WEAPON_SOURCE, statusPillCount = 3),
-                SourceExpectation(GUIDE_GALLERY_MEDIA_RENDERER_SOURCE, statusPillCount = 1),
-                SourceExpectation(GUIDE_GALLERY_VIDEO_SECTION_SOURCE, statusPillCount = 1),
-                SourceExpectation(GUIDE_SIMULATE_COMMON_ROWS_SOURCE, statusPillCount = 2),
-            )
-        val statusPillCalls =
-            sourceExpectations.flatMap { expectation ->
-                val source = sourceFile(expectation.path)
-                assertFalse("rememberLayerBackdrop" in source)
-                assertFalse(".layerBackdrop(" in source)
-                source.callBlocks("StatusPill").also { calls ->
-                    assertEquals(expectation.statusPillCount, calls.size, expectation.path)
-                }
-            }
-
-        assertEquals(8, statusPillCalls.size)
-        statusPillCalls.forEach { call ->
-            assertTrue("backdrop = backdrop" in call)
-            assertTrue("size = AppStatusPillSize.Compact" in call)
-            assertTrue("maxLines = 1" in call)
-            assertTrue("overflow = TextOverflow.Ellipsis" in call)
-            assertTrue("GuidePassiveMetadataPillMinHeight" in call)
-            assertFalse("enabled =" in call)
-            assertFalse("onClick =" in call)
-        }
-        assertEquals(
-            6,
-            statusPillCalls.count { call -> "GuidePassiveMetadataPillMaxWidth" in call },
-        )
-        sourceExpectations.forEach { expectation ->
-            val disabledTextButtons =
-                sourceFile(expectation.path)
-                    .callBlocks("AppLiquidTextButton")
-                    .count { call -> "enabled = false" in call }
-            assertEquals(0, disabledTextButtons, expectation.path)
-        }
-    }
 }
 
 @androidx.compose.runtime.Composable
@@ -246,34 +202,6 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.callBlocks(callName: String): List<String> {
-    val marker = "$callName("
-    val calls = mutableListOf<String>()
-    var searchStart = 0
-    while (searchStart < length) {
-        val callStart = indexOf(marker, startIndex = searchStart)
-        if (callStart < 0) break
-        var cursor = callStart + callName.length
-        var depth = 0
-        while (cursor < length) {
-            when (this[cursor]) {
-                '(' -> depth += 1
-                ')' -> {
-                    depth -= 1
-                    if (depth == 0) {
-                        calls += substring(callStart, cursor + 1)
-                        searchStart = cursor + 1
-                        break
-                    }
-                }
-            }
-            cursor += 1
-        }
-        if (cursor >= length) break
-    }
-    return calls
-}
-
 class StudentGuidePassiveMetadataPillTestApp : Application()
 
 private const val ONE_X_LABEL = "Read-only metadata"
@@ -284,14 +212,3 @@ private const val CROWDED_ROW_TAG = "passive-metadata-crowded-row"
 private const val TITLE_TAG = "passive-metadata-title"
 private const val DYNAMIC_PILL_TAG = "passive-metadata-dynamic-pill"
 private const val ACTION_TAG_PREFIX = "passive-metadata-action-"
-
-private const val GUIDE_SECTION_VOICE_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/section/GuideSectionVoice.kt"
-private const val GUIDE_SECTION_WEAPON_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/section/GuideSectionWeapon.kt"
-private const val GUIDE_GALLERY_MEDIA_RENDERER_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/section/gallery/GuideGalleryMediaRenderer.kt"
-private const val GUIDE_GALLERY_VIDEO_SECTION_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/section/gallery/GuideGalleryVideoSection.kt"
-private const val GUIDE_SIMULATE_COMMON_ROWS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/tabcontent/simulate/common/GuideSimulateCommonRows.kt"

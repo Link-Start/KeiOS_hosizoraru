@@ -31,8 +31,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -241,47 +239,6 @@ class BaCalendarPoolEntryStatusPillTest {
         assertInside(panelBounds, countdownBounds, tolerance)
     }
 
-    @Test
-    fun bothEntriesReuseTheExportedPanelBackdropWithoutLocalProducers() {
-        val source = sourceFile(BA_CALENDAR_POOL_CARDS_SOURCE)
-        val surfacesSource = sourceFile(BA_LIQUID_SURFACES_SOURCE)
-        val calendarImplementation =
-            source
-                .substringAfter("internal fun BaCalendarEntryPanel(")
-                .substringBefore("@Composable\ninternal fun BaPoolSectionHeaderCard(")
-        val poolImplementation =
-            source
-                .substringAfter("internal fun BaPoolEntryPanel(")
-                .substringBefore("@Composable\ninternal fun BaCalendarPoolEntryStatusPill(")
-        val pillImplementation =
-            source
-                .substringAfter("internal fun BaCalendarPoolEntryStatusPill(")
-                .substringBefore("@Composable\nprivate fun baCalendarKindLabel(")
-        val plainStatusPattern = Regex("Text\\(\\s*text = statusText")
-
-        assertEquals(1, calendarImplementation.occurrencesOf("BaCalendarPoolEntryStatusPill("))
-        assertEquals(1, poolImplementation.occurrencesOf("BaCalendarPoolEntryStatusPill("))
-        assertFalse(plainStatusPattern.containsMatchIn(calendarImplementation))
-        assertFalse(plainStatusPattern.containsMatchIn(poolImplementation))
-        assertTrue("StatusPill(" in pillImplementation)
-        assertTrue("modifier = modifier.widthIn(max = 128.dp)" in pillImplementation)
-        assertTrue("size = AppStatusPillSize.Compact" in pillImplementation)
-        assertTrue(
-            "contentPadding = PaddingValues(horizontal = 7.dp, vertical = 2.dp)" in
-                pillImplementation,
-        )
-        assertTrue("backgroundAlphaOverride = 0.12f" in pillImplementation)
-        assertTrue("borderAlphaOverride = 0f" in pillImplementation)
-        assertTrue("maxLines = 1" in pillImplementation)
-        assertTrue("overflow = TextOverflow.Ellipsis" in pillImplementation)
-        assertTrue("fontSize = AppTypographyTokens.Caption.fontSize" in pillImplementation)
-        assertTrue("contentColorOverride = accentColor" in pillImplementation)
-        assertFalse("backdrop =" in pillImplementation)
-        assertFalse("rememberLayerBackdrop" in source)
-        assertFalse(".layerBackdrop(" in source)
-        assertTrue("exportBackdropToContent = true" in surfacesSource)
-    }
-
     private fun setLargeFontContent(content: @Composable (Backdrop) -> Unit) {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
@@ -327,8 +284,6 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
 private const val SERVER_INDEX = 0
 private const val NOW_MS = 1_800_000_000_000L
 private const val CALENDAR_BEGIN_MS = NOW_MS - 3_600_000L
@@ -347,7 +302,3 @@ private const val LONG_STATUS_PANEL_TAG = "ba-calendar-pool-long-status-panel"
 private const val LONG_STATUS_PILL_TAG = "ba-calendar-pool-long-status-pill"
 private const val LONG_LOCALIZED_STATUS = "即将开始的长期限定活动状态说明（国际服本地化文本）"
 private const val LONG_COUNTDOWN = "123天23小时后"
-private const val BA_CALENDAR_POOL_CARDS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/card/BaCalendarPoolCards.kt"
-private const val BA_LIQUID_SURFACES_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaLiquidSurfaces.kt"

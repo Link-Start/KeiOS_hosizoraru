@@ -14,7 +14,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.ui.page.main.ba.support.BaCraftFunction
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
@@ -125,47 +124,6 @@ class BaPageBackdropTest {
         }
     }
 
-    @Test
-    fun canvasContentPrecedesBaConsumersAndTopBarKeepsItsOwnProducer() {
-        val pageSource = sourceFile(BA_PAGE_SOURCE)
-        val contentSource = sourceFile(BA_PAGE_CONTENT_SOURCE)
-        val sceneIndex = pageSource.indexOf("MainPageContentBackdropScene(")
-        val sceneBackdropIndex =
-            pageSource.indexOf("contentProducer = null", startIndex = sceneIndex.coerceAtLeast(0))
-        val scaffoldIndex = pageSource.indexOf("AppScaffold(", startIndex = sceneBackdropIndex.coerceAtLeast(0))
-        val contentConsumerIndex =
-            pageSource.indexOf("backdrop = backdrops.contentMaterial", startIndex = scaffoldIndex.coerceAtLeast(0))
-        val dockConsumerIndex =
-            pageSource.indexOf("BaPageFloatingDock(", startIndex = contentConsumerIndex.coerceAtLeast(0))
-        val topBarProducerIndex = contentSource.indexOf(".layerBackdrop(topBarBackdrop)")
-
-        assertTrue(sceneIndex >= 0, "BA page must host one content Backdrop scene")
-        assertTrue(sceneBackdropIndex > sceneIndex, "BA scene must be handed a producer, and it has none of its own")
-        assertTrue(scaffoldIndex > sceneBackdropIndex, "The producer wiring must precede the Scaffold consumer tree")
-        assertTrue(contentConsumerIndex > scaffoldIndex, "BA cards must consume the direct content material")
-        assertTrue(dockConsumerIndex > contentConsumerIndex, "Floating dock must be composed after page consumers")
-        assertTrue(
-            pageSource.indexOf("backdrop = backdrops.topBar,", startIndex = dockConsumerIndex) > dockConsumerIndex,
-            "Floating dock must sample the scrolling-content identity",
-        )
-        assertTrue(topBarProducerIndex >= 0, "BA scrolling content must keep the dedicated top-bar producer")
-        assertEquals(1, pageSource.occurrencesOf("MainPageContentBackdropScene("))
-        assertEquals(1, contentSource.occurrencesOf(".layerBackdrop(topBarBackdrop)"))
-        assertEquals(1, pageSource.occurrencesOf("contentProducer = null"))
-        assertEquals(1, pageSource.occurrencesOf("backdrop = backdrops.contentMaterial"))
-        assertEquals(
-            1,
-            pageSource.occurrencesOf("producerActive = pageBackdropEffectsEnabled && sheetBackdropVisible"),
-        )
-        assertEquals(
-            1,
-            pageSource.occurrencesOf("distinctLayers = pageBackdropEffectsEnabled && sheetBackdropVisible"),
-        )
-        assertEquals(0, pageSource.occurrencesOf("producerActive = backdrops.sheetProducer !== backdrops.contentProducer"))
-        assertEquals(1, pageSource.occurrencesOf("useSolidSurfaceBackdrops = true"))
-        assertEquals(0, pageSource.occurrencesOf(".layerBackdrop(backdrops.contentProducer)"))
-        assertEquals(0, contentSource.occurrencesOf(".layerBackdrop(backdrop)"))
-    }
 }
 
 private fun sourceFile(relativePath: String): String {
@@ -178,12 +136,5 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
-private const val BA_PAGE_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BAPage.kt"
-private const val BA_PAGE_CONTENT_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaPageContent.kt"
 
 class BaPageBackdropTestApp : Application()

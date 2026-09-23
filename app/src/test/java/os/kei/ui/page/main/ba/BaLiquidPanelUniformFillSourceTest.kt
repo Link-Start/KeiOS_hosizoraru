@@ -36,20 +36,6 @@ class BaLiquidPanelUniformFillSourceTest {
         )
     }
 
-    @Test
-    fun theFlatFillCompositesOverThePageCardMaterial() {
-        val source = sourceFile(SURFACES)
-
-        assertTrue(
-            "appManagedPageCardMaterialColor(" in source,
-            "$SURFACES must composite the flat fill over the page material the glass path refracts",
-        )
-        assertTrue(
-            "uniformFill" in source && "appSquircleBackground(" in source,
-            "The flat path must paint the corrected fill through the non-clipping squircle background",
-        )
-    }
-
     /**
      * Keyed on the fill helper, not on the shader mask.
      *

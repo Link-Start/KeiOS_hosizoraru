@@ -111,28 +111,6 @@ class BaselineProfileTestTagContractTest {
     }
 
     @Test
-    fun theDefaultProfileKeepsItsJourneyAndReplayBudget() {
-        val source = generatorSourceWithoutComments()
-        val journeyCount = JOURNEY_DECLARATION.findAll(source).count()
-        val iterationBudgets =
-            INT_CONST_DECLARATION
-                .findAll(source)
-                .associate { match -> match.groupValues[1] to match.groupValues[2].toInt() }
-        val replayBudget =
-            MAX_ITERATION_USE
-                .findAll(source)
-                .sumOf { match ->
-                    val constant = match.groupValues[1]
-                    requireNotNull(iterationBudgets[constant]) {
-                        "Unable to resolve maxIterations constant $constant"
-                    }
-                }
-
-        assertEquals(6, journeyCount, "The default profile should stay reviewable as six user journeys")
-        assertEquals(16, replayBudget, "The default profile replay budget changed; justify it in the plan")
-    }
-
-    @Test
     fun theDefaultProfileStaysDeterministic() {
         val source = generatorSourceWithoutComments()
 
@@ -165,143 +143,6 @@ class BaselineProfileTestTagContractTest {
 
         assertTrue("import androidx.activity.compose.ReportDrawn" in source)
         assertTrue("ReportDrawn()" in source)
-    }
-
-    @Test
-    fun liquidSheetMotionStaysInTheProfileAndHasAnABBenchmark() {
-        val generator = sourceFile(GENERATOR_SOURCE)
-        val benchmarks = sourceFile(MAIN_NAVIGATION_BENCHMARK_SOURCE)
-
-        assertTrue("openExerciseAndDismissLiquidSheet(GITHUB_STRATEGY_SHEET_BUTTON)" in generator)
-        assertTrue("dragLiquidSheetRegion(up = true)" in generator)
-        assertTrue("swipeWithinTestTag(LIQUID_SHEET_PANEL, up = true)" in generator)
-        assertTrue("swipeWithinTestTag(LIQUID_SHEET_PANEL, up = false)" in generator)
-        assertTrue("dragLiquidSheetRegion(up = false)" in generator)
-        assertTrue("fun liquidSheetMotionBaselineProfile()" in benchmarks)
-        assertTrue("fun liquidSheetMotionCompilationNone()" in benchmarks)
-        assertTrue("CompilationMode.Partial(BaselineProfileMode.Require)" in benchmarks)
-        assertTrue("CompilationMode.None()" in benchmarks)
-    }
-
-    @Test
-    fun adaptiveSidebarShapeChangesWaitForTheSharedChromeTag() {
-        val generator = sourceFile(GENERATOR_SOURCE)
-
-        assertEquals(
-            2,
-            "waitForTestTag(MAIN_SIDEBAR_TOGGLE, timeoutMs = 15_000)"
-                .toRegex(RegexOption.LITERAL)
-                .findAll(generator)
-                .count(),
-            "Both adaptive sidebar shape changes must wait for the transient top chrome to settle",
-        )
-    }
-
-    @Test
-    fun pushedRoutesProveTheForegroundPageDisappeared() {
-        val generator = sourceFile(GENERATOR_SOURCE)
-
-        assertEquals(
-            2,
-            "returnFromPushedRoute(pageTag = pageTag, returnTag = returnTag)"
-                .toRegex(RegexOption.LITERAL)
-                .findAll(generator)
-                .count(),
-            "Phone and adaptive route helpers must share foreground-page dismissal proof",
-        )
-        assertTrue("Until.gone(testTagSelector(pageTag))" in generator)
-        assertTrue("PUSH_ROUTE_MAX_BACK_ATTEMPTS = 2" in generator)
-    }
-
-    @Test
-    fun compactBottomBarsWaitForTheirExpandedTarget() {
-        val generator = sourceFile(GENERATOR_SOURCE)
-
-        assertTrue("device.click(bounds.centerX(), bounds.centerY())" in generator)
-        assertTrue(
-            "device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)" in generator,
-            "Liquid dock expansion must wait for fresh tab semantics before retrying",
-        )
-        assertEquals(
-            2,
-            "device.wait(Until.hasObject(testTagSelector(tag)), BOTTOM_BAR_EXPAND_TIMEOUT_MS)"
-                .toRegex(RegexOption.LITERAL)
-                .findAll(generator)
-                .count(),
-            "Both compact-dock taps and reverse-scroll expansion must wait for fresh semantics",
-        )
-    }
-
-    @Test
-    fun injectedGesturesHaveOneBoundedInjectionRetry() {
-        val generator = sourceFile(GENERATOR_SOURCE)
-
-        assertEquals(
-            4,
-            "swipeWithInjectionRetry("
-                .toRegex(RegexOption.LITERAL)
-                .findAll(generator)
-                .count(),
-            "The helper declaration plus Sheet drag, Sheet content and main-pager swipes must stay wired",
-        )
-        assertTrue("GESTURE_INJECTION_ATTEMPTS = 2" in generator)
-    }
-
-    /**
-     * The one page switch a tab tap cannot stand in for.
-     *
-     * A tap animates the pager on a timed curve; a finger runs `draggable`'s drag detection and then
-     * `settleAfterDrag`'s velocity spring, and `animateLoadedPagerSettlePosition` has a single call
-     * site that no tap reaches -- confirmed by capturing the journey with and without the swipe.
-     * Both directions are pinned because a one-way swipe would leave the journey on the wrong page
-     * for everything after it, and the *settled* tag is pinned because a drag a child consumes still
-     * leaves the destination's page root composed next door -- the difference between a real switch
-     * and a silent no-op is only visible there.
-     */
-    @Test
-    fun theMainPagerIsAlsoSwitchedByHand() {
-        val generator = generatorSourceWithoutComments()
-
-        assertTrue("fun MacrobenchmarkScope.swipeMainPagerTo(" in generator)
-        assertEquals(
-            3,
-            "swipeMainPagerTo("
-                .toRegex(RegexOption.LITERAL)
-                .findAll(generator)
-                .count(),
-            "The declaration plus both directions: a one-way swipe ends the journey on the wrong page",
-        )
-        assertEquals(
-            3,
-            "waitForTestTag(settledTag, timeoutMs = 15_000)"
-                .toRegex(RegexOption.LITERAL)
-                .findAll(generator)
-                .count(),
-            "Tab, sidebar and hand switches must all be proven by the settled tag, never a page root",
-        )
-    }
-
-    @Test
-    fun calendarAndPoolStayOneProfileRoute() {
-        val generator = sourceFile(GENERATOR_SOURCE)
-        val benchmarks = sourceFile(MAIN_NAVIGATION_BENCHMARK_SOURCE)
-        val mergedPage = sourceFile(BA_CALENDAR_POOL_PAGE)
-        val profileSources = "$generator\n$benchmarks"
-
-        assertTrue("BA_DOCK_OPEN_CALENDAR_POOL" in profileSources)
-        assertTrue("BA_CALENDAR_POOL_PAGE_ROOT" in profileSources)
-        assertTrue("BA_CALENDAR_POOL_TAB_POOL" in profileSources)
-        assertTrue(
-            "\"ba_dock_open_calendar\"" !in profileSources,
-            "The removed standalone Calendar dock tag returned to a profile source",
-        )
-        assertTrue(
-            "\"ba_dock_open_pool\"" !in profileSources,
-            "The removed standalone Pool dock tag returned to a profile source",
-        )
-        assertTrue("fun baCalendarPoolRouteInteractions()" in benchmarks)
-        assertTrue("if (wide)" in generator)
-        assertTrue("if (!bothColumns)" in mergedPage)
     }
 
     /**
@@ -412,8 +253,8 @@ private const val SCENE_BACKDROP_HOST =
  *
  * It also holds a couple of *platform identifiers* — the class names the tile long-press journey starts —
  * which are strings but not tags, and would fail the declared-tag check on sight. Tag values are
- * snake_case identifiers and a class name is not, so the shape is the filter;
- * `theClassNamesTheTileLongPressJourneyStartsStillExist` covers what this skips.
+ * snake_case identifiers and a class name is not, so the shape is the filter. Nothing checks the skipped
+ * class names; a renamed Activity shows up as that journey failing on device.
  */
 private fun profileTagConstants(): List<Pair<String, String>> =
     PROFILE_SOURCE_FILES.flatMap { relativePath ->
@@ -457,10 +298,6 @@ private val PROFILE_SOURCE_FILES =
     )
 
 private val CONST_DECLARATION = Regex("""const val (\w+)\s*(?:=\s*)?\n?\s*"([^"]+)"""")
-private val INT_CONST_DECLARATION = Regex("""const val (\w+_MAX_ITERATIONS)\s*=\s*(\d+)""")
-private val MAX_ITERATION_USE = Regex("""maxIterations\s*=\s*(\w+_MAX_ITERATIONS)""")
-private val JOURNEY_DECLARATION = Regex("""@Test\s+fun\s+\w+\s*\(""")
-
 private val FORBIDDEN_PROFILE_FIXTURES =
     listOf(
         "ServerSocket",

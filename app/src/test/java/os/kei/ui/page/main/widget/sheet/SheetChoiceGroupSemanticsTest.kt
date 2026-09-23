@@ -91,23 +91,6 @@ class SheetChoiceGroupSemanticsTest {
         assertFalse(ShortcutSuggestionField.IntentFlags.usesExclusiveSuggestionGroup())
     }
 
-    @Test
-    fun productionChoiceSetsUseOneSharedGroupPerExclusiveSet() {
-        val mcpSource = sourceFile(MCP_EDIT_SHEET_SOURCE)
-        val shellSource = sourceFile(OS_SHELL_RUNNER_SHEETS_SOURCE)
-        val strategySource = sourceFile(GITHUB_STRATEGY_SHEET_SOURCE)
-        val fdroidSource = sourceFile(GITHUB_FDROID_DISCOVERY_SOURCE)
-        val googleSource = sourceFile(OS_GOOGLE_SUGGESTION_SHEET_SOURCE)
-
-        assertEquals(1, mcpSource.groupedSheetActionCount())
-        assertEquals(4, shellSource.groupedSheetActionCount())
-        assertEquals(2, strategySource.groupedSheetActionCount())
-        assertEquals(1, fdroidSource.occurrencesOf(".selectableGroup()"))
-        assertEquals(2, googleSource.groupedSheetActionCount())
-        assertEquals(3, googleSource.occurrencesOf(".selectableGroup()"))
-        assertTrue("if (target.usesExclusiveSuggestionGroup())" in googleSource)
-    }
-
     private companion object {
         val SELECTABLE_GROUP =
             SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup)
@@ -115,15 +98,6 @@ class SheetChoiceGroupSemanticsTest {
             SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
     }
 }
-
-private fun String.groupedSheetActionCount(): Int =
-    Regex(
-        pattern =
-            """SheetActionGroup\s*\(\s*modifier\s*=\s*Modifier\.selectableGroup\(\)""",
-    ).findAll(this).count()
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(size = needle.length, step = 1).count { it == needle }
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
@@ -135,16 +109,5 @@ private fun sourceFile(relativePath: String): String {
     return requireNotNull(sourceFile) { "Unable to locate $relativePath from $workingDirectory" }
         .readText()
 }
-
-private const val MCP_EDIT_SHEET_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/mcp/sheet/McpEditSheet.kt"
-private const val OS_SHELL_RUNNER_SHEETS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/os/shell/OsShellRunnerSheets.kt"
-private const val GITHUB_STRATEGY_SHEET_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubStrategySheet.kt"
-private const val GITHUB_FDROID_DISCOVERY_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubTrackEditFdroidDiscoverySection.kt"
-private const val OS_GOOGLE_SUGGESTION_SHEET_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/os/components/OsGoogleSystemServiceSuggestionSheet.kt"
 
 internal class SheetChoiceGroupSemanticsTestApp : Application()

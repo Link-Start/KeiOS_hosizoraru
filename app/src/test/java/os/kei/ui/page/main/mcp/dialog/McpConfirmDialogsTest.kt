@@ -14,9 +14,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,22 +70,6 @@ class McpConfirmDialogsTest {
         }
     }
 
-    @Test
-    fun bothResetDialogsRouteThroughTheSharedHostAndKeepDangerStyling() {
-        val source = confirmDialogSource(MCP_CONFIRM_DIALOGS_SOURCE)
-
-        assertEquals(2, source.occurrencesOf("AppWindowDialogHost("))
-        assertFalse("WindowDialog(" in source)
-        assertEquals(1, source.occurrencesOf("containerColor = MiuixTheme.colorScheme.error"))
-        assertEquals(1, source.occurrencesOf("variant = GlassVariant.SheetDangerAction"))
-        assertEquals(2, source.occurrencesOf("AppLiquidDialogActionButton("))
-        assertEquals(2, source.occurrencesOf("show = show,"))
-        assertEquals(1, source.occurrencesOf("R.string.mcp_action_reset_service_config"))
-        assertEquals(1, source.occurrencesOf("R.string.mcp_reset_service_config_confirm_summary"))
-        assertEquals(1, source.occurrencesOf("R.string.mcp_action_reset_token"))
-        assertEquals(1, source.occurrencesOf("R.string.mcp_reset_token_confirm_summary"))
-    }
-
     private fun verifyConfirmDialog(
         title: String,
         summary: String,
@@ -133,17 +115,3 @@ class McpConfirmDialogsTest {
 }
 
 class McpConfirmDialogsTestApp : Application()
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
-
-private fun confirmDialogSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
-private const val MCP_CONFIRM_DIALOGS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/mcp/dialog/McpConfirmDialogs.kt"

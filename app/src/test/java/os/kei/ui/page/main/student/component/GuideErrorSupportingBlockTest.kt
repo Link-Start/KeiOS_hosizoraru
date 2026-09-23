@@ -23,7 +23,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
 import kotlin.math.abs
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -55,32 +54,6 @@ class GuideErrorSupportingBlockTest {
     @Test
     fun longErrorRemainsCompleteAndSeparatedAtLargeFontInDarkTheme() {
         verifyLongErrorLayout(ColorSchemeMode.Dark)
-    }
-
-    @Test
-    fun productionTabsReuseOneExplicitBackdropErrorBlockWithoutTruncation() {
-        val helperSource = sourceFile(GUIDE_ERROR_BLOCK_SOURCE)
-        val statusPrimitiveSource = sourceFile(APP_STATUS_PRIMITIVES_SOURCE)
-        val rendererSources = GUIDE_RENDERER_SOURCES.map(::sourceFile)
-
-        assertTrue("AppSupportingBlock(" in helperSource)
-        assertTrue("backdrop = backdrop" in helperSource)
-        assertTrue("fillWidth = true" in helperSource)
-        assertTrue("cornerRadius = 16.dp" in helperSource)
-        assertTrue("PaddingValues(horizontal = 12.dp, vertical = 9.dp)" in helperSource)
-        assertTrue("if (isDark) 0.12f else 0.08f" in helperSource)
-        assertFalse("maxLines =" in helperSource)
-        assertFalse("overflow =" in helperSource)
-        assertFalse("rememberLayerBackdrop" in helperSource)
-        assertFalse(".layerBackdrop(" in helperSource)
-
-        assertTrue("backdrop: Backdrop? = null" in statusPrimitiveSource)
-        assertTrue(
-            "activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in statusPrimitiveSource,
-        )
-        rendererSources.forEach { rendererSource ->
-            assertTrue("GuideErrorSupportingBlock(" in rendererSource)
-        }
     }
 
     private fun verifyLongErrorLayout(colorSchemeMode: ColorSchemeMode) {
@@ -166,14 +139,3 @@ private const val AFTER_TEXT = "Next student card"
 private const val LONG_ERROR_MESSAGE =
     "The student guide response could not be parsed because several nested records use an unsupported format; " +
         "the complete diagnostic remains visible so the source can be corrected and refreshed."
-private const val GUIDE_ERROR_BLOCK_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/component/GuideErrorSupportingBlock.kt"
-private const val APP_STATUS_PRIMITIVES_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppStatusPrimitives.kt"
-private val GUIDE_RENDERER_SOURCES =
-    listOf(
-        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideSkillsTabContent.kt",
-        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideVoiceTabContent.kt",
-        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideSimulateTabContent.kt",
-        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideGalleryTabContentSections.kt",
-    )

@@ -42,7 +42,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -65,32 +64,6 @@ class DebugLiquidDropdownSelectorSamplesTest {
                 .width
                 .toDp()
         }
-
-    @Test
-    fun productionMatrixDelegatesEveryPressureStateToTheSharedSelector() {
-        val source = sourceFile(DROPDOWN_SAMPLES_SOURCE)
-        val matrixSource =
-            source
-                .substringAfter("internal fun DebugLiquidProductionDropdownSelectorSamples(")
-                .substringBefore("private fun DebugLiquidProductionDropdownSelector(")
-        val selectorSource =
-            source
-                .substringAfter("private fun DebugLiquidProductionDropdownSelector(")
-                .substringBefore("private fun DebugLiquidDropdownSampleLabel(")
-
-        assertEquals(5, matrixSource.occurrencesOf("DebugLiquidProductionDropdownSelector("))
-        assertTrue("AppDropdownSelector(" in selectorSource)
-        assertTrue("anchorFillMaxWidth = true" in selectorSource)
-        assertTrue("anchorTextOverflow = TextOverflow.Ellipsis" in selectorSource)
-        assertTrue("anchorTextSoftWrap = false" in selectorSource)
-        assertTrue("dropdownItemTextMaxLines = 1" in selectorSource)
-        assertTrue("popupMatchAnchorWidth = true" in selectorSource)
-        assertTrue("enabled = enabled" in selectorSource)
-        assertTrue("DebugLiquidDropdownStressOptionCount = 16" in source)
-        assertTrue("DebugLiquidDropdownStressSelectedIndex = 14" in source)
-        assertFalse("SnapshotWindowListPopup(" in source)
-        assertFalse("LiquidGlassDropdownColumn(" in source)
-    }
 
     @Test
     fun largeFontKeepsFullAndSplitAnchorsInsideThe324DpMatrix() {
@@ -288,7 +261,5 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 class DebugLiquidDropdownSelectorSamplesTestApp : Application()

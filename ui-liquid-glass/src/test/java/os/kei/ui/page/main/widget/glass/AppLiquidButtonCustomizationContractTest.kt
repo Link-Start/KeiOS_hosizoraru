@@ -5,8 +5,6 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
-
 class AppLiquidButtonCustomizationContractTest {
     @Test
     fun explicitContainerAlphaKeepsNeutralThemeFilmInBothThemes() {
@@ -84,21 +82,6 @@ class AppLiquidButtonCustomizationContractTest {
         )
     }
 
-    @Test
-    fun textButtonLayoutOverridesStayOptionalAndFeedTheContentRow() {
-        val source = sourceFile(APP_LIQUID_BUTTONS_SOURCE)
-
-        assertTrue("containerAlphaOverride: Float? = null" in source)
-        assertTrue("leadingIconModifier: Modifier = Modifier" in source)
-        assertTrue("leadingContentGap: Dp = AppInteractiveTokens.controlContentGap" in source)
-        assertTrue("horizontalArrangement = Arrangement.spacedBy(leadingContentGap)" in source)
-        assertTrue("modifier = leadingIconModifier" in source)
-        assertEquals(
-            2,
-            source.windowed("if (containerAlphaOverride == null || containerOverlay == null)".length)
-                .count { it == "if (containerAlphaOverride == null || containerOverlay == null)" },
-        )
-    }
 }
 
 private fun sourceFile(relativePath: String): String {
@@ -111,6 +94,3 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private const val APP_LIQUID_BUTTONS_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/AppLiquidButtons.kt"

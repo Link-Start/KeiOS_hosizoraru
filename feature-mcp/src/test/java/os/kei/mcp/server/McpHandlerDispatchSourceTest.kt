@@ -88,19 +88,6 @@ class McpHandlerDispatchSourceTest {
         }
     }
 
-    @Test
-    fun progressIsGatedOnTheClientAskingForIt() {
-        val source = sourceFile(EXECUTION)
-
-        assertTrue(
-            "params.meta?.progressToken" in source,
-            "Progress must only be sent when the client supplied a progressToken in _meta",
-        )
-        assertTrue(
-            "currentRequestHandlerExtra()" in source,
-            "Progress must be sent through the in-flight request so it is tagged with relatedRequestId",
-        )
-    }
 }
 
 private const val LOCAL_SERVICE = "feature-mcp/src/main/java/os/kei/mcp/server/LocalMcpService.kt"

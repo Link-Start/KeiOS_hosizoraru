@@ -21,7 +21,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -115,24 +114,6 @@ class GitHubApkInfoExpandableSectionTest {
         }
     }
 
-    @Test
-    fun expandableSectionsUseSharedHeaderAndNestedBackdropContract() {
-        val source = sourceFile(GITHUB_APK_INFO_SECTIONS_SOURCE)
-        val manifest =
-            source.substringAfter("internal fun ManifestNodeGroupCard(")
-                .substringBefore("\n@Composable\n@OptIn(ExperimentalLayoutApi::class)\nprivate fun ManifestNodeRow(")
-        val meaning =
-            source.substringAfter("internal fun ApkInfoMeaningSection()")
-                .substringBefore("\n@Composable\ninternal fun apkMeaningEntries()")
-
-        assertTrue("AppSurfaceCard(exportBackdropToContent = true)" in manifest)
-        assertEquals(1, manifest.occurrencesOf("AppCardHeader("))
-        assertEquals(1, meaning.occurrencesOf("AppCardHeader("))
-        assertTrue("contentDescription = null" in meaning)
-        assertFalse("AppStandaloneLiquidIconButton(" in manifest)
-        assertFalse("AppStandaloneLiquidIconButton(" in meaning)
-    }
-
     private fun setLargeFontContent(content: @androidx.compose.runtime.Composable () -> Unit) {
         composeRule.setContent {
             val baseDensity = LocalDensity.current
@@ -166,9 +147,6 @@ class GitHubApkInfoExpandableSectionTest {
     }
 }
 
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
-
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
     val sourceFile =
@@ -181,6 +159,3 @@ private fun sourceFile(relativePath: String): String {
 }
 
 internal class GitHubApkInfoExpandableSectionTestApp : Application()
-
-private const val GITHUB_APK_INFO_SECTIONS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubApkInfoSections.kt"

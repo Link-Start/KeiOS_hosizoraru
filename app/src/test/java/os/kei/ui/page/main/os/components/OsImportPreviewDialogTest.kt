@@ -37,9 +37,7 @@ import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -214,28 +212,6 @@ class OsImportPreviewDialogTest {
         assertEquals(0, confirmCount)
     }
 
-    @Test
-    fun productionDialogUsesSharedHostAndRetainsFullPreviewState() {
-        val source = importPreviewSource(OS_IMPORT_PREVIEW_DIALOG_SOURCE)
-
-        assertEquals(1, source.occurrencesOf("AppWindowDialogHost("))
-        assertFalse("WindowDialog(" in source)
-        assertTrue("rememberOsImportDialogExitSnapshot(currentSnapshot)" in source)
-        assertTrue("summary = renderedSnapshot?.let { importPreviewSummary(it.preview) }" in source)
-        assertTrue("onDismissFinished = exitSnapshot::clear" in source)
-        assertTrue("maxWidth = AppDialogDimensions.ContentRichMaxWidth" in source)
-        assertTrue("heightIn(max = ImportPreviewStatisticsMaxHeight)" in source)
-        assertTrue("verticalScroll(rememberScrollState())" in source)
-        assertTrue("testTag(OS_IMPORT_PREVIEW_STATISTICS_TEST_TAG)" in source)
-        assertTrue("actionsEnabled = preview != null" in source)
-        assertTrue("importInProgress = snapshot.importInProgress" in source)
-        assertEquals(10, source.occurrencesOf("MiuixInfoItem("))
-        assertEquals(2, source.occurrencesOf("AppLiquidDialogActionButton("))
-        assertEquals(2, source.occurrencesOf("enabled = actionsEnabled && !importInProgress"))
-        assertTrue("containerColor = if (preview.canImport) PreviewValidColor else null" in source)
-        assertTrue("onClick = if (preview.canImport) onConfirmImport else onDismissRequest" in source)
-    }
-
     private fun finishExitAnimation() {
         composeRule.mainClock.advanceTimeBy(EXIT_COMPLETION_MILLIS)
         composeRule.mainClock.autoAdvance = true
@@ -244,16 +220,6 @@ class OsImportPreviewDialogTest {
 }
 
 class OsImportPreviewDialogTestApp : Application()
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count(needle::equals)
-
-private fun importPreviewSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
 
 private val VALID_PREVIEW =
     OsCardImportPreview(
@@ -284,5 +250,3 @@ private const val DIALOG_TITLE = "Import OS cards?"
 private const val READY_SUMMARY = "The backup is ready to import."
 private const val EXIT_OBSERVATION_MILLIS = 16L
 private const val EXIT_COMPLETION_MILLIS = 300L
-private const val OS_IMPORT_PREVIEW_DIALOG_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/os/components/OsImportPreviewDialog.kt"

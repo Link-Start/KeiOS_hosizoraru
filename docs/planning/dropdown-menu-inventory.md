@@ -366,9 +366,8 @@ Route/Screen/leaf boundaries.
   - submenu persistence and local Back;
   - quick-action semantics and disabled state;
   - passive info-row semantics;
-  - large-font compact geometry.
-- `LiquidGlassActionMenuSubmenuContractTest`
-  - complete single-/multiple-choice row model forwarding.
+  - large-font compact geometry;
+  - submenu choice forwarding (it replaced a source-text contract test on 2026-09-23).
 - `AppDesignSystemScreenshotTest.liquidGlassActionMenuLight`
   - light-theme action-menu visual regression.
 

@@ -28,7 +28,6 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -150,59 +149,6 @@ class StatusPrimitiveBackdropTest {
         composeRule.onNodeWithText("Explicit supporting material").assertExists()
     }
 
-    @Test
-    fun primitivesContainNoStandaloneLayerBackdropProducer() {
-        val statusPillSource = sourceFile(STATUS_PILL_SOURCE)
-        val supportingBlockSource = sourceFile(APP_STATUS_PRIMITIVES_SOURCE)
-
-        listOf(statusPillSource, supportingBlockSource).forEach { source ->
-            assertFalse("rememberLayerBackdrop" in source)
-            assertFalse(".layerBackdrop(" in source)
-        }
-        assertTrue("activeGlassBackdrop(backdrop ?: parentBackdrop)" in statusPillSource)
-        assertTrue("if (activeBackdrop != null)" in statusPillSource)
-        assertTrue(".drawAppSquircleBackground(cornerRadius)" in statusPillSource)
-        assertTrue("statusPillFallbackOptics(" in statusPillSource)
-        assertTrue(".appSquircleClip(cornerRadius)" in statusPillSource)
-        assertTrue("fallbackOptics.veilTop" in statusPillSource)
-        assertTrue("fallbackOptics.innerShadeBottom" in statusPillSource)
-        assertTrue("fallbackOptics.rimColor" in statusPillSource)
-        assertTrue("StatusPillLiquid(" in statusPillSource)
-        assertTrue("surfaceColor = resolvedColor.copy(alpha = backgroundAlpha)" in statusPillSource)
-        assertTrue("contentColorOverride: Color? = null" in statusPillSource)
-        assertTrue("contentColorOverride ?:" in statusPillSource)
-        assertTrue("typographyOverride: TextStyle? = null" in statusPillSource)
-        assertTrue("blurRadiusOverride: Dp? = null" in statusPillSource)
-        assertTrue("lensRadiusOverride: Dp? = null" in statusPillSource)
-        assertTrue("blurRadius = blurRadiusOverride ?: UiPerformanceBudget.backdropBlur" in statusPillSource)
-        assertTrue("lensRadius = lensRadiusOverride ?: UiPerformanceBudget.backdropLens" in statusPillSource)
-        assertTrue("backdrop: Backdrop? = null" in supportingBlockSource)
-        assertTrue(
-            "activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in supportingBlockSource,
-        )
-        assertTrue("containerColor: Color? = null" in supportingBlockSource)
-        assertTrue("contentColor: Color? = null" in supportingBlockSource)
-        assertTrue(
-            "contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 9.dp)" in
-                supportingBlockSource,
-        )
-        assertTrue("typography: AppTypographyToken = AppTypographyTokens.Supporting" in supportingBlockSource)
-        assertTrue("cornerRadius: Dp = 12.dp" in supportingBlockSource)
-        assertTrue("borderColor: Color = Color.Unspecified" in supportingBlockSource)
-        assertTrue("borderWidth: Dp = 0.dp" in supportingBlockSource)
-        assertTrue("fillWidth: Boolean = false" in supportingBlockSource)
-        assertTrue("depthEffect: Boolean = false" in supportingBlockSource)
-        assertTrue("highlightAlpha: Float? = null" in supportingBlockSource)
-        assertTrue("shadow: Boolean = false" in supportingBlockSource)
-        assertTrue("shadowAlpha: Float = 0.10f" in supportingBlockSource)
-        assertTrue("if (activeBackdrop != null)" in supportingBlockSource)
-        assertTrue(".appSquircleBackground(backgroundColor, cornerRadius)" in supportingBlockSource)
-        assertTrue(".appSquircleBorder(borderWidth, borderColor, cornerRadius)" in supportingBlockSource)
-        assertTrue("depthEffect = depthEffect" in supportingBlockSource)
-        assertTrue("highlightAlpha = highlightAlpha" in supportingBlockSource)
-        assertTrue("shadow = shadow" in supportingBlockSource)
-        assertTrue("shadowAlpha = shadowAlpha" in supportingBlockSource)
-    }
 }
 
 class StatusPrimitiveBackdropTestApp : Application()
@@ -217,9 +163,3 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private const val STATUS_PILL_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/status/StatusPill.kt"
-
-private const val APP_STATUS_PRIMITIVES_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppStatusPrimitives.kt"

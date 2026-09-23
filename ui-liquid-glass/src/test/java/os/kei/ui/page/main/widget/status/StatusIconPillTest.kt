@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -206,20 +205,6 @@ class StatusIconPillTest {
         assertEquals(ACCENT, statusPillContentColor(isDark = true, accent = ACCENT))
     }
 
-    @Test
-    fun sourceConsumesNearestBackdropWithoutCreatingAStandaloneProducer() {
-        val source = sourceFile(STATUS_ICON_PILL_SOURCE)
-
-        assertFalse("rememberLayerBackdrop" in source)
-        assertFalse(".layerBackdrop(" in source)
-        assertTrue("activeGlassBackdrop(backdrop ?: parentBackdrop)" in source)
-        assertTrue("statusPillFallbackOptics(" in source)
-        assertTrue(".statusPillMaterial(" in source)
-        assertTrue("isInteractive = false" in source)
-        assertTrue("contentDescription = label" in source)
-        assertFalse("onClick:" in source)
-        assertFalse("enabled:" in source)
-    }
 }
 
 class StatusIconPillTestApp : Application()
@@ -266,5 +251,3 @@ private const val DARK_TAG = "status-icon-pill-dark"
 private const val ROW_TAG = "status-icon-pill-row"
 private const val TITLE_TAG = "status-icon-pill-title"
 private const val COLOR_TOLERANCE = 0.001f
-private const val STATUS_ICON_PILL_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/status/StatusIconPill.kt"

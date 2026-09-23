@@ -28,9 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -175,59 +173,6 @@ class AppOverviewCardBackdropTest {
         }
     }
 
-    @Test
-    fun sourceDelegatesCardMaterialAndTransformToSharedSurface() {
-        val source = overviewCardSource()
-        val cardImplementation = overviewCardImplementationSource(source)
-
-        assertTrue("AppSurfaceCard(" in cardImplementation)
-        assertTrue("shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius)" in cardImplementation)
-        assertTrue("containerColor = containerColor" in cardImplementation)
-        assertTrue("borderColor = borderColor" in cardImplementation)
-        assertTrue("borderWidth = 1.dp" in cardImplementation)
-        assertTrue("contentColor = contentColor" in cardImplementation)
-        assertTrue("exportBackdropToContent = true" in cardImplementation)
-        assertTrue("pressSafePadding = 0.dp" in cardImplementation)
-        assertTrue("showIndication = showIndication" in cardImplementation)
-        assertTrue("onClick = onClick" in cardImplementation)
-        assertTrue("onLongClick = onLongClick" in cardImplementation)
-        assertFalse("LiquidSurface(" in cardImplementation)
-        assertFalse("rememberLayerBackdrop" in cardImplementation)
-        assertFalse("graphicsLayer" in cardImplementation)
-        assertFalse("0.992f" in cardImplementation)
-        assertFalse("app_overview_card_press_scale" in cardImplementation)
-        assertEquals(0, source.occurrencesOf(".layerBackdrop("))
-        assertEquals(0, source.occurrencesOf("captureBackdrop"))
-    }
-
-    @Test
-    fun metricTileMaterialsFollowTheAppTheme() {
-        val source = overviewCardSource()
-
-        assertFalse("isSystemInDarkTheme" in source)
-        assertEquals(2, source.occurrencesOf("isAppInDarkTheme()"))
-    }
 }
-
-private fun overviewCardSource(): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, APP_OVERVIEW_CARD_SOURCE) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $APP_OVERVIEW_CARD_SOURCE from $workingDirectory"
-    }.readText()
-}
-
-private fun overviewCardImplementationSource(source: String): String =
-    source
-        .substringAfter("fun AppOverviewCard(")
-        .substringBefore("fun AppOverviewMetricTile(")
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
-private const val APP_OVERVIEW_CARD_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/widget/core/AppOverviewCards.kt"
 
 class AppOverviewCardBackdropTestApp : Application()

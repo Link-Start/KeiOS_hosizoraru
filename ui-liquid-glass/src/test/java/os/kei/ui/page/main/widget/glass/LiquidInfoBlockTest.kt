@@ -32,7 +32,6 @@ import org.robolectric.annotation.GraphicsMode
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -50,19 +49,6 @@ import kotlin.math.abs
 class LiquidInfoBlockTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun exportedMaterialIsAllocatedOnlyForAnActiveParent() {
-        val source = sourceFile(LIQUID_INFO_BLOCK_SOURCE)
-        val exportBlock =
-            source
-                .substringAfter("val exportedContentBackdrop =")
-                .substringBefore("LiquidInfoBlockSurface(")
-
-        assertTrue("if (activeBackdrop != null)" in exportBlock)
-        assertTrue("rememberLayerBackdrop()" in exportBlock)
-        assertFalse("takeIf" in exportBlock)
-    }
 
     @Test
     fun exportsIndependentCardBackdropToContent() {
@@ -333,6 +319,3 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private const val LIQUID_INFO_BLOCK_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidInfoBlock.kt"

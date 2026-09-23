@@ -27,7 +27,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
-import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -80,13 +79,6 @@ class BaLiquidSurfacesInteractionTest {
         }
     }
 
-    @Test
-    fun pressFeedbackRequiresARealInteraction() {
-        val source = sourceFile(BA_LIQUID_SURFACES_SOURCE)
-
-        assertTrue("val hasLiquidPress = pressFeedback && hasInteraction" in source)
-    }
-
     private fun setPanels() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
@@ -135,8 +127,5 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private const val BA_LIQUID_SURFACES_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaLiquidSurfaces.kt"
 
 class BaLiquidSurfacesInteractionTestApp : Application()

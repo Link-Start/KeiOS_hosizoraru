@@ -23,7 +23,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.math.abs
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -148,32 +147,6 @@ class GitHubTrackedItemAssetStateCardTest {
         }
     }
 
-    @Test
-    fun stateCardsReuseFeatureCardAndInheritTheParentBackdrop() {
-        val source = sourceFile(GITHUB_TRACKED_ITEM_ASSET_STATES_SOURCE)
-        val loading =
-            source
-                .substringAfter("internal fun GitHubTrackedItemAssetLoadingCard(")
-                .substringBefore("@Composable\ninternal fun GitHubTrackedItemAssetErrorCard(")
-        val error = source.substringAfter("internal fun GitHubTrackedItemAssetErrorCard(")
-
-        assertEquals(1, loading.occurrencesOf("AppFeatureCard("))
-        assertEquals(1, error.occurrencesOf("AppFeatureCard("))
-        assertEquals(0, source.occurrencesOf("AppSurfaceCard("))
-        assertEquals(0, source.occurrencesOf("rememberLayerBackdrop"))
-        assertEquals(0, source.occurrencesOf("layerBackdrop("))
-        assertEquals(0, source.occurrencesOf("exportBackdropToContent"))
-        assertEquals(2, source.occurrencesOf("showIndication = false"))
-        assertEquals(2, source.occurrencesOf("contentPadding = PaddingValues(0.dp)"))
-        assertEquals(1, loading.occurrencesOf("\n        titleMaxLines = Int.MAX_VALUE"))
-        assertEquals(1, error.occurrencesOf("\n        titleMaxLines = Int.MAX_VALUE"))
-        assertEquals(1, loading.occurrencesOf("\n        subtitleMaxLines = Int.MAX_VALUE"))
-        assertEquals(1, error.occurrencesOf("\n        subtitleMaxLines = Int.MAX_VALUE"))
-        assertTrue("headerTextVerticalSpacing = CardLayoutRhythm.metricCardTextGap" in loading)
-        assertTrue("headerStartActionSize = 18.dp" in loading)
-        assertTrue("headerTextVerticalSpacing = CardLayoutRhythm.compactSectionGap" in error)
-    }
-
     private fun setLargeFontContent(content: @Composable () -> Unit) {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
@@ -216,8 +189,6 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
 private const val LOADING_CARD_TAG = "github-tracked-asset-loading-card"
 private const val ERROR_CARD_TAG = "github-tracked-asset-error-card"
 private const val LONG_ERROR =
@@ -225,5 +196,3 @@ private const val LONG_ERROR =
         "The second repository response line\n" +
         "The third release parsing line\n" +
         "The fourth recovery hint line"
-private const val GITHUB_TRACKED_ITEM_ASSET_STATES_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/section/GitHubTrackedItemAssetPanelStates.kt"

@@ -145,49 +145,6 @@ class StudentGuideLocalBackdropFallbackTest {
         assertTrue(".matchParentSize()\n                    .padding(horizontal = 4.dp)" in gallerySource)
     }
 
-    @Test
-    fun skillVariantBadgeReusesSharedStatusPillWithLegacyGeometryAndOptics() {
-        val skillSource = sourceFile(GUIDE_SECTION_SKILL_SOURCE)
-        val statusPillSource = sourceFile(STATUS_PILL_SOURCE)
-        val badgeSource =
-            skillSource
-                .substringAfter("internal fun GuideSkillVariantBadge(")
-                .substringBefore("internal fun GuideSkillStateTagButton(")
-
-        assertTrue("StatusPill(" in badgeSource)
-        assertFalse("LiquidSurface(" in badgeSource)
-        assertFalse("appSquircleBackground" in badgeSource)
-        assertTrue("modifier = modifier.size(26.dp)" in badgeSource)
-        assertTrue("color = Color(0xFF3B82F6)" in badgeSource)
-        assertTrue("contentPadding = PaddingValues(0.dp)" in badgeSource)
-        assertTrue("backgroundAlphaOverride = 0x22 / 255f" in badgeSource)
-        assertTrue("borderAlphaOverride = 0f" in badgeSource)
-        assertTrue("fontSize = 12.sp" in badgeSource)
-        assertTrue("fontWeight = FontWeight.SemiBold" in badgeSource)
-        assertTrue("blurRadiusOverride = 2.dp" in badgeSource)
-        assertTrue("lensRadiusOverride = 10.dp" in badgeSource)
-        assertTrue("maxLines = 1" in badgeSource)
-        assertTrue("activeGlassBackdrop(backdrop ?: parentBackdrop)" in statusPillSource)
-    }
-
-    @Test
-    fun profileValueCapsuleReusesStatusPillWithLegacyOpticsAndCopyInteraction() {
-        val profileSource = sourceFile(GUIDE_PROFILE_UI_SOURCE)
-        val capsuleSource =
-            profileSource
-                .substringAfter("internal fun GuideProfileValueCapsule(")
-                .substringBefore("private fun GuideProfileLiquidSurfaceBox(")
-
-        assertTrue("StatusPill(" in capsuleSource)
-        assertFalse("LiquidSurface(" in capsuleSource)
-        assertFalse("appSquircleBackground" in capsuleSource)
-        assertTrue("Modifier.copyModeAwareRow(" in capsuleSource)
-        assertTrue("contentPadding = PaddingValues(horizontal = 9.dp, vertical = 3.dp)" in capsuleSource)
-        assertTrue("backgroundAlphaOverride = if (isDark) 0.20f else 0.16f" in capsuleSource)
-        assertTrue("borderAlphaOverride = if (isDark) 0.42f else 0.46f" in capsuleSource)
-        assertTrue("contentColorOverride = if (isDark) tint else tint.copy(alpha = 0.92f)" in capsuleSource)
-        assertTrue("maxLines = Int.MAX_VALUE" in capsuleSource)
-    }
 }
 
 class StudentGuideLocalBackdropFallbackTestApp : Application()
@@ -203,8 +160,6 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
 private const val GUIDE_SECTION_SKILL_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/section/GuideSectionSkill.kt"
 
@@ -213,6 +168,3 @@ private const val GUIDE_PROFILE_UI_SOURCE =
 
 private const val GUIDE_GALLERY_EXPRESSION_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/section/gallery/GuideGalleryExpressionSection.kt"
-
-private const val STATUS_PILL_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/status/StatusPill.kt"

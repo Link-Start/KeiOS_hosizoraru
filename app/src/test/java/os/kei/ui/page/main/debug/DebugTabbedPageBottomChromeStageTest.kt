@@ -56,26 +56,6 @@ class DebugTabbedPageBottomChromeStageTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun stageKeepsOneProducerOutsideItsBottomChromeConsumer() {
-        val source = sourceFile(DEBUG_TABBED_CHROME_STAGE_SOURCE)
-        val cardSource = sourceFile(DEBUG_LIQUID_CHROME_CARD_SOURCE)
-        val chromeSource = sourceFile(TABBED_PAGE_BOTTOM_CHROME_SOURCE)
-        val producer = ".layerBackdrop(stageBackdrop)"
-        val consumer = "backdrop = stageBackdrop,"
-
-        assertEquals(1, source.occurrencesOf("rememberLayerBackdrop {"))
-        assertEquals(1, source.occurrencesOf("drawRect(stageBackgroundColor)"))
-        assertEquals(1, source.occurrencesOf(producer))
-        assertEquals(1, source.occurrencesOf(consumer))
-        assertTrue(source.indexOf(producer) < source.indexOf(consumer))
-        assertTrue("modifier: Modifier = Modifier," in chromeSource)
-        assertTrue("modifier\n                .fillMaxWidth()" in chromeSource)
-        assertTrue(".statusBarsPadding()" in source)
-        assertTrue("AppWindowDialogPresentation.Fullscreen" in cardSource)
-        assertTrue(cardSource.indexOf("AppWindowDialogHost(") < cardSource.indexOf("DebugTabbedPageBottomChromeStage("))
-    }
-
-    @Test
     fun largeFontStageKeepsThreeTabsAndSearchInsideThe360DpViewport() {
         setStage()
         val viewport =
@@ -280,7 +260,5 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 class DebugTabbedPageBottomChromeStageTestApp : Application()

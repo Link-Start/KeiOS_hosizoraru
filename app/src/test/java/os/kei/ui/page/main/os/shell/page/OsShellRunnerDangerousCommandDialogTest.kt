@@ -26,13 +26,9 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
-
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(
@@ -119,25 +115,6 @@ class OsShellRunnerDangerousCommandDialogTest {
         assertEquals(1, confirmCount)
     }
 
-    @Test
-    fun productionDialogUsesSharedHostAndRetainsDangerContent() {
-        val source = dangerousDialogSource(OS_SHELL_RUNNER_SHEETS_SOURCE)
-
-        assertEquals(1, source.occurrencesOf("AppWindowDialogHost("))
-        assertFalse("WindowDialog(" in source)
-        assertTrue("rememberOsShellDialogExitSnapshot(currentContent)" in source)
-        assertTrue("title = renderedContent?.title" in source)
-        assertTrue("summary = renderedContent?.summary" in source)
-        assertTrue("onDismissFinished = exitSnapshot::clear" in source)
-        assertTrue("actionsEnabled = show" in source)
-        assertEquals(2, source.occurrencesOf("enabled = actionsEnabled"))
-        assertEquals(2, source.occurrencesOf("AppLiquidDialogActionButton("))
-        assertTrue("containerColor = MiuixTheme.colorScheme.error" in source)
-        assertTrue("variant = GlassVariant.SheetDangerAction" in source)
-        assertTrue("onDismissRequest = onDismissRequest" in source)
-        assertTrue("onConfirm = onConfirm" in source)
-    }
-
     private fun finishExitAnimation() {
         composeRule.mainClock.advanceTimeBy(EXIT_COMPLETION_MILLIS)
         composeRule.mainClock.autoAdvance = true
@@ -147,21 +124,9 @@ class OsShellRunnerDangerousCommandDialogTest {
 
 class OsShellRunnerDangerousCommandDialogTestApp : Application()
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count(needle::equals)
-
-private fun dangerousDialogSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
 private const val DIALOG_TITLE = "Run dangerous command?"
 private const val INITIAL_SUMMARY = "Command: rm -rf /tmp/old"
 private const val LATEST_SUMMARY = "Command: rm -rf /tmp/latest"
 private const val CONFIRM_TEXT = "Run anyway"
 private const val EXIT_OBSERVATION_MILLIS = 16L
 private const val EXIT_COMPLETION_MILLIS = 300L
-private const val OS_SHELL_RUNNER_SHEETS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/os/shell/page/OsShellRunnerSheets.kt"

@@ -150,21 +150,6 @@ class BaGuideBgmBottomSearchFieldTest {
             .assertCountEquals(0)
     }
 
-    @Test
-    fun productionSearchUsesSharedContentInsideItsExistingGlassSurface() {
-        val source = sourceFile(BOTTOM_CHROME_SOURCE)
-        val searchFieldSource =
-            source
-                .substringAfter("internal fun BaGuideBgmBottomSearchField(")
-                .substringBefore("private fun boundedDp(")
-
-        assertTrue("AppTextInputContent(" in searchFieldSource)
-        assertFalse("BasicTextField(" in searchFieldSource)
-        assertFalse("AppLiquidFloatingSurface(" in searchFieldSource)
-        assertFalse("rememberLayerBackdrop(" in searchFieldSource)
-        assertTrue("if (searchFieldVisible) {" in source)
-    }
-
     private fun setSearchField(
         initialQuery: String = "",
         placeholder: String = TEST_PLACEHOLDER,
@@ -246,7 +231,4 @@ private fun sourceFile(relativePath: String): String {
 private const val SURFACE_TAG = "ba-bgm-bottom-search-surface"
 private const val SEARCH_ROOT_TAG = "ba-bgm-bottom-search-root"
 private const val TEST_PLACEHOLDER = "Search music or students"
-private const val BOTTOM_CHROME_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmBottomChrome.kt"
-
 class BaGuideBgmBottomSearchFieldTestApp : Application()

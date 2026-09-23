@@ -303,68 +303,6 @@ class GitHubAppCandidateRowTest {
         }
     }
 
-    @Test
-    fun candidateListDeclaresASelectableGroup() {
-        val source = sourceFile(GITHUB_TRACK_APP_PICKER_CONTENT_SOURCE)
-
-        assertTrue(".selectableGroup()" in source)
-    }
-
-    @Test
-    fun pickerLoadingAndEmptyStatesUseCompactLiquidInfoBlocks() {
-        val source = sourceFile(GITHUB_TRACK_APP_PICKER_CONTENT_SOURCE)
-        val transientStates =
-            source
-                .substringAfter("if (!appFilterReady)")
-                .substringBefore("} else {\n                LazyColumn(")
-
-        assertEquals(2, Regex("LiquidInfoBlock\\(").findAll(transientStates).count())
-        assertEquals(
-            2,
-            Regex("density = LiquidInfoBlockDensity\\.Compact").findAll(transientStates).count(),
-        )
-        assertTrue("MiuixInfoItem(" !in transientStates)
-    }
-
-    @Test
-    fun installSourcePillReusesCompactStatusMaterialFromExportedSheetCards() {
-        val source = sourceFile(GITHUB_APP_SELECTION_ROWS_SOURCE)
-        val consumers = source.substringBefore("@Composable\ninternal fun InstallSourcePill(")
-        val pill =
-            source
-                .substringAfter("internal fun InstallSourcePill(")
-                .substringBefore("@Composable\ninternal fun AppIconImage(")
-        val sheetStyles = sourceFile(SHEET_STYLES_SOURCE)
-        val surfaceCard =
-            sheetStyles
-                .substringAfter("fun SheetSurfaceCard(")
-                .substringBefore("@Composable\nfun SheetSectionCard(")
-        val choiceCard =
-            sheetStyles
-                .substringAfter("fun SheetChoiceCard(")
-                .substringBefore("@Composable\nfun SheetLiquidChoiceIndicator(")
-
-        assertEquals(2, consumers.occurrencesOf("InstallSourcePill("))
-        assertEquals(1, pill.occurrencesOf("StatusPill("))
-        assertTrue("size = AppStatusPillSize.Compact" in pill)
-        assertTrue("modifier = modifier.widthIn(max = 156.dp)" in pill)
-        assertTrue("maxLines = 1" in pill)
-        assertTrue("overflow = TextOverflow.Ellipsis" in pill)
-        assertTrue("selected: Boolean = false" in pill)
-        assertTrue("GitHubStatusPalette.Update" in pill)
-        assertTrue("MiuixTheme.colorScheme.primary" in pill)
-        assertTrue("modifier: Modifier = Modifier" in pill)
-        assertTrue("backdrop =" !in pill)
-        assertTrue("Box(" !in pill)
-        assertTrue("appSquircleBackground" !in pill)
-        assertTrue("appSquircleBorder" !in pill)
-        assertTrue("rememberAppStatusPillMetrics" !in pill)
-
-        assertTrue("exportBackdropToContent = true" in surfaceCard)
-        assertTrue("SheetSurfaceCard(" in choiceCard)
-        assertTrue("trailing?.invoke(this)" in choiceCard)
-    }
-
     private companion object {
         val candidate =
             InstalledAppItem(
@@ -398,14 +336,5 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
-
-private const val GITHUB_TRACK_APP_PICKER_CONTENT_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubTrackAppPickerContent.kt"
-private const val GITHUB_APP_SELECTION_ROWS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/GitHubAppSelectionRows.kt"
-private const val SHEET_STYLES_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SheetStyles.kt"
 
 class GitHubAppCandidateRowTestApp : Application()

@@ -28,9 +28,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,51 +49,6 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class DebugLiquidActionMenuCardTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun componentLabKeepsQualitySingleChoiceAndAddsLocalizedNestedMultipleChoice() {
-        val source = sourceFile(DEBUG_LIQUID_ACTION_MENU_SOURCE)
-        val qualitySubmenu =
-            source.itemBody(
-                constructor = "LiquidGlassActionMenuSubmenuRow",
-                id = "quality",
-            )
-        val playbackOptionsSubmenu =
-            source.itemBody(
-                constructor = "LiquidGlassActionMenuSubmenuRow",
-                id = "playback_options",
-            )
-
-        assertTrue("LiquidGlassActionMenuSingleChoiceRow(" in qualitySubmenu)
-        assertTrue("selectedQualityIndex == index" in qualitySubmenu)
-        assertEquals(
-            3,
-            source.occurrencesOf(
-                "stringResource(R.string.debug_component_lab_liquid_action_menu_quality_",
-            ),
-        )
-        assertEquals(
-            2,
-            playbackOptionsSubmenu.occurrencesOf("LiquidGlassActionMenuMultipleChoiceRow("),
-        )
-        assertTrue("id = \"show_lyrics\"" in playbackOptionsSubmenu)
-        assertTrue("checked = showLyricsSelected" in playbackOptionsSubmenu)
-        assertTrue("id = \"normalize_volume\"" in playbackOptionsSubmenu)
-        assertTrue("checked = normalizeVolumeSelected" in playbackOptionsSubmenu)
-        assertTrue(
-            "highlighted = showLyricsSelected || normalizeVolumeSelected" in
-                playbackOptionsSubmenu,
-        )
-        assertFalse("onDismissRequest" in playbackOptionsSubmenu)
-        assertFalse("expanded = false" in playbackOptionsSubmenu)
-
-        ACTION_MENU_STRING_SOURCES.forEach { path ->
-            val strings = sourceFile(path)
-            ACTION_MENU_MULTIPLE_CHOICE_STRING_NAMES.forEach { name ->
-                assertTrue("name=\"$name\"" in strings, "$path is missing $name")
-            }
-        }
-    }
 
     @Test
     fun nestedMultipleChoiceExposesTwoCheckboxesAndStaysOpenAfterToggle() {
@@ -177,38 +129,6 @@ class DebugLiquidActionMenuCardTest {
 
 class DebugLiquidActionMenuCardTestApp : Application()
 
-private fun String.itemBody(
-    constructor: String,
-    id: String,
-): String {
-    val idIndex = indexOf("id = \"$id\",")
-    require(idIndex >= 0) { "Unable to locate item id=$id" }
-    val itemStart = lastIndexOf("$constructor(", startIndex = idIndex)
-    require(itemStart >= 0) { "Unable to locate $constructor with id=$id" }
-
-    var depth = 0
-    var insideString = false
-    var escaped = false
-    for (index in itemStart until length) {
-        val character = this[index]
-        when {
-            escaped -> escaped = false
-            character == '\\' && insideString -> escaped = true
-            character == '"' -> insideString = !insideString
-            insideString -> Unit
-            character == '(' -> depth += 1
-            character == ')' -> {
-                depth -= 1
-                if (depth == 0) return substring(itemStart, index + 1)
-            }
-        }
-    }
-    error("Unbalanced $constructor call with id=$id")
-}
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
-
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
     val sourceFile =
@@ -219,20 +139,3 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private const val DEBUG_LIQUID_ACTION_MENU_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidActionMenuCard.kt"
-private val ACTION_MENU_STRING_SOURCES =
-    listOf(
-        "app/src/main/res/values/strings_about.xml",
-        "app/src/main/res/values-zh-rCN/strings_about.xml",
-        "app/src/main/res/values-en/strings_about.xml",
-        "app/src/main/res/values-ja/strings_about.xml",
-    )
-private val ACTION_MENU_MULTIPLE_CHOICE_STRING_NAMES =
-    listOf(
-        "debug_component_lab_liquid_action_menu_playback_options",
-        "debug_component_lab_liquid_action_menu_playback_options_summary",
-        "debug_component_lab_liquid_action_menu_show_lyrics",
-        "debug_component_lab_liquid_action_menu_normalize_volume",
-    )

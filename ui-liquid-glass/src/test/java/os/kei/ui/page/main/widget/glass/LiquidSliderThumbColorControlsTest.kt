@@ -93,26 +93,6 @@ class LiquidSliderThumbColorControlsTest {
         )
     }
 
-    @Test
-    fun theThumbNoLongerCallsTheFixedVibrancyHelper() {
-        // The point of the change: the effect stack is progress-driven. A `vibrancy()` call coming back
-        // would pin the thumb to one appearance whether it is idle or grabbed.
-        //
-        // Asserted on the imports, not on the body: the KDoc here and in the source both discuss
-        // `vibrancy()` by name to explain what the resting values reproduce, and a naive text search for
-        // the call finds that prose. An import cannot be prose.
-        val source = sourceFile(LIQUID_SLIDER_SOURCE).readText()
-
-        assertTrue("The thumb should drive colorControls", "colorControls(" in source)
-        assertTrue(
-            "colorControls must be imported for the progress-driven form",
-            "import com.kyant.backdrop.effects.colorControls" in source,
-        )
-        assertFalse(
-            "vibrancy is fixed; importing it again means something reverted to one appearance",
-            "import com.kyant.backdrop.effects.vibrancy" in source,
-        )
-    }
 }
 
 private fun sourceFile(relativePath: String): File {

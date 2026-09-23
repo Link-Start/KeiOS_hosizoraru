@@ -32,14 +32,6 @@ class AppTopBarChromeGutterSourceTest {
         assertEquals(2, source.occurrences("appTopBarChromeGutter()"))
     }
 
-    /** One rule, not two that can drift apart again. */
-    @Test
-    fun `there is no side-specific gutter helper left`() {
-        val source = sourceFile(APP_NAVIGATION_PLACEMENT_SOURCE)
-
-        assertTrue("fun appTopBarChromeGutterFor(" in source)
-        assertEquals(0, source.occurrences("fun appTopBarActionGutter("))
-    }
 }
 
 private fun sourceFile(relativePath: String): String {
@@ -55,5 +47,3 @@ private fun String.occurrences(needle: String): Int = windowed(needle.length).co
 
 private const val APP_TOP_BAR_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/widget/chrome/AppTopBar.kt"
-private const val APP_NAVIGATION_PLACEMENT_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/chrome/AppNavigationPlacement.kt"

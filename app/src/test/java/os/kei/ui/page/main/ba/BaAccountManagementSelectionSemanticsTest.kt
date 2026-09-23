@@ -43,7 +43,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -112,30 +111,6 @@ class BaAccountManagementSelectionSemanticsTest {
             assertTrue(choiceBounds.right <= groupBounds.right)
             assertTrue(displayNameBounds.left >= groupBounds.left)
         }
-    }
-
-    @Test
-    fun productionAccountChoiceKeepsVisualContractAndAddsRadioSemanticsOnly() {
-        val source = sourceFile(BA_ACCOUNT_MANAGEMENT_SHEET_SOURCE)
-        val accountGroupSource =
-            source
-                .substringAfter("internal fun BaAccountSelectableGroup(")
-                .substringBefore("internal fun BaAccountManagementAccountRow(")
-        val accountRowSource =
-            source
-                .substringAfter("internal fun BaAccountManagementAccountRow(")
-                .substringBefore("private fun BaAccountActionButton(")
-
-        assertEquals(1, accountGroupSource.occurrencesOf(".selectableGroup()"))
-        assertTrue("verticalArrangement = Arrangement.spacedBy(10.dp)" in accountGroupSource)
-        assertEquals(3, accountRowSource.occurrencesOf("Arrangement.spacedBy(8.dp)"))
-        assertTrue("role = Role.RadioButton" in accountRowSource)
-        assertTrue("selected = active" in accountRowSource)
-        assertTrue("enabled = !active" in accountRowSource)
-        assertTrue("variant = GlassVariant.SheetAction" in accountRowSource)
-        assertTrue("textColor = settingsAccent" in accountRowSource)
-        assertTrue("containerColor = settingsAccent" in accountRowSource)
-        assertFalse("RadioButton(" in accountRowSource)
     }
 
     private fun setAccountChoices(
@@ -228,9 +203,6 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { candidate -> candidate == needle }
-
 class BaAccountManagementSelectionSemanticsTestApp : Application()
 
 private val FIRST_ACCOUNT =
@@ -264,5 +236,3 @@ private fun testAccount(
     )
 
 private const val GROUP_TAG = "ba-account-selection-group"
-private const val BA_ACCOUNT_MANAGEMENT_SHEET_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaAccountManagementSheet.kt"

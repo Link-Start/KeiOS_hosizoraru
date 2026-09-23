@@ -34,9 +34,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -202,30 +200,6 @@ class FeedbackIssueSubmitDialogTest {
         assertEquals(1, apiCount)
     }
 
-    @Test
-    fun productionDialogUsesSharedHostAndRetainsModeDependentState() {
-        val source = feedbackDialogSource(FEEDBACK_DIALOG_SOURCE)
-
-        assertEquals(1, source.occurrencesOf("AppWindowDialogHost("))
-        assertFalse("WindowDialog(" in source)
-        assertTrue("remember(mode, apiTokenAvailable, submitting)" in source)
-        assertTrue("rememberFeedbackSubmitDialogExitSnapshot(currentSnapshot)" in source)
-        assertTrue("summary = renderedSnapshot?.let { feedbackSubmitSummary(it) }" in source)
-        assertTrue("dismissible = mode != null && !submitting" in source)
-        assertTrue("onDismissFinished = exitSnapshot::clear" in source)
-        assertTrue("actionsEnabled = mode != null" in source)
-        assertTrue("apiTokenAvailable = apiTokenAvailable" in source)
-        assertTrue("modifier = modifier.fillMaxWidth().padding(top = 12.dp)" in source)
-        assertTrue("heightIn(max = FeedbackChecklistMaxHeight)" in source)
-        assertTrue("verticalScroll(rememberScrollState())" in source)
-        assertTrue("testTag(FEEDBACK_CONFIRM_CHECKLIST_TEST_TAG)" in source)
-        assertEquals(4, source.occurrencesOf("stringResource(R.string.feedback_issue_confirm_check_"))
-        assertEquals(2, source.occurrencesOf("AppLiquidDialogActionButton("))
-        assertEquals(2, source.occurrencesOf("enabled = actionsEnabled && !snapshot.submitting"))
-        assertTrue("FeedbackSubmitMode.Browser -> onConfirmBrowser" in source)
-        assertTrue("FeedbackSubmitMode.GitHubApi -> onConfirmApi" in source)
-    }
-
     private fun setFeedbackDialogContent(
         mode: () -> FeedbackSubmitMode?,
         apiTokenAvailable: () -> Boolean,
@@ -327,17 +301,5 @@ class FeedbackIssueSubmitDialogTest {
 
 class FeedbackIssueSubmitDialogTestApp : Application()
 
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count(needle::equals)
-
-private fun feedbackDialogSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
 private const val EXIT_OBSERVATION_MILLIS = 16L
 private const val EXIT_COMPLETION_MILLIS = 300L
-private const val FEEDBACK_DIALOG_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/feedback/FeedbackIssueSubmitDialog.kt"

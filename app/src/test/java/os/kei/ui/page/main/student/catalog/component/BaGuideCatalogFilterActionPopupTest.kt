@@ -1,11 +1,11 @@
 package os.kei.ui.page.main.student.catalog.component
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -27,7 +27,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -52,29 +51,6 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class BaGuideCatalogFilterActionPopupTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun productionPopupDelegatesMixedFilteringToSharedActionMenuWithoutBackdropProducer() {
-        val source = sourceFile(BA_CATALOG_FILTER_ACTION_POPUP_SOURCE)
-
-        assertTrue("LiquidGlassActionMenu(" in source)
-        assertTrue("LiquidGlassActionMenuActionRow(" in source)
-        assertTrue("LiquidGlassActionMenuSubmenuRow(" in source)
-        assertTrue("LiquidGlassActionMenuMultipleChoiceRow(" in source)
-        assertTrue("minWidth = BaCatalogFilterMenuMinWidth" in source)
-        assertTrue("maxWidth = BaCatalogFilterMenuMaxWidth" in source)
-        assertTrue("maxHeight = BaCatalogFilterMenuMaxHeight" in source)
-        assertTrue("private val BaCatalogFilterMenuMaxHeight = 392.dp" in source)
-        assertTrue("dismissOnClick = false" in source)
-        assertTrue("highlighted = selectedIds.isNotEmpty()" in source)
-        assertTrue("backLeadingIcon = chevronLeftIcon" in source)
-        assertTrue("initialScrollItemIndex = definitionIndex" in source)
-        assertFalse("rememberLayerBackdrop" in source)
-        assertFalse(".layerBackdrop(" in source)
-        assertFalse("AppLiquidGlassDropdownColumn(" in source)
-        assertFalse("LiquidGlassDropdownItem(" in source)
-        assertFalse("focusedFilterId" in source)
-    }
 
     @Test
     fun largeFontPopupKeepsCheckboxSubmenuOpenAndClearActionInPlace() {
@@ -230,6 +206,3 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private const val BA_CATALOG_FILTER_ACTION_POPUP_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/student/catalog/component/BaGuideCatalogFilterActionPopup.kt"

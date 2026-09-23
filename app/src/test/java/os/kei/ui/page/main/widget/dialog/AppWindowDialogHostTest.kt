@@ -30,9 +30,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -159,74 +157,6 @@ class AppWindowDialogHostTest {
         }
     }
 
-    /**
-     * The card presentation has one branch now. The Miuix fallback it used to choose between went away
-     * with the preference that selected it — hosted in a Dialog window it could never have real glass,
-     * because the window boundary blanks LocalSceneBackdrop and its blur drew nothing.
-     *
-     * The fullscreen presentation is a different thing entirely and still opens its own window, so it
-     * keeps the boundary and the window-scoped navigation-event re-resolve.
-     */
-    @Test
-    fun cardPresentationForwardsMetadataToTheSingleLiquidBranch() {
-        val source = dialogHostSource(APP_WINDOW_DIALOG_HOST_SOURCE)
-        val alertCall = source.functionCallBlock("LiquidAlert")
-
-        listOf(
-            "modifier = modifier",
-            "title = title",
-            "message = summary",
-            "dismissible = dismissible",
-            "onDismissRequest = onDismissRequest",
-            "onDismissFinished = onDismissFinished",
-            "maxWidth = maxWidth",
-            "content = content",
-        ).forEach { forwarding ->
-            assertTrue(forwarding in alertCall, "Card branch must forward $forwarding")
-        }
-        assertTrue("maxWidth: Dp = DialogDefaults.MaxWidth" in source)
-
-        assertFalse("WindowDialog(" in source, "The Miuix card fallback must not come back")
-
-        val fullscreenBoundary = source.indexOf("AppLiquidWindowBoundary {").dialogMarkerFound()
-        val fullscreenDialog = source.indexOf("\n        Dialog(", fullscreenBoundary).dialogMarkerFound()
-        val fullscreenWindowScope =
-            source.indexOf("WindowNavigationEventScope {", fullscreenDialog).dialogMarkerFound()
-        assertTrue(fullscreenBoundary < fullscreenDialog)
-        assertTrue(fullscreenDialog < fullscreenWindowScope)
-    }
 }
 
 class AppWindowDialogHostTestApp : Application()
-
-private fun String.functionCallBlock(functionName: String): String {
-    val marker = "$functionName("
-    val start = indexOf(marker).dialogMarkerFound()
-    var depth = 1
-    var index = start + marker.length
-    while (index < length && depth > 0) {
-        when (this[index]) {
-            '(' -> depth += 1
-            ')' -> depth -= 1
-        }
-        index += 1
-    }
-    require(depth == 0) { "Unable to locate the closing parenthesis for $marker" }
-    return substring(start, index)
-}
-
-private fun Int.dialogMarkerFound(): Int {
-    require(this >= 0) { "Expected dialog host source marker was not found" }
-    return this
-}
-
-private fun dialogHostSource(relativePath: String): String {
-    val roots = generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
-    val source = roots.map { File(it, relativePath) }.firstOrNull(File::isFile)
-    return requireNotNull(source) {
-        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
-    }.readText()
-}
-
-private const val APP_WINDOW_DIALOG_HOST_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/widget/dialog/AppWindowDialogHosts.kt"

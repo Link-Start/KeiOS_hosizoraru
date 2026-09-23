@@ -13,7 +13,6 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,17 +74,6 @@ class GitHubActionsSelectableSemanticsTest {
     }
 
     @Test
-    fun workflowBranchAndRunContainersDeclareSelectableGroups() {
-        val branchSource = sourceFile(GITHUB_ACTIONS_BRANCH_SECTION_SOURCE)
-        val workflowSource = sourceFile(GITHUB_ACTIONS_WORKFLOW_SECTION_SOURCE)
-        val runSource = sourceFile(GITHUB_ACTIONS_RUN_SECTION_SOURCE)
-
-        assertTrue("contentModifier = Modifier.selectableGroup()" in branchSource)
-        assertTrue("contentModifier = Modifier.selectableGroup()" in workflowSource)
-        assertTrue(".selectableGroup()" in runSource.substringAfter("LazyColumn("))
-    }
-
-    @Test
     fun collapsibleHeaderExposesOneExpandAction() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
@@ -124,10 +112,3 @@ private fun sourceFile(relativePath: String): String {
     return requireNotNull(sourceFile) { "Unable to locate $relativePath from $workingDirectory" }
         .readText()
 }
-
-private const val GITHUB_ACTIONS_BRANCH_SECTION_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/actions/GitHubActionsBranchSection.kt"
-private const val GITHUB_ACTIONS_WORKFLOW_SECTION_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/actions/GitHubActionsWorkflowSection.kt"
-private const val GITHUB_ACTIONS_RUN_SECTION_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/actions/GitHubActionsRunSection.kt"

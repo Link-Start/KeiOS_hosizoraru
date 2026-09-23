@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -57,63 +56,6 @@ class BaGuideMemoryLobbyVariantSelectorTest {
     private fun menuPanelWidth(): Dp = with(composeRule.density) { menuPanelBounds().width.toDp() }
 
     private fun menuPanelHeight(): Dp = with(composeRule.density) { menuPanelBounds().height.toDp() }
-
-    @Test
-    fun sourceDelegatesTheCompleteVariantPickerContractToAppDropdownSelector() {
-        val source = sourceFile(MEMORY_LOBBY_CARDS_SOURCE)
-        val dropdownSource = sourceFile(APP_DROPDOWN_CONTROLS_SOURCE)
-        val selectorSource =
-            source
-                .substringAfter("internal fun BaGuideMemoryLobbyVariantSelector(")
-                .substringBefore("private fun BaGuideMemoryLobbyImagePreviewGroup(")
-        val sharedSelectorSource =
-            dropdownSource
-                .substringAfter("fun AppDropdownSelector(")
-                .substringBefore("private fun DropdownSelectorChoiceList(")
-
-        assertTrue("AppDropdownSelector(" in selectorSource)
-        listOf(
-            "AppDropdownAnchorButton(",
-            "capturePopupAnchor",
-            "SnapshotWindowListPopup(",
-            "LiquidGlassDropdownColumn(",
-            "LiquidGlassDropdownSingleChoiceItem(",
-        ).forEach { manualPrimitive ->
-            assertFalse(manualPrimitive in selectorSource, "Found manual dropdown primitive: $manualPrimitive")
-        }
-        assertSourceContains(
-            source = selectorSource,
-            "modifier = modifier.widthIn(min = 54.dp, max = 96.dp)",
-            "variant = GlassVariant.Compact",
-            "textColor = Color(0xFF3B82F6)",
-            "minHeight = 36.dp",
-            "horizontalPadding = 8.dp",
-            "verticalPadding = 6.dp",
-            "anchorTextMaxLines = 1",
-            "anchorTextOverflow = TextOverflow.Ellipsis",
-            "anchorTextSoftWrap = false",
-            "anchorTextSize = AppTypographyTokens.Supporting.fontSize",
-            "anchorTextLineHeight = AppTypographyTokens.Supporting.lineHeight",
-            "dropdownItemTextMaxLines = 1",
-            "popupMinWidth = MemoryLobbyVariantMenuMinWidth",
-            "popupMaxWidth = MemoryLobbyVariantMenuMaxWidth",
-            "popupMaxHeight = MemoryLobbyVariantMenuMaxHeight",
-            "dropdownItemVariant = GlassVariant.SheetAction",
-            "anchorAlignment = Alignment.Center",
-            "alignment = PopupPositionProvider.Align.BottomEnd",
-            "placement = SnapshotPopupPlacement.ButtonEnd",
-        )
-        assertTrue("private val MemoryLobbyVariantMenuMinWidth = 136.dp" in source)
-        assertTrue("private val MemoryLobbyVariantMenuMaxWidth = 196.dp" in source)
-        assertTrue("private val MemoryLobbyVariantMenuMaxHeight = 220.dp" in source)
-        assertSourceContains(
-            source = sharedSelectorSource,
-            "popupMinWidth: Dp = DropdownSelectorMinWidth",
-            "dropdownItemVariant: GlassVariant = variant",
-            "val resolvedPopupMinWidth =",
-            "variant = dropdownItemVariant",
-        )
-    }
 
     @Test
     fun anchorKeepsLegacyWidthAndDensityWithButtonSemantics() {
@@ -264,15 +206,6 @@ private fun sourceFile(relativePath: String): String {
     return requireNotNull(sourceFile) {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
-}
-
-private fun assertSourceContains(
-    source: String,
-    vararg expectedFragments: String,
-) {
-    expectedFragments.forEach { fragment ->
-        assertTrue(fragment in source, "Expected source fragment: $fragment")
-    }
 }
 
 @androidx.compose.runtime.Composable

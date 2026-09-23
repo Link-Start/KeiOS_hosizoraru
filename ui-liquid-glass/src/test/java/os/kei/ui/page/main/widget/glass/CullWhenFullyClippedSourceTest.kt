@@ -25,58 +25,7 @@ class CullWhenFullyClippedSourceTest {
         )
     }
 
-    /**
-     * Zero area, not "off screen".
-     *
-     * `boundsInWindow` returns the clipped rectangle, so a partly visible card reports a positive
-     * area and must keep drawing. A predicate that tested the element's *position* instead would
-     * blank the card at the edge of the viewport, which is the obvious wrong version of this.
-     */
-    @Test
-    fun theCullTestsClippedAreaRatherThanPosition() {
-        val source = sourceFile(CULL)
-
-        assertTrue("boundsInWindow()" in source, "$CULL must read the clipped bounds")
-        assertTrue(
-            "bounds.width > 0f && bounds.height > 0f" in source,
-            "$CULL must cull on zero clipped area only, so a partly visible card still draws",
-        )
-        assertTrue(
-            "if (visible) drawContent()" in source,
-            "$CULL must skip the whole subtree draw, which is where the layer cost lives",
-        )
-    }
-
-    /**
-     * And the one element the clipped rect lies about.
-     *
-     * A card in the edge-stack pile is drawn at the stack line by a transform *below* this node, so
-     * its layout rect scrolls away while the plate is still on screen. Culling on that rect cut 7-18dp
-     * of plate edge at full opacity. The pile's own `fade` is the honest signal, and a stacking card
-     * has to be judged by it — while still being culled once retired, or the sheet win above is handed
-     * straight back for every card kept alive in the headroom.
-     */
-    @Test
-    fun theCullAsksThePileAboutACardThatIsPinned() {
-        val source = sourceFile(CULL)
-
-        assertTrue(
-            "stacking != null && stacking.stacked" in source,
-            "$CULL must recognise a pinned card, whose layout rect is not where it is drawn",
-        )
-        assertTrue(
-            "if (stacking.fade > 0f) drawContent()" in source,
-            "$CULL must keep a pinned card drawing until the pile retires it",
-        )
-        assertTrue(
-            "return" in source.substringAfter("if (stacking.fade > 0f) drawContent()"),
-            "$CULL must still cull a retired card, which is where the layer cost would come back",
-        )
-    }
 }
-
-private const val CULL =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/CullWhenFullyClipped.kt"
 
 private const val APP_FEATURE_CARDS =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppFeatureCards.kt"

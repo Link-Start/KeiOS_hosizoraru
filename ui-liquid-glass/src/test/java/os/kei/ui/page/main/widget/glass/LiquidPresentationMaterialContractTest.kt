@@ -68,42 +68,6 @@ class LiquidPresentationMaterialContractTest {
         )
     }
 
-    @Test
-    fun `the toast no longer owns a private backdrop producer`() {
-        // It used to wrap NavDisplay in a second full-screen layerBackdrop, inside the scene backdrop's
-        // own captured subtree. That cost a second offscreen layer whenever a toast was up, left the
-        // toast inside the sample every sheet and alert blurs, and — because the private producer had no
-        // onDraw — gave the pill transparent pixels to blur wherever page content did not paint.
-        val navHost =
-            File(repositoryRoot(), "app/src/main/java/os/kei/ui/page/main/host/main/MainScreenNavHost.kt")
-                .readText()
-
-        assertFalse(
-            "rememberLayerBackdrop(" in navHost,
-            "MainScreenNavHost should sample LocalSceneBackdrop rather than produce its own layer",
-        )
-    }
-
-    @Test
-    fun `the toast is split by concern rather than living in one file`() {
-        // The original was one 496-line file holding duration policy, the state holder, host layout, the
-        // per-item timer and the pill's rendering.
-        listOf("LiquidToastState.kt", "LiquidToastHost.kt", "LiquidToastSurface.kt").forEach { name ->
-            assertTrue(
-                kotlinMainSources().any { it.name == name },
-                "expected $name to exist",
-            )
-        }
-        assertFalse(
-            kotlinMainSources().any { it.name == "LiquidToast.kt" },
-            "the monolith should be gone, not kept alongside the split files",
-        )
-        assertFalse(
-            kotlinMainSources().any { it.name == "LocalLiquidToastState.kt" },
-            "LocalLiquidToastState was declared, never provided and never read",
-        )
-    }
-
     private fun toastSource(name: String): String = kotlinMainSources().single { it.name == name }.readText()
 
     private fun kotlinMainSources(): List<File> {

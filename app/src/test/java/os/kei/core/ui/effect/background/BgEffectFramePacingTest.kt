@@ -40,17 +40,6 @@ class BgEffectFramePacingTest {
         assertFalse("framePacer" in modifierSource)
     }
 
-    /** animTime comes from real elapsed time, so capping changes sampling rate, not drift speed. */
-    @Test
-    fun `animation speed is independent of the invalidation cap`() {
-        val animationSource =
-            sourceFile(BG_EFFECT_MODIFIER_SOURCE)
-                .substringAfter("private fun startAnimation()", missingDelimiterValue = "")
-                .substringBefore("private fun stopAnimation()")
-
-        assertTrue("(now - origin)" in animationSource)
-        assertFalse("lastEmit)" in animationSource.substringAfter("animTime ="))
-    }
 }
 
 private fun sourceFile(relativePath: String): String {

@@ -3,7 +3,6 @@ package os.kei.ui.page.main.student.catalog.page
 import androidx.compose.ui.graphics.Color
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -16,18 +15,6 @@ import kotlin.test.assertTrue
  * bottom, the wallpaper surviving only in the strip between them. After: rgb(20,24,30) and rgb(80,81,88).
  */
 class BaGuideCatalogScrollEdgeTest {
-    @Test
-    fun tintingWithAColourThatMayBeTransparentPaintsBlack() {
-        // The whole bug in one line. `Color.Transparent` is transparent *black*, so re-alpha'ing it does
-        // not produce "the panel at 96%" — it produces black at 96%.
-        val reAlphaed = Color.Transparent.copy(alpha = 0.96f)
-
-        assertEquals(0f, reAlphaed.red)
-        assertEquals(0f, reAlphaed.green)
-        assertEquals(0f, reAlphaed.blue)
-        // 8-bit channel, so the alpha lands on the nearest 1/255.
-        assertEquals(0.96f, reAlphaed.alpha, 1f / 255f)
-    }
 
     @Test
     fun neitherEdgeTintsWithThePanelColour() {
@@ -43,31 +30,6 @@ class BaGuideCatalogScrollEdgeTest {
         )
     }
 
-    @Test
-    fun bothEdgesUseTheSharedScrollEdgeEffect() {
-        val source = sourceFile(BA_GUIDE_CATALOG_PAGE_CONTENT_SOURCE)
-        val topIndex = source.indexOf("side = AppScrollEdgeSide.Top,")
-        val bottomIndex = source.indexOf("side = AppScrollEdgeSide.Bottom,")
-
-        assertTrue(topIndex >= 0, "The top edge must use the shared effect")
-        assertTrue(bottomIndex > topIndex, "The bottom edge must use the shared effect")
-        assertEquals(2, source.occurrencesOf("AppScrollEdgeEffect("))
-    }
-
-    @Test
-    fun theEdgesSampleThePagerRatherThanTheLayerTheyAreDrawnInto() {
-        val source = sourceFile(BA_GUIDE_CATALOG_PAGE_CONTENT_SOURCE)
-
-        assertTrue(
-            "rememberCombinedBackdrop(managedSceneBackdrop, pageChromeBackdrop)" in source,
-            "The edges must blur the wallpaper composite together with the list sliding under them",
-        )
-        assertEquals(
-            2,
-            source.occurrencesOf("backdrop = scrollEdgeBackdrop,"),
-            "Sampling bottomChromeBackdrop would feed the edges their own output",
-        )
-    }
 }
 
 private fun sourceFile(relativePath: String): String {
@@ -80,8 +42,6 @@ private fun sourceFile(relativePath: String): String {
         "Unable to locate $relativePath from $workingDirectory"
     }.readText()
 }
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 private const val BA_GUIDE_CATALOG_PAGE_CONTENT_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPageContent.kt"

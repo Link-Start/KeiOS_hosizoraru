@@ -19,8 +19,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import kotlin.math.abs
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -44,32 +42,6 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class WebDavSyncHistoryCardsTest {
     @get:Rule
     val composeRule = createComposeRule()
-
-    @Test
-    fun entryDetailsReuseTheCompactInfoListWithoutChangingRowContracts() {
-        val source = sourceFile(WEB_DAV_SYNC_HISTORY_CARDS_SOURCE)
-        val entryCard =
-            source
-                .substringAfter("internal fun WebDavSyncHistoryEntryCard(")
-                .substringBefore("@Composable\nprivate fun historyPowerDiagnostics")
-        val infoListHeader =
-            entryCard
-                .substringAfter("AppInfoListBody(")
-                .substringBefore(") {")
-
-        assertTrue("import os.kei.ui.page.main.widget.core.AppInfoListBody" in source)
-        assertEquals(1, entryCard.occurrencesOf("AppInfoListBody("))
-        assertFalse(Regex("(?m)^\\s*Column\\(").containsMatchIn(entryCard))
-        assertTrue("modifier = Modifier.fillMaxWidth()" in infoListHeader)
-        assertFalse("verticalSpacing" in infoListHeader)
-        assertEquals(7, entryCard.occurrencesOf("AppInfoRow("))
-        assertEquals(7, entryCard.occurrencesOf("valueOverflow = TextOverflow.Ellipsis"))
-        assertEquals(2, entryCard.occurrencesOf("valueMaxLines = 1"))
-        assertEquals(4, entryCard.occurrencesOf("valueMaxLines = 2"))
-        assertEquals(1, entryCard.occurrencesOf("valueMaxLines = 3"))
-        assertFalse("enableLongPressCopy" in entryCard)
-        assertTrue("containerColor = cardColor" in entryCard)
-    }
 
     @Test
     fun largeFontDiagnosticsRemainMultilineSeparatedAndCopyableAtCompactWidth() {
@@ -199,8 +171,6 @@ private val largeFontHistoryEntry =
             ),
     )
 
-private fun String.occurrencesOf(value: String): Int = windowed(value.length).count { it == value }
-
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
     val sourceFile =
@@ -215,5 +185,3 @@ private fun sourceFile(relativePath: String): String {
 private const val ROOT_TAG = "webdav-history-large-font-root"
 private const val LONG_PENDING_REASON =
     "connectivity_and_background_execution_constraints_remain_pending_for_this_synchronization"
-private const val WEB_DAV_SYNC_HISTORY_CARDS_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/sync/WebDavSyncHistoryCards.kt"

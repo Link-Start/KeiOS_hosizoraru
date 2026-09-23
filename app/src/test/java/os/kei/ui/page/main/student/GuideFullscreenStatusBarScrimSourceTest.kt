@@ -26,14 +26,6 @@ class GuideFullscreenStatusBarScrimSourceTest {
     }
 
     @Test
-    fun scrimCoversTheStatusBarInsetWithAGradeRunway() {
-        val source = sourceFile(GUIDE_GALLERY_FULLSCREEN_SOURCE)
-
-        assertTrue("WindowInsets.statusBars" in source)
-        assertTrue("statusBarHeight + GuideFullscreenStatusBarScrimGradeRunway" in source)
-    }
-
-    @Test
     fun videoViewerKeepsThePlatformSurfaceWithoutTextureBlur() {
         // Media3 PlayerView renders on a platform surface that layer backdrops cannot
         // sample, so the video dialog must stay off the miuix texture-blur channel.

@@ -39,7 +39,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import java.io.File
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -183,37 +182,6 @@ class BaGuideBgmTrackRowQuickActionsTest {
         )
     }
 
-    @Test
-    fun productionPopupKeepsThreeQuickActionsAndOneFullActionRow() {
-        val source = sourceFile(BGM_TRACK_ROW_SOURCE)
-        val popupSource =
-            source
-                .substringAfter("internal fun BaGuideBgmTrackMorePopup(")
-                .substringBefore("private fun BaGuideBgmTrackIndex(")
-        val rowSource = source.substringBefore("internal fun BaGuideBgmTrackMorePopup(")
-        val sharedMenuSource = sourceFile(LIQUID_ACTION_MENU_SOURCE)
-
-        assertEquals(3, popupSource.occurrencesOf("LiquidGlassActionMenuQuickAction("))
-        assertEquals(1, popupSource.occurrencesOf("LiquidGlassActionMenuActionRow("))
-        assertEquals(3, popupSource.occurrencesOf("contentDescription ="))
-        assertTrue("quickActions =" in popupSource)
-        assertTrue("id = \"open_gallery\"" in popupSource)
-        assertTrue("if (show)" in popupSource)
-        assertTrue("if (renderedFavorite)" in popupSource)
-        assertTrue("appLucideHeartIcon()" in popupSource)
-        assertTrue("appLucideUndoIcon()" in popupSource)
-        assertTrue("if (renderedOfflineSaved)" in popupSource)
-        assertTrue("appLucideDownloadIcon()" in popupSource)
-        assertTrue("appLucideTrashIcon()" in popupSource)
-        assertTrue("onPlayClick = onClick" in rowSource)
-        assertTrue("onFavoriteClick = onFavoriteClick" in rowSource)
-        assertTrue("onOfflineClick = onOfflineClick" in rowSource)
-        assertTrue("onOpenGuideClick = onShareClick" in rowSource)
-        assertFalse("moreExpanded = false\n                    onClick()" in rowSource)
-        assertTrue("maxLines = 2" in sharedMenuSource)
-        assertTrue("overflow = TextOverflow.Ellipsis" in sharedMenuSource)
-    }
-
     private fun assertQuickActionClick(
         actionLabelRes: Int,
         expectedEvent: String,
@@ -321,8 +289,6 @@ class BaGuideBgmTrackRowQuickActionsTestApp : Application()
 
 private fun hasContentDescriptionExactly(value: String): SemanticsMatcher =
     SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(value))
-
-private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

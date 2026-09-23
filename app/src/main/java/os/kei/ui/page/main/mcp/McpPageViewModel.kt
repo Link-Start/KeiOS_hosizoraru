@@ -6,7 +6,6 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -134,19 +133,6 @@ internal class McpPageViewModel(
             started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
             initialValue = McpPageRouteState(),
         )
-
-    companion object {
-        val Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    if (modelClass.isAssignableFrom(McpPageViewModel::class.java)) {
-                        return McpPageViewModel(SavedStateHandle()) as T
-                    }
-                    throw IllegalArgumentException("Unknown ViewModel class ${modelClass.name}")
-                }
-            }
-    }
 
     fun syncServiceDraft(
         serverState: McpServerUiState,

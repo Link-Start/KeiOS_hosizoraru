@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -54,7 +55,8 @@ fun McpPage(
     onOpenSkill: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val mcpPageViewModel: McpPageViewModel = viewModel(factory = McpPageViewModel.Factory)
+    // The nav entry's own SavedStateHandle, so the cards a reader opened survive process death.
+    val mcpPageViewModel: McpPageViewModel = viewModel { McpPageViewModel(createSavedStateHandle()) }
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
     val runtimeNowMsFlow =

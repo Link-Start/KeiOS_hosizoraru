@@ -7,14 +7,6 @@ import kotlin.test.assertTrue
 
 class McpPageViewModelTest {
     @Test
-    fun factoryCreatesViewModelWithoutSavedStateRegistryExtras() {
-        val viewModel = McpPageViewModel.Factory.create(McpPageViewModel::class.java)
-
-        assertFalse(viewModel.uiState.value.onboardingExpanded)
-        assertFalse(viewModel.uiState.value.logsExpanded)
-    }
-
-    @Test
     fun cardsDefaultCollapsedAndRememberExpandedState() {
         val savedStateHandle = SavedStateHandle()
         val viewModel = McpPageViewModel(savedStateHandle)

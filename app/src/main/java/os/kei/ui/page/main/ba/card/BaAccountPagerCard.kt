@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +47,8 @@ import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
+import top.yukonga.miuix.kmp.utils.springAnimateToPage
 import kotlin.math.abs
 
 private const val AccountPageLiquidActivationDistance = 0.99f
@@ -75,7 +78,7 @@ internal fun BaAccountPagerCard(
 
     LaunchedEffect(activeIndex, accounts.size, pagerState) {
         if (activeIndex in accounts.indices && pagerState.currentPage != activeIndex) {
-            pagerState.animateScrollToPage(activeIndex)
+            pagerState.springAnimateToPage(activeIndex)
         }
     }
     LaunchedEffect(pagerState) {
@@ -89,10 +92,16 @@ internal fun BaAccountPagerCard(
             }
     }
 
+    // Switching account from elsewhere and swiping to one settle on the same Miuix spring.
     HorizontalPager(
         state = pagerState,
         userScrollEnabled = accounts.size > 1,
         pageSpacing = 24.dp,
+        flingBehavior =
+            PagerDefaults.flingBehavior(
+                state = pagerState,
+                snapAnimationSpec = PagerNavigationSpringSpec,
+            ),
     ) { page ->
         val account = accounts[page]
         val pageOffset =

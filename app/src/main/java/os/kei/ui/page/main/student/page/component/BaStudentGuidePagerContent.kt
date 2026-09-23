@@ -5,6 +5,7 @@ package os.kei.ui.page.main.student.page.component
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.page.state.BaStudentGuideContentPresentationState
+import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 
 @Composable
 internal fun BaStudentGuidePagerContent(
@@ -61,10 +63,19 @@ internal fun BaStudentGuidePagerContent(
     onListScrollInProgressChange: (Boolean) -> Unit,
     onSelectedVoiceLanguageChange: (String) -> Unit,
 ) {
+    // The swipe settles on the same spring the tab bar animates with (see animateTabSwitch), so a
+    // page lands the same way whichever of the two moved it. Native gestures stay: Miuix's
+    // cross-axis interceptor claims horizontal drags before page content sees them, and the gallery's
+    // audio progress slider is one of those drags.
     HorizontalPager(
         state = pagerState,
         key = { index -> bottomTabs.getOrNull(index)?.name ?: "stale-$index" },
         overscrollEffect = null,
+        flingBehavior =
+            PagerDefaults.flingBehavior(
+                state = pagerState,
+                snapAnimationSpec = PagerNavigationSpringSpec,
+            ),
         beyondViewportPageCount = guidePagerBeyondViewportPageCount,
         modifier =
             Modifier

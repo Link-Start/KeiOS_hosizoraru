@@ -1,11 +1,16 @@
 package os.kei.ui.page.main.host.pager
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.pager.PagerState
+import top.yukonga.miuix.kmp.utils.springAnimateToPage
 import kotlin.math.abs
 
+/**
+ * Moves the pager to [targetIndex] the way a tab selection should: Miuix's page-navigation spring,
+ * the one its own tab rows and snap fling share, rather than a tween with a distance-scaled length.
+ *
+ * A jump of more than one page is bracketed by [onFarJumpBefore] and [onFarJumpAfter], so the caller
+ * can dim the pages the spring sweeps past.
+ */
 internal suspend fun PagerState.animateTabSwitch(
     fromIndex: Int,
     targetIndex: Int,
@@ -29,30 +34,14 @@ internal suspend fun PagerState.animateTabSwitch(
         return
     }
 
-    val farJumpDistance = abs(target - from)
-    val pageSizePx = layoutInfo.pageSize.takeIf { it > 0 } ?: 0
-    if (pageSizePx <= 0) {
+    if (layoutInfo.pageSize <= 0) {
         if (currentPage != target || isScrollInProgress) {
             scrollToPage(target)
         }
         return
     }
-    val pageStridePx = (pageSizePx + layoutInfo.pageSpacing).toFloat()
-    val distanceInPages = target - currentPage - currentPageOffsetFraction
-    val scrollDistancePx = pageStridePx * distanceInPages
-    val animationDistance = abs(target - currentPage).coerceAtLeast(2)
-    if (farJumpDistance > 1) onFarJumpBefore()
-    animateScrollBy(
-        value = scrollDistancePx,
-        animationSpec = tween(
-            durationMillis = tabSwitchDurationMillis(animationDistance),
-            easing = FastOutSlowInEasing
-        )
-    )
-    scrollToPage(target)
-    if (farJumpDistance > 1) onFarJumpAfter()
-}
-
-private fun tabSwitchDurationMillis(distance: Int): Int {
-    return (100 * distance + 100).coerceIn(180, 420)
+    val farJump = abs(target - from) > 1
+    if (farJump) onFarJumpBefore()
+    springAnimateToPage(target)
+    if (farJump) onFarJumpAfter()
 }

@@ -174,7 +174,7 @@ object ItgsaFairMemoryReceiver : IBinder.DeathRecipient {
 
         // A KILL is never suppressed: the process is going away and this is the last chance to act on it.
         val runRelease =
-            notification.kill ||
+            shouldRunItgsaRelease(kill = notification.kill) {
                 synchronized(lock) {
                     shouldRunItgsaRelease(
                         nowMs = startedAtMs,
@@ -182,6 +182,7 @@ object ItgsaFairMemoryReceiver : IBinder.DeathRecipient {
                         minIntervalMs = MIN_RELEASE_INTERVAL_MS,
                     ).also { allowed -> if (allowed) lastReleaseAtMs = startedAtMs }
                 }
+            }
 
         val freedKb =
             if (runRelease) {
@@ -278,6 +279,19 @@ internal fun writeItgsaFairMemoryReply(
     data.writeInt(result)
     data.writeBundle(extra)
 }
+
+/**
+ * Whether a release should run for this notification: a KILL always, anything else only if [rateLimitAllows].
+ *
+ * A KILL is never rate-limited, because the process is going away and this is the last chance to act on it.
+ * [rateLimitAllows] is not even consulted for one, so a KILL neither waits on the limiter's lock nor records
+ * itself as the last release — a TRIM that follows it is judged against the release before, as it always was.
+ * Inline so the call site's short-circuit is exactly what it was when this was `kill || limiter()` in place.
+ */
+internal inline fun shouldRunItgsaRelease(
+    kill: Boolean,
+    rateLimitAllows: () -> Boolean,
+): Boolean = kill || rateLimitAllows()
 
 /**
  * Whether a release should actually run, given when the last one did.

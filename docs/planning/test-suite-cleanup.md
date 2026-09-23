@@ -75,10 +75,8 @@ behavioural test, and the source check should go in the same change:
   must not be dismissible while a delete is in progress.
 - `BaLiquidSurfacesBackdropTest.surfaceMaterialsFollowTheAppTheme`: covers `482f0cfb3`, glass lost
   in the card stack.
-- `AppTopBarChromeGutterSourceTest`: both ends of the top row take the same gutter (the 242dp
-  landscape bug). Needs a layout test at a landscape qualifier.
-- `ItgsaFairMemoryRateLimitTest`'s kill-path check. Moving `kill` into `shouldRunItgsaRelease`
-  would make it a pure test.
+- Done: `AppTopBarChromeGutterSourceTest` is now `AppTopBarChromeGutterTest`, a 1280dp landscape bounds test.
+- Done: the `ItgsaFairMemoryRateLimitTest` kill-path check is now a pure test of `shouldRunItgsaRelease(kill, ...)`.
 
 The audits also found merge candidates, left for later because they are guards worth keeping, not
 dead weight:

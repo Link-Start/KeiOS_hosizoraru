@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Parcel
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.Test
@@ -315,15 +316,25 @@ class ItgsaFairMemoryRateLimitTest {
         assertTrue(shouldRunItgsaRelease(nowMs = 5_000, lastReleaseAtMs = 10_000, minIntervalMs = 4_000))
     }
 
-    /** A KILL is never rate-limited; the receiver checks `notification.kill` before consulting the limit. */
+    /**
+     * A KILL is never rate-limited: it is the last chance to save state and release before the process goes.
+     *
+     * Driven through the real limiter, inside its window, so the only thing that differs between the two
+     * calls is the kill flag. The KILL must also leave the limiter untouched — not consulted, so it neither
+     * blocks on its lock nor records itself as the last release.
+     */
     @Test
-    fun `the kill path bypasses the limit`() {
-        val source = File(RECEIVER_SOURCE).readText()
-        assertTrue(
-            "notification.kill ||" in source,
-            "A KILL must skip the rate limit: it is the last chance to save state",
-        )
+    fun `a kill runs inside the rate-limit window and a trim does not`() {
+        var consulted = 0
+        val insideWindow = {
+            consulted++
+            shouldRunItgsaRelease(nowMs = 13_999, lastReleaseAtMs = 10_000, minIntervalMs = 4_000)
+        }
+
+        assertTrue(shouldRunItgsaRelease(kill = true, rateLimitAllows = insideWindow), "a KILL must skip the limit")
+        assertEquals(0, consulted, "a KILL must not consult, and so not advance, the rate limit")
+
+        assertFalse(shouldRunItgsaRelease(kill = false, rateLimitAllows = insideWindow), "a TRIM must be limited")
+        assertEquals(1, consulted)
     }
 }
-
-private const val RECEIVER_SOURCE = "src/main/java/os/kei/memory/ItgsaFairMemoryReceiver.kt"

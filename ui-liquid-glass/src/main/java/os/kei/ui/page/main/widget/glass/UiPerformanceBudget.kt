@@ -18,7 +18,6 @@ object UiPerformanceBudget {
     const val baCalendarPoolDeferredWarmDelayMs: Long = 220L
 
     data class PreloadPolicy(
-        val mainPagerBeyondViewportPageCount: Int,
         val catalogPagerBeyondViewportPageCount: Int,
         val guidePagerBeyondViewportPageCount: Int,
         val guideStaticPrefetchInitialCount: Int,
@@ -30,7 +29,6 @@ object UiPerformanceBudget {
     fun resolvePreloadPolicy(preloadingEnabled: Boolean): PreloadPolicy {
         if (!preloadingEnabled) {
             return PreloadPolicy(
-                mainPagerBeyondViewportPageCount = 0,
                 catalogPagerBeyondViewportPageCount = catalogPagerBeyondViewportPageCount,
                 guidePagerBeyondViewportPageCount = guidePagerBeyondViewportPageCount,
                 guideStaticPrefetchInitialCount = guideStaticPrefetchInitialCount,
@@ -40,7 +38,6 @@ object UiPerformanceBudget {
             )
         }
         return PreloadPolicy(
-            mainPagerBeyondViewportPageCount = 1,
             catalogPagerBeyondViewportPageCount = 1,
             guidePagerBeyondViewportPageCount = 1,
             guideStaticPrefetchInitialCount = 10,

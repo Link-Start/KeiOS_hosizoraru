@@ -373,9 +373,9 @@ longer cancels that axis' spring, so a horizontal move no longer stops a vertica
 The main pager is not a `HorizontalPager`. `MainLoadedPager` is its own `draggable`, so the
 `PagerState` utilities do not attach to it. Its motion is tuned: an `EaseInOut` tab jump, and a
 no-bounce spring (stiffness 1200) on drag release that keeps the release velocity (`5212bbc37`). It is
-unchanged. `MainMiuixPager` and `MainFoundationPager` carry the example's old tween too, but the
-coordinator only ever builds `MainLoadedPagerState`, so they are unreachable. Their removal is filed as
-its own task.
+unchanged. `MainMiuixPager` and `MainFoundationPager` carried the example's old tween too, but the
+coordinator only ever builds `MainLoadedPagerState`, so they were unreachable. They have since been
+deleted, together with `PreloadPolicy.mainPagerBeyondViewportPageCount`, which only they read.
 
 ### LocalNavTransitionScope (#430): available, no consumer
 

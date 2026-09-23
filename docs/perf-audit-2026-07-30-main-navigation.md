@@ -403,7 +403,8 @@ Raw retained evidence:
 
 The production bottom-page path resolves through
 `rememberMainLoadedPagerState` and `MainLoadedPager`. `MainMiuixPager` and
-`MainFoundationPager` remain source-level alternatives. The measured Home →
+`MainFoundationPager` remain source-level alternatives. (2026-09-23: both were deleted. Neither
+had been constructed since `86a61f1aa` and `2b2fa0775` in May.) The measured Home →
 GitHub → MCP → Home journey exclusively uses the loaded pager. Miuix Navigation
 3 owns the outer route stack; the retained five-page surface uses the custom
 loaded pager.

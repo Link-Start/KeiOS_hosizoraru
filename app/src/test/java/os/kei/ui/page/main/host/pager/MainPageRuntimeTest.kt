@@ -10,14 +10,12 @@ import kotlin.test.assertTrue
 
 class MainPageRuntimeTest {
     @Test
-    fun `preload policy controls main pager adjacent page retention`() {
+    fun `preload policy controls target page heavy render and the first fetch delay`() {
         val enabledPolicy = UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled = true)
         val disabledPolicy = UiPerformanceBudget.resolvePreloadPolicy(preloadingEnabled = false)
 
-        assertEquals(1, enabledPolicy.mainPagerBeyondViewportPageCount)
         assertTrue(enabledPolicy.includeTargetPageInHeavyRender)
         assertEquals(0, enabledPolicy.initialFetchDelayMs)
-        assertEquals(0, disabledPolicy.mainPagerBeyondViewportPageCount)
         assertFalse(disabledPolicy.includeTargetPageInHeavyRender)
         assertTrue(disabledPolicy.initialFetchDelayMs > 0)
     }

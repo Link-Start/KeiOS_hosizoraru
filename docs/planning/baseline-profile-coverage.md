@@ -103,6 +103,96 @@ left is `GitHubRefreshBatchActions$refreshTrackedBatchInternal`, `GitHubPageRefr
 a background refresh no journey drives, which fired during the 2026-09-04 capture and did not fire
 during this one. No UI path lost rules.
 
+## Re-captured 2026-09-24, and two journeys made to prove what they reach
+
+On `KeiOS_API37_Validation`, 11m12s wall for `:app:generateReleaseBaselineProfile`, all six journeys
+passing. It took five captures to get there, and the three that were not accepted are the useful part.
+
+| Journey | Device time |
+| --- | ---: |
+| startupAndFirstScroll | 63.6s |
+| commonRoutesAndChrome | 68.7s |
+| gitHubTrackingCore | 89.6s |
+| baOfficeAndCatalogCore | 122.9s |
+| mainPagesAndNavigation | 129.2s |
+| adaptiveLargeScreenCore | 168.7s |
+
+Baseline rules 59,966 -> 62,053 (2,945 added, 858 removed); startup rules 24,144 -> 24,046. Named
+components against the 2026-09-15 capture:
+
+| named component | before | after |
+| --- | ---: | ---: |
+| `ui/page/main/host` | 1538 | 1525 |
+| `MainLoadedPager` | 229 | 229 |
+| `ui/page/main/home` | 650 | 647 |
+| `kyant/backdrop` | 1563 | 1566 |
+| `yukonga/miuix` | 1988 | 2026 |
+| `compose/foundation/lazy` | 1369 | 1375 |
+| `media3` | 5196 | 5028 |
+| `ui/page/main/student` | 5744 | 5786 |
+| guide Gallery sections | 244 | 244 |
+| `ui/page/main/github` | 2969 | 3195 |
+| `ui/page/main/ba` | 2974 | 3114 |
+| `widget/glass` | 2087 | 2126 |
+| `BaGuideCatalogFetchKt` / `BaStudentGuideRepository` | 114 / 174 | 114 / 174 |
+
+`host` is lambda renumbering in `MainPagerLayoutKt` after the pager refactor plus the deleted
+`MainMiuixPager`/`MainFoundationPager` and tab-switch durations. `media3` is content: the first student BGM
+is now served as Ogg (`VorbisReader`, `DefaultOggSeeker` added) where the last capture played an MP3
+(`Mp3Extractor`, `Id3Decoder` gone); the player path is intact. This month's new code is covered:
+`UniformColorBackdrop` 24, `PagerGestureUtils` 28 (0 before), `GitHubHistoryUnreadBadge` 16,
+`BaGuideBgmFavoriteUndoController` 4. The release APK carries `assets/dexopt/baseline.prof` (22,513 bytes)
+and `baseline.profm` (3,288 bytes).
+
+### Every capture starts from a fresh install
+
+The Gradle task uninstalls both APKs when it finishes; `pm list packages` after a capture shows neither.
+So a capture never inherits the state a hand-run smoke leaves behind, and a difference between two
+captures is not stale data. Two captures of the same tree, both fresh, differed like this:
+
+| | capture 1 | capture 2 |
+| --- | ---: | ---: |
+| `BaGuideCatalogFetchKt` | 57 | 114 |
+| `media3` | 4,992 | 9 |
+
+That is network timing on a fresh install, and it decided whether the catalog's BGM ever played. The
+first explanation recorded for it here -- that a smoke run had left the catalog cached -- was wrong, and
+this is how it was checked.
+
+### The BGM step now waits for playback
+
+Tapping the first student BGM row is not what loads media3: on a fresh install the row resolves its audio
+over the network first, and a journey that moved on straight after the tap could leave before the player
+existed. `playFirstStudentBgm` waits up to 25s for `ba_guide_catalog_bgm_playing`, a test tag the catalog's
+mini player carries only while `isPlaying`. Still optional, because a device with no network cannot play.
+A fresh-install smoke of the journey went from 9 media3 rules to 5,294.
+
+Playback is now the last thing either journey does in the catalog. A playing track turns the collapsed
+chrome into the mini player, and bringing the tab bar back past it to reach another catalog tab failed one
+full capture (`Unable to bring navigation tab testTag=ba_guide_catalog_dock_student`) while passing two
+smoke runs. Favourite BGM is visited before Student BGM, and the journey leaves by Back.
+
+### The guide pager is now changed by a finger, until it arrives
+
+`swipeGuidePagerWhileCoasting` swipes the guide's own pager after a fling, so the first swipe can land
+while the list is still coasting -- the Miuix `pagerGestureOverride` in `TapToHalt` mode spends it stopping
+the list -- and repeats until the Voice tab reports `selected`. Measured with and without it: the
+override's pointer loop and the snap fling compile without any swipe, because the override sees every
+pointer event, vertical flings and tab taps included. What arriving on Voice adds is the pager's
+neighbour prefetch and Gallery composing beside it. A version that swiped a fixed twice landed on Voice
+in the smoke runs (Gallery 218) and not in a full capture (Gallery 71); swiping until the tab is selected
+gave 245 in smoke and 244 in the accepted capture.
+
+### The profile sources share one vocabulary
+
+The generator, `MainNavigationFrameBenchmarks` and `StartupBenchmarks` each spelled their own tag strings,
+and `StartupBenchmarks`'s were not checked at all. They now share `ProfileTags.kt` and the tag waits,
+selector and `targetAppId` in `ProfileJourneySupport.kt`; gestures stay with each caller, because the
+generator swipes to reach code and the benchmarks swipe and then hold still for a measured window.
+`BaselineProfileTestTagContractTest` checks all five files, requires every shared tag and helper to be used,
+and now also requires every numeric constant the generator declares to be used. Removing the last catalog
+tab visit left `BA_GUIDE_CATALOG_DOCK_STUDENT` unused, and that check is what caught it.
+
 ## Selection rule
 
 A path belongs in the default profile when it satisfies these properties:
@@ -261,6 +351,11 @@ Install both APKs first, or the run instruments a stale build:
 
 This smoke run proves the UI script. Complete Profile collection proof comes from the generation task,
 its per-journey outputs and the merged generated artifacts.
+
+A hand-run leaves both APKs installed, with whatever the journey did to the app's data; the Gradle task
+uninstalls them when it finishes. So smoke runs can be repeated on warm state, and a capture always starts
+fresh. When a journey's value depends on an optional step -- playback, a page change -- read that
+journey's own `baseline-prof.txt` for the classes the step exists to reach, rather than trusting a pass.
 
 ## Full capture acceptance
 

@@ -17,7 +17,7 @@
 #
 # It deliberately does not try to judge *how much* drift matters. Any runtime
 # change on a path a journey walks can move method signatures, so the answer to
-# "is it current" is a date comparison, and the fix is a 30-minute run:
+# "is it current" is a date comparison, and the fix is a run of about 11 minutes (2026-09-24):
 #
 #   ANDROID_SERIAL=<emulator> ./gradlew :app:generateReleaseBaselineProfile
 set -uo pipefail

@@ -479,3 +479,83 @@ The spring covers 95% of the distance sooner than the tween did (about 0.19 s ag
 adjacent tab), then spends its extra frames on a tail that moves under 1% of a page. That is the cost
 of Miuix's feel, and the one knob is the threshold. Frame *time* was not measured: the AVD cannot
 measure it, and the phone is where it would have to be checked.
+
+## Snapshot follow-up: 0.9.4-2afdbb39-SNAPSHOT
+
+Five upstream commits between `39c40f99` (2026-09-20) and `2afdbb39` (2026-09-23), all on 2026-09-23. Four
+touch library source; three of them rework the pager gesture utilities, and one changes miuix-nav.
+
+| commit | subject | in KeiOS |
+| --- | --- | --- |
+| `73ba6073` | update jetbrains.compose.multiplatform to v1.12.1 (#442) | the JetBrains wrappers move to 1.12.1; androidx Compose was already 1.12.1 here |
+| `a575835c` | preserve child gestures in cross-axis pager (#440) | Cross-Axis only; KeiOS uses TapToHalt |
+| `70528417` | clear focus when navigation top changes (#441) | **applies everywhere**; checked below |
+| `00e2f193` | fix cross-axis child gestures after pager takeover | Cross-Axis only |
+| `2afdbb39` | keep pager settling during child gestures | Cross-Axis only |
+
+### pagerGestureOverride takes the pager's fling behaviour: migrated
+
+Every `pagerGestureOverride` overload now takes a `FlingBehavior`, and the call on the student guide's pager
+(`BaStudentGuidePagerContent`) stopped compiling. The guide passes the same `PagerDefaults.flingBehavior(
+snapAnimationSpec = PagerNavigationSpringSpec)` instance to the pager and to the modifier; it is now hoisted
+into one `val`.
+
+The parameter matters only to Cross-Axis. There the pager runs with `userScrollEnabled = false`, and the new
+`PagerNonTouchScroll` restores wheel, Shift+wheel and trackpad input by driving that fling behaviour. The
+TapToHalt branch still reduces to `iosStyleMomentumHalt`. `iosStyleMomentumHalt`,
+`PagerFlingTrackerConnection` and `PagerGestureNestedScrollConnection` are identical in the two snapshots,
+compared function by function in the sources. So the guide's gesture behaviour should not change, and the
+phone agrees:
+
+| swipe on Voice Lines (phone `5eea1f50`) | result |
+| --- | --- |
+| 150 ms after a list fling | 6 of 6 only stopped the list |
+| with the list at rest (control) | 4 of 4 paged |
+
+Cross-Axis is still not adopted, for the reason given under `39c40f99`: the gallery's audio slider is a
+horizontal drag. #440 and `00e2f193` narrow that conflict (the recognizer is now a Foundation `DragGestureNode`
+whose angle arbitration lets an aligned horizontal child win). That makes Cross-Axis worth another look, but
+it is a behaviour change and was not measured here.
+
+### Focus cleared when the top entry changes (#441): checked, nothing to adapt
+
+`NavDisplayLayout` now calls `LocalFocusManager.clearFocus()` from a `DisposableEffect` whenever the back
+stack's top key changes, because covered entries stay composed and could keep focus. Production code that
+requests focus: the BGM search panel and bottom chrome (after a tap in the catalog), and the shell runner's
+command input, which takes focus *on route entry* when its startup behaviour is "Focus input on entry". Only
+that last one could lose to a clear on the same frame. Its request comes from a `LaunchedEffect` that bumps a
+token, and the input requests focus from a second `LaunchedEffect` on that token. Both run after the push
+frame's effects apply, so the clear lands first. On the phone, with the setting switched to "Focus input on
+entry" and back to Silent afterwards: the keyboard came up on the first entry and on three re-entries, and
+leaving the route took it down.
+
+### Artifact check
+
+Sources jars for both versions of every module that resolves, fetched by a scratch Gradle build with the
+GitHub Packages credentials and compared file by file:
+
+| module | files | old vs new |
+| --- | --- | --- |
+| `miuix-ui` | 90 | `BreadcrumbBar.kt`, `TabRow.kt`, `PagerGestureUtils.kt` differ; `PagerNonTouchScroll.kt` and `PagerNonTouchScroll.android.kt` new |
+| `miuix-nav` | 31 | `NavDisplay.kt` differs |
+| `miuix-icons`, `miuix-blur`, `miuix-preference`, `miuix-squircle`, `miuix-shader`, `miuix-core` | 157, 25, 20, 8, 5, 4 | identical |
+
+The artifact agrees with the compare exactly. KeiOS uses neither `BreadcrumbBar` nor `TabRow`.
+
+`miuix_snapshot_check.sh --update` moved `gradle.properties` and the two build readmes but not the catalog,
+which it only reports as shadowed; `libs.versions.toml` was moved by hand, as the earlier bumps did.
+
+### What actually reaches KeiOS
+
+Diffing `:app:debugRuntimeClasspath` before and after, the resolved versions change only for
+`top.yukonga.miuix.kmp` and for the `org.jetbrains.compose.*` wrappers (1.12.0 -> 1.12.1, from #442). Every
+`androidx.compose` module was already on 1.12.1, the catalog's floor, so `COMPOSE_VERSION` is unchanged.
+
+### Verification
+
+- `verifyRoborazziDebug` over every module: 3,112 tests, 0 failures, no screenshot moved.
+  `:app:assembleRelease`, `:app:assembleReleaseDiagnostic` and `:baselineprofile:assemble` pass.
+- Phone `5eea1f50`, `os.kei.diag`: the TapToHalt table and the shell focus check above; an edge back gesture
+  leaves a route; no fatal exception in the session's log.
+- Not covered on the device: the gallery's audio slider. Its only link to this change is the TapToHalt path,
+  which is byte-identical.

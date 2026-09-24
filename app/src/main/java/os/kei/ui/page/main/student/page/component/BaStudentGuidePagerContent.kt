@@ -71,15 +71,18 @@ internal fun BaStudentGuidePagerContent(
     // Miuix's cross-axis interceptor: that one claims every horizontal drag before page content sees
     // it, and the gallery's audio progress slider is one of those drags. TapToHalt engages only during
     // a fling.
+    // Miuix takes the pager's fling behaviour too; only its Cross-Axis mode uses it (to drive wheel and
+    // trackpad input), so TapToHalt behaves the same, but the two must be the same instance.
+    val flingBehavior =
+        PagerDefaults.flingBehavior(
+            state = pagerState,
+            snapAnimationSpec = PagerNavigationSpringSpec,
+        )
     HorizontalPager(
         state = pagerState,
         key = { index -> bottomTabs.getOrNull(index)?.name ?: "stale-$index" },
         overscrollEffect = null,
-        flingBehavior =
-            PagerDefaults.flingBehavior(
-                state = pagerState,
-                snapAnimationSpec = PagerNavigationSpringSpec,
-            ),
+        flingBehavior = flingBehavior,
         beyondViewportPageCount = guidePagerBeyondViewportPageCount,
         modifier =
             Modifier
@@ -89,6 +92,7 @@ internal fun BaStudentGuidePagerContent(
                 .layerBackdrop(navBackdrop)
                 .pagerGestureOverride(
                     pagerState = pagerState,
+                    flingBehavior = flingBehavior,
                     mode = PagerInterceptionMode.TapToHalt,
                 ),
     ) { pageIndex ->

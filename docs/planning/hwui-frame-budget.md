@@ -416,6 +416,12 @@ on three consecutive home runs (366-368 frames per 3s, p50 18-19ms), where the e
 reports home over deadline 100% of the time. 66% of those frames still exceed the vsync interval.
 Anyone comparing should re-derive both numbers the same way before reading anything into it.
 
+(2026-09-25: part of the reason is that they were two different counters. `idle_dwell.sh` read
+`Number Frame deadline missed:` and `hwui_journey.sh` read `Number Frame deadline missed (legacy):`,
+and both printed it as `missed=`. Both scripts now print `missed=` for the first and
+`missed_legacy=` for the second. On the phone the two differ even over one session, for example 59
+against 62, so a `missed=` figure from `hwui_journey.sh` before this date is the legacy one.)
+
 `hwui_journey.sh` hardcoded `PKG=os.kei` — the user's real install, with their real tracked
 repositories, which it force-stops and relaunches. It now defaults to `os.kei.diag` like its
 sibling and honours `PKG` from the environment.

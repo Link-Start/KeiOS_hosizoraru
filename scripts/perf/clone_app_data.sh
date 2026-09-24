@@ -22,7 +22,9 @@ sleep 2
 [ "$(A shell id -u | tr -d '\r')" = "0" ] || { echo "needs root; adb root failed on $D"; exit 1; }
 
 for pkg in "$SRC" "$DST"; do
-  A shell pm list packages | grep -qx "package:$pkg" || { echo "$pkg is not installed"; exit 2; }
+  # `pm path` rather than `pm list packages | grep -q`: under pipefail, grep -q exiting at the first
+  # match can SIGPIPE adb and report an installed package as missing.
+  A shell pm path "$pkg" >/dev/null 2>&1 || { echo "$pkg is not installed"; exit 2; }
   A shell am force-stop "$pkg"
 done
 
@@ -32,8 +34,8 @@ DST_UID=$(A shell dumpsys package "$DST" \
 [ -n "$DST_UID" ] || { echo "could not read $DST uid"; exit 3; }
 
 A shell "rm -rf /data/data/$DST/* 2>/dev/null"
-A shell "cp -a /data/data/$SRC/. /data/data/$DST/ 2>/dev/null"
+A shell "cp -a /data/data/$SRC/. /data/data/$DST/" || { echo "copy $SRC -> $DST failed"; exit 4; }
 # The copy carries the source's ownership and SELinux labels, which the target cannot read.
-A shell "chown -R $DST_UID:$DST_UID /data/data/$DST"
-A shell "restorecon -R /data/data/$DST"
+A shell "chown -R $DST_UID:$DST_UID /data/data/$DST" || { echo "chown on $DST failed"; exit 4; }
+A shell "restorecon -R /data/data/$DST" || { echo "restorecon on $DST failed"; exit 4; }
 echo "cloned $SRC -> $DST (uid $DST_UID)"

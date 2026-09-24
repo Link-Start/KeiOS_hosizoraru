@@ -33,7 +33,10 @@ def load(path):
             continue
         get = lambda k: v[header[k]]  # noqa: E731
         total = (get("FrameCompleted") - get("IntendedVsync")) / 1e6
-        if not (0 < total < 500):
+        # A frame that never completed (skipped, or still in flight) has FrameCompleted 0 and a
+        # negative total. A long one is a real hitch and stays in: dropping frames over some
+        # ceiling hid exactly the frames a switch or scroll report exists to find.
+        if total <= 0:
             continue
         row = {"total": total, "interval": get("FrameInterval") / 1e6}
         ok = True
@@ -62,6 +65,9 @@ def report(label, rows):
     over = sum(1 for r in rows if r["total"] > interval)
     print(f"\n{label}: {len(rows)} frames, vsync interval {interval:.2f}ms "
           f"({100 * over // len(rows)}% over interval)")
+    long = sum(1 for r in rows if r["total"] >= 500)
+    if long:
+        print(f"  {long} frame(s) of 500ms or more are included")
     print(f"  total            p50={q(rows,'total',.5):6.2f}  p90={q(rows,'total',.9):6.2f}  "
           f"p99={q(rows,'total',.99):6.2f}")
     print(f"  {'stage':<17}{'p50':>7}{'p90':>7}{'p99':>7}{'mean':>7}   share")

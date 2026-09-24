@@ -9,7 +9,7 @@
 # bounce Home <-> one tab instead of walking all four.
 set -uo pipefail
 D=${D:-5eea1f50}
-PKG=os.kei
+PKG=${PKG:-os.kei.diag}  # never os.kei: that is the real install, with real refreshes
 DIR="$(cd "$(dirname "$0")" && pwd)"
 TAG="${TAG:-run}"
 pause() { perl -e "select(undef,undef,undef,$1)"; }

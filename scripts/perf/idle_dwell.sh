@@ -14,7 +14,8 @@
 set -uo pipefail
 D=${D:-emulator-5554}
 PKG=${PKG:-os.kei.diag}
-ACT=${ACT:-os.kei.LauncherAndroidDesigns}
+# MainActivity, not a launcher alias: the icon picker disables the aliases it is not using.
+ACT=${ACT:-os.kei.MainActivity}
 DWELL=${DWELL:-3}
 SETTLE=${SETTLE:-1.6}
 LABEL="$1"
@@ -29,7 +30,11 @@ tag_xy() {
 }
 
 adb -s "$D" shell am force-stop "$PKG" >/dev/null 2>&1
-adb -s "$D" shell am start -W -n "$PKG/$ACT" >/dev/null 2>&1
+START=$(adb -s "$D" shell am start -W -n "$PKG/$ACT" 2>&1)
+if ! printf '%s' "$START" | grep -q "Status: ok"; then
+  echo "$LABEL: could not start $PKG/$ACT: $(printf '%s' "$START" | grep -m1 -i "error" )" >&2
+  exit 4
+fi
 pause 6
 
 while [ "$#" -ge 1 ]; do
@@ -60,8 +65,9 @@ adb -s "$D" shell dumpsys gfxinfo "$PKG" 2>/dev/null | LABEL="$LABEL" DWELL="$DW
   $v{p90}   = $1 if /^90th percentile: (\d+)/;
   $v{p99}   = $1 if /^99th percentile: (\d+)/;
   $v{missed} = $1 if /^Number Frame deadline missed: (\d+)/;
+  $v{missedlegacy} = $1 if /^Number Frame deadline missed \(legacy\): (\d+)/;
   END {
     my $fps = $v{total} ? $v{total} / $ENV{DWELL} : 0;
-    printf "%-30s idle_frames=%-5s (%5.1f/s)  p50=%-4s p90=%-4s p99=%-5s missed=%s\n",
-      $ENV{LABEL}, $v{total}//"-", $fps, $v{p50}//"-", $v{p90}//"-", $v{p99}//"-", $v{missed}//"-";
+    printf "%-30s idle_frames=%-5s (%5.1f/s)  p50=%-4s p90=%-4s p99=%-5s missed=%s missed_legacy=%s\n",
+      $ENV{LABEL}, $v{total}//"-", $fps, $v{p50}//"-", $v{p90}//"-", $v{p99}//"-", $v{missed}//"-", $v{missedlegacy}//"-";
   }'

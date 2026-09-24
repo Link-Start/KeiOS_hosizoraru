@@ -67,12 +67,17 @@ journey_route_push() {
   done
 }
 
+declare -F "journey_$JOURNEY" >/dev/null || {
+  echo "unknown journey: $JOURNEY (have: $(declare -F | sed -n 's/^declare -f journey_//p' | tr '\n' ' '))" >&2
+  exit 2
+}
+
 goto_home
 adb -s "$D" shell dumpsys gfxinfo $PKG reset >/dev/null 2>&1
 "journey_$JOURNEY"
 pause 1.0
 
-adb -s "$D" shell dumpsys gfxinfo $PKG 2>/dev/null | perl -ne '
+adb -s "$D" shell dumpsys gfxinfo $PKG 2>/dev/null | LABEL="$LABEL" JOURNEY="$JOURNEY" perl -ne '
   BEGIN { our %v }
   chomp;
   $v{total}  = $1 if /^Total frames rendered: (\d+)/;
@@ -87,11 +92,12 @@ adb -s "$D" shell dumpsys gfxinfo $PKG 2>/dev/null | perl -ne '
   $v{g99}    = $1 if /^99th gpu percentile: (\d+)/;
   $v{slowui} = $1 if /^Number Slow UI thread: (\d+)/;
   $v{slowdraw} = $1 if /^Number Slow issue draw commands: (\d+)/;
-  $v{missed} = $1 if /^Number Frame deadline missed \(legacy\): (\d+)/;
+  $v{missed} = $1 if /^Number Frame deadline missed: (\d+)/;
+  $v{missedlegacy} = $1 if /^Number Frame deadline missed \(legacy\): (\d+)/;
   END {
-    printf "%-22s frames=%-5s jank=%-5s (%5s%%)  cpu p50=%-3s p90=%-3s p95=%-3s p99=%-4s  gpu p50=%-3s p90=%-3s p99=%-3s  slowUI=%-4s slowDraw=%-4s missed=%s\n",
+    printf "%-22s frames=%-5s jank=%-5s (%5s%%)  cpu p50=%-3s p90=%-3s p95=%-3s p99=%-4s  gpu p50=%-3s p90=%-3s p99=%-3s  slowUI=%-4s slowDraw=%-4s missed=%s missed_legacy=%s\n",
       $ENV{LABEL}."/".$ENV{JOURNEY}, $v{total}//"-", $v{jank}//"-", $v{jankpc}//"-",
       $v{p50}//"-", $v{p90}//"-", $v{p95}//"-", $v{p99}//"-",
       $v{g50}//"-", $v{g90}//"-", $v{g99}//"-",
-      $v{slowui}//"-", $v{slowdraw}//"-", $v{missed}//"-";
+      $v{slowui}//"-", $v{slowdraw}//"-", $v{missed}//"-", $v{missedlegacy}//"-";
   }'

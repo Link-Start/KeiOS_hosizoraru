@@ -25,7 +25,8 @@ def load(path):
             continue
         g = lambda k: v[header[k]]  # noqa: E731
         total = (g("FrameCompleted") - g("IntendedVsync")) / 1e6
-        if not (0 < total < 500):
+        # Unfinished frames have a negative total; a long one is a real hitch and is kept.
+        if total <= 0:
             continue
         rows.append(dict(
             total=total,

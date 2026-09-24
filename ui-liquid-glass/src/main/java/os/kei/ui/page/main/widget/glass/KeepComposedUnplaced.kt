@@ -25,6 +25,11 @@ import androidx.compose.ui.unit.Constraints
  *
  * One node whether shown or not, so toggling keeps the modifier chain — and the glass modifier nodes after it —
  * intact. Unplaced content alone is not enough: it stays in the semantics tree with a stale position.
+ *
+ * Put it on a node that owns the whole form, such as a Box around the component, not on a component's
+ * `modifier` parameter. A component may apply that modifier to an inner element: AppFloatingLiquidActionButton
+ * wraps it in a TooltipBox, which then stayed placed with its long-click semantics over the dock's first action
+ * and hid that action from accessibility (AppFloatingVerticalActionDockSemanticsTest).
  */
 fun Modifier.keepComposedUnplaced(visible: Boolean): Modifier = this.then(KeepComposedElement(visible))
 

@@ -163,6 +163,23 @@ semantics cleared. Unplaced alone was not enough: `uiautomator` still listed the
 stale position, and `KeepComposedUnplacedTest` fails without the semantics clearing. Pixels at rest and scrolled
 on OS, MCP and BA: identical. Result in the table above.
 
+### A regression it shipped with, found by the baseline profile (2026-09-25)
+
+The release capture lost 465 `ui/page/main/ba` rules, nearly all of them the calendar-and-pool page and the
+daily-done sheet. Both are opened from BA's floating dock, and `uiautomator` no longer listed the dock's first
+action (`ba_dock_open_calendar_pool`) at all, collapsed or expanded: the journey's optional step found nothing
+to tap. With the dock file from before `keepComposedUnplaced`, all three actions were listed.
+
+The cause was where the modifier went. In `AppFloatingVerticalActionDock` it was handed to the compact button's
+`modifier` parameter, and `AppFloatingLiquidActionButton` applies that modifier inside a `TooltipBox`. So the
+TooltipBox wrapper stayed placed while the button was hidden, with its long-click semantics, at the dock's top
+edge. Android's accessibility tree drops a node that a later sibling covers, so the first action disappeared for
+TalkBack as well as for `uiautomator`. Both forms are now wrapped in a Box that carries `keepComposedUnplaced`,
+the KDoc says to put it on a node that owns the whole form, and
+`AppFloatingVerticalActionDockSemanticsTest` checks the merged tree: three long-click nodes expanded, one
+collapsed. It fails on the previous version with 4. The other callers already put the modifier on a Box they
+own. The dock region is pixel-identical before and after the fix.
+
 ### What the 33ms count measured, re-read the same day
 
 framestats `total` runs from the intended vsync to GPU completion. It counts a frame that waited behind a busy

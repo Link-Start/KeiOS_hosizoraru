@@ -542,56 +542,69 @@ fun AppFloatingVerticalActionDock(
                 .width(size)
                 .appFloatingDockAnimatedHeight(compactMotion.height),
     ) {
-        AppFloatingLiquidVerticalDockSurface(
-            backdrop = backdrop,
+        // Each form is wrapped in a Box that carries keepComposedUnplaced, rather than handing the modifier to
+        // the component: AppFloatingLiquidActionButton puts its modifier inside a TooltipBox, so that wrapper
+        // stayed placed with its long-click semantics while the button was hidden, and it covered the first
+        // action in the accessibility tree. TalkBack and uiautomator lost that action (on BA, the calendar).
+        Box(
             modifier =
-                compactMotion.expandedModifier
+                Modifier
                     .keepComposedUnplaced(compactMotion.showExpandedContent)
-                    .align(Alignment.BottomCenter)
-                    .width(size)
-                    .height(dockHeight),
+                    .align(Alignment.BottomCenter),
         ) {
-            Column(
-                modifier = Modifier.matchParentSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+            AppFloatingLiquidVerticalDockSurface(
+                backdrop = backdrop,
+                modifier =
+                    compactMotion.expandedModifier
+                        .width(size)
+                        .height(dockHeight),
             ) {
-                actions.forEach { action ->
-                    AppFloatingVerticalDockAction(
-                        icon = action.icon,
-                        contentDescription = action.contentDescription,
-                        onClick = action.onClick,
-                        size = size,
-                        iconSize = iconSize,
-                        iconTint = action.iconTint,
-                        enabled = action.enabled,
-                        rotating = action.rotating,
-                        testTag = action.testTag,
-                        badgeLabel = action.badgeLabel,
-                        badgeColor = action.badgeColor,
-                        badgeContentColor = action.badgeContentColor,
-                        tooltipText = action.tooltipText,
-                    )
+                Column(
+                    modifier = Modifier.matchParentSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    actions.forEach { action ->
+                        AppFloatingVerticalDockAction(
+                            icon = action.icon,
+                            contentDescription = action.contentDescription,
+                            onClick = action.onClick,
+                            size = size,
+                            iconSize = iconSize,
+                            iconTint = action.iconTint,
+                            enabled = action.enabled,
+                            rotating = action.rotating,
+                            testTag = action.testTag,
+                            badgeLabel = action.badgeLabel,
+                            badgeColor = action.badgeColor,
+                            badgeContentColor = action.badgeContentColor,
+                            tooltipText = action.tooltipText,
+                        )
+                    }
                 }
             }
         }
-        AppFloatingLiquidActionButton(
-            backdrop = backdrop,
-            icon = compactIcon ?: firstAction.icon,
-            contentDescription = compactContentDescription ?: firstAction.contentDescription,
-            onClick = onCompactClick ?: firstAction.onClick,
-            size = size,
-            iconSize = iconSize,
-            iconTint = firstAction.iconTint,
-            tooltipText = compactTooltipText ?: firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
-            badgeLabel = collapsedBadgeLabel,
-            badgeColor = compactBadgeColor ?: firstAction.badgeColor,
-            badgeContentColor = compactBadgeContentColor ?: firstAction.badgeContentColor,
+        Box(
             modifier =
-                compactMotion.compactModifier
+                Modifier
                     .keepComposedUnplaced(compactMotion.showCompactContent)
                     .align(Alignment.BottomCenter),
-        )
+        ) {
+            AppFloatingLiquidActionButton(
+                backdrop = backdrop,
+                icon = compactIcon ?: firstAction.icon,
+                contentDescription = compactContentDescription ?: firstAction.contentDescription,
+                onClick = onCompactClick ?: firstAction.onClick,
+                size = size,
+                iconSize = iconSize,
+                iconTint = firstAction.iconTint,
+                tooltipText = compactTooltipText ?: firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
+                badgeLabel = collapsedBadgeLabel,
+                badgeColor = compactBadgeColor ?: firstAction.badgeColor,
+                badgeContentColor = compactBadgeContentColor ?: firstAction.badgeContentColor,
+                modifier = compactMotion.compactModifier,
+            )
+        }
     }
 }
 

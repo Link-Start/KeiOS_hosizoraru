@@ -103,6 +103,54 @@ left is `GitHubRefreshBatchActions$refreshTrackedBatchInternal`, `GitHubPageRefr
 a background refresh no journey drives, which fired during the 2026-09-04 capture and did not fire
 during this one. No UI path lost rules.
 
+## Re-captured 2026-09-25 for v1.16.0, after a capture that caught a regression
+
+On `KeiOS_API37_Validation`, 10m44s wall for `:app:generateReleaseBaselineProfile`, all six journeys
+passing. The benchmark classes in the same APK (`MainNavigationFrameBenchmarks`, `StartupBenchmarks`) skip
+themselves through an assumption during generation, which the test report counts as 16 failures; that is
+expected.
+
+| Journey | Device time |
+| --- | ---: |
+| commonRoutesAndChrome | 71.1s |
+| gitHubTrackingCore | 68.9s |
+| startupAndFirstScroll | 80.3s |
+| baOfficeAndCatalogCore | 98.2s |
+| mainPagesAndNavigation | 121.9s |
+| adaptiveLargeScreenCore | 166.3s |
+
+Baseline rules 62,053 -> 62,312 (1,328 added, 1,069 removed); startup rules 24,046 -> 24,262. Named
+components against the 2026-09-24 capture, with the first 2026-09-25 capture that was not accepted:
+
+| named component | 09-24 | 09-25, rejected | 09-25, accepted |
+| --- | ---: | ---: | ---: |
+| `ui/page/main/host` | 1525 | 1501 | 1526 |
+| `MainLoadedPager` | 229 | 217 | 229 |
+| `ui/page/main/home` | 647 | 648 | 652 |
+| `kyant/backdrop` | 1566 | 1483 | 1629 |
+| `yukonga/miuix` | 2026 | 2080 | 2118 |
+| `compose/foundation/lazy` | 1375 | 1320 | 1375 |
+| `media3` | 5028 | 5015 | 5019 |
+| `ui/page/main/student` | 5786 | 5707 | 5819 |
+| guide Gallery sections | 88 | 88 | 88 |
+| `ui/page/main/github` | 3195 | 3195 | 3192 |
+| `ui/page/main/ba` | 3114 | **2649** | 3114 |
+| `BaCalendarPoolPageKt` / `BaDailyDoneTemplateSheetKt` | 103 / 126 | **0 / 50** | 103 / 126 |
+| `widget/glass` | 2126 | 2269 | 2327 |
+| `BaGuideCatalogFetchKt` / `BaStudentGuideRepository` | 114 / 174 | 114 / 174 | 114 / 174 |
+
+The first capture passed every journey and still lost 465 BA rules. They were almost all the calendar-and-pool
+page and the daily-done sheet, which the BA journey opens from the floating dock in steps marked optional. The
+dock's first action had dropped out of the accessibility tree, so the step found nothing to tap and moved on.
+That was a regression in this release's chrome work (`keepComposedUnplaced` handed to a component that wraps its
+modifier in a TooltipBox); `docs/planning/liquid-glass-clip-and-resolution.md` §4 has the cause and the fix.
+It is the argument for judging a capture by named components: the journey passed, the total fell by 434 rules,
+and only the per-component table showed which page was gone.
+
+This release's code is covered: `FlatLiquidBackdrop` 8, `KeepComposedUnplaced` 2, `PagerNonTouchScroll` 16.
+`PagerGestureUtils` 28 -> 20 is the TapToHalt path the student guide no longer takes since it moved to
+Cross-Axis.
+
 ## Re-captured 2026-09-24, and two journeys made to prove what they reach
 
 On `KeiOS_API37_Validation`, 11m12s wall for `:app:generateReleaseBaselineProfile`, all six journeys

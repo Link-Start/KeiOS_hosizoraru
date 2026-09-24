@@ -74,8 +74,10 @@ CATALOG="$CATALOG" SHOW_ALL="$SHOW_ALL" DO_UPDATE="$DO_UPDATE" SELF_TEST="$SELF_
   ONLY_REF="$ONLY_REF" python3 - <<'PY'
 import concurrent.futures as cf
 import io
+import json
 import os
 import re
+import subprocess
 import sys
 import tomllib
 import urllib.request
@@ -167,7 +169,6 @@ PLUGIN_ARTIFACTS = {
 NOT_A_DEPENDENCY = "not a dependency version"
 EXCLUDED = {
     "miuix": "owned by scripts/deps/miuix_snapshot_check.sh",
-    "compose": "pinned to what Miuix resolves; see the catalog comment",
 }
 
 
@@ -244,13 +245,62 @@ def verdict(ref):
     return ref, module, best, "behind", ""
 
 
+# Pins that live outside the catalog. They are checked by the same rule, reported under a
+# "file:" label, and never rewritten by --update, which only knows the catalog.
+OUTSIDE = {}
+if os.path.exists("settings.gradle.kts"):
+    for plugin_id, version in re.findall(
+        r'id\("([^"]+)"\)\s+version\s+"([^"]+)"', io.open("settings.gradle.kts", encoding="utf-8").read()
+    ):
+        label = f"settings:{plugin_id.rsplit('.', 1)[-1]}"
+        versions[label] = version
+        coordinate[label] = plugin_coordinate(plugin_id)
+        OUTSIDE[label] = "settings.gradle.kts"
+
+
+def gradle_wrapper_row():
+    path = "gradle/wrapper/gradle-wrapper.properties"
+    if not os.path.exists(path):
+        return None
+    match = re.search(r"gradle-([0-9][^-/]*?(?:-rc-\d+)?)-(?:bin|all)\.zip", io.open(path, encoding="utf-8").read())
+    if not match:
+        return None
+    label = "gradle-wrapper"
+    versions[label] = match.group(1)
+    OUTSIDE[label] = path
+    found = []
+    for channel in ("current", "release-candidate"):
+        try:
+            with urllib.request.urlopen(f"https://services.gradle.org/versions/{channel}", timeout=40) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except Exception:
+            continue
+        if data.get("version") and not data.get("broken"):
+            found.append(data["version"])
+    if not found:
+        return label, "services.gradle.org", None, "unreachable", "could not read the version service"
+    # Gradle spells candidates "9.8-rc-1"; the comparator knows "rc".
+    best = newest(found) or found[0]
+    pinned = versions[label]
+    if best == pinned:
+        return label, "services.gradle.org", best, "current", ""
+    if rank(pinned) is not None and rank(best) is not None and rank(best) < rank(pinned):
+        return label, "services.gradle.org", best, "pin ahead", f"newest published is {best}"
+    return label, "services.gradle.org", best, "behind", ""
+
+
 targets = [ONLY_REF] if ONLY_REF else sorted(versions)
-if ONLY_REF and ONLY_REF not in versions:
+if ONLY_REF and ONLY_REF not in versions and ONLY_REF != "gradle-wrapper":
     print(f"No such version ref: {ONLY_REF}", file=sys.stderr)
     raise SystemExit(2)
+targets = [t for t in targets if t != "gradle-wrapper"]
 
 with cf.ThreadPoolExecutor(16) as pool:
     rows = list(pool.map(verdict, targets))
+if not ONLY_REF or ONLY_REF == "gradle-wrapper":
+    wrapper = gradle_wrapper_row()
+    if wrapper:
+        rows.append(wrapper)
 
 # ------------------------------------------------------------------- report
 
@@ -268,7 +318,8 @@ pin_width = max([len(versions[row[0]]) for row in shown] + [10]) + 2
 if behind:
     print("behind")
     for ref, module, best, _, _ in behind:
-        print(f"  {ref:<{ref_width}}{versions[ref]:<{pin_width}}-> {best:<{pin_width}}{module}")
+        where = f"  (edit {OUTSIDE[ref]} by hand)" if ref in OUTSIDE else ""
+        print(f"  {ref:<{ref_width}}{versions[ref]:<{pin_width}}-> {best:<{pin_width}}{module}{where}")
 else:
     print("Every rankable pin is the newest stable-or-rc published.")
 
@@ -298,6 +349,9 @@ if not behind:
 if DO_UPDATE:
     source = io.open(CATALOG, encoding="utf-8").read()
     for ref, _, best, _, _ in behind:
+        if ref in OUTSIDE:
+            print(f"\nnot rewritten: {ref} lives in {OUTSIDE[ref]}")
+            continue
         old = f'{ref} = "{versions[ref]}"'
         if source.count(old) != 1:
             print(f"\nRefusing to rewrite {ref}: {source.count(old)} matches for {old!r}")
@@ -314,23 +368,21 @@ if DO_UPDATE:
     # `readme/RELEASE_*.md` describes a shipped version, so an old number there is the record doing
     # its job, not a staleness to fix.
     HISTORICAL = ("docs/planning", "readme/RELEASE_")
+    # Tracked files only. Walking the tree reached build output and a foreign checkout under .tmp,
+    # and a substring test on the directory ("build", ".git") skipped .github and anything named
+    # like a build folder.
     stale = []
-    for directory, _, names in os.walk("."):
-        if any(part in directory for part in (".git", "build", "node_modules")):
+    tracked = subprocess.run(["git", "ls-files", "-z", "--", "*.md"], capture_output=True, check=True)
+    for path in filter(None, tracked.stdout.decode("utf-8").split("\0")):
+        if path.startswith(HISTORICAL):
             continue
-        for name in names:
-            if not name.endswith(".md"):
-                continue
-            path = os.path.join(directory, name)
-            if any(mark in path.lstrip("./") for mark in HISTORICAL):
-                continue
-            try:
-                text = io.open(path, encoding="utf-8").read()
-            except Exception:
-                continue
-            for ref, _, _, _, _ in behind:
-                if f"`{versions[ref]}`" in text:
-                    stale.append((path.lstrip("./"), ref, versions[ref]))
+        try:
+            text = io.open(path, encoding="utf-8").read()
+        except Exception:
+            continue
+        for ref, _, _, _, _ in behind:
+            if f"`{versions[ref]}`" in text:
+                stale.append((path, ref, versions[ref]))
     if stale:
         print("\ndocs still quoting a version that moved")
         for path, ref, old in sorted(set(stale)):

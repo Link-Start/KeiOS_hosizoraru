@@ -25,7 +25,8 @@ Usage: scripts/deps/miuix_snapshot_check.sh [options]
   --files             list every library file that changed in the range
   --diff <pattern>    print the patch for changed files matching <pattern>, e.g. --diff PullToRefresh
   --all               include example/CI/tooling commits in the listing
-  --update            rewrite the pin in gradle.properties (and the build-doc examples) to the newest
+  --update            move the pin to the newest: gradle.properties, the version catalog and the
+                      build-doc examples, whatever value each of them currently holds
   -h, --help          show this help
 
 Exit codes: 0 up to date, 1 behind, 2 bad usage, 3 missing prerequisite.
@@ -64,7 +65,7 @@ property_in() {
 
 # Same order the build resolves in: a Gradle property first (GRADLE_USER_HOME wins over the
 # project file), then local.properties, then the version catalog. Anything found later is
-# reported as shadowed — a stale entry there is a classic "why is my pin ignored" trap.
+# reported as shadowed when it disagrees — a stale entry there is a classic "why is my pin ignored" trap.
 PINNED=""
 PINNED_FROM=""
 for candidate in \
@@ -78,7 +79,7 @@ for candidate in \
     if [[ -z "$PINNED" ]]; then
       PINNED="$value"
       PINNED_FROM="$file"
-    else
+    elif [[ "$value" != "$PINNED" ]]; then
       printf 'note: %s sets %s=%s, shadowed by %s\n' "$file" "$key" "$value" "$PINNED_FROM"
     fi
   fi
@@ -96,7 +97,8 @@ import json, os, sys
 versions = sorted(json.load(sys.stdin), key=lambda v: v["created_at"], reverse=True)
 names = [v["name"] for v in versions]
 pinned = os.environ["PINNED"]
-behind = names.index(pinned) if pinned in names else "?"
+# Only the newest 100 are fetched; a pin older than that (or never published) has no index.
+behind = names.index(pinned) if pinned in names else "100+"
 print(names[0], versions[0]["created_at"][:16], behind)
 ')"
 
@@ -108,9 +110,13 @@ if [[ "$PINNED" == "$LATEST" ]]; then
   exit 0
 fi
 
-printf '\n%s snapshot(s) behind.\n' "$BEHIND"
+if [[ "$BEHIND" == "100+" ]]; then
+  printf '\nThe pin is not among the newest 100 published snapshots (older, or never published).\n'
+else
+  printf '\n%s snapshot(s) behind.\n' "$BEHIND"
+fi
 
-# Snapshots are named 0.9.3-<sha>-SNAPSHOT; a plain version maps to its release tag.
+# Snapshots are named <version>-<sha>-SNAPSHOT; a plain version maps to its release tag.
 sha_of() {
   if [[ "$1" =~ -([0-9a-f]{7,40})-SNAPSHOT$ ]]; then
     printf '%s' "${BASH_REMATCH[1]}"
@@ -130,16 +136,21 @@ printf '\ncommits\n'
 SHOW_ALL="$SHOW_ALL" python3 -c '
 import json, os, re, sys
 # Upstream prefixes every subject; everything outside these buckets touches the library.
-skip = re.compile(r"^(example|ci|build|docs|chore)[:(]|\(deps\)")
+skip = re.compile(r"^(example|ci|build|docs|chore)[:(]")
+# A dependency bump is never skipped, whatever its prefix: it changes what the published artifacts
+# pull onto our classpath (e.g. a JetBrains Compose bump moves every androidx.compose module).
+deps = re.compile(r"\(deps\)")
 show_all = os.environ["SHOW_ALL"] == "1"
 kept = dropped = 0
 for c in json.load(open(sys.argv[1]))["commits"]:
     subject = c["commit"]["message"].split("\n")[0]
-    if not show_all and skip.search(subject):
+    is_deps = bool(deps.search(subject))
+    if not show_all and not is_deps and skip.search(subject):
         dropped += 1
         continue
     kept += 1
-    print("  %s %s %s" % (c["sha"][:8], c["commit"]["author"]["date"][:10], subject))
+    tag = "  [deps: check the classpath]" if is_deps else ""
+    print("  %s %s %s%s" % (c["sha"][:8], c["commit"]["author"]["date"][:10], subject, tag))
 if not kept:
     print("  (none touch the library)")
 if dropped:
@@ -177,14 +188,43 @@ fi
 
 if [[ "$DO_UPDATE" == 1 ]]; then
   printf '\nupdating pin\n'
-  for target in gradle.properties readme/BUILD.md readme/BUILD_CN.md; do
-    if [[ -f "$target" ]] && grep -q -- "$PINNED" "$target"; then
-      tmp="$(mktemp)"
-      sed "s|$PINNED|$LATEST|g" "$target" > "$tmp"
-      mv "$tmp" "$target"
-      printf '  %s\n' "$target"
-    fi
-  done
+  # Rewrite each place by its key, not by searching for the effective pin: a file holding an older
+  # value (the catalog, shadowed by gradle.properties, is the usual one) would otherwise be skipped
+  # and keep drifting.
+  LATEST="$LATEST" python3 - <<'PY'
+import os, re
+latest = os.environ["LATEST"]
+targets = [
+    ("gradle.properties", r"^(\s*miuix\.version\s*=\s*)(\S+)(\s*)$"),
+    ("gradle/libs.versions.toml", r'^(\s*miuix\s*=\s*")([^"]+)(".*)$'),
+    ("readme/BUILD.md", r"^(\s*miuix\.version\s*=\s*)(\S+)(\s*)$"),
+    ("readme/BUILD_CN.md", r"^(\s*miuix\.version\s*=\s*)(\S+)(\s*)$"),
+]
+for path, pattern in targets:
+    if not os.path.exists(path):
+        continue
+    lines = open(path, encoding="utf-8").read().split("\n")
+    old = []
+    for i, line in enumerate(lines):
+        m = re.match(pattern, line)
+        if m and m.group(2) != latest:
+            old.append(m.group(2))
+            lines[i] = m.group(1) + latest + m.group(3)
+    if old:
+        open(path, "w", encoding="utf-8").write("\n".join(lines))
+        print("  %s  (was %s)" % (path, ", ".join(sorted(set(old)))))
+    elif any(re.match(pattern, l) for l in lines):
+        print("  %s  already %s" % (path, latest))
+    else:
+        print("  %s  has no miuix pin line; left alone" % path)
+PY
+  case "$PINNED_FROM" in
+    gradle.properties|gradle/libs.versions.toml) ;;
+    *)
+      printf '\nwarning: the effective pin comes from %s, which shadows the repo files and was not\n' "$PINNED_FROM"
+      printf 'changed. Remove or update miuix.version there, or the build keeps using %s.\n' "$PINNED"
+      ;;
+  esac
   printf '\nBuild and check on device before committing: a snapshot can carry behaviour changes.\n'
 else
   printf '\n  --diff <pattern>  patch for one component, e.g. --diff PullToRefresh\n'

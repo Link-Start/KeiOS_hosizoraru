@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativePaint
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.toArgb
@@ -309,7 +310,7 @@ private class LiquidHighlightNode(
         paint.applyBlur(highlight.blurRadius.toPx())
         // The library draws the highlight shader only where `RuntimeShader` exists.
         if (android.os.Build.VERSION.SDK_INT >= 33) {
-            paint.asFrameworkPaint().shader = highlightShader(highlight.style)
+            paint.nativePaint.shader = highlightShader(highlight.style)
         }
     }
 
@@ -349,7 +350,7 @@ private class LiquidHighlightNode(
 
 /** The library's `Paint.blur`. */
 private fun Paint.applyBlur(radius: Float) {
-    asFrameworkPaint().maskFilter = if (radius > 0f) BlurMaskFilter(radius, BlurMaskFilter.Blur.NORMAL) else null
+    nativePaint.maskFilter = if (radius > 0f) BlurMaskFilter(radius, BlurMaskFilter.Blur.NORMAL) else null
 }
 
 // ---- outer shadow ------------------------------------------------------------------------------------

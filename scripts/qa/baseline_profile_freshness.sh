@@ -3,8 +3,9 @@
 #
 #   scripts/qa/baseline_profile_freshness.sh [--ref <git-ref>]
 #
-# Exits 0 when fresh, 1 when a profiled runtime source moved after the last
-# capture, 2 when the profile is missing entirely. Meant as a release gate:
+# Exits 0 when fresh, 1 when a profiled runtime source or a dependency version
+# moved after the last capture, 2 when the profile is missing entirely, 64 on bad
+# usage (including a --ref git cannot resolve). Meant as a release gate:
 #
 #   scripts/qa/baseline_profile_freshness.sh || echo "regenerate before shipping"
 #
@@ -25,11 +26,18 @@ set -uo pipefail
 REF="HEAD"
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --ref) REF="$2"; shift 2 ;;
+    --ref)
+      [[ $# -ge 2 ]] || { echo "missing value for --ref" >&2; exit 64; }
+      REF="$2"; shift 2 ;;
     -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 64 ;;
   esac
 done
+
+# Every path below is relative to the repository root, wherever this was started from.
+cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)" || exit 64
+# A mistyped ref must not read as "fresh": git diff would fail, leave DRIFT empty, and pass.
+git rev-parse --verify -q "$REF^{commit}" >/dev/null || { echo "bad ref: $REF" >&2; exit 64; }
 
 PROFILE_DIR="app/src/release/generated/baselineProfiles"
 BASELINE="$PROFILE_DIR/baseline-prof.txt"
@@ -62,21 +70,43 @@ DRIFT=$(
     ':(glob)*/src/main/**/*.aidl' \
     | sort
 )
+# Library code is in the profile too (androidx.compose and Miuix alone are tens of thousands of
+# rules), so a dependency bump can leave it as stale as a source edit. Compared by value, so a
+# comment or an unrelated property in the same files does not count.
+versions_at() {
+  {
+    git show "$1:gradle/libs.versions.toml" 2>/dev/null \
+      | awk '/^\[versions\]/{on=1; next} /^\[/{on=0} on && /^[A-Za-z0-9_.-]+[[:space:]]*=/' \
+      | sed -E 's/[[:space:]]*#.*$//; s/[[:space:]]*=[[:space:]]*/=/'
+    git show "$1:gradle.properties" 2>/dev/null | grep -E '^[[:space:]]*miuix\.version[[:space:]]*=' \
+      | sed -E 's/[[:space:]]*=[[:space:]]*/=/; s/^[[:space:]]+//'
+  } | sort
+}
+DEP_DRIFT=$(comm -13 <(versions_at "$CAPTURE") <(versions_at "$REF"))
+
 RULES=$(grep -cv '^#' "$BASELINE")
 STARTUP_RULES=$(grep -cv '^#' "$STARTUP")
 
 echo "profile   $RULES baseline rules, $STARTUP_RULES startup rules"
 echo "captured  ${CAPTURE:0:9} ($CAPTURE_WHEN) $CAPTURE_SUBJECT"
 
-if [[ -z "$DRIFT" ]]; then
-  echo "STATUS    fresh — no runtime source has moved since the capture"
+if [[ -z "$DRIFT" && -z "$DEP_DRIFT" ]]; then
+  echo "STATUS    fresh — no runtime source or dependency version has moved since the capture"
   exit 0
 fi
 
-echo "STATUS    STALE — runtime source moved after the capture:"
-while IFS= read -r path; do
-  echo "            $path"
-done <<< "$DRIFT"
+if [[ -n "$DRIFT" ]]; then
+  echo "STATUS    STALE — runtime source moved after the capture:"
+  while IFS= read -r path; do
+    echo "            $path"
+  done <<< "$DRIFT"
+fi
+if [[ -n "$DEP_DRIFT" ]]; then
+  echo "STATUS    STALE — dependency versions moved after the capture (values now; build and test tools such as agp are listed too and do not stale it on their own):"
+  while IFS= read -r line; do
+    echo "            $line"
+  done <<< "$DEP_DRIFT"
+fi
 echo
 echo "Regenerate before shipping:"
 echo "  ANDROID_SERIAL=<emulator> ./gradlew :app:generateReleaseBaselineProfile"

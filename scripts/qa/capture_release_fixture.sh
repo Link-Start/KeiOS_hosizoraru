@@ -27,8 +27,8 @@
 # It is also fixed at ten entries with no page parameter, so the capture is the whole window by
 # definition. Needs no `gh` and no token, which is the point of that mode.
 #
-# Needs `gh` authenticated (`gh auth status`) and `jq` for the API capture. Guest access works for
-# public repositories but is rate limited; the token is used when there is one.
+# Needs `gh` authenticated (`gh auth status`, or GH_TOKEN set) and `jq` for the API capture. `gh api`
+# will not send an unauthenticated request, so there is no guest mode here; use --atom for that.
 #
 # Exit codes: 0 captured, 2 bad usage, 3 missing tool or auth, 4 request failed.
 set -euo pipefail
@@ -64,8 +64,10 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
     --atom) AS_ATOM=1; shift ;;
-    --limit) LIMIT="${2:-}"; shift 2 ;;
-    --name) NAME="${2:-}"; shift 2 ;;
+    --limit|--name)
+      [ $# -ge 2 ] || { echo "missing value for $1" >&2; exit 2; }
+      if [ "$1" = --limit ]; then LIMIT="$2"; else NAME="$2"; fi
+      shift 2 ;;
     --stdout) TO_STDOUT=1; shift ;;
     -*) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
     *)
@@ -86,7 +88,10 @@ if [ "$AS_ATOM" -eq 0 ]; then
   for tool in gh jq; do
     command -v "$tool" >/dev/null 2>&1 || { echo "$tool is required but not installed" >&2; exit 3; }
   done
-  gh auth status >/dev/null 2>&1 || echo "warning: gh is not authenticated; guest rate limits apply" >&2
+  if [ -z "${GH_TOKEN:-}${GITHUB_TOKEN:-}" ] && ! gh auth status >/dev/null 2>&1; then
+    echo "gh is not authenticated (gh auth login, or set GH_TOKEN); --atom needs no token" >&2
+    exit 3
+  fi
 else
   command -v curl >/dev/null 2>&1 || { echo "curl is required but not installed" >&2; exit 3; }
 fi

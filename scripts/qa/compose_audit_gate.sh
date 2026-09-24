@@ -95,9 +95,10 @@ write_metric_summary() {
       "effectivelyStableClasses=\(.effectivelyStableClasses)"
     ' "$module_json" > "$summary"
   else
-    sed -n \
+    # -E so the alternation works in BSD sed too; GNU's \| inside a basic regex matches nothing on macOS.
+    sed -E -n \
       -e 's/[", ]//g' \
-      -e '/^\(totalComposables\|skippableComposables\|knownUnstableArguments\|inferredUnstableClasses\|markedStableClasses\|effectivelyStableClasses\):/ { s/:/=/; p; }' \
+      -e '/^(totalComposables|skippableComposables|knownUnstableArguments|inferredUnstableClasses|markedStableClasses|effectivelyStableClasses):/ { s/:/=/; p; }' \
       "$module_json" > "$summary"
   fi
   printf '\nCompose metrics summary:\n'

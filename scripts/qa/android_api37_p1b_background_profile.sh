@@ -137,7 +137,22 @@ collect_state() {
   "${ADB[@]}" shell dumpsys deviceidle > "$OUT_DIR/${label}_deviceidle.txt" || true
 }
 
+require_qa_components() {
+  # ApiCompatQaActivity and ApiCompatQaReceiver live in app/src/debug, which .gitignore keeps local.
+  # A build without them still installs and starts; the QA intents then go nowhere and the run can
+  # pass having exercised nothing. Captured first: grep -q on a live pipe can SIGPIPE adb under pipefail.
+  local dump
+  dump="$("${ADB[@]}" shell dumpsys package "$PACKAGE_NAME" 2>/dev/null || true)"
+  # dumpsys prints the short form (pkg/.ApiCompatQaReceiver), so match the class name alone.
+  if ! grep -q "ApiCompatQaReceiver" <<< "$dump"; then
+    echo "$PACKAGE_NAME has no os.kei.debug.ApiCompatQaReceiver. Build it from a tree that has the" >&2
+    echo "local QA sources under app/src/debug (gitignored), then run this again." >&2
+    exit 1
+  fi
+}
+
 "${ADB[@]}" install -r "$APK_PATH" > "$OUT_DIR/install.txt"
+require_qa_components
 "${ADB[@]}" shell pm clear "$PACKAGE_NAME" > "$OUT_DIR/pm_clear.txt" || true
 "${ADB[@]}" shell pm grant "$PACKAGE_NAME" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
 "${ADB[@]}" shell pm grant "$PACKAGE_NAME" android.permission.NEARBY_WIFI_DEVICES >/dev/null 2>&1 || true
